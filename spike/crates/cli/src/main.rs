@@ -2691,9 +2691,8 @@ mod snapshot_id_space_tests {
 /// The chrome line naming what a completed apply wrote, so the operator can ask about it.
 ///
 /// A SUMMARY, sited with `cli-plan-summary-line` rather than in the diagnostic catalog: nothing
-/// went wrong, and the two identities are exactly what `dorc why --receipt-id` takes. Its words are
-/// unwritten (`error-authorship-tier`), so today it renders the greppable placeholder and the
-/// values wait for prose; the mechanism is what a register cannot supply for itself.
+/// went wrong, and the two identities are what `dorc why --receipt-id` takes. Its words are
+/// unwritten (`error-authorship-tier`), so it renders the placeholder until prose lands.
 const APPLY_RECEIPTS_LINE: &str = "cli-apply-receipts-line";
 
 /// Ship an already-rendered plan to a host and report how it ended.
@@ -2795,9 +2794,9 @@ fn ship_consented_apply(
     )
     .map_err(|refusal| apply_refused(&refusal, &store))?;
 
-    // Past the permit, and BEFORE the shipment is classified: what the durable did is a fact about
-    // this run whatever the host answered, and reading it after the classification consumed the
-    // outcome would be the same drop this repair is about.
+    // Read before the classification consumes the outcome, and reported AROUND it: the durable's
+    // own failure first, since one arriving after the transport's would read as caused by it; the
+    // summary last, where a run's closing lines live.
     let durable = dorc_cli::apply::durable_report(&reached, &store);
     report_at(
         sink,
@@ -2806,49 +2805,47 @@ fn ship_consented_apply(
         None,
         &durable.items,
     );
+
+    let applied = report_shipment(
+        sink,
+        host,
+        transport_edge::classify_shipment(reached.shipped),
+    );
+
+    // Whatever the host answered: both documents were published before the bytes shipped, and a
+    // failed apply is exactly when an operator wants an identity to ask `dorc why` about.
     if let Some((intent, outcome)) = durable.recorded {
         sink.emit(OutputEvent::plain_tagged(
             OutputChannel::Stderr,
             chrome_parts(APPLY_RECEIPTS_LINE, &[&intent, &outcome]),
         ));
     }
+    Ok(applied)
+}
 
-    match transport_edge::classify_shipment(reached.shipped) {
-        transport_edge::AppliedOutcome::Ran { status } => {
-            if status == 0 {
-                Ok(RunOutcome::Complete)
-            } else {
-                report_at(
-                    sink,
-                    true,
-                    "apply",
-                    None,
-                    &[transport_edge::apply_failed(host, status)],
-                );
-                Ok(RunOutcome::ApplyFailed)
-            }
-        }
-        transport_edge::AppliedOutcome::Unknown { diagnosis } => {
-            report_at(
-                sink,
-                true,
-                "apply",
-                None,
-                &[transport_edge::session_lost(host, 1, &diagnosis)],
-            );
-            Ok(RunOutcome::SessionLost)
-        }
-        transport_edge::AppliedOutcome::NotAttempted(why) => {
-            report_at(
-                sink,
-                true,
-                "apply",
-                None,
-                &[transport_edge::not_attempted(host, &why)],
-            );
-            Ok(RunOutcome::HostNotReached)
-        }
-    }
+/// Report one classified shipment and answer with the run's own status.
+fn report_shipment(
+    sink: &mut dyn OutputSink,
+    host: &str,
+    applied: transport_edge::AppliedOutcome,
+) -> RunOutcome {
+    let (diagnostic, outcome) = match applied {
+        transport_edge::AppliedOutcome::Ran { status: 0 } => return RunOutcome::Complete,
+        transport_edge::AppliedOutcome::Ran { status } => (
+            transport_edge::apply_failed(host, status),
+            RunOutcome::ApplyFailed,
+        ),
+        transport_edge::AppliedOutcome::Unknown { diagnosis } => (
+            transport_edge::session_lost(host, 1, &diagnosis),
+            RunOutcome::SessionLost,
+        ),
+        transport_edge::AppliedOutcome::NotAttempted(why) => (
+            transport_edge::not_attempted(host, &why),
+            RunOutcome::HostNotReached,
+        ),
+    };
+    report_at(sink, true, "apply", None, &[diagnostic]);
+    outcome
 }
 
 /// An apply whose local durable edge would not open, in the word for what was unavailable.
@@ -3929,15 +3926,12 @@ mod tests {
         }
     }
 
-    /// A remote apply REFUSES `--no-receipt`, and refuses it at the parser — before the plan file,
-    /// the keyset, the store, the clock, or the transport (`30R:publication-and-dispatch-boundary`:
-    /// the intent publication IS the dispatch authority, and V1 has no bypass).
+    /// A remote apply REFUSES `--no-receipt`, at the parser — before the plan file, the keyset, the
+    /// store, the clock, or the transport (`30R:publication-and-dispatch-boundary`).
     ///
     /// The named plan does not exist, and that is the assertion: reading it is the FIRST thing
-    /// `ship_consented_apply` does, so a refusal arriving here reached no I/O at all. The same argv
-    /// WITHOUT the flag parses, which is what keys the refusal to the flag rather than to the form.
-    /// Before this repair the flag parsed cleanly and the run went on to publish rich intent and
-    /// outcome receipts anyway.
+    /// `ship_consented_apply` does, so a refusal arriving here reached no I/O. The same argv
+    /// WITHOUT the flag parses, which keys the refusal to the flag rather than to the form.
     #[test]
     fn a_remote_apply_refuses_the_receipt_opt_out_before_it_reads_anything() {
         let shipping = vec![
@@ -3959,11 +3953,9 @@ mod tests {
 
     /// A refused durable edge keeps its OWN word, and names the store it would have filed under.
     ///
-    /// Every route used to round to `intent-not-published`, which named the step a reader could
-    /// already see and dropped the only thing they act on: a store standing where a directory
-    /// belongs and a keyset in an unusable state are repaired in different places, and one of them
-    /// is not in the operator's profile at all (`30Rs:fix-apply-durable-reporting`). Both halves
-    /// are asserted because carrying the word without the place is only half a repair — the same
+    /// Every route used to round to `intent-not-published`, which dropped the only thing a reader
+    /// acts on: a store standing where a directory belongs and an unusable keyset are repaired in
+    /// different places (`30Rs:fix-apply-durable-reporting`). Both halves are asserted — the same
     /// word means different things at a per-user root and at a named one.
     #[test]
     fn a_refused_durable_edge_keeps_its_own_word_and_names_its_store() {
@@ -3986,10 +3978,9 @@ mod tests {
     /// The flag survives wherever it still means something: nothing else publishes an
     /// `ApplyIntent`, so nothing else is asking for a bypass by declining a receipt.
     ///
-    /// Both cells matter and neither implies the other. A remote PLAN probes read-only and mints no
-    /// mutation permit, so its receipt is a record and the admin may refuse it. A local `apply`
-    /// renders an artifact to stdout and contacts nothing. Refusing either would have turned a
-    /// narrow authority rule into a blanket ban on a subtractive lever
+    /// Both cells, because neither implies the other: a remote PLAN probes read-only and mints no
+    /// permit, and a local `apply` renders to stdout and contacts nothing. Refusing either would
+    /// turn a narrow authority rule into a blanket ban on a subtractive lever
     /// (`28D:pay-levers-are-subtractive`).
     #[test]
     fn the_receipt_opt_out_survives_everywhere_it_still_means_something() {

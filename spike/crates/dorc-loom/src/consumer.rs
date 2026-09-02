@@ -879,11 +879,9 @@ impl DorcConsumer {
                 dorc_cli::transport_apply_failed(host, status),
                 15,
             ),
-            // Past the permit: the dispatch happened, so the run reports and carries on, and the
-            // status stays the shipment's own (`30R:publication-and-dispatch-boundary`). The
-            // intent identity is a HARNESS value — a loom world stands up no keyset and mints no
-            // receipt id, so the seat is handed one rather than inventing one where a real
-            // identity goes.
+            // Past the permit: the dispatch happened, so the status stays the shipment's own
+            // (`30R:publication-and-dispatch-boundary`). The intent is a HARNESS value — a loom
+            // world stands up no keyset and mints no receipt id.
             crate::edge_fault::EdgeFault::ApplyOutcomePublish(failure) => (
                 dorc_cli::engine::RECEIPT_STAGE,
                 dorc_cli::apply_outcome_unrecorded(
@@ -1308,9 +1306,9 @@ const ROOTLESS_WORLD: &str = "no-controller-root";
 
 /// The intent identity a replayed apply names when its outcome publication is injected to fail.
 ///
-/// A HARNESS value, and deliberately not a plausible one: a loom world stands up no keyset and
-/// mints no receipt id, so any identity here is fixture-tier and must be unable to read as
-/// something a store could hold (`rul-fixture-identity-never-production`).
+/// Deliberately not a plausible one: a loom world mints no receipt id, so this is fixture-tier and
+/// must be unable to read as something a store could hold
+/// (`rul-fixture-identity-never-production`).
 const LOOM_INTENT: &str = "<loom-intent>";
 
 /// Why this tool declines to answer for a whole-product case. One spelling: the decline reaches an

@@ -20,11 +20,9 @@ pub(crate) enum EdgeFault {
     ShimExec(IoFailure),
     ArtifactPublish(&'static str),
     ReceiptPublish(String),
-    /// A remote apply's OUTCOME publication, past the permit its intent already minted.
-    ///
-    /// Its own operation rather than a `ReceiptPublish` reason word: an apply publishes twice, and
-    /// which of the two failed is the difference between a run that dispatched nothing and one
-    /// that dispatched and lost the record of what it reached.
+    /// A remote apply's OUTCOME publication, past the permit its intent already minted. Its own
+    /// operation rather than a `ReceiptPublish` reason word: which of an apply's two publications
+    /// failed is the difference between dispatching nothing and losing the record of a dispatch.
     ApplyOutcomePublish(dorc_receipt::dispatch::DurableFailure),
     HostEvidence(dorc_plan::records::AdmissionRefusal),
     ToolRun {
@@ -138,10 +136,8 @@ impl EdgeFault {
     }
 }
 
-/// Which step of writing a document a declaration says did not close.
-///
-/// Names the OPERATION's outcome, not a diagnostic: the same closed set the receipt library
-/// answers a publication with, so an injected failure is one production already knows how to map.
+/// Which step of writing a document a declaration says did not close — the OPERATION's outcome,
+/// not a diagnostic: the same closed set the receipt library answers a publication with.
 fn durable_step(step: &str) -> Result<dorc_receipt::dispatch::DurableFailure, String> {
     use dorc_receipt::dispatch::DurableFailure;
     match step {

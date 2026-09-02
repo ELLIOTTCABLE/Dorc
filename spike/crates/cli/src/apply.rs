@@ -526,13 +526,12 @@ const fn terminal_of(shipped: Option<&SessionOutcome>) -> RecordedTerminalState 
     }
 }
 
-/// The closed word a report names one durable failure by.
+/// The closed word a report names one durable failure by — which STEP of writing did not close,
+/// because that is what separates the repairs (a grammar refusal is ours, a sink refusal is the
+/// operator's).
 ///
-/// Sited here rather than on [`DurableFailure`]: the receipt crate owns the typed state and this
-/// crate owns what a user is shown of it (`receipt/CLAUDE.md inv-report-is-the-public-read-
-/// boundary`). Every word says which STEP of writing a document did not close, because that is
-/// what separates the repairs — a grammar refusal is ours to fix and a sink refusal is the
-/// operator's.
+/// Sited here rather than on [`DurableFailure`]: the receipt crate owns the typed state, this one
+/// owns what a user is shown of it (`receipt/CLAUDE.md inv-report-is-the-public-read-boundary`).
 #[must_use]
 pub const fn durable_failure_word(failure: DurableFailure) -> &'static str {
     match failure {
@@ -544,11 +543,9 @@ pub const fn durable_failure_word(failure: DurableFailure) -> &'static str {
     }
 }
 
-/// The closed word for a publication that placed no document.
-///
-/// The rounding this replaces said only `intent-not-published`, which named the step everyone
-/// could already see and dropped the one thing a reader acts on
-/// (`30Rs:fix-apply-durable-reporting`).
+/// The closed word for a publication that placed no document. Replaces a rounding to
+/// `intent-not-published`, which named the step everyone could see and dropped the one thing a
+/// reader acts on (`30Rs:fix-apply-durable-reporting`).
 #[must_use]
 pub const fn publication_refusal_word(refusal: &PublicationRefusal) -> &'static str {
     durable_failure_word(durable_failure_of(refusal))
@@ -556,17 +553,15 @@ pub const fn publication_refusal_word(refusal: &PublicationRefusal) -> &'static 
 
 /// What one authorized apply left in the durable, past its shipment.
 ///
-/// A VALUE rather than a print: the seat that knows how a durable failed is not the seat that owns
-/// the output streams. It exists because the production consumer used to read `shipped` and drop
-/// the rest, which satisfied the ruled "continue execution" half of a post-dispatch durable
-/// failure while quietly dropping the equally ruled "report it" half
-/// (`30R:publication-and-dispatch-boundary`).
+/// A VALUE rather than a print: the seat that knows how a durable failed is not the one that owns
+/// the output streams. It exists because the production consumer read `shipped` and dropped the
+/// rest, honouring the ruled "continue execution" half of a post-dispatch durable failure while
+/// dropping the equally ruled "report it" half (`30R:publication-and-dispatch-boundary`).
 #[derive(Debug)]
 pub struct ApplyDurableReport {
     /// The published intent and outcome identities, as an operator would ask `dorc why` for them.
     ///
-    /// `None` where either did not land: a pair is what makes the apply's durable trail complete,
-    /// and half of one announced as though it were whole is the kind of quiet partiality
+    /// Both or neither: half a pair announced as a trail is the quiet partiality
     /// `30R:standing-invariants` refuses.
     pub recorded: Option<(String, String)>,
     /// The report items the run prints — one, where the durable failed past the permit.
@@ -575,9 +570,8 @@ pub struct ApplyDurableReport {
 
 /// Read one authorized apply's durable trail into the things a run reports about it.
 ///
-/// The failure item is a REPORT: the permit was already spent, the host already saw the bytes, and
-/// nothing about stopping now would un-write them. What it must not do is look like a pre-dispatch
-/// refusal, which is why it carries the intent that DID land — the trail is partial, not absent.
+/// The failure item carries the intent that DID land, so it reads as a partial trail rather than
+/// as the pre-dispatch refusal it must never be mistaken for.
 #[must_use]
 pub fn durable_report(reached: &ConsentedApply, store: &str) -> ApplyDurableReport {
     let intent = reached.intent.map(ApplyIntentId::hex);

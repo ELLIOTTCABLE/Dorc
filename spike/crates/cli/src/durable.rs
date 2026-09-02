@@ -39,8 +39,7 @@ use dorc_receipt_local::keyset::{
     StorePresence, open_for_read, open_or_initialize_for_write,
 };
 // `StoreOpenRefusal` joins them because [`EdgeRefusal`] carries it in public: a caller that can
-// receive the value but cannot name its type would have to reach past this seat to match on one,
-// which is the reach this module exists to be instead of.
+// receive the value but not name its type would have to reach past this seat to match on one.
 pub use dorc_receipt_local::store::{
     BoundedReceiptEntries, LocalReceiptStoreV1, OwnedReceiptEntry, StoreOpenRefusal,
 };

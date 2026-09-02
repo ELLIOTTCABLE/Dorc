@@ -2158,11 +2158,9 @@ pub struct CliShimDirUnwritable {
 
 /// Payload of [`DiagCode::ApplyReceiptNotOptional`]: `--no-receipt` under a remote apply.
 ///
-/// No fields, because nothing varies: one flag, one invocation shape. The refusal exists because
-/// `30R:publication-and-dispatch-boundary` gives V1 no bypass — the permit that authorizes the
-/// first mutative dispatch is minted only by publishing the intent — so accepting the flag would
-/// have to mean either dispatching unrecorded or persisting anyway, and the second is what it
-/// silently did.
+/// No fields, because nothing varies: one flag, one invocation shape. V1 has no bypass
+/// (`30R:publication-and-dispatch-boundary`), so accepting the flag could only mean dispatching
+/// unrecorded or persisting anyway — and the second is what it silently did.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApplyReceiptNotOptional;
 
@@ -2178,20 +2176,17 @@ pub struct ApplyPlanNotDispatchable {
     /// would not take (a `dorc-receipt` publication word), or the local edge that would not open
     /// at all (a root/key/store word).
     pub reason: &'static str,
-    /// The per-user state base this apply would have filed under (`{store}`).
-    ///
-    /// Beside the reason because a root/key/store word is about a PLACE, and the same word means
-    /// different repairs at a per-user root and at an explicitly named one. Its spelling matches
-    /// the one [`DiagCode::DurableReceiptUnwritten`] uses, so an operator reading both is reading
-    /// about one store rather than matching two labels.
+    /// The per-user state base this apply would have filed under (`{store}`). Beside the reason
+    /// because the same root/key/store word means different repairs at a per-user root and at a
+    /// named one; spelled as [`DiagCode::DurableReceiptUnwritten`] spells it.
     pub store: String,
 }
 
 /// Payload of [`DiagCode::ApplyOutcomeUnrecorded`]: a dispatch whose outcome did not land.
 ///
-/// The intent is carried, not omitted, and that is the whole point: past the permit the apply RAN,
-/// so the honest report is a partial trail with a name on it rather than a durable that reads
-/// absent (`30R:standing-invariants` — missing material never reads complete).
+/// Carrying the intent is the whole point — past the permit the apply RAN, so the honest report is
+/// a partial trail with a name on it, never a durable that reads absent
+/// (`30R:standing-invariants`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ApplyOutcomeUnrecorded {
     /// The intent that authorized the dispatch and DID land (`{intent}`).
@@ -2989,11 +2984,9 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // Its apply-side sibling, and Error for the same reason: the outcome is the only record of
-        // what a mutation actually reached, so losing it loses the run somebody comes back asking
-        // about. Severity is registry data and decides no exit code (`291` §5a step 3) — the
-        // apply's own result stays what the shipment reached, which is the ruled post-dispatch
-        // failure direction (`30R:publication-and-dispatch-boundary`).
+        // Its apply-side sibling: the outcome is the only record of what a mutation reached.
+        // Severity decides no exit code (`291` §5a step 3), so the run's result stays the
+        // shipment's — the ruled post-dispatch direction (`30R:publication-and-dispatch-boundary`).
         DiagCode::ApplyOutcomeUnrecorded(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

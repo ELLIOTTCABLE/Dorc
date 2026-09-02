@@ -1259,13 +1259,9 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
         )));
     }
     // A remote apply's intent publication IS its dispatch authority (`30R:publication-and-dispatch-
-    // boundary`; V1 has no bypass), so `--no-receipt` there asks for something the invocation
-    // cannot do. Refused rather than honoured (that would be a bypass) and rather than ignored
-    // (which is what it used to be: the flag was accepted and rich receipts were written anyway).
-    // HERE, in the parser, so the refusal lands before the plan file, the keyset, the store, the
-    // clock, and the transport — every one of which the apply route touches on the way to
-    // publishing. Non-mutative plan production keeps the flag: declining to write about a run that
-    // changes nothing takes no authority away.
+    // boundary`, no bypass in V1), so honouring the flag would be the bypass and ignoring it wrote
+    // rich receipts under a flag saying none would be. HERE, in the parser, because the refusal has
+    // to precede the plan file, the keyset, the store, the clock and the transport.
     if ships_a_rendered_plan && no_receipt {
         return Err(Diag::new_spanless_site(DiagCode::ApplyReceiptNotOptional(
             dorc_aid::diag::ApplyReceiptNotOptional,
@@ -1455,11 +1451,9 @@ pub fn transport_crlf_error(which: &str, line: usize) -> InvocationError {
 
 /// Map an apply whose OUTCOME did not reach the store, past the permit it already spent.
 ///
-/// One mint seat, shared by the production consumer and by the injected-edge replay, so a
-/// transcript can never show a sentence the binary does not produce
-/// (`dorc-replay-is-production-semantics`). It is a REPORT and never a refusal: the bytes are on
-/// the host either way, and the run's own result stays what the shipment reached
-/// (`30R:publication-and-dispatch-boundary`).
+/// A REPORT and never a refusal: the bytes are on the host either way, so the run's own result
+/// stays what the shipment reached (`30R:publication-and-dispatch-boundary`). One mint seat,
+/// shared with the injected-edge replay (`dorc-replay-is-production-semantics`).
 #[must_use]
 pub fn apply_outcome_unrecorded(
     intent: &str,

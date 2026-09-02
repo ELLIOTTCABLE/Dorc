@@ -1283,19 +1283,9 @@ mod deterministic_apply_route {
             "two documents never share one identity"
         );
 
-        // What the RUN says about the pair it just wrote. Both identities or neither: an operator
-        // holding one of them can ask `dorc why --receipt-id` about it, and a run that named half
-        // a pair would be announcing a trail it does not have.
-        let report = dorc_cli::apply::durable_report(&reached, "<store>");
-        assert_eq!(
-            report.recorded,
-            Some((intent_id.hex(), outcome_id.hex())),
-            "a complete apply names both documents it published"
-        );
-        assert!(
-            report.items.is_empty(),
-            "and reports nothing wrong, because nothing was"
-        );
+        // The "names it afterwards" half: what the RUN says about the pair it just wrote.
+        let named = dorc_cli::apply::durable_report(&reached, "<store>").recorded;
+        assert_eq!(named, Some((intent_id.hex(), outcome_id.hex())));
     }
 
     /// THE ordering negative: a sink that will not place the intent must leave the host untouched.
@@ -1347,6 +1337,82 @@ mod deterministic_apply_route {
         );
     }
 
+    /// Places the intent and refuses the outcome that follows it.
+    ///
+    /// Only the two apply methods are reachable from this route; the other four answer the
+    /// refusal rather than a plausible success, so a route that started calling one would
+    /// fail here rather than pass on a stand-in.
+    #[derive(Default)]
+    struct PlacesTheFirstOnly(MemorySink);
+
+    impl ReceiptPlacement for PlacesTheFirstOnly {
+        fn place_plan(
+            &mut self,
+            _: dorc_receipt::ids::PlanReceiptId,
+            _: ReceiptOrderToken,
+            _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Rich>,
+        ) -> Result<PlacedDocument, PlacementFailure> {
+            Err(PlacementFailure::Declined)
+        }
+
+        fn place_plain_plan(
+            &mut self,
+            _: dorc_receipt::ids::PlanReceiptId,
+            _: ReceiptOrderToken,
+            _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Plain>,
+        ) -> Result<PlacedDocument, PlacementFailure> {
+            Err(PlacementFailure::Declined)
+        }
+
+        fn place_intent(
+            &mut self,
+            id: dorc_receipt::ids::ApplyIntentId,
+            order: ReceiptOrderToken,
+            receipt: dorc_receipt::writer::SignedReceipt<
+                dorc_receipt::model::ApplyIntent,
+                dorc_receipt::model::Rich,
+            >,
+        ) -> Result<PlacedIntent, PlacementFailure> {
+            self.0.place_intent(id, order, receipt)
+        }
+
+        fn place_plain_intent(
+            &mut self,
+            _: dorc_receipt::ids::ApplyIntentId,
+            _: ReceiptOrderToken,
+            _: dorc_receipt::writer::SignedReceipt<
+                dorc_receipt::model::ApplyIntent,
+                dorc_receipt::model::Plain,
+            >,
+        ) -> Result<PlacedDocument, PlacementFailure> {
+            Err(PlacementFailure::Declined)
+        }
+
+        fn place_outcome(
+            &mut self,
+            _: dorc_receipt::ids::ApplyOutcomeId,
+            _: ReceiptOrderToken,
+            _: dorc_receipt::writer::SignedReceipt<
+                dorc_receipt::model::ApplyOutcome,
+                dorc_receipt::model::Rich,
+            >,
+        ) -> Result<PlacedDocument, PlacementFailure> {
+            Err(PlacementFailure::Declined)
+        }
+
+        fn place_plain_outcome(
+            &mut self,
+            _: dorc_receipt::ids::ApplyOutcomeId,
+            _: ReceiptOrderToken,
+            _: dorc_receipt::writer::SignedReceipt<
+                dorc_receipt::model::ApplyOutcome,
+                dorc_receipt::model::Plain,
+            >,
+        ) -> Result<PlacedDocument, PlacementFailure> {
+            Err(PlacementFailure::Declined)
+        }
+    }
+
     /// A sink that places the intent and then refuses the OUTCOME: the apply still happened.
     ///
     /// The mirror of the case above, and the pair is the point. Before the permit, a durable
@@ -1354,82 +1420,6 @@ mod deterministic_apply_route {
     /// is narration — reporting it is all that is left, and stopping would restore nothing.
     #[test]
     fn a_durable_failure_past_the_permit_is_reported_and_the_apply_still_ran() {
-        /// Places the intent and refuses the outcome that follows it.
-        ///
-        /// Only the two apply methods are reachable from this route; the other four answer the
-        /// refusal rather than a plausible success, so a route that started calling one would
-        /// fail here rather than pass on a stand-in.
-        #[derive(Default)]
-        struct PlacesTheFirstOnly(MemorySink);
-
-        impl ReceiptPlacement for PlacesTheFirstOnly {
-            fn place_plan(
-                &mut self,
-                _: dorc_receipt::ids::PlanReceiptId,
-                _: ReceiptOrderToken,
-                _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Rich>,
-            ) -> Result<PlacedDocument, PlacementFailure> {
-                Err(PlacementFailure::Declined)
-            }
-
-            fn place_plain_plan(
-                &mut self,
-                _: dorc_receipt::ids::PlanReceiptId,
-                _: ReceiptOrderToken,
-                _: dorc_receipt::writer::SignedReceipt<PlanReceipt, dorc_receipt::model::Plain>,
-            ) -> Result<PlacedDocument, PlacementFailure> {
-                Err(PlacementFailure::Declined)
-            }
-
-            fn place_intent(
-                &mut self,
-                id: dorc_receipt::ids::ApplyIntentId,
-                order: ReceiptOrderToken,
-                receipt: dorc_receipt::writer::SignedReceipt<
-                    dorc_receipt::model::ApplyIntent,
-                    dorc_receipt::model::Rich,
-                >,
-            ) -> Result<PlacedIntent, PlacementFailure> {
-                self.0.place_intent(id, order, receipt)
-            }
-
-            fn place_plain_intent(
-                &mut self,
-                _: dorc_receipt::ids::ApplyIntentId,
-                _: ReceiptOrderToken,
-                _: dorc_receipt::writer::SignedReceipt<
-                    dorc_receipt::model::ApplyIntent,
-                    dorc_receipt::model::Plain,
-                >,
-            ) -> Result<PlacedDocument, PlacementFailure> {
-                Err(PlacementFailure::Declined)
-            }
-
-            fn place_outcome(
-                &mut self,
-                _: dorc_receipt::ids::ApplyOutcomeId,
-                _: ReceiptOrderToken,
-                _: dorc_receipt::writer::SignedReceipt<
-                    dorc_receipt::model::ApplyOutcome,
-                    dorc_receipt::model::Rich,
-                >,
-            ) -> Result<PlacedDocument, PlacementFailure> {
-                Err(PlacementFailure::Declined)
-            }
-
-            fn place_plain_outcome(
-                &mut self,
-                _: dorc_receipt::ids::ApplyOutcomeId,
-                _: ReceiptOrderToken,
-                _: dorc_receipt::writer::SignedReceipt<
-                    dorc_receipt::model::ApplyOutcome,
-                    dorc_receipt::model::Plain,
-                >,
-            ) -> Result<PlacedDocument, PlacementFailure> {
-                Err(PlacementFailure::Declined)
-            }
-        }
-
         let signer = Ed25519Signer::of_secret(FIXTURE_SECRET);
         let (sealer, _) = age_pair();
         let mut ids = CountingIds(0);
@@ -1469,32 +1459,66 @@ mod deterministic_apply_route {
             "the failure is reported as what it was — a sink, not an execution"
         );
 
-        // AND IT IS REPORTED. The production consumer used to read `shipped` and drop the rest,
-        // which honoured the ruled "continue execution" half of a post-dispatch durable failure
-        // while dropping the equally ruled "report it" half (`30Rs:fix-apply-durable-reporting`).
+        // AND IT IS REPORTED — the half the production consumer used to drop by reading `shipped`
+        // and nothing else (`30Rs:fix-apply-durable-reporting`).
         let report = dorc_cli::apply::durable_report(&reached, "<store>");
-        let item = match report.items.as_slice() {
-            [only] => only,
-            other => panic!("a durable failure past the permit is one report item: {other:?}"),
-        };
-        assert_eq!(item.code.slug(), "apply-outcome-unrecorded");
+        assert_eq!(
+            report.items.first().map(|item| item.code.slug()),
+            Some("apply-outcome-unrecorded")
+        );
         assert_eq!(
             report.recorded, None,
-            "half a pair is not a trail: the run reports the failure rather than announcing a \
-             durable it does not have"
+            "and half a pair is not a trail: the failure is reported rather than a durable the \
+             run does not have being announced"
         );
-        // The intent that DID land rides the item, because a partial trail with a name on it is
-        // still answerable — an operator can ask `dorc why --receipt-id` about it.
-        let named = dorc_aid::diag::render_body(item, &dorc_core::Interner::default());
+    }
+
+    /// What the report SAYS, over both cells of the one projection the production consumer reads.
+    ///
+    /// Built by hand rather than dispatched: the two cells differ only in whether an outcome
+    /// landed, and driving a whole apply twice to vary one field would hide that. The failure cell
+    /// carries the intent that DID land — a partial trail with a name on it stays answerable —
+    /// and the write step that did not close, which is what separates the repairs.
+    #[test]
+    fn the_durable_report_names_the_surviving_intent_and_the_step_that_did_not_close() {
+        use dorc_cli::apply::{ConsentedApply, durable_report};
+        let mut ids = CountingIds(0);
+        let intent = dorc_receipt::ids::ApplyIntentId::mint(&mut ids);
+        let outcome = dorc_receipt::ids::ApplyOutcomeId::mint(&mut ids);
+
+        let complete = durable_report(
+            &ConsentedApply {
+                shipped: None,
+                intent: Some(intent),
+                outcome: Some(outcome),
+                durable_failure: None,
+            },
+            "/state/dorc/receipts",
+        );
+        assert_eq!(complete.recorded, Some((intent.hex(), outcome.hex())));
+        assert!(complete.items.is_empty());
+
+        let lost = durable_report(
+            &ConsentedApply {
+                shipped: None,
+                intent: Some(intent),
+                outcome: None,
+                durable_failure: Some(DurableFailure::Grammar),
+            },
+            "/state/dorc/receipts",
+        );
+        assert_eq!(lost.recorded, None);
+        let item = lost.items.first().expect("one report item");
         assert!(
             matches!(
                 &item.code,
                 dorc_aid::diag::DiagCode::ApplyOutcomeUnrecorded(payload)
-                    if payload.intent == reached.intent.expect("its intent was placed").hex()
-                        && payload.reason == "receipt-not-placed"
+                    if payload.intent == intent.hex()
+                        && payload.store == "/state/dorc/receipts"
+                        && payload.reason == "receipt-out-of-grammar"
             ),
-            "the item names the surviving intent and the write step that did not close; got: \
-             {named}"
+            "got: {:?}",
+            item.code
         );
     }
 
