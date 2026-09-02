@@ -28,7 +28,7 @@
 
 ---
 
-## IN FLIGHT (2026-09-02 — the test-architecture REBUILD; design cleared on the second sealed review; lane A building)
+## IN FLIGHT (2026-09-02 — the test-architecture REBUILD; design cleared on the second sealed review; lane A built, lane B1 building)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -53,9 +53,12 @@ loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) 
 livetest as the explicit ambient composition; `rul-seam-columns-are-conductor-ruled`), and
 `30-reviewB` over the re-stabilized design returned ACK (both reports committed on the arc
 branch, unopened by the conductor). Lane A (the `Seams`/`HarnessSeams` bundle, `compose::run`,
-`dorc-harness`, seeded entropy, the six env pins retired) is BUILDING in the conductor
-worktree; checkpoint after it. A rewound conductor resumes from the ledger's §0 on that branch,
-where the lane briefs, the scout inventory, and the review dispatch kit are banked beside it.
+`dorc-harness`, seeded entropy, the six env pins retired, the scrubbed session, literal
+runner-owned roots) is BUILT and green on both legs; lane B1 (the shell-session process driver,
+gates by kind, both-streams transcripts, the ticking clock default) is building in the
+conductor worktree, then B2 (needle rip, battery split), C, D. No sealed review within the arc
+(human, 2026-09-02). Builder briefs are never committed (human, same day); a rewound conductor
+resumes from the ledger's §0 on that branch.
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 
