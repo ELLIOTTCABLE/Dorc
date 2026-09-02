@@ -10,7 +10,7 @@
 > coverage, not calibration to truth. Agreement is a signal; every finding below remains a claim
 > about the artifact and its governing design, never a model vote.
 
-## 30Rs:verdict-in-one-screen
+## verdict-in-one-screen
 
 The receipt **format kernel is worth keeping**. All four reviewers found substantial, unusually
 careful work in exact-byte signing, strict grammar, plain/rich separation, reverse-overlay
@@ -37,7 +37,7 @@ breaches and several larger design debts.
    no-observation identity, durable-content growth, and the intentionally temporary total why
    surface. These alter product behavior, durable contents, or high-lock architecture.
 
-## 30Rs:method-and-weighting
+## method-and-weighting
 
 Provenance labels used below:
 
@@ -61,7 +61,7 @@ Weighting:
 - Severity words in the source reports are not inherited. Sol tends to overstate severity; the
   categories below are conductor judgments.
 
-## 30Rs:fix-now-work
+## fix-now-work
 
 These items are suitable for a bounded repair lane. None requires the human to choose a new product
 posture. Changes touching governed receipt/publication surfaces still follow the existing
@@ -70,7 +70,7 @@ whether the defect should be fixed.
 
 ### P0 — authority and identity boundaries
 
-#### 30Rs:fix-required-publication-mint
+#### fix-required-publication-mint
 
 **Sources:** S-N `30Ro:required-publication-proof-is-caller-mintable`; related S-A concern about
 self-certified authority.
@@ -86,7 +86,7 @@ publication edge. A fixture/deterministic path may exercise its own disjoint tra
 same opaque proof through the model; it must not manufacture the production proof from digest and
 policy strings. Add the external/caller negative proof the design already requires.
 
-#### 30Rs:fix-entropy-failure-must-refuse
+#### fix-entropy-failure-must-refuse
 
 **Source:** S-N `30Ro:entropy-failure-mints-fixed-zero-identities` (solitary, mechanically traced).
 
@@ -98,7 +98,7 @@ enter the fixed-ID fixture class.
 session/intent construction, or permit minting. Remove the remember-to-check latch and narrow raw
 identity constructors to parsing or structural test-only use.
 
-#### 30Rs:fix-draft-and-identity-mints
+#### fix-draft-and-identity-mints
 
 **Source:** S-N `30Ro:receipt-draft-mint-is-an-open-field-bag` (solitary, direct API finding).
 
@@ -113,7 +113,7 @@ test-only APIs.
 
 ### P0 — apply CLI honesty and durable failure
 
-#### 30Rs:fix-apply-receipt-opt-out
+#### fix-apply-receipt-opt-out
 
 **Sources:** F-A `30Rn:fnd-no-receipt-is-ignored-by-apply`; S-N
 `30Ro:no-receipt-is-ignored-for-host-apply`; S-A `30Rp:fnd-receipt-disable-is-ignored`.
@@ -126,7 +126,7 @@ persistence.
 **Repair:** reject `--no-receipt` for required-publication apply before key/store/transport work,
 with one registry code explaining the incompatibility. Do not design a bypass in this lane.
 
-#### 30Rs:fix-apply-durable-reporting
+#### fix-apply-durable-reporting
 
 **Source:** F-N `fnd-apply-route-swallows-durable-failure-and-never-names-its-receipts` (solitary,
 production consumer traced).
@@ -140,7 +140,7 @@ also collapse useful closed reasons into `intent-not-published`.
 model; preserve typed pre-dispatch root/key/store reason and store locus. This lane supplies data and
 codes only where prose is absent; it does not author user-facing words.
 
-#### 30Rs:fix-retired-livetest-flag
+#### fix-retired-livetest-flag
 
 **Sources:** F-N `fnd-livetest-passes-a-retired-flag`; current-tree census confirms both call sites
 remain.
@@ -153,7 +153,7 @@ required receipts, omit the flag rather than replacing it with a flag that is re
 
 ### P1 — partial recovery and value exits
 
-#### 30Rs:fix-verification-only-skeleton-recovery
+#### fix-verification-only-skeleton-recovery
 
 **Sources:** S-N `30Ro:missing-age-key-hides-authenticated-skeleton`; S-A
 `30Rp:fnd-verification-only-recovery-disappears`.
@@ -166,7 +166,7 @@ detail custody unnecessarily loses authenticated structural history and its exac
 specific encryption-role reason. It must never release opaque slots or impersonate a complete rich
 receipt.
 
-#### 30Rs:fix-private-key-buffer-discipline
+#### fix-private-key-buffer-discipline
 
 **Source:** S-N `30Ro:private-key-write-callback-extracts-owned-bytes` (solitary, API and production
 caller traced).
@@ -179,7 +179,7 @@ exit.
 in zeroizing containers. Add a negative API test for returning/capturing owned key material, not
 only escaping a borrowed slice.
 
-#### 30Rs:fix-partial-publication-narration
+#### fix-partial-publication-narration
 
 **Sources:** F-N `fnd-interrupted-publication-bricks-last-selection`; F-A
 `fnd-store-lifecycle-edges`; S-A lifecycle analysis.
@@ -195,7 +195,7 @@ reconstruction already carries the state, close only the remaining acquisition l
 
 ### P1 — local filesystem capability continuity
 
-#### 30Rs:fix-created-directory-handle-continuity
+#### fix-created-directory-handle-continuity
 
 **Source:** S-N `30Ro:fresh-keyset-children-are-created-by-path` (solitary, clean-profile path
 traced).
@@ -207,7 +207,7 @@ contradicts the ruled created-component ownership chain.
 **Repair:** successful directory creation returns or immediately acquires an inspected,
 non-following owned directory handle before any child operation.
 
-#### 30Rs:fix-handle-relative-enumeration
+#### fix-handle-relative-enumeration
 
 **Source:** S-A `30Rp:fnd-directory-handle-is-abandoned` (solitary, distinct operation traced).
 
@@ -221,7 +221,7 @@ than silently fall back to a pathname.
 
 ### P1 — fixture/production separation
 
-#### 30Rs:fix-fixture-clock-publication-fence
+#### fix-fixture-clock-publication-fence
 
 **Source:** F-N `fnd-fixture-clock-reaches-published-order` (solitary, current-tree census confirms
 reachability).
@@ -236,7 +236,7 @@ must not silently make a production run clockless.
 
 ### P2 — straightforward hygiene
 
-#### 30Rs:fix-current-steering-residue
+#### fix-current-steering-residue
 
 **Sources:** both Fable reviews; current-tree census.
 
@@ -247,14 +247,14 @@ must not be replayed wholesale.
 **Repair:** inspect only the current remaining aliases/citations and make them truthful; retain
 necessary née references where they intentionally explain a rename.
 
-## 30Rs:human-input-work
+## human-input-work
 
 These items should not enter the mechanical repair lane. Each changes product posture, requires a
 new capability, changes durable contents/identity, or activates an explicitly deferred design.
 
 ### H0 — genuine standup before apply authority
 
-#### 30Rs:ask-real-session-standup
+#### ask-real-session-standup
 
 **Sources:** S-N `30Ro:apply-ready-target-is-only-an-argv-spelling`; S-A
 `30Rp:fnd-standup-is-self-certified`.
@@ -270,7 +270,7 @@ refuse required apply. This is not repaired by renaming the thin context or addi
 
 ### H0 — mandatory durability versus the shell floor
 
-#### 30Rs:ask-audit-gate-versus-availability
+#### ask-audit-gate-versus-availability
 
 **Sources:** F-A `fnd-apply-is-gated-on-a-per-user-profile`; S-A
 `30Rp:fnd-mandatory-durable-breaks-shell-floor`.
@@ -286,7 +286,7 @@ claim. Do not sneak a bypass into the current authority chain.
 
 ### H0 — plan/apply causal correlation
 
-#### 30Rs:ask-explicit-plan-origin-handoff
+#### ask-explicit-plan-origin-handoff
 
 **Source:** S-A `30Rp:fnd-normal-plan-apply-never-correlates` (solitary, normal path traced).
 
@@ -300,7 +300,7 @@ Filename guessing or automatic “same bytes” inference is not enough.
 
 ### H1 — no-observation run identity
 
-#### 30Rs:ask-last-run-misattribution
+#### ask-last-run-misattribution
 
 **Source:** F-A `fnd-no-observation-plan-writes-nothing-silently` (solitary but red-test demonstrated).
 
@@ -315,7 +315,7 @@ stable identity semantics need a ruling.
 
 ### H1 — outcome observability
 
-#### 30Rs:ask-whole-script-site-outcomes
+#### ask-whole-script-site-outcomes
 
 **Source:** S-N `30Ro:apply-outcome-never-records-sites`; echoed by the wider Fable concern that apply
 never tells the operator what its receipts mean.
@@ -329,7 +329,7 @@ typed explicit state distinguishing “unobservable whole script” from “zero
 
 ### H1 — store lifecycle and retention
 
-#### 30Rs:ask-bounded-store-lifecycle
+#### ask-bounded-store-lifecycle
 
 **Sources:** F-A `fnd-store-lifecycle-edges`; S-A `30Rp:fnd-immutable-store-has-hard-expiry`; F-N
 interrupted-publication analysis.
@@ -346,7 +346,7 @@ entry-count problem; the reviewers' mechanical account controls here.
 
 ### H1 — default why selection and sensitive detail
 
-#### 30Rs:ask-temporary-total-surface-exit
+#### ask-temporary-total-surface-exit
 
 **Sources:** S-A `30Rp:fnd-default-why-dumps-sensitive-detail`; both Fables' broader why regression.
 Current status: 30V **fixed** the old listing, explicit file, address, and rooted closure, but
@@ -360,7 +360,7 @@ fields.
 
 ### H1 — durable contents and decision identity
 
-#### 30Rs:ask-recorded-consent-and-absent-scalars
+#### ask-recorded-consent-and-absent-scalars
 
 **Sources:** F-N `fnd-argv-uncollected-drops-the-consent-link` and
 `fnd-skeleton-scalars-fabricated-not-absent`.
@@ -374,7 +374,7 @@ truth problems. Correcting them changes receipt contents/grammar and therefore c
 in the receipt and replace fabricated zeros with typed absence where the producer lacks data. Do not
 smuggle this into an ordinary projection cleanup.
 
-#### 30Rs:ask-planning-identity-completeness
+#### ask-planning-identity-completeness
 
 **Source:** S-N `30Ro:planning-input-identity-omits-live-controls` (solitary, input/identity tables
 compared).
@@ -387,7 +387,7 @@ semantics versioning. This is a decision-identity governed surface, not a local 
 
 ### H2 — broader cost and usability consequences
 
-#### 30Rs:consider-receipt-complexity-budget
+#### consider-receipt-complexity-budget
 
 **Sources:** both Fables quantified code/dependency growth; F-A/F-N and S-A noted that the old why
 surface shrank at the review tip. 30V recovered the surface, so the strongest “dead report module”
@@ -400,7 +400,7 @@ Do require future receipt work to delete superseded pathways and justify depende
 against reachable product behavior. Provider expansion, import/rotation, and retention should not
 proceed as automatic completion of the existing architecture.
 
-#### 30Rs:consider-readable-structure-limits
+#### consider-readable-structure-limits
 
 **Source:** F-A `fnd-receipts-are-legible-only-where-written`.
 
@@ -409,7 +409,7 @@ Age overlay; V1 has no import/key-transfer UX. This is a ruled trade, not an imp
 Record it when specifying vendor handoff, old-machine recovery, backup, and issue-attachment claims;
 do not market direct readability as full stand-alone legibility.
 
-## 30Rs:already-fixed-after-review-tip
+## already-fixed-after-review-tip
 
 The following findings were correct at `4414af7a` and useful — they exposed bad delivery sequencing —
 but later 30V work repaired them on current `ai/main`. The fix lane must not recreate their patches.
@@ -426,10 +426,10 @@ but later 30V work repaired them on current `ai/main`. The fix lane must not rec
 - **`RecordedWhyFacts` had no production consumer** — both Fables/S-A. It is now the reconstruction
   input and was widened exhaustively over persisted plan families.
 
-These repairs do **not** dispose `30Rs:ask-temporary-total-surface-exit`: current output is now a
+These repairs do **not** dispose `ask-temporary-total-surface-exit`: current output is now a
 correctly rooted total reconstruction, but it is intentionally uncurated and depth-insensitive.
 
-## 30Rs:rejected-or-non-action-findings
+## rejected-or-non-action-findings
 
 - **Delete the crypto/format core** — rejected. Every reviewer found the central exact-byte,
   projection, overlay, and recorded/live properties strong; no counterexample survived.
@@ -453,9 +453,9 @@ correctly rooted total reconstruction, but it is intentionally uncurated and dep
   security defect. Restate non-sensitive engineering reasons locally when those sites are next
   touched; do not bulk-copy quarantined rationale.
 
-## 30Rs:fix-lane-boundary
+## fix-lane-boundary
 
-A single fix conductor may split `30Rs:fix-now-work` into parallel implementation slices, but the
+A single fix conductor may split `fix-now-work` into parallel implementation slices, but the
 boundary is strict:
 
 1. It may repair private mints, fallible identity, CLI refusal/report routing, verification-only
@@ -471,7 +471,7 @@ boundary is strict:
 5. It ends with the ordinary builder gate on both platforms and the governed receipt review before
    fold; no finding is “proven fixed” by editing its test or weakening its question.
 
-## 30Rs:final-priority-order
+## final-priority-order
 
 1. **Stop false authority first:** publication proof, entropy identity, genuine standup decision.
 2. **Stop explicit user-contract violations:** `--no-receipt`, silent durable failure, wrong-run
