@@ -290,6 +290,15 @@
 - Invocation plumbing that must follow a runner change: mise `test:e2e`/`test:looms`(+`-quiet`),
   `hk.pkl`'s `e2e` and `loom-hygiene` steps, `internal-tooling/src/bless.rs` (spawns
   `cargo test -p dorc-cli --test e2e`), `cli/Cargo.toml`'s `[[test]]` stanzas.
+- `cli/src/apply.rs` `ship_consented_apply` computes `ConsentedApply.{intent, outcome,
+  durable_failure}` and the production consumer DISCARDS all three; the pre-dispatch refusal
+  words and store locus do survive (`ApplyPlanNotDispatchable { reason, store }`, reusing an
+  existing case). The two post-dispatch surfaces — the durable-failure diagnostic and the
+  completed apply's intent/outcome identities line — are product behaviour with NO driving
+  route: a `dorc apply --host` diagnostic can be transcripted today only through
+  `consumer.rs run_remote_apply`, a scripted table keyed on `edge-fault` words that never runs
+  an apply. Extending that table is a STOP, never a build — it is the accretion this document
+  removes. Both surfaces are lane C's.
 
 ### lanes (serial; one Opus builder per lane; stop-and-report between lanes; each lane ends green on `mise run both gate:full-quiet`; every brief carries the Safety block, step-zero, the comment budget with rip-don't-update, and `AGENTS.for-builders-only.md` first)
 
@@ -312,7 +321,15 @@
    driver composes the REAL `LocalReceiptEdgeV1` over the deterministic `LocalIo` model with
    seeded entropy and the ticking case clock, so receipt-rooted `why` is a fast editable loom and
    the thirty-seven `why-total-*` rows become authorable through the existing publish loop; the
-   varied-seed default with its two affordances; `gate-two-drivers-agree`.
+   varied-seed default with its two affordances; `gate-two-drivers-agree`; and the post-dispatch
+   durable report, minted here as the first product surface authored over that world — a
+   durable-failure diagnostic carrying the surviving intent (a seeded id, never a fixture
+   literal) plus the closed write-step word, and the completed apply's intent/outcome
+   identities chrome line — each authored through the ordinary publish loop and each also
+   witnessed by a state-only e2e (the store holds an intent and no outcome / holds both) per §3
+   shape (c). Whether the failure is a sibling of `durable-receipt-unwritten` or a reason arm
+   widening it is a product choice the conductor rules at this lane's checkpoint, never a
+   builder call.
 4. **`lane-d-one-runner-and-frontmatter-collapse`** (medium-large; mostly mechanical once B
    exists) — merge the runners; derive and report the driver; retire `run:`/`fixpoint:`;
    collapse frontmatter per §5; hk/mise/bless plumbing follows.
@@ -342,7 +359,8 @@ expressible as an export (otherwise it stays, on-target rule).
 ### steering edits owed at close (Fable-authored, once, in conductor voice)
 
 `crates/cli/CLAUDE.md`: the harness contract re-cut around sessions, gates-by-kind, the derived
-driver, and `inv-division-at-the-narrowest-edge`. `spike/CLAUDE.md`:
+driver, `inv-division-at-the-narrowest-edge`, and the apply-host driving route (receipt-side
+diagnostics driven over the real edge in-process; scripted `edge-fault` rows are transport-only). `spike/CLAUDE.md`:
 `rul-fixture-identity-never-production` re-cut with the public-interfaces reading; the Safety
 block's "central e2e runner" sentence renamed to the one runner. `crates/aid/CLAUDE.md`: the
 runner pointers and the `seam-tolerated-nondeterminism` rule's spelling. `plans/282` §2/§7:
