@@ -163,20 +163,37 @@ files:
 
 ## Git hygiene
 
-Mint yourself a conductor-worktree before making mutative changes yourself,
-unless they're trivial or the user asks otherwise. If there's a clear point
-where work is essentially complete, delete it and clean up after yourself; your
-final deliverable will often be a single, populated branch, ready for the
-human's fast-forward-to / merge-into-main.
+**Important:** Some harnesses unreliably change the working-directory; *all* git
+commands should include their *full* `-C` worktree-path, *and* commit
+by-explicit-pathspec.
 
-Use a dedicated worktree for mutative subagents unless their model-specific
-supplement gives different worktree instructions.
+Worktrees should hold a `ai/rXX-<name>` branch and live under the same name
+in-repo at `.tmp/trees/rXX-<name>`.
 
-When manually minting worktrees: Give the builder the absolute worktree path,
-expected branch and tip, expected initial dirt, and require **every** git
-command (read-only included) as `git -C <absolute-worktree> …`. A vanished or
-misbased worktree is then a loud stop instead of a command silently landing in a
-sibling. (This is not necessary for harness-managed worktrees.)
+Mint yourself a `ai/rXX-<name>-conductor`-worktree before making mutative
+changes yourself, unless they're trivial or the user asks otherwise. If there's
+a clear point where work is essentially complete, delete it and clean up after
+yourself; your final deliverable will often be a single, populated branch, ready
+for the human's fast-forward-to / merge-into-main.
+
+Managing the git state from your own arc/remit is your responsibility; and it's
+*very* common for cruft to be left around. (This has a variety of causes, but I
+imagine primarily falls out of conductors believing they'll have a cleanup-phase
+at the end, that nobody ever tells me about, so I simply move on to new work
+without noticing it's not been cleaned up.)
+
+Proactively clean state that includes no danger: delete branches that have been
+merged (*especially* if you choose to cherry-pick or otherwise generate state
+that `git branch -d` will not accept, despite all the valuable work having been
+reaped.) Remove builder worktrees when you no longer need them; or have them
+work in *your* conductor-worktree if they're singular/serial/simple/straightforward.
+
+It's reasonable to ask the builders to manage this themselves, to save on your
+own tokens - this isn't a hard requirement, but is usually the best plan. Tell
+them where to create their worktree, how to 'upstream' their work into yours
+if-simple-enough (don't let them handle complex merges, though, that's your
+task), and so on; but it's still up to you to ensure a clean final state holds
+anytime there isn't in-flight work.
 
 Avoid permanently encoding git-hashes anywhere unless they're referring to quite
 old work, *especially* in current/live branches - our git-history is
@@ -189,6 +206,20 @@ information, though brief; and commit *granularly* - 'broken' commits in the
 middle of work are expected/encouraged, never wait for work being 'complete' or
 compilation-passing before actually committing, because the history must encode
 failures and mistakes as well.)
+
+## Subagent worktrees
+
+Avoid the harness-managed worktrees/isolation for subagents; they delete
+themselves whenever the builder returns, and my prompting and infrastructure
+heavily encourages builders to ask questions, stop early, and so on - any of
+which will result in the harness dropping their work.
+
+Instead, the usual pattern is to ask them to create their worktree (hand them a
+specific name) before any work, and clean it up before their final report to
+you. If their work is trivial/serial, you may also want to ask them to forward
+it into your conductor-branch and delete their own branch; or for more complex work,
+you may ask them to just delete the worktree and leave you the branch-tip for your
+own merging.
 
 ### Git reconciliation
 
@@ -211,6 +242,10 @@ start of work; as with all docs, use the lowest unused docID in your round.
 (Some docs with your ID may be in sibling worktrees or branches; be careful when
 browsing or listing.)
 
+If your work remit is only single document, not a large arc ("implement 30X as
+specified"), then it's appropriate to make your ledger a sub-docID
+(`30Xa-...-conductor-ledger.md`.)
+
 Update the ledger *occasionally* but commit *granularly* - batch updates when
 taking a multi-turn design interaction with the human, and hold updates until
 the design or plan has quiesced.
@@ -223,15 +258,6 @@ autonomous work, need to be surfaced in the final chat message when you finish
 your final turn, *after* all work is merged. (The human not scrolling up is a
 repeated failure-mode in this project, and their attention is often split
 between avenues of work.)
-
-**AFK glossing rule** (human-directed, 2026-08-15): whenever it's clear the
-human is AFK — reading only your chat output, not the output-files, ledgers, or
-documents you're citing — every finding, bullet, or slug you report from content
-they can't see carries a ~one-line idiot's-summary in plain language. Just
-enough for them to smell whether it could contain a buried landmine decision or
-inaccuracy, and so decide whether to go read the source. Applies to any
-subagent's results and to the final outcomes of work-arcs; a bare slug or
-finding-name with no gloss is a report they cannot triage.
 
 ### Cleanup
 
@@ -251,8 +277,8 @@ git -C <root> branch -d <branch>
 ```
 
 Never use `-D` to turn failed containment into cleanup. Remove only worktrees
-you created, and never discard an untracked brief/report until its value is
-either committed elsewhere or the human explicitly says to drop it.
+your work created, and never discard an untracked brief/report until its value
+is either committed elsewhere or the human explicitly says to drop it.
 
 ## Planning
 

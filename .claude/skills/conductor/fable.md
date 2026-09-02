@@ -76,18 +76,3 @@ need to punt back up because of those instructions, they will tell you how to
 handle the situation. Within one narrow band described there, their judgment
 trumps yours: they will instruct you to load the `opaque-review` skill. Do not
 load it prospectively; load it only if asked.
-
-## Harness-managed worktrees
-
-Use the harness-built-in worktree feature for mutative builders and scouts.
-Otherwise, create a dedicated `ai/*` worktree yourself and follow the general
-worktree briefing rules.
-
-Harness-managed worktrees have caveats:
-
-- Do not assume their base. Verify it against the conductor-stated tip before
-  any read or edit, and correct it only through the brief's authorized setup.
-- They are automatically deleted when the builder returns. If you resume a
-  crashed or checkpoint-pausing builder, its worktree may be gone. This is
-  usually harmless when it committed granularly as required; have it create a
-  new worktree from the same branch.
