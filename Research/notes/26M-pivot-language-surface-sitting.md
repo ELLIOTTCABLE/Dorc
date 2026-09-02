@@ -194,7 +194,8 @@ stay visibly buried.
   finished-definitions suffice; the one lift is the abstract **Store role**;
   even expected-sever derives (a footprint touching the store backing your own
   entry path). Every interim spelling above (`: transits <axis>`, `outlives`,
-  region-declarations) is SUPERSEDED by `30W`'s form.
+  region-declarations) is SUPERSEDED — and the Store role itself was superseded
+  in turn by the recast recorded in the next section; `30W` carries the recast.
 - **The two adversarial checks (human):** (1) namespacing → names are
   view-relative, identity is chain-rooted, minted-unique entities bridge;
   view-aliasing (chroot/bind-mount: same cell, two names) split from
@@ -203,20 +204,89 @@ stay visibly buried.
   overclaim; the honest form: event-time dissolved into identity+order, METRIC
   time authored-or-parked with named reentry points (`30W` law-event-time-only).
 
+## The recast (2026-09-01/02): from stores to index-kinds and owner-answered referents
+
+The first `30W` rested on a misremembered `kind__state_stored_only_in()`. Reading
+`notes/272` (with `271`'s rulings, `281`'s verb table, `273` §3–§4, and `plans/30T`)
+dissolved the Store role and relocated the sitting's findings onto machinery that
+already existed. `30W` now carries the recast; this section keeps the turns.
+
+- **What `272` actually holds:** the member emits `(locator, address-space)` pairs —
+  the locator IS the folder/subdivision parameter the human remembered — and the
+  address-space tokens (`fs`/`kernel`/`net-kernel`/`process`/`endpoint`) were an
+  engine-owned closed vocabulary; three outcomes per (kind × axis): invariant (the
+  owner's explicit line, `271:rul-invariance-speech-act`, TYPED) / keyed (derived,
+  license-free) / ⊤; two conductor-proposed fences — `never-derive-separation` (the
+  docker rootless-socket counterexample: address-inequality ≠ referent-inequality)
+  and `addresses-are-not-coordinates` (locators are coarser than cells; cross-kind
+  co-reference is the parked mechanism). `281` already renamed the invariance verb
+  `undivided-by-transit-across` — the corpus had the epoch-as-axis reading in hand.
+- **The human's vindicated suspicion:** epochs are dimensions plus a temporal
+  analysis. `26K`'s "not a fifth sibling" was right about the LEND side (no entry
+  form, nothing lends time) and silent about the kind-topology side, where Boot /
+  Machine / LoginSession fit as *measured* index-kinds. Human sideeye on `272`'s
+  engine-owned vocabularies → dissolved into kinds-as-indices ("everything is an
+  object"); address-space tokens are index-kinds viewed as namespaces; `30T`'s
+  `inv-no-world-facts-in-engine` and `30S`'s allowlist-is-oracle-content had already
+  retired the engine-table posture.
+- **The separation question, worked twice.** First cut: separation derivable from
+  minted-unique *identities*, never from names (Plan 9 Qids as prior art: `{path,
+  vers}` = identity + incarnation; regions/effect systems, ownership types for
+  containment). Human pushback (typed): "stay forbidden" is silly — name/referent
+  machinery is needed fundamentally (redirects, `.`) and skipping it means doing it
+  worse with fewer consumers; the correct posture is the MONOTONE ENHANCEMENT LAW:
+  more effort never decreases safety except through a single, contracted,
+  where-possible-scoped opt-in ack; lift `30T`'s ask-the-user discipline to all
+  codomains; guard against infinite abstraction. Conductor precision, banked: the
+  law is per-consumer — the `273` §4 phase inversion (believed-same safe for sparing
+  / dangerous for transport; believed-disjoint the reverse; unknown safe for both)
+  forces lazy ⇒ unknown, both positive arms deliberate, each gated by the consumer
+  it endangers (transport: vouch-tier attribution; sparing: the flag + `30U`).
+- **lend-map vs `30T`: not redundant** — two speaker-positions on `272` §1's one
+  ternary relation, kept mutually ignorant by input separation (`273` §4, `30T`
+  §3.3); the ssh entry is where both fire on one line, which answers the
+  scope-spelling chafe (reading iii): ssh's mapped lend sets the Host index; the
+  Host binder measures the identity.
+- **The one missing generator:** region OVERLAP in a kind's own referent space —
+  `30T` §9's registered non-capture ("same-kind sparing — capture: the identity
+  tier") generalized from entity-pairs to region-pairs; rides `comp-identity-tier`.
+  The human's "Subtree that clobbers Files" lands here; mount-tier knowledge is
+  contradiction-checker material, never license.
+- **Class B reclassified** (`26M` §road, Class B): a transport-address change is
+  endpoint-substrate re-keying under existing cell-scoped footprint machinery, not
+  a havoc; needs an sshd/endpoint oracle, no theory.
+- **Human-typed nit, adopted into `30W`:** every `_only` in the lexicon should
+  decompose to per-arm omittable statements + a printf-completion-sentinel, as
+  `disturbance_reaches_only → disturbance_reaches` did — a non-safety-decreasing,
+  non-opt-in way to strictly increase footprints/backings. Applied to the store
+  member (`state_stored_in` + `stored nothing-else`); the `only` quantifier had gone
+  vestigial there once the invariance line became a positive claim.
+- **Cost reprice, flagged for ruling:** if incarnation-invariance is an own-domain
+  closed claim it passes `271:rul-flag-is-razor-residue`'s razor like
+  user-invariance — vouch-tier, unflagged for transport — which collapses the
+  "license plane is catastrophically expensive" estimate to "add three
+  index-kinds". The human's necessity argument (expressiveness of purpose-ordered
+  pivot books) stands; the price fell.
+- **Collision caught:** `271:rul-axis-vocabulary-v1` reserves `host` as
+  reserved-never (spike3 single-universe scope); the pivot arc needs it as an
+  entered index. Explicit un-reservation required; queued first.
+
 ## Queue (live)
 
-1. `q-payload-declaration-speech-act` — OPEN, the sitting's standing focus:
+1. `q-30W-rulings` — the six rulings in `30W` §10, `rule-unreserve-host-as-entered-index`
+   first; then the razor question (`rule-incarnation-invariance-passes-the-razor`),
+   the separation floor, the vocabulary dissolution, the `_only` decomposition, the
+   two-consumer name-bias refinement.
+2. `q-payload-declaration-speech-act` — OPEN, the sitting's standing focus:
    custody-over-there drill · carrier-geometry survey · inline-render posture ·
    the fidelity-normalizer spelling (human-directed: an authored, pre-applied
    normalizer function in the closed dialect, NOT a closed token class).
-2. `q-store-algebra-ratification` — `plans/30W`'s open asks: the stored-in
-   coverage burden · the two engine extensions' pricing · the stdlib store-kind
-   roster + incarnation-cell reads · the §5 law-forms.
-3. `q-entry-economics` — check-tax through constructed entries; probe batching
+3. `q-30W-build-pricing` — the context-slot audit (`FactKey.context` as-built) before
+   anything else; the identity-tier sequencing with `30T`'s components.
+4. `q-entry-economics` — check-tax through constructed entries; probe batching
    per (world, context); feeds `slow-planner-cost-model`.
-4. `q-prefix-head-resolution` — parked (owed, narrow).
+5. `q-prefix-head-resolution` — parked (owed, narrow).
 
-(`q-granularity-partial-havoc` DISCHARGED into `30W` — the reach-subsumption
-rider's residue is the self-transit/expected-sever cell, now derived at `30W`
-§2.4; `q-entry-spelling-strawmen`'s havoc half likewise discharged, its
-payload-declaration half absorbed into item 1.)
+(`q-granularity-partial-havoc` and `q-store-algebra-ratification` DISCHARGED into the
+recast `30W`; `q-entry-spelling-strawmen`'s havoc half likewise, its
+payload-declaration half absorbed into item 2.)
