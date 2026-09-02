@@ -152,8 +152,8 @@ Human-acked as real; no date. Arcs first, then the sittings and rulings the huma
 - **`lane-flux-engine-hardening`** — UNSCHEDULED (human 2026-08-21); `300:lane-flux-engine-hardening`;
   any typesystem change it needs rides the Aeneas-prep facade work, never a Flux lane.
 - **`rc-vs-genkill-permanent-law`** — revisit, not now, never strike (human 2026-08-23);
-  `spike/CLAUDE.md rul-rc-reaches-genkill-only-through-decisions` still expects it from the
-  influence round, which `30Qd` established will not produce it.
+  `spike/CLAUDE.md rul-rc-reaches-genkill-only-through-decisions` is the clarifier that stands
+  until the wider law lands (the influence-carriage lane does not produce it — `30Qd`).
 - **FORFEITS captures with a stated trigger** — `forfeit-certifier-trip-evicts-elisions`
   (trips observed in the field) · `forfeit-plain-sh-inclusion-analysis` (the splice and
   single-stream paste tiers) · `forfeit-book-dynamic-load-analysis` (glob loads;

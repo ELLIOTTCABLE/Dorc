@@ -356,7 +356,7 @@ prompt you write:
   divergence-of-world facts, never raw sink-landings; hostsim injects the race.
 - **rul-rc-reaches-genkill-only-through-decisions** (human-typed 2026-08-16) — a
   CLARIFIER for the current rounds, not a standalone forever-invariant: the
-  wider permanent law is OWED — tracked as `TODO-ADDTL` `rc-vs-genkill-permanent-law`, and
+  wider permanent law is OWED — tracked as `ROADMAP` `rc-vs-genkill-permanent-law`, and
   NOT produced by the influence-carriage lane (which carries causal accounting only; the
   rc-vs-gen/kill species separation is orthogonal to it) — and supersedes this in place
   when it lands. Verdict-rc and gen/kill are different species
