@@ -847,14 +847,13 @@ impl DorcConsumer {
             .ok()
             .flatten()?;
         let _artifact = context.read_file(plan)?;
-        let (stage, diagnostic, status) = match fault {
+        let (diagnostic, status) = match fault {
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::Crlf { line },
-            ) => ("transport", dorc_cli::transport_crlf_error(plan, line), 13),
+            ) => (dorc_cli::transport_crlf_error(plan, line), 13),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::SessionLost,
             ) => (
-                "transport",
                 dorc_cli::transport_session_lost(
                     host,
                     1,
@@ -864,36 +863,16 @@ impl DorcConsumer {
             ),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::SpawnRefused(detail),
-            ) => (
-                "transport",
-                dorc_cli::transport_spawn_refused(host, &detail),
-                13,
-            ),
+            ) => (dorc_cli::transport_spawn_refused(host, &detail), 13),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::MarkerUnusable,
-            ) => ("transport", dorc_cli::transport_marker_unusable(host), 13),
+            ) => (dorc_cli::transport_marker_unusable(host), 13),
             crate::edge_fault::EdgeFault::Transport(
                 crate::edge_fault::TransportFailure::ApplyFailed { status },
-            ) => (
-                "transport",
-                dorc_cli::transport_apply_failed(host, status),
-                15,
-            ),
-            // Past the permit: the dispatch happened, so the status stays the shipment's own
-            // (`30R:publication-and-dispatch-boundary`). The intent is a HARNESS value — a loom
-            // world stands up no keyset and mints no receipt id.
-            crate::edge_fault::EdgeFault::ApplyOutcomePublish(failure) => (
-                dorc_cli::engine::RECEIPT_STAGE,
-                dorc_cli::apply_outcome_unrecorded(
-                    LOOM_INTENT,
-                    dorc_cli::engine::NO_STATE_ROOT,
-                    failure,
-                ),
-                0,
-            ),
+            ) => (dorc_cli::transport_apply_failed(host, status), 15),
             _ => return None,
         };
-        self.staged_diagnostic(case, stage, diagnostic, status)
+        self.staged_diagnostic(case, "transport", diagnostic, status)
     }
 
     fn run_lint(
@@ -1303,13 +1282,6 @@ fn arrangement_index(
 /// builds one: what this crate can honestly state is that its world has no root, and this is that
 /// sentence in the edge's own closed vocabulary.
 const ROOTLESS_WORLD: &str = "no-controller-root";
-
-/// The intent identity a replayed apply names when its outcome publication is injected to fail.
-///
-/// Deliberately not a plausible one: a loom world mints no receipt id, so this is fixture-tier and
-/// must be unable to read as something a store could hold
-/// (`rul-fixture-identity-never-production`).
-const LOOM_INTENT: &str = "<loom-intent>";
 
 /// Why this tool declines to answer for a whole-product case. One spelling: the decline reaches an
 /// author through `dorc-loom vars` and through the corpus gate.

@@ -1282,10 +1282,6 @@ mod deterministic_apply_route {
             intent_id.hex(),
             "two documents never share one identity"
         );
-
-        // The "names it afterwards" half: what the RUN says about the pair it just wrote.
-        let named = dorc_cli::apply::durable_report(&reached, "<store>").recorded;
-        assert_eq!(named, Some((intent_id.hex(), outcome_id.hex())));
     }
 
     /// THE ordering negative: a sink that will not place the intent must leave the host untouched.
@@ -1457,68 +1453,6 @@ mod deterministic_apply_route {
             reached.durable_failure,
             Some(DurableFailure::Sink),
             "the failure is reported as what it was — a sink, not an execution"
-        );
-
-        // AND IT IS REPORTED — the half the production consumer used to drop by reading `shipped`
-        // and nothing else (`30Rs:fix-apply-durable-reporting`).
-        let report = dorc_cli::apply::durable_report(&reached, "<store>");
-        assert_eq!(
-            report.items.first().map(|item| item.code.slug()),
-            Some("apply-outcome-unrecorded")
-        );
-        assert_eq!(
-            report.recorded, None,
-            "and half a pair is not a trail: the failure is reported rather than a durable the \
-             run does not have being announced"
-        );
-    }
-
-    /// What the report SAYS, over both cells of the one projection the production consumer reads.
-    ///
-    /// Built by hand rather than dispatched: the two cells differ only in whether an outcome
-    /// landed, and driving a whole apply twice to vary one field would hide that. The failure cell
-    /// carries the intent that DID land — a partial trail with a name on it stays answerable —
-    /// and the write step that did not close, which is what separates the repairs.
-    #[test]
-    fn the_durable_report_names_the_surviving_intent_and_the_step_that_did_not_close() {
-        use dorc_cli::apply::{ConsentedApply, durable_report};
-        let mut ids = CountingIds(0);
-        let intent = dorc_receipt::ids::ApplyIntentId::mint(&mut ids);
-        let outcome = dorc_receipt::ids::ApplyOutcomeId::mint(&mut ids);
-
-        let complete = durable_report(
-            &ConsentedApply {
-                shipped: None,
-                intent: Some(intent),
-                outcome: Some(outcome),
-                durable_failure: None,
-            },
-            "/state/dorc/receipts",
-        );
-        assert_eq!(complete.recorded, Some((intent.hex(), outcome.hex())));
-        assert!(complete.items.is_empty());
-
-        let lost = durable_report(
-            &ConsentedApply {
-                shipped: None,
-                intent: Some(intent),
-                outcome: None,
-                durable_failure: Some(DurableFailure::Grammar),
-            },
-            "/state/dorc/receipts",
-        );
-        assert_eq!(lost.recorded, None);
-        let item = lost.items.first().expect("one report item");
-        assert!(
-            matches!(
-                &item.code,
-                dorc_aid::diag::DiagCode::ApplyOutcomeUnrecorded(payload)
-                    if payload.intent == intent.hex()
-                        && payload.store == "/state/dorc/receipts"
-                        && payload.reason == "receipt-out-of-grammar"
-            ),
-            "got: {:?}",
-            item.code
         );
     }
 

@@ -388,25 +388,6 @@ fn the_default_apply_publishes_its_intent_then_dispatches_and_records_what_it_re
     assert_eq!(outcomes.len(), 1, "and records one outcome");
     let intent_id = receipt_id_of(intents.first().expect("one intent"));
 
-    // AND IT SAYS SO. Before this, an operator had to derive the identities from filenames, which
-    // is what this battery does two lines up (`30Rs:fix-apply-durable-reporting`). Asserted as a
-    // registry RELATIONSHIP, not as bytes, so the pin survives the day the words are authored
-    // (`aid/CLAUDE.md prose-pins-live-where-the-prose-does`).
-    let summary = dorc_aid::arrangement::arrangement_sentence(
-        &dorc_aid::arrangement::CONST_ARRANGEMENTS,
-        "cli-apply-receipts-line",
-        None,
-        &[
-            &intent_id,
-            &receipt_id_of(outcomes.first().expect("one outcome")),
-        ],
-    );
-    let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(
-        stderr.contains(&summary),
-        "a completed apply names the pair it published; got:\n{stderr}"
-    );
-
     // The keyset the apply route created on its own first use — this profile never planned, so
     // the write path reached initialization from the apply side.
     assert!(

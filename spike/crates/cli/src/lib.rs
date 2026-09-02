@@ -1449,26 +1449,6 @@ pub fn transport_crlf_error(which: &str, line: usize) -> InvocationError {
     ))
 }
 
-/// Map an apply whose OUTCOME did not reach the store, past the permit it already spent.
-///
-/// A REPORT and never a refusal: the bytes are on the host either way, so the run's own result
-/// stays what the shipment reached (`30R:publication-and-dispatch-boundary`). One mint seat,
-/// shared with the injected-edge replay (`dorc-replay-is-production-semantics`).
-#[must_use]
-pub fn apply_outcome_unrecorded(
-    intent: &str,
-    store: &str,
-    failure: dorc_receipt::dispatch::DurableFailure,
-) -> InvocationError {
-    Diag::new_spanless_site(DiagCode::ApplyOutcomeUnrecorded(
-        dorc_aid::diag::ApplyOutcomeUnrecorded {
-            intent: intent.to_owned(),
-            store: store.to_owned(),
-            reason: apply::durable_failure_word(failure),
-        },
-    ))
-}
-
 /// Map a transport session that exhausted its retries without completion.
 #[must_use]
 pub fn transport_session_lost(

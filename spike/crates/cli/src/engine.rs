@@ -2088,7 +2088,7 @@ fn run_status(
 /// One constant because the write side and the read side are the same surface to a reader: a
 /// person who saw `receipt: error[…]` when their run wrote nothing should not have to learn a
 /// second word to find out why nothing can be read back.
-pub const RECEIPT_STAGE: &str = "receipt";
+const RECEIPT_STAGE: &str = "receipt";
 
 /// What names the receipt store when no per-user root resolved.
 ///

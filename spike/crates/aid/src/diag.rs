@@ -410,9 +410,6 @@ pub enum DiagCode {
     /// A `dorc apply --host` invocation could not turn the bytes it was handed into something a
     /// dispatch permit may be minted over, so it dispatched nothing.
     ApplyPlanNotDispatchable(ApplyPlanNotDispatchable),
-    /// A `dorc apply --host` dispatched, and then its OUTCOME did not reach the store — so the
-    /// durable trail stops at the intent that authorized the dispatch.
-    ApplyOutcomeUnrecorded(ApplyOutcomeUnrecorded),
     /// An input file does not exist.
     CliFileNotFound(CliFileNotFound),
     /// An input file exists but is not readable by this process.
@@ -565,7 +562,6 @@ impl DiagCode {
             DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
             DiagCode::ApplyReceiptNotOptional(_) => "apply-receipt-not-optional",
             DiagCode::ApplyPlanNotDispatchable(_) => "apply-plan-not-dispatchable",
-            DiagCode::ApplyOutcomeUnrecorded(_) => "apply-outcome-unrecorded",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
             DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
@@ -2182,21 +2178,6 @@ pub struct ApplyPlanNotDispatchable {
     pub store: String,
 }
 
-/// Payload of [`DiagCode::ApplyOutcomeUnrecorded`]: a dispatch whose outcome did not land.
-///
-/// Carrying the intent is the whole point — past the permit the apply RAN, so the honest report is
-/// a partial trail with a name on it, never a durable that reads absent
-/// (`30R:standing-invariants`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ApplyOutcomeUnrecorded {
-    /// The intent that authorized the dispatch and DID land (`{intent}`).
-    pub intent: String,
-    /// The per-user state base the pair files under (`{store}`).
-    pub store: String,
-    /// The closed word for the write step that did not close (`{reason}`).
-    pub reason: &'static str,
-}
-
 /// Payload of [`DiagCode::TransportCrlfRefused`]: bytes bound for a host are not LF-only.
 ///
 /// A CRLF shebang is an exec failure the remote kernel reports before any shell of ours exists,
@@ -2984,14 +2965,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // Its apply-side sibling: the outcome is the only record of what a mutation reached.
-        // Severity decides no exit code (`291` §5a step 3), so the run's result stays the
-        // shipment's — the ruled post-dispatch direction (`30R:publication-and-dispatch-boundary`).
-        DiagCode::ApplyOutcomeUnrecorded(_) => CodeSpec {
-            severity: Severity::Error,
-            floor: Floor::WarnOrDeny,
-            remediation: RemediationClass::Structural,
-        },
         // A READ that found nothing is not a failure of the run being asked about, so it warns:
         // there is no durable to explain, and the repair is the operator's own profile.
         DiagCode::DurableReceiptUnreadable(_) => CodeSpec {
@@ -3588,17 +3561,6 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             vec![
                 ours("reason", (*reason).to_owned()),
                 ours("store", store.clone()),
-            ]
-        }
-        DiagCode::ApplyOutcomeUnrecorded(ApplyOutcomeUnrecorded {
-            intent,
-            store,
-            reason,
-        }) => {
-            vec![
-                ours("intent", intent.clone()),
-                ours("store", store.clone()),
-                ours("reason", (*reason).to_owned()),
             ]
         }
         DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {

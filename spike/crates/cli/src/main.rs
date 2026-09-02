@@ -958,6 +958,7 @@ fn render_ctx() -> dorc_aid::RenderCtx<'static> {
 /// (`289:rul-arrangement-home-is-registry-plus-transcripts`). These stderr lines have a registry
 /// HOME but not yet an editable face: no case drives them, so their words are edited in the lock
 /// until a page case exists for them.
+#[cfg(test)]
 fn chrome_parts(slug: &'static str, values: &[&str]) -> dorc_aid::tagged::RenderParts {
     let mut parts = dorc_cli::chrome_line_parts(&render_ctx(), slug, values);
     parts.push(dorc_aid::tagged::RenderPart::Arrangement {
@@ -2688,13 +2689,6 @@ mod snapshot_id_space_tests {
 /// site is deliberately not in the apply run-set, and a guarded omit may be absent from the
 /// BARE book too (a preceding guard short-circuits it), so it must not be asserted ⊆ the
 /// log (task-O / strain-D3b-fold-vs-gate5).
-/// The chrome line naming what a completed apply wrote, so the operator can ask about it.
-///
-/// A SUMMARY, sited with `cli-plan-summary-line` rather than in the diagnostic catalog: nothing
-/// went wrong, and the two identities are what `dorc why --receipt-id` takes. Its words are
-/// unwritten (`error-authorship-tier`), so it renders the placeholder until prose lands.
-const APPLY_RECEIPTS_LINE: &str = "cli-apply-receipts-line";
-
 /// Ship an already-rendered plan to a host and report how it ended.
 ///
 /// The one path in this binary that runs a mutating artifact somewhere. Three properties are
@@ -2794,33 +2788,16 @@ fn ship_consented_apply(
     )
     .map_err(|refusal| apply_refused(&refusal, &store))?;
 
-    // Read before the classification consumes the outcome, and reported AROUND it: the durable's
-    // own failure first, since one arriving after the transport's would read as caused by it; the
-    // summary last, where a run's closing lines live.
-    let durable = dorc_cli::apply::durable_report(&reached, &store);
-    report_at(
-        sink,
-        true,
-        dorc_cli::engine::RECEIPT_STAGE,
-        None,
-        &durable.items,
-    );
-
-    let applied = report_shipment(
+    // What the durable recorded — the published intent and outcome, and a failure past the permit —
+    // is DELIBERATELY unread here. Both are user-facing surfaces with no honest driving or authoring
+    // route until the in-process receipt world exists, so the reporting half of
+    // `30Rs:fix-apply-durable-reporting` is deferred to `notes/30X` §11 lane C. The pre-dispatch
+    // half is not: a refusal still carries the edge's own word and its store.
+    Ok(report_shipment(
         sink,
         host,
         transport_edge::classify_shipment(reached.shipped),
-    );
-
-    // Whatever the host answered: both documents were published before the bytes shipped, and a
-    // failed apply is exactly when an operator wants an identity to ask `dorc why` about.
-    if let Some((intent, outcome)) = durable.recorded {
-        sink.emit(OutputEvent::plain_tagged(
-            OutputChannel::Stderr,
-            chrome_parts(APPLY_RECEIPTS_LINE, &[&intent, &outcome]),
-        ));
-    }
-    Ok(applied)
+    ))
 }
 
 /// Report one classified shipment and answer with the run's own status.

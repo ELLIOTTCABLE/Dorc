@@ -47,7 +47,6 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-use dorc_aid::diag::Diag;
 use dorc_receipt::RecordedInfluence;
 use dorc_receipt::capability::OverlaySealer;
 use dorc_receipt::dispatch::{
@@ -526,73 +525,22 @@ const fn terminal_of(shipped: Option<&SessionOutcome>) -> RecordedTerminalState 
     }
 }
 
-/// The closed word a report names one durable failure by — which STEP of writing did not close,
-/// because that is what separates the repairs (a grammar refusal is ours, a sink refusal is the
-/// operator's).
+/// The closed word for a publication that placed no document — which STEP of writing did not
+/// close, because that is what separates the repairs (a grammar refusal is ours, a sink refusal is
+/// the operator's).
 ///
-/// Sited here rather than on [`DurableFailure`]: the receipt crate owns the typed state, this one
-/// owns what a user is shown of it (`receipt/CLAUDE.md inv-report-is-the-public-read-boundary`).
+/// Replaces a rounding to `intent-not-published`, which named the step everyone could see and
+/// dropped the one thing a reader acts on (`30Rs:fix-apply-durable-reporting`). The words are sited
+/// here rather than on [`DurableFailure`]: the receipt crate owns the typed state, this one owns
+/// what a user is shown of it (`receipt/CLAUDE.md inv-report-is-the-public-read-boundary`).
 #[must_use]
-pub const fn durable_failure_word(failure: DurableFailure) -> &'static str {
-    match failure {
+pub const fn publication_refusal_word(refusal: &PublicationRefusal) -> &'static str {
+    match durable_failure_of(refusal) {
         DurableFailure::Projection => "receipt-not-projectable",
         DurableFailure::Grammar => "receipt-out-of-grammar",
         DurableFailure::Seal => "receipt-not-sealed",
         DurableFailure::Signature => "receipt-not-signed",
         DurableFailure::Sink => "receipt-not-placed",
-    }
-}
-
-/// The closed word for a publication that placed no document. Replaces a rounding to
-/// `intent-not-published`, which named the step everyone could see and dropped the one thing a
-/// reader acts on (`30Rs:fix-apply-durable-reporting`).
-#[must_use]
-pub const fn publication_refusal_word(refusal: &PublicationRefusal) -> &'static str {
-    durable_failure_word(durable_failure_of(refusal))
-}
-
-/// What one authorized apply left in the durable, past its shipment.
-///
-/// A VALUE rather than a print: the seat that knows how a durable failed is not the one that owns
-/// the output streams. It exists because the production consumer read `shipped` and dropped the
-/// rest, honouring the ruled "continue execution" half of a post-dispatch durable failure while
-/// dropping the equally ruled "report it" half (`30R:publication-and-dispatch-boundary`).
-#[derive(Debug)]
-pub struct ApplyDurableReport {
-    /// The published intent and outcome identities, as an operator would ask `dorc why` for them.
-    ///
-    /// Both or neither: half a pair announced as a trail is the quiet partiality
-    /// `30R:standing-invariants` refuses.
-    pub recorded: Option<(String, String)>,
-    /// The report items the run prints — one, where the durable failed past the permit.
-    pub items: Vec<Diag>,
-}
-
-/// Read one authorized apply's durable trail into the things a run reports about it.
-///
-/// The failure item carries the intent that DID land, so it reads as a partial trail rather than
-/// as the pre-dispatch refusal it must never be mistaken for.
-#[must_use]
-pub fn durable_report(reached: &ConsentedApply, store: &str) -> ApplyDurableReport {
-    let intent = reached.intent.map(ApplyIntentId::hex);
-    let items = match (&intent, reached.durable_failure) {
-        (Some(intent), Some(failure)) => {
-            vec![crate::apply_outcome_unrecorded(intent, store, failure)]
-        }
-        // A durable failure is only reachable PAST the permit, and a permit implies a placed
-        // intent — so the pair cannot arise, and dropping one silently is the shape being repaired.
-        (None, failure) => {
-            debug_assert!(
-                failure.is_none(),
-                "a durable failure with no intent behind it"
-            );
-            Vec::new()
-        }
-        (Some(_), None) => Vec::new(),
-    };
-    ApplyDurableReport {
-        recorded: intent.zip(reached.outcome.map(ApplyOutcomeId::hex)),
-        items,
     }
 }
 

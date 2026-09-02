@@ -2245,11 +2245,4 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.",
         words: Some(ProseTier::Slop(&["for `why`: the same answer as one machine-readable JSON document on stdout -- version-unstable, and a value the engine withholds appears as an explicit marker, never a missing key"])),
     },
-    ArrangementEntry {
-        slug: "cli-apply-receipts-line",
-        occurrence: None,
-        when_used: "The stderr summary line a completed `dorc apply --host` closes with. Values, in order: the published intent identity and the published outcome identity. Absent where either did not land -- a half pair is reported as the durable failure it is, never as a trail.",
-        why: "30Rs fix-apply-durable-reporting: an apply that writes two documents and names neither leaves the operator nothing to ask `dorc why --receipt-id` about. Sited beside cli-plan-summary-line rather than in the diagnostic catalog because nothing went wrong.",
-        words: None,
-    },
 ];
