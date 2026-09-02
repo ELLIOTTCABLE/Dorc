@@ -68,3 +68,26 @@ One. The proposed general shell-session runner and independently selectable harn
 ## Final outcome
 
 NACK
+
+---
+
+## Human disposition after review
+
+The human rejects the report's broad threat framing as a reason to restore a closed command grammar,
+per-case escape machinery, or substantial containment complexity. For a user possessing only the
+compiled production `dorc` binary, the report establishes no direct path from loom or harness
+capability to that user's machine or managed hosts; the identified user-facing risk is transitive,
+through developer/CI compromise, accidental harness distribution, or later fixture-to-production
+boundary erosion. The human explicitly accepts that the test subsystem is powerful on a developer's
+machine and weighs test expressiveness heavily: restrictions added now would predictably be removed
+when Dorc must mechanically exercise privileged or unusual environments.
+
+One narrow tightening is accepted. Ordinary loom sessions retain unrestricted shell grammar, but run
+with scrubbed inherited credentials and runner-owned roots; their harness composition cannot select
+`RealSsh` or production roots/persistence. Real-host, privileged, `chroot`, real-mutator, and similarly
+ambient exercises remain possible through the separate explicit livetest composition. The production
+binary remains unable to construct fixture seams. This answers the plausible transitive
+fixture-to-production path without treating developer-machine authority as a direct product threat or
+recreating the test-suite backflips that `30X` exists to remove. The revised decision is recorded
+adjacently in `Research/notes/30X-testing-architecture-seams-sessions-and-seeds.md` at
+`loom-syntax-grants-no-production-authority`; this original report body and NACK remain historical.

@@ -40,11 +40,13 @@
 - **`model-seams-are-one-bundle`** — every nondeterministic edge the engine consumes is a typed
   member of ONE bundle (strawman `Seams`): clock · receipt-id entropy · key entropy · stdout
   posture · roots/environment · transport · and future columns (a process supervisor, netns, a
-  sudo prompt, …). Each seam independently selects an implementation: `Seeded(seed)` ·
-  `Pinned(value)` · `Os` · for transport also `Scripted(case sections)` · `Hostsim` · `RealSsh`.
-  A tier is a ROW of that matrix, never a separate harness; a new seam is one column added once,
-  and every driver inherits it. Only columns with an implementation in hand are built — the
-  STRUCTURE is the deliverable.
+  sudo prompt, …). Each ordinary-harness seam independently selects a model implementation:
+  `Seeded(seed)` · `Pinned(value)` · `Os`; transport additionally offers `Scripted(case sections)`
+  and `Hostsim`. `RealSsh` is NOT in that cross-product: it belongs only to the explicit livetest
+  composition and is unconstructible from loom session configuration. A tier is a ROW of its
+  permitted matrix, never a separate harness; a new seam is one column added once, and every driver
+  inherits it. Only columns with an implementation in hand are built — the STRUCTURE is the
+  deliverable.
 - **`model-determinism-at-the-source`** — no driver asks the operating system for a value unless
   the case set that seam to `Os`. Values are typed, injected at the composition root, and
   derived from case data plus an ordinal; nothing is normalized after the fact
@@ -92,7 +94,9 @@
   Legitimate today, with a standing pull: as the `why`/`--json` surface becomes total over
   decisions, "site 3 was licensed" is a loom golden and the inline world becomes a loom world.
 - **`tier-livetest`** — real ssh, real hosts, the `Os`/`RealSsh` row; gate/bless-tier, never the
-  hot loop (`notes/26D`). Unchanged by this document.
+  hot loop (`notes/26D`). It is a separate explicit composition root, not a seam selection available
+  to ordinary looms; privileged, `chroot`, real-mutator, and other intentionally ambient exercises
+  belong here rather than teaching restrictions to the loom language.
 
 ## §3a — what may be non-loom, and when `[TYPED 2026-09-02]`
 
@@ -143,9 +147,10 @@
   `act_like_the_product(argv)` cannot stand in for them. But the injection lives in a SIBLING
   BUILD, never in the shipped `dorc`: one crate, one lib, two composition roots —
   `bin/dorc.rs` = `exit(compose::run(Seams::os()))`, `bin/dorc-harness.rs` =
-  `exit(compose::run(Seams::from_env(&real_env)))`, the latter refusing loudly when no seam is
-  set so it can never be mistaken for the product. Arg parsing, source acquisition, root
-  resolution, the receipt edge, the engine — all BELOW the seam, shared byte for byte.
+  `exit(compose::run(HarnessSeams::from_env(&real_env)))`, the latter refusing loudly when no seam
+  is set and structurally unable to construct real transport or production roots/persistence.
+  Arg parsing, source acquisition, root resolution, the receipt edge, the engine — all BELOW the
+  seam, shared byte for byte.
 - **`inv-division-at-the-narrowest-edge`** `[TYPED]` — the shipped `main.rs` is edge VALUES plus
   one call; anything with a branch, a parse, or a decision belongs below the seam. Everything
   above the seam is testable only by shape (c) of the e2e tier over the shipped binary, so that
@@ -183,6 +188,16 @@
   line. `export`, `cd`, pipes, `cat`, `echo $?`, redirects — everything the shell does is
   native, and the artifact-execution rail (`PATH=<mocks>` only, `env -i`, a throwaway cwd,
   `umask 022`) stays a separate, runner-owned process exactly as today.
+- **`loom-syntax-grants-no-production-authority`** `[TYPED after 30-reviewA]` — unrestricted shell
+  GRAMMAR stays the point; it does not imply inherited production authority. The ordinary runner
+  starts from a scrubbed environment with runner-owned cwd/profile roots and no inherited credential
+  variables, and its harness composition cannot select `RealSsh` or production roots/persistence.
+  This is deliberately NOT a claim that arbitrary shell is contained from the developer machine;
+  the harness remains a powerful developer subsystem. A test that intentionally needs real-host,
+  privileged, `chroot`, or other ambient capability uses the explicit livetest composition without
+  narrowing the loom language. This is the complete tightening accepted in response to
+  `Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`; do not rebuild the retired closed
+  command grammar or accrete per-case escape machinery in its name.
 - **`loom-in-process-driver-is-a-closed-grammar`** — the in-process driver runs the sessions it
   can express in memory and declines the rest with a TYPED decline (an external tool, a
   filesystem durable it has no model for, a process exit, an unmodelled construct); one decline
@@ -359,13 +374,15 @@
 ### lanes (serial; one Opus builder per lane; stop-and-report between lanes; each lane ends green on `mise run both gate:full-quiet`; every brief carries the Safety block, step-zero, the comment budget with rip-don't-update, and `AGENTS.for-builders-only.md` first)
 
 1. **`lane-a-seams-and-harness-binary`** (medium) — the `Seams` bundle with per-seam selection
-   and the shared `Seams::from_env` parser; `compose::run(Seams)` extracted from `main.rs`;
+   and one shared environment parser; `compose::run(Seams)` extracted from `main.rs`;
    `bin/dorc-harness.rs`; seeded id/key entropy over a dependency-free generator; the ticking
    harness clock (per-block base offset from the block ordinal, non-zero step); the shipped `dorc`
-   loses all six env pins; the e2e runner spawns the harness through a `dorc` shim on PATH.
-   Goldens must stay byte-identical (`bless:dry` clean — nothing in the current corpus renders an
-   id). CHECKPOINT after A: the extraction is the risky refactor and the invariant
-   `inv-division-at-the-narrowest-edge` is judged here.
+   loses all six env pins; the ordinary harness type excludes `RealSsh` and production
+   roots/persistence and rejects those requests; the e2e runner supplies scrubbed credentials and
+   runner-owned roots, then spawns the harness through a `dorc` shim on PATH. Goldens must stay
+   byte-identical (`bless:dry` clean — nothing in the current corpus renders an id). CHECKPOINT after
+   A: the extraction is the risky refactor and the invariants `inv-division-at-the-narrowest-edge`
+   and `loom-syntax-grants-no-production-authority` are judged here.
 2. **`lane-b-session-driver-and-rip`** (large) — the shell-session process driver; gates by
    kind, no position rules; own roots per session; the needle gate ripped whole
    (`expect-why-receipt` row, `materialize_loom`'s mapping, `scan_why_receipt`, its discovery
