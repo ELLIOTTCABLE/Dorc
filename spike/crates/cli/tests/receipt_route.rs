@@ -1282,6 +1282,20 @@ mod deterministic_apply_route {
             intent_id.hex(),
             "two documents never share one identity"
         );
+
+        // What the RUN says about the pair it just wrote. Both identities or neither: an operator
+        // holding one of them can ask `dorc why --receipt-id` about it, and a run that named half
+        // a pair would be announcing a trail it does not have.
+        let report = dorc_cli::apply::durable_report(&reached, "<store>");
+        assert_eq!(
+            report.recorded,
+            Some((intent_id.hex(), outcome_id.hex())),
+            "a complete apply names both documents it published"
+        );
+        assert!(
+            report.items.is_empty(),
+            "and reports nothing wrong, because nothing was"
+        );
     }
 
     /// THE ordering negative: a sink that will not place the intent must leave the host untouched.
@@ -1453,6 +1467,34 @@ mod deterministic_apply_route {
             reached.durable_failure,
             Some(DurableFailure::Sink),
             "the failure is reported as what it was — a sink, not an execution"
+        );
+
+        // AND IT IS REPORTED. The production consumer used to read `shipped` and drop the rest,
+        // which honoured the ruled "continue execution" half of a post-dispatch durable failure
+        // while dropping the equally ruled "report it" half (`30Rs:fix-apply-durable-reporting`).
+        let report = dorc_cli::apply::durable_report(&reached, "<store>");
+        let item = match report.items.as_slice() {
+            [only] => only,
+            other => panic!("a durable failure past the permit is one report item: {other:?}"),
+        };
+        assert_eq!(item.code.slug(), "apply-outcome-unrecorded");
+        assert_eq!(
+            report.recorded, None,
+            "half a pair is not a trail: the run reports the failure rather than announcing a \
+             durable it does not have"
+        );
+        // The intent that DID land rides the item, because a partial trail with a name on it is
+        // still answerable — an operator can ask `dorc why --receipt-id` about it.
+        let named = dorc_aid::diag::render_body(item, &dorc_core::Interner::default());
+        assert!(
+            matches!(
+                &item.code,
+                dorc_aid::diag::DiagCode::ApplyOutcomeUnrecorded(payload)
+                    if payload.intent == reached.intent.expect("its intent was placed").hex()
+                        && payload.reason == "receipt-not-placed"
+            ),
+            "the item names the surviving intent and the write step that did not close; got: \
+             {named}"
         );
     }
 

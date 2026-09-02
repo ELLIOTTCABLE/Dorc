@@ -3957,6 +3957,32 @@ mod tests {
         );
     }
 
+    /// A refused durable edge keeps its OWN word, and names the store it would have filed under.
+    ///
+    /// Every route used to round to `intent-not-published`, which named the step a reader could
+    /// already see and dropped the only thing they act on: a store standing where a directory
+    /// belongs and a keyset in an unusable state are repaired in different places, and one of them
+    /// is not in the operator's profile at all (`30Rs:fix-apply-durable-reporting`). Both halves
+    /// are asserted because carrying the word without the place is only half a repair — the same
+    /// word means different things at a per-user root and at a named one.
+    #[test]
+    fn a_refused_durable_edge_keeps_its_own_word_and_names_its_store() {
+        let refusal = dorc_cli::durable::EdgeRefusal::Store(
+            dorc_cli::durable::StoreOpenRefusal::NotADirectory,
+        );
+        let diag = apply_edge_refused(&refusal, "/state/dorc/receipts");
+        assert!(
+            matches!(
+                &diag.code,
+                DiagCode::ApplyPlanNotDispatchable(payload)
+                    if payload.reason == "store-not-a-directory"
+                        && payload.store == "/state/dorc/receipts"
+            ),
+            "the edge's own word and place survive; got: {:?}",
+            diag.code
+        );
+    }
+
     /// The flag survives wherever it still means something: nothing else publishes an
     /// `ApplyIntent`, so nothing else is asking for a bypass by declining a receipt.
     ///

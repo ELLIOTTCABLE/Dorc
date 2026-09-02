@@ -38,12 +38,13 @@ use dorc_receipt_local::keyset::{
     KeyAvailability, LocalReadKeysV1, LocalReadOpenV1, LocalWriteKeysV1, LocalWriteOpenV1,
     StorePresence, open_for_read, open_or_initialize_for_write,
 };
+// `StoreOpenRefusal` joins them because [`EdgeRefusal`] carries it in public: a caller that can
+// receive the value but cannot name its type would have to reach past this seat to match on one,
+// which is the reach this module exists to be instead of.
 pub use dorc_receipt_local::store::{
-    BoundedReceiptEntries, LocalReceiptStoreV1, OwnedReceiptEntry,
+    BoundedReceiptEntries, LocalReceiptStoreV1, OwnedReceiptEntry, StoreOpenRefusal,
 };
-use dorc_receipt_local::store::{
-    PublishFailure, PublishRefusal, StoreLimits, StoreOpenRefusal, StoredSpecies,
-};
+use dorc_receipt_local::store::{PublishFailure, PublishRefusal, StoreLimits, StoredSpecies};
 use dorc_receipt_local::{LocalLimits, RootInputs, RootPlatform, RootRefusal, RootRole};
 /// The real filesystem and the store-side values a caller needs to walk and select, re-exported
 /// so the ONE production seat naming the local edge is this module: a caller elsewhere in the
