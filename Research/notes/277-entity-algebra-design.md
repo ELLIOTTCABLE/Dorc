@@ -138,7 +138,7 @@ mints licenses at the chokepoint, humans only mint claims):
 | token-equality + entity canonicalization | `kind__resolve()` | same (within kind, within context) | vouch (kind-owner) |
 | selector-dialect comparison (§3) | verdict/observe marks mint; claim marks consume | provably-disjoint (same entity, cross-cell) | vouch; consumed under the survival flag |
 | axis-invariance line | `kind__state_stored_only_in()` + the explicit invariance mark (`271:rul-invariance-speech-act`) | same across a context boundary (per axis) | vouch (kind-owner's typed line) |
-| carried-by rows | engine-owned table (`272` §3 r1) | invariance for substrate-borne axes | structural (engine-warranted) | <!-- /* superceded 2026-07-17 (27Xf Tier-1): the engine-warranted carried-by row is RETIRED. Substrate-axis "same across a boundary" now comes from the kind-owner's `invariant:<axis>` line (A, the row above) + engine-verified read-set closure of the verdict body (B); unflagged only when both hold. `27C:mech-pure-predicate-carry`, plans/27C §4(a). */ -->
+| carried-by rows | engine-owned table (`272` §3 r1) | invariance for substrate-borne axes | structural (engine-warranted) | <!-- /* superseded 2026-07-17 (27Xf Tier-1): the engine-warranted carried-by row is RETIRED. Substrate-axis "same across a boundary" now comes from the kind-owner's `invariant:<axis>` line (A, the row above) + engine-verified read-set closure of the verdict body (B); unflagged only when both hold. `27C:mech-pure-predicate-carry`, plans/27C §4(a). */ -->
 | lend entries | `cmd__lend_map()` | boundary identity (full lend) / re-keying (mapped lend) | vouch (wrapper author's line) |
 | keying | derived (the emission-set non-interference ingredients, né `272` r2; mapped lends; ρ-resolution) | blocks transport by re-indexing; NEVER provably-disjoint | license-free (`272` §4) |
 | contradiction detection | non-interference-vs-typed-invariance; dual-peel; duplicate owners | refuse-both fail-fast | dictate |
@@ -583,7 +583,7 @@ adversarial pass) · the specimens (in-tree, committed).
 Riding the human's adversarial pass, by design: the `275` ratifications (three
 regimes · backing-inheritance/per-channel backing sets · the cross-context
 transport chain) and everything conductor-proposed above.
-<!-- /* superceded 2026-07-17 (27Xf): the `275` transport ratifications were REFUSED
+<!-- /* superseded 2026-07-17 (27Xf): the `275` transport ratifications were REFUSED
 (279f §3), not still-pending — the adversarial pass happened. Cross-context answering is
 re-answered by plans/27C (measure-in-context; transport demoted to the flag-tier fallback
 lane). The unflagged structural carried-by row (§2 generator table) is scoped to
@@ -604,7 +604,7 @@ substrate-borne axes only and is the open design question — 27Xf Tier-1. */ --
 | the deliberate kOOB reading | settled |
 | keyed/partitioned vocabulary | settled ("partitioned" hard; "keyed" tolerated) |
 | topology bundle rows | acked, graded per-row (`271` task-12 entries; substrate marks soft/narrow-as-built; spine-registry + verification posture conductor-proposed) |
-| `275` ratifications (regimes · backing-inheritance · transport) | riding the human's adversarial pass <!-- /* superceded: transport ratification REFUSED (279f §3); re-answered by plans/27C. */ --> |
+| `275` ratifications (regimes · backing-inheritance · transport) | riding the human's adversarial pass <!-- /* superseded: transport ratification REFUSED (279f §3); re-answered by plans/27C. */ --> |
 | command-word thread | closed (`271:rul-trailing-marks-stand`) |
 | specimen amendments | in-tree, committed |
 | seams (§5) | reserve-only; carried into rebuild + reshape briefs |

@@ -22,7 +22,7 @@ However, that unsoundness is *load-bearing*: without it, *every* command poisons
 A quick refresher:
 
 - we have typed 'global state items' - think, a package in the system's package-manager, a systemd unit, a filesystem path, one of the wombats that `hork` manages. (this is adjacent to, and similar to, but slightly orthogonal to, the *shell-native* observables, like stdout/stderr/rc/fds.)
-- oracles declare both mutations and references to, as well as dependancies on, those states, spelled-in-sh (we have a candidate spelling for some of it, but the syntax is not the important part right now)
+- oracles declare both mutations and references to, as well as dependencies on, those states, spelled-in-sh (we have a candidate spelling for some of it, but the syntax is not the important part right now)
 - states currently have a very basic structure, and may evolve a bit more later (again, shouldn't be the focus right this second unless it somehow sidesteps the issue at hand): a namespace for types `dns.reverse.TypeName`, followed by stringly-keyed 'instances' that represent entities in that type-namespace (`apt.Package:nginx` vs `apt.Package:ruby`, or `fs.Dir:/etc/nginx`), and finally 'properties' on that type that can either be on-instance (`apt.Package:nginx.installed`) or singleton (`apt.Cache.fresh`).
   - right now, we're trying to keep value orthogonal from effect/vouch/dependancy - i.e. retain the ability to say "I am specifying/vouching a specific value <here> in the CFG, and that value is <it is absent>" separately from "I have not looked at this value at all, it is unknown" separately from "this value is specifically falsey."
   - vague vocab: for data, "ESTABLISH" `: T:i.p = val` (or punned, `expr : T:i.p`) vs. "OBSERVE" (i.e. depends-upon, `expr :? T:i.p`); for vouching/trust, "ACK" (an 'I checked, this *doesn't* mutate', `: T:i.p~`) vs. "POISON" (for those designs below where it's *not* the default, an explicit marking of "this may be mutated, but I'm not breaking down how", by no-op mentioning - `: T` or `: T:i` or `: T:i.p`)
@@ -169,7 +169,7 @@ Clearly, every single oracle having to explicitly *list* every single thing that
 
 ### 2. Less correct, still frustratingly enumerated
 
-One mitigation I considered is establising a 'default-vouch' stance:
+One mitigation I considered is establishing a 'default-vouch' stance:
 
 ```sh
 apt-get.predict() {

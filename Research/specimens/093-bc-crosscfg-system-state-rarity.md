@@ -16,7 +16,7 @@
 ## The negative result (the rare-hope holds)
 Each canonical "system-state save/restore" tool-pair is dominated by a shape that is **not** a transient bracket:
 - `iptables-save` / `iptables-restore` → **persistence**, not revert: `iptables-save > /etc/iptables.up.rules` then reload-at-boot via `if-pre-up.d` / `netfilter-persistent` (doubi, FunctionClub/SSR-Bash-Python, ezpptp, many VPN installers). The pair snapshots *desired* rules to disk; it does not bracket a mutate-then-undo.
-- `setenforce 0` → **permanent disable**: `setenforce 0` + `sed -i 's/SELINUX=enforcing/disabled/'` (crazy886/SSR, self20/mt-server, rootsongjc, billchen8888, summmer121, …). SELinux is turned off and left off.
+- `setenforce 0` → **permanent disable**: `setenforce 0` + `sed -i 's/SELINUX=enforcing/disabled/'` (crazy886/SSR, self20/mt-server, rootsongjc, billchen8888, summer121, …). SELinux is turned off and left off.
 - `modprobe` / `rmmod` → **permanent blacklist-disable** (CIS hardening: `echo "install X /bin/true" >> modprobe.d; rmmod X`) or **reload-after-rebuild**, not a depend-restore window.
 - `systemctl stop` / `start` → **service-control wrappers** (`start()`/`stop()` subcommands of a control script), not a transient stop-work-start.
 - `chattr -i/+i` → not assessed (the operator was tokenized away by code-search).

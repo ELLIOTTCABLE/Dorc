@@ -8336,7 +8336,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## w1-discipline-artifacts
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:101 — — the `verified-core-discipline` skill is SHIPPED
-- superseded: <!-- /* superceded-in-part 2026-08-14: the diversity leg was deweighted — the checker's
+- superseded: <!-- /* superseded-in-part 2026-08-14: the diversity leg was deweighted — the checker's
 
 ## w1-kani-lane
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:65 — — an opt-in mise lane (real-tools-lane shape) of exhaustive bounded
@@ -8367,7 +8367,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## w3-foreign-ground-truth
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:174 — — the open investigation (no cheap dash/posh-analogue floor
-- superseded: <!-- /* superceded 2026-08-14: no measurement gate exists — the derived-defs pipeline
+- superseded: <!-- /* superseded 2026-08-14: no measurement gate exists — the derived-defs pipeline
 
 ## w3-reactive-model-before-code
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:163 — — when the reactive/multi-host fixpoint build (`26C`)

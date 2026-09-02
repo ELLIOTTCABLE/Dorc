@@ -1,6 +1,6 @@
 # 28J — the prose-authoring worklist + on-ramp (durable home)
 
-<!-- superceded by 28L (the loom-final arc, 2026-07-30): this worklist's editability
+<!-- superseded by 28L (the loom-final arc, 2026-07-30): this worklist's editability
 claims were FALSE when written — "the 7 unwritten catalog codes, all loom-editable
 today" refused MarkerOutsideEditableSection for every one (the placeholder rendered as
 immutable chrome), and the written whylog-* entries refused on revision (the reflow

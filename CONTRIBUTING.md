@@ -10,9 +10,9 @@ they work.
 
 As a counter, though, this project is largely LLM-generated - so *hand-authored*
 patches to the outlying regions are probably somewhat wasteful; as those regions
-are currently churned fairly heavily by LLMs; broad strokes trumps minutae.
+are currently churned fairly heavily by LLMs; broad strokes trumps minutiae.
 (This has exceptions - the core analysis-kernel, for instance, is subject to
-higher scruitny and churns less often; human eyes are more useful there.)
+higher scrutiny and churns less often; human eyes are more useful there.)
 
 
 ## Tooling
@@ -188,7 +188,7 @@ names. After confirming things rendered how you wanted, you can `git add` and
 commit.
 
 
-## Commiting
+## Committing
 
 This project uses granular committing. I *deeply* prefer helpful, pickaxe-able
 history with a full accounting of what went wrong and what redirections

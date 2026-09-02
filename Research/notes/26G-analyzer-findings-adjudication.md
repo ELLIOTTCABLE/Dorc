@@ -238,7 +238,7 @@ recorded `holds`), planned read-only against a one-oracle dir:
 
 - when the RHS mutator is **modeled** (a `wombat sync` covered by the same oracle):
   `sites=7 elide=3 omit=3 guard=0 run=1` — **all three lines fold**. The cap does not exist.
-  <!-- /* superceded by `§CORRECTION-the-variable-is-gens-into-reach` (appended 2026-07-27,
+  <!-- /* superseded by `§CORRECTION-the-variable-is-gens-into-reach` (appended 2026-07-27,
        during the W-C build). These NUMBERS reproduce exactly — but only against a NON-MUTATING
        RHS, not a modeled mutator. A modeled mutator caps at one rung exactly like an unmodeled
        opaque, because validity is an empty-SET test both populate. Do not carry "modeled RHS ⇒
@@ -440,7 +440,7 @@ independently of finding the parse sites, and I would sequence it first.
 
 Trial label: `README.md` §4 item 2.
 
-<!-- /* superceded IN PART by §CORRECTION-orlist-not-command-v (appended 2026-07-27): the
+<!-- /* superseded IN PART by §CORRECTION-orlist-not-command-v (appended 2026-07-27): the
      MECHANISM this section names is wrong. The degrade is caused by the `||` (or-list); NOT by
      `command -v`, which models fine on its own, and NOT by "unmodeled statements" generally.
      Every OBSERVATION below reproduces; only the attribution is wrong. The knock-on is that
@@ -601,7 +601,7 @@ plainly because it sets the priority: none of these is an emergency, and a rushe
 them — particularly the separation consequence in `fnd-shared-auto-cell-collides` — can easily
 be *worse* than the defect, by converting a precision loss into a soundness loss. Prefer slow.
 
-<!-- /* superceded IN PART, TWICE, by the appended §FINDING sections below. The claim is true of
+<!-- /* superseded IN PART, TWICE, by the appended §FINDING sections below. The claim is true of
      the FOUR ORIGINAL findings and false of the note as a whole: `§FINDING-andand-resolves-a-
      wrong-coordinate` (2026-07-27) and `§FINDING-ortrue-vouches-a-forged-rc` (2026-07-28) are
      both wrong-YES-capable, found later by pulling on this note's own threads. Do not carry

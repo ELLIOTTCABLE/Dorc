@@ -10,7 +10,7 @@ Stage order, as ruled: A load-inert · B source-file identity · C-v0 function-e
 **[conductor checkpoint]** · F pin-by-definition-bytes · G two-kind fixture respell ·
 H differential load-order battery · C2 value-flow source targets (budget permitting).
 
-<!-- superceded: the E→F checkpoint's asks were closed by the `28M` §7 ack-ledger and the
+<!-- superseded: the E→F checkpoint's asks were closed by the `28M` §7 ack-ledger and the
 `28K` §10 rewrite; stages F/H/C2 (+ the `28M` §9 fold) were executed by the resume lane —
 ledger `Research/notes/28P`. This note is historical from here down. -->
 
@@ -451,7 +451,7 @@ cells — `guard23-reingest-collision-verbatim`'s artifact bytes are byte-identi
 carries an `expected-diagnostics` declaring the general refusal that governs it, which is the
 pin that the bespoke route is gone.
 
-<!-- superceded in part: the contested/plural framing below (name-keyed collision ⇒
+<!-- superseded in part: the contested/plural framing below (name-keyed collision ⇒
 family-wide withdrawal) is generalized by `28M` §4's committee fence (MEMBER-span, not
 name-collision) and sharpened by the `28P` custody typing; the fence itself is
 build-as-spiked, UNRATIFIED, and its keying is under re-design (`28M` §10

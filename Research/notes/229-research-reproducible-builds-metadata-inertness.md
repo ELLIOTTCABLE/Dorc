@@ -594,7 +594,7 @@ to 2026-05-27):
 
 | axis | first build | second build |
 | --- | --- | --- |
-| hostname | a real builder name (infom01-amd64, ionos1-amd64, …) | `i-capture-the-hostname` (sentinel) |
+| hostname | a real builder name (inform01-amd64, ionos1-amd64, …) | `i-capture-the-hostname` (sentinel) |
 | domainname | `debian.net` | `i-capture-the-domainname` (sentinel) |
 | `CAPTURE_ENVIRONMENT` env | *unset* | `"I capture the environment"` (sentinel) |
 | `TZ` | `Etc/GMT+12` | `Etc/GMT-14` (26h apart) |

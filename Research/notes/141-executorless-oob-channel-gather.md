@@ -37,7 +37,7 @@ The convergent answer: **N probe channels stay pristine (the channel boundary IS
 > If you want to use a file descriptor handle in bash on the remote host, you need to create it on the remote host, not locally.
 
 > [A-pdsh-readme-2024]:§GOTCHAS (1) (relevance: +1:SURE)
-> When executing remote commands via rsh, krb4, qsh, or ssh, pdsh uses one reserved socket for each active connection, two if it is maintaining a separate connection for stderr. It obtains these sockets by calling rresvport(), which normally draws from a pool of 256 sockets. You may exhaust these if multiple pdsh's are running simultanously on a machine, or if the fanout is set too high.
+> When executing remote commands via rsh, krb4, qsh, or ssh, pdsh uses one reserved socket for each active connection, two if it is maintaining a separate connection for stderr. It obtains these sockets by calling rresvport(), which normally draws from a pool of 256 sockets. You may exhaust these if multiple pdsh's are running simultaneously on a machine, or if the fanout is set too high.
 
 > [B-kamil-ssh-separate-streams-tty-2021]:question body + answer script (relevance: +1:SURE)
 > ssh -tt will make sudo and tool read from the remote tty and write output and errors and prompts to the remote tty. Not only I won't be able to tell the output and the errors/prompts apart locally. All the streams will be processed by the remote tty and this will mangle data.

@@ -45,7 +45,7 @@
 
 ## §1 · THE PLAN — what is owed for building, and when
 
-<!-- /* superceded-in-part 2026-08-14 (r30 open): the execution plan was reshaped and
+<!-- /* superseded-in-part 2026-08-14 (r30 open): the execution plan was reshaped and
 re-homed — the live stage plan is notes/300 §2; the minispec/dorc-verify design
 (subsuming the Lean-model, vocabulary, and literate-surface questions) is notes/301.
 The items below stand as evidence and original pricing; per-item markers flag the
@@ -95,7 +95,7 @@ deeply-changed ones. */ -->
   adjudication): passes as mechanism iff the demote-only structure is recorded and
   implementation diversity is genuinely addressed (`22W` fb-same-model applies — a copy is
   not a check).
-  <!-- /* superceded-in-part 2026-08-14: the diversity leg was deweighted — the checker's
+  <!-- /* superseded-in-part 2026-08-14: the diversity leg was deweighted — the checker's
   value is STRUCTURAL difference (different constraints, the machinery-free description,
   one pass), never authorial lineage; the demote-only requirement stands. notes/300 §2. */ -->
 - **w1-discipline-artifacts** — the `verified-core-discipline` skill is SHIPPED
@@ -110,7 +110,7 @@ deeply-changed ones. */ -->
 
 ### Wave 2 — with the spec/kernel work (sequencing couples to 28Q/28R rulings)
 
-<!-- /* superceded 2026-08-14: w2-lean-tier-governance is RESOLVED — Aeneas ruled
+<!-- /* superseded 2026-08-14: w2-lean-tier-governance is RESOLVED — Aeneas ruled
 must/of-course as the derived-definitions substrate; the maintained artifact is
 minispec (hand statements + instances over derived defs, proofs opportunistic;
 notes/301); the hand spike is quarry, never seed; no multi-vehicle budget exists.
@@ -168,7 +168,7 @@ The Aeneas-lane facts below remain accurate and load-bearing. */ -->
   churn-cost (crosscheck): re-run the pipeline across a real refactor after 28Q stage-i/ii
   land, and measure proof/translation breakage, before the Lean-tier vehicle choice is
   treated as settled economics.
-  <!-- /* superceded 2026-08-14: no measurement gate exists — the derived-defs pipeline
+  <!-- /* superseded 2026-08-14: no measurement gate exists — the derived-defs pipeline
   is simply maintained (notes/300 §2) and its regeneration breakage IS the drift-alarm,
   by design; the vehicle choice no longer waits on economics. */ -->
 - **w3-foreign-ground-truth** — the open investigation (no cheap dash/posh-analogue floor
@@ -271,13 +271,13 @@ The Aeneas-lane facts below remain accurate and load-bearing. */ -->
   post-rewind; stated concern: possibly underpowered for the important concepts (the
   type-guarantees-do-not-cross and lawless-Clone/Eq findings are the live evidence); the
   named fallback if it cannot model what matters is maintaining the hand-written model.
-  <!-- /* superceded 2026-08-14: ruled must/of-course [TYPED] — the concern resolved:
+  <!-- /* superseded 2026-08-14: ruled must/of-course [TYPED] — the concern resolved:
   what fails to cross is compile-time discipline rustc keeps enforcing over the real
   code; it never needed to cross. The mini-model ack directly above is realized as
   minispec (notes/301). */ -->
 - [LEAN] Flux add-early-scoped; the human's parenthetical this-arc: nothing heard so far
   disliked.
-  <!-- /* superceded 2026-08-14: ruled DEFERRED [TYPED] — penciled mid-r30, after the
+  <!-- /* superseded 2026-08-14: ruled DEFERRED [TYPED] — penciled mid-r30, after the
   Lean/minispec standup, before 28Q stage-i; any typesystem/architecture change Flux
   REQUIRES rides the facade (Aeneas-prep) lane instead. notes/300 §2. */ -->
 - [OPEN] the w2-lean-tier-governance residual (post-review Aeneas confirmation + the
@@ -286,7 +286,7 @@ The Aeneas-lane facts below remain accurate and load-bearing. */ -->
   additive, unmerged; NOTE both the crosscheck (on `ai/main`) and the Aeneas branch minted
   a `turn07` note — the Aeneas branch's renumbers at merge); the aid-seam location
   (deliberately unsettled); AID-NEEDS reconciliation before w2-narrative work.
-  <!-- /* superceded-in-part 2026-08-14: the governance residual is CLOSED (see the
+  <!-- /* superseded-in-part 2026-08-14: the governance residual is CLOSED (see the
   Aeneas marker above); the branch disposition is RESOLVED — both folded to ai/main and
   deleted, the Aeneas turn07 renamed to turn08 at merge (later turns: turn09, the
   prose-formal linkage prior art). Still open: the kSURVIVAL status-line edit, the
@@ -331,7 +331,7 @@ The Aeneas-lane facts below remain accurate and load-bearing. */ -->
   `spike-lean-sparing/` (on branch `ai/research-lean-sparing-spike`).
 - Aeneas experiment: branch `ai/research-aeneas-spike` (its own `turn07` note + nested
   `spike-aeneas/mise.toml`).
-  <!-- /* superceded 2026-08-14: both spike branches are folded to ai/main and deleted;
+  <!-- /* superseded 2026-08-14: both spike branches are folded to ai/main and deleted;
   spike-lean-sparing/ and spike-aeneas/ live in the research dir on main, and the Aeneas
   branch's turn07 was renamed to turn08 at merge — "turn07" in this document's vicinity
   means the crosscheck adjudication only. */ -->

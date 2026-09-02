@@ -114,7 +114,7 @@ fabricated rc-0 was a confident wrong value.
     `Replace`/`Omit`). This is the honest pin the old `should_panic`-"not replaced" used to be.
   - REWROTE `f1_andand_left_operand_stays_replaced_tc_mint_gap` →
     `andand_left_operand_declared_rc0_relaxes_and_replaces` (the `tc-mint` gap is RESOLVED, not a gap;
-    the declared rc-0 relaxes — renamed + recommented so the green doesn't hide a stale "deferred gap"
+    the declared rc-0 relaxes — renamed + recommended so the green doesn't hide a stale "deferred gap"
     framing).
   - `prove_replaceable` unit tests: added `andor_status_blocks_only_when_rc_undeclared` (the
     rc-conditional gate) + `if_guard_status_blocks_unconditionally` (the render floor); strengthened

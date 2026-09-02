@@ -148,7 +148,7 @@ conflate the instruments: this checker detects INCONSISTENCY (implementation bug
 safety-under-interruption of a capped SOLVE comes from pass shape (a pessimistic pass
 starts at walls and proves survival, so every stopping point is safe-side by
 construction, no certificate involved — and its mid-descent states may honestly fail
-edge checks while being perfectly safe). Cappable passes owe the pessimistic shape as
+edge checks while being perfectly safe). Capable passes owe the pessimistic shape as
 standing doctrine; the certifier licenses no partial result in either shape.
 
 ## §3 — The seam, the whole-window demotion, and the consumer floors

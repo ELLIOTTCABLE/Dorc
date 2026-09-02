@@ -75,7 +75,7 @@
 > [A-takikawa-sound-gradual-typing-dead-2016]:p1 (relevance: +1:SURE)
 > "Realizing type soundness in this world requires run-time checks that watch out for potential impedance
 > mismatches between the typed and untyped portions of the programs. The granularity of these checks
-> determine the peformance overhead of gradual typing."
+> determine the performance overhead of gradual typing."
 
 > [A-takikawa-sound-gradual-typing-dead-2016]:p1 (relevance: +1:SURE)
 > "We find that Typed Racket's cost of soundness is not tolerable. If applying our method to other gradual

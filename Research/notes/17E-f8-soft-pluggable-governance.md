@@ -67,7 +67,7 @@ shared global slot. Feeds the coordination contract.
 > significant than the latter. It is in fact a very stringent requirement."
 
 > [B-bracha-pluggable-types-2004]:p2 (relevance: +1:SURE)
-> "Once a mandatory type system is in place, the temptation to rely upon it is irresistable. It becomes a
+> "Once a mandatory type system is in place, the temptation to rely upon it is irresistible. It becomes a
 > basis for optimizations and for security guarantees that fail ungracefully if the underlying assumptions
 > of the type system do not hold. If the type system fails, system behavior is completely undefined."
 

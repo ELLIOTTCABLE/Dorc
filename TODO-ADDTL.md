@@ -2,7 +2,7 @@
 
 Dig through the design-docs in this repo; collate for me a list of 'undone design-work' that was either 1. mentioned by a human in-passing, but doesn't clearly map to any of the design-passes present; or 2. heavily pushed by a `plans/*.md` document, but seems like it may have gotten lost in the weeds. Sort higher: items with high design-consequences ("especially hard to unbake" or "can't be refactored"); and sort lower: items that seem known/deferred (in `TODO.md`, discussed by the human in recent design-passes, or clearly not-upfront-work.)
 
-*Remove* complete items; they are in git history. Do not populate incomplete items with sub-lists of chunks that *are* complete, this should *only* mention incomplete work; it has a tendancy to become a work-log, which it very much should not be. Keep items *short*; the deails live in the design-docs they were written into / during.
+*Remove* complete items; they are in git history. Do not populate incomplete items with sub-lists of chunks that *are* complete, this should *only* mention incomplete work; it has a tendency to become a work-log, which it very much should not be. Keep items *short*; the deails live in the design-docs they were written into / during.
 
 Update-by-overwriting this section; keep this descriptive header/prompt, just replace items. Keep it short; collapse similar/related items into one entry; this shouldn't grow over ~10 items. It's to catch *major work*, not nits.
 
