@@ -535,6 +535,12 @@ raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- docids"
 
+[tasks.slugs]
+description = "Regenerate the root SLUGS.md: the machine-generated index of every slug the corpus defines or cites (grep it, do not edit it). Reads the WHOLE corpus every run. Trailing args reach the endpoint — `-- --near-all` recomputes every advisory `near:` line, `-- --no-near` carries them all forward and computes none, `-- --check` compares only the committed file's mechanical lines and writes nothing (what the pre-commit hook runs), `-- --stats` prints corpus counts and residue samples. The `near:` lines are SEMANTIC and per-machine (the external `ck` tool + its model, resolved via mise); absent that backend they are silently carried forward, so a bare run needs no network."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- slugs"
+
 [tasks."prose:census"]
 description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom publish --human`."
 raw = true
