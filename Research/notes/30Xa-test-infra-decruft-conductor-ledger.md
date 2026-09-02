@@ -6,13 +6,17 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
-## §0 — HELD (2026-09-02)
+## §0 — state (2026-09-02): resumed after the human's adjudication; `30-reviewB` gates lane A
 
 `/opaque-review` `30-reviewA` (pass `initial`, range `3b999e47^..633fd954`) returned, verbatim:
-`NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`. The arc is STOPPED before
-lane A: no builder dispatched, nothing accrues on this branch, the path is the human's and stays
-unopened by the conductor. Resumption is a human act; a resumed candidate is re-reviewed under a
-fresh identity.
+`NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`; the conductor never opened
+it. The human adjudicated: the accepted tightening landed in `30X` as `8ab53489` ("Fence fixture
+authority without narrowing sessions" — `RealSsh` and `Os` roots out of the ordinary harness's
+reach; `HarnessSeams` as the constructor-side subtype; `loom-syntax-grants-no-production-authority`;
+livetest as the explicit composition for ambient capability), then acked the conductor's five
+clarity repairs and the added `rul-seam-columns-are-conductor-ruled`. The re-stabilized design
+goes through `30-reviewB` (pass `initial`; kit `30Xd`) before lane A; ACK continues, anything
+else returns to the human.
 
 Successor on-ramp (everything a rewound conductor needs is on this branch): this ledger · `30X` as
 amended at `633fd954` (§3a is the new non-loom law) · `30Xb` (the lane A brief, DRAFT, pre-NACK —
@@ -55,6 +59,8 @@ over before any fold.
 | `ask-opaque-review-before-build` | RULED 2026-09-02: the stabilized plan clears `/opaque-review` BEFORE the first build; an ACK continues, anything else returns to the human. OUTCOME: `30-reviewA` → NACK (§0); held |
 | `exceed-convert-dir-cases-to-looms` (109 cli dir cases → looms; one-off converter deleted after use; lane D tail) | ACKED 2026-09-02 ("no legacy e2e") |
 | `amend-shape-c-assertion-rule` (§4) | ACKED 2026-09-02 in sharpened form — `30X` §3a (prose primacy · seven classes · stop-at-the-conductor · one mechanism per arc) |
+| the reviewer-driven tightening (`8ab53489`) + the conductor's five clarity repairs + `rul-seam-columns-are-conductor-ruled` | ACKED 2026-09-02 ("Ack; proceed with your cleaning. I believe we're ready to deploy") |
+| `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; the human corrects in-chat if the other reading was meant |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
 | `exceed-port-or-delete-yardstick` | acked with the plan 2026-09-02 |
 | `note-stale-review-repair-worktree` (`.claude/worktrees/r30-review-repair1`, tip inside `ai/main`; not this arc's) | reported; untouched |
@@ -170,7 +176,7 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 
 | lane | scope (`30X` §11 + §3 deltas) | state |
 |---|---|---|
-| A `lane-a-seams-and-harness-binary` | `Seams` + `Seams::from_env` on one env-reader footing; `compose::run` extracted from `main.rs`; `bin/dorc-harness.rs` refusing with no seam set; seeded id/key entropy over a dependency-free generator; the ticking harness clock; ALL SIX pins retired from the shipped binary; the e2e runner spawns the harness through a `dorc` shim on PATH; `bless:dry` clean | not dispatched |
+| A `lane-a-seams-and-harness-binary` | `Seams` + `HarnessSeams` (`30X` §4) + `HarnessSeams::from_env` on one env-reader footing; the session environment scrubbed; `compose::run(Seams)` extracted from `main.rs`; `bin/dorc-harness.rs` refusing with no seam set; seeded id/key entropy over a dependency-free generator; the ticking harness clock; ALL SIX pins retired from the shipped binary; the e2e runner spawns the harness through a `dorc` shim on PATH; `bless:dry` clean | not dispatched |
 | — checkpoint A | `inv-division-at-the-narrowest-edge` judged on the extraction diff | — |
 | B `lane-b-session-driver-and-rip` | the shell-session process driver; gates by kind, no position rules; own roots per session; the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); batteries split by assertion kind; `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | not dispatched |
 | C `lane-c-in-process-receipt-world` | the in-process driver composes the real `LocalReceiptEdgeV1` over `ModelIo` (the new Cargo edge) with seeded entropy and the ticking case clock; the 37 `why-total-*` rows authorable; varied-seed default + the two affordances; `gate-two-drivers-agree`; the post-dispatch durable report authored over that world, witnessed by state-only e2es | not dispatched |
