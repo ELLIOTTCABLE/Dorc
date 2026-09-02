@@ -343,8 +343,7 @@ impl TransportSeam {
                 }
                 _ => dorc_transport::LocalDriver::same_spelling(local.shell),
             }),
-            // An unconfigured harness transport: an empty spelling, so a `--host` run that reaches
-            // it fails to spawn and lands on the ordinary not-attempted path. `--host` cases set it.
+            // Unconfigured harness transport: an empty spelling `--host` fails to spawn against.
             Self::Local(None) => {
                 Box::new(dorc_transport::LocalDriver::same_spelling(PathBuf::new()))
             }

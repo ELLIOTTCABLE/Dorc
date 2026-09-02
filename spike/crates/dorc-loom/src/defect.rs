@@ -139,7 +139,8 @@ mod tests {
 
     #[test]
     fn production_cannot_name_harness_defect_authority() {
-        let production = include_str!("../../cli/src/main.rs");
+        // `main.rs` became `compose.rs` when the harness sibling split off (`30X`).
+        let production = include_str!("../../cli/src/compose.rs");
         for forbidden in ["DefectScenario", "dorc_loom", "--this defect"] {
             assert!(
                 !production.contains(forbidden),

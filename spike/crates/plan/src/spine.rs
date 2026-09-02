@@ -529,10 +529,11 @@ mod tests {
             .expect("crates/");
         let engine = std::fs::read_to_string(crates.join("cli").join("src").join("engine.rs"))
             .expect("the engine source is readable");
-        let binary = std::fs::read_to_string(crates.join("cli").join("src").join("main.rs"))
+        // `main.rs` became `compose.rs` (`30X`); as a lib module it delegates via `crate::`.
+        let binary = std::fs::read_to_string(crates.join("cli").join("src").join("compose.rs"))
             .expect("the driver source is readable");
         assert!(
-            binary.contains("dorc_cli::engine::run("),
+            binary.contains("crate::engine::run("),
             "the production driver must delegate planning to the shared engine"
         );
         assert!(
@@ -724,8 +725,8 @@ mod tests {
             [
                 "cli/src/apply.rs",
                 "cli/src/artifact.rs",
+                "cli/src/compose.rs",
                 "cli/src/engine.rs",
-                "cli/src/main.rs",
                 "cli/src/results.rs",
                 "cli/src/world.rs",
                 "cli/tests/receipt_route.rs",
