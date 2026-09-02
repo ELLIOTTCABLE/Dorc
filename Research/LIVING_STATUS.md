@@ -5,14 +5,19 @@
 > chronological record; `Research/README.md`'s per-round map says what each closed document
 > did) and never authority (the human-written root docs, stamped `plans/`, and
 > `spike/CLAUDE.md` rulings outrank it). **Nothing important may live ONLY here** — rulings and
-> findings get a durable numbered-note home; this file carries pointers. Upcoming and owed
-> work is NOT here either: that is root `ROADMAP.md` (scheduled · owed · the rulings the
-> human owes), with `TODO-ADDTL.md` as its unacked porch.
+> findings get a durable numbered-note home; this file carries pointers.
+>
+> **This file and root `ROADMAP.md` are mutually exclusive.** A piece of work appears here
+> only once a conductor has been handed it and told to build it; until then it is on the
+> roadmap (scheduled or owed), and when work is split on purpose only the handed-over half
+> moves. So everything here has active, owned, in-flight work; an entry sitting here unowned
+> means code-level work was dropped mid-build — never design residue that was punted, which
+> belongs on the roadmap or in its record.
 >
 > **How to maintain:** update judiciously — direction-changes, discoveries, refutations,
 > deferments; never per-turn chatter. Keep it NARROW: only in-flight work and what a
-> near-future conductor must know; when an arc closes, its entry collapses to one pointer and
-> its account moves to the README round-map. Reverse-chronological, always.
+> near-future conductor must know; when an arc closes, its entry is deleted and its account
+> moves to the README round-map. Reverse-chronological, always.
 >
 > *Never* update this file in a worktree; apply your edits directly in the
 > project root, and if possible, commit it there by pathspec (check for
@@ -51,27 +56,6 @@ branch, unopened by the conductor). Lane A (the `Seams`/`HarnessSeams` bundle, `
 `dorc-harness`, seeded entropy, the six env pins retired) is BUILDING in the conductor
 worktree; checkpoint after it. A rewound conductor resumes from the ledger's §0 on that branch,
 where the lane briefs, the scout inventory, and the review dispatch kit are banked beside it.
-
-## DESIGN SITTING (2026-08-31 → 09-02 — pivot-book language surface; OPEN, banked for a rewind)
-
-Fable⇄human design sitting toward the human's concrete target (an idempotent Vultr
-standup + first-config + apps book). Ledger and live queue: **`notes/26M`** (the
-ack-ledger — only typed acks count; the tabled apply-side-transport exploration; the
-payload-declaration decomposition; the recast trail). Design-of-record: **`plans/30W`**
-(index-kinds in the context slot; region OVERLAP; the lifted ask-the-owner discipline; the
-per-arm claim family; six rulings owed in its §10). Nothing welded; the license-consuming
-half stays behind `kSURVIVAL` and the human's economic deferral. Resume from `26M`'s queue.
-The sitting's output is now the spine of the announced next round:
-`ROADMAP:round-r31-language-and-kernel` (candidates awaiting the human's in/out).
-
-## CLOSED ARCS (pointers only)
-
-The r30/30R close arc — receipt residue, the whylog→receipt recast, the receipt-backed
-`dorc why` surface — is COMPLETE and folded (2026-08-31; conduct `notes/30Va`, lane ledger
-`notes/30Vd`). The r30 kernel close-out — every `30O` lane BUILT and folded (2026-08-23;
-schedule `notes/30O`, conduct `notes/30Q`, design `plans/30P`). Accounts: the README r30
-entry. What remains of both is on the roadmap: `ROADMAP:ceremony-r30-close` (the human's) and
-the rulings list there (formerly the "human-gated" and "gently held" sections of this file).
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 
@@ -117,8 +101,9 @@ licenses no dispatch by itself · `rNN:` xfail horizons are never minted to mirr
 row (human, 2026-09-02: mechanical horizons are expensive in human attention and must pass a
 high bar).
 
-## History
+## Round
 
-Closed arcs and their accounts: `Research/README.md` per-round map. r30's ledgers in order:
-`notes/300` (first half) · `307` (wave two) · `30N` (second half) · `30O` (close-out) ·
-`30Va` (the receipt/why close) · `30Xa` (the test-architecture rebuild, in flight).
+r30 is OPEN. Its close ceremony (`30O:the-schedule`: the human-run gate → `gate:arc` → the
+`CURRENT_ROUND` bump → the prose queue → ff `ai/main`) is the human's, once the rebuild above
+folds. Closed arcs and their accounts: `Research/README.md` per-round map; r30's ledgers in
+order: `notes/300` · `307` · `30N` · `30O` · `30Va` · `30Xa` (in flight).
