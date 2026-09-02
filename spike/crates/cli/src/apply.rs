@@ -579,7 +579,16 @@ pub fn durable_report(reached: &ConsentedApply, store: &str) -> ApplyDurableRepo
         (Some(intent), Some(failure)) => {
             vec![crate::apply_outcome_unrecorded(intent, store, failure)]
         }
-        _ => Vec::new(),
+        // A durable failure is only reachable PAST the permit, and a permit implies a placed
+        // intent — so the pair cannot arise, and dropping one silently is the shape being repaired.
+        (None, failure) => {
+            debug_assert!(
+                failure.is_none(),
+                "a durable failure with no intent behind it"
+            );
+            Vec::new()
+        }
+        (Some(_), None) => Vec::new(),
     };
     ApplyDurableReport {
         recorded: intent.zip(reached.outcome.map(ApplyOutcomeId::hex)),

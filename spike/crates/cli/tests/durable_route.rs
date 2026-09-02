@@ -500,6 +500,51 @@ fn an_apply_that_cannot_publish_its_intent_never_reaches_the_transport() {
 }
 
 #[test]
+fn a_remote_apply_declining_its_receipt_touches_nothing_at_all() {
+    // THE PRE-I/O BOUNDARY, measured rather than argued. A remote apply's intent publication IS
+    // its dispatch authority (`30R:publication-and-dispatch-boundary`), so `--no-receipt` is
+    // refused there — and the refusal has to land before anything is opened, which is a claim only
+    // an untouched profile can make. Before this repair the flag parsed, the store was created,
+    // and rich intent AND outcome receipts were written under a flag saying none would be.
+    let sandbox = ProfileSandbox::new("apply-no-receipt");
+    let scratch = Scratch::new("apply-no-receipt");
+    std::fs::write(scratch.path.join("plan.sh"), INERT_PLAN).expect("write the plan");
+
+    let mut command = dorc(&sandbox, &scratch.path);
+    // Pointed at a shell that does not exist, so a run that got as far as the transport would say
+    // so — the same discriminator the publication-refusal case above uses.
+    command.env(
+        "DORC_TRANSPORT",
+        format!("local:{}", scratch.path.join("no-such-shell").display()),
+    );
+    let out = command
+        .args([
+            "apply",
+            "--host",
+            DESTINATION,
+            "--plan",
+            "plan.sh",
+            "--no-receipt",
+        ])
+        .output()
+        .expect("the built binary runs");
+
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("apply-receipt-not-optional"),
+        "the refusal names the incompatibility; got: {stderr}"
+    );
+    assert!(
+        !stderr.contains("DORC_TRANSPORT") && !stderr.contains("transport"),
+        "nothing transport-shaped may precede it; got: {stderr}"
+    );
+    assert!(
+        !store_root(&sandbox).exists() && !keyset_dir(&sandbox).exists(),
+        "a refused invocation created neither a store nor a keyset"
+    );
+}
+
+#[test]
 fn a_run_with_no_clock_publishes_nothing_and_says_so() {
     // THE UNDATED REFUSAL, at the production composition root and nowhere lower.
     //
