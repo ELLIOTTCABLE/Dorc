@@ -11,6 +11,16 @@
 //! previous line forward / computes nothing, and `SLUGS.md` simply has no `near:` lines. When a
 //! backend does land, the staleness rule keeps the cost down: a row's line refreshes only when that
 //! row's other lines change.
+//!
+//! Why none is wired (measured 2026-09-02, so nobody re-walks it): every in-tree route
+//! (`model2vec-rs`, `ck-search` from source) reaches HuggingFace `tokenizers`, whose C/C++ deps
+//! (`onig`/`esaxx`) fail to build on Windows — `cargo install ck-search` dies at link on an MSVC
+//! static-vs-dynamic CRT mismatch. The prebuilt `ck` 0.7.11 binary installs on every platform via
+//! mise, but its `--sem` scores were 0.000 on Windows and on WSL over drvfs, and its indexer hung
+//! on WSL ext4; its `--hybrid` scores are RRF ranks, unusable as a floor. macOS is untested and is
+//! the one cheap experiment left (`ck --index` a two-file dir, one `--sem --scores` query, expect
+//! cosines near 0.6–0.9 for the related file). Only if that works is an adapter behind this seam
+//! worth writing; its index must then sit outside the tree (`CK_INDEX_DIR`).
 
 use std::collections::BTreeSet;
 
