@@ -63,10 +63,16 @@ Weighting:
 
 ## fix-now-work
 
-These items are suitable for a bounded repair lane. None requires the human to choose a new product
+These items are suitable for bounded repair work. None requires the human to choose a new product
 posture. Changes touching governed receipt/publication surfaces still follow the existing
 quarantined-review process before fold; that is validation of the repair, not a request to reopen
 whether the defect should be fixed.
+
+A testing-architecture rebuild is in flight but not settled here. This adjudication does not ratify
+or depend on its prospective shape. Scheduling below merely avoids making security repairs against
+fixture/composition seams that are actively being replaced, and preserves one requirement whatever
+that architecture becomes: closing production authority must not remove deterministic, granular
+construction at test time.
 
 ### P0 — authority and identity boundaries
 
@@ -82,9 +88,10 @@ claims. The current production caller uses the real store, but the advertised ty
 false and a future caller can compile the bypass.
 
 **Repair:** make production permit minting consume an unforgeable result of the required local
-publication edge. A fixture/deterministic path may exercise its own disjoint transition or earn the
-same opaque proof through the model; it must not manufacture the production proof from digest and
-policy strings. Add the external/caller negative proof the design already requires.
+publication edge. Preserve deterministic testing of the semantic transition without letting fixture
+code manufacture production authority from digest and policy strings. The exact harness/test-support
+shape is deliberately not ruled here. Add the external/caller negative proof the design already
+requires.
 
 #### fix-entropy-failure-must-refuse
 
@@ -108,8 +115,9 @@ passing an authoritative species projector. This does not itself mint mutation a
 the historical-account boundary the receipt exists to provide.
 
 **Repair:** close semantic draft construction behind species projectors/producer facades; separate
-parser reconstruction from live controller mints; retain fixture access only through structurally
-test-only APIs.
+parser reconstruction from live controller mints; retain deliberate deterministic construction for
+tests behind a boundary that cannot enter production. The exact test-support mechanism is not ruled
+here.
 
 ### P0 — apply CLI honesty and durable failure
 
@@ -230,9 +238,10 @@ reachability).
 receipt ordering. Fixed fixture state has crossed into default persistence, exactly the production
 fence trigger.
 
-**Repair:** structurally gate fixture-clock selection out of production publication, following the
-existing debug/test transport posture or a separate harness binary/seam. A malformed fixture value
-must not silently make a production run clockless.
+**Repair:** structurally exclude fixture-clock selection from production publication while
+preserving an explicit deterministic clock input for granular tests. A malformed fixture value must
+not silently make a production run clockless. The testing-architecture work owns the eventual
+composition spelling; this finding owns only the production exclusion and continued injectability.
 
 ### P2 — straightforward hygiene
 
@@ -453,39 +462,87 @@ correctly rooted total reconstruction, but it is intentionally uncurated and dep
   security defect. Restate non-sensitive engineering reasons locally when those sites are next
   touched; do not bulk-copy quarantined rationale.
 
-## fix-lane-boundary
+## unattended-fix-schedule
 
-A single fix conductor may split `fix-now-work` into parallel implementation slices, but the
-boundary is strict:
+The unattended work should not be one builder or one concurrent fan-out. Three cohesive dispatch
+arcs keep each builder's context useful and avoid rebuilding temporary fixture infrastructure.
 
-1. It may repair private mints, fallible identity, CLI refusal/report routing, verification-only
-   skeleton recovery, key-buffer custody, partial-state propagation, directory-handle continuity,
-   fixture clock fencing, livetest, and narrow current steering residue.
-2. It may add red/failing-direction tests from the reviewer branches after checking they isolate the
-   current behavior; reviewer evidence files are not automatically production regressions.
-3. It must not implement transport standup, a durability bypass, plan-origin inference, per-site
-   executor instrumentation, retention, durable content additions, identity expansion, or why
-   curation without the corresponding human decision above.
-4. It must treat any inability to close the publication proof without changing the ruled authority
-   model as a STOP, not as permission for another lexical roster.
-5. It ends with the ordinary builder gate on both platforms and the governed receipt review before
-   fold; no finding is “proven fixed” by editing its test or weakening its question.
+### dispatch-before-testing-architecture — CLI contract and reporting
+
+**One builder; small-to-medium; dispatch now.** This arc is intentionally limited to behavior the
+ongoing suite work should inherit rather than mechanisms it is replacing:
+
+1. `fix-apply-receipt-opt-out` — reject the incompatible flag before I/O.
+2. `fix-apply-durable-reporting` — preserve intent/outcome identity and typed durable failures in the
+   production output model.
+3. `fix-retired-livetest-flag` — repair the live acceptance invocation to the ruled current CLI.
+
+These three share the remote-apply/CLI boundary and can be carried together. The builder may add
+focused Rust assertions and update the existing live script, but should avoid restructuring test
+composition or minting a new fixture path. Landing this first gives the test-architecture work the
+correct product behavior to preserve.
+
+### dispatch-after-testing-architecture-a — authority construction and deterministic inputs
+
+**One strong builder; medium-large; serial after the testing-architecture work settles.** Re-scout
+current names first because some fixture-clock plumbing may already have moved.
+
+1. `fix-required-publication-mint`.
+2. `fix-entropy-failure-must-refuse`.
+3. `fix-draft-and-identity-mints`.
+4. `fix-fixture-clock-publication-fence`.
+
+These are one question: which constructors and injected values may reach production authority while
+remaining deterministically constructible in tests. Doing them before the active suite work would
+force the repair to target seams known to be moving. Doing them together lets one builder close the
+production API without independently breaking receipt IDs, publication DST, and clock-controlled
+fixtures.
+
+### dispatch-after-testing-architecture-b — durable recovery and local object custody
+
+**One strong builder; large but cohesive; serial after arc A to avoid CLI/receipt conflicts.**
+
+1. `fix-verification-only-skeleton-recovery`.
+2. `fix-private-key-buffer-discipline`.
+3. `fix-partial-publication-narration`.
+4. `fix-created-directory-handle-continuity`.
+5. `fix-handle-relative-enumeration`.
+
+All five live on the receipt-crypto → receipt-local → CLI recovery path and should be proved against
+one shared deterministic I/O/state model plus focused native checks. Splitting them would make
+several builders repeatedly load the same keyset/store state machine and risks different notions of
+partial recovery or object ownership.
+
+`fix-current-steering-residue` is not a builder arc. Recheck it once the test-architecture and both
+post arcs have settled, then make one conductor edit over the current truth; editing it earlier would
+create immediate steering churn.
+
+Across all three arcs:
+
+- Reviewer red evidence may be adopted only after confirming it isolates current behavior; it is not
+  automatically a regression suite.
+- No arc may implement transport standup, a durability bypass, plan-origin inference, per-site
+  executor instrumentation, retention, durable content additions, identity expansion, or why
+  curation without the corresponding human decision above.
+- If closing publication authority appears to require a new product posture or to make deterministic
+  construction materially worse, STOP rather than replacing the problem with a production-only path
+  or another lexical roster.
+- Each builder ends with the ordinary both-platform completion gate; governed receipt changes receive
+  their required review before fold. A finding is never fixed by weakening its test question.
 
 ## final-priority-order
 
-1. **Stop false authority first:** publication proof, entropy identity, genuine standup decision.
-2. **Stop explicit user-contract violations:** `--no-receipt`, silent durable failure, wrong-run
-   no-observation answer.
-3. **Preserve degraded recovery:** verification-only skeleton, partial-root reasons, handle-relative
-   object continuity.
-4. **Restore causal usefulness:** plan/apply origin and truthful site-outcome posture.
-5. **Prevent operational self-expiry:** store lifecycle/retention decision.
-6. **Finish the user surface:** leave the temporary total register for a curated, depth-sensitive
-   receipt why.
-7. **Only then expand the durable:** new contents, identity fields, providers, rotation, import,
-   policy profiles, or stronger platform claims.
+1. **Before the suite rebuild:** repair the remote-apply CLI contract and reporting so the rebuilt
+   tests target truthful behavior.
+2. **After the suite rebuild:** close authority/identity/input boundaries without sacrificing
+   deterministic construction.
+3. **Then:** repair partial recovery and local object continuity against the settled test seams.
+4. **With human input later:** genuine standup, durability availability, plan/apply origin, site
+   outcomes, store lifecycle, no-observation identity, durable contents, and why curation.
+5. **Only after those:** expand providers, rotation, import, policy profiles, or stronger platform
+   claims.
 
 The work should not be called closed merely because the strongest local kernels held. Their purpose
 is to support an honest, available, causal explanation product. The current tree is materially
 better than the reviewed tip because 30V repaired the delivery-sequencing failures, but closure
-still depends on the fix-now lane plus explicit human rulings above.
+still depends on these unattended arcs plus the explicitly human-owned rulings above.
