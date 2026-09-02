@@ -68,7 +68,10 @@ Read, in this order, IN FULL:
 2. `spike/docs/reference/oracle-contract.md` - THE contract. Every obligation,
    license, and failure mode of every member you might write. This is your
    working companion for the entire task; re-open it whenever you are about to
-   author a member, and walk its section-8 checklist before you finish.
+   author a member, and walk its section-9 checklist before you finish. It
+   describes the product as ruled, which runs ahead of what the spike's Rust
+   implements; where the two differ, author against the contract and note
+   the gap in your report.
 3. From `spike/docs/writing-oracles/`, at minimum: `02-your-first-oracle.md`,
    `03-the-probe-contract.md`, `05-covering-a-real-tool.md`,
    `11-authoring-with-the-engine.md` (classing your declines, linting as you
@@ -194,14 +197,14 @@ Write `cmd__is_converged()`, then STOP. Do not author further members
 speculatively - not because they are forbidden, but because you lack the
 engine's knowledge of what is actually missing. The workflow that replaces
 speculation: land the verdict member; then, if a runnable Dorc is available
-(build with `mise exec -- cargo build --workspace` from `spike/`; invocation
-details in the cli crate's `CLAUDE.md` and `spike/crates/cli/tests/e2e.rs`), run a plan over
+(build with `mise run build`; invocation details in the cli crate's
+`CLAUDE.md` and `spike/crates/cli/tests/e2e.rs`), run a plan over
 the motivating book and READ IT. The plan's reason strings and hints name what
 is limiting it - which sites stayed unmodeled, which wall degrades the tail,
 what one description would recover - with topology-knowledge you do not have.
 Author a further member only against a named need: a plan reason, a hint, or an
 explicit task instruction; and re-read the oracle-contract's per-member section
-(5a-5i) immediately before authoring each. Two riders: before any plan run,
+(5a-5k) immediately before authoring each. Two riders: before any plan run,
 re-verify your bodies' inertness (step 4, item 3) - a plan run EXECUTES probe
 bodies, and the read-only promise it keeps rests on the code you just wrote;
 and if no runnable Dorc is available, stop at the verdict member and record
@@ -213,10 +216,27 @@ artifact, not a style issue:
 - PROBE BODIES NEVER MUTATE. No gradient, no "only a little", no "only first
   run". Read-only by design, not by privilege-starvation. Applies to every
   member body, including `disturbs` emission bodies and `predict` delegations.
-- DECLINE BY DEFAULT. `*) return 2 ;;` closes every case; unmodeled flags,
-  unexpected arity, missing binaries, unrecognized output, and every surprise
-  route to `return 2`. Open delegate-dependent bodies with
+- DECLINE BY DEFAULT. `*) return 2 ;;` closes every case of a VERDICT body;
+  unmodeled flags, unexpected arity, missing binaries, unrecognized output,
+  and every surprise route to `return 2`. Open delegate-dependent bodies with
   `command -v tool >/dev/null 2>&1 || return 2`.
+- A PREDICT DECLINES BY RECORD, NEVER BY STATUS. In `cmd__predict()` the
+  function's final exit status IS the predicted status, every value included
+  (`return 2` predicts 2). Stdout/stderr are declined by default and claimed
+  only by `printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"` AFTER the
+  complete output (comma sets: `rc,stdout,no-stderr`); a whole-shape refusal
+  is `printf 'predicts none unmodeled %s\n' "$1" >>"${DREP_V1:-/dev/null}"`
+  on the `*` arm, written FIRST. The record's `printf` clobbers the status
+  unless you preserve it in sh. Full treatment: oracle-contract 5b and 6a.
+- MARK EVERY CELL A VERDICT READS. A compare-shaped check (`cmp a b`) reads
+  two cells; a mark naming only the destination under-backs the fact and lets
+  it be wrongly kept past a write of the other. Extra reads are `:?` marks.
+- ENVIRONMENT HYGIENE. A book may change the environment between two sites of
+  your tool; your body is probed below such a change only when it either
+  consumes each changed variable deliberately (a pin) or shuts ambient
+  variables out with `env -i`-class hygiene (a sever). Never write a
+  sensitivity list. `PATH`/`IFS`/`ENV`-class variables are engine-owned.
+  Contract: oracle-contract 5a.
 - CLASS THE DELIBERATE DECLINES. On a decline you can name (never the catch-all
   `*` arm), emit `printf '<verb> <class> <tail>\n' >>"${DREP_V1:-/dev/null}"` on
   the declining path, before `return 2`. v1 verb: `decline`; classes: `unsound`
@@ -250,22 +270,38 @@ artifact, not a style issue:
   reads). Meta facts spell their verb as a word: `: disturbs KIND` (footprint),
   `: safe-across DIM` (context vouch), `: lends DIM` (wrapper dimension),
   `: stored-in SUBSTRATE` / `: undivided-by-transit-across AXIS` (kind store).
-  At most one verdict per line; one mark per physical line in production (an
-  extra read is its own line). Binds (`x : KIND = "$1"`) name entities, never
+  At most one verdict per line. The ruled grammar chains marks in one block
+  (`: COORD reads COORD2 safe-across user`, continuation lines re-open with
+  `:`/`#:`); the spike's parser still reads one mark per physical line, so for
+  spike fixtures put an extra read on its own `:?` line. Binds
+  (`x : KIND = "$1"`, or trailing `x="$1" #:= KIND`) name entities, never
   cells. Kinds are reverse-DNS >= 2 dots; reuse existing kinds as their owners
   document; never invent tokens outside the engine's closed vocabularies.
+  Selector tokens key your facts from the first mark; they join the shared
+  survival vocabulary only once the family has one genuinely modeled
+  `__predict` arm (family-wide, non-local - read the activation account).
 - FOOTPRINTS (`__disturbs`) are at-most claims: matching a shape asserts you
   enumerated EVERYTHING it disturbs. Include cells when unsure; leave the whole
   shape unmatched when the enumeration itself is unsure. A wrong footprint
   silently breaks OTHER people's lines - the sharpest knife in the system.
 - WRAPPER MEMBERS (`__lend_map`, entry forms) and KIND MEMBERS (`__resolve`,
-  `__disturbance_reaches`, `__state_stored_only_in`): do not author from
-  this skill's summary - read oracle-contract 5d-5i and
+  `__disturbance_reaches`, `__state_stored_only_in`, the File-kind binder):
+  do not author from this skill's summary - read oracle-contract 5d-5k and
   `08-wrappers-and-contexts.md` / `09-owning-a-kind.md` first, every time.
   `only`-named members demand a totalistic survey before authoring; the
   `disturbs nothing-else` tail record (reach bodies; dynamic `disturbs` bodies)
   is a completeness claim of the same weight - one line, the sharpest in the
-  file.
+  file. Verbs that rename/remove/link filesystem entries get NO `disturbs`
+  arm (total walls by rule). The identity-tier members of 5k (`__overlaps`,
+  per-selector identity, referent-transparent kinds) are not yet authorable.
+- LOADING AND CUSTODY. A dialect file's top level is load-inert (definitions,
+  known-value assignments, exact `.`, `unset -f`, subshell loading, include
+  guards) - never a working command. Source every package you depend on
+  behind a sentinel include guard (`[ "${x_loaded-}" != 'org.x/v1' ] && . …`
+  shape); helpers reached outside your own custody (your file plus what your
+  top-level `.` lines pull in) stay legal sh but suspend the vouch. Prefer the
+  sentinel guard over `command -v` for package dependencies. Contract:
+  oracle-contract section 7.
 - NAMES ARE PERMANENT. Function and kind names are a compatibility surface;
   choose once, evolve additively.
 
@@ -282,7 +318,7 @@ comments restating what self-evident shell does.
 
 ## Step 4 - verify before you call it done
 
-1. Walk `oracle-contract.md` section 8 (the battle-grade checklist), line by
+1. Walk `oracle-contract.md` section 9 (the battle-grade checklist), line by
    line, against your file. Actually walk it; do not assert it.
 2. Run `dorc lint` over your oracle file(s) - it needs no book and contacts no
    host, and it is the single gate that runs the mechanical checks: `shellcheck`
@@ -296,8 +332,8 @@ comments restating what self-evident shell does.
    on a fresh host.
 4. If the spike's harness is available and the task includes fixtures: e2e
    fixtures use INERT MOCKS only (`PATH=mocks-only` stubs) - never real
-   mutators; the central e2e runner (`cargo test -p dorc-cli --test e2e`) is
-   the only sanctioned executor of fixture material.
+   mutators; the central e2e runner (`mise run test:e2e`) is the only
+   sanctioned executor of fixture material.
 5. Report honestly: every judgment call with its rationale; every shape you
    declined and why; confidence marks (+SURE / ~SUSPECT / -GUESS) on the
    claims your research could not fully ground; every question that needs a
@@ -326,15 +362,33 @@ skill-up on the corpus wholesale from inside this task. NEVER enter
 - Wrappers, contexts, sudo-class questions:
   `Research/plans/27C-context-entry-probing-design.md` (THE current spec; its
   section 10 separates ruled from strawman).
+- Predict channels and the report-lane records (`predicts …`, the status
+  rule): `Research/notes/30D-predict-channel-claims-and-oob-confirmation.md`;
+  which marks mint a family's survival vocabulary:
+  `Research/plans/30J-predict-qualified-family-vocabulary.md`.
+- Book-environment changes and the pin-or-sever witness:
+  `Research/plans/30S-environment-identity-and-vouch-envelopes.md`.
+- Kind-owner questions - the finished definition, the File-kind binder, the
+  owed store-member redesign and index-kinds:
+  `Research/plans/30U-disturbance-reaches-and-finished-definitions.md`,
+  `Research/plans/30T-redirect-routing-and-authored-file-semantics.md`,
+  `Research/plans/30W-index-kinds-and-owner-answered-referents.md` (its
+  section 10 lists what is still unruled).
+- Loading, include guards, custody, `command -v`:
+  `Research/plans/30I-static-loading-and-bundle-emission.md` sections 2.2 and
+  3.4; the load principles in
+  `Research/plans/30P-emission-planner-and-inclusion.md`.
+- The map of every information shape an oracle can hand Dorc, with its status
+  and design-of-record: root `ORACLE_PROVIDES.md` (grep the `provides-*` slug).
 - Stdlib-specific obligations (if your oracle targets the standard library):
   `Research/notes/27Q-stdlib-handoff-preconditions.md` section 2 - binding
   teachings, including the marked-command-form mandate and the quality bars.
 - Named design tensions (when you sense two goals pulling apart): root
   `KNOBS.md` - reuse its slugs; never re-derive a tension under a new name.
-- Living examples of the current as-built spelling: `spike/e2e/cases/*/`
-  oracle fixtures (e.g. `context-entry-babby-elides/`, `carry-fsview-elides/`)
-  - real, parsed, tested; but remember they are test fixtures with inert-mock
-  bodies, not models of tool-research depth.
+- Living examples of the current as-built spelling: the e2e cases under
+  `spike/crates/cli/tests/*/` (e.g. `context-entry-babby-elides/`,
+  `carry-fsview-elides/`) - real, parsed, tested; but remember they are test
+  fixtures with inert-mock bodies, not models of tool-research depth.
 
 When a corpus dive surfaces a contradiction with the docs you read in step 0,
 do not resolve it yourself: the corpus outranks the docs on design truth, but
