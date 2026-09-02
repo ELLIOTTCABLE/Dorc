@@ -57,21 +57,34 @@ For the read-only shapes of your tool, the best model is usually the tool itself
 dpkg__predict() {
    case "${1-}" in
    -s) dpkg "$@" 2>/dev/null ;;
-   *)  return 2 ;;
+   *)  printf 'predicts none unmodeled %s\n' "${1-}" >>"${DREP_V1:-/dev/null}"
+       false ;;
    esac
 }
 ```
 
-Each line of a predict body is a claim, and the vocabulary is ordinary shell read
-the obvious way. Running the real tool (as above) claims every channel faithfully
-- the output is genuine, the exit status is genuine, and you have vouched the
-invocation is read-only. A `printf` claims "this is what stdout would be". An
-explicit `return` claims the exit status. Redirecting a channel to `/dev/null`
-declines exactly that channel - "I make no claim about stderr here", as above -
-which is honest and often right, since tools chatter unpredictable diagnostics.
-And `return 2` before doing anything declines the whole shape, exactly as in
-`is_converged`: mutating verbs, unmodeled flags, and anything you cannot stand in
-for read-only all take this exit.
+A predict speaks channel by channel, and the rules are simple once you know
+which way each channel defaults. The exit status is always claimed: whatever
+the function finally exits with is the prediction, every value included, so a
+`return 2` here predicts that the tool exits 2 - it is not a decline. Running
+the real read-only tool (as above) therefore predicts its status faithfully.
+Stdout and stderr go the other way: declined unless you say otherwise.
+Redirecting stderr to `/dev/null`, as above, changes nothing about the claim -
+stderr was already unclaimed - it only keeps noise out of the probe.
+
+To claim an output channel, write one line after the complete output:
+
+```sh
+printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"
+```
+
+It appends a short record to a channel Dorc provides through an environment
+variable (harmless off Dorc, where the default sends it nowhere), and its
+position matters: arriving after the bytes, it witnesses that the body got that
+far. To decline a whole shape - mutating verbs, unmodeled flags, anything you
+cannot stand in for read-only - write the same kind of line with `none`, as
+the `*` arm above does. That record, not an exit status, is how a predict
+refuses; write it for every unexplored shape before modeling any.
 
 The engine's use of these claims is all-or-nothing per consumer: your predict
 stands in for your tool inside a construct only if it covers every channel that
@@ -97,6 +110,14 @@ its own argument-slot marks the tool as a wrapper by construction, which opens a
 whole set of machinery covered on page eight. You do not declare wrapper-ness
 anywhere; you model the behavior, and the analyzer sees it.
 
+And one thing it enables for the marks you wrote on page four: the first
+genuinely modeled arm of a predict promotes the family's selector names into
+the shared vocabulary that the footprint machinery (page seven) reasons with.
+Until then those names still address your own facts; after it they can also
+keep other people's lines elided. The contract reference has the exact rule.
+
 <!-- quoted: spike/CLAUDE.md rul-only-oracle-bytes-ship, rul-argv-flows-bytes-do-not,
      inv-one-observable, role-menu predict vocabulary; 23O rul-role-split;
-     USER_STORY.md stage 4 predict-lane note; 273 predict-absorbs-wrapper-modeling -->
+     USER_STORY.md stage 4 predict-lane note; 273 predict-absorbs-wrapper-modeling;
+     notes/30D (channel defaults; predicts records; status keeps every value);
+     plans/30J (predict-qualified family vocabulary) -->

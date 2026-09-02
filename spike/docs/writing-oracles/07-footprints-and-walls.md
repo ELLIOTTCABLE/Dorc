@@ -76,7 +76,18 @@ its documentation, its file activity on a scratch machine, its source if you hav
 it. A disturbs body is also a probe body (the full page-three contract applies),
 and it may ask the tool read-only questions at probe time when the honest answer
 lives on the host - a package manager's file payload, for instance, is knowable
-only where the package is.
+only where the package is. A body that asks the host owes one more line at the
+end of every matched path that completes:
+
+```sh
+printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"
+```
+
+It trails the emissions, so its arrival proves the survey ran to the end; a
+body that dies or stops early leaves no record, and the whole claim is refused
+rather than read as a smaller one (a cut-short at-most claim would spare too
+much). A body whose emissions are all written out in the source needs no such
+line.
 
 Precision pays. Claims can carry selectors (`printf '%s\n' "$1"   : disturbs
 sm.dorc.Service@{enabled,active}` claims two cells of a service), and the finer
@@ -126,4 +137,5 @@ mornings stop costing everyone the rest of the book.
      v0.2 (disturbs verb, @{a,b} brace); 277 sections 3, 4c;
      spike/CLAUDE.md rul-flag-is-razor-residue, sparing-algebra,
      set-lifting-universal-meet; 271 rul-touches-becomes-disturbs,
-     rul-at-most-family-names -->
+     rul-at-most-family-names; plans/30U section 5 (the completion record
+     in dynamic disturbs bodies) -->
