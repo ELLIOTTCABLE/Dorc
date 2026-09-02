@@ -29,9 +29,6 @@ use crate::artifact::StdoutPosture;
 use crate::durable::{RootEnvironment, host_platform, standard_roots};
 use crate::results::RunClock;
 
-// -------------------------------------------------------------------------------------------------
-// the dependency-free generator (`30X:bin-seeded-entropy-is-dependency-free`)
-
 /// A tiny deterministic linear-congruential generator — the ONLY entropy a `Seeded` seam draws.
 ///
 /// Hand-rolled with the common 64-bit LCG constants (Knuth/PCG lineage), matching hostsim's
@@ -117,9 +114,6 @@ fn seeded_nonce(seed: u64) -> String {
     format!("s{:016x}", lcg.next_u64())
 }
 
-// -------------------------------------------------------------------------------------------------
-// the seeded clock
-
 /// The base instant a `Seeded` clock ticks from. Linear in the seed and rooted at a plausible 2026
 /// epoch so a re-blessed date reads as a real morning; monotonic in the seed so a runner giving
 /// later blocks larger seeds gets later — and distinct — receipt order tokens
@@ -136,9 +130,6 @@ const SEEDED_CLOCK_STEP_MS: u64 = 1000;
 const fn seeded_clock_base(seed: u64) -> u64 {
     SEEDED_CLOCK_EPOCH_MS.saturating_add(seed.saturating_mul(SEEDED_CLOCK_SPACING_MS))
 }
-
-// -------------------------------------------------------------------------------------------------
-// the value seams (clock, the entropies, nonce, posture, source-match)
 
 /// The clock member: a seeded ticking clock, a pinned instant, the real wall clock, or none.
 #[derive(Debug, Clone)]
@@ -297,9 +288,6 @@ impl SourceMatchSeam {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-// the production witness, and the fenced transport / roots seams
-
 /// Proof a value was minted by the production composition root ([`Seams::os`]).
 ///
 /// Its only constructor is private to this module and [`Seams::os`] holds the sole call, so
@@ -355,9 +343,8 @@ impl TransportSeam {
                 }
                 _ => dorc_transport::LocalDriver::same_spelling(local.shell),
             }),
-            // An unconfigured harness transport: a driver on an empty spelling, so a `--host` run
-            // that reaches it fails to spawn and lands on the ordinary not-attempted path rather
-            // than silently doing something. Harness `--host` cases set the transport seam.
+            // An unconfigured harness transport: an empty spelling, so a `--host` run that reaches
+            // it fails to spawn and lands on the ordinary not-attempted path. `--host` cases set it.
             Self::Local(None) => {
                 Box::new(dorc_transport::LocalDriver::same_spelling(PathBuf::new()))
             }
@@ -389,9 +376,6 @@ impl RootsSeam {
         standard_roots(host_platform(), environment)
     }
 }
-
-// -------------------------------------------------------------------------------------------------
-// the bundle, and the harness subtype
 
 /// The full bundle the engine's composition root consumes. Its fields are PRIVATE and its only
 /// constructors are [`Seams::os`] and `From<HarnessSeams>`, so no mixed fixture/production bundle is
@@ -542,9 +526,6 @@ impl From<HarnessSeams> for Seams {
         }
     }
 }
-
-// -------------------------------------------------------------------------------------------------
-// the one environment parser (`30X:loom-seams-are-sh-lines`)
 
 /// The narrow read the seam parser needs from an environment: one variable, or `None` when it is
 /// unset or empty. The real process supplies [`ProcessSeamEnv`]; lane B's modelled session supplies
@@ -752,9 +733,8 @@ fn parse_transport(environment: &dyn SeamEnv) -> Result<HarnessTransportSeam, Di
     let Some(raw) = environment.var(TRANSPORT_ENV) else {
         return Ok(HarnessTransportSeam::Unset);
     };
-    // `;` splits the optional interpreter off the END, never `:` — a Windows shell PATH carries a
-    // drive-letter colon, so a colon here would split the path itself; neither a shell path nor an
-    // interpreter name ever contains `;`.
+    // `;` (not `:`) splits the optional interpreter off the END: a Windows shell PATH carries a
+    // drive-letter colon a `:` would split, and neither a path nor an interpreter contains `;`.
     match raw.strip_prefix("local:") {
         Some(rest) => {
             let (shell, interpreter) = match rest.rsplit_once(';') {
@@ -810,8 +790,6 @@ mod tests {
 
     #[test]
     fn a_seed_makes_ids_and_keys_deterministic_and_independent() {
-        // The same seed reproduces byte-for-byte; the id and key streams never coincide, because
-        // each folds a different salt into the umbrella (the point of the per-seam salt).
         let mut a = SeededReceiptIdEntropy::from_seed(7);
         let mut b = SeededReceiptIdEntropy::from_seed(7);
         let (mut ra, mut rb) = ([0_u8; 32], [0_u8; 32]);
@@ -830,8 +808,6 @@ mod tests {
 
     #[test]
     fn the_seeded_clock_is_monotonic_in_the_seed_and_steps_within_a_block() {
-        // Later blocks (larger seeds) sit strictly later, so `--receipt-last` orders them; and a
-        // second read inside one block advances, so two publishes never share an order token.
         let RunClock::Ticking { at: block0, .. } = ClockSeam::Seeded(0).into_clock() else {
             panic!("seeded is ticking");
         };
@@ -860,8 +836,6 @@ mod tests {
 
     #[test]
     fn a_bare_environment_defaults_every_member_to_seeded_or_os() {
-        // No variables at all: the value seams default to the umbrella seed, posture/source-match
-        // to Os, transport unset, roots pinned. A bare harness session is deterministic.
         let seams = HarnessSeams::from_env(&env(&[])).expect("a bare environment parses");
         assert!(matches!(seams.clock, ClockSeam::Seeded(0)));
         assert!(matches!(seams.receipt_ids, ReceiptIdSeam::Seeded(0)));

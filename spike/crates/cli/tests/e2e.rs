@@ -1696,9 +1696,8 @@ fn run_replay_block(
         .collect();
     match words.split_first() {
         Some((&"dorc", rest)) if !rest.is_empty() => {
-            // A real run into the case's SHARED store: a later replay must read what an earlier one
-            // published. Each block offsets the ENTROPY seed by its ordinal so the publishes mint
-            // distinct receipt ids (a shared store, a shared clock — the name is the id).
+            // A real run into the case's SHARED store, each block offsetting the seed by its ordinal
+            // so the publishes mint distinct ids (shared store, shared clock — the name is the id).
             let mut child = harness.dorc_shared(dir);
             child.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
             child
@@ -1884,8 +1883,7 @@ fn run_round_trip(
     });
 
     let book = dir.join("book.sh");
-    // THE run: it publishes into the case's shared store, where a receipt-reading replay or gate
-    // can find it. Inspection re-drives go to throwaway stores instead ([`Harness::dorc`]).
+    // THE run: it publishes into the case's shared store; inspection re-drives use throwaways.
     let mut command = harness.dorc_shared(dir);
     command
         .arg(format!("--shim-dir={}", shim_dir.display()))

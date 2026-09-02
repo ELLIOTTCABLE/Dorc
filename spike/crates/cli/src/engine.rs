@@ -4270,10 +4270,9 @@ mod tests {
 
     #[test]
     fn production_main_calls_the_shared_engine() {
-        // The composition module drives the ONE shared engine rather than a re-implemented
-        // pipeline. Spelled `crate::engine::run(` now that composition lives in the lib
-        // (`lib-target-is-a-loom-seam`, re-cut); the `\nfn run(` needle still forbids a rival
-        // column-0 `run` reimplementation (the entry point is `pub fn run`, which this excludes).
+        // The composition module drives the ONE shared engine, not a re-implemented pipeline.
+        // Spelled `crate::engine::run(` now composition lives in the lib; `\nfn run(` still forbids
+        // a rival column-0 `run` (the entry point is `pub fn run`, which this excludes).
         let source = include_str!("compose.rs");
         assert!(source.contains("crate::engine::run("));
         assert!(!source.contains("\nfn run("));

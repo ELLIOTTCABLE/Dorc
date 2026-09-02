@@ -82,16 +82,13 @@ fn records() -> String {
 
 /// One invocation of the shipped binary, in `sandbox`'s profile and `at`'s directory.
 fn dorc(sandbox: &ProfileSandbox, at: &Path) -> Command {
-    // The seam-driven twin (`30X:bin-harness-sibling-not-produced-cli`), so this battery's
-    // determinism comes from the seams, not from harness-shaped environment the shipped binary no
-    // longer reads. A seeded run over the sandbox profile; source-match pinned off (no `git`, whose
-    // answer would flip with where a developer's temp directory sits); roots pinned to the sandbox.
+    // The seam-driven twin: determinism from the seams, not the harness-shaped env the shipped
+    // binary no longer reads. A DISTINCT seed per invocation (two runs mint different identities,
+    // as the OS source did — the store-selection cases turn on it); the clock is pinned separately
+    // ([`plan_at`]), so two runs can still share one recorded moment.
     let mut command = Command::new(env!("CARGO_BIN_EXE_dorc-harness"));
     command.current_dir(at);
     sandbox.apply(&mut command);
-    // A DISTINCT entropy seed per invocation, so two runs mint DIFFERENT identities exactly as the
-    // OS source used to — the store-selection cases turn on that. The clock is a separate seam a
-    // case pins independently ([`plan_at`]), so two runs can still share one recorded moment.
     command.env("DORC_SEED", u64::from(next_ordinal()).to_string());
     command.env("DORC_SEAM_SOURCE_MATCH", "pinned:off");
     command.env("DORC_SEAM_ROOTS", "pinned");

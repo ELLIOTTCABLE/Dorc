@@ -3182,9 +3182,8 @@ mod tests {
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
     #[test]
     fn run_contains_no_direct_output_writes() {
-        // The lint tool adapter's `run` (`fn run(&self, tool: …)`); the needle is specific so it
-        // never lands on the composition entry point `pub fn run(seams)`, which legitimately prints
-        // help/version at the edge.
+        // The lint tool adapter's `run` — the needle is specific so it never lands on the entry
+        // point `pub fn run`, which legitimately prints help/version at the edge.
         let source = include_str!("compose.rs");
         let start = source.find("fn run(&self, tool").expect("run function");
         let end = source[start..]
