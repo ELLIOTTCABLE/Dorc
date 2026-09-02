@@ -952,6 +952,7 @@ mise run loom -- ARGS     # the loom CLI on this workspace's toolchain (a bare `
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run lint:docids      # docID dangling-reference lint (rides check)
+mise run slugs            # regenerate root SLUGS.md, the generated slug index (the hook runs `slugs --check`)
 mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
 mise run verify:promote   # regenerate catalogue_lock.rs from corpus + claims (review = the diff)
 mise run verify:translate-check # strict read-only comparison against committed Lean output
