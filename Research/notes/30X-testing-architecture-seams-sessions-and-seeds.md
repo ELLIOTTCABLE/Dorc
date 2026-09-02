@@ -69,13 +69,20 @@
   correctness claim is `dorc-replay-is-production-semantics`. Its gap is never determinism (it is
   deterministic by construction) but COVERAGE: a world it cannot yet express is a typed decline,
   and the session runs in the process driver instead.
-- **`tier-e2e`** `[TYPED]` — THE tier for the product mechanized above unit level, in three
-  shapes: (a) looms as shell sessions driven through the harness binary (default — tests AND
-  prose); (b) dir-cases (legacy; a one-block session; converting to looms, expected to become
-  rare); (c) Rust-authored batteries — arbitrarily complex setup, spawning either the seeded
-  harness binary or the shipped `dorc` with `Os` seams, asserting STATE AND EXITS ONLY (files
-  that exist or do not, a keyset that was or was not created, a refusal code), never render
-  bytes. Render bytes belong in looms; that single rule is what separates (c) from (a).
+- **`tier-e2e`** `[TYPED]` — THE tier for the product mechanized above unit level, in two
+  shapes: (a) looms as shell sessions driven through the harness binary (the default — tests
+  AND prose); (c) Rust-authored batteries — arbitrarily complex setup, spawning either the
+  seeded harness binary or the shipped `dorc` with `Os` seams, asserting STATE, EXITS,
+  STRUCTURE and RELATIONS (files that exist or do not, a keyset that was or was not created, a
+  refusal code, a code slug present, two invocations byte-identical, an inequality) and never a
+  render GOLDEN. A byte-exact render belongs in a loom, always; a structural assertion over a
+  render is legal in (c) only where the bytes are un-goldenable (`Os` seams, foreign tools,
+  platform variance). Which cases may take shape (c) AT ALL is §3a's closed license, and that
+  license is subordinate to §3a's prose law `[TYPED 2026-09-02]`. The former shape (b), the
+  dir-case, was (a) serialized as files — one test in two spellings, since the loom runner
+  materializes a loom into exactly the dir layout — and is CONVERTED, not kept
+  (`[TYPED 2026-09-02: "no legacy e2e"]`; the seven in-tree counterexamples that drove the
+  ruling are `30Xa` §4).
 - **`tier-census`** — corpus-wide property tests: universally-quantified assertions over the
   whole case population ("no happy-path artifact contains a munged name"; "every lifted role row
   carries its parsed span"). A per-case golden cannot say "for all cases", so this is a real,
@@ -86,6 +93,47 @@
   decisions, "site 3 was licensed" is a loom golden and the inline world becomes a loom world.
 - **`tier-livetest`** — real ssh, real hosts, the `Os`/`RealSsh` row; gate/bless-tier, never the
   hot loop (`notes/26D`). Unchanged by this document.
+
+## §3a — what may be non-loom, and when `[TYPED 2026-09-02]`
+
+- **`law-all-prose-is-loomed`** `[TYPED]` — every user-facing sentence a surface renders has a
+  loom that renders it, and every other rule in this section is SUBORDINATE to this one. "My
+  testing situation is complex" never makes a surface loom-less: a complex situation grows a
+  loom for the prose AND, in extremis, a narrow specialized harness for its one un-loomable
+  assertion — additive, never instead. The loom carries every rendered byte; the harness carries
+  only the assertion a loom cannot state.
+- **`rul-non-loom-is-licensed-by-class`** — a test that is neither a loom nor a unit test is
+  legal only when what it asserts falls in one of seven classes, and then it asserts STATE,
+  EXITS, STRUCTURE or RELATIONS, never a render golden: (1) the suite's own machinery — runner,
+  harness, bless, hooks, discovery floors, fixpoint gates (a loom cannot test the loom runner
+  without regress); (2) a universal over the corpus, "for every case …" (`tier-census`); (3) an
+  invariant over seed-generated worlds (`seed-exploration-asserts-invariants`); (4)
+  platform-variant state where the property under test IS the platform difference (one
+  transcript serves both legs, and nothing is normalized after the fact); (5) bytes nobody
+  controls — a real tool's text, a real host's timings — asserted structurally, never goldened;
+  (6) a relation over un-goldenable bytes from `Os` seams — inequality across runs,
+  cross-invocation identity, a slug present; (7) timing and interleaving. A case outside these
+  is a loom. A session that would have to become a shell program whose golden is the word `ok`
+  is the signature of class (6), not a licence to write that program.
+- **`rul-loom-escape-stops-at-the-conductor`** `[TYPED]` — no builder mints a new non-loom test,
+  harness, driver, runner, gate family, marker, frontmatter key, or fixture shape on its own
+  judgment — "this one case needs a tiny special runner" included. Every such impulse STOPS and
+  is raised to at least a conductor, who rules it against the seven classes; anything the
+  classes do not cover is the human's. The repeated loom-escapes of past arcs are the failure
+  this rule ends; the detritus they left is what this arc removes.
+- **`rul-one-handbuilt-mechanism-per-arc`** `[TYPED]` — at most ONE new bespoke test mechanism
+  per arc (r30, r31, …): a harness, a driver, a runner, a gate family, a fixture shape, an
+  assertion vocabulary. A second in the same arc is refused by default — fold it into the arc's
+  one, or wait for the next. A new `#[test]` in an existing licensed battery is a test, not a
+  mechanism: growth WITHIN the inventory below is free, growth OF the inventory is what this
+  caps. The mechanisms are extremely fragile and problematic to maintain; that is the whole
+  reason.
+- **`inv-non-loom-inventory`** (lean-; the grandfathered set at this arc's close, kept current
+  here) — the one runner (looms, and the Rust batteries of shape (c)) · hostsim DST and the seed
+  sweeps · the floor lane (`test:floor`, measure-once manifests) · the real-tools lane
+  (`DORC_E2E_REAL_TOOLS`) · livetest · the census tests · the harness selftests (bless, hooks,
+  doctor, discovery floors, fixpoint gates). Each is one mechanism; a member added to one is a
+  test; a row added to this list is an arc's one mechanism and a conductor's ruling.
 
 ## §4 — the binary under test
 
@@ -299,6 +347,14 @@
   `consumer.rs run_remote_apply`, a scripted table keyed on `edge-fault` words that never runs
   an apply. Extending that table is a STOP, never a build — it is the accretion this document
   removes. Both surfaces are lane C's.
+- Reconciled 2026-09-02 (`30Xa` §3): the shipped `dorc` reads SIX harness-shaped variables, not
+  three — the three above plus `DORC_FIXTURE_NONCE` and the debug-only `DORC_TRANSPORT` /
+  `DORC_TRANSPORT_INTERPRETER` (`cli/src/transport_edge.rs`); lane A retires all six, transport
+  being a listed seam column. `dorc_receipt_local::model::ModelIo` is ordinary public code, so
+  lane C's boundary question is one new Cargo edge (`dorc-loom` depends on no receipt crate
+  today). `cli/tests` holds 108 looms and 109 dir-cases (106 with `mocks/`) beside two
+  `lint-real-*` dirs driven only by the real-tools lane; the multi-file `X/X.loom` shape has zero
+  instances; `tests-critical-law` has zero uses among the 24 keys.
 
 ### lanes (serial; one Opus builder per lane; stop-and-report between lanes; each lane ends green on `mise run both gate:full-quiet`; every brief carries the Safety block, step-zero, the comment budget with rip-don't-update, and `AGENTS.for-builders-only.md` first)
 
@@ -306,7 +362,7 @@
    and the shared `Seams::from_env` parser; `compose::run(Seams)` extracted from `main.rs`;
    `bin/dorc-harness.rs`; seeded id/key entropy over a dependency-free generator; the ticking
    harness clock (per-block base offset from the block ordinal, non-zero step); the shipped `dorc`
-   loses its three env pins; the e2e runner spawns the harness through a `dorc` shim on PATH.
+   loses all six env pins; the e2e runner spawns the harness through a `dorc` shim on PATH.
    Goldens must stay byte-identical (`bless:dry` clean — nothing in the current corpus renders an
    id). CHECKPOINT after A: the extraction is the risky refactor and the invariant
    `inv-division-at-the-narrowest-edge` is judged here.
@@ -330,20 +386,25 @@
    shape (c). Whether the failure is a sibling of `durable-receipt-unwritten` or a reason arm
    widening it is a product choice the conductor rules at this lane's checkpoint, never a
    builder call.
-4. **`lane-d-one-runner-and-frontmatter-collapse`** (medium-large; mostly mechanical once B
-   exists) — merge the runners; derive and report the driver; retire `run:`/`fixpoint:`;
-   collapse frontmatter per §5; hk/mise/bless plumbing follows.
+4. **`lane-d-one-runner-and-frontmatter-collapse`** (large; mostly mechanical once B exists)
+   — merge the runners; derive and report the driver; retire `run:`/`fixpoint:`; collapse
+   frontmatter per §5; hk/mise/bless plumbing follows; convert every remaining dir-case to a
+   loom through a one-off converter deleted after use, and delete the round-trip runner's dir
+   entry with its `NAME=value` marker grammar (`[TYPED 2026-09-02: "no legacy e2e"]`); the
+   `lint-real-*` dirs become the real-tools test's own fixture space; the `mise run test`
+   doctest noise and the known-broken `yardstick` task are tidied (conductor exceedances,
+   acked with the plan).
 
 ### lane law `[TYPED]`
 
 All four lanes are in scope. Leave no cruft and no half-completed work; the ONLY legal deferral
 is "a clear improvement, deeply wanted, that needs kernel mutation", recorded under
 `front-dogfood-ceiling` for the next kernel arc. Nothing else from a cleanup arc becomes a TODO
-row. Before any building step the human decides whether this design goes through
-`/opaque-review` (lane A brushes the receipt family's identity/key semantics; lane C touches
-`receipt-local`'s boundary); the conductor does not concern itself with anything opaque during
-design and may break invariants to reach excellent praxis; if the review is owed it precedes
-the first build.
+row. The human ruled (2026-09-02) that the stabilized design clears `/opaque-review` BEFORE
+the first build (lane A brushes the receipt family's identity/key semantics; lane C touches
+`receipt-local`'s boundary): an ACK continues, anything else returns to the human; the
+conductor does not concern itself with anything opaque during design and may break invariants
+to reach excellent praxis.
 
 ### rip list
 
@@ -351,7 +412,9 @@ the first build.
 `e2e.rs::scan_why_receipt` · its key-specific discovery floor · the three needles in
 `why30-receipt-rooted-surface.loom`) · the block-0-must-match rule in `run_loom` · the
 `split_whitespace` mini-grammar in `run_replay_block` · the constant clock in `Harness::dorc` ·
-the shipped binary's three env pins · `spine_baseline.rs` with its task and Cargo stanza · every
+the shipped binary's six env pins · the dir-case shape with its marker grammar and the
+round-trip runner's dir entry · the `X/X.loom` shape (zero instances) · `spine_baseline.rs`
+with its task and Cargo stanza · every
 frontmatter key in the §5 collapse · the `looms.rs`/`e2e.rs` split · the stale "cannot sign"
 header · the `tolerate`/`RAN_ORDER`-era normalizer vocabulary only if lane D finds it fully
 expressible as an export (otherwise it stays, on-target rule).
@@ -364,4 +427,7 @@ diagnostics driven over the real edge in-process; scripted `edge-fault` rows are
 `rul-fixture-identity-never-production` re-cut with the public-interfaces reading; the Safety
 block's "central e2e runner" sentence renamed to the one runner. `crates/aid/CLAUDE.md`: the
 runner pointers and the `seam-tolerated-nondeterminism` rule's spelling. `plans/282` §2/§7:
-in-place correction of the two superseded clauses (plans are ahistorical).
+in-place correction of the two superseded clauses (plans are ahistorical). `spike/CLAUDE.md
+flat-test-tree-and-loom-placement`: the dir and `X/X.loom` shapes leave the shape list.
+`crates/cli/CLAUDE.md`: §3a lands as law. `CONTRIBUTING.md`: the stale clean-worktree
+paragraph.

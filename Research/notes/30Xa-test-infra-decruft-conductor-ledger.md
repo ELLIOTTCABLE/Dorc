@@ -21,6 +21,10 @@
   (`dorc-loom/src/repository.rs::classify_prose_changes` — locks byte-equal to HEAD, the
   selected cases wholly staged or wholly unstaged, everything else ignored). Only the stale
   CONTRIBUTING sentence is corrected at close.
+- `rul-non-loom-licensing` `[TYPED 2026-09-02]` — recorded as `30X` §3a: all prose is loomed
+  (primacy); a non-loom test is licensed only by one of seven closed classes and asserts state,
+  exits, structure or relations; every loom-escape impulse STOPS and is raised to at least a
+  conductor; at most ONE new handbuilt test mechanism per arc. Propagates into every brief.
 - `30X` §11's lane law stands: no cruft, no half-work; the only legal deferral is
   kernel-mutating and lands under `30X:front-dogfood-ceiling`.
 
@@ -28,11 +32,12 @@
 
 | item | state |
 |---|---|
-| `ask-opaque-review-before-build` (30X: the human decides before the first build step) | OPEN |
-| `exceed-convert-dir-cases-to-looms` (109 cli dir cases → looms; one-off converter deleted after use; lane D tail) | OPEN — analysis §4; awaiting veto or ack |
-| `amend-shape-c-assertion-rule` (§4; the parent `30X:tier-e2e` bullet is `[TYPED]`) | OPEN — needs a typed ack |
-| `exceed-silence-doctest-noise` | proposed 2026-09-02; unvetoed |
-| `exceed-port-or-delete-yardstick` | proposed 2026-09-02; unvetoed |
+| the plan (lanes A–D, checkpoints after A and C, the exceedances, serial builders in the conductor worktree) | ACKED 2026-09-02 |
+| `ask-opaque-review-before-build` | RULED 2026-09-02: the stabilized plan clears `/opaque-review` BEFORE the first build; an ACK continues, anything else returns to the human |
+| `exceed-convert-dir-cases-to-looms` (109 cli dir cases → looms; one-off converter deleted after use; lane D tail) | ACKED 2026-09-02 ("no legacy e2e") |
+| `amend-shape-c-assertion-rule` (§4) | ACKED 2026-09-02 in sharpened form — `30X` §3a (prose primacy · seven classes · stop-at-the-conductor · one mechanism per arc) |
+| `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
+| `exceed-port-or-delete-yardstick` | acked with the plan 2026-09-02 |
 | `note-stale-review-repair-worktree` (`.claude/worktrees/r30-review-repair1`, tip inside `ai/main`; not this arc's) | reported; untouched |
 
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
@@ -151,7 +156,7 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | B `lane-b-session-driver-and-rip` | the shell-session process driver; gates by kind, no position rules; own roots per session; the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); batteries split by assertion kind; `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | not dispatched |
 | C `lane-c-in-process-receipt-world` | the in-process driver composes the real `LocalReceiptEdgeV1` over `ModelIo` (the new Cargo edge) with seeded entropy and the ticking case clock; the 37 `why-total-*` rows authorable; varied-seed default + the two affordances; `gate-two-drivers-agree`; the post-dispatch durable report authored over that world, witnessed by state-only e2es | not dispatched |
 | — checkpoint C | the durable-failure diagnostic's shape (sibling code vs reason arm) is the conductor's product ruling | — |
-| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion if acked; `lint-real-*` re-homed; the doctest noise; yardstick | not dispatched |
+| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the doctest noise; yardstick | not dispatched |
 
 ## §6 — residue accounting (empty, or kernel-only under `30X:front-dogfood-ceiling`, at close)
 
