@@ -40,6 +40,11 @@ suspended and never traded against performance.
   survival names the claims it rested on; every entered context names the
   consents that licensed it. *Publishing an oracle is accepting that your name
   is in that chain.*
+- Your file is not the attention product. Elision exists to shorten the
+  admin's book: a dialect file's bodies are contracted read-only and are never
+  themselves candidates for removal from a plan, and nothing you write can
+  clone, rename, or specialize a body per call site. There is always exactly
+  one authored line, by one person, answerable for anything that runs.
 
 ## 2. The family: names, roles, extension
 
@@ -68,14 +73,29 @@ mean something different. Current per-command roles:
 Current per-kind roles:
 - `kind__resolve()`,
 - `kind__disturbance_reaches()`,
-- `kind__state_stored_only_in()`.
+- `kind__state_stored_only_in()`,
+- the filesystem binder of the base library's File kind (section 5j; its
+  member name is not yet minted).
 
 The `only` naming convention binds authorship posture: *a role with `only` in
 its name is complete-by-contract* - consumers act on its negative space, so
 authoring it requires a totalistic survey first. A role without `only` grows arm
-by arm, each matched arm complete for its own shape only. The reach member lost
-its `only` deliberately: its completeness contract is a spelled act inside the
+by arm, each matched arm complete for its own shape only. The reach member
+carries no `only` because its completeness contract is a spelled act inside the
 body (section 5h), not a property of the name.
+
+A family also has a vocabulary rung, and it is crossed by an act rather than a
+declaration. The selector tokens your marks mint (section 4) always name your
+facts and widen your backings; they take part in selector-distinct survival -
+letting another author's footprint on one cell of an entity spare a fact on a
+sibling cell - only once the family has one genuine `cmd__predict()` modeling
+at least one invocation shape. A predict that declines every shape does not
+count; one honest partial model does, and it need not mention the selectors it
+activates. The rung is family-wide: a modeled `push` arm activates a selector
+written later in a `gc` verdict. Nothing about probing, vouching, or elision at
+your own sites waits on this rung; it gates only the shared survival vocabulary,
+and the plan tells you, at the one site where it mattered, when the missing
+predict was the only thing standing between a guard and an elision.
 
 ## 3. The answer channel: exit-status law
 
@@ -90,9 +110,10 @@ fixed, permanent table:
 
 Only 0 and 1 ever carry a verdict; 2 communicates "I cannot meaningfully speak
 for this" (collapsing error-states, NYI, instability, and so on). Everything at
-2 and above is currently one flat "confused" sink, semantically flat. The table
-binds verdict-bearing members alone: a predict's exit status is a prediction of
-its tool's status, never an answer read against this table (section 5b).
+2 and above is one flat sink, and it stays flat: no table, now or later, reads a
+value there as a verdict, and nothing you write can make one. The table binds
+verdict-bearing members alone: a predict's exit status is a prediction of its
+tool's status, never an answer read against this table (section 5b).
 
 - Stray away from 'flattening' shell-vocab operators like `||` that will paper
   over exit-status-semantics; and *extremely avoid shell-flipping-and-flattening
@@ -208,8 +229,20 @@ The rules on marks:
   and every meta mark do not consume the status.
 - An observe (`:?`) elsewhere in a verdict body widens that fact's staleness
   surface (its backing) to include the observed cell - always safe, often
-  obligatory for honesty. Write one, as its own statement, whenever your verdict
-  consults state beyond the cell it answers for.
+  obligatory for honesty. Write one whenever your verdict consults state beyond
+  the cell it answers for.
+- Mark every cell your exit status reads. This is the obligation the previous
+  rule serves, stated as a contract: a verdict whose status depends on two
+  pieces of state must name both, or the fact it mints has a hole in its
+  backing, and a later command that writes the unnamed cell can be judged not
+  to touch the fact. The canonical trap is the two-operand compare - a `cmp`
+  of a candidate file against its destination reads both files, so a mark
+  naming only the destination is under-marked; the candidate is a `reads`.
+  Dorc warns when a body's visible path-bearing reads exceed its marks, but the
+  warning is a net for the obvious case, never a proof of completeness.
+- Vocabulary participation follows the family rung (section 2): selector
+  tokens key your facts and widen your backings from the first mark, and join
+  the shared survival vocabulary once the family has a genuine predict.
 - Emission members type what they emit with a verb-led mark. `cmd__disturbs()`
   and `kind__disturbance_reaches()` write `: disturbs KIND` or
   `: disturbs KIND@SELECTOR`; `cmd__lend_map()` writes `: lends DIMENSION`;
@@ -226,12 +259,21 @@ The rules on marks:
   refused only where it would forge a multi-cell verdict, since one status
   cannot witness two.
 
-What this engine reads today. The grammar describes a mark-block: several marks
-may share one physical line, and a block may spill onto continuation lines (each
-re-opening with its own carrier). Today's engine reads one mark per physical
-line, so an extra read or a second meta claim is disclosed as its own line. The
-block form is specified in the grammar spec and will be adopted later without
-changing any spelling written now.
+The mark-block. Several marks about one statement form one block, and a block
+is an unordered set: no mark's meaning depends on another's presence or
+position, and the only thing a mark loses by moving off the head is its sugar.
+Within one physical line, chain marks after one intro (`: COORD reads COORD2
+safe-across user`, never `: X : Y`); across lines, each continuation re-opens
+with its own carrier and accrues to the same block:
+
+    foobar status --certs-current -- "$dest"   : org.foob.Certs:"$dest"@synced
+       :? org.foob.Policy:"$dest"@current
+       : safe-across user
+
+A continuation line is decoded afresh by the head rules above, so a bare
+coordinate on a continuation reads as `asserts` - and, under the one-verdict
+rule, is refused when a verdict already heads the block. Write extra reads with
+their `:?` sugar or their word.
 
 Binds. `name : KIND = "$value"` assigns and declares the value an entity of the
 kind. Binds name entities, never cells; strip reduces a bind to the plain
@@ -245,11 +287,13 @@ value then inherits its identity. Skip binds for values that are not entities
 (counts, modes, free text) and for entities you never mark - an unused bind is
 noise, not safety.
 
-The inline form above is the one this engine reads. The grammar also defines a
-trailing bind that rides an assignment - `FOO="bar" := KIND` (sugar) or the word
-`: bind KIND` - which is what would let the whole annotation surface sit on `#:`
-comments; but that trailing form is not yet accepted in production (it is
-diagnosed, not parsed), so write the inline bind for now.
+Two spellings, one meaning. The inline form types the value where it lives. The
+trailing form rides an ordinary assignment - `dest="$1"   := org.foob.Certs`
+(sugar) or `dest="$1"   : bind org.foob.Certs` (word) - and, on the comment
+carrier, `dest="$1"   #:= org.foob.Certs`. Prefer the comment carrier for
+binds: an unstripped inline or colon-form bind on an assignment fails harder
+under a raw shell run than a colon mark on a command does (the shell reads `:=`
+as an unknown command), while `#:=` is inert on every route.
 
 The `dorc:` prefix. `dorc:sh -c '...'` is the one prefix-position spelling:
 full-analysis invitation on an interpreter head. Bare `sh -c '...'` is the
@@ -277,7 +321,8 @@ itself when-guidance:
    drifted-day books their shape, and you can survey its verbs completely.
 5. `cmd__lend_map()` and `cmd__enter()` - only if your tool is itself a
    wrapper.
-6. The `kind__*` members - only if you own a shared vocabulary.
+6. The `kind__*` members - only if you own a shared vocabulary; the filesystem
+   binder only if that vocabulary is the File kind.
 
 ### 5a. `cmd__is_converged()` - the verdict member
 
@@ -307,29 +352,57 @@ Author holds true:
   counts beyond what is checked.
 - That multi-operand shapes are either fully checked (every operand) or
   declined; a partially-checked yes is a wrong yes.
+- That every cell the answer reads is marked (section 4): a compare-shaped
+  verdict marks both operands.
+- That the answer stands under any environment the body's own hygiene admits.
+  A book may change the environment between two sites of your tool (`export
+  AWS_PROFILE=prod`, or a leading `AWS_PROFILE=prod foobar ...` prefix), and
+  the same argv then means a different world. Dorc probes such a site only
+  when every changed variable is witnessed by your body one of two ways:
+  pinned - your body consumes the variable faithfully, and the probe replays
+  the book's value for exactly that variable - or severed - your body's own
+  shell provably keeps ambient variables from reaching the check. Anything
+  unwitnessed withholds the probe, and the site guards or runs. You owe
+  positive speech only: name what you consume; never enumerate what you are
+  sensitive to. The severing idiom is deliberately over-defensive shell,
+  `env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin foobar status -- "$1"`, and it
+  is the expected spelling rather than a helper wrapper. Variables with shell
+  meaning (`PATH`, `IFS`, the `ENV` class) are not yours to witness: a book
+  that changes one below your site is no longer running the tool you
+  described, and the site walls regardless. The exact shape of the
+  pinned-or-severed witness may still shift; the obligation is ruled.
 
 Failure modes:
 - a wrong 0 causes this tool's line to be skipped or guarded-away when it was
   needed - under-execution, at your own tool's site, attributed to this function
   by name. A wrong 1 merely runs a converged line (safe, noisy).
-- A mutating body breaks the probe promise itself (see section 7, first entry).
+- A body that reads an ambient variable while looking severed measures the
+  wrong world under your name; a body that leaves an extra read unmarked lets
+  its fact be spared past a write that touched it. Both are attributed to this
+  function.
+- A mutating body breaks the probe promise itself (see section 8, first entry).
 
 ### 5b. `cmd__predict()` - the modeling member
 
 Invoked with an invocation's arguments. Stands in for the command inside probe
 constructs: its stdout, stderr, and exit status are consumed as the command's
-predicted observables. The channel rules (this is the surface that most
-recently shifted; the spellings below are current):
+predicted observables. The channel rules:
 
-- Status is always predicted, and every value of it: the body's ordinary exit
-  status simply is the prediction, whatever it is. There is no reserved
-  decline status here; section 3's table belongs to verdict members alone.
+- Status is always predicted, and every value of it: the body's ordinary final
+  exit status simply is the prediction, whatever it is - Dorc never searches
+  backward for a more interesting command or decides a fallthrough was
+  accidental. There is no reserved decline status here; section 3's table
+  belongs to verdict members alone.
 - Stdout and stderr are declined by default. A body claims one positively by
   writing a `predicts` record to the report stream (section 6a) after the
   modeled output - `printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"` -
   and the record deliberately trails the bytes it vouches for: its arrival is
   the completion witness, so a body that dies partway leaves an unclaimed,
-  unusable channel rather than a half-true one.
+  unusable channel rather than a half-true one. The record's payload is one
+  comma-separated channel set over the words `rc`, `stdout`, `stderr` and
+  their `no-` negations (`predicts rc,stdout,no-stderr`); a set naming both
+  polarities of one channel, or a duplicate word, is refused before any host
+  is contacted.
 - A shape the body does not model is refused out-of-band, with the whole-shape
   decline record - `printf 'predicts none unmodeled %s\n' "$1"
   >>"${DREP_V1:-/dev/null}"` - where `none` declines every channel at once
@@ -337,14 +410,31 @@ recently shifted; the spellings below are current):
   are the first lines to write, not the last: fence every unexplored shape
   before modeling any. A predict never spells refusal through its status; a
   `return 2` here is nothing but a prediction that the tool exits 2.
+- The record is itself a command, and it has a status. Written after the
+  modeled tool, the `printf` becomes the body's final status unless you
+  preserve the tool's; do that in plain shell (capture `$?` and `return` it),
+  because Dorc will not repair the body for you. There is no mark spelling for
+  channel claims and no statement Dorc inserts into your body; the fixed
+  `printf` line is the whole mechanism, and only that literal form carries
+  authority - a format built in a variable, an `echo`, or a sink assigned
+  through an intermediate variable remain ordinary report noise and claim
+  nothing.
 - Delegation of the real (read-only) tool remains the natural body shape; the
-  channel claims are still yours to speak, channel by channel.
+  channel claims are still yours to speak, channel by channel. Redirecting a
+  channel to `/dev/null` is not a decline: stdout and stderr are declined by
+  default, and only the record changes that.
 
 Write it when your tool appears inside constructs rather than alone on lines:
 pipelines and compounds cannot probe without a stand-in for every participant,
 and an admin's hand-written guard invoking your tool lifts only through your
 predict. The plan's hints point at exactly these sites; until they do,
-`cmd__is_converged()` alone is usually the better spend.
+`cmd__is_converged()` alone is usually the better spend. The second reason to
+write one is the family's vocabulary rung (section 2): a plan that names a
+guard your selector vocabulary would have turned into a survived elision, and
+names the missing predict as the reason, is asking for exactly one honest
+modeled arm. Expect that first arm to activate every selector the family has
+ever marked, in arms it never modeled; read the activation account the
+authoring tools show you before publishing.
 
 Licenses: substitution of this body for the tool inside composed probes and
 lifted hand-guards, but only where every channel the surrounding construct
@@ -355,6 +445,8 @@ A predict never licenses eliding anything by itself.
 Author holds true:
 - That every unexplored shape is fenced with a `predicts none` record before
   any shape is modeled; refusal never rides the status.
+- That a positive stream record sits after the complete value, and that the
+  status you meant survives it.
 - That every claimed channel is faithful for every matched shape, on hosts
   unlike theirs.
 - That no matched shape mutates.
@@ -391,7 +483,10 @@ Write it when your tool is the wall that costs drifted-day books their shape:
 churn-heavy, early-in-book commands (index refreshes, cache warms, log
 rotations) whose effects you can genuinely enumerate. Do not write it
 speculatively - an unsurveyed verb is better left unmatched, and a tool that
-rarely runs mid-book earns little from a footprint.
+rarely runs mid-book earns little from a footprint. Leave it entirely unwritten
+for verbs that rename, remove, or link filesystem entries (`mv`, `rm`, `ln`,
+`rmdir`): a footprint for those needs identity machinery that does not yet
+exist, so those verbs stay total walls by rule.
 
 Licenses: under the admin's explicit risk flag only - survival of downstream
 proven facts past this command actually running, wherever fact-backing and
@@ -625,12 +720,79 @@ Failure modes:
 - The engine's structural check narrows but does not replace your duty: it
   verifies the measuring body's reads, not your claim about the substrate.
 
+A redesign of this member is written and awaiting its rulings: per-arm
+`stored-in` emissions under a member without `only`, a `stored nothing-else`
+completion record on the pattern of section 5h, and invariance lines naming
+lifecycle axes (a boot, a login session, a machine, a host) beside the context
+dimensions above. Until those rulings land, the spelling on this page is the
+contract; author against it.
+
+### 5j. The filesystem binder - a File-kind member, name not yet minted
+
+The shell, not a tool, places bytes when a line redirects (`cat >f <<EOF`,
+`printf ... >f`). No tool oracle can name that target - the path never reaches
+argv - so the File kind carries one more member: the binder. Dorc parses the
+redirect into a locator (the target word, the working-directory state at that
+line, and the open mode) and hands the locator to the binder, which answers
+with a footprint claim or declines. The member's name is still being chosen;
+its contract is ruled.
+
+- The claim is `sm.dorc.File:<path>`, always whole-entity, never a selector: a
+  tool can act on the open file description it was handed (change its mode,
+  say) in ways neither author can name per cell, so the claim must collide
+  with every cell of the written file.
+- The body measures rather than assumes. An existing target binds only when
+  the body finds an ordinary regular file on a persistent filesystem from a
+  short authored allowlist; an absent target binds only when its parent and
+  the open mode establish an ordinary-file creation. FIFOs, devices,
+  directories, sockets, `/proc`, `/sys`, FUSE and network filesystems, and
+  every unknown object or filesystem type decline. A path-prefix denylist is
+  not a conservative closure; measuring the object is.
+- It is a footprint body in every other respect: it ships on the same rails
+  as `cmd__disturbs()`, runs read-only, ends every completing path with the
+  completion record, and a body death refuses the whole claim.
+
+Write it only if you maintain the base library's File kind. What it buys every
+admin: a redirect stops walling the *rest* of the book. Their own
+`cmp -s conf.new conf || cp conf.new conf` stays and guards - it reads the file
+the write produced, and it is already the right check - while unrelated lines
+below recover their elisions wherever the File kind's finished definition
+licenses the comparison.
+
+Failure modes: exactly those of section 5c, attributed to the binder's arm; a
+tool oracle cannot overreach into routing even by error, because the routing
+information is not in its inputs.
+
+### 5k. Members designed, not yet ruled
+
+Three further owner declarations are designed for the identity tier and await
+their rulings; none has a settled spelling, and none is a contract yet.
+
+- A per-selector identity relation, declared by a kind's owner: which notion of
+  "same" a selector's comparisons consult (two hard-linked names are one file
+  for contents and two entries for existence).
+- A referent-transparent declaration for kinds whose names are minted unique
+  identifiers (a boot id, a machine id), making name inequality a real
+  separation for that kind alone.
+- `kind__overlaps()`: two regions, or a region and an entity, measured in
+  place - overlap (exit 0, collide), provably disjoint (1), cannot say (2 or
+  higher). The lazy answer is cannot-say; the disjoint arm is the deliberate
+  one, and it is consumed only under the admin's risk flag.
+
+Write nothing against these yet. Until they land, two files of your kind that
+are genuinely distinct still collide, which is the safe floor.
+
 ## 6. The probe execution environment
 
 What a body may assume when it runs:
 
-- It receives argv only. No environment contract exists beyond what your own
-  file establishes; assume `set -u`-grade strictness in consumers.
+- It receives argv, and an environment it must not trust. The site's
+  arguments arrive through your argument parsing. The book's environment
+  changes arrive only as far as your body witnesses them (section 5a): a
+  variable you pin is replayed at the book's value; everything else is
+  whatever the probe host has, and a body that reads it unpinned and
+  unsevered is not probed below a book environment change. Assume `set
+  -u`-grade strictness in consumers.
 - It may run many times, concurrently with other bodies, batched with
   strangers' bodies on the same host.
 - In the apply lane the identical bytes run as guards; nothing may depend on
@@ -659,11 +821,16 @@ append-only; three verbs exist today:
 - `decline <class> <tail>` - the classed refusal accompanying a verdict body's
   in-band `return 2`, naming which of the four kinds of no this is.
 - `predicts <channel-set>` and `predicts none <reason>` - a predict body's
-  channel speech (section 5b). Load-bearing both ways: a positive claim
+  channel speech (section 5b). The channel set is one comma-separated field
+  over `rc`, `stdout`, `stderr`, `no-rc`, `no-stdout`, `no-stderr`, with
+  `none` as the all-declined sugar. Load-bearing both ways: a positive claim
   licenses substitution, and `predicts none` is the whole-shape refusal - a
   predict's only refusal, its status being reserved wholly for prediction.
   Fencing the unexplored with these is among the first and most primary things
-  a predict author writes.
+  a predict author writes. Because these records mint authority, only the
+  literal fixed form is recognized; a line that reaches for the `predicts`
+  verb but breaks its closed grammar is refused before any host is contacted,
+  while every other verb and every free-form line stays tolerated noise.
 - `disturbs nothing-else` - the completion witness of dynamic at-most bodies
   and the finished-definition act of reach bodies (sections 5c and 5h).
   Load-bearing: it is the license for cross-kind sparing.
@@ -674,7 +841,7 @@ it vouches for, so its arrival proves the body reached it.
 - Sink. A body writes with `>>"${DREP_V1:-/dev/null}"`. The probe lane sets the
   variable to a file inside a scratch directory it created exclusively for this
   run, and drains that file afterwards. Where it cannot establish such a
-  directory it sets the variable to `/dev/null` instead and captures nothing —
+  directory it sets the variable to `/dev/null` instead and captures nothing -
   your writes stay total either way, exactly as they are off-Dorc, where the
   `:-/dev/null` default makes every write a `set -u`-safe no-op. Nothing you
   write ever needs to change: the variable's value is chosen by the engine, per
@@ -736,7 +903,57 @@ wants to explain a gap in your model is usually a missing distinction in the
 model. Warning on a covered (answered) arm has no verb in v1 by design; it is a
 deliberately-held seam pending exactly this question.
 
-## 7. The failure catalogue, ranked
+## 7. Loading, packages, and custody
+
+An oracle file is loaded the way any shell library is: the admin's book (or a
+prelude the admin passes on the command line) sources it with `.`, and it may
+source its own dependencies in turn. Dorc reads those load lines statically,
+before any host is contacted, and never discovers a file at run time. What
+that costs you, and what it buys:
+
+- Keep the top level load-inert. A dialect file's top level may hold function
+  definitions, assignments of known values, `.` of a path Dorc can resolve
+  from what it holds, `unset -f`, subshell-scoped loading, and the include
+  guard below. It never holds a command that does work: a top-level mutator,
+  an `eval`, or a `.` of a file only the host has is a loud refusal or a point
+  past which nothing you define carries authority.
+- Own your dependencies with an include guard. A package that needs another
+  package's helpers sources it behind an ordinary sentinel test, and the
+  target package sets the sentinel as its last act:
+
+      # dorc-lang/v0.2
+      if [ "${org_example_common_loaded-}" != 'org.example.common/v1' ]; then
+         . "$SM_ORACLE_ROOT/org.example.common/entry.oracle.sh"
+      fi
+
+  The variable name, the literal, and the root variable are yours; Dorc
+  recognizes no naming scheme, only the shape: a tested value and a guarded
+  `.` whose target defines the helpers you then call. This is the same guard
+  that stops double initialization off Dorc. Write one for every dependency
+  you rely on inside a vouching body.
+- Custody decides what your vouch may rest on. A verdict that calls a helper
+  ships with that helper only when the helper is yours to answer for: defined
+  in your file, or in a file your own top-level `.` (guarded or not) pulled
+  in. A helper that happens to be loaded beside you - by the book, by a
+  command-line prelude, by another package - is legal shell and stays
+  callable, but it composes nothing: the vouch that reached it is suspended,
+  the site runs or guards, and the plan tells you which call to source
+  explicitly. Ambient helpers, callbacks, and plugins are ordinary shell and
+  never a refusal; they simply cannot license.
+- `command -v` guards are supported shell and remain conservative. Testing
+  whether a command resolves asks a wider question (functions, aliases,
+  builtins, `PATH`) than "is this exact package loaded", so a definition that
+  hangs off `command -v jq || jq() { ... }` is not yet a binding Dorc can rest a
+  license on. Use the sentinel guard for package dependencies; keep
+  `command -v` for what it is good at, checking a real binary before
+  delegating to it. The wider model is designed and owed; the spelling stays.
+- Two live definitions of one family's member withhold that family. If a
+  frame sees two definitions of `foobar__is_converged` at once, neither
+  licenses anything until the admin blesses one (an `unset -f` before their
+  own `.`, say). Sourcing an oracle twice through a diamond is fine; two
+  different bodies under one name is not.
+
+## 8. The failure catalogue, ranked
 
 Worst first, with the repair path that attribution buys:
 
@@ -745,32 +962,39 @@ Worst first, with the repair path that attribution buys:
    none after the fact - prevention is the entire section-3-of-page-three
    discipline. The engine refuses provable mutation at plan time; everything
    unprovable rides your vouch.
-2. Wrong-world measurement (mis-sited entry; wrong lend value). Confident
+2. Wrong-world measurement (mis-sited entry; wrong lend value; a body that
+   looks severed from the book's environment but reads it). Confident
    verdicts about a context the site does not denote; can under- or
    over-execute. Repair: decline-on-unverifiable siting; the static
-   peel-coherence check; attribution to the wrapper family.
-3. Wrong at-most speech (a disturbs omission; a finished-definition record
-   written before its survey was truly total; a false invariance; a resolver
-   split). Silent under-execution of someone else's line, behind the admin's
-   risk flag (or the carry machinery, for invariance). Repair: fully
-   attributed to the claiming line or record; next plan re-measures and
-   self-heals; fix the one file, every consumer heals. (A reach body's omitted
-   edge without the record is not in this class: it merely walls.)
-4. Wrong yes (verdict 0 that should not have been). Under-execution at your
-   own tool's site; attributed to your function. Repair: fix the arm; consider
-   whether the verb belonged in the decline column all along.
+   peel-coherence check; the environment witness; attribution to the wrapper
+   family or the body.
+3. Wrong at-most speech (a disturbs omission; a binder that binds what it
+   should have declined; a finished-definition record written before its
+   survey was truly total; a false invariance; a resolver split). Silent
+   under-execution of someone else's line, behind the admin's risk flag (or
+   the carry machinery, for invariance). Repair: fully attributed to the
+   claiming line or record; next plan re-measures and self-heals; fix the one
+   file, every consumer heals. (A reach body's omitted edge without the
+   record is not in this class: it merely walls.)
+4. Wrong yes (verdict 0 that should not have been), and the under-marked read
+   that lets a right yes be wrongly kept past a write. Under-execution at your
+   own tool's site; attributed to your function. Repair: fix the arm, or mark
+   the read; consider whether the verb belonged in the decline column all
+   along.
 5. Wrong channel claim (predict). Corrupt composed-probe results, bounded by
    coverage rules. Repair: decline the channel; delegate instead of asserting.
 6. Over-caution everywhere else - declines, walls, unclaimed channels, absent
-   members. Not a failure. This is the system working; the only cost is value
-   not yet earned.
+   members, suspended helpers. Not a failure. This is the system working; the
+   only cost is value not yet earned.
 
-## 8. The battle-grade checklist
+## 9. The battle-grade checklist
 
 Before publishing, walk the file once against each line:
 
 - Marker present; strip output verified to parse and run identically under
   both pinned floor shells; `shellcheck` and `checkbashisms` clean.
+- Top level load-inert; every dependency behind an include guard; no helper
+  your vouching bodies reach lives outside your custody.
 - Every verdict member: unknown-shape fallthrough to 2; existence gates on
   every delegate; no `!`, no `|| true`, no status arithmetic; foreign exit
   vocabularies remapped; pipeline tails audited.
@@ -781,32 +1005,48 @@ Before publishing, walk the file once against each line:
   known - literal format strings, so the class reads statically.
 - Every body: read-only by design (not by privilege), no scaffolding
   side-effects, no dry-run flags taken on faith, answers from durable state,
-  reentrant, cheap enough to pay the check-tax forever.
-- Marks: one assertion per line; observes disclosed for every extra cell a
-  verdict reads; complement senses on `:!`, never hand-inverted.
+  reentrant, cheap enough to pay the check-tax forever; every environment
+  variable it depends on either consumed deliberately or shut out with
+  `env -i`-class hygiene.
+- Marks: one assertion per line; every cell a verdict's status reads marked,
+  extra reads as observes; complement senses on `:!`, never hand-inverted.
 - Wrapper families: every dimension enumerated in `lend_map`; peel positions
   coherent between members; entry form non-interactive, siting-verified or
   declining; `safe-across` only on bodies re-audited for shifted execution.
 - Every predict: unexplored shapes fenced with `predicts none` records, first
   - never through the status; channels claimed positively (`predicts`
-  records), every claim record trailing the bytes it vouches for; statuses
-  predicted, never answered.
+  records), every claim record trailing the bytes it vouches for, the tool's
+  status preserved past it; statuses predicted, never answered; the selector
+  activation account read once the first modeled arm exists.
 - Footprints and kind members: matched shapes surveyed to completion;
-  unsure-cells included; unsurveyed shapes unmatched; dynamic emission bodies
-  ending every completing matched path with their completion record, exactly
-  once; the finished-definition record written only where the survey is truly
-  total, arm by arm; `only` members authored from a total survey or not at
-  all.
+  unsure-cells included; unsurveyed shapes unmatched; entry-mutating verbs
+  left unmatched; dynamic emission bodies ending every completing matched
+  path with their completion record, exactly once; the finished-definition
+  record written only where the survey is truly total, arm by arm; `only`
+  members authored from a total survey or not at all.
 - The file as a shipped artifact: header comment stating coverage, declines,
   and judgment rationale; kinds documented; names treated as permanent.
 
 <!-- quoted: spike/CLAUDE.md invariants (license-and-trust, separation,
      observables, authored-surface, language-law blocks), decline-class-emission,
      report-lane-versioned-entry, report-surface-massaging-carve; 271 rulings
-     ledger; plans/281 mark grammar v0.2 (supersedes 277 section 4 / 278 section 6);
-     277 sections 1-6; 278 whole; 276 dialect rulings; plans/27C sections
-     1-7; 23O settled law; USER_STORY.md bought-unsoundness; 27Q quality bars;
-     27W:rul-emission-grammar-v1, rul-versioned-entry, rul-report-noise-tolerant,
-     rul-advise-verb-deferred (modeling-crutch); plans/30U (finished-definition
-     gate; disturbs nothing-else; witness-iff-licensure); notes/30D
-     (predict channel claims; predicts records; verdict-partition-stays-separate) -->
+     ledger; plans/281 mark grammar v0.2 (sections 2-3 mark-block, 8 bind forms;
+     supersedes 277 section 4 / 278 section 6); 277 sections 1-6; 278 whole; 276
+     dialect rulings; plans/27C sections 1-7; 23O settled law; USER_STORY.md
+     bought-unsoundness; 27Q quality bars; 27W:rul-emission-grammar-v1,
+     rul-versioned-entry, rul-report-noise-tolerant, rul-advise-verb-deferred
+     (modeling-crutch); plans/30U (finished-definition gate; disturbs nothing-else;
+     witness-iff-licensure); notes/30D (predict channel claims; predicts records;
+     rul-predict-channel-token-set; rul-predict-status-is-function-aggregate;
+     rul-predict-record-form-is-closed; verdict-partition-stays-separate);
+     plans/30J (rul-predict-authorship-qualifies-family-vocabulary; section 5
+     activation account); plans/30S (model-pin-or-sever-composition,
+     rul-positive-speech-only, rul-engine-owns-shell-resolution-vars,
+     rul-vouch-holds-under-witnessed-env, rul-idiomatic-plus-offramp); plans/30T
+     (req-verdict-marks-every-read-cell; section 3.2 binder contract; section 6
+     v0 floor; section 5k identity tier); plans/30W sections 1-3, 10 (owed
+     rulings); plans/30I sections 2.2, 3.4 (include guards; custody;
+     rul-ambient-dependencies-are-ordinary-shell; pin-command-v-load-model);
+     plans/28K rul-silent-shadowing-refuses; plans/30P
+     law-no-unsoundness-below-a-blind-act; plans/30L rul-region-universe-is-book-custody,
+     rul-no-specialized-shell -->
