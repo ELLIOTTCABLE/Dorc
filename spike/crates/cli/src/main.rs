@@ -3893,6 +3893,65 @@ mod tests {
         }
     }
 
+    /// A remote apply REFUSES `--no-receipt`, and refuses it at the parser — before the plan file,
+    /// the keyset, the store, the clock, or the transport (`30R:publication-and-dispatch-boundary`:
+    /// the intent publication IS the dispatch authority, and V1 has no bypass).
+    ///
+    /// The named plan does not exist, and that is the assertion: reading it is the FIRST thing
+    /// `ship_consented_apply` does, so a refusal arriving here reached no I/O at all. The same argv
+    /// WITHOUT the flag parses, which is what keys the refusal to the flag rather than to the form.
+    /// Before this repair the flag parsed cleanly and the run went on to publish rich intent and
+    /// outcome receipts anyway.
+    #[test]
+    fn a_remote_apply_refuses_the_receipt_opt_out_before_it_reads_anything() {
+        let shipping = vec![
+            "apply".to_owned(),
+            "--host=web1".to_owned(),
+            "--plan=no-such-plan.sh".to_owned(),
+        ];
+        let mut declining = shipping.clone();
+        declining.push("--no-receipt".to_owned());
+
+        let refusal = parse_args_from(declining)
+            .expect_err("a remote apply cannot decline the receipt that authorizes its dispatch");
+        assert_eq!(refusal.code.slug(), "apply-receipt-not-optional");
+        assert!(
+            parse_args_from(shipping).is_ok(),
+            "the same invocation without the flag is ordinary"
+        );
+    }
+
+    /// The flag survives wherever it still means something: nothing else publishes an
+    /// `ApplyIntent`, so nothing else is asking for a bypass by declining a receipt.
+    ///
+    /// Both cells matter and neither implies the other. A remote PLAN probes read-only and mints no
+    /// mutation permit, so its receipt is a record and the admin may refuse it. A local `apply`
+    /// renders an artifact to stdout and contacts nothing. Refusing either would have turned a
+    /// narrow authority rule into a blanket ban on a subtractive lever
+    /// (`28D:pay-levers-are-subtractive`).
+    #[test]
+    fn the_receipt_opt_out_survives_everywhere_it_still_means_something() {
+        for argv in [
+            vec![
+                "plan".to_owned(),
+                "--host=web1".to_owned(),
+                "--book=book.sh".to_owned(),
+                "--no-receipt".to_owned(),
+            ],
+            vec![
+                "apply".to_owned(),
+                "--book=book.sh".to_owned(),
+                "--no-receipt".to_owned(),
+            ],
+        ] {
+            let spelled = argv.join(" ");
+            let Ok(Invocation::Analyze(args)) = parse_args_from(argv) else {
+                panic!("`{spelled}` publishes no intent, so declining a receipt is ordinary");
+            };
+            assert!(args.no_receipt, "`{spelled}` keeps the admin's refusal");
+        }
+    }
+
     /// [`probe1`] but ENTRY-bearing (a wrapped-context site): the runtime-EntryFailure input.
     fn probe1_entry(fact: FactKey, site_kind: ProbeSiteKind) -> ProbePlan {
         let mut p = probe1(fact, site_kind);

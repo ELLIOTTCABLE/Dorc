@@ -1058,4 +1058,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "apply-receipt-not-optional",
+        when_fires: "a `dorc apply --host` invocation carries `--no-receipt`. cli/lib.rs parse_args_from, beside the other apply-host argument rules, so the refusal lands before the plan file, the keyset, the store, the clock and the transport. No params: one flag, one invocation shape. Every other mode keeps the flag, remote `dorc plan --host` included.",
+        why: "30R publication-and-dispatch-boundary — a remote apply's mutation permit is minted only by publishing its exact ApplyIntent, and V1 has no bypass, so the flag asks for something this invocation cannot do. Refusing beats the two alternatives: honouring it would BE the bypass, and ignoring it wrote rich intent/outcome receipts under a flag that said none would be written (30Rs fix-apply-receipt-opt-out). Remediation register (help) wanted: say that the apply's receipt is its dispatch authority rather than a log, and that dropping the flag is the whole fix.",
+        params: &[],
+        example: "[unwritten: apply-receipt-not-optional]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
