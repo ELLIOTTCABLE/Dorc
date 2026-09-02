@@ -21,6 +21,8 @@ mod posix_script;
 mod precommit_gate;
 mod preflight;
 mod prose_census;
+mod slug_near;
+mod slugs;
 mod step_globs;
 
 fn main() -> ExitCode {
@@ -43,6 +45,7 @@ fn main() -> ExitCode {
         Some("gate-floor") => gate_floor::run(args.get(1..).unwrap_or_default()),
         Some("fmt-detached") => fmt_detached::run(args.get(1..).unwrap_or_default()),
         Some("docids") => docids::run(args.get(1..).unwrap_or_default()),
+        Some("slugs") => slugs::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
         // shares its one renderer rather than re-deriving the screen.
@@ -57,7 +60,7 @@ fn main() -> ExitCode {
             );
             eprintln!(
                 "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
-                 preflight, gate-floor, doctor, xfail-census, fmt-detached, docids"
+                 preflight, gate-floor, doctor, xfail-census, fmt-detached, docids, slugs"
             );
             ExitCode::from(2)
         }
