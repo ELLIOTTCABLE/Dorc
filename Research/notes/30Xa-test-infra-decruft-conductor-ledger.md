@@ -6,6 +6,14 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
+## §0 — HELD (2026-09-02)
+
+`/opaque-review` `30-reviewA` (pass `initial`, range `3b999e47^..633fd954`) returned, verbatim:
+`NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`. The arc is STOPPED before
+lane A: no builder dispatched, nothing accrues on this branch, the path is the human's and stays
+unopened by the conductor. Resumption is a human act; a resumed candidate is re-reviewed under a
+fresh identity.
+
 ## §1 — remit and standing rulings
 
 - `remit-30X-is-the-floor` — build every 30X lane; mild exceedance licensed only toward a
@@ -33,7 +41,7 @@
 | item | state |
 |---|---|
 | the plan (lanes A–D, checkpoints after A and C, the exceedances, serial builders in the conductor worktree) | ACKED 2026-09-02 |
-| `ask-opaque-review-before-build` | RULED 2026-09-02: the stabilized plan clears `/opaque-review` BEFORE the first build; an ACK continues, anything else returns to the human |
+| `ask-opaque-review-before-build` | RULED 2026-09-02: the stabilized plan clears `/opaque-review` BEFORE the first build; an ACK continues, anything else returns to the human. OUTCOME: `30-reviewA` → NACK (§0); held |
 | `exceed-convert-dir-cases-to-looms` (109 cli dir cases → looms; one-off converter deleted after use; lane D tail) | ACKED 2026-09-02 ("no legacy e2e") |
 | `amend-shape-c-assertion-rule` (§4) | ACKED 2026-09-02 in sharpened form — `30X` §3a (prose primacy · seven classes · stop-at-the-conductor · one mechanism per arc) |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
