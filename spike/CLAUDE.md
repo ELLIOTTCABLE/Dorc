@@ -281,8 +281,9 @@ prompt you write:
   user/identity is excluded, because a shift there changes ACCESS to the body's own
   reads (EACCES flips the answer of a structurally-closed body). netns: `net.*` is
   per-netns, so the model must forbid `undivided-by-transit-across netns` on network kernel state. The
-  pass is a correctness surface the spike must build and prove; empty-oracle world
-  stays byte-identical (no closure attempted).
+  pass is BUILT — `oracle::carry` (the invariance index + the read-set closure; e2e
+  `carry-fsview-*`); its completeness against the audited safe-list is unverified;
+  the empty-oracle world stays byte-identical (no closure attempted).
 - **value-predictions** (`275` · `271:rul-value-prediction-species`) — every
   byte-shaped belief beyond program text (captured stdout, stored rcs, composed
   outputs, register-resolved values) is a value-prediction; its provenance and

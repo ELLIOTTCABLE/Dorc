@@ -85,23 +85,55 @@ section affected by a design change: grep the slug, re-synthesize the section.
 ## Correctness sources and precedence
 
 On any conflict, the corpus outranks these docs, and these docs get re-synthesized
-(never locally patched into disagreement). Authority order:
+(never locally patched into disagreement). These docs describe the product AS RULED:
+ahistorical, current-truth, allowed to run ahead of what the spike's Rust implements.
+Where a ruling exists, teach it; where only a design-of-record exists, teach it with
+one light status sentence; where nothing is ruled, teach nothing as settled. Authority
+order:
 
 1. Root docs: `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`,
    `KNOBS.md` (human-audited).
-2. `spike/CLAUDE.md` (the invariant registry; densest correct summary).
-3. The dialect and contract notes: `Research/plans/281` (THE mark grammar,
-   dorc-lang v0.2 - supersedes the mark grammar of `277` section 4 and `278`
-   section 6), `Research/notes/278` (base-dialect floor reference),
-   `Research/notes/277` (entity algebra), `Research/notes/276` (dialect rulings),
-   `Research/plans/27C` (wrapper/context spec), `Research/notes/23O` (settled
-   oracle-contract law), `Research/notes/27Q` (stdlib authoring preconditions).
-4. The e2e fixtures under `spike/e2e/cases/` for as-built concrete spellings.
+2. `spike/CLAUDE.md` (the invariant registry; densest correct summary - its
+   "The authored surface" and "Language & off-ramp law" sections first).
+3. The design-of-record documents, newest ruling first on any topic:
+   - the mark grammar: `Research/plans/281` (THE grammar, dorc-lang v0.2 - supersedes
+     `277` section 4 and `278` section 6); the entity algebra `Research/notes/277`; the
+     rulings ledger `Research/plans/271`; `Research/notes/278` (one-page reference,
+     DRAFT - assembles, never rules);
+   - the verdict member and the license: `Research/plans/239`, `Research/notes/23O`
+     (settled oracle-contract law), `Research/notes/24M` (the rung default),
+     `Research/plans/24L` (the typeless floor);
+   - the predict member: `Research/notes/30D` (+`30Da`) - per-channel claims, the
+     `predicts` records, status keeps every value; `Research/plans/30J` - which marks
+     mint a family's survival vocabulary and whose dialect a comparison reads;
+     `Research/notes/27W` - decline classes and the report lane;
+   - footprints, reach, and finished definitions: `Research/plans/30U`; the store
+     topology note `Research/notes/272`;
+   - kind ownership and index-kinds: `Research/plans/30W` (design-of-record; its
+     section 10 lists the rulings still owed - teach none of them as settled);
+   - wrappers and contexts: `Research/plans/27C` (THE spec), `Research/notes/273`,
+     `Research/plans/24S` section 0;
+   - environment identity: `Research/plans/30S`;
+   - redirect routing, the filesystem binder, the identity tier: `Research/plans/30T`;
+   - loading, packages, custody, include guards, `command -v`: `Research/plans/30I`
+     (sections 2.2, 3.4, 15), `Research/plans/28K`, `Research/plans/28M`,
+     `Research/plans/30P` (the load principles), `Research/notes/30Ic`;
+   - elision regions and the authorship law: `Research/plans/30L`;
+   - eval'ers and the dialect floor: `Research/notes/274`, `Research/notes/276`;
+   - stdlib authoring preconditions: `Research/notes/27Q`.
+   Read `Research/notes/275`, `26B`, `26C` only under `30D` (stdout/stderr are
+   default-declined; `275` section 6 is not ratified).
+4. Root `ORACLE_PROVIDES.md` - the map of every information shape an oracle can hand
+   Dorc, with its status and design-of-record; grep the `provides-*` slug to find which
+   document owns a shape before re-synthesizing a section.
+5. The e2e cases under `spike/crates/cli/tests/` for as-built concrete spellings. The
+   as-built lags the ruled product; a fixture is never evidence that a ruled spelling
+   is wrong.
 
-Where the design is still provisional (some role-member names, some mark spellings,
-all CLI surface), the docs teach the current spelling and say so lightly, without
-turning the prose into a hedge-forest. One sentence of "this spelling may still
-shift" at first use is enough.
+Where a spelling is still provisional (the binder's member name, `cmd__enter`, the
+report sink's name, the pinned-or-severed witness's exact shape), the docs teach the
+current spelling and say so lightly, without turning the prose into a hedge-forest.
+One sentence of "this spelling may still shift" at first use is enough.
 
 ## The reader-path rubric
 
