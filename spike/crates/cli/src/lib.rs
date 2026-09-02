@@ -543,6 +543,10 @@ pub struct Args {
     /// (`AID-NEEDS:law-receipts-are-sensitive`), so refusing one must be typeable. Per-invocation and
     /// subtractive-only, which is the shape `28D:pay-levers-are-subtractive` demands of anything in
     /// this family — there is no widening sibling and never will be.
+    ///
+    /// Refused outright under `dorc apply --host`, where the intent publication is the dispatch
+    /// authority itself: the parser answers `apply-receipt-not-optional` rather than letting a
+    /// subtractive lever ask for a bypass V1 does not have.
     pub no_receipt: bool,
     /// `--receipt-last`: derive the root from the store's newest recognized document.
     ///
@@ -1252,6 +1256,19 @@ pub fn parse_args_from(raw: Vec<String>) -> Result<Invocation, InvocationError> 
                 flag: "--plan",
                 mode: "dorc apply --host",
             },
+        )));
+    }
+    // A remote apply's intent publication IS its dispatch authority (`30R:publication-and-dispatch-
+    // boundary`; V1 has no bypass), so `--no-receipt` there asks for something the invocation
+    // cannot do. Refused rather than honoured (that would be a bypass) and rather than ignored
+    // (which is what it used to be: the flag was accepted and rich receipts were written anyway).
+    // HERE, in the parser, so the refusal lands before the plan file, the keyset, the store, the
+    // clock, and the transport — every one of which the apply route touches on the way to
+    // publishing. Non-mutative plan production keeps the flag: declining to write about a run that
+    // changes nothing takes no authority away.
+    if ships_a_rendered_plan && no_receipt {
+        return Err(Diag::new_spanless_site(DiagCode::ApplyReceiptNotOptional(
+            dorc_aid::diag::ApplyReceiptNotOptional,
         )));
     }
     // `probe` is IN although it emits no plan: it is the round-trip's own first PHASE, and refusing

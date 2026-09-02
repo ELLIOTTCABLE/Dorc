@@ -404,6 +404,9 @@ pub enum DiagCode {
     /// `--plan`). The inverse of [`DiagCode::CliFlagRequiresMode`], and a separate world: there the
     /// flag was wrong for the mode, here the mode is missing an input it cannot default.
     CliModeNeedsFlag(CliModeNeedsFlag),
+    /// A `dorc apply --host` invocation asked to write no receipt, which that invocation cannot
+    /// honour: its intent publication is what authorizes the first mutative dispatch.
+    ApplyReceiptNotOptional(ApplyReceiptNotOptional),
     /// A `dorc apply --host` invocation could not turn the bytes it was handed into something a
     /// dispatch permit may be minted over, so it dispatched nothing.
     ApplyPlanNotDispatchable(ApplyPlanNotDispatchable),
@@ -557,6 +560,7 @@ impl DiagCode {
             DiagCode::CliFlagsMutuallyExclusive(_) => "cli-flags-mutually-exclusive",
             DiagCode::CliFlagRequiresMode(_) => "cli-flag-requires-mode",
             DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
+            DiagCode::ApplyReceiptNotOptional(_) => "apply-receipt-not-optional",
             DiagCode::ApplyPlanNotDispatchable(_) => "apply-plan-not-dispatchable",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
@@ -2148,6 +2152,16 @@ pub struct CliShimDirUnwritable {
     pub detail: ForeignBytes,
 }
 
+/// Payload of [`DiagCode::ApplyReceiptNotOptional`]: `--no-receipt` under a remote apply.
+///
+/// No fields, because nothing varies: one flag, one invocation shape. The refusal exists because
+/// `30R:publication-and-dispatch-boundary` gives V1 no bypass — the permit that authorizes the
+/// first mutative dispatch is minted only by publishing the intent — so accepting the flag would
+/// have to mean either dispatching unrecorded or persisting anyway, and the second is what it
+/// silently did.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyReceiptNotOptional;
+
 /// Payload of [`DiagCode::ApplyPlanNotDispatchable`]: bytes that could not be bound to an intent.
 ///
 /// One code carrying a closed reason WORD rather than three sibling codes
@@ -3037,6 +3051,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::CliFlagsMutuallyExclusive(_)
         | DiagCode::CliFlagRequiresMode(_)
         | DiagCode::CliModeNeedsFlag(_)
+        | DiagCode::ApplyReceiptNotOptional(_)
         | DiagCode::ApplyPlanNotDispatchable(_)
         | DiagCode::CliFileNotFound(_)
         | DiagCode::CliFilePermissionDenied(_)
@@ -3456,6 +3471,7 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::CliStripNeedsPath(CliStripNeedsPath)
         | DiagCode::CliNoBookGiven(CliNoBookGiven)
+        | DiagCode::ApplyReceiptNotOptional(ApplyReceiptNotOptional)
         | DiagCode::LintNoLintableFiles(LintNoLintableFiles)
         | DiagCode::DorcShUsage(DorcShUsage) => vec![],
         DiagCode::CliStripGotAFlag(CliStripGotAFlag { got }) => vec![ours("got", got.clone())],
