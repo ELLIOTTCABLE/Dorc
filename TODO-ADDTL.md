@@ -72,10 +72,59 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 
 * [ ] **live-surface polish (sharp edges handed over)** — `--host` absent from `--help` (loom-editable chrome) · `--results`/`--help` grammar mismatch stands. None blocks usage; papercuts catalogued in the CONTRIBUTING draft + `notes/26F`.
 
+## Owed for pivot-books that analyze, and work, correctly
+
+*(Minted 2026-08-31 from the pivot/reactive up-to-speed synthesis. Standing frame, acked same
+day: a pivot is sh-spelled or it is nothing — no native non-sh ordering/pivot/orchestration
+construct will exist; what remains open is how far Dorc LIFTS sh-spelled orchestration.)*
+
+* [ ] **`26K` §0b — THE pivot kernel sitting (design half)** — one worldview, then the rulings:
+  local-exec as a supported mode (zero tests; the pivot prerequisite) · host×epoch scope
+  typing (`26K:sit-scope-ownership`'s four arrivals; one-scope-per-book interim ruling ACKED
+  (human, 2026-08-31), oracle-declared execution-scope stays rejected) · the ssh
+  scope-spelling ruling (strawman `chafe-ssh-lends-scope-not-dimensions`: lend-subsumes vs
+  fifth-sibling vs context-slot/scope-entry; collides `273` wrapper-locality; `26Lb`'s
+  transit-species-of-wrapper wonder) · transit classing under the transit-relative law
+  (converged transit casts no boundary; rebuild-day semantics) · wait ratification
+  (`26K:sit-wall-transparent-delay-loops` + `26Lb` §2's wait-is-a-guard-spelled-as-a-loop
+  reframe; the `StatusIterated` converged-at-entry carve is a deliberate license-widening,
+  human-flag before build) · the terminology rider (human suspects epoch = dimensions + a
+  temporal analysis; standard PLT terms; explainers before solutions).
+* [ ] **`26L:finding-future-values-remain-future` — the epoch×capture boundary** — no document
+  rules what the engine may claim below an un-fired transit, nor how captures
+  (`IP=$(doctl …)`) feeding post-transit argv behave; `26K`'s planned-transit-as-analysis-event
+  has never been reconciled with `26B`/`26C`'s monotone-knowledge frame (which models
+  refinement, never authored invalidation). The single-shot posture belongs to the §0b
+  sitting; the reactive half to the revival.
+* [ ] **`26K:sit-stdin-copy-exec-amendment`** — copy-then-exec vs pipe; load-bearing for pivots
+  (the secret-push `<./secrets/…` line is specimen two —
+  `pivot-vps-standup.note:chafe-book-lines-consume-the-artifact-channel`); human suspicions
+  on the downsides banked; a design sitting before any `260` §5 change.
+* [ ] **`26Lb:lean-cross-host-facts-gate-never-license` — scoping + the owed review** — the lean
+  is scoped (human, 2026-08-31) to NATIVE orchestration features (which include per-host
+  *different* books); within a pivot/local book, cross-host dataflow is ordinary sh and
+  largely un-preventable — punt. A security/threat-model review (opaque-review-tier) of
+  pivot books' cross-host influence is OWED and explicitly out-of-scope for the current
+  design work.
+* [ ] **`26B:gate-binding-site-coherence` — the r26-revival entry gates** (revival-owned, after
+  the r30 close) — the un-ruled R2-entry question (freeze-in-artifact vs
+  structure-preserving folds) · the `26C` §1 stability-resolution formal confirmation · a
+  FRESH `26C` §7-style quiet-welding audit against the r30 kernel BEFORE R0 (26C verified
+  against the r27 tip only; `28Q`/`30K`/`30L`/Spine/`30R` landed since; NB `30L`'s iteration
+  axis = loop-member while `26C`'s `iter=` = probe-iteration — two axes, one word) ·
+  `26B:need-quiescence-witness-at-mint` (executor-era termination detection, mechanism
+  unowned) · `26B:split-semantic-versus-concurrency-holes` (the batch driver cannot surface
+  the transport holes; the `142`-shape executor work owns them).
+* [ ] **`26B:ask-trial-counts-capture-walls`** — the capture lane's sizing evidence was never
+  collected (the r25 ceremony died); count dynamic-value walls in the live-run era, and size
+  `26C` §5b's narration depth from real `dorc why` critique, before the revival invests.
+  Rider: the lane starving until `30D` stdout claims exist is correct-by-design (`26Lb` §3).
+* [ ] deletes-are-hard (`061` theme 6) — the establish/kill model's product argument; sitting-visible.
+
 ## Demoted (real; does not block live testing)
 
-* starter-oracle-stdlib — zero non-fixture oracles exist; important-and-pending, NOT blocking (human-ruled 2026-07-27: stdlib/multihost/first-blood ceremony have mostly stood in the way of experimenting; scrappy hand-written oracles are part of the experiment itself). The verdict-only tier is authorable against in-tree mechanisms once the taught-decline idiom (above) adjudicates; predict-bearing families wait for the scheduled `30D`/`30J`. On-ramp when picked up → `27Q` (§2 preconditions discharged); authoring trap: converged≠no-op adequacy, unmeasured → `24U` §2.
-* slow-planner-cost-model — foreign convergence/preview checks can take minutes, and planning-duration is itself staleness; no design exists; must be sat before the terraform/ansible-class delegation oracles are authored → `26L` §11, `KNOBS:kPROBING` (check-tax).
+* starter-oracle-stdlib — zero non-fixture oracles exist; important-and-pending, NOT blocking (human-ruled 2026-07-27: stdlib/multihost/first-blood ceremony have mostly stood in the way of experimenting; scrappy hand-written oracles are part of the experiment itself). The verdict-only tier is authorable against in-tree mechanisms once the taught-decline idiom (above) adjudicates; predict-bearing families wait for the scheduled `30D`/`30J`. Pivot priority when revived: transit verbs lead (an unmodeled, unguarded transit walls every day — `26K` concl-boot-books), then the pivot wall-cluster (timeout · ssh-keygen · curl · getent). On-ramp when picked up → `27Q` (§2 preconditions discharged); authoring trap: converged≠no-op adequacy, unmeasured → `24U` §2.
+* slow-planner-cost-model — foreign convergence/preview checks can take minutes, and planning-duration is itself staleness; no design exists; must be sat before the terraform/ansible-class delegation oracles are authored → `26L` §11, `KNOBS:kPROBING` (check-tax) · `26Lb` frame-conductor-cost-model (a kept converged wait's check-tax = one serial round-trip per wait, in apply order).
 * book-acceptance-carve — the value-ladder for accepting unmarked/bash/zsh-ish *runbooks* (never oracles) is undesigned/unowned; design inputs banked → `276:rul-kwhichsh-oracle-scoped`, `276`.
 * probe-safety-backstop — seccomp `socket(AF_INET)` observe + `--faithful` one-leaf-one-exec, both unowned; probe honesty rides author discipline until then → `077`, `24O` item-13.
 * posh-leg-of-the-floor-is-unexercised — `printf` is not a posh 0.14.1 builtin, so under the corpus's `PATH=mocks-only` rail no shipped oracle body's emissions have ever run under posh: the corpus half of the `kWHICHSH` weld's "dash ∩ posh identically" promise is dash-shaped. The opt-in `mise run test:floor` lane (r28) proves six sentinel manifests only; corpus-wide posh coverage of emitter bodies is unowned → `spike/CLAUDE.md` floor-differential-lane-opt-in, `28P`.
