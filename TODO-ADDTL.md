@@ -78,18 +78,26 @@ Update-by-overwriting this section; keep this descriptive header/prompt, just re
 day: a pivot is sh-spelled or it is nothing — no native non-sh ordering/pivot/orchestration
 construct will exist; what remains open is how far Dorc LIFTS sh-spelled orchestration.)*
 
-* [ ] **`26K` §0b — THE pivot kernel sitting (design half)** — one worldview, then the rulings:
-  local-exec as a supported mode (zero tests; the pivot prerequisite) · host×epoch scope
-  typing (`26K:sit-scope-ownership`'s four arrivals; one-scope-per-book interim ruling ACKED
-  (human, 2026-08-31), oracle-declared execution-scope stays rejected) · the ssh
-  scope-spelling ruling (strawman `chafe-ssh-lends-scope-not-dimensions`: lend-subsumes vs
-  fifth-sibling vs context-slot/scope-entry; collides `273` wrapper-locality; `26Lb`'s
-  transit-species-of-wrapper wonder) · transit classing under the transit-relative law
-  (converged transit casts no boundary; rebuild-day semantics) · wait ratification
-  (`26K:sit-wall-transparent-delay-loops` + `26Lb` §2's wait-is-a-guard-spelled-as-a-loop
-  reframe; the `StatusIterated` converged-at-entry carve is a deliberate license-widening,
-  human-flag before build) · the terminology rider (human suspects epoch = dimensions + a
-  temporal analysis; standard PLT terms; explainers before solutions).
+* [ ] **`26K` §0b — the pivot kernel sitting: design half largely DONE (`notes/26M`,
+  `plans/30W`); build half + rulings owed** — the worldview settled on index-kinds: Host
+  entered via ssh's mapped lend + the Host binder; Boot/Machine/LoginSession measured; a
+  "transit" is a mutator of an index-value cell; no locus/axis/region vocabulary exists
+  (see `30W`). Still owed: local-exec as a supported mode (zero tests; the prerequisite) ·
+  wait ratification (`26K:sit-wall-transparent-delay-loops` + `26Lb` §2's
+  wait-is-a-guard reframe; the `StatusIterated` converged-at-entry carve is a
+  license-widening, human-flag before build) · the six `30W` §10 rulings,
+  `rule-unreserve-host-as-entered-index` first (it collides with
+  `271:rul-axis-vocabulary-v1`'s reserved-never `host`), then the razor question for
+  incarnation-invariance (the cost-collapsing one) · the `FactKey.context` as-built audit
+  before the context-slot generalization (retrofit-hostile).
+* [ ] **the payload-declaration speech-act (`26M` §payload)** — the one engine core under
+  BOTH carrier forms (adjacent-book dispatch and inline payload; equal priority,
+  human-ruled): the carrier-geometry survey owed before any spelling · fidelity as an
+  authored, pre-applied normalizer function (ruled) · custody-over-there · inline render
+  whole-or-nothing (~lean). Language-surface holes, cardinal-capable if missed: payload
+  identity must join the `26C` Question identity; expansion-siting across the payload
+  boundary (which world evaluates each `$X`); entry recipes must carry the site's
+  transport flags or decline.
 * [ ] **`26L:finding-future-values-remain-future` — the epoch×capture boundary** — no document
   rules what the engine may claim below an un-fired transit, nor how captures
   (`IP=$(doctl …)`) feeding post-transit argv behave; `26K`'s planned-transit-as-analysis-event

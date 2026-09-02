@@ -36,6 +36,21 @@ loom goldens vs state-only Rust e2e. Four serial lanes, all in scope, no deferra
 kernel-mutating improvements; the human decides on `/opaque-review` before any building step.
 The design statement and its build-planning tail: **`notes/30X`**. Start there.
 
+## DESIGN SITTING (2026-08-31 → 09-02 — pivot-book language surface; OPEN, banked for a rewind)
+
+Fable⇄human design sitting toward the human's concrete target (an idempotent Vultr
+standup + first-config + apps book). Ledger and live queue: **`notes/26M`** (the
+ack-ledger — only typed acks count; the tabled apply-side-transport exploration; the
+payload-declaration decomposition; the recast trail). Design-of-record: **`plans/30W`** —
+pivot books reduce to index-kinds in the context slot (Host entered via ssh's mapped
+lend + the Host binder; Boot/Machine/LoginSession measured), the ternary relation
+gaining region OVERLAP, the lifted ask-the-owner discipline, and the per-arm claim
+family with completion sentinels; its §10 lists six owed rulings
+(`rule-unreserve-host-as-entered-index` first — it collides with
+`271:rul-axis-vocabulary-v1`) and a seven-item build sketch. Nothing welded; the
+license-consuming half stays behind `kSURVIVAL` and the human's economic deferral.
+Owed-work register: `TODO-ADDTL` "Owed for pivot-books". Resume from `26M`'s queue.
+
 ## CURRENT STATE (2026-08-31 — the r30/30R close arc is COMPLETE and folded; the round ceremony is the human's)
 
 Arc conduct: **`notes/30Va`** (remit · rulings · acks · close). `ai/main` (`ea295267`)

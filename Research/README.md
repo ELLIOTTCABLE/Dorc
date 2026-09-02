@@ -121,6 +121,12 @@ and carries the license-contamination map.
   the negative findings) + `notes/26Lb` (the 2026-08-24/25 brainstorm ledger: per-story
   rulings, kills, banked residues). Both EXPLORATION/BRAINSTORM-tier by their own
   headers — cite no commitments from them.
+- **Pivot books: worlds, lifecycle boundaries, and owner-answered referents** —
+  **`plans/30W`** (design-of-record: index-kinds in the context slot; region overlap as
+  the identity tier's second relation; the lifted ask-the-owner discipline; the per-arm
+  claim family with completion sentinels; six rulings owed in its §10) over
+  **`notes/26M`** (the 2026-08-31→09-02 sitting ledger: ack-ledger, the tabled
+  apply-side-transport exploration, the payload-declaration decomposition, the queue).
 - **Wrapper contexts (sudo/su/env): context-entry probing, the escalation dial, the
   tolerance vouch** — **`plans/27C` (THE current spec: measurement in the site's denoted
   context; reuse-never-acquire; the fallback consumption lane)** over `notes/273` (the
@@ -143,7 +149,9 @@ and carries the license-contamination map.
   supersedes `277` §4 (verb vocabulary · `@` selector · `#:` carrier · the respell
   grep-map).
 - **Kind-side topology & never-derive-separation** — `notes/272` (address-derived
-  topology; `kind__state_stored_only_in()`; §12 is its ratification-status table).
+  topology; `kind__state_stored_only_in()`; §12 is its ratification-status table);
+  extended by **`plans/30W`** (index-kinds; the per-arm `state_stored_in` +
+  `stored nothing-else` shape; separation from measured identity, never from names).
 - **Value-predictions & the capture lane** — `notes/275` (its §6 carries a NOT-RATIFIED
   banner — honor it); origin analysis `notes/219` (round-21 vintage; concepts carry,
   cites stale); the BUILD is deferred to the r26 revival — direction + design bank
@@ -328,7 +336,8 @@ and carries the license-contamination map.
   behind the r28/`28Q` push; stdlib and the why/loom prose tails stay gently held —
   `LIVING_STATUS.md`. The 2026-08-24/25 meta-orchestration sittings are `notes/26L` +
   `notes/26Lb` (exploration/brainstorm-tier); the env-identity design they surfaced is
-  banked at `plans/30S`. (Same round-id as the tabled multi-host r26 above — branch
+  banked at `plans/30S`; the 2026-08-31→09-02 pivot-book language-surface sitting is
+  `notes/26M`, its design-of-record `plans/30W`. (Same round-id as the tabled multi-host r26 above — branch
   lineage, not chronology; this entry is its revival.)
 
 ## Vendor/ (full-history clones)
