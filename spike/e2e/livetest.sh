@@ -238,23 +238,26 @@ expect_summary() {
    exit 1
 }
 
+# The plan declines its own local receipt: this lane is about the live host, and a run that
+# writes nothing into the operator's store leaves no residue behind on the machine driving it.
 plan_into() {
    out=$1
    err=$2
    "$dorc" plan --book="$BOOK" --oracle-dir "$ORACLES" \
       --host "$DEST_SPEC" --ssh-config "$RUNDIR/ssh_config" \
-      --probe-timeout 120 --no-whylog >"$out" 2>"$err"
+      --probe-timeout 120 --no-receipt >"$out" 2>"$err"
 }
 
 # The apply publishes its own pre-dispatch intent into the operator's local receipt store, and
 # that publication is what authorizes the first mutative dispatch. There is no flag here and no
-# bypass: an apply that cannot publish refuses before the host is contacted.
+# bypass: an apply that cannot publish refuses before the host is contacted, and `--no-receipt`
+# is refused outright rather than quietly ignored.
 apply_from() {
    plan=$1
    out=$2
    err=$3
    "$dorc" apply --host "$DEST_SPEC" --ssh-config "$RUNDIR/ssh_config" \
-      --plan "$plan" --apply-timeout 600 --no-whylog \
+      --plan "$plan" --apply-timeout 600 \
       >"$out" 2>"$err"
 }
 
