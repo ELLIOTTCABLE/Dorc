@@ -198,6 +198,10 @@ fn seam_env(command: &mut Command, ordinal: u64) {
     command.env(SEAM_ROOTS_ENV, "pinned");
 }
 
+#[expect(
+    clippy::struct_field_names,
+    reason = "the `harness_bin` field is named for the binary it holds, not the struct"
+)]
 struct Harness {
     /// The shipped `dorc` binary cargo just built for this test target — the all-production seam
     /// row, driven only by the batteries that assert `Os`-seam behaviour (the real-tools lint lane).
@@ -205,7 +209,7 @@ struct Harness {
     /// The `dorc-harness` sibling (`30X:bin-harness-sibling-not-produced-cli`): the SAME engine
     /// driven with a seam bundle from the environment. The round-trip corpus drives THIS, so its
     /// clock, entropy and roots are deterministic; the transcript still displays the `dorc` command.
-    dorc_harness: PathBuf,
+    harness_bin: PathBuf,
     /// The `dorc-sh` sibling (the strip-and-exec off-ramp runner).
     dorc_sh: PathBuf,
     /// Absolute path of the strict-POSIX syntax checker (`dash`, else `sh`).
@@ -282,7 +286,7 @@ impl Harness {
         }
         Self {
             dorc: PathBuf::from(env!("CARGO_BIN_EXE_dorc")),
-            dorc_harness: PathBuf::from(env!("CARGO_BIN_EXE_dorc-harness")),
+            harness_bin: PathBuf::from(env!("CARGO_BIN_EXE_dorc-harness")),
             dorc_sh: PathBuf::from(env!("CARGO_BIN_EXE_dorc-sh")),
             checker,
             checker_name,
@@ -340,7 +344,7 @@ impl Harness {
     /// The shared body of [`Self::dorc`] and [`Self::dorc_shared`]: the harness binary, a
     /// profile-rooted store, the analysis cwd, and the seam bundle spelled in the environment.
     fn harness_command(&self, at: &Path, profile_root: &Path) -> Command {
-        let mut command = Command::new(&self.dorc_harness);
+        let mut command = Command::new(&self.harness_bin);
         for role in ["config", "state"] {
             std::fs::create_dir_all(profile_root.join(role)).expect("create the case profile");
         }
@@ -3611,7 +3615,7 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
     // the live harness's receipts down with this specimen.
     let bless = Harness {
         dorc: harness.dorc.clone(),
-        dorc_harness: harness.dorc_harness.clone(),
+        harness_bin: harness.harness_bin.clone(),
         dorc_sh: harness.dorc_sh.clone(),
         checker: harness.checker.clone(),
         checker_name: harness.checker_name.clone(),

@@ -221,6 +221,11 @@ pub(crate) fn encoded_host_lines(stream: &[u8]) -> Vec<String> {
 /// Every line goes through the shared display seat (`dorc_aid::display::encode_line`), because
 /// these are bytes a managed host chose and a terminal is a sink that executes some of them.
 /// Encoding grants them no trust — it makes them safe to LOOK at, nothing more.
+#[expect(
+    clippy::print_stdout,
+    clippy::print_stderr,
+    reason = "the transport edge echoes a managed host's own streams to the operator"
+)]
 fn echo(stream: &[u8], to_stderr: bool) {
     if stream.is_empty() {
         return;

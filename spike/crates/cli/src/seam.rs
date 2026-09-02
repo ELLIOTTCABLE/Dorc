@@ -17,6 +17,11 @@
 //! over the seed, hostsim's `lcg-only-entropy` posture, so keys and ids are deterministic per
 //! (case, seed) with no `rand` dependency.
 
+#![expect(
+    clippy::result_large_err,
+    reason = "cold seam-parse path; the Diag is the harness print seat's own value, as in main.rs"
+)]
+
 use std::path::PathBuf;
 
 use dorc_aid::diag::{Diag, DiagCode};
@@ -57,7 +62,9 @@ impl SeamLcg {
     fn fill(&mut self, raw: &mut [u8]) {
         for chunk in raw.chunks_mut(8) {
             let bytes = self.next_u64().to_le_bytes();
-            chunk.copy_from_slice(&bytes[..chunk.len()]);
+            for (dst, src) in chunk.iter_mut().zip(bytes) {
+                *dst = src;
+            }
         }
     }
 }
@@ -254,9 +261,8 @@ impl PostureSeam {
         use std::io::IsTerminal as _;
         match self {
             Self::PinnedInteractive => StdoutPosture::Interactive,
-            Self::PinnedKept => StdoutPosture::NonInteractive,
             Self::Os if std::io::stdout().is_terminal() => StdoutPosture::Interactive,
-            Self::Os => StdoutPosture::NonInteractive,
+            Self::PinnedKept | Self::Os => StdoutPosture::NonInteractive,
         }
     }
 }
@@ -368,6 +374,10 @@ impl RootsSeam {
     /// Resolve this member's base roots through the standard platform resolution. Both variants
     /// read the same query; the TYPE is the fence — the harness cannot name `Os`, and its scrubbed
     /// environment points the platform variables at the runner's throwaway pair.
+    #[expect(
+        clippy::unused_self,
+        reason = "the roots variant is the type-level fence; both resolve the same query today"
+    )]
     fn base_roots(
         &self,
         environment: &dyn RootEnvironment,
