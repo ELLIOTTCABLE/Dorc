@@ -8,12 +8,20 @@ publish = false
 # target discovery is declared, never inferred (`288:rul-flat-test-tree`).
 autotests = false
 
-# The thin driver — the one place (with `hostsim`) where real I/O lives. The
-# analyzer kernel it calls is pure (`inv-determinism`); this binary just reads
-# files, runs the pipeline, and prints the plan.
+# The shipped driver — edge VALUES plus one call (`30X:inv-division-at-the-narrowest-edge`): it
+# drives `dorc_cli::compose::run` with the all-production `Seams::os()` bundle and reads NO
+# harness-shaped environment. The one place (with `hostsim`) real I/O lives; the kernel it calls is
+# pure (`inv-determinism`).
 [[bin]]
 name = "dorc"
-path = "src/main.rs"
+path = "src/bin/dorc.rs"
+
+# The test-only harness sibling (`30X:bin-harness-sibling-not-produced-cli`): the SAME
+# `compose::run` engine, driven with a `HarnessSeams` parsed from the environment. Its bundle
+# structurally cannot name `RealSsh` or `Os` roots, and it refuses loudly when no seam is set.
+[[bin]]
+name = "dorc-harness"
+path = "src/bin/dorc-harness.rs"
 
 # `dorc-sh` — the strip-and-exec shebang runner the `#!/usr/bin/env dorc-sh` corpus stamp names
 # (`27D` rider-dorc-sh-unbuilt / `24P` §9 decision-dorc-sh-semantics). A thin second bin sharing the

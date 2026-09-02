@@ -32,7 +32,9 @@
 
 pub mod apply;
 pub mod artifact;
+mod artifact_store;
 pub mod bundle;
+pub mod compose;
 pub mod custody;
 pub mod durable;
 pub mod engine;
@@ -43,10 +45,13 @@ pub mod receipt_edge;
 pub mod recorded;
 pub mod recorded_facts;
 pub mod results;
+pub mod seam;
 pub mod snapshot;
 pub mod source_comparison;
+mod source_match;
 pub mod sourcing;
 pub mod survival;
+mod transport_edge;
 pub mod why;
 pub mod why_json;
 pub mod why_total;

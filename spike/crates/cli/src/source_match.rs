@@ -18,23 +18,21 @@
 //! deferred (`plans/28G` W3 shipped the matches-HEAD form only). A miss is silent rather than
 //! partially-informative: "your book is not at HEAD" without saying what it IS would send a
 //! firefighter looking for a change that may not exist.
+//!
+//! # The harness answer is a seam, not a fixture read here
+//!
+//! Whether to ask git or return a pinned answer is a member of the seam bundle now
+//! (`crate::seam::SourceMatchSeam`): the shipped binary selects `Os` (this module's real
+//! [`GitRepository`]); a harness selects `pinned:off` / `pinned:<commit>`. This module holds only
+//! the production query (`30X:inv-fixture-state-never-typeable-into-main`).
 
 use std::path::Path;
 use std::process::Command;
 
-/// The harness's seam (`28F:rul-fixture-clock-env-accepted`, same pattern as the clock).
-///
-/// Unset means ask the real repository -- the production path. `off` means never ask, which is what
-/// the test corpus sets: `real-tools-lane-opt-in` makes zero external invocations the suite's
-/// default, and a git-shaped answer that depends on where a developer's temp directory happens to
-/// sit is not a fixpoint. Any other value is taken as the short commit to render, so a case can pin
-/// the line without a repository existing at all.
-const FIXTURE_ENV: &str = "DORC_FIXTURE_SOURCE_MATCH";
-
 /// The ANSWER this module resolves. It lives across the loom seam (`dorc_cli`) because the render
 /// holds it and the render is drivable there; the QUERY — [`resolve`] and the git subprocess below
 /// — stays here at the I/O edge (`lib-target-is-a-loom-seam`).
-pub(crate) use dorc_cli::SourceMatch;
+pub(crate) use crate::SourceMatch;
 
 /// The narrow read this needs from a repository. One impl asks git; tests supply their own.
 pub(crate) trait SourceRepository {
@@ -57,31 +55,11 @@ pub(crate) fn resolve(repository: &impl SourceRepository, book: &Path) -> Option
         .flatten()
 }
 
-/// What [`FIXTURE_ENV`] says to do.
-#[derive(Debug, PartialEq, Eq)]
-enum Fixture {
-    /// Unset: the production path, ask the real repository.
-    AskGit,
-    /// Pinned to no annotation at all.
-    Absent,
-    /// Pinned to a match at this commit, no repository needed.
-    At(String),
-}
-
-/// The production edge: the real `git`, or the harness's pinned answer.
+/// The production edge: the real `git`.
 #[derive(Debug)]
 pub(crate) struct GitRepository;
 
 impl GitRepository {
-    /// What the harness pinned, if anything.
-    fn fixture() -> Fixture {
-        match std::env::var(FIXTURE_ENV) {
-            Err(_) => Fixture::AskGit,
-            Ok(value) if value == "off" => Fixture::Absent,
-            Ok(commit) => Fixture::At(commit),
-        }
-    }
-
     /// Run one read-only git query in `within`, or `None` if git is absent, fails, or is not UTF-8.
     ///
     /// No timeout, deliberately noted: `Command::output` blocks, so a git hung on an unresponsive
@@ -104,22 +82,12 @@ impl GitRepository {
 
 impl SourceRepository for GitRepository {
     fn head_commit(&self, within: &Path) -> Option<String> {
-        match Self::fixture() {
-            Fixture::Absent => return None,
-            Fixture::At(commit) => return Some(commit),
-            Fixture::AskGit => {}
-        }
         Self::query(within, &["rev-parse", "--short", "HEAD"])
             .map(|out| out.trim().to_owned())
             .filter(|commit| !commit.is_empty())
     }
 
     fn is_unmodified_at_head(&self, path: &Path) -> Option<bool> {
-        match Self::fixture() {
-            Fixture::Absent => return Some(false),
-            Fixture::At(_) => return Some(true),
-            Fixture::AskGit => {}
-        }
         let within = path.parent().unwrap_or_else(|| Path::new("."));
         let name = path.file_name()?.to_str()?;
         // `diff --quiet` would call an UNTRACKED file unchanged; `status --porcelain` will not.

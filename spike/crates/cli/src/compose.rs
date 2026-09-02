@@ -44,25 +44,24 @@
 //! driver over ONE pipeline call ([`analyze`]) — no kernel logic moves here (the
 //! thin-driver mandate, crates/cli/CLAUDE.md).
 
-#![forbid(unsafe_code)]
-// The cli is the sanctioned I/O edge (workspace Cargo.toml: "I/O-edge crates may
-// `#[expect]` these at the crate root, with reason"): stdout carries the
-// probe-then-apply artifact, stderr carries diagnostics. The kernel it drives
-// stays print-free. Not a seeded-ratchet expect — this one is permanent for the
-// binary's edge.
+// The composition root is the sanctioned I/O edge (workspace Cargo.toml: "I/O-edge crates may
+// `#[expect]` these at the crate root, with reason"): stdout carries the probe-then-apply artifact,
+// stderr carries diagnostics. The kernel it drives stays print-free. Under 30X the lib HOLDS the
+// edge implementations as seam members, selected at the composition root
+// (`lib-target-is-a-loom-seam`, re-cut), so this module lives in the lib and both binaries call
+// [`run`].
 #![expect(
     clippy::print_stdout,
     clippy::print_stderr,
-    reason = "cli is the I/O edge: probe/apply to stdout, diagnostics to stderr; the kernel stays print-free"
+    reason = "the composition root is the I/O edge: probe/apply to stdout, diagnostics to stderr; the kernel stays print-free"
 )]
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Write;
 use std::process::ExitCode;
 
-mod artifact_store;
-mod source_match;
-mod transport_edge;
+use crate::seam::Seams;
+use crate::{artifact_store, transport_edge};
 
 use dorc_aid::Severity;
 use dorc_aid::diag::{Diag, DiagCode};
@@ -75,40 +74,40 @@ use dorc_core::{ProvArena, Symbol};
 // The invocation surface lives in the crate's INTERNAL lib target (`289:rul-worldless-route-
 // honest-trigger`) so the loom harness can fire the real parser; this bin keeps every I/O edge.
 #[cfg(test)]
-use dorc_cli::engine::reach_arm_fn_name;
-use dorc_cli::engine::{
+use crate::engine::reach_arm_fn_name;
+use crate::engine::{
     EngineEdges, EngineRequest, EngineStatus as RunOutcome, InvocationRecordRequest, Observation,
     ObservationRequest, OutputChannel, OutputEvent, OutputSink,
 };
 #[cfg(test)]
-use dorc_cli::fixpoint::{FrozenModel, attribute_cascades, classify_round, settle_world};
+use crate::fixpoint::{FrozenModel, attribute_cascades, classify_round, settle_world};
 #[cfg(test)]
-use dorc_cli::kinds::{build_kind_reaches, build_kind_resolvers};
-use dorc_cli::results::RunClock;
+use crate::kinds::{build_kind_reaches, build_kind_resolvers};
+use crate::results::RunClock;
 #[cfg(test)]
-use dorc_cli::results::{ReportRecord, SiteResults, probe_origins};
+use crate::results::{ReportRecord, SiteResults, probe_origins};
 #[cfg(test)]
-use dorc_cli::survival::{
+use crate::survival::{
     WrapperSets, build_wrapped_analysis, expand_footprints_via_reaches, merge_derived_footprints,
 };
-use dorc_cli::world::definition_table;
+use crate::world::definition_table;
 #[cfg(test)]
-use dorc_cli::world::{ship_predict_body, ship_verdict_body};
+use crate::world::{ship_predict_body, ship_verdict_body};
 // The legacy headerless string parser below is `#[cfg(test)]`-gated law
 // (`rul-fixture-identity-never-production`), so its tokenizers are imported on the same gate.
 #[cfg(test)]
 #[cfg(test)]
-use dorc_cli::fixpoint::SettledFixpoint;
+use crate::fixpoint::SettledFixpoint;
 #[cfg(test)]
-use dorc_cli::results::facts_from_sites;
+use crate::results::facts_from_sites;
 #[cfg(test)]
-use dorc_cli::results::{
+use crate::results::{
     REPORT_RAW_CAP, RecordKey, ResolvOutcome, parse_leaf, parse_report_record, parse_site_record,
     sanitize_report_raw, split_key,
 };
 #[cfg(test)]
-use dorc_cli::survival::own_wall_coord;
-use dorc_cli::{Args, Invocation, LintArgs, LintFormat, Mode, humane_read_error, parse_args_from};
+use crate::survival::own_wall_coord;
+use crate::{Args, Invocation, LintArgs, LintFormat, Mode, humane_read_error, parse_args_from};
 #[cfg(test)]
 use dorc_core::{Observable, Verdict};
 #[cfg(test)]
@@ -116,7 +115,7 @@ use dorc_core::{OutBytes, Predicted, Rc};
 // The why REPORT composes across the same seam (`28L:rul-full-driver-this-arc`): this edge builds
 // the world and prints the bytes, the lib turns that world into a stamped part stream.
 #[cfg(test)]
-use dorc_cli::why::{is_structurally_unprobeable, oracle_locus, unresolvable_diagnostics};
+use crate::why::{is_structurally_unprobeable, oracle_locus, unresolvable_diagnostics};
 
 /// A usage/argument error, or an unreadable input file (the classic getopt convention).
 const EXIT_USAGE: u8 = 2;
@@ -137,10 +136,16 @@ const EXIT_LINT_OPERATIONAL: u8 = 3;
 /// not fail it, it mints Unknown, so the caller must opt in with `--apply-timeout`.
 const DEFAULT_PROBE_TIMEOUT_SECS: u64 = 120;
 
-fn main() -> ExitCode {
+/// The one engine both binaries drive (`30X:bin-harness-sibling-not-produced-cli`): arg parsing,
+/// source acquisition, root resolution, the receipt edge, the engine — everything BELOW the seam,
+/// shared byte for byte. `bin/dorc.rs` calls `run(&Seams::os())`; `bin/dorc-harness.rs` calls
+/// `run(&HarnessSeams::from_env(&real_env).into())`. The `Seams` bundle is the ONLY thing that
+/// differs between them, and it selects every nondeterministic edge.
+#[must_use]
+pub fn run(seams: &Seams) -> ExitCode {
     match parse_args() {
         Ok(Invocation::Help) => {
-            print!("{}", dorc_cli::help_text(&render_ctx()));
+            print!("{}", crate::help_text(&render_ctx()));
             std::io::stdout().flush().ok();
             ExitCode::SUCCESS
         }
@@ -158,7 +163,7 @@ fn main() -> ExitCode {
         Ok(Invocation::Lint(args)) => lint_command(&args),
         Ok(Invocation::Analyze(args)) => {
             let mut sink = ProductionOutputSink;
-            let result = run_analysis(&args, &mut sink);
+            let result = run_analysis(seams, &args, &mut sink);
             match result {
                 Ok(status) => ExitCode::from(status.exit_code()),
                 Err(diag) => {
@@ -178,22 +183,22 @@ fn main() -> ExitCode {
     clippy::result_large_err,
     reason = "the binary print seat consumes the full diagnostic"
 )]
-fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Diag> {
+fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Diag> {
     if args.mode == Mode::Apply
         && let Some(host) = args.host.as_deref()
     {
-        return ship_consented_apply(sink, args, host);
+        return ship_consented_apply(seams, sink, args, host);
     }
     if args.reads_the_receipt() {
-        let edge = production_receipt_edge(args);
+        let edge = production_receipt_edge(seams, args);
         let label = edge
             .as_ref()
-            .map_or(dorc_cli::engine::NO_STATE_ROOT, |edge| edge.state_base());
+            .map_or(crate::engine::NO_STATE_ROOT, |edge| edge.state_base());
         let answer = match &edge {
             Ok(edge) => read_rooted_receipt(edge, args),
-            Err(refusal) => dorc_cli::recorded::StoreAnswer::Unreadable(refusal.token().to_owned()),
+            Err(refusal) => crate::recorded::StoreAnswer::Unreadable(refusal.token().to_owned()),
         };
-        return Ok(dorc_cli::engine::report_recorded_store(
+        return Ok(crate::engine::report_recorded_store(
             answer,
             args.why_register(),
             label,
@@ -201,12 +206,12 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
         ));
     }
 
-    let stdout = stdout_posture();
+    let stdout = seams.stdout_posture();
     // Publication is gated on the admin's REFUSAL, never on whether they named a store: the store
     // has a standard per-user default and `28F:rul-w3-default-on-aim-high` makes a receipt the
     // thing you get without asking. Gating on a named directory would make default-on mean
     // default-off for every invocation that did not spell one.
-    let options = dorc_cli::engine_options_from_args(
+    let options = crate::engine_options_from_args(
         args,
         stdout,
         args.artifact_dir.is_some(),
@@ -215,11 +220,12 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
     let cwd = invocation_cwd();
     let ready = acquire_engine_request(args, &cwd)?;
     let mut edges = ProductionEdges {
+        seams,
         args,
-        clock: clock_for_invocation(),
-        receipt: production_receipt_edge(args),
+        clock: seams.clock(),
+        receipt: production_receipt_edge(seams, args),
     };
-    dorc_cli::engine::run(
+    crate::engine::run(
         &EngineRequest {
             snapshot: &ready.snapshot,
             options: &options,
@@ -233,13 +239,13 @@ fn run_analysis(args: &Args, sink: &mut dyn OutputSink) -> Result<RunOutcome, Di
 }
 
 struct AcquiredReady {
-    snapshot: dorc_cli::snapshot::StaticLoadSnapshot,
+    snapshot: crate::snapshot::StaticLoadSnapshot,
     acquisition_diagnostics: Vec<Diag>,
 }
 
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn acquire_engine_request(
     args: &Args,
@@ -267,11 +273,11 @@ fn acquire_engine_request(
         oracle_srcs,
         &load_dependencies,
     );
-    let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+    let snapshot = crate::snapshot::StaticLoadSnapshot::over(
         cwd.clone(),
         acquired.paths,
         acquired.srcs,
-        &dorc_cli::snapshot::LoadPositions::book_sourced(acquired.reached)
+        &crate::snapshot::LoadPositions::book_sourced(acquired.reached)
             .with_dependencies(load_dependencies),
         book_name,
         &book_src,
@@ -283,13 +289,16 @@ fn acquire_engine_request(
 }
 
 struct ProductionEdges<'a> {
+    /// The selected nondeterministic edges — clock, entropy, nonce, transport, source-match — that
+    /// every callback below draws its VALUES from (`30X:model-seams-are-one-bundle`).
+    seams: &'a Seams,
     args: &'a Args,
     clock: RunClock,
     /// The production durable edge, or the refusal that stands in its place.
     ///
     /// Resolved ONCE at the process boundary, before the engine runs, so root resolution cannot
     /// happen twice with different answers and cannot happen inside the pipeline at all.
-    receipt: Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal>,
+    receipt: Result<crate::durable::LocalReceiptEdgeV1, crate::durable::EdgeRefusal>,
 }
 
 impl EngineEdges for ProductionEdges<'_> {
@@ -336,8 +345,8 @@ impl EngineEdges for ProductionEdges<'_> {
                 line,
             )));
         }
-        let nonce = transport_edge::mint_nonce();
-        let mut driver = transport_edge::driver_for_invocation(
+        let nonce = self.seams.attempt_nonce();
+        let mut driver = self.seams.transport_driver(
             self.args.connect_timeout,
             self.args.accept_new,
             self.args.ssh_config.as_deref(),
@@ -387,16 +396,13 @@ impl EngineEdges for ProductionEdges<'_> {
         &mut self.clock
     }
 
-    fn source_match(&mut self, book_name: &str) -> Option<dorc_cli::SourceMatch> {
-        source_match::resolve(
-            &source_match::GitRepository,
-            std::path::Path::new(book_name),
-        )
+    fn source_match(&mut self, book_name: &str) -> Option<crate::SourceMatch> {
+        self.seams.source_match(book_name)
     }
 
     fn publish_artifact(
         &mut self,
-        artifact: &dorc_cli::artifact::ArtifactSet,
+        artifact: &crate::artifact::ArtifactSet,
     ) -> Result<(), &'static str> {
         let Some(dir) = self.args.artifact_dir.as_deref() else {
             return Ok(());
@@ -406,28 +412,26 @@ impl EngineEdges for ProductionEdges<'_> {
 
     fn publish_receipt(
         &mut self,
-        request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
-    ) -> Result<Option<dorc_cli::receipt_edge::PlacedDocument>, String> {
+        request: &crate::engine::ReceiptPublicationRequest<'_>,
+    ) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
         let edge = match &self.receipt {
             Ok(edge) => edge,
             Err(refusal) => return Err(refusal.token().to_owned()),
         };
-        let mut io = dorc_cli::durable::NativeIo::new();
-        let mut generator =
-            dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
+        let mut io = crate::durable::NativeIo::new();
+        let mut generator = self.seams.keyset_generator();
         let open = edge
-            .open_for_write(&mut io, &mut generator)
+            .open_for_write(&mut io, &mut *generator)
             .map_err(|refusal| refusal.token().to_owned())?;
-        let mut ids =
-            dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);
-        let mut order = dorc_cli::receipt_edge::RunClockOrder::of(&mut self.clock);
+        let mut ids = self.seams.receipt_id_source();
+        let mut order = crate::receipt_edge::RunClockOrder::of(&mut self.clock);
         let signer = open.keys().signer();
         let sealer = open.keys().encryption().sealer();
         let mut placement = open.placement(&mut io);
-        dorc_cli::receipt_edge::publish_rich_plan_receipt(
+        crate::receipt_edge::publish_rich_plan_receipt(
             request,
-            dorc_cli::receipt_edge::ReceiptCapabilities::of(
-                &mut ids,
+            crate::receipt_edge::ReceiptCapabilities::of(
+                &mut *ids,
                 &mut order,
                 signer,
                 &mut placement,
@@ -440,8 +444,8 @@ impl EngineEdges for ProductionEdges<'_> {
 
     fn receipt_label(&self) -> &str {
         self.receipt.as_ref().map_or(
-            dorc_cli::engine::NO_STATE_ROOT,
-            dorc_cli::durable::LocalReceiptEdgeV1::state_base,
+            crate::engine::NO_STATE_ROOT,
+            crate::durable::LocalReceiptEdgeV1::state_base,
         )
     }
 
@@ -450,7 +454,7 @@ impl EngineEdges for ProductionEdges<'_> {
         request: InvocationRecordRequest<'_>,
     ) -> dorc_core::spine::SpineInvocation {
         // `argv` is a QUERY, so it is read here and handed over as a value.
-        dorc_cli::receipt_edge::invocation_record(
+        crate::receipt_edge::invocation_record(
             std::env::args().collect(),
             request.framing,
             request.snapshot,
@@ -471,13 +475,13 @@ impl EngineEdges for ProductionEdges<'_> {
 /// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
 /// never mint an identity that cannot open the receipt being asked about.
 fn read_rooted_receipt(
-    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
+    edge: &crate::durable::LocalReceiptEdgeV1,
     args: &Args,
-) -> dorc_cli::recorded::StoreAnswer {
-    let mut io = dorc_cli::durable::NativeIo::new();
+) -> crate::recorded::StoreAnswer {
+    let mut io = crate::durable::NativeIo::new();
     let address = named_address(args.why_address.as_deref());
     match args.receipt_root() {
-        dorc_cli::engine::ReceiptRoot::File(path) => root_from_file(edge, &mut io, path, address),
+        crate::engine::ReceiptRoot::File(path) => root_from_file(edge, &mut io, path, address),
         selection => root_from_store(edge, &mut io, selection, address),
     }
 }
@@ -492,9 +496,9 @@ struct HeldDocument {
 /// A decoded document, by species. Each arm is a locally-authenticated read and nothing else can
 /// mint one.
 enum HeldReceipt {
-    Plan(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::PlanReceipt>),
-    Intent(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyIntent>),
-    Outcome(dorc_cli::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyOutcome>),
+    Plan(crate::durable::LocallyAuthenticatedRead<dorc_receipt::model::PlanReceipt>),
+    Intent(crate::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyIntent>),
+    Outcome(crate::durable::LocallyAuthenticatedRead<dorc_receipt::model::ApplyOutcome>),
 }
 
 impl HeldReceipt {
@@ -510,12 +514,12 @@ impl HeldReceipt {
 
 /// Root the question at a document the store holds.
 fn root_from_store(
-    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
-    io: &mut dorc_cli::durable::NativeIo,
-    selection: dorc_cli::engine::ReceiptRoot<'_>,
-    address: dorc_cli::recorded::AddressAsk,
-) -> dorc_cli::recorded::StoreAnswer {
-    use dorc_cli::recorded::StoreAnswer;
+    edge: &crate::durable::LocalReceiptEdgeV1,
+    io: &mut crate::durable::NativeIo,
+    selection: crate::engine::ReceiptRoot<'_>,
+    address: crate::recorded::AddressAsk,
+) -> crate::recorded::StoreAnswer {
+    use crate::recorded::StoreAnswer;
     let open = match edge.open_for_read(io) {
         Ok(open) => open,
         Err(refusal) => return StoreAnswer::Unreadable(refusal.token().to_owned()),
@@ -524,8 +528,8 @@ fn root_from_store(
     let Some((held, cohort)) = walk_store(&open, io, &mut graph) else {
         return StoreAnswer::Unreadable("walk-failed".to_owned());
     };
-    let terminal = dorc_cli::recorded::collapse_predecessors(cohort, &graph.edges());
-    if matches!(selection, dorc_cli::engine::ReceiptRoot::Last) && terminal.len() > 1 {
+    let terminal = crate::recorded::collapse_predecessors(cohort, &graph.edges());
+    if matches!(selection, crate::engine::ReceiptRoot::Last) && terminal.len() > 1 {
         return StoreAnswer::Ambiguous(terminal.len());
     }
     let Some(chosen) = held
@@ -548,17 +552,17 @@ fn root_from_store(
 /// renamed out of that grammar is refused rather than dated UNDATED, which would be a false claim
 /// about the document (`30Ve:fnd-file-root-order-comes-from-the-name`).
 fn root_from_file(
-    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
-    io: &mut dorc_cli::durable::NativeIo,
+    edge: &crate::durable::LocalReceiptEdgeV1,
+    io: &mut crate::durable::NativeIo,
     path: &str,
-    address: dorc_cli::recorded::AddressAsk,
-) -> dorc_cli::recorded::StoreAnswer {
-    use dorc_cli::recorded::StoreAnswer;
+    address: crate::recorded::AddressAsk,
+) -> crate::recorded::StoreAnswer {
+    use crate::recorded::StoreAnswer;
     let reader = match edge.open_documents_for_read(io) {
         Ok(reader) => reader,
         Err(refusal) => return StoreAnswer::Unreadable(refusal.token().to_owned()),
     };
-    let Some(order) = dorc_cli::durable::order_of_receipt_file(path) else {
+    let Some(order) = crate::durable::order_of_receipt_file(path) else {
         return StoreAnswer::Unreadable("receipt-file-unnamed".to_owned());
     };
     let Some(bytes) = read_receipt_file(path) else {
@@ -590,8 +594,8 @@ fn root_from_file(
 /// outcome answer" from a one-document read would be answering a different question. That is
 /// bounded DISCOVERY of typed reverse edges, never a user-visible union of histories.
 fn walk_store(
-    open: &dorc_cli::durable::ReadEdge,
-    io: &mut dorc_cli::durable::NativeIo,
+    open: &crate::durable::ReadEdge,
+    io: &mut crate::durable::NativeIo,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
 ) -> Option<(Vec<HeldDocument>, Vec<String>)> {
     let store = open.store();
@@ -636,26 +640,26 @@ fn walk_store(
 /// Handing it an empty slice made every pair compare equal, which silenced
 /// `GraphFinding::IdentityCollision` for every real store walk.
 fn read_recognized(
-    open: &dorc_cli::durable::ReadEdge,
+    open: &crate::durable::ReadEdge,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
-    species: dorc_cli::durable::NamedSpecies,
+    species: crate::durable::NamedSpecies,
     bytes: Vec<u8>,
 ) -> Option<HeldReceipt> {
-    use dorc_cli::durable::NamedSpecies;
+    use crate::durable::NamedSpecies;
     let image = bytes.clone();
     // no self-asserted arm: this edge holds one keyset, so another provider is a read that did
     // not happen
     match species {
         NamedSpecies::Plan => open.read_plan(bytes).ok().map(|document| {
-            dorc_cli::recorded::ingest_plan(graph, &document, &image);
+            crate::recorded::ingest_plan(graph, &document, &image);
             HeldReceipt::Plan(document)
         }),
         NamedSpecies::ApplyIntent => open.read_intent(bytes).ok().map(|document| {
-            dorc_cli::recorded::ingest_intent(graph, &document, &image);
+            crate::recorded::ingest_intent(graph, &document, &image);
             HeldReceipt::Intent(document)
         }),
         NamedSpecies::ApplyOutcome => open.read_outcome(bytes).ok().map(|document| {
-            dorc_cli::recorded::ingest_outcome(graph, &document, &image);
+            crate::recorded::ingest_outcome(graph, &document, &image);
             HeldReceipt::Outcome(document)
         }),
     }
@@ -667,21 +671,21 @@ fn read_recognized(
 /// wrong species fails at the skeleton's own `species` line, which makes trying each in turn a way
 /// of ASKING the document rather than of guessing.
 fn read_any_species(
-    reader: &dorc_cli::durable::DocumentReader,
+    reader: &crate::durable::DocumentReader,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
     bytes: Vec<u8>,
 ) -> Option<HeldReceipt> {
     let image = bytes.clone();
     if let Ok(document) = reader.read_plan(bytes.clone()) {
-        dorc_cli::recorded::ingest_plan(graph, &document, &image);
+        crate::recorded::ingest_plan(graph, &document, &image);
         return Some(HeldReceipt::Plan(document));
     }
     if let Ok(document) = reader.read_intent(bytes.clone()) {
-        dorc_cli::recorded::ingest_intent(graph, &document, &image);
+        crate::recorded::ingest_intent(graph, &document, &image);
         return Some(HeldReceipt::Intent(document));
     }
     if let Ok(document) = reader.read_outcome(bytes) {
-        dorc_cli::recorded::ingest_outcome(graph, &document, &image);
+        crate::recorded::ingest_outcome(graph, &document, &image);
         return Some(HeldReceipt::Outcome(document));
     }
     None
@@ -691,16 +695,16 @@ fn read_any_species(
 fn rooted_reading(
     graph: &dorc_receipt::graph::ReceiptGraph,
     chosen: HeldDocument,
-    address: dorc_cli::recorded::AddressAsk,
-) -> dorc_cli::recorded::StoreAnswer {
-    use dorc_cli::recorded::{ReadRoot, RootedReading, StoreAnswer};
+    address: crate::recorded::AddressAsk,
+) -> crate::recorded::StoreAnswer {
+    use crate::recorded::{ReadRoot, RootedReading, StoreAnswer};
     use dorc_receipt::report::{AuthenticationState, DetailState, ProjectionState};
     let Some(document) = document_identity(&chosen.receipt, &chosen.receipt_id) else {
         return StoreAnswer::Unreadable("receipt-identity-unreadable".to_owned());
     };
-    let siblings = dorc_cli::recorded::siblings_of(graph, &document);
+    let siblings = crate::recorded::siblings_of(graph, &document);
     let closure = graph.closure_from(&document);
-    let correlations = dorc_cli::recorded::correlations_of(graph, closure.documents());
+    let correlations = crate::recorded::correlations_of(graph, closure.documents());
     // Both established by the READ: the local-authentication envelope, and a region that validated.
     let authentication = AuthenticationState::Trusted;
     let detail = DetailState::Available;
@@ -711,7 +715,7 @@ fn rooted_reading(
             let Ok(model) = receipt.document().model() else {
                 return StoreAnswer::Unreadable("receipt-model-unavailable".to_owned());
             };
-            ReadRoot::Plan(Box::new(dorc_cli::recorded_facts::SelectedRoot {
+            ReadRoot::Plan(Box::new(crate::recorded_facts::SelectedRoot {
                 receipt,
                 model,
                 closure,
@@ -728,7 +732,7 @@ fn rooted_reading(
             order: order_spelled,
             correlations,
             siblings: siblings.clone(),
-            intent: dorc_cli::recorded::shallow_intent(receipt.document()),
+            intent: crate::recorded::shallow_intent(receipt.document()),
             outcome: None,
         }),
         HeldReceipt::Outcome(receipt) => ReadRoot::OtherSpecies(dorc_why::recorded::NonPlanRoot {
@@ -740,7 +744,7 @@ fn rooted_reading(
             correlations,
             siblings: siblings.clone(),
             intent: None,
-            outcome: dorc_cli::recorded::shallow_outcome(receipt.document()),
+            outcome: crate::recorded::shallow_outcome(receipt.document()),
         }),
     };
     StoreAnswer::Rooted(Box::new(RootedReading::of(root, siblings, address)))
@@ -771,8 +775,8 @@ fn document_identity(
 /// rul-line-addresses-are-namespaced): the recorded model names an ORDINAL and the only bridge to
 /// it is the exact bytes of the file the user named, so a content query or a bare line number has
 /// nothing here to resolve against and says so rather than answering about something else.
-fn named_address(spec: Option<&str>) -> dorc_cli::recorded::AddressAsk {
-    use dorc_cli::recorded::AddressAsk;
+fn named_address(spec: Option<&str>) -> crate::recorded::AddressAsk {
+    use crate::recorded::AddressAsk;
     use dorc_why::UnplaceableAddress;
     let Some(spec) = spec else {
         return AddressAsk::Unasked;
@@ -790,7 +794,7 @@ fn named_address(spec: Option<&str>) -> dorc_cli::recorded::AddressAsk {
     read_current_source(path).map_or(
         AddressAsk::Unplaceable(UnplaceableAddress::CurrentSourceUnreadable),
         |bytes| {
-            AddressAsk::Read(dorc_cli::source_comparison::NamedFile {
+            AddressAsk::Read(crate::source_comparison::NamedFile {
                 path: path.to_owned(),
                 line,
                 bytes,
@@ -839,7 +843,7 @@ fn read_bounded(path: &str, cap: u64) -> Option<Vec<u8>> {
 /// as one would land the durable at whatever the empty string resolves to.
 struct ProcessEnvironment;
 
-impl dorc_cli::durable::RootEnvironment for ProcessEnvironment {
+impl crate::durable::RootEnvironment for ProcessEnvironment {
     fn var(&self, name: &str) -> Option<String> {
         std::env::var(name).ok().filter(|value| !value.is_empty())
     }
@@ -857,18 +861,19 @@ impl dorc_cli::durable::RootEnvironment for ProcessEnvironment {
 /// bytes, source text, receipt contents and TTY state reach none of it. The KEY root is untouched
 /// by construction — `RootInputs` offers no way for a store root to reach the configuration role.
 fn production_receipt_edge(
+    seams: &Seams,
     args: &Args,
-) -> Result<dorc_cli::durable::LocalReceiptEdgeV1, dorc_cli::durable::EdgeRefusal> {
-    let roots =
-        dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), &ProcessEnvironment)
-            .map_err(dorc_cli::durable::EdgeRefusal::Roots)?;
+) -> Result<crate::durable::LocalReceiptEdgeV1, crate::durable::EdgeRefusal> {
+    let roots = seams
+        .base_roots(&ProcessEnvironment)
+        .map_err(crate::durable::EdgeRefusal::Roots)?;
     let roots = match args.receipts.as_deref() {
         Some(folder) => roots
             .with_store_root(&absolute_controller_path(folder))
-            .map_err(dorc_cli::durable::EdgeRefusal::Roots)?,
+            .map_err(crate::durable::EdgeRefusal::Roots)?,
         None => roots,
     };
-    Ok(dorc_cli::durable::LocalReceiptEdgeV1::of(roots))
+    Ok(crate::durable::LocalReceiptEdgeV1::of(roots))
 }
 
 /// One admin-typed folder, as an absolute controller path.
@@ -927,7 +932,7 @@ impl OutputSink for ProductionOutputSink {
 /// error) so the legacy `dorc --book=… < results` invocation parses unchanged.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn parse_args() -> Result<Invocation, Diag> {
     let raw: Vec<String> = std::env::args().skip(1).collect();
@@ -960,7 +965,7 @@ fn render_ctx() -> dorc_aid::RenderCtx<'static> {
 /// until a page case exists for them.
 #[cfg(test)]
 fn chrome_parts(slug: &'static str, values: &[&str]) -> dorc_aid::tagged::RenderParts {
-    let mut parts = dorc_cli::chrome_line_parts(&render_ctx(), slug, values);
+    let mut parts = crate::chrome_line_parts(&render_ctx(), slug, values);
     parts.push(dorc_aid::tagged::RenderPart::Arrangement {
         text: "\n".into(),
         slug: "cli-chrome-line-ending",
@@ -971,7 +976,7 @@ fn chrome_parts(slug: &'static str, values: &[&str]) -> dorc_aid::tagged::Render
 fn report_invocation_error(diag: &Diag) {
     eprint!(
         "{}",
-        dorc_cli::invocation_error_parts(&render_ctx(), diag, &Interner::default()).text()
+        crate::invocation_error_parts(&render_ctx(), diag, &Interner::default()).text()
     );
 }
 
@@ -981,7 +986,7 @@ fn report_invocation_error(diag: &Diag) {
 /// diagnostics today, but any it grows are reported to stderr so stdout stays exactly the artifact.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn strip_command(path: &str) -> Result<(), Diag> {
     let src = std::fs::read_to_string(path).map_err(|e| humane_read_error("source", path, &e))?;
@@ -1002,7 +1007,7 @@ fn strip_command(path: &str) -> Result<(), Diag> {
 /// the same convention.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn read_input(kind: &str, path: &str) -> Result<String, Diag> {
     if path == "-" {
@@ -1020,7 +1025,7 @@ fn read_input(kind: &str, path: &str) -> Result<String, Diag> {
 /// directory that cannot be read is a humane error.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn resolve_pre_sources(
     pre_sources: &[String],
@@ -1043,7 +1048,7 @@ fn resolve_pre_sources(
 }
 
 /// Append every file the loaded oracles `.`-source, transitively, to the loaded set
-/// (`28Q:pin-oracle-side-sourcing-amendment`; the pure half is `dorc_cli::sourcing`).
+/// (`28Q:pin-oracle-side-sourcing-amendment`; the pure half is `crate::sourcing`).
 ///
 /// The filesystem half of the include-tree, and therefore sited at this edge rather than in the lib
 /// (`io-at-edges-only` · `lib-target-is-a-loom-seam`). A target that cannot be read, or that does
@@ -1070,10 +1075,10 @@ fn read_sourced_oracles(
     let mut cursor = 0;
     while let Some(src) = srcs.get(cursor).cloned() {
         cursor = cursor.saturating_add(1);
-        if !dorc_cli::sourcing::satisfies_the_contract(&src) {
+        if !crate::sourcing::satisfies_the_contract(&src) {
             continue;
         }
-        for target in dorc_cli::sourcing::top_level_load_targets(&src) {
+        for target in crate::sourcing::top_level_load_targets(&src) {
             let Some(wanted) = cwd.resolve_dot(&target) else {
                 continue;
             };
@@ -1086,7 +1091,7 @@ fn read_sourced_oracles(
             let Ok(text) = std::fs::read_to_string(&wanted) else {
                 continue;
             };
-            if !dorc_cli::sourcing::satisfies_the_contract(&text) {
+            if !crate::sourcing::satisfies_the_contract(&text) {
                 continue;
             }
             paths.push(wanted);
@@ -1099,7 +1104,7 @@ fn read_sourced_oracles(
 
 /// Read the sources a BOOK `.`-sources, transitively (`30I:rul-books-load-but-do-not-speak`).
 ///
-/// The I/O half only: which of them a book reaches is [`dorc_cli::snapshot::book_reached`], asked
+/// The I/O half only: which of them a book reaches is [`crate::snapshot::book_reached`], asked
 /// once the reading is done, so the binary and the in-process why driver partition by ONE rule.
 ///
 /// A book's `.` is ordinary flowing sh — its operand resolves through the same value plane every
@@ -1133,11 +1138,11 @@ fn read_book_sourced(
     let book_ast = dorc_syntax::parse(book_src).value;
     let mut refused: BTreeSet<String> = BTreeSet::new();
     for _ in 0..ACQUISITION_ROUNDS_CAP {
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd.clone(),
             paths.clone(),
             srcs.clone(),
-            &dorc_cli::snapshot::LoadPositions::book_sourced((ambient..paths.len()).collect())
+            &crate::snapshot::LoadPositions::book_sourced((ambient..paths.len()).collect())
                 .with_dependencies(load_dependencies.clone()),
             book_path,
             book_src,
@@ -1164,7 +1169,7 @@ fn read_book_sourced(
             // file onto the host. A marker-free one is an ordinary sh INCLUSION, read for its bytes
             // and modelled not at all; the snapshot derives that from the same marker.
             if dorc_oracle::marker::has_marker(&text)
-                && !dorc_cli::sourcing::satisfies_the_contract(&text)
+                && !crate::sourcing::satisfies_the_contract(&text)
             {
                 continue;
             }
@@ -1304,7 +1309,7 @@ fn executable_exts() -> Vec<String> {
 /// signal — `27R` §8 delta-exit-trichotomy-sharpened).
 fn lint_command(args: &LintArgs) -> ExitCode {
     if args.list_sources {
-        print!("{}", dorc_cli::lint_sources_parts(&render_ctx()).text());
+        print!("{}", crate::lint_sources_parts(&render_ctx()).text());
         return ExitCode::SUCCESS;
     }
     let inputs = match read_lint_inputs("file", &args.files) {
@@ -1356,7 +1361,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
         dorc_lint::lint(&inputs, &oracles, options, &SubprocessRunner, only)
     };
 
-    let operational = dorc_cli::lint_operational_diagnostic(args, inputs.len(), &report);
+    let operational = crate::lint_operational_diagnostic(args, inputs.len(), &report);
     if inputs.is_empty() {
         if args.format == LintFormat::Jsonl {
             print!("{}", dorc_lint::render::render_jsonl(&report));
@@ -1391,7 +1396,7 @@ fn lint_command(args: &LintArgs) -> ExitCode {
 /// cannot lint what it cannot read — an operational failure, `27R` §8b). `kind` labels the humane error.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintInput>, Diag> {
     let mut inputs = Vec::new();
@@ -1413,13 +1418,13 @@ fn read_lint_inputs(kind: &str, paths: &[String]) -> Result<Vec<dorc_lint::LintI
 /// (the e2e runner `chmod +x`s them), so a plain write suffices and this stays cross-platform.
 #[expect(
     clippy::result_large_err,
-    reason = "cold invocation path; see dorc_cli::parse_args_from"
+    reason = "cold invocation path; see crate::parse_args_from"
 )]
 fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(), Diag> {
     if files.is_empty() {
         return Ok(()); // wrapper-free / already-answered run — nothing to materialize.
     }
-    std::fs::create_dir_all(dir).map_err(|e| dorc_cli::shim_write_error(dir, &e))?;
+    std::fs::create_dir_all(dir).map_err(|e| crate::shim_write_error(dir, &e))?;
     let mut staged: Vec<(std::path::PathBuf, std::path::PathBuf)> = Vec::new();
     for (name, content) in files {
         let path = std::path::Path::new(dir).join(name);
@@ -1429,16 +1434,13 @@ fn materialize_shim_dir(dir: &str, files: &BTreeMap<String, String>) -> Result<(
                 let _ = std::fs::remove_file(temp);
             }
             let _ = std::fs::remove_file(&temp);
-            return Err(dorc_cli::shim_write_error(
-                &path.display().to_string(),
-                &error,
-            ));
+            return Err(crate::shim_write_error(&path.display().to_string(), &error));
         }
         staged.push((temp, path));
     }
     for (temp, path) in staged {
         std::fs::rename(&temp, &path)
-            .map_err(|e| dorc_cli::shim_write_error(&path.display().to_string(), &e))?;
+            .map_err(|e| crate::shim_write_error(&path.display().to_string(), &e))?;
     }
     Ok(())
 }
@@ -1457,81 +1459,13 @@ fn write_shim(temp: &std::path::Path, content: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-/// The harness's clock pin (`rul-fixture-identity-never-production`) — Unix milliseconds, and the
-/// ONE substitution point for the run's instant, exactly as `records::Framing::spike` is the one
-/// substitution point for the run's nonce/host.
-///
-/// It exists because the why surface now DATES its output: a receipt header and a `reported` row's
-/// run-instant are wall-clock values, so a committed transcript could otherwise never be a
-/// fixpoint. A rendered-but-wrong timestamp was the alternative and is strictly worse — dating a
-/// receipt wrongly is mis-attribution, the top of `271:rul-sin-ordering` — so the real clock stays
-/// the default and the pin is something a harness must deliberately set.
-const FIXTURE_CLOCK_ENV: &str = "DORC_FIXTURE_CLOCK_MS";
-
-/// The clock this invocation runs on: the harness pin when one is set, else the real one.
-/// Read at the process edge, once (`io-at-edges-only`). A free function rather than a
-/// [`RunClock`] method because the type itself is pure and lives across the loom seam; the
-/// environment read is what has to stay on this side of it.
-fn clock_for_invocation() -> RunClock {
-    match std::env::var(FIXTURE_CLOCK_ENV)
-        .ok()
-        .as_deref()
-        .map(str::parse::<u64>)
-    {
-        Some(Ok(millis)) => RunClock::Ticking {
-            at: dorc_core::RunInstant(millis),
-            step_millis: 0,
-        },
-        Some(Err(_)) => RunClock::Absent,
-        None => system_clock(),
-    }
-}
-
-/// The harness's stdout-posture pin, on [`FIXTURE_CLOCK_ENV`]'s footing and for the same reason:
-/// the fact is real, non-hermetic, and read once at the process edge, and a battery that drives the
-/// binary as a subprocess has to be able to say which cell it means.
-///
-/// CLOSED vocabulary — `interactive` or `piped`. Anything else, including absence, asks the terminal
-/// itself, so a typo degrades to the truth rather than to a chosen answer.
-const STDOUT_POSTURE_ENV: &str = "DORC_STDOUT_POSTURE";
-
-/// Is a person reading this run's stdout (`30Ng:rul-piped-stdout-carries-a-full-plan`)?
-///
-/// The ONE terminal read, at the edge. It decides which stream carries the ARTIFACT, and therefore
-/// whether the plan on stdout has to be complete — so it is an injected value from here inward,
-/// never a question anything below the edge asks (`io-at-edges-only` · `inv-determinism`).
-fn stdout_posture() -> dorc_cli::artifact::StdoutPosture {
-    use dorc_cli::artifact::StdoutPosture;
-    use std::io::IsTerminal as _;
-
-    match std::env::var(STDOUT_POSTURE_ENV).ok().as_deref() {
-        Some("interactive") => StdoutPosture::Interactive,
-        Some("piped") => StdoutPosture::NonInteractive,
-        _ if std::io::stdout().is_terminal() => StdoutPosture::Interactive,
-        _ => StdoutPosture::NonInteractive,
-    }
-}
-
-/// The ONE wall-clock read. A clock the platform cannot place after the epoch answers
-/// [`RunClock::Absent`] rather than saturating to a fabricated zero (`inv-no-throw`).
-fn system_clock() -> RunClock {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .ok()
-        .and_then(|d| u64::try_from(d.as_millis()).ok())
-        .map_or(RunClock::Absent, |millis| RunClock::Ticking {
-            at: dorc_core::RunInstant(millis),
-            step_millis: 0,
-        })
-}
-
 /// Publish a whole artifact set under `dir`, atomically (`30I` §7.5).
 ///
 /// # Errors
 /// Returns the publisher's closed refusal, having left no partial generation behind.
 fn publish_artifact(
     dir: &str,
-    set: &dorc_cli::artifact::ArtifactSet,
+    set: &crate::artifact::ArtifactSet,
 ) -> Result<(), artifact_store::PublishRefusal> {
     artifact_store::publish(
         dir,
@@ -1552,7 +1486,7 @@ mod the_store_walk_hands_the_graph_real_documents {
     /// already proves the classifier with real images, and could not have caught this.
     #[test]
     fn no_ingest_call_site_passes_a_stand_in_image() {
-        let src = include_str!("main.rs");
+        let src = include_str!("compose.rs");
         for species in ["ingest_plan", "ingest_intent", "ingest_outcome"] {
             let needle = format!("{species}(");
             let calls: Vec<&str> = src
@@ -1775,17 +1709,17 @@ mod acquisition_tests {
         );
         assert_eq!(names(&included.paths), ["child.sh".to_owned()].into());
         assert_eq!(included.reached, [0].into());
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             package.cwd(),
             included.paths.clone(),
             included.srcs.clone(),
-            &dorc_cli::snapshot::LoadPositions::book_sourced(included.reached.clone()),
+            &crate::snapshot::LoadPositions::book_sourced(included.reached.clone()),
             "book.sh",
             ". ./child.sh\n",
         );
         assert_eq!(
             snapshot.role_of(0),
-            Some(dorc_cli::snapshot::SourceRole::PlainInclusion),
+            Some(crate::snapshot::SourceRole::PlainInclusion),
             "read for its BYTES, and classified as modelled-not-at-all"
         );
 
@@ -1840,11 +1774,11 @@ mod acquisition_tests {
             let (paths, srcs) = (acquired.paths, acquired.srcs);
             let reached = acquired.reached;
             let found = ordered_names(&paths);
-            let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+            let snapshot = crate::snapshot::StaticLoadSnapshot::over(
                 cwd,
                 paths,
                 srcs,
-                &dorc_cli::snapshot::LoadPositions::book_sourced(reached.clone()),
+                &crate::snapshot::LoadPositions::book_sourced(reached.clone()),
                 book_path,
                 book,
             );
@@ -1852,7 +1786,7 @@ mod acquisition_tests {
             let cfg = dorc_analysis::cfg::build(&ast).value;
             let mut interner = dorc_core::Interner::default();
             let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
-            let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+            let definitions = crate::world::definition_table(&snapshot, &ast);
             let env = {
                 let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
                 dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane)
@@ -2548,11 +2482,11 @@ mod acquisition_tests {
             super::read_sourced_oracles(&cwd, vec![named_path], vec![named_src]);
         let book = "wombat sync a.conf\n";
         let acquired = super::read_book_sourced(&cwd, "book.sh", book, paths, srcs, &dependencies);
-        let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
+        let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd,
             acquired.paths,
             acquired.srcs,
-            &dorc_cli::snapshot::LoadPositions::book_sourced(acquired.reached)
+            &crate::snapshot::LoadPositions::book_sourced(acquired.reached)
                 .with_dependencies(dependencies),
             "book.sh",
             book,
@@ -2562,7 +2496,7 @@ mod acquisition_tests {
         let mut interner = dorc_core::Interner::default();
         let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
         let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
-        let definitions = dorc_cli::world::definition_table(&snapshot, &ast);
+        let definitions = crate::world::definition_table(&snapshot, &ast);
         let env = dorc_analysis::funcenv::analyze(&ast, &cfg, &definitions, &plane);
         dorc_analysis::funcenv::LiveDefinitions::new(&env, &definitions)
             .definition_before(cfg.exit(), role)
@@ -2621,9 +2555,9 @@ mod acquisition_tests {
 
 #[cfg(test)]
 mod snapshot_id_space_tests {
-    use dorc_cli::snapshot::StaticLoadSnapshot;
+    use crate::snapshot::StaticLoadSnapshot;
 
-    use dorc_cli::world::source_file_id;
+    use crate::world::source_file_id;
 
     use super::oracle_locus;
 
@@ -2632,7 +2566,7 @@ mod snapshot_id_space_tests {
             dorc_core::loadpath::Cwd::default(),
             vec!["a.oracle.sh".to_owned(), "b.oracle.sh".to_owned()],
             vec!["# a\n".to_owned(), "# b\nsecond\n".to_owned()],
-            &dorc_cli::snapshot::LoadPositions::roots_only(),
+            &crate::snapshot::LoadPositions::roots_only(),
             "webhost.sh",
             "# book\n",
         );
@@ -2701,6 +2635,7 @@ mod snapshot_id_space_tests {
     reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
 )]
 fn ship_consented_apply(
+    seams: &Seams,
     sink: &mut dyn OutputSink,
     args: &Args,
     host: &str,
@@ -2735,12 +2670,12 @@ fn ship_consented_apply(
     // The apply route stands up no engine, so it holds no clock from one: the reading is this
     // seat's own, taken at the process edge like every other. Dating it `None` unconditionally
     // would be a different claim — that this run had no clock — rather than a missing wire.
-    let mut clock = clock_for_invocation();
-    let invocation = dorc_cli::apply::apply_invocation(host, clock.now());
-    let request = dorc_cli::apply::ConsentedApplyRequest {
+    let mut clock = seams.clock();
+    let invocation = crate::apply::apply_invocation(host, clock.now());
+    let request = crate::apply::ConsentedApplyRequest {
         plan: &artifact,
         destination: &destination,
-        nonce: &transport_edge::mint_nonce(),
+        nonce: &seams.attempt_nonce(),
         timeout: args.apply_timeout.map(std::time::Duration::from_secs),
         invocation: &invocation,
         limits: &dorc_receipt::limits::ReceiptLimits::V1,
@@ -2748,36 +2683,35 @@ fn ship_consented_apply(
         // context axis is unentered, so what it produced is controller-authored.
         standup_account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
     };
-    let mut ids =
-        dorc_cli::receipt_edge::OsReceiptIdSource::over(dorc_cli::receipt_edge::OsEntropy);
+    let mut ids = seams.receipt_id_source();
     // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
     // nothing here constructs: an apply that cannot publish its intent refuses before the host is
     // contacted, which is what the pre-dispatch boundary is for.
-    let edge = production_receipt_edge(args)
-        .map_err(|refusal| apply_edge_refused(&refusal, dorc_cli::engine::NO_STATE_ROOT))?;
+    let edge = production_receipt_edge(seams, args)
+        .map_err(|refusal| apply_edge_refused(&refusal, crate::engine::NO_STATE_ROOT))?;
     let store = edge.state_base().to_owned();
-    let mut io = dorc_cli::durable::NativeIo::new();
-    let mut generator = dorc_cli::durable::OsKeysetGenerator::over(dorc_cli::durable::OsKeyEntropy);
+    let mut io = crate::durable::NativeIo::new();
+    let mut generator = seams.keyset_generator();
     let open = edge
-        .open_for_write(&mut io, &mut generator)
+        .open_for_write(&mut io, &mut *generator)
         .map_err(|refusal| apply_edge_refused(&refusal, &store))?;
-    let mut order = dorc_cli::receipt_edge::RunClockOrder::of(&mut clock);
+    let mut order = crate::receipt_edge::RunClockOrder::of(&mut clock);
     let signer = open.keys().signer();
     let sealer = open.keys().encryption().sealer();
     let mut placement = open.placement(&mut io);
     // The driver is built only once the durable edge is open. It opens nothing by itself, but a
     // run that cannot record its intent should not have announced a transport either — the
     // pre-dispatch boundary is easier to read when nothing transport-shaped precedes it.
-    let mut driver = transport_edge::driver_for_invocation(
+    let mut driver = seams.transport_driver(
         args.connect_timeout,
         args.accept_new,
         args.ssh_config.as_deref(),
     );
-    let reached = dorc_cli::apply::consented_apply(
+    let reached = crate::apply::consented_apply(
         &request,
-        &mut ids,
-        dorc_cli::apply::ApplyAuthorization::RequiredPublication(
-            dorc_cli::apply::ApplyPublishingCapabilities::of(
+        &mut *ids,
+        crate::apply::ApplyAuthorization::RequiredPublication(
+            crate::apply::ApplyPublishingCapabilities::of(
                 &mut order,
                 signer,
                 &mut placement,
@@ -2832,7 +2766,7 @@ fn report_shipment(
 /// named the step and dropped the only thing a reader acts on: those repairs are in different
 /// places, and one of them is not even in the operator's profile
 /// (`30Rs:fix-apply-durable-reporting`).
-fn apply_edge_refused(refusal: &dorc_cli::durable::EdgeRefusal, store: &str) -> Diag {
+fn apply_edge_refused(refusal: &crate::durable::EdgeRefusal, store: &str) -> Diag {
     Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
         dorc_aid::diag::ApplyPlanNotDispatchable {
             reason: refusal.token(),
@@ -2845,13 +2779,13 @@ fn apply_edge_refused(refusal: &dorc_cli::durable::EdgeRefusal, store: &str) -> 
 ///
 /// One code and a closed reason word rather than sibling codes: the world is one — an apply that
 /// bound nothing and shipped nothing — and only the step that did not close differs.
-fn apply_refused(refusal: &dorc_cli::apply::ConsentedApplyRefusal, store: &str) -> Diag {
-    use dorc_cli::apply::ConsentedApplyRefusal;
+fn apply_refused(refusal: &crate::apply::ConsentedApplyRefusal, store: &str) -> Diag {
+    use crate::apply::ConsentedApplyRefusal;
     let reason = match refusal {
         ConsentedApplyRefusal::Image(_) => "image-not-recordable",
         ConsentedApplyRefusal::Preparation(_) => "session-not-preparable",
         ConsentedApplyRefusal::Publication(publication) => {
-            dorc_cli::apply::publication_refusal_word(publication)
+            crate::apply::publication_refusal_word(publication)
         }
     };
     Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
@@ -3000,7 +2934,7 @@ fn parse_reach_end_record(rest: &str, out: &mut SiteResults) {
     if let (Some(arm), Some(count), Some(body_rc)) = (arm, count, body_rc) {
         out.reach_ends.insert(
             (coord.to_owned(), arm),
-            dorc_cli::results::EmissionClose { count, body_rc },
+            crate::results::EmissionClose { count, body_rc },
         );
     }
 }
@@ -3053,7 +2987,7 @@ fn parse_results(
                     }
                     if let (Some(count), Some(body_rc)) = (count, body_rc) {
                         out.derivation_ends
-                            .insert(site, dorc_cli::results::EmissionClose { count, body_rc });
+                            .insert(site, crate::results::EmissionClose { count, body_rc });
                     }
                 }
             }
@@ -3139,7 +3073,7 @@ fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[Strin
             }
         }
     }
-    dorc_cli::unloaded_sibling_oracle_diagnostics(oracle_paths, &discovered)
+    crate::unloaded_sibling_oracle_diagnostics(oracle_paths, &discovered)
 }
 
 fn report_at(
@@ -3243,13 +3177,16 @@ fn severity_style(severity: Severity) -> (&'static str, anstyle::Style) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dorc_cli::oracle_path_key;
+    use crate::oracle_path_key;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
     #[test]
     fn run_contains_no_direct_output_writes() {
-        let source = include_str!("main.rs");
-        let start = source.find("fn run(").expect("run function");
+        // The lint tool adapter's `run` (`fn run(&self, tool: …)`); the needle is specific so it
+        // never lands on the composition entry point `pub fn run(seams)`, which legitimately prints
+        // help/version at the edge.
+        let source = include_str!("compose.rs");
+        let start = source.find("fn run(&self, tool").expect("run function");
         let end = source[start..]
             .find("\nfn ")
             .map_or(source.len(), |offset| start + offset);
@@ -3936,9 +3873,8 @@ mod tests {
     /// word means different things at a per-user root and at a named one.
     #[test]
     fn a_refused_durable_edge_keeps_its_own_word_and_names_its_store() {
-        let refusal = dorc_cli::durable::EdgeRefusal::Store(
-            dorc_cli::durable::StoreOpenRefusal::NotADirectory,
-        );
+        let refusal =
+            crate::durable::EdgeRefusal::Store(crate::durable::StoreOpenRefusal::NotADirectory);
         let diag = apply_edge_refused(&refusal, "/state/dorc/receipts");
         assert!(
             matches!(
@@ -5077,19 +5013,19 @@ apt_get__is_converged() {
                 attribution
                     .causes
                     .iter()
-                    .any(|cause| matches!(cause, dorc_cli::why::CascadeCause::Replacement { .. }))
+                    .any(|cause| matches!(cause, crate::why::CascadeCause::Replacement { .. }))
             })
             .expect("the query validity flip retains its replacement cause");
         let replacement = attribution
             .causes
             .iter()
             .find_map(|cause| match cause {
-                dorc_cli::why::CascadeCause::Replacement {
+                crate::why::CascadeCause::Replacement {
                     replaced_line,
                     fact,
                     round,
                 } => Some((*replaced_line, *fact, *round)),
-                dorc_cli::why::CascadeCause::DeadBranch { .. } => None,
+                crate::why::CascadeCause::DeadBranch { .. } => None,
             })
             .expect("the retained cause is replacement-shaped");
         assert_eq!(replacement, (1, upstream_fact, 1));

@@ -5,34 +5,13 @@
 //! learns that a host exists: it is handed evidence bytes exactly as it would be handed the
 //! contents of `--results`, and it cannot tell which happened.
 
-use dorc_aid::diag::{Diag, DiagCode};
 use dorc_plan::records::{Framing, Nonce, RemoteIdentity};
 use dorc_transport::{
-    HostId, LocalDriver, Phase, SessionDriver, SessionMarker, SessionOutcome, SessionRequest,
-    SshDriver, SshOptions, TransportDiagnosis,
+    HostId, Phase, SessionDriver, SessionMarker, SessionOutcome, SessionRequest, TransportDiagnosis,
 };
-use std::path::PathBuf;
+
+use dorc_aid::diag::{Diag, DiagCode};
 use std::time::Duration;
-
-/// Selects a non-ssh driver, for the acceptance tiers that must exercise the shipping path
-/// without a network (`26D` §5 T1/T2).
-///
-/// Read only in debug builds. A release binary has no code path from this variable to a driver
-/// choice at all, which matters because the hazard is mis-attribution rather than mere
-/// weirdness: a run that believes it reached `web1` while executing locally would write `web1`
-/// into its records and its receipt (`271:rul-sin-ordering` puts mis-attributed error at the
-/// top). Selecting it also announces itself, so a transcript never quietly says "host" and means
-/// "here".
-const TRANSPORT_ENV: &str = "DORC_TRANSPORT";
-
-/// The local shell's own name for itself, when it differs from the OS's name for it.
-const TRANSPORT_INTERPRETER_ENV: &str = "DORC_TRANSPORT_INTERPRETER";
-
-/// Pins the run nonce so a committed transcript can be a fixpoint, exactly as
-/// `DORC_FIXTURE_CLOCK_MS` pins the clock. No normalizer may touch rendered output
-/// (`seam-tolerated-nondeterminism-stops-at-the-run-log`), so pinning the source is the only way
-/// a driven transcript is reproducible.
-const FIXTURE_NONCE_ENV: &str = "DORC_FIXTURE_NONCE";
 
 /// How many times a probe may be re-shipped after a transport loss (`260` dec-26-probe-retry).
 ///
@@ -41,33 +20,24 @@ const FIXTURE_NONCE_ENV: &str = "DORC_FIXTURE_NONCE";
 /// phase-keying spelled at the transport.
 const PROBE_RETRIES: u32 = 2;
 
-/// The run's nonce, minted once at the edge.
+/// The run's nonce, minted from the clock and pid — the `Os` nonce seam's production draw.
 ///
 /// Unique, not unpredictable — and the distinction is deliberate. The host is HANDED this nonce
 /// (it is baked into the artifact we ship it), so secrecy against the host is not a property
 /// this value could have. What it must do is separate one attempt from another and one run from
 /// another, so a killed attempt's zombie writer and a mis-plumbed stream fail to parse rather
-/// than fold. Clock and pid give that without a dependency.
+/// than fold. Clock and pid give that without a dependency. A harness selects the seeded nonce
+/// seam instead (`crate::seam::NonceSeam`); this is the query, the seam is the value.
 ///
 /// This reasoning stops holding if records from several sessions ever share one channel; at that
 /// point unpredictability starts to matter and this needs revisiting.
-pub(crate) fn mint_nonce() -> String {
-    match std::env::var(FIXTURE_NONCE_ENV) {
-        Ok(raw) if usable_pinned_nonce(&raw) => raw,
-        _ => minted_nonce(
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_or(0, |d| d.as_nanos()),
-            std::process::id(),
-        ),
-    }
-}
-
-/// Whether a pinned nonce could survive the marker's charset. One that could not is IGNORED
-/// rather than fatal: the pin is a harness convenience, and a harness typo should cost
-/// determinism, never correctness.
-fn usable_pinned_nonce(raw: &str) -> bool {
-    !raw.is_empty() && raw.chars().all(|c| c.is_ascii_alphanumeric())
+pub(crate) fn minted_process_nonce() -> String {
+    minted_nonce(
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.as_nanos()),
+        std::process::id(),
+    )
 }
 
 /// The derivation, kept a pure function of its inputs so it is testable without mutating the
@@ -75,35 +45,6 @@ fn usable_pinned_nonce(raw: &str) -> bool {
 fn minted_nonce(nanos: u128, pid: u32) -> String {
     let mixed = u64::try_from(nanos & u128::from(u64::MAX)).unwrap_or(0) ^ (u64::from(pid) << 32);
     format!("r{mixed:016x}")
-}
-
-/// What the caller asked for, resolved into a driver.
-pub(crate) fn driver_for_invocation(
-    connect_timeout: Option<u64>,
-    accept_new: bool,
-    ssh_config: Option<&str>,
-) -> Box<dyn SessionDriver> {
-    if cfg!(debug_assertions)
-        && let Ok(spec) = std::env::var(TRANSPORT_ENV)
-        && let Some(shell) = spec.strip_prefix("local:")
-    {
-        eprintln!("dorc: {TRANSPORT_ENV}=local — running through a local shell, not ssh");
-        return Box::new(match std::env::var(TRANSPORT_INTERPRETER_ENV) {
-            Ok(interpreter) if !interpreter.is_empty() => {
-                LocalDriver::new(PathBuf::from(shell), interpreter)
-            }
-            _ => LocalDriver::same_spelling(PathBuf::from(shell)),
-        });
-    }
-    let mut options = SshOptions {
-        accept_new_host_key: accept_new,
-        config_file: ssh_config.map(PathBuf::from),
-        ..SshOptions::default()
-    };
-    if let Some(secs) = connect_timeout {
-        options.connect_timeout = Duration::from_secs(secs);
-    }
-    Box::new(SshDriver::new(options))
 }
 
 /// What a probe shipment produced.
@@ -215,7 +156,7 @@ pub(crate) fn first_carriage_return(bytes: &[u8]) -> Option<usize> {
 
 /// Refuse a shipment whose bytes are not LF-only.
 pub(crate) fn crlf_refusal(which: &str, line: usize) -> Diag {
-    dorc_cli::transport_crlf_error(which, line)
+    crate::transport_crlf_error(which, line)
 }
 
 /// How a remote apply ended, once classified.
@@ -309,12 +250,12 @@ pub(crate) fn host_rejected(raw: &str) -> Diag {
 
 /// Report a session that never reported completion.
 pub(crate) fn session_lost(host: &str, attempts: u32, diagnosis: &TransportDiagnosis) -> Diag {
-    dorc_cli::transport_session_lost(host, attempts, diagnosis)
+    crate::transport_session_lost(host, attempts, diagnosis)
 }
 
 /// Report a remote apply that ran and exited non-zero.
 pub(crate) fn apply_failed(host: &str, status: i32) -> Diag {
-    dorc_cli::transport_apply_failed(host, status)
+    crate::transport_apply_failed(host, status)
 }
 
 /// Report a host that was never contacted, as one of the two worlds that can claim it.
@@ -325,26 +266,14 @@ pub(crate) fn apply_failed(host: &str, status: i32) -> Diag {
 /// `from_io_edge` names.
 pub(crate) fn not_attempted(host: &str, why: &NotAttempted) -> Diag {
     match why {
-        NotAttempted::SpawnRefused(platform) => dorc_cli::transport_spawn_refused(host, platform),
-        NotAttempted::MarkerUnusable => dorc_cli::transport_marker_unusable(host),
+        NotAttempted::SpawnRefused(platform) => crate::transport_spawn_refused(host, platform),
+        NotAttempted::MarkerUnusable => crate::transport_marker_unusable(host),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_pinned_nonce_is_only_honoured_when_it_is_marker_safe() {
-        assert!(usable_pinned_nonce("abc123"));
-        assert!(!usable_pinned_nonce(""));
-        for unsafe_pin in ["not safe!", "a'; rm -rf /; echo '", "a-b", "n=1"] {
-            assert!(
-                !usable_pinned_nonce(unsafe_pin),
-                "a pin that could not survive the marker's charset must be ignored: {unsafe_pin}"
-            );
-        }
-    }
 
     #[test]
     fn minted_nonces_separate_runs_and_are_always_marker_safe() {
@@ -355,7 +284,7 @@ mod tests {
         assert_ne!(a, c, "two concurrent processes must not collide");
         for nonce in [&a, &b, &c] {
             assert!(
-                usable_pinned_nonce(nonce),
+                !nonce.is_empty() && nonce.chars().all(|c| c.is_ascii_alphanumeric()),
                 "a minted nonce must satisfy the marker's charset: {nonce}"
             );
         }
