@@ -110,7 +110,7 @@ the license-contamination map. Cross-references are `docID:slug`.
   dry-run claim) / `24S` (wrapper contexts; proposal-tier; its §0 impossibility ledger
   stands) / `24T` (payload decomposition + the render ladder; proposal-tier) ·
   **`notes/24U` (close-out + where every owed item moved)**. Root `ORACLE_PROVIDES.md`
-  (the oracle information-shapes ledger) was minted here and has not been revised since.
+  (the oracle information-shapes map) was minted here; re-cut to a status-bearing map in r30.
 - **r25 field-trial methodology** — the human's first real contact, pre-registered.
   → `plans/250` (charter) · `plans/252` (THE protocol + fan-out — SUPERSEDED as ceremony
   2026-07-27 by the informal live run, `notes/26D`; the tooling survives at

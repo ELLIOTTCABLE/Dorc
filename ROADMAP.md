@@ -37,8 +37,10 @@
     then the incarnation-invariance razor), then build items 1–4 (context-slot
     generalization AFTER the `FactKey.context` as-built audit — retrofit-hostile; the
     index-kind stdlib; re-keying + expected-sever; the witness on `30S` rails); items 5–7
-    ride the identity tier and the stdlib arc. Sitting record `notes/26M` (its live queue).
-    Lean: IN — the round's spine.
+    ride the identity tier and the stdlib arc — the identity tier's three owner
+    declarations (`kind__overlaps`, the referent-transparent declaration, the
+    per-selector identity relation; `30W` §1–§3, `30T` §6) are NOT ruled and not yet
+    authorable. Sitting record `notes/26M` (its live queue). Lean: IN — the round's spine.
   - `cand-finished-definitions` — `plans/30U`: the `disturbance_reaches` respell, the
     `unrelated` answer + settle gate, `nothing-else` record recognition, the reds; §10 is
     pending a successor's rewrite against the tree; register row `an-kind-reach` stands at
@@ -48,7 +50,8 @@
     (independent, every domain); `comp-identity-tier` (shares plumbing with
     `30P:mech-two-standups`); `comp-artifact-injectivity`; later
     `comp-channel-relative-speech` and `comp-content-establishment` (the write-if-changed
-    idiom's own elision; the FORFEITS capture). Lean: IN for the first four, the rest by
+    idiom's own elision; the FORFEITS capture). The binder member's NAME is unminted —
+    mint it before any fs-stdlib authoring. Lean: IN for the first four, the rest by
     energy. (This supersedes the older "write-elision needs a vouch-holder" row: `30T`
     rules who authors the compare.)
   - `cand-environment-identity` — `plans/30S`: value-carried context keying + the
@@ -95,7 +98,10 @@
     lane: `30O:register-and-steering-debt` (the two-seat explicitness predicate · the
     frameless acquisition exposure · the `30Kb` residue · `doctor` over drvfs) · `307` §6c
     (wall narratives for non-leaf walls; delete `render-heredoc-refused`, bank
-    guards-at-redirected-sites) · the `rc-vs-genkill-permanent-law` steering re-home.
+    guards-at-redirected-sites) · the `rc-vs-genkill-permanent-law` steering re-home ·
+    at the round's close, re-synthesize `ORACLE_PROVIDES.md`, the docs-tree contract
+    page, and the affected `writing-oracles/` chapters (both were brought current to the
+    r30 designs on 2026-09-02; chapter 03 still lacks the `30S` env-witness obligation).
   - `cand-r31-horizon-glance` — the pins already carrying an `r31` horizon
     (`mise run xfail:census`): `r31:kernel-punt-glance` (five; FORFEITS rows
     `forfeit-value-narrowing-by-test` · `forfeit-file-content-facts-from-exact-checks` ·
@@ -123,7 +129,10 @@ Human-acked as real; no date. Arcs first, then the sittings and rulings the huma
 - **`arc-predict-contract`** — `notes/30D` + `plans/30J`, design RULED, build
   deadline-triggered (`30J` §10: the earliest of the stdlib revival, a survival-authoring
   trial, third-party publication); `30D`'s return-2 drop still owes its §4.3
-  typed-consequence ruling. Build nothing opportunistically before the trigger.
+  typed-consequence ruling, and `30D` §10 leaves the record byte-grammar and the
+  one-verb-or-two question as implementation latitude (the docs now teach the
+  `predicts <set>` / `predicts none` strawman). Build nothing opportunistically before
+  the trigger.
 - **`arc-r26-revival`** (reactive/capture + multi-host) — `26B`/`26C` + `260`–`262`; after
   r30. Entry gates: the un-ruled R2-entry question (freeze-in-artifact vs
   structure-preserving folds) · `26C` §1's stability confirmation · a FRESH `26C` §7

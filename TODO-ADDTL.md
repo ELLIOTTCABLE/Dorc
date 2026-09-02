@@ -31,10 +31,6 @@ in `30O:register-and-steering-debt`, not here.
   `--faithful` one-leaf-one-exec are both unowned; probe honesty rides author discipline
   (`077`, `24O` item-13). The human's own `TODO.md` distrusts seccomp-in-core without a
   threat model — this row is the reminder that *nothing* holds the line today.
-* [ ] **ORACLE_PROVIDES.md is aging without an owner** — r24-vintage (2026-07-03), never
-  audited, untouched through the `281`/`30D`/`30U`/`30W` language changes, yet its slugs are
-  cited from code (`core::claim`, `oracle::touches`, `plan::survival`), ANALYZER-NEEDS, KNOBS
-  and `30Ta`. Either refresh it as the language-surface map or demote its self-declared tier.
 
 ## Pre-publication and quality bars
 
@@ -76,6 +72,10 @@ in `30O:register-and-steering-debt`, not here.
 * [ ] **seams-grab-bag** — retries/until · serial non-preclusion · escape-hatches + veto
   polarity · secrets timing (`26B:need-scrub-before-freeze`) · `24R` cheap-adds; each pointer
   is the live re-entry. (Streaming/TUI is on `TODO.md`.)
+* [ ] **docs-tree gaps after the 2026-09-02 re-synthesis** — `writing-oracles/03` lacks the
+  `30S` pin-or-sever obligation (a new subsection, not a small fix) · `04` lacks the
+  mark-block / trailing-bind paragraph · the contract page's §5k lists three unruled
+  identity-tier members with "write nothing against these yet" (cut if absence is preferred).
 * [ ] **`26L` §15's owed investigations** (real glue strawmen, live sibling docs, the minimal
   native-runner shape, preview contract, planner costs) — exploration-tier; the human's
   standing lean is punt-for-now; listed so the next meta-orchestration sitting starts there.
