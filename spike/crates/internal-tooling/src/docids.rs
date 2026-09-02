@@ -19,6 +19,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use crate::corpus::{ch, doc_ids, scanned, starts_with, take_id};
+
 /// Cited IDs with no document, and the in-corpus evidence that each absence is legitimate.
 ///
 /// Three families sit here, all attested at the citing line: slugs a note was DRAFTED under before
@@ -70,46 +72,12 @@ const RETIRED: &[&str] = &[
 /// targets, and missing the subdirectories reported fourteen live documents as dangling.
 const DOC_DIRS: [&str; 2] = ["Research/notes", "Research/plans"];
 
-/// Never descended into for content, wherever it appears; its filenames alone answer existence.
-/// Quarantined material is off-limits to content reads, and this lint has no business being the
-/// exception.
-const QUARANTINE_DIR: &str = "quarantine-DO-NOT-READ";
-
 /// Which spelling produced a citation. Only the bare form needs the corpus-shaped guard below —
 /// a `notes/` path and a `:slug` tail each disambiguate themselves.
 #[derive(PartialEq, Eq)]
 enum Shape {
     Qualified,
     Bare,
-}
-
-fn ch(chars: &[char], i: usize) -> Option<char> {
-    chars.get(i).copied()
-}
-
-fn starts_with(chars: &[char], i: usize, want: &str) -> bool {
-    want.chars()
-        .enumerate()
-        .all(|(off, c)| ch(chars, i.saturating_add(off)) == Some(c))
-}
-
-/// A docID token: 1–3 digits then up to 2 ASCII letters (`307`, `306b`, `27Xf`).
-fn take_id(chars: &[char], i: usize) -> Option<(String, usize)> {
-    let mut end = i;
-    let mut digits = 0_u8;
-    while digits < 3 && ch(chars, end).is_some_and(|c| c.is_ascii_digit()) {
-        end = end.saturating_add(1);
-        digits = digits.saturating_add(1);
-    }
-    if digits == 0 {
-        return None;
-    }
-    let mut letters = 0_u8;
-    while letters < 2 && ch(chars, end).is_some_and(|c| c.is_ascii_alphabetic()) {
-        end = end.saturating_add(1);
-        letters = letters.saturating_add(1);
-    }
-    Some((chars.get(i..end)?.iter().collect(), end))
 }
 
 /// `notes/307`, `plans/309`, `Research/notes/306b` — an explicit path is unambiguous whatever the
@@ -207,12 +175,6 @@ fn references(line: &str) -> Vec<(String, Shape)> {
     found
 }
 
-/// The ID a corpus filename encodes: everything before the first hyphen, if it starts with a digit.
-fn id_of(name: &str) -> Option<&str> {
-    let id = name.split('-').next()?;
-    id.starts_with(|c: char| c.is_ascii_digit()).then_some(id)
-}
-
 /// Does the corpus have a series at this ID's leading digits?
 ///
 /// The one corpus-shaped guard, and it applies to the bare form ALONE. `95K`, `85K`, `50M`, `35M`
@@ -223,79 +185,6 @@ fn id_of(name: &str) -> Option<&str> {
 fn series_exists(id: &str, known: &BTreeSet<String>) -> bool {
     id.get(..2)
         .is_some_and(|series| known.iter().any(|doc| doc.starts_with(series)))
-}
-
-fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    entries
-        .flatten()
-        .filter_map(|entry| {
-            let name = entry.file_name().into_string().ok()?;
-            Some((name, entry.file_type().is_ok_and(|kind| kind.is_dir())))
-        })
-        .collect()
-}
-
-/// Every document ID under `dir`, files and directories alike, all the way down.
-fn doc_ids(dir: &Path, out: &mut BTreeSet<String>) {
-    for (name, is_dir) in dir_entries(dir) {
-        if let Some(id) = id_of(&name) {
-            out.insert(id.to_owned());
-        }
-        if is_dir {
-            doc_ids(&dir.join(name), out);
-        }
-    }
-}
-
-/// Quarantine filenames, gathered by NAME ONLY — no entry is ever opened.
-fn quarantine_ids(dir: &Path, out: &mut Vec<String>) {
-    for (name, is_dir) in dir_entries(dir) {
-        out.push(name.clone());
-        if is_dir {
-            quarantine_ids(&dir.join(name), out);
-        }
-    }
-}
-
-/// Markdown under `dir`. A quarantine is harvested for names and never descended into for content,
-/// wherever in the tree it turns up.
-fn markdown_under(dir: &Path, files: &mut Vec<PathBuf>, quarantined: &mut Vec<String>) {
-    for (name, is_dir) in dir_entries(dir) {
-        let path = dir.join(&name);
-        if is_dir {
-            if name == QUARANTINE_DIR {
-                quarantine_ids(&path, quarantined);
-            } else {
-                markdown_under(&path, files, quarantined);
-            }
-        } else if path.extension().is_some_and(|ext| ext == "md") {
-            files.push(path);
-        }
-    }
-}
-
-/// The three scanned surfaces: the corpus, the steering files, and the root docs.
-fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    markdown_under(&root.join("Research"), &mut files, quarantined);
-    let mut spike = Vec::new();
-    markdown_under(&root.join("spike"), &mut spike, quarantined);
-    files.extend(
-        spike
-            .into_iter()
-            .filter(|path| path.file_name().is_some_and(|name| name == "CLAUDE.md")),
-    );
-    files.extend(
-        dir_entries(root)
-            .iter()
-            .map(|(name, _)| root.join(name))
-            .filter(|path| path.extension().is_some_and(|ext| ext == "md")),
-    );
-    files.sort();
-    files
 }
 
 /// Every citation found in one `(display-path, contents)` pair, resolved against the corpus's

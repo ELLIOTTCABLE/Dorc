@@ -9,6 +9,7 @@ use std::process::ExitCode;
 
 mod arrangement_census;
 mod bless;
+mod corpus;
 mod coverage;
 mod docids;
 mod doctor;
