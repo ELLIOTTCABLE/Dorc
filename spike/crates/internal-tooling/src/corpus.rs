@@ -48,6 +48,13 @@ pub(crate) fn id_of(name: &str) -> Option<&str> {
     id.starts_with(|c: char| c.is_ascii_digit()).then_some(id)
 }
 
+/// A Syncthing conflict copy (`271-foo.sync-conflict-20260101-….md`), which lands beside the real
+/// file in this synced tree. Never a corpus document — indexing one would mint duplicate definition
+/// sites for the same slugs (and a phantom dangling docID for `docids`).
+fn is_sync_conflict(name: &str) -> bool {
+    name.contains(".sync-conflict-")
+}
+
 fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return Vec::new();
@@ -56,6 +63,9 @@ fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
         .flatten()
         .filter_map(|entry| {
             let name = entry.file_name().into_string().ok()?;
+            if is_sync_conflict(&name) {
+                return None;
+            }
             Some((name, entry.file_type().is_ok_and(|kind| kind.is_dir())))
         })
         .collect()
@@ -122,4 +132,17 @@ pub(crate) fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf
     );
     files.sort();
     files
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_sync_conflict;
+
+    #[test]
+    fn it_skips_syncthing_conflict_copies() {
+        assert!(is_sync_conflict(
+            "271-block-settle-rulings-ledger.sync-conflict-20260101-123456-ABCDEF.md"
+        ));
+        assert!(!is_sync_conflict("271-block-settle-rulings-ledger.md"));
+    }
 }
