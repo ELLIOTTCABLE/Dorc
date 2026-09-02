@@ -21,7 +21,7 @@
 
 ---
 
-## NEXT (2026-09-01 — the test-architecture REBUILD; design converged, NOT dispatched)
+## IN FLIGHT (2026-09-02 — the test-architecture REBUILD; design stabilized, sealed review running, build lanes queued)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -33,8 +33,17 @@ attached by block KIND, seams spelled as `$ export` lines, transcripts carrying 
 varied seed by default, declared seed as per-case regression opt-in in every tier; one runner
 with the driver derived; frontmatter 24→9; the needle gate ripped; the batteries split into
 loom goldens vs state-only Rust e2e. Four serial lanes, all in scope, no deferrals except
-kernel-mutating improvements; the human decides on `/opaque-review` before any building step.
-The design statement and its build-planning tail: **`notes/30X`**. Start there.
+kernel-mutating improvements. The design statement and its build-planning tail: **`notes/30X`**.
+The arc is OPEN (2026-09-02): conductor worktree `.tmp/trees/r30-30X-test-infra-decruft-conductor`
+on `ai/r30-30X-test-infra-decruft-conductor`; the conductor ledger sits beside `30X` on that
+branch and folds with it (typed rulings · reconciliation deltas · the dir-cases-versus-looms
+analysis · the lane table). The human's
+2026-09-02 rulings are folded into `30X` §3/§3a (no legacy e2e — every dir-case converts to a
+loom; all prose is loomed; a non-loom test is licensed only by seven closed classes; every
+loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) and §11.
+`/opaque-review` `30-reviewA` runs over the stabilized design BEFORE lane A; an ACK starts the
+four serial Opus lanes in the conductor worktree (checkpoints after A and C); a NACK holds the
+arc for the human.
 
 ## DESIGN SITTING (2026-08-31 → 09-02 — pivot-book language surface; OPEN, banked for a rewind)
 
