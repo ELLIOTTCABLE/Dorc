@@ -1067,4 +1067,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "apply-outcome-unrecorded",
+        when_fires: "a `dorc apply --host` published its intent, spent the permit, dispatched, and then its ApplyOutcome did not reach the store. cli/lib.rs apply_outcome_unrecorded, from the projection cli/apply.rs durable_report reads off one ConsentedApply. {intent} is the intent that DID land, {store} the per-user state base the pair files under, and {reason} the closed word for the write step that did not close.",
+        why: "30R publication-and-dispatch-boundary rules the direction — past the first dispatch a durable-only failure no longer aborts otherwise coherent orchestration — and this is the other half of that sentence, which the production consumer used to drop (30Rs fix-apply-durable-reporting). Error-severity on durable-receipt-unwritten's footing: the outcome is the only record of what a mutation actually reached. Severity decides no exit code, so the run's result stays the shipment's own. It names the intent rather than reading as an absent durable, because a partial trail with a name on it is still answerable — missing material never reads complete (30R standing-invariants). Remediation register (help) wanted: per reason word, plus the fact that the apply RAN and the intent is still queryable.",
+        params: &[],
+        example: "[unwritten: apply-outcome-unrecorded]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
