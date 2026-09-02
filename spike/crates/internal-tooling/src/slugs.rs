@@ -134,18 +134,28 @@ fn take_citation(chars: &[char], i: usize) -> Option<(String, usize)> {
     take_slug(chars, after.saturating_add(1))
 }
 
-/// Every `docID:slug` citation on one line, one entry per occurrence. A citation never starts
-/// mid-word, which keeps the scanner out of `AES256:foo`-shaped interiors.
-fn citations(line: &str) -> Vec<String> {
+/// Every maximal slug-shaped token on one line, each flagged QUALIFIED when it is a `docID:slug`
+/// citation and bare otherwise. Both forms count toward a row's `cited:` line; only the qualified
+/// form mints a row, so the row set stays `defined ∪ qualified-cited` while a bare mention only
+/// augments an existing row. A token never starts mid-word, keeping the scanner out of
+/// `AES256:foo`-shaped interiors.
+fn slug_occurrences(line: &str) -> Vec<(String, bool)> {
     let chars: Vec<char> = line.chars().collect();
     let mut out = Vec::new();
     let mut i = 0_usize;
     while i < chars.len() {
         let fresh = i == 0 || !ch(&chars, i.saturating_sub(1)).is_some_and(char::is_alphanumeric);
-        if fresh && let Some((slug, end)) = take_citation(&chars, i) {
-            out.push(slug);
-            i = end.max(i.saturating_add(1));
-            continue;
+        if fresh {
+            if let Some((slug, end)) = take_citation(&chars, i) {
+                out.push((slug, true));
+                i = end.max(i.saturating_add(1));
+                continue;
+            }
+            if let Some((slug, end)) = take_slug(&chars, i) {
+                out.push((slug, false));
+                i = end.max(i.saturating_add(1));
+                continue;
+            }
         }
         i = i.saturating_add(1);
     }
@@ -344,16 +354,33 @@ fn corpus_files(root: &Path) -> Vec<(String, String)> {
 
 /// Build the row set from `(display-path, contents)` pairs. Pure and disk-free, so the whole
 /// extraction is unit-testable without a real corpus.
+///
+/// A slug earns a ROW iff it is DEFINED or QUALIFIED-cited (`docID:slug`). Its `cited:` line then
+/// lists every document that qualified-cites OR bare-mentions it, EXCLUDING its own defining
+/// documents, one docID per document, count = total occurrences of either form. Bare mentions only
+/// augment an existing row — a token that is never defined or qualified-cited mints no row.
 fn build_rows(files: &[(String, String)]) -> BTreeMap<String, SlugRow> {
     let mut rows: BTreeMap<String, SlugRow> = BTreeMap::new();
+    // Per slug: occurrences (qualified + bare) keyed by document; whether it was ever qualified-cited
+    // (a row-minter); and which documents define it (excluded from its `cited:` set).
+    let mut occ: BTreeMap<String, BTreeMap<String, u32>> = BTreeMap::new();
+    let mut qualified: BTreeSet<String> = BTreeSet::new();
+    let mut defined_by: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
     for (display, text) in files {
         let self_id = doc_id_of(display);
         let lines: Vec<&str> = text.lines().collect();
         for (n, line) in lines.iter().enumerate() {
-            for cited in citations(line) {
-                let row = rows.entry(cited).or_default();
-                row.citing.insert(self_id.clone());
-                row.cite_count = row.cite_count.saturating_add(1);
+            for (slug, is_qualified) in slug_occurrences(line) {
+                let count = occ
+                    .entry(slug.clone())
+                    .or_default()
+                    .entry(self_id.clone())
+                    .or_insert(0);
+                *count = count.saturating_add(1);
+                if is_qualified {
+                    qualified.insert(slug);
+                }
             }
             if let Some((slug, text_after)) = definition(line) {
                 let olds = rename_edges(line);
@@ -364,6 +391,10 @@ fn build_rows(files: &[(String, String)]) -> BTreeMap<String, SlugRow> {
                     text: text_after,
                     para: following_paragraph(&lines, n),
                 };
+                defined_by
+                    .entry(slug.clone())
+                    .or_default()
+                    .insert(self_id.clone());
                 {
                     let row = rows.entry(slug.clone()).or_default();
                     row.defs.push(site);
@@ -383,6 +414,30 @@ fn build_rows(files: &[(String, String)]) -> BTreeMap<String, SlugRow> {
             }
         }
     }
+
+    // A qualified citation mints a row just as a definition does; ensure those rows exist.
+    for slug in &qualified {
+        rows.entry(slug.clone()).or_default();
+    }
+    // Fold both relations into `cited:` — but only for row slugs (defined or qualified-cited), so a
+    // bare-only token, or a rename-only `aka`, never gains a row.
+    for (slug, row) in &mut rows {
+        if !(defined_by.contains_key(slug) || qualified.contains(slug)) {
+            continue;
+        }
+        let Some(doc_counts) = occ.get(slug) else {
+            continue;
+        };
+        let definers = defined_by.get(slug);
+        for (doc, count) in doc_counts {
+            if definers.is_some_and(|d| d.contains(doc)) {
+                continue;
+            }
+            row.citing.insert(doc.clone());
+            row.cite_count = row.cite_count.saturating_add(*count);
+        }
+    }
+
     for row in rows.values_mut() {
         row.defs
             .sort_by(|a, b| (&a.path, a.line).cmp(&(&b.path, b.line)));
@@ -696,7 +751,7 @@ fn sample(label: &str, slugs: &[&String], rows: &BTreeMap<String, SlugRow>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{citations, definition, rename_edges, take_slug};
+    use super::{definition, rename_edges, slug_occurrences, take_slug};
 
     fn slug(line: &str) -> Option<String> {
         definition(line).map(|(s, _)| s)
@@ -746,17 +801,26 @@ mod tests {
     }
 
     #[test]
-    fn it_reads_qualified_citations_only() {
+    fn it_flags_qualified_citations_and_counts_bare_mentions() {
+        // A `docID:slug` is qualified (row-minting); an otherwise-identical bare token is a mention.
         assert_eq!(
-            citations("per `271:rul-sin-ordering` and KNOBS:kvolatile-reads-here"),
-            ["rul-sin-ordering", "kvolatile-reads-here"]
+            slug_occurrences("per `271:rul-sin-ordering` and a bare rul-touches-becomes-disturbs"),
+            [
+                ("rul-sin-ordering".to_owned(), true),
+                ("rul-touches-becomes-disturbs".to_owned(), false),
+            ]
         );
         assert_eq!(
-            citations("see AID-NEEDS:law-collapse-mints-narrative"),
-            ["law-collapse-mints-narrative"]
+            slug_occurrences("see AID-NEEDS:law-collapse-mints-narrative"),
+            [("law-collapse-mints-narrative".to_owned(), true)]
         );
-        assert!(citations("a bare rul-touches-becomes-disturbs is not a citation").is_empty());
-        assert!(citations("15:30 and 100:1 are not").is_empty());
+        // A two-part token and bare line-number pairs are not slugs at all.
+        assert!(slug_occurrences("well-tested 15:30 and 100:1").is_empty());
+        // A longer token is taken maximally, never as a shorter prefix.
+        assert_eq!(
+            slug_occurrences("rul-foo-bar-baz"),
+            [("rul-foo-bar-baz".to_owned(), false)]
+        );
     }
 
     #[test]
