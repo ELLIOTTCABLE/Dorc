@@ -14,6 +14,17 @@ lane A: no builder dispatched, nothing accrues on this branch, the path is the h
 unopened by the conductor. Resumption is a human act; a resumed candidate is re-reviewed under a
 fresh identity.
 
+Successor on-ramp (everything a rewound conductor needs is on this branch): this ledger · `30X` as
+amended at `633fd954` (§3a is the new non-loom law) · `30Xb` (the lane A brief, DRAFT, pre-NACK —
+re-cut against the human's ruling before dispatch) · `30Xc` (the scout inventory: seat table,
+corpus census, plumbing, xfail registry) · `30Xd` (the sealed-review dispatch kit; reuse verbatim
+for `30-reviewB` with the identity/pass/range/report lines changed, and forbid `Monitor` in the
+relay prompt). The review report itself is at
+`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor\Research\quarantine-DO-NOT-READ\30-reviewA-opaque-report.md`
+(committed on this branch as `9b915238`); the conductor never opens it. `ai/main` carries two
+status-only commits from this sitting (`74da908d`, `17403acd`) that this branch must be rebased
+over before any fold.
+
 ## §1 — remit and standing rulings
 
 - `remit-30X-is-the-floor` — build every 30X lane; mild exceedance licensed only toward a
