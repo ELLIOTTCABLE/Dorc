@@ -237,9 +237,10 @@ fn list_bold_def(chars: &[char]) -> Option<(String, usize)> {
     Some((slug, end.saturating_add(2)))
 }
 
-/// Old slugs named by a `(né …)` / `(née …)` / `(nee …)` edge on a definition line, with or
-/// without backticks. Scoped to definition lines by the caller, so a prose `(nee 22F-fd6)` (not a
-/// slug anyway) never mints an edge.
+/// Old slugs named by a `(né …)` / `(née …)` / `(nee …)` / `(ne …)` edge on a definition line,
+/// with or without backticks. All four spellings are equal — no accent is required. Scoped to
+/// definition lines by the caller, so a prose `(nee 22F-fd6)` (not a slug anyway) never mints an
+/// edge. Markers are matched longest-first (`nee` before `ne`) so the bare form never shadows it.
 fn rename_edges(line: &str) -> Vec<String> {
     let chars: Vec<char> = line.chars().collect();
     let mut out = Vec::new();
@@ -247,7 +248,7 @@ fn rename_edges(line: &str) -> Vec<String> {
     while i < chars.len() {
         let fresh = i == 0 || !ch(&chars, i.saturating_sub(1)).is_some_and(char::is_alphanumeric);
         if fresh {
-            for marker in ["née", "né", "nee"] {
+            for marker in ["née", "né", "nee", "ne"] {
                 if starts_with(&chars, i, marker) {
                     let mut j = i.saturating_add(marker.chars().count());
                     if ch(&chars, j) == Some(' ') {
@@ -836,6 +837,19 @@ mod tests {
         assert!(
             rename_edges("(né touches): at-most claims").is_empty(),
             "two-part is not a slug"
+        );
+    }
+
+    #[test]
+    fn a_rename_edge_accepts_the_bare_ne_without_the_accent() {
+        // `ne` with no accent is equal to `né`/`née`/`nee`; the bare form must not shadow `nee`.
+        assert_eq!(
+            rename_edges("- **compare-consumer-map** (ne ternary-compare-consumer-map)"),
+            ["ternary-compare-consumer-map"]
+        );
+        assert_eq!(
+            rename_edges("## `collapse-mints-narrative` (nee `collapse-mints-evidence`)"),
+            ["collapse-mints-evidence"]
         );
     }
 }
