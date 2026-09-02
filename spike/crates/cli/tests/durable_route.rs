@@ -88,10 +88,9 @@ fn dorc(sandbox: &ProfileSandbox, at: &Path) -> Command {
     // ([`plan_at`]), so two runs can still share one recorded moment.
     let mut command = Command::new(env!("CARGO_BIN_EXE_dorc-harness"));
     command.current_dir(at);
-    sandbox.apply(&mut command);
+    sandbox::scrub_harness_env(&mut command, sandbox.root());
     command.env("DORC_SEED", u64::from(next_ordinal()).to_string());
     command.env("DORC_SEAM_SOURCE_MATCH", "pinned:off");
-    command.env("DORC_SEAM_ROOTS", "pinned");
     command
 }
 
@@ -872,5 +871,66 @@ fn no_receipt_suppresses_publication_under_either_store_selection() {
     assert!(
         !named.exists(),
         "and nothing to a named one: the refusal is the only thing that decides"
+    );
+}
+
+/// One `dorc plan` over [`BOOK`] through the SHIPPED binary (`env!("CARGO_BIN_EXE_dorc")`), in
+/// `sandbox`'s profile. The harness seams are set in its environment on purpose: the shipped binary
+/// constructs only the production row (`Seams::os()`) and reads none of them
+/// (`30X:inv-fixture-state-never-typeable-into-main`), so setting them must not change what it mints.
+fn shipped_plan(sandbox: &ProfileSandbox, scratch: &Scratch) {
+    let stdin = scratch.path.join("records.txt");
+    std::fs::write(&stdin, records()).expect("write the records");
+    let input = std::fs::File::open(&stdin).expect("re-open the records");
+    let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
+    sandbox.apply(&mut command);
+    command.current_dir(&scratch.path);
+    command.env("DORC_SEED", "7");
+    command.env("DORC_SEAM_RECEIPT_IDS", "seeded");
+    command.env("DORC_SEAM_CLOCK", "pinned:1769306437000");
+    let out = command
+        .args(["plan", "--book=book.sh", "--results", "-"])
+        .stdin(std::process::Stdio::from(input))
+        .output()
+        .expect("the built binary runs");
+    assert!(
+        out.status.success(),
+        "the shipped plan must complete for its receipt to mean anything; stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}
+
+/// The shipped binary draws its identities from the live OS, not a seam — the one witness this arc
+/// keeps over `30X:inv-division-at-the-narrowest-edge` after the harness twin took the corpus.
+///
+/// Two `dorc plan` runs share one sandbox store and mint two DIFFERENT receipt identities, which a
+/// seeded binary could not: it would compute one name twice and collide. And the keyset lands under
+/// the sandboxed platform root, so the production roots really resolved there. The harness seams are
+/// set in the environment throughout, so the run proves the shipped binary ignores them
+/// (`30X:inv-fixture-state-never-typeable-into-main`) — a regression that read the seed would mint
+/// one identity twice and fail this relation.
+#[test]
+fn the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams() {
+    let sandbox = ProfileSandbox::new("shipped-liveness");
+    let scratch = Scratch::new("shipped-liveness");
+    shipped_plan(&sandbox, &scratch);
+    shipped_plan(&sandbox, &scratch);
+
+    let published = entries(&store_root(&sandbox));
+    assert_eq!(
+        published.len(),
+        2,
+        "two runs into one store publish two documents"
+    );
+    assert_ne!(
+        receipt_id_of(&published[0]),
+        receipt_id_of(&published[1]),
+        "the shipped binary mints from live OS entropy: two runs never share one identity"
+    );
+    assert!(
+        keyset_dir(&sandbox)
+            .join("keyset-manifest-v1.txt")
+            .is_file(),
+        "the production roots resolved to the sandboxed platform variables, where the keyset landed"
     );
 }

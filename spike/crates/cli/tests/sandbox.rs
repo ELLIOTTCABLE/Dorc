@@ -44,6 +44,12 @@ impl ProfileSandbox {
         Self { root }
     }
 
+    /// The sandbox's own directory, above the two role bases — the runner-owned throwaway a harness
+    /// spawn pins its roots seam at (`30Xa:rul-roots-pinned-is-a-literal`).
+    pub(crate) fn root(&self) -> &std::path::Path {
+        &self.root
+    }
+
     /// Where a keyset would land.
     pub(crate) fn config_root(&self) -> PathBuf {
         self.root.join("config")
@@ -78,6 +84,34 @@ pub(crate) fn apply_roots_under(command: &mut std::process::Command, root: &std:
         command.env(key, root.join("state"));
     }
     command.env("HOME", root.join("home"));
+}
+
+/// The roots-seam variable; its pinned value is a runner-owned absolute directory the config/state
+/// roots derive under (`30Xa:rul-roots-pinned-is-a-literal`).
+const ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
+
+/// Point a harness spawn's roots seam at `root` — the runner-owned throwaway the run writes into.
+///
+/// A literal directory, not the platform variables: the harness reads no `APPDATA`/`HOME`/`XDG_*`,
+/// so a scrubbed spawn still resolves (`30Xa:rul-roots-pinned-is-a-literal`).
+pub(crate) fn pin_roots_at(command: &mut std::process::Command, root: &std::path::Path) {
+    command.env(ROOTS_ENV, format!("pinned:{}", root.display()));
+}
+
+/// Scrub a harness spawn to a credential-free environment and pin its roots at `root`
+/// (`30X:loom-syntax-grants-no-production-authority`).
+///
+/// Starts from `env_clear`, then restores only `PATH` and the roots seam — nothing inherited: no
+/// `HOME`/`APPDATA`, no credential variables. Callers add the rest of the seam bundle afterward.
+/// Measured on Windows: the harness needs none of `SystemRoot`/`ComSpec`/`PATHEXT` — it draws seeded
+/// entropy (no OS randomness), spawns no `cmd`-hosted child, and is launched by absolute path (no
+/// `PATHEXT` resolution) — so `PATH` is the whole of what the OS needs to run it.
+pub(crate) fn scrub_harness_env(command: &mut std::process::Command, root: &std::path::Path) {
+    command.env_clear();
+    if let Some(path) = std::env::var_os("PATH") {
+        command.env("PATH", path);
+    }
+    pin_roots_at(command, root);
 }
 
 impl Drop for ProfileSandbox {

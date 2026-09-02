@@ -162,7 +162,6 @@ const SEAM_SEED_ENV: &str = "DORC_SEED";
 const SEAM_CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
 const SEAM_POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
 const SEAM_SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
-const SEAM_ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
 const SEAM_TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
 
 /// Where a case that owns its own per-user profile keeps it, inside its materialization.
@@ -189,13 +188,13 @@ fn fresh_profile_parent(tag: &str) -> PathBuf {
 /// a SHARED clock base so two runs recorded "at one moment" still share an order token — the shape
 /// `durable-receipt-ambiguous` needs, and the only case that reads `--receipt-last` across two
 /// publishes. (This is a per-block SEED offset rather than the per-block CLOCK offset `30X` §6
-/// spelled; the roots come through the platform variables `apply_roots_under` already set.)
+/// spelled; the roots are pinned to the runner's throwaway directory by the scrub, not the platform
+/// variables.)
 fn seam_env(command: &mut Command, ordinal: u64) {
     command.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
     command.env(SEAM_CLOCK_ENV, "seeded:0");
     command.env(SEAM_POSTURE_ENV, "pinned:interactive");
     command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
-    command.env(SEAM_ROOTS_ENV, "pinned");
 }
 
 #[expect(
@@ -348,7 +347,7 @@ impl Harness {
         for role in ["config", "state"] {
             std::fs::create_dir_all(profile_root.join(role)).expect("create the case profile");
         }
-        sandbox::apply_roots_under(&mut command, profile_root);
+        sandbox::scrub_harness_env(&mut command, profile_root);
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
         // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
@@ -3007,7 +3006,9 @@ fn scan_why_receipt(
 /// One `dorc` invocation for the receipt gate, in a profile that gate alone writes into.
 fn why_receipt_command(harness: &Harness, dir: &Path, profile: &Path) -> Command {
     let mut command = harness.dorc(dir);
-    sandbox::apply_roots_under(&mut command, profile);
+    // Re-pin the roots seam at this gate's OWN profile, overriding the throwaway `dorc` chose: the
+    // harness reads the literal seam, not the platform variables.
+    sandbox::pin_roots_at(&mut command, profile);
     command
 }
 

@@ -22,7 +22,7 @@
     reason = "cold seam-parse path; the Diag is the harness print seat's own value, as in main.rs"
 )]
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dorc_aid::diag::{Diag, DiagCode};
 use dorc_receipt::ids::{EntropyReceiptIds, ReceiptIdEntropy, ReceiptIdSource};
@@ -288,7 +288,7 @@ impl SourceMatchSeam {
             }),
             Self::Os => crate::source_match::resolve(
                 &crate::source_match::GitRepository,
-                std::path::Path::new(book_name),
+                Path::new(book_name),
             ),
         }
     }
@@ -358,32 +358,43 @@ impl TransportSeam {
 }
 
 /// The receipt-roots member. `Os` (the platform resolution behind [`RootEnvironment`]) is
-/// production-only (`Seams::os`); `Pinned` is a runner-owned throwaway roots pair — there is NO
+/// production-only (`Seams::os`); `Pinned` carries a runner-owned throwaway directory — there is NO
 /// `Os` variant in the harness subtype (`30X:bin-harness-sibling-not-produced-cli`; persistence
 /// under runner-owned roots is not a production variant).
 #[derive(Debug, Clone)]
 pub enum RootsSeam {
     /// The platform-resolved per-user config/state roots — mintable only by [`Seams::os`].
     Os(ProductionWitness),
-    /// A runner-owned throwaway roots pair, delivered through the platform variables the runner
-    /// set in the scrubbed session environment (`30X` §11: keep the platform-variable route).
-    Pinned,
+    /// A runner-owned throwaway directory the config/state roots derive UNDER, carried as a literal
+    /// (`30Xa:rul-roots-pinned-is-a-literal`): it consults no platform variable, so a scrubbed
+    /// session with no `APPDATA`/`HOME`/`XDG_*` still resolves.
+    Pinned(PathBuf),
 }
 
 impl RootsSeam {
-    /// Resolve this member's base roots through the standard platform resolution. Both variants
-    /// read the same query; the TYPE is the fence — the harness cannot name `Os`, and its scrubbed
-    /// environment points the platform variables at the runner's throwaway pair.
-    #[expect(
-        clippy::unused_self,
-        reason = "the roots variant is the type-level fence; both resolve the same query today"
-    )]
+    /// Resolve this member's base roots. `Os` reads the platform variables through
+    /// [`RootEnvironment`]; `Pinned` derives them under its literal directory and reads no
+    /// environment (`30Xa:rul-roots-pinned-is-a-literal`).
     fn base_roots(
         &self,
         environment: &dyn RootEnvironment,
     ) -> Result<dorc_receipt_local::RootInputs, dorc_receipt_local::RootRefusal> {
-        standard_roots(host_platform(), environment)
+        match self {
+            Self::Os(_) => standard_roots(host_platform(), environment),
+            Self::Pinned(directory) => pinned_roots(directory),
+        }
     }
+}
+
+/// Derive the config/state roots UNDER a runner-owned directory, consulting no platform variable
+/// (`30Xa:rul-roots-pinned-is-a-literal`). The two roles stay separate subdirectories, exactly as
+/// every platform keeps them and as the runner creates them, so a pinned run writes precisely where
+/// the platform route would under a runner-owned sandbox.
+fn pinned_roots(
+    directory: &Path,
+) -> Result<dorc_receipt_local::RootInputs, dorc_receipt_local::RootRefusal> {
+    let base = |role: &str| directory.join(role).to_string_lossy().into_owned();
+    dorc_receipt_local::RootInputs::of(host_platform(), &base("config"), &base("state"))
 }
 
 /// The full bundle the engine's composition root consumes. Its fields are PRIVATE and its only
@@ -490,12 +501,13 @@ pub enum HarnessTransportSeam {
     Unset,
 }
 
-/// The roots subtype the ordinary harness parses: a runner-owned pinned pair, never `Os`
-/// (`30X:bin-harness-sibling-not-produced-cli`).
-#[derive(Debug, Clone, Copy)]
+/// The roots subtype the ordinary harness parses: a runner-owned pinned directory, never `Os`
+/// (`30X:bin-harness-sibling-not-produced-cli`). It carries the throwaway directory as a literal
+/// (`30Xa:rul-roots-pinned-is-a-literal`).
+#[derive(Debug, Clone)]
 pub enum HarnessRootsSeam {
-    /// The runner's throwaway roots, delivered through the platform variables.
-    Pinned,
+    /// The runner's throwaway directory, the config/state roots derive under it.
+    Pinned(PathBuf),
 }
 
 /// The constructor-side subtype the ordinary harness parses from its environment. It shares the
@@ -530,7 +542,7 @@ impl From<HarnessSeams> for Seams {
                 HarnessTransportSeam::Unset => TransportSeam::Local(None),
             },
             roots: match harness.roots {
-                HarnessRootsSeam::Pinned => RootsSeam::Pinned,
+                HarnessRootsSeam::Pinned(directory) => RootsSeam::Pinned(directory),
             },
         }
     }
@@ -604,7 +616,7 @@ impl HarnessSeams {
             stdout_posture: parse_posture(environment)?,
             source_match: parse_source_match(environment)?,
             transport: parse_transport(environment)?,
-            roots: HarnessRootsSeam::Pinned,
+            roots: parse_roots(environment)?,
         })
     }
 }
@@ -763,6 +775,22 @@ fn parse_transport(environment: &dyn SeamEnv) -> Result<HarnessTransportSeam, Di
     }
 }
 
+/// Parse the roots seam. `pinned:<absolute dir>` is the ONLY spelling — the harness cannot name
+/// `Os` roots (`30X:bin-harness-sibling-not-produced-cli`), and a runner-owned directory has no
+/// sensible default, so an absent or path-less `pinned` is a typed refusal
+/// (`30Xa:rul-roots-pinned-is-a-literal`), never a silent fallback (`30X:loom-seams-are-sh-lines`).
+fn parse_roots(environment: &dyn SeamEnv) -> Result<HarnessRootsSeam, Diag> {
+    let Some(raw) = environment.var(ROOTS_ENV) else {
+        return Err(seam_value_error(ROOTS_ENV, "", "pinned:<absolute dir>"));
+    };
+    match split_selection(&raw) {
+        ("pinned", Some(directory)) if !directory.is_empty() => {
+            Ok(HarnessRootsSeam::Pinned(PathBuf::from(directory)))
+        }
+        _ => Err(seam_value_error(ROOTS_ENV, &raw, "pinned:<absolute dir>")),
+    }
+}
+
 /// Split `head[:rest]` on the FIRST colon, so a value can itself carry colons (a Windows shell path).
 fn split_selection(raw: &str) -> (&str, Option<&str>) {
     match raw.split_once(':') {
@@ -793,8 +821,13 @@ mod tests {
             self.0.get(name).map(|v| (*v).to_owned())
         }
     }
+    /// A test environment carrying `pairs`, with a valid roots pin injected unless one is spelled —
+    /// roots is required (`30Xa:rul-roots-pinned-is-a-literal`), so an unrelated case would else
+    /// refuse before reaching what it means to check.
     fn env(pairs: &[(&'static str, &'static str)]) -> Env {
-        Env(pairs.iter().copied().collect())
+        let mut map: BTreeMap<&'static str, &'static str> = pairs.iter().copied().collect();
+        map.entry(ROOTS_ENV).or_insert("pinned:/srv/throwaway");
+        Env(map)
     }
 
     #[test]
@@ -844,12 +877,13 @@ mod tests {
     }
 
     #[test]
-    fn a_bare_environment_defaults_every_member_to_seeded_or_os() {
+    fn with_only_roots_pinned_every_other_member_defaults_to_seeded_or_os() {
         let seams = HarnessSeams::from_env(&env(&[])).expect("a bare environment parses");
         assert!(matches!(seams.clock, ClockSeam::Seeded(0)));
         assert!(matches!(seams.receipt_ids, ReceiptIdSeam::Seeded(0)));
         assert!(matches!(seams.stdout_posture, PostureSeam::Os));
         assert!(matches!(seams.transport, HarnessTransportSeam::Unset));
+        assert!(matches!(seams.roots, HarnessRootsSeam::Pinned(_)));
     }
 
     #[test]
@@ -871,6 +905,10 @@ mod tests {
 
     #[test]
     fn a_malformed_selection_is_a_typed_refusal_never_a_default() {
+        assert!(
+            HarnessSeams::from_env(&Env(BTreeMap::new())).is_err(),
+            "no roots at all is a refusal, never a silent default"
+        );
         for (var, value) in [
             (CLOCK_ENV, "seeded:not-a-number"),
             (CLOCK_ENV, "pinned:nope"),
@@ -878,6 +916,8 @@ mod tests {
             (RECEIPT_IDS_ENV, "pinned:5"),
             (POSTURE_ENV, "loud"),
             (SEED_ENV, "-1"),
+            (ROOTS_ENV, "pinned"),
+            (ROOTS_ENV, "os"),
         ] {
             assert!(
                 HarnessSeams::from_env(&env(&[(var, value)])).is_err(),
@@ -915,12 +955,19 @@ mod tests {
     #[test]
     fn the_harness_bundle_never_carries_a_production_variant() {
         // The whole point of the two-type split: no `from_env` path can produce `RealSsh` transport
-        // or `Os` roots. Checked structurally by converting and matching.
-        let seams: Seams = HarnessSeams::from_env(&env(&[(TRANSPORT_ENV, "local:/bin/sh")]))
-            .expect("parses")
-            .into();
+        // or `Os` roots. Checked structurally by converting and matching; the pinned roots carry the
+        // runner's literal directory verbatim (`30Xa:rul-roots-pinned-is-a-literal`).
+        let seams: Seams = HarnessSeams::from_env(&env(&[
+            (TRANSPORT_ENV, "local:/bin/sh"),
+            (ROOTS_ENV, "pinned:/srv/case-42"),
+        ]))
+        .expect("parses")
+        .into();
         assert!(matches!(seams.transport, TransportSeam::Local(_)));
-        assert!(matches!(seams.roots, RootsSeam::Pinned));
+        let RootsSeam::Pinned(directory) = seams.roots else {
+            panic!("the harness bundle resolves to pinned roots");
+        };
+        assert_eq!(directory, PathBuf::from("/srv/case-42"));
     }
 
     #[test]
