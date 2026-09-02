@@ -237,7 +237,10 @@
   gets the artifact gates (dash `-n`, exec-under-mocks with its own run-set, guard-shape,
   redirect scan, argv-echo, dual-rail); every block gets the diagnostic gates. A dir-case is a
   one-block session. The gates re-drive their subject block with split streams for parsing — a
-  seeded invocation driven twice is byte-identical, so the double drive is honest.
+  seeded invocation driven twice is byte-identical in RENDER, so the double drive is honest;
+  but a re-drive that would publish a durable collides with the first under seeded ids, so an
+  inspection re-drive is rooted in a throwaway store (or runs with receipts off) and never
+  writes into the session's own store (`inspection-redrives-carry-no-durable`, a lane A finding).
 - **`loom-transcript-is-what-the-user-saw`** — both streams, in the order the user saw them
   (`2>&1` at the session; the in-process driver already emits ordered events for both). A
   diagnostic is then a transcript line, and `expect-*` needle keys have no job.
