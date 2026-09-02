@@ -9,6 +9,14 @@
 > ran because their harness failed; no Kimi output influenced this document. This is widened
 > coverage, not calibration to truth. Agreement is a signal; every finding below remains a claim
 > about the artifact and its governing design, never a model vote.
+>
+> **Unattended builder order if this work resumes:** (1) before the testing-architecture rebuild,
+> one CLI/apply builder repairs receipt opt-out, durable-result reporting, and livetest vocabulary;
+> (2) after that rebuild settles, one authority builder closes publication/identity mints, entropy
+> failure, and fixture-clock production reach while preserving deterministic construction; (3)
+> after that, one durable-edge builder repairs verification-only recovery, key-buffer custody,
+> partial narration, and handle-relative local I/O. This is scheduling, not ratification of the
+> in-flight testing design. Human-input items remain outside all three.
 
 ## verdict-in-one-screen
 
