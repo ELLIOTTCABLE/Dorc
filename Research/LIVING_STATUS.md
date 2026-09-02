@@ -21,7 +21,7 @@
 
 ---
 
-## HELD (2026-09-02 — the test-architecture REBUILD; design stabilized; the sealed review returned NACK; the human holds the path)
+## IN FLIGHT (2026-09-02 — the test-architecture REBUILD; design cleared on the second sealed review; lane A building)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -41,12 +41,14 @@ analysis · the lane table). The human's
 2026-09-02 rulings are folded into `30X` §3/§3a (no legacy e2e — every dir-case converts to a
 loom; all prose is loomed; a non-loom test is licensed only by seven closed classes; every
 loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) and §11.
-`/opaque-review` `30-reviewA` ran over the stabilized design BEFORE lane A and returned
-`NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md` (the report is committed on
-the arc branch, unopened by the conductor). The arc is HELD: no lane dispatched, nothing accrues
-on the branch, the path is the human's. Resumption is a human act and re-reviews under a fresh
-identity. A rewound conductor resumes from the ledger's §0 on that branch, where the lane A brief
-draft, the scout inventory, and the review dispatch kit are banked beside it.
+`/opaque-review` `30-reviewA` returned NACK; the human adjudicated it into `30X` (`RealSsh` and
+`Os` roots out of the ordinary harness; a `HarnessSeams` subtype; the scrubbed session;
+livetest as the explicit ambient composition; `rul-seam-columns-are-conductor-ruled`), and
+`30-reviewB` over the re-stabilized design returned ACK (both reports committed on the arc
+branch, unopened by the conductor). Lane A (the `Seams`/`HarnessSeams` bundle, `compose::run`,
+`dorc-harness`, seeded entropy, the six env pins retired) is BUILDING in the conductor
+worktree; checkpoint after it. A rewound conductor resumes from the ledger's §0 on that branch,
+where the lane briefs, the scout inventory, and the review dispatch kit are banked beside it.
 
 ## DESIGN SITTING (2026-08-31 → 09-02 — pivot-book language surface; OPEN, banked for a rewind)
 
