@@ -421,7 +421,11 @@ fn mechanical_lines(slug: &str, row: &SlugRow) -> Vec<String> {
             out.push("- defined: —".to_owned());
         } else {
             for d in &row.defs {
-                out.push(format!("- defined: {}:{} — {}", d.path, d.line, d.text));
+                if d.text.is_empty() {
+                    out.push(format!("- defined: {}:{}", d.path, d.line));
+                } else {
+                    out.push(format!("- defined: {}:{} — {}", d.path, d.line, d.text));
+                }
             }
         }
         if !row.akas.is_empty() {
