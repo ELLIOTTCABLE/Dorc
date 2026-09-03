@@ -1,11 +1,17 @@
-//! The production durable route, through the shipped binary, across process boundaries.
+//! The receipt family's ONE state-only home: state, exits, and cross-process relations.
 //!
-//! # What only this battery can answer
+//! `30X` §3 splits the receipt batteries by assertion kind. A byte-exact render belongs in a loom
+//! always — the loom is the prose-authoring surface, and nothing else can be edited into prose.
+//! Structural and relational assertions — a keyset that exists or not, a document count, an
+//! inequality across runs, a refusal code, two invocations byte-identical — belong in Rust, in this
+//! one named home, and only where the bytes are un-goldenable.
 //!
-//! Every other receipt test injects its capabilities. This one links none: it runs
-//! `CARGO_BIN_EXE_dorc` in a throwaway profile and asks what the binary itself did — which is the
-//! whole of D4's claim, and a claim no in-process battery can make. A run that published nothing
-//! would satisfy every injected-capability case in the tree and fail here.
+//! # What only this home can answer
+//!
+//! These drive a binary across a process boundary and ask what it DID: a keyset on disk, a second
+//! process reading what the first wrote, a refusal that fired before the transport. Most drive the
+//! seam-seeded `dorc-harness` twin; the liveness witness alone drives the shipped `dorc` with `Os`
+//! seams, the one claim `30X:inv-division-at-the-narrowest-edge` keeps over the shipped binary.
 //!
 //! # The sandbox is the platform's own variables
 //!

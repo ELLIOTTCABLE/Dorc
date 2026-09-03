@@ -133,12 +133,12 @@ path = "tests/definition_frames.rs"
 name = "receipt_route"
 path = "tests/receipt_route.rs"
 
-# The production durable route, across process boundaries. Ordinary-harness: it drives the SHIPPED
-# binary in a throwaway per-user profile and asks what the binary itself wrote, which is the one
-# claim no in-process battery can make.
+# The receipt family's ONE state-only home (`30X` §3): state, exits, and cross-process relations
+# across a process boundary — a keyset on disk, a refusal code, two invocations byte-identical.
+# Ordinary-harness: byte-exact renders are the loom's, structural/relational assertions are here.
 [[test]]
-name = "durable_route"
-path = "tests/durable_route.rs"
+name = "receipt_state"
+path = "tests/receipt_state.rs"
 
 # The recorded-facts seat, over documents the shipped binary published. Ordinary-harness for the
 # same reason its neighbour is: the model has to be derivable from material a real run wrote.
