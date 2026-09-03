@@ -22,7 +22,7 @@
 
 #![expect(
     clippy::print_stderr,
-    reason = "the discovery floor aborts before any trial runs; it has no Failed to return"
+    reason = "the discovery floor aborts before any trial runs, and the two-driver gate names a declined session's reason on an otherwise-silent pass"
 )]
 
 mod support;
@@ -37,7 +37,7 @@ use errorloom::{
 };
 use libtest_mimic::{Arguments, Failed, Trial};
 
-use dorc_loom::{DorcConsumer, replay_case};
+use dorc_loom::{DorcConsumer, TwoDriverOutcome, render_run_loom_in_process, replay_case};
 use support::{LoomCase, case_roots, discover_looms, report_path_selection, split_path_selectors};
 
 /// The case name inside a trial name, which [`trial_name`] may have suffixed.
@@ -119,19 +119,12 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
         .into());
     }
 
-    // A WHOLE-PRODUCT loom's transcript is proven by running the real binary in the e2e runner, the
-    // stricter proof and the only one the sanctioned-executor law permits for a case that
-    // materializes mocks. The SECOND-WITNESS gate (`gate-two-drivers-agree`,
-    // `30X:loom-driver-is-derived-and-reported`) is BUILT in `dorc_loom::render_run_loom_in_process`,
-    // but its activation is HELD: the records-intake reconciliation
-    // (`30Xa:rul-in-process-sessions-take-the-controller-intake`) fixed the records-diagnostic
-    // divergences, yet five `run:` looms still disagree for reasons OUTSIDE this lane (a cross-file
-    // helper-closure lift, `--format=jsonl`, and a receipt source-comparison cwd) — over the C1′
-    // threshold of three, so it stays held pending a conductor ruling. Until then this runner
-    // asserts only that the case declares who does prove it.
+    // A WHOLE-PRODUCT loom is proven by the e2e runner running the real binary; this runner drives
+    // the SAME session in-process as a second witness (`gate-two-drivers-agree`,
+    // `30X:loom-driver-is-derived-and-reported`), and a declined session defers wholly to e2e.
     if parsed.frontmatter().scalar("fixpoint") == Some("executed") {
         return match parsed.frontmatter().scalar("run") {
-            Some(_) => Ok(()),
+            Some(_) => gate_two_drivers_agree(name, &parsed),
             None => Err(format!(
                 "FAIL  {name}  [fixpoint: `executed` with no `run:` — no runner would ever execute this case, so its transcript is proven by nothing]"
             )
@@ -238,6 +231,55 @@ fn divergence(want: &str, got: &str) -> String {
         let _ = writeln!(out, "      {line}");
     }
     out.trim_end().to_owned()
+}
+
+/// `gate-two-drivers-agree` (`30X:loom-driver-is-derived-and-reported`): a `run:` loom's committed
+/// transcript is proven by the e2e runner running the real binary; this runner drives the SAME
+/// session IN-PROCESS as a second witness. A DECLINED session — a construct the in-process driver
+/// cannot express (a shell builtin, an external tool, an out-of-store receipt) — passes with its
+/// reason and defers wholly to e2e. A RENDERED session must equal the committed transcript
+/// block-for-block under `strip_trailing_newlines`, the SAME comparison `run_loom` applies; a
+/// mismatch is the gate FAILING, never a normalizer or a golden edit
+/// (`30X:model-determinism-at-the-source`).
+fn gate_two_drivers_agree(name: &str, case: &Case) -> Result<(), Failed> {
+    let outcome = render_run_loom_in_process(&DorcConsumer::new(), case)
+        .map_err(|error| format!("FAIL  {name}  [two-driver gate: {error}]"))?;
+    let bytes = match outcome {
+        TwoDriverOutcome::Declined(reason) => {
+            eprintln!(
+                "  {name}: in-process driver declined — {}; proven by e2e",
+                reason.reason()
+            );
+            return Ok(());
+        }
+        TwoDriverOutcome::Rendered(bytes) => bytes,
+    };
+    let blocks = case.replay().blocks();
+    if bytes.len() != blocks.len() {
+        return Err(format!(
+            "FAIL  {name}  [two-driver gate: the in-process driver rendered {} blocks, the committed transcript has {}]",
+            bytes.len(),
+            blocks.len()
+        )
+        .into());
+    }
+    for (block, got) in blocks.iter().zip(&bytes) {
+        if strip_trailing_newlines(block.output()) != strip_trailing_newlines(got) {
+            return Err(format!(
+                "FAIL  {name}  [two-driver gate: block `{}` — the in-process render disagrees with the committed transcript the binary proved]\n{}",
+                block.command(),
+                divergence(block.output(), got)
+            )
+            .into());
+        }
+    }
+    Ok(())
+}
+
+/// `$(…)` strips every trailing newline; the two-driver comparison applies it to both sides and
+/// nothing else, exactly as `run_loom` compares a captured block to its committed bytes.
+fn strip_trailing_newlines(text: &str) -> String {
+    text.trim_end_matches('\n').to_owned()
 }
 
 fn main() {
