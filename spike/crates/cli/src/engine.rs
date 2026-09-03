@@ -14,8 +14,8 @@ use crate::survival::{
     resolve_touches_footprint, ship_touches_body,
 };
 use crate::why::{
-    WhyReport, collect_wall_steps, first_wall_hint, oracle_locus, render_coord,
-    unresolvable_diagnostics, why_report_parts,
+    WhyReport, collect_wall_steps, first_wall_hint, oracle_locus, relativize_for_display,
+    render_coord, unresolvable_diagnostics, why_report_parts,
 };
 use crate::world::{
     WhyWorld, definition_table, demote_on_certifier_trip, never_live_predict_rows,
@@ -1766,6 +1766,9 @@ fn run_status(
         .chain(plan.render_refusal_narratives())
         .collect();
     if advisory && mode != Mode::Why {
+        // The compact `why:` lens spells a `.`-sourced dependency's locus relative to the load cwd,
+        // exactly as the pull report does (`30Xa:rul-why-lens-relativizes-under-the-load-cwd`).
+        let source_paths = &relativize_for_display(snapshot.cwd(), source_paths);
         emit_why_lens(sink, &why_diags, &arena, &book_src, &collapse_narrative);
         // sigpipe-flap-class (`279f` §5): a probe record landing rc 141 (128+SIGPIPE) is the
         // NAMED early-exit-race nondeterminism class — a `pipefail`-off `A | grep -q` whose
@@ -1943,6 +1946,7 @@ fn run_status(
                 interner: &interner,
                 source_paths,
                 source_srcs,
+                cwd: snapshot.cwd(),
                 narrative: &collapse_narrative,
                 cascades: &cascades,
                 receipt: &receipt,

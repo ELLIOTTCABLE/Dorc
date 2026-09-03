@@ -316,6 +316,7 @@ impl WhyWorld {
             // coincidence. Closing it means re-lifting this seat's world: a dispatch, not a rename.
             source_paths: self.snapshot.oracle_paths(),
             source_srcs: self.snapshot.oracle_srcs(),
+            cwd: self.snapshot.cwd(),
             narrative: &self.narrative,
             cascades: &self.cascades,
             receipt,

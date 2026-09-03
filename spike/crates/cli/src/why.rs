@@ -172,6 +172,24 @@ pub fn oracle_locus(
     Some(format!("{path}:{line}"))
 }
 
+/// Re-spell each definition-source path for DISPLAY: a `.`-sourced dependency filed under an
+/// ABSOLUTE canonical key comes back RELATIVE to the load cwd when it lies beneath it — the same
+/// spelling a `--pre-source` oracle path already carries, since a pre-source is recorded by its
+/// relative command-line operand (`30Xa:rul-why-lens-relativizes-under-the-load-cwd`). Display
+/// plane ONLY (`report-surface-massaging-carve`): the canonical source keys, placement/mirroring,
+/// and the receipt's recorded rows stay absolute and are unread here. A path outside the cwd — or
+/// one under an unknown cwd — is left exactly as it was (`Cwd::relativize` answers `None`).
+#[must_use]
+pub(crate) fn relativize_for_display(
+    cwd: &dorc_core::loadpath::Cwd,
+    paths: &[String],
+) -> Vec<String> {
+    paths
+        .iter()
+        .map(|path| cwd.relativize(path).unwrap_or_else(|| path.clone()))
+        .collect()
+}
+
 /// The most lines of an author's arm the surface will inline before cutting a middle out of it.
 const EXCERPT_LINES: usize = 8;
 /// The most preceding comment lines attached to an arm.
@@ -1643,7 +1661,7 @@ impl WhySite {
 /// An ADDRESSED site renders the `28G` triptych (OUTCOME / ANALYSIS / NEXT STEPS); the unargumented
 /// form renders the aggregate (TRUST SPENT first and uncapped, then SURPRISES, then IMPROVEMENTS).
 ///
-/// The seventeen inputs travel as ONE borrowed context rather than seventeen parameters. They are
+/// The inputs travel as ONE borrowed context rather than as many parameters. They are
 /// all pure data by the time they get here — the binary spent every query at its own edge
 /// (`io-at-edges-only`) — which is exactly what lets a loom driver assemble the same struct from a
 /// materialized case and drive the REAL report (`lib-target-is-a-loom-seam`: values cross, queries
@@ -1682,6 +1700,10 @@ pub struct WhyReport<'a> {
     pub source_paths: &'a [String],
     /// Those sources' bytes, positionally matched, for excerpts and loci.
     pub source_srcs: &'a [String],
+    /// The load cwd every `.` operand resolved against, for DISPLAY relativization only
+    /// (`relativize_for_display`): a dependency's absolute canonical key renders relative beneath
+    /// it, never touching the keys or placement (`need-controller-paths-never-cross-hosts`).
+    pub cwd: &'a dorc_core::loadpath::Cwd,
     /// The run's collapse narratives — declines and the `--all` census.
     pub narrative: &'a [CollapseNarrative],
     /// Per-leaf cascade attribution from the validity fixpoint.
@@ -1715,7 +1737,9 @@ pub fn why_report_parts(ctx: &RenderCtx<'_>, report: &WhyReport<'_>) -> RenderPa
         narrative,
         cascades,
         receipt,
+        cwd,
     } = *report;
+    let source_paths = &relativize_for_display(cwd, source_paths);
     let declines = authored_declines(narrative);
     let unnarrated = if receipt.deepest_tier {
         unnarrated_lines(narrative)
