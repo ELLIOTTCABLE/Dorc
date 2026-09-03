@@ -92,7 +92,14 @@ export is built but DISABLED. `gate:full-quiet` routes `test:floor` when floor p
 staged (a floor case must agree on both platform legs). The opaque-review gate is
 builder-initiated (`AGENTS.for-builders-only.md`). Cross-kind sparing is licensed only by a
 finished definition (`30U:rul-cross-kind-sparing-needs-a-finished-definition`, 2026-08-29;
-the `an-kind-reach` row and steering carry it; the build is unscheduled).
+the `an-kind-reach` row and steering carry it; the build is unscheduled). Any Dorc act not
+provably caused by the author's code is withhold-shaped; only explicitly-authored, unmodified
+lines Dorc can Must-conclude would have run under plain sh are perform-shaped
+(`26N:rul-dorc-acts-are-withhold-shaped`, human-typed 2026-09-03). An unresolvable
+book-custody load refuses the plan before network — never shipped on a guess, never left to
+die halfway (`26N:rul-unresolvable-book-load-refuses`). The delivery shape is ruled (`26N`
+§2), and `$0` under Dorc is the absolute path of the real plan file wherever a filesystem
+exists (`26N:rul-dollar-zero-authority-spelling`).
 
 ## Conduct fences (standing; bind any successor)
 

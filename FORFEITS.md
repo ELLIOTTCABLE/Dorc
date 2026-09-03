@@ -198,23 +198,25 @@ and/or e2e cases that keep the forfeited value ENCODED IN SH and red until captu
   FORFEITS: the deploy-then-source env-file pattern. CAPTURE: the heredoc/redirect and `cp`
   establishing a contents cell; the load plane reading it. BACK-OUT: low. REVISIT:
   `r31:kernel-punt-glance`. REDS: `p-x-known-write-establishes-sourced-contents`.
-- **forfeit-shell-parity-immunity-model** — RULE (as-built; the cheap half may be absorbed
-  by the running load lane): the funcenv does not model sh's own immunities — POSIX lookup order
-  (special builtins beat functions), quoting suppressing alias recognition, `$0` immutability,
-  assignment words, subshell containment — so a blind act ⊤s dimensions the author can soundly
-  keep or restore.
+- **forfeit-shell-parity-immunity-model** — RULE (as-built): the funcenv does not model sh's
+  own immunities — POSIX lookup order (special builtins beat functions), quoting suppressing
+  alias recognition, `readonly` variables (a sourced file cannot reassign or unset one),
+  assignment words — so a blind act ⊤s dimensions the author can soundly keep or restore.
   ```sh
+  readonly here=/srv/ops
   . /vendor/blind.sh
-  . "${0%/*}/oracles/x.sh"          # immune: immutable $0, pure expansion — today havoc
+  cd "$here"                        # immune: readonly survives the sourced file — today ⊤
   \unset -f cd; \unalias -a         # sound reset — today unrecognised
   ( . /vendor/blind.sh )            # contained — BUILT: the havoc dies at the paren
   ```
   FORFEITS: authority below any blind act for every immune or reset dimension. CAPTURE: parity
   modelling in `funcenv` (alias-table domain; named-function unset; quoted command words;
-  `$0`-relative loads immune to cwd ⊤ under `tc-dollar-zero-is-script-anchored`). Subshell
-  containment is NOT forfeited (`cli/tests/sh_parity.rs the_havoc_dies_at_a_paren_and_survives_a_return`).
-  BACK-OUT: low. REVISIT: `r31:kernel-punt-glance`. REDS:
-  `p-x-dollar-zero-expansion-survives-a-blind-load`.
+  the readonly domain). NOT in this row: `$0` immutability — ruled and planned
+  (`26N:rul-dollar-zero-authority-spelling`; r31 lane 2), and subshell containment, built
+  (`cli/tests/sh_parity.rs the_havoc_dies_at_a_paren_and_survives_a_return`). BACK-OUT: low.
+  REVISIT: `r31:kernel-punt-glance`. REDS: none minted for the remaining cells — owed
+  (`30P:rul-forfeits-carry-reds`); the `$0` pin `p-x-dollar-zero-expansion-survives-a-blind-load`
+  is now an ordinary lane red, not this row's.
 - **forfeit-certifier-trip-evicts-elisions** — RULE (`302` §3
   rul-certifier-trip-guard-only, TYPED 2026-08-15): any solve-certifier
   `Inconsistent` evicts every elision-family outcome (elide / omit / survive)

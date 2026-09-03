@@ -95,6 +95,10 @@ Fold order: loop → planner → load, rebased onto `ai/r30-conduct`; then influ
   the host's `${0%/*}` is cwd-immune); the slashless `$0` spelling is a LINT spelling; the
   computed `.` keeps today's outcome at exit 17 with only the tier moved; the `case $0` form gets
   a new r31 red; the `30Pc` repair is skipped in EXECUTE-B (it landed on the planner lane).
+  <!-- /* superseded 2026-09-03: the "cwd-⊤ never costs acquisition or mirroring" sentence is
+  reversed by `26N:rul-unresolvable-book-load-refuses` (nothing shipped under ¬EXACT; the
+  as-built stands), and `tc-dollar-zero-is-script-anchored` is RULED yes by
+  `26N:rul-dollar-zero-authority-spelling`. */ -->
 - influence (before dispatch): rename the influence `Grade` (collides with claim-tier `core::Grade`) ·
   render/output sinks as explicit `untracked` adapters this lane (conductor lean) ·
   `certifier_trip` demotion path's influence meaning.
@@ -572,6 +576,7 @@ resumed until the human restarts the harness. Dispatch-ready afterwards, in this
 
 Human-owned, unchanged: `tc-dollar-zero-is-script-anchored` · `ask-ship-explicit-targets-below-a-clobber`
 · `tc-t2-is-narrower-than-the-ladder-says` · the prose queue (incl. the fruit lane's item-4 paragraph).
+<!-- /* superseded 2026-09-03: the first two are ruled in `Research/notes/26N` §5 and §6. */ -->
 
 ## §5h — `ratify-committee-sparing-fence` dissolved (2026-08-23; sibling sitting, Fable rubber-duck; branch `ai/r30-dialect-ruling` off `ai/r30-conduct`)
 
