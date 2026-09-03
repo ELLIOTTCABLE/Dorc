@@ -47,7 +47,7 @@ dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- replay --
 $ dorc why --book=book.sh --pre-source hork.oracle.sh --results - < probe-results.txt 2>/dev/null
-receipt: [unwritten: why-receipt-when-undated], host localhost
+receipt: plan 2026-01-25 02:00:40, host localhost
    book book.sh (digest 3de7697eda402a72b6220063a6d523a1cde9a886bd9b7c0d76aea97f71ce6022)
    oracles: hork.oracle.sh
    risk-profile: none (no trust flags)
@@ -108,7 +108,7 @@ relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc-loom --this vars
 case: why-reason-render-refused
-{{v0}} = "[unwritten: why-receipt-when-undated]"
+{{v0}} = "plan 2026-01-25 02:00:40"
 {{v1}} = "localhost"
 {{v2}} = "1"
 {{v3}} = "1"

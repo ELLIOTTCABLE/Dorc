@@ -45,7 +45,7 @@ $ dorc why book.sh:2 --book=book.sh --pre-source hork.oracle.sh --results - --al
 relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc why --book=book.sh --pre-source hork.oracle.sh --results - --all < probe-results.txt 2>/dev/null
-receipt: [unwritten: why-receipt-when-undated], host localhost
+receipt: plan 2026-01-26 02:00:39, host localhost
    book book.sh (digest 56eaafb4f5970ae87ddd3ebeea18616885d63b77842a961def427bc69a90e981)
    oracles: hork.oracle.sh
    risk-profile: none (no trust flags)

@@ -120,7 +120,8 @@ $ dorc why book.sh:11 --book=book.sh --pre-source firewall.oracle.sh --pre-sourc
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@enabled" (rc 0)
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@enabled" (received 02:00:40, rc
+                                     0)
    * service.oracle.sh:18  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@enabled holds"
    ! 7|hork                ran       undescribed: no author has said what it touches, so it
@@ -153,7 +154,7 @@ $ dorc why book.sh:11 --book=book.sh --pre-source firewall.oracle.sh --pre-sourc
 relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc why --book=book.sh --pre-source firewall.oracle.sh --pre-source service.oracle.sh --pre-source package.oracle.sh --results - < probe-results.txt 2>/dev/null
-receipt: [unwritten: why-receipt-when-undated], host localhost
+receipt: plan 2026-01-26 02:00:42, host localhost
    book book.sh (digest 3d32f18cce8c302bac28a0e455e9db103a3f0b639c40e6e801f2f2b8b4773cd3)
    oracles: firewall.oracle.sh, service.oracle.sh, package.oracle.sh
    risk-profile: none (no trust flags)
@@ -202,7 +203,8 @@ $ dorc why book.sh:8 --book=book.sh --pre-source firewall.oracle.sh --pre-source
 
    what was known, and why it was not enough:
 
-   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (rc 0)
+   * service.oracle.sh:14  reported  "sm.dorc.Service:nginx@active" (received 02:00:38, rc
+                                     0)
    * service.oracle.sh:17  vouches   "re-running this line adds nothing worth running while
                                      sm.dorc.Service:nginx@active holds"
    ! 7|hork                ran       undescribed: no author has said what it touches, so it

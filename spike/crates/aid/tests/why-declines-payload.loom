@@ -240,7 +240,7 @@ $ dorc why book.sh:7 --book=book.sh --pre-source sysctl.oracle.sh --pre-source h
 relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc why --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh --results - < /dev/null 2>/dev/null
-receipt: [unwritten: why-receipt-when-undated], host localhost
+receipt: plan 2026-01-29 02:00:38, host localhost
    book book.sh (digest 9b8ed805ae3fa41a0473f1f6bcd353a94c7bde0698f7df1b9b2da63fefc641b7)
    oracles: sysctl.oracle.sh, hork.oracle.sh, wombat.oracle.sh
    risk-profile: none (no trust flags)

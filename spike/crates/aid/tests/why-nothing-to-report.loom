@@ -11,7 +11,7 @@ true
 
 -- replay --
 $ dorc why --book=book.sh --results - < /dev/null 2>/dev/null
-receipt: [unwritten: why-receipt-when-undated], host localhost
+receipt: plan 2026-01-25 02:00:38, host localhost
    book book.sh (digest 08fc6d98b8b57fcd3b0cc4b868f1b15a4edd16f9bac50733b918b543bf28dda0)
    oracles:
    risk-profile: none (no trust flags)
@@ -24,7 +24,7 @@ do better with more description.
 
 $ dorc-loom --this vars
 case: why-nothing-to-report
-{{v0}} = "[unwritten: why-receipt-when-undated]"
+{{v0}} = "plan 2026-01-25 02:00:38"
 {{v1}} = "localhost"
 {{v2}} = "0"
 {{v3}} = "0"
