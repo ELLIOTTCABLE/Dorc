@@ -124,6 +124,22 @@ FLAGGED to the human for veto; built at the head of lane B2a with the two re-ble
 folded there too: the carry-attribution locus in `survival::build_wrapped_analysis` still calls
 `oracle_locus` unrelativized (no committed case renders it absolute).
 
+### Checkpoint B2a (`49626ae1`; both gate legs and `bless:dry` green)
+
+Deliverable 0 built `rul-sibling-oracle-scan-reconciles-by-canonical-key` across all three drivers
+(the shipped binary's reconciler keyed by `cwd.resolve_operand`, the in-process consumer, and the
+survival carry-attribution locus, all rendering through `why::relativize_for_display`);
+`pin28`/`pin30` re-blessed, the known-broken state cleared, `aid-unloaded-sibling-oracle`'s own
+defining case byte-identical. Then: `expect-why-receipt` gone from `FRONTMATTER_KEYS` (24 → 23;
+the e2e run-lane set filters that list, so nothing else changed), `scan_why_receipt` and its
+key-specific floor gone (the general non-empty discovery floor stands), `spine_baseline.rs` with
+its stanza and task gone, `receipt_route.rs`'s header corrected. `why30-receipt-rooted-surface`
+is a four-block session (plan → `why --receipt-last` → `--json` → `--all`, the last
+byte-identical to the second) needing no clock pin; its ~1,481-line transcript carries ~37
+`[unwritten: why-total-*]` rows — the legal resting state lane C makes authorable. Rulings: the
+rewritten `why:` frontmatter is case metadata, not rendered prose — ACCEPTED; the reconciliation
+rule joins `cli/CLAUDE.md` at close beside `rul-why-lens-relativizes-under-the-load-cwd`.
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
@@ -240,8 +256,8 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | — checkpoint A | `inv-division-at-the-narrowest-edge` judged on the extraction diff | — |
 | B1 `lane-b1-session-driver` (split from B after the human's sizing steer) | the shell-session process driver over the `dorc` PATH shim; gates by kind, no position rules; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); the runner default becomes the ticking per-block clock; `durable-receipt-ambiguous` re-authored as a clock-pinned session | BUILT to `10debadd` (four floor looms red, known-broken); completion → B1′ |
 | B1′ lane B1 completion | `rul-why-lens-relativizes-under-the-load-cwd`; the four floor looms re-blessed; the known-broken state cleared; both gate legs; `bless:dry` | BUILT to `5ed5e156` (two `emit30-*` green; `pin28`/`pin30` red on the sibling-oracle leak, known-broken); the remainder heads B2a |
-| B2a `lane-b2a-needle-rip-and-baseline-delete` | head: `rul-sibling-oracle-scan-reconciles-by-canonical-key` + the survival locus + the two re-blesses + the gates; then the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | DISPATCHED 2026-09-02 |
-| B2b `lane-b2b-battery-split` | batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness) | not dispatched |
+| B2a `lane-b2a-needle-rip-and-baseline-delete` | head: `rul-sibling-oracle-scan-reconciles-by-canonical-key` + the survival locus + the two re-blesses + the gates; then the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | BUILT to `49626ae1`; COMPLETE |
+| B2b `lane-b2b-battery-split` | batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness) | DISPATCHED 2026-09-02 |
 | C `lane-c-in-process-receipt-world` | the in-process driver composes the real `LocalReceiptEdgeV1` over `ModelIo` (the new Cargo edge) with seeded entropy and the ticking case clock; the 37 `why-total-*` rows authorable; varied-seed default + the two affordances; `gate-two-drivers-agree`; the post-dispatch durable report authored over that world, witnessed by state-only e2es | not dispatched |
 | — checkpoint C | the durable-failure diagnostic's shape (sibling code vs reason arm) is the conductor's product ruling | — |
 | D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick | not dispatched |
