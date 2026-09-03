@@ -230,8 +230,11 @@ the license-contamination map. Cross-references are `docID:slug`.
   ledger) — both EXPLORATION/BRAINSTORM-tier by their own headers, cite no commitments ·
   **`notes/26M`** (the 2026-08-31→09-02 pivot-book language-surface sitting: ack-ledger,
   the tabled apply-side-transport exploration, the payload-declaration decomposition, the
-  live queue) whose design-of-record is `plans/30W`. (Same round-id as the tabled multi-host
-  r26 above — branch lineage, not chronology.)
+  live queue) whose design-of-record is `plans/30W` · **`notes/26N`** (the immutable-fs-targets
+  round, 2026-09-03: host capabilities as a measured, context-keyed SYSTEM; the weird-host
+  pareto frontier; the three floors; the delivery-shape leans behind
+  `26K:sit-stdin-copy-exec-amendment`; evidence base `.claude/research/immutable-fs-targets/`).
+  (Same round-id as the tabled multi-host r26 above — branch lineage, not chronology.)
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.
