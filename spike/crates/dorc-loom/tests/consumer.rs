@@ -753,13 +753,15 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
 }
 
 #[test]
-fn source_backed_plan_replays_the_complete_engine_invocation_and_redirects_its_artifact() {
+fn source_backed_plan_replays_the_complete_engine_invocation() {
+    // A source-backed plan runs the REAL engine in-process (`dorc-replay-is-production-semantics`):
+    // book.sh's `hork "$(wombat)"` is a `cmdsub-operand-top` case, so the render carries the
+    // diagnostic on stderr and the plan artifact on stdout, interleaved as the user saw them.
     let case = Case::parse(
         "---\ncode: cmdsub-operand-top\n---\n\
          -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
          -- replay --\n\
-         $ dorc plan --book=book.sh > plan.sh\nold\n\
-         $ cat plan.sh\nold\n",
+         $ dorc plan --book=book.sh\nold\n",
     )
     .expect("case parses");
 
@@ -770,13 +772,39 @@ fn source_backed_plan_replays_the_complete_engine_invocation_and_redirects_its_a
 
     assert!(
         results[0].output().contains("cmdsub-operand-top"),
-        "stderr stays in the natural transcript: {}",
+        "the diagnostic stays in the natural transcript: {}",
+        results[0].output()
+    );
+    assert!(
+        results[0].output().contains("#!/bin/sh"),
+        "the plan artifact is in the interleaved render: {}",
         results[0].output()
     );
     assert!(results[0].editable_render().is_some());
-    assert!(
-        results[1].output().contains("#!/bin/sh"),
-        "the redirected stdout artifact is observable through native cat"
+}
+
+/// A stdout redirect to a REAL file is OUTSIDE the ruled output set
+/// (`30X:loom-in-process-driver-is-a-closed-grammar` rules `> /dev/null` only), so the in-process
+/// driver DECLINES it and the whole session defers to the process driver, which runs the redirect and
+/// its `cat` readback natively. Source-backed engine replay itself is proven by `gate-two-drivers-agree`.
+#[test]
+fn a_stdout_redirect_to_a_real_file_declines_to_the_process_driver() {
+    let case = Case::parse(
+        "---\ncode: cmdsub-operand-top\n---\n\
+         -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
+         -- replay --\n\
+         $ dorc plan --book=book.sh > plan.sh\nold\n",
+    )
+    .expect("case parses");
+
+    let declined: RefCell<Option<String>> = RefCell::new(None);
+    let _ = replay_case(&case, &DorcConsumer::new(), &RunEnv::new(), |command, _| {
+        *declined.borrow_mut() = Some(command.to_owned());
+        Ok(ReplayResult::bytes(String::new()))
+    });
+    assert_eq!(
+        declined.into_inner().as_deref(),
+        Some("dorc plan --book=book.sh > plan.sh"),
+        "a `> realfile` artifact redirect is outside the ruled set and declines in-process"
     );
-    assert!(!results[1].output().contains("cmdsub-operand-top"));
 }
