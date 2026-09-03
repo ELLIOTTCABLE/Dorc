@@ -947,14 +947,20 @@ impl DorcConsumer {
             .collect::<Vec<_>>();
         let mut emissions = Vec::new();
         if !inputs.is_empty() {
-            emissions.push(ReplayEmission::editable(
-                errorloom::ReplayChannel::Stdout,
-                to_editable_render(&dorc_lint::render::render_human_parts_at(
-                    &self.render_ctx(),
-                    &report,
-                    args.verbosity,
-                )),
-            ));
+            emissions.push(match args.format {
+                dorc_cli::LintFormat::Jsonl => ReplayEmission::bytes(
+                    errorloom::ReplayChannel::Stdout,
+                    dorc_lint::render::render_jsonl(&report),
+                ),
+                dorc_cli::LintFormat::Human => ReplayEmission::editable(
+                    errorloom::ReplayChannel::Stdout,
+                    to_editable_render(&dorc_lint::render::render_human_parts_at(
+                        &self.render_ctx(),
+                        &report,
+                        args.verbosity,
+                    )),
+                ),
+            });
         }
         let status = if let Some(diagnostic) = operational {
             if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
