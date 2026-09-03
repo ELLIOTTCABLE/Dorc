@@ -28,7 +28,7 @@
 
 ---
 
-## IN FLIGHT (2026-09-02 — the test-architecture REBUILD; design cleared on the second sealed review; lane A built, lane B1 building)
+## IN FLIGHT (2026-09-03 — the test-architecture REBUILD; lanes A and B built and green; lane C1 building; the arc branch rides today's `ai/main`)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -52,13 +52,23 @@ loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) 
 `Os` roots out of the ordinary harness; a `HarnessSeams` subtype; the scrubbed session;
 livetest as the explicit ambient composition; `rul-seam-columns-are-conductor-ruled`), and
 `30-reviewB` over the re-stabilized design returned ACK (both reports committed on the arc
-branch, unopened by the conductor). Lane A (the `Seams`/`HarnessSeams` bundle, `compose::run`,
-`dorc-harness`, seeded entropy, the six env pins retired, the scrubbed session, literal
-runner-owned roots) is BUILT and green on both legs; lane B1 (the shell-session process driver,
-gates by kind, both-streams transcripts, the ticking clock default) is building in the
-conductor worktree, then B2 (needle rip, battery split), C, D. No sealed review within the arc
+branch, unopened by the conductor). BUILT and green on both gate legs (as of the branch tip carrying the ledger's §0): lane A —
+the `Seams`/`HarnessSeams` bundle, `compose::run`, `dorc-harness`, seeded entropy, the six env
+pins retired, the scrubbed session, literal runner-owned roots; lane B — one persistent `sh`
+session per `run:` loom with gates by kind and both-streams transcripts, the ticking per-block
+clock default, the needle gate and the baseline scaffold gone, the receipt-rooted why loom a
+four-block session, the receipt batteries split into one state-only home. Lane C runs as three
+small lanes (C1 the in-process receipt world + two-drivers-agree — DISPATCHED 2026-09-03 · C2 the
+dogfooded session model · C3 varied seeds, the two affordances, the durable-report surfaces),
+then lane D (one runner, the frontmatter collapse, dir-case and lint-loom conversion). The arc
+branch was rebased onto `ai/main` before C1 (not at close, as the ledger's §0 planned) so the
+slug-index and spelling gates govern the remaining lanes as they build; a re-rebase over the
+r31-remit commits waits for a between-lanes gap. Two product rulings were taken inside
+this suite arc and stand open to the human's veto (the why-lens relativizes `.`-sourced
+dependency paths under the load cwd; the unloaded-sibling-oracle advisory reconciles by
+canonical key); lane A's five fence re-targets await re-ack. No sealed review within the arc
 (human, 2026-09-02). Builder briefs are never committed (human, same day); a rewound conductor
-resumes from the ledger's §0 on that branch.
+resumes from the ledger's §0 on that branch, which carries every lane's scope and every ruling.
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 
