@@ -86,9 +86,10 @@ pub(crate) fn apply_roots_under(command: &mut std::process::Command, root: &std:
     command.env("HOME", root.join("home"));
 }
 
-/// The roots-seam variable; its pinned value is a runner-owned absolute directory the config/state
-/// roots derive under (`30Xa:rul-roots-pinned-is-a-literal`).
-const ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
+/// The roots-seam variable (one home for the name is `dorc_cli::seam`); its pinned value is a
+/// runner-owned absolute directory the config/state roots derive under
+/// (`30Xa:rul-roots-pinned-is-a-literal`).
+const ROOTS_ENV: &str = dorc_cli::seam::ROOTS_ENV;
 
 /// Point a harness spawn's roots seam at `root` — the runner-owned throwaway the run writes into.
 ///

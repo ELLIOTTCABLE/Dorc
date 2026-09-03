@@ -148,21 +148,10 @@ use internal_tooling::{Posix, which};
 // ---------------------------------------------------------------------------
 // the harness's shared, immutable context
 
-/// The run-wide seed the seeded entropy members (receipt ids, key material, nonce) derive from —
-/// constant for now, varied per run by lane C (`30X:seed-varied-by-default`). Nothing in the corpus
-/// renders an id, so the value is free; a stable one keeps the store names it drives reproducible.
-const RUN_SEED: u64 = 0x0030_A15E_EDED;
-
-/// The seam bundle the runner spells in the environment (`30X:loom-seams-are-sh-lines`): one
-/// variable per seam. The clock is seeded PER BLOCK (`seeded:<ordinal>`), so two publishes in one
-/// case take distinct order tokens; posture is pinned interactive (the terminal render cell the
-/// round-trip battery reads while driving an artifact set to a directory); source-match is pinned
-/// off (zero external `git`); roots are the runner-owned throwaway pair.
-const SEAM_SEED_ENV: &str = "DORC_SEED";
-const SEAM_CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
-const SEAM_POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
-const SEAM_SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
-const SEAM_TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
+/// The run-wide seed and the per-block seam selections both drivers share live in ONE seat,
+/// `dorc_loom::runner_seams` (`30X:loom-seams-are-sh-lines`); the variable NAMES live once in
+/// `dorc_cli::seam`. Neither is re-spelled here — a second copy is how the two drivers would derive
+/// a different clock for one block and stop agreeing (`gate-two-drivers-agree`).
 
 /// Where a case that owns its own per-user profile keeps it, inside its materialization.
 ///
@@ -181,20 +170,14 @@ fn fresh_profile_parent(tag: &str) -> PathBuf {
     root
 }
 
-/// Spell the seam bundle into a `dorc-harness` invocation's environment
-/// (`30X:loom-seams-are-sh-lines`). `ordinal` is the replay block's index: the ENTROPY seed is
-/// offset per block so a case's block 0 and its later publishing replays mint DISTINCT receipt ids
-/// (a constant seed would make two publishes into the case's shared store collide on the name), on
-/// a SHARED clock base so two runs recorded "at one moment" still share an order token — the shape
-/// `durable-receipt-ambiguous` needs, and the only case that reads `--receipt-last` across two
-/// publishes. (This is a per-block SEED offset rather than the per-block CLOCK offset `30X` §6
-/// spelled; the roots are pinned to the runner's throwaway directory by the scrub, not the platform
-/// variables.)
-fn seam_env(command: &mut Command, ordinal: u64) {
-    command.env(SEAM_SEED_ENV, RUN_SEED.to_string());
-    command.env(SEAM_CLOCK_ENV, format!("seeded:{ordinal}"));
-    command.env(SEAM_POSTURE_ENV, "pinned:interactive");
-    command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
+/// Spell the seam bundle into a single-invocation `dorc-harness` environment
+/// (`30X:loom-seams-are-sh-lines`), from the shared runner-defaults seat. A single invocation is
+/// block 0 (its clock is `seeded:0`); the roots are pinned to the runner's throwaway directory by
+/// the scrub, not by this seat.
+fn seam_env(command: &mut Command) {
+    for (name, value) in dorc_loom::runner_seams::value_seam_pairs(0) {
+        command.env(name, value);
+    }
 }
 
 /// Build a runner-owned shim dir holding one `dorc` executable that IS the harness binary, so a
@@ -387,7 +370,7 @@ impl Harness {
         // would resolve differently again. It is a separate question from the EXECUTION cwd, which
         // stays the throwaway sandbox `rail` supplies.
         command.current_dir(at);
-        seam_env(&mut command, 0);
+        seam_env(&mut command);
         command
     }
 
@@ -1330,7 +1313,7 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     shipped
         .current_dir(&sandbox)
         .env(
-            SEAM_TRANSPORT_ENV,
+            dorc_cli::seam::TRANSPORT_ENV,
             format!("local:{};{interpreter}", harness.checker.display()),
         )
         .env("PATH", &probe_path)
@@ -1452,10 +1435,13 @@ fn drive_session(
     let mut script = String::from("exec 2>&1\n");
     for (index, cmd) in commands.iter().enumerate() {
         // Per-block clock default, applied only while it still holds the runner's own last value
-        // (`30Xa-b1:rul-runner-varies-only-what-it-set`).
+        // (`30Xa-b1:rul-runner-varies-only-what-it-set`); the block's clock selection comes from the
+        // shared seat, so the two drivers derive one clock per block.
+        let [_seed, (clock_name, clock_value), ..] =
+            dorc_loom::runner_seams::value_seam_pairs(index);
         let _ = writeln!(
             script,
-            "[ \"$DORC_SEAM_CLOCK\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export DORC_SEAM_CLOCK=seeded:{index}; {RUNNER_CLOCK_SHADOW}=seeded:{index}; }}"
+            "[ \"${clock_name}\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export {clock_name}={clock_value}; {RUNNER_CLOCK_SHADOW}={clock_value}; }}"
         );
         script.push_str(cmd);
         script.push('\n');
@@ -1478,12 +1464,13 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle (`30X:loom-seams-are-sh-lines`); the clock shadow starts EQUAL to the clock.
-    command.env(SEAM_SEED_ENV, RUN_SEED.to_string());
-    command.env(SEAM_CLOCK_ENV, "seeded:0");
-    command.env(SEAM_POSTURE_ENV, "pinned:interactive");
-    command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
-    command.env(RUNNER_CLOCK_SHADOW, "seeded:0");
+    // The seam bundle from the shared seat (`30X:loom-seams-are-sh-lines`); block 0 is `seeded:0`, so
+    // the clock shadow starts EQUAL to the clock.
+    let [_, (_, block0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs(0);
+    for (name, value) in dorc_loom::runner_seams::value_seam_pairs(0) {
+        command.env(name, value);
+    }
+    command.env(RUNNER_CLOCK_SHADOW, &block0_clock);
     // A throwaway `$ARTIFACT_DIR` a `--artifact-dir=$ARTIFACT_DIR` block publishes into (disposable;
     // the artifact-set gate is `run_round_trip`'s own re-drive).
     let artifact_dir = scratch.path.join("artifacts");
@@ -3962,7 +3949,7 @@ fn run_kept_stream_refusal(harness: &Harness) -> Result<(), Failed> {
         harness
             .dorc(&kept.path)
             .args(["plan", "book.sh"])
-            .env(SEAM_POSTURE_ENV, "pinned:kept")
+            .env(dorc_cli::seam::POSTURE_ENV, "pinned:kept")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
     );

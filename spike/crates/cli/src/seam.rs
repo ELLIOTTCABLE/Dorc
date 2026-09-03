@@ -567,15 +567,24 @@ impl SeamEnv for ProcessSeamEnv {
 }
 
 /// The umbrella seed every `Seeded` member derives its own seed from (seed + a per-seam salt).
-const SEED_ENV: &str = "DORC_SEED";
-const CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
+///
+/// The seam-variable names the runner spells are `pub` so the ONE home for them is this parser's
+/// crate: `dorc-loom`'s runner-defaults seat references these consts rather than re-spelling the
+/// strings, so the two drivers cannot drift on what a seam is called (`30X:loom-seams-are-sh-lines`).
+pub const SEED_ENV: &str = "DORC_SEED";
+/// The clock seam variable (`seeded:<block ordinal>` per block).
+pub const CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
 const RECEIPT_IDS_ENV: &str = "DORC_SEAM_RECEIPT_IDS";
 const KEY_ENTROPY_ENV: &str = "DORC_SEAM_KEY_ENTROPY";
 const NONCE_ENV: &str = "DORC_SEAM_NONCE";
-const POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
-const SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
-const TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
-const ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
+/// The stdout-posture seam variable.
+pub const POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
+/// The source-match seam variable.
+pub const SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
+/// The transport seam variable (`local:<shell>[;<interpreter>]`).
+pub const TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
+/// The receipt-roots seam variable (`pinned:<absolute dir>`, required).
+pub const ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
 
 /// Every seam variable this parser reads, so the harness binary can refuse when NONE is set.
 const SEAM_ENV_VARS: &[&str] = &[

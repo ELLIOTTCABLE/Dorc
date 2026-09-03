@@ -56,6 +56,7 @@ mod repository;
 pub use repository::{GitRepository, ProseClassification, Repository, classify_prose_changes};
 mod roots;
 pub use roots::Roots;
+pub mod runner_seams;
 pub mod usage;
 pub use usage::{PROGRAM, Reading};
 mod vocabulary;
