@@ -10,6 +10,8 @@ cd /var/tmp
 true
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc why --book=book.sh --results - < /dev/null 2>/dev/null
 receipt: plan 2026-01-25 02:00:38, host localhost
    book book.sh (digest 08fc6d98b8b57fcd3b0cc4b868f1b15a4edd16f9bac50733b918b543bf28dda0)

@@ -90,6 +90,8 @@ wombat__is_converged() {
 }
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc why book.sh:4 --book=book.sh --pre-source sysctl.oracle.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh --results - < /dev/null 2>/dev/null
       [ book.sh, participating lines:
    4 | sysctl vm.drop_caches

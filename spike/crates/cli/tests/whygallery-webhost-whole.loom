@@ -247,6 +247,8 @@ ran: systemctl is-active -- nginx
 ran: sysctl vm.drop_caches
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results - < probe-results.txt
 oracle: warning[oracle-matched-zero-sites]: [unwritten:
 oracle-matched-zero-sites]

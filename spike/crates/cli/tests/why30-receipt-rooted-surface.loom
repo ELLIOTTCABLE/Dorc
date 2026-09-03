@@ -22,6 +22,8 @@ foobar__is_converged() {
 site 0 effect=holds rc=0
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc plan --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
@@ -38,7 +40,7 @@ $ dorc why --receipt-last
 === [unwritten: why-total-section-carriers] ===
 
 [unwritten: why-total-label-document]  
-                                       237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                       2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-species]         plan
    [unwritten: why-total-label-role]            [unwritten: why-total-role-root]
@@ -49,114 +51,114 @@ $ dorc why --receipt-last
 === [unwritten: why-total-section-data] ===
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Trusted
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Rich
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Available
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Complete
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        PendingKernelSupport
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        plan
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        plan
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -166,7 +168,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -177,7 +179,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -187,7 +189,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -197,7 +199,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -211,7 +213,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -221,7 +223,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -232,7 +234,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -242,7 +244,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -252,7 +254,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -268,7 +270,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -278,7 +280,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -288,7 +290,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -298,7 +300,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -309,7 +311,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  stage 0 0
@@ -319,44 +321,44 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        admitted
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        [unwritten:
@@ -364,22 +366,22 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -387,11 +389,11 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -399,11 +401,11 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -411,18 +413,18 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -432,7 +434,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -442,7 +444,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -452,7 +454,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -462,7 +464,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -472,7 +474,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -482,51 +484,51 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        whole-window
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        consistent true
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        tripped false
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -536,7 +538,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -547,7 +549,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -557,22 +559,22 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        defensive-emission-off
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        [unwritten:
@@ -580,18 +582,18 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -602,7 +604,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -613,7 +615,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -624,7 +626,7 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -636,117 +638,117 @@ $ dorc why --receipt-last
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        record-stream
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        vouch
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        observation
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        validity-round
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        outcome
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 === [unwritten: why-total-section-correlations] ===
@@ -756,13 +758,13 @@ $ dorc why --receipt-last
 [unwritten: why-total-label-locus]  0 0 Authored Recorded Agrees book.sh:4
 
 $ dorc why --receipt-last --json
-{"format":"dorc-why-json/unstable","carriers":[{"document":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b","species":"plan","role":"root","authentication":{"state":"present","value":"Trusted"},"projection":{"state":"present","value":"Rich"},"detail":{"state":"present","value":"Available"}}],"data":[{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Trusted"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Rich"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Available"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Complete"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"PendingKernelSupport"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"plan"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"plan"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"general-sh"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"fbcd099a5f73eb6670eaeebd4ecba3b13e755c4010f7a05f66466069800396c0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"148"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Matching"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"foobar__is_converged() {\\x0a   verb=\"$1\"; shift\\x0a   case \"$verb\" in\\x0a   sync-certs) foobar status --certs-current -- \"$1\" ;;\\x0a   *) return 2 ;;\\x0a   esac\\x0a}\\x0a"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"general-sh"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"738f29c55418c875e1dd1d334eaf151764153d8fbeabd9187f3c85552d2a5106"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"221"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Matching"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"#!/bin/sh\\x0a# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when\\x0a# its intake ADMITTED records, and a framed stream with none is NoObservation.\\x0afoobar sync-certs /etc/nginx/certs\\x0a"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"replace"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"3"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"foobar sync-certs /etc/nginx/certs"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"stage 0 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"admitted"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"9bdf4b0718de5d24efda166b9fd41f3a741d2cb4b73138040a4e2ddf08c5bbb2"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"890a8cb67bb67ca3f25215d301f52f8dc56114a47ce9295fcf3e6de59c3bc08c"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1e6ea323d3ad0c2cd6239626593e545f822112a098bce6792a562c628d3ce9c2"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"establish-probe-ambient"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"3"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"verdict-lane true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"invalidator true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1+0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"whole-window"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"consistent true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"tripped false"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"verdict"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"defensive-emission-off"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"replace"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"vouched"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"record-stream"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"vouch"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"observation"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"validity-round"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"outcome"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"},{"subject":{"state":"present","value":"document 237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b"}},"delivery":"0"}],"correlations":[],"loci":{"nodes":[{"locus":"0 0 Authored Recorded Agrees","address":{"state":"present","value":"book.sh:4"}}],"edges":[]},"audit":[]}
+{"format":"dorc-why-json/unstable","carriers":[{"document":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0","species":"plan","role":"root","authentication":{"state":"present","value":"Trusted"},"projection":{"state":"present","value":"Rich"},"detail":{"state":"present","value":"Available"}}],"data":[{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Trusted"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Rich"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Available"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Complete"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"PendingKernelSupport"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"plan"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"plan"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"general-sh"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"fbcd099a5f73eb6670eaeebd4ecba3b13e755c4010f7a05f66466069800396c0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"148"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Matching"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 0"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"foobar__is_converged() {\\x0a   verb=\"$1\"; shift\\x0a   case \"$verb\" in\\x0a   sync-certs) foobar status --certs-current -- \"$1\" ;;\\x0a   *) return 2 ;;\\x0a   esac\\x0a}\\x0a"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"general-sh"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"738f29c55418c875e1dd1d334eaf151764153d8fbeabd9187f3c85552d2a5106"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"221"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"Matching"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"source 1"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"#!/bin/sh\\x0a# One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when\\x0a# its intake ADMITTED records, and a framed stream with none is NoObservation.\\x0afoobar sync-certs /etc/nginx/certs\\x0a"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"replace"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"3"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Claimed one"},"payload":{"state":"present","value":"foobar sync-certs /etc/nginx/certs"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"stage 0 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"admitted"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"9bdf4b0718de5d24efda166b9fd41f3a741d2cb4b73138040a4e2ddf08c5bbb2"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"890a8cb67bb67ca3f25215d301f52f8dc56114a47ce9295fcf3e6de59c3bc08c"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1e6ea323d3ad0c2cd6239626593e545f822112a098bce6792a562c628d3ce9c2"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"establish-probe-ambient"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"3"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"verdict-lane true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"invalidator true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1+0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"whole-window"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"consistent true"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"tripped false"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"verdict"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"defensive-emission-off"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"replace"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"vouched"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"present","value":"host-influenced"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"site 0"},"speaker":{"state":"present","value":"Vouched absent-report-api-lacks"},"payload":{"state":"absent-projection-uncollected","value":null},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"record-stream"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"1"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"vouch"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"observation"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"validity-round"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"outcome"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"},{"subject":{"state":"present","value":"document 2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"},"speaker":{"state":"present","value":"Derived mine"},"payload":{"state":"present","value":"0"},"world":{"moment":{"state":"present","value":"00000001769306439000"},"host":{"state":"present","value":"localhost"},"lineage":{"state":"present","value":"2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0"}},"delivery":"0"}],"correlations":[],"loci":{"nodes":[{"locus":"0 0 Authored Recorded Agrees","address":{"state":"present","value":"book.sh:4"}}],"edges":[]},"audit":[]}
 
 $ dorc why --receipt-last --all
 === [unwritten: why-total-section-carriers] ===
 
 [unwritten: why-total-label-document]  
-                                       237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                       2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-species]         plan
    [unwritten: why-total-label-role]            [unwritten: why-total-role-root]
@@ -773,114 +775,114 @@ $ dorc why --receipt-last --all
 === [unwritten: why-total-section-data] ===
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Trusted
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Rich
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Available
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        Complete
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        PendingKernelSupport
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        plan
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        plan
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -890,7 +892,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -901,7 +903,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -911,7 +913,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -921,7 +923,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 0
@@ -935,7 +937,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -945,7 +947,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -956,7 +958,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -966,7 +968,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -976,7 +978,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  source 1
@@ -992,7 +994,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1002,7 +1004,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1012,7 +1014,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1022,7 +1024,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1033,7 +1035,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  stage 0 0
@@ -1043,44 +1045,44 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        admitted
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        [unwritten:
@@ -1088,22 +1090,22 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -1111,11 +1113,11 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -1123,11 +1125,11 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        
@@ -1135,18 +1137,18 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1156,7 +1158,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1166,7 +1168,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1176,7 +1178,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1186,7 +1188,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1196,7 +1198,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1206,51 +1208,51 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        whole-window
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        consistent true
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        tripped false
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1260,7 +1262,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1271,7 +1273,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1281,22 +1283,22 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        defensive-emission-off
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        [unwritten:
@@ -1304,18 +1306,18 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        host-influenced
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1326,7 +1328,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1337,7 +1339,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1348,7 +1350,7 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  site 0
@@ -1360,117 +1362,117 @@ $ dorc why --receipt-last --all
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        record-stream
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        1
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        vouch
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        observation
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        validity-round
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        outcome
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 [unwritten: why-total-label-subject]  document
-                                      237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                      2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
 
    [unwritten: why-total-label-speaker]        derives [unwritten: why-total-voice-mine]
    [unwritten: why-total-label-payload]        0
    [unwritten: why-total-label-world-moment]   00000001769306439000
    [unwritten: why-total-label-world-host]     localhost
    [unwritten: why-total-label-world-lineage]  
-                                               237f8accda36991b76373104ef8ad5090dcb3f6e71bfb05298a5ea08d398ac4b
+                                               2489d36ea79736d6a37893e511ed7da8f6920b16d5ffd0938d6086267fbb2fe0
    [unwritten: why-total-label-delivery]       0
 
 === [unwritten: why-total-section-correlations] ===
