@@ -25,6 +25,11 @@ pub const RECORDS_TOKEN: &str = dorc_plan::records::TERMINAL_TOKEN;
 /// Re-frame a case's raw inner records into the `dorc-records/1` stream the controller intake
 /// admits, given the compiled probe's own bytes (the header + the resolvable site census) and the
 /// raw records the case authored (empty for a `/dev/null` target — an empty framed stream).
+///
+/// ONE rule for BOTH drivers (`30Xa:rul-framing-is-one-rule-both-drivers`): a `dorc-records/`-headed
+/// fixture is ALREADY framed and passes VERBATIM, so a case's own digest is what the intake sees. The
+/// shell runner no longer silently re-frames (and thus repairs) an already-framed fixture — a fixture
+/// whose committed digest is wrong is rot, fixed as a fixture, not papered over per drive.
 #[expect(
     clippy::indexing_slicing,
     clippy::arithmetic_side_effects,
@@ -33,6 +38,9 @@ pub const RECORDS_TOKEN: &str = dorc_plan::records::TERMINAL_TOKEN;
 )]
 #[must_use]
 pub fn frame_records(probe: &str, raw: &str) -> String {
+    if raw.starts_with("dorc-records/") {
+        return raw.to_owned();
+    }
     let header = probe
         .lines()
         .find(|line| line.contains("dorc-records/1"))
