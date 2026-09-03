@@ -1611,16 +1611,19 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         std::fs::create_dir_all(session_root.join(role)).expect("create the session store");
     }
     // The framed record stream: what a `$ dorc … --results -` block reads on the session's stdin,
-    // and — where a block redirects `< probe-results.txt` — what that file is re-written to hold, so
-    // the session and the inspection re-drive read ONE identical world (`frame_records` is
-    // idempotent, so a later re-drive's re-framing of the framed file is a no-op).
+    // and — where a block redirects `< probe-results.txt` — what that file must hold for the session
+    // to read framed records. The AUTHORED (raw) file is restored below before the artifact battery,
+    // whose gate-1 compares the mocked probe against the raw fixture, not the wire form.
     let args = shared_args(&dir)
         .map_err(|message| Failed::from(format!("FAIL  {}  [session: {message}]", spec.name)))?;
     let framed = framed_results(harness, &dir, &args);
     let probe_results = dir.join("probe-results.txt");
-    if probe_results.is_file() {
+    let raw_probe_results = probe_results
+        .is_file()
+        .then(|| read_or_empty(&probe_results));
+    if raw_probe_results.is_some() {
         std::fs::write(&probe_results, &framed)
-            .expect("re-write probe-results.txt as the framed record stream");
+            .expect("re-write probe-results.txt as the framed record stream for the session");
     }
     let commands: Vec<String> = spec
         .case
@@ -1631,6 +1634,10 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         .collect();
     let captures = drive_session(harness, &dir, &session_root, &commands, &framed)
         .map_err(|error| Failed::from(format!("FAIL  {}  [session: {error}]", spec.name)))?;
+    if let Some(raw) = raw_probe_results {
+        std::fs::write(&probe_results, raw)
+            .expect("restore the raw probe-results.txt for the gates");
+    }
 
     let mut failures: Vec<String> = Vec::new();
 
