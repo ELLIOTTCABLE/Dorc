@@ -1025,11 +1025,25 @@ impl DorcConsumer {
             ctx: self.render_ctx(),
             actions: Vec::new(),
         };
+        // The source-comparison's CURRENT bytes come from the case's own sections, never real disk:
+        // in-process the recorded book/oracle is unchanged, so it renders Matching exactly as the
+        // shipped binary reading the materialized case dir does (`30Va:rul-source-comparison-is-one-cli-seat`).
+        let current_sources: std::collections::BTreeMap<String, Vec<u8>> = case
+            .sections()
+            .iter()
+            .map(|section| {
+                (
+                    section.name().to_owned(),
+                    section.content().as_bytes().to_vec(),
+                )
+            })
+            .collect();
         let status = dorc_cli::engine::report_recorded_store(
             answer,
             args.why_register(),
             dorc_cli::engine::NO_STATE_ROOT,
             &mut sink,
+            Some(&current_sources),
         );
         Some(dorc_engine_replay(status, sink.actions))
     }

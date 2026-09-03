@@ -117,13 +117,20 @@ impl RootedReading {
     /// Consuming, because a reading is one question's whole answer and deriving it twice would
     /// hand two callers two models of one document.
     #[must_use]
-    pub fn reconstruct(self) -> Reconstruction {
+    pub fn reconstruct(
+        self,
+        current_sources: Option<&std::collections::BTreeMap<String, Vec<u8>>>,
+    ) -> Reconstruction {
         match self.root {
             ReadRoot::Plan(root) => {
                 // Two passes, for the reason `the-two-pass-address` above gives: the first hands
                 // the seat a source table, the second binds what it established.
                 let survey = facts_for(&root, self.siblings.clone(), Vec::new(), None);
-                let outcome = compare_sources(&survey.source_material(), self.address.named_file());
+                let outcome = compare_sources(
+                    &survey.source_material(),
+                    self.address.named_file(),
+                    current_sources,
+                );
                 let compared = match self.address.standing() {
                     // An edge refusal outranks the seat's: a question that never became a file and
                     // a line was never a question about a source at all.

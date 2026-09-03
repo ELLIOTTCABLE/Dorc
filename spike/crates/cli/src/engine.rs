@@ -2194,6 +2194,7 @@ pub fn report_recorded_store(
     register: WhyRegister,
     store: &str,
     sink: &mut dyn OutputSink,
+    current_sources: Option<&std::collections::BTreeMap<String, Vec<u8>>>,
 ) -> EngineStatus {
     let reading = match answer {
         crate::recorded::StoreAnswer::Unreadable(reason) => {
@@ -2219,7 +2220,7 @@ pub fn report_recorded_store(
         crate::recorded::StoreAnswer::Rooted(reading) => *reading,
     };
 
-    let reconstruction = reading.reconstruct();
+    let reconstruction = reading.reconstruct(current_sources);
     let event = match register {
         WhyRegister::Json => OutputEvent::plain_text(
             OutputChannel::Stdout,

@@ -76,9 +76,11 @@ pub struct ComparedOutcome {
 pub fn compare_sources(
     material: &RecordedSourceMaterial<'_>,
     named: Option<&NamedFile>,
+    current_sources: Option<&std::collections::BTreeMap<String, Vec<u8>>>,
 ) -> ComparedOutcome {
     let mut seat = SourceComparisonSeat {
         named,
+        current_sources,
         observations: Vec::new(),
         naming: Vec::new(),
         placed: None,
@@ -105,9 +107,27 @@ pub fn compare_sources(
 /// The one implementation of `dorc_receipt::report::SourceComparisonConsumer`.
 struct SourceComparisonSeat<'a> {
     named: Option<&'a NamedFile>,
+    current_sources: Option<&'a std::collections::BTreeMap<String, Vec<u8>>>,
     observations: Vec<ObservedSource>,
     naming: Vec<NamedSource>,
     placed: Option<u32>,
+}
+
+impl SourceComparisonSeat<'_> {
+    /// The CURRENT bytes at a recorded path: real disk for the shipped binary, the in-memory case
+    /// sources for the in-process loom driver (`30Va:rul-source-comparison-is-one-cli-seat` — the
+    /// seat extends, never a scattered read). An in-memory set answers `Absent` for a path it does
+    /// not hold, exactly as disk does for a missing file, so the authentication asymmetry is intact.
+    fn read_current(&self, path: &str) -> CurrentSourceReading {
+        match self.current_sources {
+            Some(sources) => sources
+                .get(path)
+                .map_or(CurrentSourceReading::Absent, |bytes| {
+                    CurrentSourceReading::Read(bytes.clone())
+                }),
+            None => read_regular_file(path),
+        }
+    }
 }
 
 impl SourceComparisonConsumer for SourceComparisonSeat<'_> {
@@ -142,7 +162,9 @@ impl SourceComparisonConsumer for SourceComparisonSeat<'_> {
             // authenticated. This process opens nobody else.s document.s path unprompted.
             None if source.authentication() == AuthenticationState::Trusted => recorded_path
                 .as_deref()
-                .map_or(CurrentSourceReading::NotLookedFor, read_regular_file),
+                .map_or(CurrentSourceReading::NotLookedFor, |path| {
+                    self.read_current(path)
+                }),
             None => CurrentSourceReading::NotLookedFor,
         };
         let matches_digest = current_bytes(&reading).is_some_and(|bytes| {

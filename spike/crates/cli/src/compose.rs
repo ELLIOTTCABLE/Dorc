@@ -203,6 +203,7 @@ fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result
             args.why_register(),
             label,
             sink,
+            None,
         ));
     }
 
