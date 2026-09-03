@@ -272,16 +272,16 @@ fn rename_edges(line: &str) -> Vec<String> {
 }
 
 /// A superseded marker within three lines of the definition at `n` (before or after, inclusive),
-/// verbatim/trimmed/truncated. The `superced` stem also catches the corpus's own recurring
-/// misspelling of the word; `supersedes` is deliberately NOT matched — the active verb marks the
+/// verbatim/trimmed/truncated. `supersedes` is deliberately NOT matched — the active verb marks the
 /// LIVE slug, not a retired one.
 fn superseded_near(lines: &[&str], n: usize) -> Option<String> {
     let lo = n.saturating_sub(3);
     let hi = n.saturating_add(3);
     (lo..=hi).find_map(|k| {
         let line = lines.get(k)?;
-        let lower = line.to_lowercase();
-        (lower.contains("superseded") || lower.contains("superced")).then(|| truncate(line.trim()))
+        line.to_lowercase()
+            .contains("superseded")
+            .then(|| truncate(line.trim()))
     })
 }
 
@@ -752,7 +752,7 @@ fn sample(label: &str, slugs: &[&String], rows: &BTreeMap<String, SlugRow>) {
 
 #[cfg(test)]
 mod tests {
-    use super::{definition, rename_edges, slug_occurrences, take_slug};
+    use super::{definition, rename_edges, slug_occurrences, superseded_near, take_slug};
 
     fn slug(line: &str) -> Option<String> {
         definition(line).map(|(s, _)| s)
@@ -851,5 +851,26 @@ mod tests {
             rename_edges("## `collapse-mints-narrative` (nee `collapse-mints-evidence`)"),
             ["collapse-mints-evidence"]
         );
+    }
+
+    #[test]
+    fn a_superseded_marker_matches_only_the_exact_word() {
+        // The retirement marker is the exact word `superseded`; `supersedes` (the active verb, one
+        // letter off) marks the LIVE slug and must NOT match. That exactness is also what drops the
+        // corpus's former misspelling now that the spelling pass has removed it — the stem branch
+        // that used to tolerate it is gone.
+        let live = ["## some-live-slug", "- superseded: gone 2026", "body"];
+        assert_eq!(
+            superseded_near(&live, 0).as_deref(),
+            Some("- superseded: gone 2026")
+        );
+        let active = ["## some-live-slug", "this supersedes the old note", "body"];
+        assert_eq!(
+            superseded_near(&active, 0),
+            None,
+            "the active verb is one letter off and must not match"
+        );
+        let plain = ["## some-live-slug", "an ordinary body line", "body"];
+        assert_eq!(superseded_near(&plain, 0), None);
     }
 }
