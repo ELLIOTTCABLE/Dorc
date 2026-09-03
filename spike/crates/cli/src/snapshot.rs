@@ -419,31 +419,68 @@ pub fn root_dependencies(
     srcs: &[String],
     ambient: usize,
 ) -> std::collections::BTreeSet<usize> {
-    let mut deps: std::collections::BTreeSet<usize> = std::collections::BTreeSet::new();
+    // The in-process byte source: a resolved target's bytes come from the case's ALREADY-LOADED
+    // sections, keyed by their canonical operand path — never disk (`lib-target-is-a-loom-seam`).
+    let read = |wanted: &str| -> Option<String> {
+        paths
+            .iter()
+            .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted))
+            .and_then(|idx| srcs.get(idx).cloned())
+    };
+    let roots = ambient.min(paths.len());
+    let root_paths = paths.get(..roots).unwrap_or_default();
+    let root_srcs = srcs.get(..roots.min(srcs.len())).unwrap_or_default();
+    sourced_oracle_dependencies(cwd, root_paths, root_srcs, read)
+        .iter()
+        .filter_map(|(resolved, _)| {
+            paths
+                .iter()
+                .position(|path| cwd.resolve_operand(path).as_deref() == Some(resolved.as_str()))
+                .filter(|&idx| idx >= ambient)
+        })
+        .collect()
+}
+
+/// The dependencies a set of ROOTS `.`-sources transitively — the ONE walk both drivers share
+/// (`one-definition-table-two-drivers`; `lib-target-is-a-loom-seam`: VALUES cross the seam). `read`
+/// yields a cwd-resolved target's bytes so the walk recurses into each dependency's own load program:
+/// the binary reads from disk ([`read_sourced_oracles`](crate::compose)), the in-process snapshot
+/// from the case's already-loaded sections ([`root_dependencies`]). Returns each contract-satisfying
+/// dependency's resolved path and source, in discovery (append) order, once — the shape both a
+/// growing on-disk acquisition and a fixed in-memory identification project from.
+pub(crate) fn sourced_oracle_dependencies(
+    cwd: &Cwd,
+    root_paths: &[String],
+    root_srcs: &[String],
+    read: impl Fn(&str) -> Option<String>,
+) -> Vec<(String, String)> {
+    let mut seen: std::collections::BTreeSet<String> = root_paths
+        .iter()
+        .filter_map(|path| cwd.resolve_operand(path))
+        .collect();
+    let mut deps: Vec<(String, String)> = Vec::new();
+    let mut frontier: Vec<String> = root_srcs.to_vec();
     let mut cursor = 0;
-    while let Some(src) = srcs.get(cursor) {
-        let follow = cursor < ambient || deps.contains(&cursor);
+    while let Some(src) = frontier.get(cursor).cloned() {
         cursor = cursor.saturating_add(1);
-        if !follow || !crate::sourcing::satisfies_the_contract(src) {
+        if !crate::sourcing::satisfies_the_contract(&src) {
             continue;
         }
-        for target in crate::sourcing::top_level_load_targets(src) {
+        for target in crate::sourcing::top_level_load_targets(&src) {
             let Some(wanted) = cwd.resolve_dot(&target) else {
                 continue;
             };
-            let Some(idx) = paths
-                .iter()
-                .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
-            else {
+            if !seen.insert(wanted.clone()) {
+                continue;
+            }
+            let Some(text) = read(&wanted) else {
                 continue;
             };
-            if idx >= ambient
-                && srcs
-                    .get(idx)
-                    .is_some_and(|source| crate::sourcing::satisfies_the_contract(source))
-            {
-                deps.insert(idx);
+            if !crate::sourcing::satisfies_the_contract(&text) {
+                continue;
             }
+            deps.push((wanted, text.clone()));
+            frontier.push(text);
         }
     }
     deps

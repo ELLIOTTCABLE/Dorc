@@ -1132,31 +1132,14 @@ fn read_sourced_oracles(
     mut srcs: Vec<String>,
 ) -> (Vec<String>, Vec<String>, BTreeSet<usize>) {
     let named = paths.len();
-    let mut cursor = 0;
-    while let Some(src) = srcs.get(cursor).cloned() {
-        cursor = cursor.saturating_add(1);
-        if !crate::sourcing::satisfies_the_contract(&src) {
-            continue;
-        }
-        for target in crate::sourcing::top_level_load_targets(&src) {
-            let Some(wanted) = cwd.resolve_dot(&target) else {
-                continue;
-            };
-            if paths
-                .iter()
-                .any(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
-            {
-                continue;
-            }
-            let Ok(text) = std::fs::read_to_string(&wanted) else {
-                continue;
-            };
-            if !crate::sourcing::satisfies_the_contract(&text) {
-                continue;
-            }
-            paths.push(wanted);
-            srcs.push(text);
-        }
+    // The binary's byte source for the shared walk: a resolved target's bytes come from DISK
+    // (`one-definition-table-two-drivers`; the in-process snapshot reads its sections instead).
+    let deps = crate::snapshot::sourced_oracle_dependencies(cwd, &paths, &srcs, |wanted| {
+        std::fs::read_to_string(wanted).ok()
+    });
+    for (path, src) in deps {
+        paths.push(path);
+        srcs.push(src);
     }
     let acquired = (named..paths.len()).collect();
     (paths, srcs, acquired)
