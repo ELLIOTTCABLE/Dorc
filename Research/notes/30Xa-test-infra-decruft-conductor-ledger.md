@@ -98,6 +98,16 @@ tests track the parser. Measured: on Windows the harness needs none of `SystemRo
 `PATHEXT` (seeded entropy, no `cmd`-hosted child, absolute-path launch). The shipped-binary
 witness is `durable_route::the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams`.
 
+### Checkpoint B1 (`10debadd`; the session driver built — one persistent `sh` per round-trip loom, sentinel-framed both-streams capture, gates by kind through the product's arg parser; 101 of 105 round-trip looms re-blessed; four floor looms red under `DORC_KNOWN_BROKEN`; gate legs unrun)
+
+| item | ruling |
+|---|---|
+| `dev-lint-looms-stay-single-invocation` — the four `run: lint` looms keep `run_lint` over the shipped binary | ACCEPT for B1; lane D folds lint looms into the session driver (`$ dorc lint …` through the harness) so one driver remains. |
+| `open-dot-sourced-dependency-paths-leak-into-both-streams` — four floor looms' stderr why-lens prints a `.`-sourced dependency's ABSOLUTE materialization path, invisible until stderr was transcripted | RULED `rul-why-lens-relativizes-under-the-load-cwd`: the live why-lens renders a `.`-sourced dependency's path relative to the load cwd when it lies under it, exactly as `--pre-source` oracle paths already render; canonical keys stay absolute (`need-controller-paths-never-cross-hosts` governs placement, not display). A product display change inside a suite arc, taken because the alternatives are four permanently un-goldenable cases or a forbidden normalizer; FLAGGED to the human for veto. Built in the B1 completion pass. |
+| `concept-session-stdin-is-the-framed-stream` · `concept-block-argv-classifier-is-read-only` | accepted as steering concepts (`cli/CLAUDE.md` at close). |
+| the runner frames the raw fixture records for the session (the shipped intake is exercised; the nonce rides the seeded `attempt_nonce` seam) and restores them raw for gate-1 | accepted. |
+| gate legs and `bless:dry` unrun; comment budget at its ceiling (+10) | the completion pass. |
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
@@ -212,11 +222,12 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | A `lane-a-seams-and-harness-binary` | `Seams` + `HarnessSeams` (`30X` §4) + `HarnessSeams::from_env` on one env-reader footing; the session environment scrubbed; `compose::run(Seams)` extracted from `main.rs`; `bin/dorc-harness.rs` refusing with no seam set; seeded id/key entropy over a dependency-free generator; the ticking harness clock; ALL SIX pins retired from the shipped binary; the e2e runner spawns the harness through a `dorc` shim on PATH; `bless:dry` clean | BUILT to `4ee6aeca` (§2a); completion → A′ |
 | A′ lane A completion | roots `Pinned` carries a literal path; the session scrub; the shipped-binary liveness witness; the WSL leg; `bless:dry` | BUILT to `413e2e49`; lane A COMPLETE |
 | — checkpoint A | `inv-division-at-the-narrowest-edge` judged on the extraction diff | — |
-| B1 `lane-b1-session-driver` (split from B after the human's sizing steer) | the shell-session process driver over the `dorc` PATH shim; gates by kind, no position rules; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); the runner default becomes the ticking per-block clock; `durable-receipt-ambiguous` re-authored as a clock-pinned session | not dispatched |
+| B1 `lane-b1-session-driver` (split from B after the human's sizing steer) | the shell-session process driver over the `dorc` PATH shim; gates by kind, no position rules; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); the runner default becomes the ticking per-block clock; `durable-receipt-ambiguous` re-authored as a clock-pinned session | BUILT to `10debadd` (four floor looms red, known-broken); completion → B1′ |
+| B1′ lane B1 completion | `rul-why-lens-relativizes-under-the-load-cwd`; the four floor looms re-blessed; the known-broken state cleared; both gate legs; `bless:dry` | DISPATCHED 2026-09-02 |
 | B2 `lane-b2-needle-rip-and-battery-split` | the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness); `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | not dispatched |
 | C `lane-c-in-process-receipt-world` | the in-process driver composes the real `LocalReceiptEdgeV1` over `ModelIo` (the new Cargo edge) with seeded entropy and the ticking case clock; the 37 `why-total-*` rows authorable; varied-seed default + the two affordances; `gate-two-drivers-agree`; the post-dispatch durable report authored over that world, witnessed by state-only e2es | not dispatched |
 | — checkpoint C | the durable-failure diagnostic's shape (sibling code vs reason arm) is the conductor's product ruling | — |
-| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the doctest noise; yardstick | not dispatched |
+| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick | not dispatched |
 
 ## §6 — residue accounting (empty, or kernel-only under `30X:front-dogfood-ceiling`, at close)
 
