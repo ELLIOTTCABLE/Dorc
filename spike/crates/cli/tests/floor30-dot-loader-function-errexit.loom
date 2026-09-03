@@ -48,6 +48,11 @@ function first=1 second=0 value=ready function=yes
 
 -- replay --
 $ dorc --book=book.sh --results -
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:8:4
+   8 |    . ./child.sh; sm_dot_second=$?
+     |    \__________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -74,6 +79,62 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5999fb88ce739161
 # site:17 unresolvable-no-probe
 # site:18 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:15:7
+   15 |    if [ "${SM_CHILD_LOADED-}" = 1 ]; then return 0; fi
+      |       ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:15:7
+   15 |    if [ "${SM_CHILD_LOADED-}" = 1 ]; then return 0; fi
+      |       ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:15:7
+   15 |    if [ "${SM_CHILD_LOADED-}" = 1 ]; then return 0; fi
+      |       ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 4 sites run unprobed (no read-only check
+could be shipped): `. ./child.sh`, `. ./child.sh`, `command -v sm_child_fn
+>/dev/null 2>&1`, `command -v sm_child_fn >/dev/null 2>&1` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:7:4
+   7 |    . ./child.sh; sm_dot_first=$?
+     |    \__________/
+
+   = help:  sm site runs `. ./child.sh`
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 15:7 `[ "${SM_CHILD_LOADED-}" = 1 ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 15:7 `[ "${SM_CHILD_LOADED-}" = 1 ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 15:7 `[ "${SM_CHILD_LOADED-}" = 1 ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: '.' (line 7) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 3 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -106,3 +167,6 @@ sm_dorc_load_child() {
    printf 'function first=%s second=%s value=%s function=%s\n' \
       "$sm_fn_first" "$sm_fn_second" "$sm_child_value" "$sm_fn_function"
 ) || printf 'function boundary=%s\n' "$?"
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=19 elide=0 omit=0 guard=0 run=19 may-alias=0
+dorc: decision-digest 2bc4c4a51afcd4f588e71addc5c0bb7de90dcdccc881c1f524f8871482b686b8

@@ -215,6 +215,7 @@ systemctl__is_converged() {
 }
 systemctl__is_converged 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -227,6 +228,8 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 true || :   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; apt-get install -y nginx] (already converged / dead branch)
 # ufw allow 80/tcp   # dorc: elided (already converged / dead branch)
 # systemctl enable nginx   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=4 elide=3 omit=1 guard=0 run=0 may-alias=0
+dorc: decision-digest 2ec4e0e0db17d36852f54276181a998737ed915aad91892af87da7b7fe3511a6
 
 $ dorc why 8 --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --results=probe-results.txt
       [ book.sh, participating lines:

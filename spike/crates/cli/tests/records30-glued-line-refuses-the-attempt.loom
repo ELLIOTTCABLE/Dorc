@@ -34,3 +34,6 @@ $ dorc --book=book.sh --results - < probe-results.txt
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=742e0712cc65f7202bd35ed7adcd219f214d78520be74101a8213acc804df656 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+records: warning[records-glued-line]: sm a records line carried bytes after its
+terminal token (two writes glued) -- the whole read unit is refused, the host
+runs (kFAIL-perform)

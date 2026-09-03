@@ -100,8 +100,20 @@ dpkg__predict '-s' 'otelcol'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `curl -sL https://example.com/otelcol.tar.gz`, `tar xz` --
+run `dorc why` for the per-site detail (the apply runs each anyway, to stay
+safe)
+      [ book.sh:2:36
+   2 | dpkg -s otelcol >/dev/null 2>&1 || curl -sL https://example.com/otelcol.tar.gz | tar xz
+     |                                    \_________________________________________/
+
+   = help:  sm site runs `curl -sL https://example.com/otelcol.tar.gz`
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # strawman24-pipe-guard-single-lifts (the CONTRAST to strawman24-pipe-guard-floor / the
 true || : | :   # dorc: elided [dpkg -s otelcol >/dev/null 2>&1; curl -sL https://example.com/otelcol.tar.gz; tar xz] (already converged / dead branch)
+dorc: plan-summary sites=3 elide=1 omit=2 guard=0 run=0 may-alias=0
+dorc: decision-digest ba319698a04405d7f97fcf5982dd8388836ec8575bd6c735bf92aa8c6ba3994a

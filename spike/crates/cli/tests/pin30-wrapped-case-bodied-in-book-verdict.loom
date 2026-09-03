@@ -86,6 +86,24 @@ ran: sudo hork install wombat
 
 -- replay --
 $ dorc --book=book.sh --pre-source sudo.oracle.sh --results - < probe-results.txt
+reserved: warning[reserved-namespace-squat]: Book function `hork__is_converged`
+sits in the `__is_converged` namespace reserved for oracle functions; Dorc
+treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble
+defining the same name would collide with it. Rename it to stay clear of
+`*__is_converged`.
+      [ book.sh:6:1
+   6 | hork__is_converged() {
+     | \________________/
+loading: note[role-defined-below-its-sites]: `hork__is_converged` is defined
+below 1 of its family's sites, and a definition licenses nothing above itself,
+so those sites run as if it were absent -- moving it above them is one
+cut-and-paste.
+      [ book.sh:6:1
+   6 | hork__is_converged() {
+     | \________________/
+escalation: note[escalation-policy]: escalation policy: probe re-uses connection
+authority (root) for `tolerates:`-vouched functions only (default); entry forms:
+sudo -n. Forbid with --no-probe-escalation; widen with --escalate-any-probe.
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -96,6 +114,31 @@ $ dorc --book=book.sh --pre-source sudo.oracle.sh --results - < probe-results.tx
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ba7d69414c68d9eaaa6def96dfe28ded23db86ee4f52053e6215c87cc65fc463 sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: operand 3 is an unresolvable positional
+parameter (`$@`/`$*`/`$N`), so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:9:27
+   9 |    install) hork query -- "$2" ;;
+     |                           \__/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sudo hork install wombat` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:13:1
+   13 | sudo hork install wombat
+      | \______________________/
+
+   = help:  sm site runs `sudo hork install wombat`
+why: ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 9:13 `hork query -- "$2"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: 'sudo' (line 13) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -112,3 +155,5 @@ hork__is_converged() {
    esac
 }
 sudo hork install wombat
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest b4d83eb2d036cd0d79c0cad3a842ec85cba30d21e056f401fa89b4a88e5f02f8

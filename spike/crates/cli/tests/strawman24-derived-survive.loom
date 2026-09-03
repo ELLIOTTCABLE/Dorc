@@ -174,9 +174,25 @@ if [ -z "$_d" ]; then printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' 0 "$_
 _d=$(apt_get__disturbs 'install' '-y' 'nginx'); _dr=$?
 if [ -z "$_d" ]; then printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+derive: note[touches-escalated]: site 0: this footprint could not be derived
+statically, so apt-get.touches() shipped with the probe and answered from the
+host, read-only.
+      [ book.sh:2:1
+   2 | apt-get install -y oldpkg
+     | \_______________________/
+derive: note[touches-escalated]: site 1: this footprint could not be derived
+statically, so apt-get.touches() shipped with the probe and answered from the
+host, read-only.
+      [ book.sh:3:1
+   3 | apt-get install -y nginx
+     | \______________________/
+why: site 1 survives+elides past wall site 0 (apt-get touches {sm.dorc.File:/etc/oldpkg.conf}; own-effect sm.dorc.Package:oldpkg; DERIVED at probe from apt-get.touches()) -- backing sm.dorc.Package:nginx disjoint (trusted footprint); vouched at package.oracle.sh:32
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to strawman24-survive-simple, its AUTHORED-footprint twin).
 apt-get install -y oldpkg
 # apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=2 elide=1 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 68e179faab8f520f3ec284cc3ff302381ed6ef66d836b389d45c94e7e60cc6f0

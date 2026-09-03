@@ -140,6 +140,8 @@ sm_dorc_Package__disturbance_reaches_only_0() { dpkg -L "$1" ; }
 _r=$(sm_dorc_Package__disturbance_reaches_only_0 'nginx'); _rr=$?
 if [ -z "$_r" ]; then printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' 0 "$_rr"; else printf '%s\n' "$_r" | { _n=0; while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; _n=$((_n+1)); done; printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_rr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 survives+elides past wall site 0 (hork touches {sm.dorc.Package:nginx sm.dorc.File:/etc/other.conf}) -- backing sm.dorc.File:/etc/nginx/nginx.conf disjoint (trusted footprint); vouched at crossauthor.oracle.sh:24
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -160,3 +162,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # non-vacuous: the elision below is real, and the refusal there costs exactly this.
 hork tune nginx
 # installfile /etc/nginx/nginx.conf   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=2 elide=1 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest d5fa462d065e2b4127fa10d7ae2f9d0e6a472274d92e95da8d02a8774f790bcc

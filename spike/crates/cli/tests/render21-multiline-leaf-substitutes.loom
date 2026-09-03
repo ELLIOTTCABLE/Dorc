@@ -128,9 +128,21 @@ apt_get__is_converged 'install' '-y' 'multi
 line'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `systemctl reload nginx` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:4:1
+   4 | systemctl reload nginx
+     | \____________________/
+
+   = help:  sm site runs `systemctl reload nginx`
+hint: 'systemctl' (line 4) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # render21-multiline-leaf-substitutes (arch-1, note 214 d-6 — the NEWLY-EXPRESSIBLE multi-line
 true   # dorc: elided [apt-get install -y "multi line"] (already converged / dead branch)
 systemctl reload nginx
+dorc: plan-summary sites=2 elide=1 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 65b2d33818f0cffb2c5f6b3a3bf94221a7e3a2612718936cdf95e51e8969edac

@@ -248,6 +248,8 @@ ran: sysctl vm.drop_caches
 
 -- replay --
 $ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results - < probe-results.txt
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -303,6 +305,19 @@ systemctl__is_converged 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=ho
 # site:8 unresolvable-no-probe
 # site:9 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `hork tune --profile web`, `sysctl vm.drop_caches` -- run
+`dorc why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:14:1
+   14 | hork tune --profile web
+      | \_____________________/
+
+   = help:  sm site runs `hork tune --profile web`
+why: author declines [unsound] (at sysctl.oracle.sh:11) -- a deliberate decline the author classed, so the site runs
+why: site 5 survives+elides past wall site 4 (apt-get touches {sm.dorc.Package:oldpkg}) -- backing sm.dorc.Firewall:443/tcp disjoint (trusted footprint); vouched at firewall.oracle.sh:17
+why: site 7 guard [sm.dorc.Service] -- licensed by the sm.dorc.Service oracle's vouch (at service.oracle.sh:17) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+hint: 'hork' (line 14) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged, and un-wall 1 downstream site; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -337,9 +352,21 @@ hork tune --profile web
 ( systemctl__is_converged start nginx ) || systemctl start nginx   # dorc: guard [sm.dorc.Service converged-vouch; probe: holds]
 sysctl vm.drop_caches
 echo "web1 up"
+dorc: plan-summary sites=10 elide=4 omit=1 guard=1 run=4 may-alias=0
+dorc: decision-digest 2bae8a619a62a1395b6d8395a41fa565a08a6d035cde0778f97978065a8afa9d
 
 $ dorc why --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
-receipt: plan 2026-01-25 02:00:45, host localhost
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `hork tune --profile web`, `sysctl vm.drop_caches` -- run
+`dorc why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:14:1
+   14 | hork tune --profile web
+      | \_____________________/
+
+   = help:  sm site runs `hork tune --profile web`
+receipt: plan 2026-01-26 02:00:45, host localhost
    book book.sh (digest a50ae48b624add743ba2349e0f939238425cd6fb5c63405f5fecdca4fe49d0b8)
    oracles: firewall.oracle.sh, package.oracle.sh, pkgstate.oracle.sh, service.oracle.sh,
    sysctl.oracle.sh
@@ -371,6 +398,16 @@ converged
 relevance; `--all` enumerates everything the engine holds.)
 
 $ dorc why 15 --all --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --pre-source sysctl.oracle.sh --risk-faultless-skips --results=probe-results.txt
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `hork tune --profile web`, `sysctl vm.drop_caches` -- run
+`dorc why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:14:1
+   14 | hork tune --profile web
+      | \_____________________/
+
+   = help:  sm site runs `hork tune --profile web`
       [ book.sh, participating lines:
    12 | apt-get install -y oldpkg
    14 | hork tune --profile web

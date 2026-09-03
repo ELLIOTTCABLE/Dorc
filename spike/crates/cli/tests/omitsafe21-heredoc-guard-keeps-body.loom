@@ -105,6 +105,25 @@ dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "
 # site:0 unresolvable-no-probe
 # site:2 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `apt-get install -y nginx` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:3:40
+   3 | dpkg -s nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx
+     |                                        \______________________/
+
+   = help:  sm site runs `apt-get install -y nginx`
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+render: error[render-heredoc-refused]: Dorc cannot elide `dpkg -s nginx <<EOF
+>/dev/null 2>&1` as planned: rewriting the line would strand the heredoc body
+below its `<<` opener, so the command stays in place and runs verbatim.
+      [ book.sh:3:1
+   3 | dpkg -s nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx
+     | \_________________________________/
+
+   = help:  Move the heredoc's content out of the command -- feed it with printf
+            or redirect from a file -- and Dorc can then elide or guard the
+            site.
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -113,3 +132,5 @@ set -e
 dpkg -s nginx <<EOF >/dev/null 2>&1 || apt-get install -y nginx
 omit-safety heredoc payload
 EOF
+dorc: plan-summary sites=3 elide=1 omit=1 guard=0 run=1 may-alias=0
+dorc: decision-digest 505a6fda0376b3fa53c0a8b20ff56dfce12d01fc77b89f038e803bc23d0bef28

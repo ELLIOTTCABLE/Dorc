@@ -74,6 +74,8 @@ ran: sysctl vm.drop_caches
 
 -- replay --
 $ dorc --book=book.sh --pre-source sysctl.oracle.sh --results - < probe-results.txt
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -84,6 +86,17 @@ $ dorc --book=book.sh --pre-source sysctl.oracle.sh --results - < probe-results.
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ca23687f49760296e278132ecad73b98742b5b248b042f3ef7195946fce34f5c sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sysctl vm.drop_caches` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:6:1
+   6 | sysctl vm.drop_caches
+     | \___________________/
+
+   = help:  sm site runs `sysctl vm.drop_caches`
+why: author declines [unsound] (at sysctl.oracle.sh:8) -- a deliberate decline the author classed, so the site runs
+hint: 'sysctl' (line 6) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -93,3 +106,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # reached arm; the static argv threads to that arm, so the class + emitting-arm file:line surface
 # at PLAN time (the tier-2 `authored_reason`). No vouch ⇒ the site RUNS.
 sysctl vm.drop_caches
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 0b45be4b97e112fddb572729019d8a8575f42db95ea7935668ed2676548940a9

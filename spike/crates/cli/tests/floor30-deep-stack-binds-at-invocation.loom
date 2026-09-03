@@ -45,6 +45,21 @@ override
 
 -- replay --
 $ dorc --book=book.sh --results -
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:16:1
+   16 | . ./inner-base.sh
+      | \_______________/
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:18:1
+   18 | . ./inner-override.sh
+      | \___________________/
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:20:3
+   20 | ( . ./inner-base.sh; hork__is_converged )
+      |   \_______________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -62,6 +77,18 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9ffd79c1a0ec31fe
 # site:6 unresolvable-no-probe
 # site:7 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 8 sites run unprobed (no read-only check
+could be shipped): `. ./chain.sh`, `. ./inner-base.sh`, `hork__is_converged`, `.
+./inner-override.sh`, `hork__is_converged`, `. ./inner-base.sh`,
+`hork__is_converged`, `hork__is_converged` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:15:1
+   15 | . ./chain.sh
+      | \__________/
+
+   = help:  sm site runs `. ./chain.sh`
+hint: '.' (line 15) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 7 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -86,3 +113,6 @@ hork__is_converged
 hork__is_converged
 ( . ./inner-base.sh; hork__is_converged )
 hork__is_converged
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=8 elide=0 omit=0 guard=0 run=8 may-alias=0
+dorc: decision-digest e1f79f04bb079fad43c71cef786636a14e18e62c5ee50e84b0a226086626ac7f

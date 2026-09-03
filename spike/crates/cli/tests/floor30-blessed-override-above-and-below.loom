@@ -42,6 +42,16 @@ base
 
 -- replay --
 $ dorc --book=book.sh --results -
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:17:1
+   17 | . ./override.sh
+      | \_____________/
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:21:1
+   21 | . ./base.sh
+      | \_________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -60,6 +70,18 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b8be6ac9c4198cac
 # site:7 unresolvable-no-probe
 # site:8 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 7 sites run unprobed (no read-only check
+could be shipped): `. ./base.sh`, `hork__is_converged`, `. ./override.sh`,
+`hork__is_converged`, `hork__is_converged 2>/dev/null`, `. ./base.sh`,
+`hork__is_converged` -- run `dorc why` for the per-site detail (the apply runs
+each anyway, to stay safe)
+      [ book.sh:15:1
+   15 | . ./base.sh
+      | \_________/
+
+   = help:  sm site runs `. ./base.sh`
+hint: '.' (line 15) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 6 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -85,3 +107,6 @@ unset -f hork__is_converged
 hork__is_converged 2>/dev/null || printf 'gone\n'
 . ./base.sh
 hork__is_converged
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=9 elide=0 omit=0 guard=0 run=9 may-alias=0
+dorc: decision-digest 6888250448f78b7723dec60df47282f3ce62352799e510209c2a532e51ce118d

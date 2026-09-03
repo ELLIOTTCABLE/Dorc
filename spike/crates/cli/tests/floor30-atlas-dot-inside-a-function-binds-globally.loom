@@ -71,6 +71,33 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e317c5d9e4040bf6
 # site:8 unresolvable-no-probe
 # site:9 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-inner-nonleaf]: Dorc cannot elide `command -v payload_say`
+on its own: it runs inside a `$(...)` substitution as part of evaluating its
+enclosing line, so it runs whenever that line does.
+      [ book.sh:1:1
+   1 | #!/bin/sh
+     | \_______/
+   2 | # floor30-atlas-dot-inside-a-function-binds-globally \xe2\x80\x94 QUESTION (added mechanic): a `.` performed
+     | \__________________________/
+classify: note[cmdsub-inner-nonleaf]: Dorc cannot elide `command -v payload_say`
+on its own: it runs inside a `$(...)` substitution as part of evaluating its
+enclosing line, so it runs whenever that line does.
+      [ book.sh:1:1
+   1 | #!/bin/sh
+     | \_______/
+   2 | # floor30-atlas-dot-inside-a-function-binds-globally \xe2\x80\x94 QUESTION (added mechanic): a `.` performed
+     | \__________________________/
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `command -v payload_say >/dev/null 2>&1`, `command -v
+payload_say >/dev/null 2>&1`, `payload_say` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:19:4
+   19 | if command -v payload_say >/dev/null 2>&1; then
+      |    \____________________________________/
+
+   = help:  sm site runs `command -v payload_say >/dev/null 2>&1`
+hint: 'command' (line 19) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -106,3 +133,6 @@ fi
 printf 'book: after-loader var=[%s]\n' "${payload_mark-unset}"
 payload_say
 printf 'book-tail\n'
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=10 elide=0 omit=0 guard=0 run=10 may-alias=0
+dorc: decision-digest f096e7e44d735b8f4a16d6fb4651ab79b6024646c0478545c4c5398d9fd725f1

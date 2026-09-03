@@ -117,8 +117,11 @@ apt_get__is_converged 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif
 # site 1: sm.dorc.Package:nginx@installed
 apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # apt-get update   # dorc: elided (already converged / dead branch)
 # apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=2 elide=2 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 07826c3addee568f5cf032cd20ccca122c749a0a4d5f61fe11a5eeedc6ea10a0

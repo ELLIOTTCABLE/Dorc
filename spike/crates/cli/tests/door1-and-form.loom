@@ -88,9 +88,21 @@ dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "
 # site:2 unresolvable-no-probe
 # site:3 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `systemctl stop nginx`, `rm -f
+/etc/nginx/sites-enabled/default` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:3:36
+   3 | dpkg -s nginx >/dev/null 2>&1 && { systemctl stop nginx; rm -f /etc/nginx/sites-enabled/default; }
+     |                                    \__________________/
+
+   = help:  sm site runs `systemctl stop nginx`
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
 # door1-and-form (door-1 && DUAL, charter 20V §4 / note 215): the `&&` direction of the
 set -e
 false && { :; :; }   # dorc: elided [dpkg -s nginx >/dev/null 2>&1; systemctl stop nginx; rm -f /etc/nginx/sites-enabled/default] (already converged / dead branch)
+dorc: plan-summary sites=4 elide=1 omit=2 guard=0 run=1 may-alias=0
+dorc: decision-digest f2ab74a30453067bba3af6e90b96f3aeb10454209c22ec5b24273fd58c1a67c2

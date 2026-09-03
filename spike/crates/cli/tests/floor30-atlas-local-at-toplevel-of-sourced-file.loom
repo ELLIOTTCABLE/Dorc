@@ -65,6 +65,16 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=bea255303b145b0f
 # site:5 unresolvable-no-probe
 # site:6 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. ./localer.sh`, `. ./localer.sh` -- run `dorc why` for the
+per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:33:3
+   33 | ( . ./localer.sh; printf 'sub: after-dot x=[%s]\n' "$x" ) || printf 'book: contained status=[%s]\n' "$?"
+      |   \____________/
+
+   = help:  sm site runs `. ./localer.sh`
+hint: '.' (line 33) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -104,3 +114,6 @@ x=outer
 printf 'book: x-after-subshell=[%s]\n' "$x"
 . ./localer.sh
 printf 'book: bare-survived x=[%s]\n' "$x"
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=7 elide=0 omit=0 guard=0 run=7 may-alias=0
+dorc: decision-digest d4d74ab998ecae8e5bbf3ed694177a9a9da55a5d65ce40f7054917e91ad74eda

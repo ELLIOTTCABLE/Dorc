@@ -45,6 +45,16 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=89e48a7846116e6a
 # site:3 unresolvable-no-probe
 # site:4 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `. ./setter.sh` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:11:1
+   11 | . ./setter.sh
+      | \___________/
+
+   = help:  sm site runs `. ./setter.sh`
+hint: '.' (line 11) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -62,3 +72,6 @@ printf 'book-before\n'
 printf 'book-after-dot\n'
 false
 printf 'book-survived-a-false\n'
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=5 elide=0 omit=0 guard=0 run=5 may-alias=0
+dorc: decision-digest 9054922e7a34fb5d36fd922de06fc5f959359535bd1cd0fa2ce70cf573fefa8b

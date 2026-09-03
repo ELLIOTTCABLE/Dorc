@@ -70,6 +70,31 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=59470abc22359eed
 # site:7 unresolvable-no-probe
 # site:8 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:24:4
+   24 | if [ "$PWD" = "$book_pwd" ]; then
+      |    ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. ./stateful.sh`, `command -v victim >/dev/null 2>&1` -- run
+`dorc why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:18:1
+   18 | . ./stateful.sh
+      | \_____________/
+
+   = help:  sm site runs `. ./stateful.sh`
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 24:4 `[ "$PWD" = "$book_pwd" ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: '.' (line 18) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -102,3 +127,6 @@ else
    printf 'book: cd=[caller-cwd-changed]\n'
 fi
 printf 'book-tail\n'
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=9 elide=0 omit=0 guard=0 run=9 may-alias=0
+dorc: decision-digest 93f23b15c031a51cab2f1f5b3ff8724d2db58f49ed2b3bcaa535dec71b25fd12

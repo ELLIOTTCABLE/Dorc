@@ -29,6 +29,11 @@ file-ran
 
 -- replay --
 $ dorc --book=book.sh --results -
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:13:1
+   13 | . ./tailfail.sh
+      | \_____________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -44,6 +49,16 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=4b403e0ae9ea488e
 # site:4 unresolvable-no-probe
 # site:5 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `. ./tailfail.sh`, `. ./tailfail.sh` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:11:1
+   11 | . ./tailfail.sh || printf 'book: guarded caught status=[%s]\n' "$?"
+      | \_____________/
+
+   = help:  sm site runs `. ./tailfail.sh`
+hint: '.' (line 11) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -61,3 +76,6 @@ set -e
 printf 'book-after-guarded\n'
 . ./tailfail.sh
 printf 'book-after-bare\n'
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=6 elide=0 omit=0 guard=0 run=6 may-alias=0
+dorc: decision-digest b2c17f0f5308fa23635dddfd002ca46acd722f878a72346426547a9e46428a30

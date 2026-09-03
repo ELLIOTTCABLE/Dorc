@@ -136,6 +136,17 @@ apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _
 apt_get__is_converged 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork wombat` -- run `dorc why` for the per-site detail (the apply
+runs each anyway, to stay safe)
+      [ book.sh:3:1
+   3 | hork wombat
+     | \_________/
+
+   = help:  sm site runs `hork wombat`
+why: site 2 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:22) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+hint: 'hork' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged, and un-wall 1 downstream site
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -158,3 +169,5 @@ apt_get__is_converged() {
 hork wombat
 ( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
 apt-get install -y vim
+dorc: plan-summary sites=4 elide=1 omit=0 guard=1 run=2 may-alias=0
+dorc: decision-digest 1eb15f8fc3d5c4f50e36df5481f7b451760608c19ee23935ae221f6ad838fed5

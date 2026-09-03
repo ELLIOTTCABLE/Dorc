@@ -45,6 +45,7 @@ foobar__is_converged() {
 }
 foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -52,3 +53,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # One MEASURED site, which is the whole fixture requirement: a run publishes a receipt only when
 # its intake ADMITTED records, and a framed stream with none is NoObservation.
 # foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 890a8cb67bb67ca3f25215d301f52f8dc56114a47ce9295fcf3e6de59c3bc08c

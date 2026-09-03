@@ -157,6 +157,7 @@ systemctl__is_converged 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=h
 # site 2: sm.dorc.Package:curl@installed
 apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -164,3 +165,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # apt-get install -y nginx   # dorc: elided (already converged / dead branch)
 # systemctl enable nginx   # dorc: elided (already converged / dead branch)
 # apt-get install -y curl   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=3 elide=3 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 32db85838b274ec9395ec229e61bb370f8dd5ffb49c7e2aa151b1151b762cf06

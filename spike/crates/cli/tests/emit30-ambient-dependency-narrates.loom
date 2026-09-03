@@ -141,6 +141,32 @@ ran: beta sync b.conf
 
 -- replay --
 $ dorc --book=book.sh --pre-source alpha.oracle.sh --pre-source beta-common.oracle.sh --pre-source beta.oracle.sh --pre-source delta-common.oracle.sh --pre-source delta.oracle.sh --pre-source rogue.oracle.sh --pre-source shared.oracle.sh --results - < probe-results.txt
+loading: warning[helper-declaration-contested]: Two differing declarations of
+`sm_beta_check` are loaded (the earlier at beta-common.oracle.sh:2), and nothing
+can choose between same-named helpers, so Dorc withholds them all and the sites
+needing `sm_beta_check` run -- load a single source, or take custody of a merged
+copy.
+      [ rogue.oracle.sh:4:1
+   4 | sm_beta_check() {
+     | \_______________/
+   5 |    common cmp --strict -- "$1"
+     | \____________________________/
+   6 | }
+     | ^
+vouching: warning[vouched-composition-not-present]: [unwritten:
+vouched-composition-not-present]
+      [ beta.oracle.sh:5:1
+   5 | beta__is_converged() {
+     | \________________/
+vouching: warning[vouched-composition-not-present]: [unwritten:
+vouched-composition-not-present]
+      [ alpha.oracle.sh:4:1
+   4 | alpha__is_converged() {
+     | \_________________/
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -160,6 +186,16 @@ delta__is_converged 'sync' 'd.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds;
 # site:1 unresolvable-no-probe
 # site:2 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `alpha sync a.conf`, `beta sync b.conf` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:24:1
+   24 | alpha sync a.conf
+      | \_______________/
+
+   = help:  sm site runs `alpha sync a.conf`
+hint: 'alpha' (line 24) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -188,3 +224,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # delta sync d.conf   # dorc: elided (already converged / dead branch)
 alpha sync a.conf
 beta sync b.conf
+dorc: plan-summary sites=3 elide=1 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest c62a6b8230d29190bf8f63c8ea7f348c188fc9f0306d66bbf543fa75d331717c

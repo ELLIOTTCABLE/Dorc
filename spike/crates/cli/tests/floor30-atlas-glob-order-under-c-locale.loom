@@ -65,6 +65,7 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=50766b52cca124bb
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -91,3 +92,5 @@ for f in ./g_*.sh; do
    printf 'member=[%s]\n' "$f"
 done
 printf 'book-tail\n'
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest 629eb4c978f50733093ac51216d45e0f08352107b989ce9c00e6d99dfc6794b7

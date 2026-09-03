@@ -102,6 +102,12 @@ wombat__is_converged 'a.conf' '/etc/shared.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; t
 # site 1: sm.dorc.File:/etc/shared.conf@content
 wombat__is_converged 'b.conf' '/etc/shared.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+records: note[shared-cell-measurements-disagree]: 2 probe sites all measure one
+shared coordinate (sm.dorc.File:/etc/shared.conf@content) and their reports did
+not agree, so Dorc holds it unknown and every site on it runs -- the
+cleanly-reporting ones included (an authored verdict coordinate would split them
+apart).
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -120,3 +126,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # measurement. That is why the fix keys on what the oracle wrote and never on where it was called.
 wombat a.conf /etc/shared.conf
 wombat b.conf /etc/shared.conf
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest a8d3d0de7145d297e80b776f3222877edb07dffbad11705185066921781d729d

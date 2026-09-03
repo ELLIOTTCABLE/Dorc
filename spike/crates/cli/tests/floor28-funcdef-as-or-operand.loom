@@ -36,6 +36,34 @@ real
 
 -- replay --
 $ dorc --book=book.sh --results -
+reserved: warning[reserved-namespace-squat]: Book function `hork__is_converged`
+sits in the `__is_converged` namespace reserved for oracle functions; Dorc
+treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble
+defining the same name would collide with it. Rename it to stay clear of
+`*__is_converged`.
+      [ book.sh:17:52
+   17 | ( command -v hork__is_converged >/dev/null 2>&1 || hork__is_converged() { printf 'polyfill\n' ;}
+      |                                                    \________________/
+reserved: warning[reserved-namespace-squat]: Book function `hork__is_converged`
+sits in the `__is_converged` namespace reserved for oracle functions; Dorc
+treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble
+defining the same name would collide with it. Rename it to stay clear of
+`*__is_converged`.
+      [ book.sh:20:52
+   20 |   command -v hork__is_converged >/dev/null 2>&1 || hork__is_converged() { printf 'polyfill\n' ;}
+      |                                                    \________________/
+cfg: warning[cfg-inline-refused]: function `hork__is_converged` is defined more
+than once; the call is not inlined (redefinition tracking is out of the modeled
+subset) -- it runs as an ordinary unmodeled command
+      [ book.sh:18:3
+   18 |   hork__is_converged )
+      |   \________________/
+cfg: warning[cfg-inline-refused]: function `hork__is_converged` is defined more
+than once; the call is not inlined (redefinition tracking is out of the modeled
+subset) -- it runs as an ordinary unmodeled command
+      [ book.sh:21:3
+   21 |   hork__is_converged )
+      |   \________________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -50,6 +78,18 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b9720386c26c89c3
 # site:3 unresolvable-no-probe
 # site:4 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 5 sites run unprobed (no read-only check
+could be shipped): `command -v hork__is_converged >/dev/null 2>&1`,
+`hork__is_converged`, `. ./real.sh`, `command -v hork__is_converged >/dev/null
+2>&1`, `hork__is_converged` -- run `dorc why` for the per-site detail (the apply
+runs each anyway, to stay safe)
+      [ book.sh:17:3
+   17 | ( command -v hork__is_converged >/dev/null 2>&1 || hork__is_converged() { printf 'polyfill\n' ;}
+      |   \___________________________________________/
+
+   = help:  sm site runs `command -v hork__is_converged >/dev/null 2>&1`
+hint: 'command' (line 17) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 4 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -74,3 +114,6 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 ( . ./real.sh
   command -v hork__is_converged >/dev/null 2>&1 || hork__is_converged() { printf 'polyfill\n' ;}
   hork__is_converged )
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=5 elide=0 omit=0 guard=0 run=5 may-alias=0
+dorc: decision-digest 29e337fd5ac65e99e4ca675fa0a46129e1896bfa11d1d7491c499ba49d374e18

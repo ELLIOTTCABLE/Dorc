@@ -173,6 +173,8 @@ systemctl__is_converged() {
 }
 systemctl__is_converged 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 survives+elides past wall site 0 (certsync touches {sm.dorc.CertBundle:web1}) -- backing sm.dorc.Service:nginx disjoint (trusted footprint); vouched at service.oracle.sh:17
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -188,3 +190,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # toward an impossible world-breakage assertion.
 certsync push web1
 # systemctl start nginx   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=2 elide=1 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 83ea9652f60504cd60f07e827ac05c85daa83f4ef3f0be4b7c0cd9eaa410be8e

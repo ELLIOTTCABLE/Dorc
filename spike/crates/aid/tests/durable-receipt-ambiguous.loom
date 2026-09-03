@@ -26,7 +26,9 @@ site 0 effect=holds rc=0
 
 -- replay --
 $ export DORC_SEAM_CLOCK=pinned:1769306437000
+
 $ export DORC_SEED=1
+
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
@@ -46,6 +48,7 @@ foobar__is_converged() {
 }
 foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -54,7 +57,16 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # its intake ADMITTED records, and a framed stream with none is NoObservation. This case is about
 # the store, not this book.
 # foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 9f7f75d6cace9764fd68ffbe7d65505d3f9afc056b7f05858c610439580079a4
 
 $ export DORC_SEED=2
+
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt > /dev/null
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 9f7f75d6cace9764fd68ffbe7d65505d3f9afc056b7f05858c610439580079a4
+
 $ dorc why --receipt-last > /dev/null
+receipt: warning[durable-receipt-ambiguous]: [unwritten:
+durable-receipt-ambiguous]

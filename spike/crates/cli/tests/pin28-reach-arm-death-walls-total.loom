@@ -146,6 +146,13 @@ sm_dorc_Package__disturbance_reaches_only_0() { dpkg -L "$1" ; }
 _r=$(sm_dorc_Package__disturbance_reaches_only_0 'nginx'); _rr=$?
 if [ -z "$_r" ]; then printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' 0 "$_rr"; else printf '%s\n' "$_r" | { _n=0; while IFS= read -r _re; do printf 'dorc reach sm.dorc.Package:nginx arm=0 entity=%s @@dorc@@\n' "$_re"; _n=$((_n+1)); done; printf 'dorc reach-end sm.dorc.Package:nginx arm=0 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_rr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+reach: warning[footprint-incoherent]: [unwritten:
+footprint-incoherent-reach-arm-died-mid-survey]
+      [ book.sh:18:1
+   18 | hork tune nginx
+      | \_____________/
+why: site 1 guard [sm.dorc.File] -- licensed by the sm.dorc.File oracle's vouch (at crossauthor.oracle.sh:24) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -177,3 +184,5 @@ installfile__is_converged() {
 # residue is ANALYZER-NEEDS:an-atmost-completion-signal, a design question and not this gate.
 hork tune nginx
 ( installfile__is_converged /etc/nginx/nginx.conf ) || installfile /etc/nginx/nginx.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 6cfeaa64c4260191a080ec7cbb3b28d2afe28769af258ace08bc09d977a7661d

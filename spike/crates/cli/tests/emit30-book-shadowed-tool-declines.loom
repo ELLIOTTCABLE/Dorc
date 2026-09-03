@@ -39,6 +39,13 @@ hork__is_converged() {
 
 -- replay --
 $ dorc --book=book.sh --pre-source hork.oracle.sh --results -
+vouching: warning[vouched-composition-not-present]: [unwritten:
+vouched-composition-not-present]
+      [ hork.oracle.sh:3:1
+   3 | hork__is_converged() {
+     | \________________/
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -49,6 +56,16 @@ $ dorc --book=book.sh --pre-source hork.oracle.sh --results -
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=095597528541e5324d51514f2b4ae2811869ee649699b4c396cefe40b96bf6ea sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork sync a.conf` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:24:1
+   24 | hork sync a.conf
+      | \______________/
+
+   = help:  sm site runs `hork sync a.conf`
+hint: 'hork' (line 24) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -76,3 +93,5 @@ wombat() {
 }
 
 hork sync a.conf
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 4aa9775a4b59da1afbe6abbef4db674dd634fdbfcdb82470a9b6305c84b164ba

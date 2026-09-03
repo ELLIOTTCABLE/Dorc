@@ -49,6 +49,25 @@ _wombat_dest() {
 
 -- replay --
 $ dorc --book=book.sh --pre-source a-entry.oracle.sh --pre-source b-helper.oracle.sh --pre-source c-helper.oracle.sh --results -
+loading: warning[helper-declaration-contested]: Two differing declarations of
+`_wombat_dest` are loaded (the earlier at b-helper.oracle.sh:3), and nothing can
+choose between same-named helpers, so Dorc withholds them all and the sites
+needing `_wombat_dest` run -- load a single source, or take custody of a merged
+copy.
+      [ c-helper.oracle.sh:3:1
+   3 | _wombat_dest() {
+     | \______________/
+   4 |    wombat cmp --strict -- "$1" "/etc/wombat/$1"
+     | \_____________________________________________/
+   5 | }
+     | ^
+vouching: warning[vouched-composition-not-present]: [unwritten:
+vouched-composition-not-present]
+      [ a-entry.oracle.sh:3:1
+   3 | wombat__is_converged() {
+     | \__________________/
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -59,6 +78,16 @@ $ dorc --book=book.sh --pre-source a-entry.oracle.sh --pre-source b-helper.oracl
 printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5ce80ad4b0df5191d56eebe0e8d63295c967c58b16bde241735e17b1b0a12b5b sites=0 @@dorc@@\n'
 # site:0 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `wombat sync a.conf` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:19:1
+   19 | wombat sync a.conf
+      | \________________/
+
+   = help:  sm site runs `wombat sync a.conf`
+hint: 'wombat' (line 19) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -81,3 +110,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # What to read in the transcript: `sites=0` (a check that cannot carry its composition ships nothing)
 # and an apply that is the book byte for byte.
 wombat sync a.conf
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 94242d3e6f644937aefb4b9d14eac3265bb2de4aee2b842dccdffa8e94d22a17

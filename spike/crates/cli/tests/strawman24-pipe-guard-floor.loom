@@ -135,6 +135,20 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5925fc22c765395b
 # site:10 unresolvable-no-probe
 # site:11 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 12 sites run unprobed (no read-only check
+could be shipped): `otelcol --version`, `grep -q "0.155.0"`, `curl -sL
+https://example.com/otelcol.tar.gz`, `tar xz`, `promtail --version`, `grep -q
+"2.9.0"`, `curl -sL https://example.com/promtail.tar.gz`, `tar xz`,
+`node_exporter --version`, `grep -q "1.7.0"`, `curl -sL
+https://example.com/nodeexp.tar.gz`, `tar xz` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | otelcol --version | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+     | \_______________/
+
+   = help:  sm site runs `otelcol --version`
+hint: 'otelcol' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 11 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -142,3 +156,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 otelcol --version | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
 promtail --version | grep -q "2.9.0" || curl -sL https://example.com/promtail.tar.gz | tar xz
 node_exporter --version | grep -q "1.7.0" || curl -sL https://example.com/nodeexp.tar.gz | tar xz
+dorc: plan-summary sites=12 elide=0 omit=0 guard=0 run=12 may-alias=0
+dorc: decision-digest 00c65675fe61e14efe133379197d776c07b2fdf267871aca3ef61c81d80ab04f

@@ -62,6 +62,10 @@ foobar__is_converged() {
 
 -- replay --
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
+cfg: warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in
+effect at one or more commands (a non-literal `set` argument, or paths that
+disagree), so it plans as though each might abort the book on failure -- the
+cautious reading; it can cost elisions, never correctness.
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -82,6 +86,20 @@ foobar__is_converged 'sync-certs' '/etc/nginx/certs'; _rc=$?; if [ "$_rc" -eq 0 
 # site:0 unresolvable-no-probe
 # site:1 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `. "./$PKG.oracle.sh"` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:42:1
+   42 | . "./$PKG.oracle.sh"
+      | \__________________/
+
+   = help:  sm site runs `. "./$PKG.oracle.sh"`
+hint: '.' (line 42) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+emission: note[plan-import-rewritten]: [unwritten: plan-import-rewritten]
+      [ book.sh:42:1
+   42 | . "./$PKG.oracle.sh"
+      | \__________________/
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -135,3 +153,5 @@ foobar__is_converged() {
    esac
 }
 foobar sync-certs /etc/nginx/certs
+dorc: plan-summary sites=3 elide=0 omit=0 guard=0 run=3 may-alias=0
+dorc: decision-digest f89adc09c43cd96cfad53b107ea8082a5aaace709f71d7a91d8471c353832dc1

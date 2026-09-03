@@ -39,6 +39,16 @@ base
 
 -- replay --
 $ dorc --book=book.sh --results -
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:15:3
+   15 | ( . ./variant-a.sh; hork__is_converged )
+      |   \______________/
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:16:3
+   16 | ( . ./variant-b.sh; hork__is_converged )
+      |   \______________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -54,6 +64,17 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=dc0dad5070924bc6
 # site:4 unresolvable-no-probe
 # site:5 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 6 sites run unprobed (no read-only check
+could be shipped): `. ./base.sh`, `. ./variant-a.sh`, `hork__is_converged`, `.
+./variant-b.sh`, `hork__is_converged`, `hork__is_converged` -- run `dorc why`
+for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:14:1
+   14 | . ./base.sh
+      | \_________/
+
+   = help:  sm site runs `. ./base.sh`
+hint: '.' (line 14) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 5 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -74,3 +95,6 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 ( . ./variant-a.sh; hork__is_converged )
 ( . ./variant-b.sh; hork__is_converged )
 hork__is_converged
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=6 elide=0 omit=0 guard=0 run=6 may-alias=0
+dorc: decision-digest ca6e61336a8a8fcf7b753d110a42cb1c34aef4be160c7b7a535d6cdd648f5687

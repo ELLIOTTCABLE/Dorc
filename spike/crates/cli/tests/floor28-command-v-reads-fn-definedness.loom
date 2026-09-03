@@ -62,6 +62,14 @@ exit 0
 
 -- replay --
 $ dorc --book=book.sh --results -
+reserved: warning[reserved-namespace-squat]: Book function `hork__is_converged`
+sits in the `__is_converged` namespace reserved for oracle functions; Dorc
+treats it as ordinary shell and runs it verbatim, but a shipped oracle preamble
+defining the same name would collide with it. Rename it to stay clear of
+`*__is_converged`.
+      [ book.sh:26:1
+   26 | hork__is_converged() { printf 'a\n' ;}
+      | \________________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -80,6 +88,17 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=7ec6322a1ef0f492
 # site:7 unresolvable-no-probe
 # site:8 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `command -v hork__is_converged >/dev/null 2>&1`, `command -v
+hork >/dev/null 2>&1`, `command -v wombat >/dev/null 2>&1` -- run `dorc why` for
+the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:27:4
+   27 | if command -v hork__is_converged >/dev/null 2>&1; then printf 'fn: yes\n'; else printf 'fn: no\n'; fi
+      |    \___________________________________________/
+
+   = help:  sm site runs `command -v hork__is_converged >/dev/null 2>&1`
+hint: 'command' (line 27) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -112,3 +131,5 @@ hork__is_converged() { printf 'a\n' ;}
 if command -v hork__is_converged >/dev/null 2>&1; then printf 'fn: yes\n'; else printf 'fn: no\n'; fi
 if command -v hork >/dev/null 2>&1; then printf 'path: yes\n'; else printf 'path: no\n'; fi
 if command -v wombat >/dev/null 2>&1; then printf 'absent: yes\n'; else printf 'absent: no\n'; fi
+dorc: plan-summary sites=9 elide=0 omit=0 guard=0 run=9 may-alias=0
+dorc: decision-digest f8a1d48ac4dd33bf0f42d49daa6b52d57fe06b535873d5bc7f185e7098478673

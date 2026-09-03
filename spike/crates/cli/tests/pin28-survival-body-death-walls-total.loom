@@ -193,6 +193,30 @@ if [ -z "$_d" ]; then printf 'dorc deriv-end 0 n=%s body-rc=%s @@dorc@@\n' 0 "$_
 _d=$(apt_get__disturbs 'install' '-y' 'nginx'); _dr=$?
 if [ -z "$_d" ]; then printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' 0 "$_dr"; else printf '%s\n' "$_d" | { _n=0; while IFS= read -r _c; do printf 'dorc deriv 1 coord=%s @@dorc@@\n' "$_c"; _n=$((_n+1)); done; printf 'dorc deriv-end 1 n=%s body-rc=%s @@dorc@@\n' "$_n" "$_dr"; }; fi
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+derive: note[touches-escalated]: site 0: this footprint could not be derived
+statically, so apt-get.touches() shipped with the probe and answered from the
+host, read-only.
+      [ book.sh:27:1
+   27 | apt-get install -y oldpkg
+      | \_______________________/
+derive: warning[footprint-incoherent]: [unwritten:
+footprint-incoherent-emitting-body-died-mid-survey]
+      [ book.sh:27:1
+   27 | apt-get install -y oldpkg
+      | \_______________________/
+derive: note[touches-escalated]: site 1: this footprint could not be derived
+statically, so apt-get.touches() shipped with the probe and answered from the
+host, read-only.
+      [ book.sh:28:1
+   28 | apt-get install -y nginx
+      | \______________________/
+derive: warning[footprint-incoherent]: [unwritten:
+footprint-incoherent-emitting-body-died-mid-survey]
+      [ book.sh:28:1
+   28 | apt-get install -y nginx
+      | \______________________/
+why: site 1 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:33) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -239,3 +263,5 @@ apt_get__is_converged() {
 # ANALYZER-NEEDS:an-atmost-completion-signal, which is a design question, not this gate.
 apt-get install -y oldpkg
 ( apt_get__is_converged install -y nginx ) || apt-get install -y nginx   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 677c8958e16a3b88251eaa6dddf85f323003cce4532f0465fbcbdc60b35ce73d
