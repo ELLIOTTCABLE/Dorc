@@ -559,7 +559,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ask-ship-explicit-targets-below-a-clobber
 - defined: —
-- cited: 307 30P 30Q (5)
+- cited: 26N 307 30P 30Q (6)
 
 ## 307b:ask-should-probe-mode-carry-the-banner
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:193 — — `dorc plan --probe`-shaped invocations return before a
@@ -931,7 +931,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26K:concl-offline-compile-is-a-face-not-a-product
 - defined: Research/plans/26K-ops-glue-residue-synthesis.md:159 — -- `dorc compile`'s
-- cited: 30Qe (1)
+- cited: 26N 30Qe (2)
 
 ## 26K:concl-pivot-is-chartered
 - defined: Research/plans/26K-ops-glue-residue-synthesis.md:207 — -- `ack-pivot-must-support` (human-typed):
@@ -2331,7 +2331,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: spike/CLAUDE (1)
 
 ## 30P:findings-this-sitting
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:533
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:555
 
 ## fix-275-license-source
 - defined: —
@@ -2530,6 +2530,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-battery-never-instantiates-its-own-law
 - defined: Research/notes/30Ba-minispec-review-neutral.md:60 — (+SURE) — the sharpest structural gap
 - cited: 30B (1)
+
+## fnd-blind-act-fixture-is-guard-at-most
+- defined: —
+- cited: 26N 310 ROADMAP (4)
 
 ## 30F:fnd-book-arm-is-shadowed-by-the-degraded-receipt
 - defined: Research/notes/30F-spine-reification-lane-report.md:80 — [verified]
@@ -3065,7 +3069,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 302 307 307b (5)
 
 ## FORFEITS:forfeit-certifier-trip-evicts-elisions
-- defined: FORFEITS.md:218 — — RULE (`302` §3
+- defined: FORFEITS.md:220 — — RULE (`302` §3
 - cited: 302 307 30O ROADMAP (4)
 
 ## FORFEITS:forfeit-command-v-poison-wall
@@ -3105,8 +3109,8 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 26N 30O 30P 30Qc 310 ROADMAP (8)
 
 ## FORFEITS:forfeit-shell-parity-immunity-model
-- defined: FORFEITS.md:201 — — RULE (as-built; the cheap half may be absorbed
-- cited: 30Pd 30Q 30Qf ROADMAP (6)
+- defined: FORFEITS.md:201 — — RULE (as-built): the funcenv does not model sh's
+- cited: 26N 30Pd 30Q 30Qf ROADMAP (8)
 
 ## FORFEITS:forfeit-survival-lanes-closure-less
 - defined: FORFEITS.md:139 — — RULE (as-built; `28P`):
@@ -3213,6 +3217,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ng:give-up-on-lift-but-still-build
 - defined: Research/notes/30Ng-artifact-semantics-adjudication-sitting.md:173 — — where book dynamism or other modeling issues we
+
+## gloss-floor-unevenness-has-trumps
+- defined: —
+- cited: 26N 30P (2)
 
 ## 30R:governed-change-process
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:469
@@ -3722,7 +3730,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 26C 277 27C 27O (5)
 
 ## 310:lane-file-semantics-binder
-- defined: Research/plans/310-round31-arc-remit.md:175 — — `syntax`/`analysis` (the locator), `oracle` (the binder
+- defined: Research/plans/310-round31-arc-remit.md:195 — — `syntax`/`analysis` (the locator), `oracle` (the binder
 
 ## 30N:lane-first-half-remit
 - defined: Research/notes/30N-second-half-conduct-ledger.md:78 — (`30Mg` R1–R7): FOLDED 2026-08-21 at `566089e2`
@@ -3738,7 +3746,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/300-kernel-arc-conduct-ledger.md:327 — (queued behind the two above; WSL-heavy,
 
 ## 310:lane-kernel-index-rekey
-- defined: Research/plans/310-round31-arc-remit.md:114 — — `core::coord` (the context slot, `ContextKey`, the compare
+- defined: Research/plans/310-round31-arc-remit.md:131 — — `core::coord` (the context slot, `ContextKey`, the compare
 
 ## lane-load-plane-precision
 - defined: —
@@ -3853,7 +3861,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## law-no-unsoundness-below-a-blind-act
 - defined: —
-- cited: 30O 30P 30Pd 30Q 30Qf 30T 30W ORACLE_PROVIDES Research/LIVING_STATUS analysis/CLAUDE cli/CLAUDE (17)
+- cited: 26N 30O 30P 30Pd 30Q 30Qf 30T 30W 310 ORACLE_PROVIDES Research/LIVING_STATUS analysis/CLAUDE cli/CLAUDE (19)
 
 ## 28T:law-null-result-honesty
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:194 — — on a well-tested codebase, verification's marginal BUG
@@ -3976,7 +3984,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lean-every-detected-mode-is-also-requestable
 - defined: —
-- cited: 30I 30Nh (2)
+- cited: 26N 30I 30Nh (3)
 
 ## lean-flat-frontmatter-subset
 - defined: —
@@ -4021,7 +4029,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 289 (1)
 
 ## 30P:ledger-updates-owed
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:710
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:733
 
 ## spike/CLAUDE:lexical-fences-are-human-ack-instruments
 - defined: spike/CLAUDE.md:1309 — (human-typed 2026-08-31; scope
@@ -4112,7 +4120,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## mech-two-standups
 - defined: —
-- cited: 26N 307 30O 30P 30T ROADMAP (11)
+- cited: 26N 307 30O 30P 30T ROADMAP (10)
 
 ## mech-wall-standing-finality-class
 - defined: —
@@ -4138,7 +4146,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## model-symbolic-dollar-zero
 - defined: —
-- cited: 30P 30Qc FORFEITS cli/CLAUDE (7)
+- cited: 26N 30P 30Qc 310 FORFEITS cli/CLAUDE (10)
 
 ## hostsim/CLAUDE:model-the-outcome
 - defined: spike/crates/hostsim/CLAUDE.md:31 — — inject the outcome, never the kernel mechanism (a
@@ -4419,6 +4427,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 27C (3)
 
+## open-census-needs-value-plane
+- defined: —
+- cited: 26N ROADMAP (3)
+
 ## 30S:open-env-epoch-seat-unification
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:105 — (deliberately unresolved; tc-tier) — whether
 - cited: 310 (1)
@@ -4471,8 +4483,12 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/aid/CLAUDE.md:242 — (`28L` loom-final; supersedes the old
 - cited: 307a (1)
 
+## park-drep-remote-home-explainer
+- defined: —
+- cited: 26N ROADMAP (2)
+
 ## 30P:parse-never-fails-on-floor-text
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:574
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:596
 
 ## aid/CLAUDE:passthrough-is-type-gated
 - defined: spike/crates/aid/CLAUDE.md:151 — (`282:rul-passthrough-type-gated`; `28W` (née 296) is the census) — a hole is
@@ -4620,7 +4636,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pin-ssh-entry-shape
 - defined: —
-- cited: 28Q 310 ROADMAP (4)
+- cited: 26N 28Q 310 ROADMAP (5)
 
 ## 262:pin-terminal-determinism
 - defined: Research/plans/262-round26-build-spine.md:98 — — per host, arrival-incremental final plan == single-shot plan
@@ -5317,7 +5333,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/27R-lint-entrypoint-plan.md:324 — : the one genuinely unverified surface is live external-tool
 
 ## 30P:review-adjudication-inputs
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:589 — — the conductor's stance on `notes/30Pb` (findings, not rulings; the human decides)
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:612 — — the conductor's stance on `notes/30Pb` (findings, not rulings; the human decides)
 - cited: 30Qb (2)
 
 ## 307:review-minispec-focused
@@ -5781,6 +5797,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28R:rul-defensive-mode-definition-vectors
 - defined: Research/notes/28R-context-kernel-review.md:483 — [TYPED] — whole-artifact defensive emission
 
+## rul-delivery-shape-file-backed-default
+- defined: —
+- cited: 26K 26N 310 KNOBS ROADMAP (5)
+
 ## spike/verify/CLAUDE:rul-derivation-digest-is-an-alarm-not-trust
 - defined: spike/verify/CLAUDE.md:46 — — the recorded source digest detects
 
@@ -5808,13 +5828,21 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:73 — — apply-time divergence from plan prediction:
 - cited: 239 23A 23Ia 23Ib 26B 26C 30P 30Vb AID-NEEDS (11)
 
+## rul-dollar-zero-authority-spelling
+- defined: —
+- cited: 26N 30P 30Q 310 FORFEITS ROADMAP Research/LIVING_STATUS (7)
+
+## rul-dorc-acts-are-withhold-shaped
+- defined: —
+- cited: 26N 30P KNOBS Research/LIVING_STATUS (4)
+
 ## rul-dorc-embeds-are-validated-links
 - defined: —
 - cited: 286 (1)
 
 ## rul-dorc-invokes-in-a-modelled-live-spelling
 - defined: —
-- cited: 30P 30Qc cli/CLAUDE (4)
+- cited: 26N 30P 30Qc cli/CLAUDE (5)
 
 ## rul-dorc-loom-owns-template-policy
 - defined: —
@@ -5863,7 +5891,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-durable-contents-reviewed-before-design
 - defined: spike/CLAUDE.md:454 — — Surface: what the receipt durable
-- cited: 26Lb 307 307b 309 30D 30E 30Ib 30K 30Mg 30N 30Na 30Ne 30O 30Q 30Qb 30Qd 30V 30Vb ROADMAP (23)
+- cited: 26Lb 26N 307 307b 309 30D 30E 30Ib 30K 30Mg 30N 30Na 30Ne 30O 30Q 30Qb 30Qd 30V 30Vb ROADMAP (25)
 
 ## rul-e2e-stays-in-workspace-suite
 - defined: —
@@ -6012,9 +6040,13 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/288-aid-loom-unification-plan.md:50 — — all cases are peers in a flat `tests/` dir, selected by
 - cited: 28Va spike/CLAUDE (2)
 
+## rul-floor-is-uneven-across-forms
+- defined: —
+- cited: 26N 30P 30Qf (3)
+
 ## rul-floor-valid-text-never-parse-fails
 - defined: —
-- cited: 30P 30Qc Research/LIVING_STATUS syntax/CLAUDE (8)
+- cited: 26N 30P 30Qc Research/LIVING_STATUS syntax/CLAUDE (9)
 
 ## rul-fold-entry-coherence-failfast
 - defined: —
@@ -6026,7 +6058,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-forfeits-carry-reds
 - defined: —
-- cited: 30O 30P 30Pd 30Q 30Qd 30Qf 30T FORFEITS Research/LIVING_STATUS (10)
+- cited: 30O 30P 30Pd 30Q 30Qd 30Qf 30T FORFEITS Research/LIVING_STATUS (11)
 
 ## rul-freshness-stamp-flag-gated
 - defined: —
@@ -6143,7 +6175,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-integrity-failure-withholds-mutation
 - defined: spike/CLAUDE.md:411 — — this does NOT contradict
-- cited: 26N 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (9)
+- cited: 26N 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (10)
 
 ## rul-interactivity-is-local-books
 - defined: —
@@ -6243,6 +6275,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 288:rul-loom-mint-guarantee
 - defined: Research/plans/288-aid-loom-unification-plan.md:33 — — `dorc-loom` handles minting: a new slug referenced
 - cited: 289 28Vb (3)
+
+## rul-main-book-is-not-a-pre-source
+- defined: —
+- cited: 26N 30I (2)
 
 ## rul-marked-colon-is-the-grammars
 - defined: —
@@ -6479,6 +6515,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30S:rul-prefix-joins-site-identity
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:52 — — a leading assignment-prefix participates in
 
+## rul-preflight-over-probe-time
+- defined: —
+- cited: 26N ROADMAP (3)
+
 ## rul-primacy-moves-the-body-never-the-cell
 - defined: —
 - cited: 28Q 307 30L 30La analysis/CLAUDE spike/CLAUDE (11)
@@ -6493,7 +6533,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-probe-writes-only-what-it-owns
 - defined: spike/CLAUDE.md:183 — — controller-generated probe plumbing may
-- cited: 26K 26N 30Ne 30T (4)
+- cited: 26N 30Ne 30T (3)
 
 ## rul-promote-is-one-atomic-act
 - defined: —
@@ -6613,7 +6653,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-repeated-probing-reviewed-before-design
 - defined: spike/CLAUDE.md:463 — — Surface: any probing that is not
-- cited: 26N 30L 30P 30T (4)
+- cited: 30L 30P 30T (3)
 
 ## rul-replay-editability-is-provenance
 - defined: —
@@ -6928,6 +6968,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:134 — — the unprovable region of a verdict-function
 - superseded: coverage). The unprovable residual: superseded by rul-unprovable-rides-the-vouch.
 - cited: 274 27R 27S 30T ORACLE_PROVIDES (5)
+
+## rul-unresolvable-book-load-refuses
+- defined: —
+- cited: 26N 30P 30Q 310 Research/LIVING_STATUS (6)
 
 ## 276:rul-unsafe-is-bare-sh
 - defined: Research/notes/276-language-sitting-kwhichsh-unsafe-churn.md:29 — (typed 2026-07-12 — "I see no reason to grow warts and cruft for a second version of that"; closed)
@@ -8117,11 +8161,11 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/30Qf-blind-act-retrofit-lane-report.md:15
 
 ## 30P:the-load-plane-stays-correct
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:404 — — rewrite permission, the blessed lift, and the two standups
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:425 — — rewrite permission, the blessed lift, and the two standups
 - cited: 30O 30Q 30Qf 30T ANALYZER-NEEDS Research/LIVING_STATUS (6)
 
 ## 30P:the-load-principles
-- defined: Research/plans/30P-emission-planner-and-inclusion.md:164 — — three rules, no idioms
+- defined: Research/plans/30P-emission-planner-and-inclusion.md:168 — — three rules, no idioms
 - cited: 30Qc FORFEITS (2)
 
 ## 30O:the-measuring-stick
@@ -8298,6 +8342,18 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 1A8:um-user-1
 - defined: Research/notes/1A8-oracle-seeds-core.md:198 — (password-by-value un-probeable) — the salt-randomization argument is a
 - cited: 1AA (1)
+
+## unit-context-slot-product
+- defined: —
+- cited: 26N 310 ROADMAP (7)
+
+## unit-delivery-shape
+- defined: —
+- cited: 26K 310 ROADMAP (5)
+
+## unit-host-index-and-entry
+- defined: —
+- cited: 26N 310 (4)
 
 ## plan/CLAUDE:universal-meet-here
 - defined: spike/crates/plan/CLAUDE.md:191 — — sparing over backing-SETS quantifies universally:
