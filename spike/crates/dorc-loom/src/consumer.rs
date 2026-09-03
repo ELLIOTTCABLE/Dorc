@@ -18,6 +18,8 @@ use errorloom::{
 };
 
 use crate::invocation::{Breadth, Target, Verb};
+use crate::session_env::SessionEnv;
+use crate::session_grammar::{ExportOp, OutputRouting, SessionHead, SessionReading};
 use crate::usage::{self, PROGRAM, Reading};
 use crate::{
     DorcSectionEdit, SectionKey, SectionVariableId, TemplateVariableName, to_editable_render,
@@ -691,6 +693,31 @@ impl DorcConsumer {
         self_reference: SelfReference,
         session: &mut LoomSession,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+        session.env.inject_block_clock(context.block());
+        let reading = SessionReading::read(command.original());
+        if reading.disagrees_with(
+            command.argv(),
+            command.input(),
+            command.stdout_is_terminal(),
+        ) {
+            return None;
+        }
+        let SessionReading::Line(line) = reading else {
+            return None;
+        };
+        let output = line.output;
+        match line.head {
+            SessionHead::Export(ExportOp::Assign { name, value }) => {
+                session.env.export_assign(&name, &value);
+                return Some(ReplayResult::bytes(String::new()));
+            }
+            SessionHead::Export(ExportOp::Mark { name }) => {
+                session.env.export_mark(&name);
+                return Some(ReplayResult::bytes(String::new()));
+            }
+            SessionHead::Cd(target) => return replay_cd(session, &target),
+            SessionHead::Invocation | SessionHead::EchoStatus | SessionHead::Cat(_) => {}
+        }
         let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
         if is_help_case(case, &tokens) {
             let parts = dorc_cli::help_parts(&self.render_ctx());
@@ -706,7 +733,7 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&"dorc") {
-            return self.replay_dorc(case, command, context, session);
+            return self.replay_dorc(case, command, context, session, output);
         }
         if tokens.first() == Some(&"dorc-sh") {
             return self.replay_dorc_sh(case, &tokens, context);
@@ -720,8 +747,9 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
         session: &mut LoomSession,
+        output: OutputRouting,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.replay_dorc_outcome(case, command, context, session)
+        self.replay_dorc_outcome(case, command, context, session, output)
             .map(|replay| replay.result)
     }
 
@@ -731,6 +759,7 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
         session: &mut LoomSession,
+        output: OutputRouting,
     ) -> Option<DorcEngineReplay> {
         let invocation_argv = command.argv().get(1..)?.to_vec();
         let invocation = match dorc_cli::parse_args_from(invocation_argv) {
@@ -754,9 +783,9 @@ impl DorcConsumer {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
                     self.run_remote_apply(case, &analysis_args, context)
                 } else if analysis_args.reads_the_receipt() {
-                    self.run_receipt_store_why(case, &analysis_args, session)
+                    self.run_receipt_store_why(case, &analysis_args, session, output)
                 } else {
-                    self.run_engine(case, &analysis_args, command, context, session)
+                    self.run_engine(case, &analysis_args, command, context, session, output)
                 }
             }
             dorc_cli::Invocation::Strip(_) => None,
@@ -1009,12 +1038,14 @@ impl DorcConsumer {
         case: &Case,
         args: &dorc_cli::Args,
         session: &mut LoomSession,
+        output: OutputRouting,
     ) -> Option<DorcEngineReplay> {
         if matches!(args.receipt_root(), dorc_cli::engine::ReceiptRoot::File(_))
             || args.receipts.is_some()
         {
             return None;
         }
+        let routing = output;
         let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
         let answer = if let Some(crate::edge_fault::EdgeFault::ReceiptRead(reason)) = &fault {
             dorc_cli::recorded::StoreAnswer::Unreadable(reason.clone())
@@ -1045,7 +1076,7 @@ impl DorcConsumer {
             &mut sink,
             Some(&current_sources),
         );
-        Some(dorc_engine_replay(status, sink.actions))
+        Some(dorc_engine_replay(status, sink.actions, routing))
     }
 
     fn run_engine(
@@ -1055,6 +1086,7 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
         session: &mut LoomSession,
+        output: OutputRouting,
     ) -> Option<DorcEngineReplay> {
         if args.plan.is_some() || !args.oracle_dirs.is_empty() || args.reads_the_receipt() {
             return None;
@@ -1089,7 +1121,7 @@ impl DorcConsumer {
                 sources.push(context.read_file(section.name())?);
             }
         }
-        let snapshot = engine_snapshot(book_path, &book, paths, sources, ambient);
+        let snapshot = engine_snapshot(&session.cwd, book_path, &book, paths, sources, ambient);
         let raw_results = match args.results.as_deref() {
             Some(path) => {
                 match replay_source("results", path, stdin.bytes(), context, fault.as_ref()) {
@@ -1126,8 +1158,8 @@ impl DorcConsumer {
             snapshot.oracle_paths(),
             &discovered_oracles,
         );
-        // One world across the case's blocks on the per-block seam clock (`30X:tier-in-process-loom`).
-        let seams = crate::runner_seams::session_seams(context.block());
+        let routing = output;
+        let seams = session.seams()?;
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
             clock: seams.clock(),
@@ -1154,7 +1186,7 @@ impl DorcConsumer {
             &mut sink,
         );
         match result {
-            Ok(result) => Some(dorc_engine_replay(result.status, sink.actions)),
+            Ok(result) => Some(dorc_engine_replay(result.status, sink.actions, routing)),
             Err(diagnostic) => self.invocation_diagnostic(case, *diagnostic, "dorc"),
         }
     }
@@ -1236,9 +1268,13 @@ impl DorcConsumer {
                 .map(String::as_str)
                 .collect::<Vec<_>>();
             let replay = match words.first() {
-                Some(&"dorc") => {
-                    self.replay_dorc_outcome(case, command, context, &mut session.borrow_mut())
-                }
+                Some(&"dorc") => self.replay_dorc_outcome(
+                    case,
+                    command,
+                    context,
+                    &mut session.borrow_mut(),
+                    OutputRouting::default(),
+                ),
                 Some(&"dorc-sh") => self.replay_dorc_sh_outcome(case, &words, context),
                 _ => None,
             };
@@ -1347,13 +1383,14 @@ pub const EXECUTED_ELSEWHERE: &str = "this case declares `run:`, so its transcri
      transcript.";
 
 fn engine_snapshot(
+    cwd: &dorc_core::loadpath::Cwd,
     book_path: &str,
     book_src: &str,
     paths: Vec<String>,
     srcs: Vec<String>,
     ambient: usize,
 ) -> dorc_cli::snapshot::StaticLoadSnapshot {
-    let cwd = dorc_core::loadpath::Cwd::default();
+    let cwd = cwd.clone();
     let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
     let dependencies = dorc_cli::snapshot::root_dependencies(&cwd, &paths, &srcs, ambient);
     let mut kept_paths = Vec::new();
@@ -1580,6 +1617,22 @@ fn replay_stdout_posture(command: &ReplayCommand) -> dorc_cli::artifact::StdoutP
     }
 }
 
+/// A `cd <literal>` in the modelled session: move the cwd through `resolve_operand`
+/// (`30X:session-cwd-is-loadpath-cwd`). A cd whose resolved target escapes the modelled root, or an
+/// operand that resolves nowhere (the cwd is unknown), declines the whole session to the process
+/// driver — `RunError::SandboxPathLeak` is the shell driver's equivalent.
+fn replay_cd(
+    session: &mut LoomSession,
+    target: &str,
+) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
+    let resolved = session.cwd.resolve_operand(target)?;
+    if resolved.starts_with("..") {
+        return None;
+    }
+    session.cwd = dorc_core::loadpath::Cwd::at(resolved);
+    Some(ReplayResult::bytes(String::new()))
+}
+
 struct DorcEngineReplay {
     result: ReplayResult<SectionKey, SectionVariableId>,
     diagnostics: Vec<Diag>,
@@ -1597,6 +1650,7 @@ impl DorcEngineReplay {
 fn dorc_engine_replay(
     status: dorc_cli::engine::EngineStatus,
     actions: Vec<dorc_cli::engine::OutputAction>,
+    routing: OutputRouting,
 ) -> DorcEngineReplay {
     let diagnostics = actions
         .iter()
@@ -1611,10 +1665,17 @@ fn dorc_engine_replay(
         .filter_map(|action| match action {
             dorc_cli::engine::OutputAction::Flush(_) => None,
             dorc_cli::engine::OutputAction::Event(event) => {
-                let channel = match event.channel() {
-                    dorc_cli::engine::OutputChannel::Stdout => errorloom::ReplayChannel::Stdout,
-                    dorc_cli::engine::OutputChannel::Stderr => errorloom::ReplayChannel::Stderr,
+                let (channel, suppressed) = match event.channel() {
+                    dorc_cli::engine::OutputChannel::Stdout => {
+                        (errorloom::ReplayChannel::Stdout, routing.stdout_to_null)
+                    }
+                    dorc_cli::engine::OutputChannel::Stderr => {
+                        (errorloom::ReplayChannel::Stderr, routing.stderr_to_null)
+                    }
                 };
+                if suppressed {
+                    return None;
+                }
                 Some(match event.tagged_parts() {
                     Some(parts) => ReplayEmission::editable(
                         channel,
@@ -1861,6 +1922,12 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges<'_> {
 struct LoomSession {
     store: Box<dyn dorc_cli::durable::LocalIo>,
     edge: dorc_cli::durable::LocalReceiptEdgeV1,
+    /// The modelled environment (`30X:loom-seams-are-sh-lines`): seam selections spelled as `export`
+    /// lines in the session, read through the ONE parser as the exported subset.
+    env: SessionEnv,
+    /// The modelled cwd (`dorc_core::loadpath::Cwd`): the session's own cwd model, moved by `cd`, and
+    /// every path operand resolves through it before reaching the invocation or the framing seat.
+    cwd: dorc_core::loadpath::Cwd,
 }
 
 impl LoomSession {
@@ -1883,13 +1950,27 @@ impl LoomSession {
                 dorc_cli::durable::DirectorySync::Synchronized,
             ))
         };
-        let edge = dorc_cli::compose::production_receipt_edge_over(
-            &crate::runner_seams::session_seams(0),
-            None,
-            &LoomRootEnv,
-        )
-        .expect("the pinned synthetic root always resolves");
-        Self { store, edge }
+        let env = SessionEnv::seeded();
+        let seams: dorc_cli::seam::Seams = dorc_cli::seam::HarnessSeams::from_env(&env)
+            .expect("the runner's seeded defaults always parse")
+            .into();
+        let edge = dorc_cli::compose::production_receipt_edge_over(&seams, None, &LoomRootEnv)
+            .expect("the pinned synthetic root always resolves");
+        Self {
+            store,
+            edge,
+            env,
+            cwd: dorc_core::loadpath::Cwd::default(),
+        }
+    }
+
+    /// This block's `Seams` from the modelled environment's exported subset, through the ONE parser
+    /// both drivers use (`30X:loom-seams-are-sh-lines`). `None` when an authored `export` gave a seam
+    /// a value the parser refuses — a decline, so the process driver proves that line.
+    fn seams(&self) -> Option<dorc_cli::seam::Seams> {
+        dorc_cli::seam::HarnessSeams::from_env(&self.env)
+            .ok()
+            .map(Into::into)
     }
 }
 
@@ -2042,8 +2123,8 @@ pub enum LoomDecline {
     ExplicitReceiptFile,
     /// A `--receipts <dir>` store override.
     ReceiptsOverride,
-    /// A command whose first word is not `dorc`/`dorc-sh` — a shell builtin (`export`, `cd`), a
-    /// pipe, a compound, or an external tool (the shell-line modelling is lane C2's).
+    /// A command whose first word is not one the driver recognizes — a shell builtin outside the
+    /// modelled set, or an external tool (`export`, `cd`, `echo $?` and `cat` ARE modelled now).
     ShellOrExternal(String),
     /// Any other command the in-process driver does not express (`dorc strip`, a `dorc-sh` it
     /// cannot run, an unmodelled durable, a process exit): named so the trial output points at it.
