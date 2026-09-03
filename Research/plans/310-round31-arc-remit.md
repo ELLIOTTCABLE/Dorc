@@ -23,8 +23,8 @@ tier, selector-granular survival) stays out or held. The arc has four build lane
    `disturbs nothing-else` record, and the read-versus-marks detector. This lane is also the
    gate before anyone hand-authors a real oracle.
 2. **`lane-edge-local-exec-and-load`** — local-exec becomes a supported product mode
-   (no host means the controller is the target), and the load-plane rulings build once
-   typed.
+   (no host means the controller is the target), the delivery shape of `26N` §2 replaces
+   the stdin pipe, and the load-plane rulings build once typed.
 3. **`lane-kernel-index-rekey`** — the coordinate's context slot becomes a product over
    index-kinds; book-side environment identity (`30S`) rides that slot; Host is an entered
    index; transit verbs re-key; cross-kind comparisons answer `unrelated` and collide
@@ -91,19 +91,36 @@ consumes the harness seam).
   definition"; the spelling authority is the human's cli-refresh note in `TODO.md` — no
   host prefix means local, `--book` goes; do not invent flags beyond that); the local
   driver is a first-class product driver selected by that invocation, not by environment;
-  the artifact ships to the local shell over the same marker/stdin path the ssh driver
-  uses (`260` §5 driver 2, ≥95% shared). Acceptance: plan and apply looms round-tripping a
+  the artifact ships to the local shell over the same wrapper and routes the ssh driver
+  uses (`unit-delivery-shape`; `260` §5 driver 2, ≥95% shared). Acceptance: plan and apply
+  looms round-tripping a
   book on the controller under the rebuilt harness; the receipt records the controller as
   the target with no host name fabricated (`271:rul-sin-ordering` top cell).
+- `unit-delivery-shape` (medium) — `26N:rul-delivery-shape-file-backed-default`, whole: the
+  constant wrapper; the file-backed route (an exclusive scratch at a controller-literal root,
+  the nonce-delimited stream materialised by a `while read -r` loop, per-file `cksum`, cd to
+  the root, `sh /abs/<the book's filename>`); the in-memory route as the `auto` floor; the
+  `capabilities=` marker key; host-side self-selection in one exchange; cleanup by manifest.
+  The `260` §5 invocation line and driver 2 change with it, and the sim driver scripts both
+  routes. Lands BEFORE lane 3's `unit-host-index-and-entry`, whose entry-composed probes
+  would otherwise consume their own artifact. Acceptance: the existing marker/transport
+  looms under both routes; a DST sometimes-assert per route.
 - `unit-artifact-injectivity` (small) — `30T:comp-artifact-injectivity`, the apply-standup
   distinctness check; independent of everything, homes here because it is the artifact
   lane.
-- `unit-load-model-builds` (small each; GATED) — the builds behind the load-model rulings:
-  the `$0` anchoring switch (`tc-dollar-zero-is-script-anchored`, greening
-  `load30-point-havoc-and-script-relative`), the hoist ACTION's T2 tier
-  (`tc-hoisted-dot-line-spelling`, `tc-t2-is-narrower-than-the-ladder-says`; `30Ng` §7's
-  ladder), and whatever `30I:pin-command-v-load-model` rules. Each waits on its ruling and
-  builds in isolation; none blocks the other units.
+- `unit-load-model-builds` (small each; the first RULED, the rest GATED) — the builds behind
+  the load-model rulings: the `$0` authority spelling (`26N:rul-dollar-zero-authority-spelling`,
+  RULED 2026-09-03 — `30P:model-symbolic-dollar-zero` carries the amended text; the `cd`
+  operand rides the same `$0` evaluation; `load30-point-havoc-and-script-relative` targets
+  GUARD, never elision, and its empty-run-set expectation is re-read against
+  `30P:law-no-unsoundness-below-a-blind-act` — `26N:fnd-blind-act-fixture-is-guard-at-most`)
+  together with the unresolvable-load refusal (`26N:rul-unresolvable-book-load-refuses`: one
+  pre-network code for a computed or relative-below-a-clobber book-custody `.`, naming the
+  load line, the clobbering line, and the `${0%/*}` remedies; `cli/CLAUDE.md`'s ¬EXACT ship
+  rule gains that pointer); the hoist ACTION's T2 tier (`tc-hoisted-dot-line-spelling`,
+  `tc-t2-is-narrower-than-the-ladder-says`; `30Ng` §7's ladder); and whatever
+  `30I:pin-command-v-load-model` rules. The gated ones wait on their ruling and build in
+  isolation; none blocks the other units.
 - `unit-acquired-source-weld` (small; GATED on the ruling `ROADMAP` names) — reconcile
   `30R`'s ordered role-carrying source vector with `30I`'s occurrence account
   (`an-static-load-occurrence-account`); one representation, no adapter.
@@ -136,10 +153,13 @@ the whole lane waits; `unit-env-identity` alone may start before them (§4b).
   wrapper-entered key and the value-carried env key become entries in it. Every reader on
   the audit's list converts in one lane; no adapter (`rul-strawman-formats-no-compat`).
   The compare chokepoint stays the one seat (`core/CLAUDE.md` relational-compare-chokepoint).
-- `unit-host-index-and-entry` (medium; GATED additionally on `28Q:pin-ssh-entry-shape` and
-  on the two delivery-mechanics rulings `ROADMAP` names beside it — the stdin copy-exec
-  amendment and the report sink's remote home; without them an entry-composed remote probe
-  consumes its own artifact and drops its records) —
+  One seat RESERVED, nothing built: a per-context measured-supply projection keyed by the new
+  key, beside a per-chunk requirement set (`26N` §4.4) — the capability system's
+  representation, built under `ROADMAP`'s `arc-host-capabilities`.
+- `unit-host-index-and-entry` (medium; GATED additionally on `28Q:pin-ssh-entry-shape`, on
+  lane 2's `unit-delivery-shape` having landed, and on the one delivery-mechanics ruling
+  `ROADMAP` still names beside it — the report sink's remote home; without it an
+  entry-composed remote probe drops its records) —
   `30W` items 2 and 3 for Host only: Host as an entered index whose value is the wrapper's
   mapped lend; the Host binder minimal (destination string is the entity; no merging —
   `FORFEITS:forfeit-no-host-merging` stands; host-key continuity at the transport is the
@@ -320,8 +340,9 @@ says gets its own ruling; it is not in this arc.
 ## §5 — what a conductor verifies at close (pointers, not prose)
 
 - `mise run xfail:census`: the four `r31` `30S` pins green; `load30-point-havoc-and-script-relative`
-  green iff `tc-dollar-zero-is-script-anchored` was typed, else still red and still named
-  an attention-call (never re-horizoned — `LIVING_STATUS` standing truths).
+  green at GUARD (the ruling is typed; its elision expectation was wrong —
+  `26N:fnd-blind-act-fixture-is-guard-at-most`), never re-horizoned (`LIVING_STATUS`
+  standing truths).
 - The `30D` §9 obligations, the `30U` §10 reds, the `30T` §9 reds for the chain if lane 4
   ran, and the lane-3 acceptance looms above, all in the rebuilt loom shape.
 - `empty-world-byte-identical` pinned in every lane touching `plan` or `core`.

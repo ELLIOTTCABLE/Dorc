@@ -94,14 +94,14 @@ phone_home is the unauthenticated prior art).
 Explicitly NOT in the batch: redirect-routing (own sitting, after), os-release
 (research-gated own sitting), anything survival-tier.
 
-### §0c -- Banked prominently, design-first, NOT build-yet
+### §0c -- Ruled elsewhere
 
-- sit-stdin-copy-exec-amendment: the artifact-on-stdin hazard (two live wild
-  specimens; family split 4-to-1 toward copy-then-exec; rset's
-  confidentiality counter; judo's fd0 doctrine) wants a DESIGN SITTING before
-  any `260` §5 change -- the human holds suspicions about the downsides
-  (host-disk writes vs rul-probe-writes-only-what-it-owns adjacency;
-  confidentiality; cleanup). No build scheduled.
+- sit-stdin-copy-exec-amendment: RULED -- the design-of-record is
+  `26N:rul-delivery-shape-file-backed-default` (`Research/notes/26N` §2: the
+  file-backed route by default, the in-memory route as the measured floor, the
+  tree crossing the pipe as one stream, `capabilities=` on the marker); the
+  build is r31 lane 2 (`310:unit-delivery-shape`), and the `260` §5 invocation
+  line changes with that build.
 
 ### §0d -- The rest, ranked
 

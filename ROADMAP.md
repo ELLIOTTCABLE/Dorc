@@ -73,16 +73,20 @@ Rulings that gate lanes (the human's; each blocks the lane it names and nothing 
 - `28Q:pin-ssh-entry-shape` — gates Host entry (the `"$@"`-verbatim rule versus the remote
   re-parse).
 - the delivery-mechanics pair from `26M`'s seam map, gating Host entry AND local-exec's use
-  for pivot books: `26K:sit-stdin-copy-exec-amendment` (the artifact ships on stdin, so the
-  first `ssh host …` line of a locally-run book eats the rest of the artifact — probe and
-  apply alike; not only the secret-push line) · `dec-drep-remote-home` (unminted: the report
+  for pivot books: `26K:sit-stdin-copy-exec-amendment` is RULED
+  (`26N:rul-delivery-shape-file-backed-default`; its build is lane 2's `unit-delivery-shape`,
+  which lands before Host entry) · `dec-drep-remote-home` still gates (unminted: the report
   sink is a per-attempt file on the EXECUTING host and `DREP_V1` does not cross an `ssh`
   entry, so every `decline`/`predicts`/`nothing-else` record from a remote world lands in
-  `/dev/null`, silently, by the idiom's own off-Dorc design).
-- the load-model trio — `tc-dollar-zero-is-script-anchored` (the flagship red
-  `load30-point-havoc-and-script-relative`) · `tc-hoisted-dot-line-spelling` +
+  `/dev/null`, silently, by the idiom's own off-Dorc design; the explainer is owed first,
+  `26N:park-drep-remote-home-explainer`).
+- the load-model trio — `tc-dollar-zero-is-script-anchored` is RULED yes
+  (`26N:rul-dollar-zero-authority-spelling`; the flagship red
+  `load30-point-havoc-and-script-relative` targets guard-at-most,
+  `26N:fnd-blind-act-fixture-is-guard-at-most`) · `tc-hoisted-dot-line-spelling` +
   `tc-t2-is-narrower-than-the-ladder-says` (`30Ng` §7's hoist ladder) ·
-  `30I:pin-command-v-load-model` (evidence `notes/30Ic`) — gate their own small builds only.
+  `30I:pin-command-v-load-model` (evidence `notes/30Ic`) — the unruled two gate their own
+  small builds only.
 - the acquired-source weld — `30R`'s ordered role-carrying source vector against `30I`'s
   occurrence account; a small ruling, gates one small unit.
 - `26M:q-payload-declaration-speech-act` — the carrier-geometry survey before any
@@ -124,6 +128,13 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
   with it (the splice and paste tiers) and `30I`/`30P`'s bundling; the heredoc form forces
   the first source-to-source questions inside argv/heredoc bytes — `26M`'s v1 posture is
   whole-or-nothing render for inline payloads.
+- **`arc-host-capabilities`** — the capability SYSTEM of `notes/26N` §4: measured,
+  context-keyed supply; a derived per-chunk requirement census; the join at the standups
+  under `26N:rul-preflight-over-probe-time`; never a plan line, never a license. Its census
+  question is OPEN (`26N:open-census-needs-value-plane`, the next sitting). Builds with
+  `arc-payload-declaration`, when demand first becomes non-empty; r31 only reserves the seat
+  (`310:unit-context-slot-product`). Recording measured supply in the receipt clears
+  `rul-durable-contents-reviewed-before-design` first.
 - **`arc-identity-tier`** — `30T:comp-identity-tier` (per-aspect relations, perishable
   answers) · `30W` item 5 (`kind__overlaps`) · the referent-transparent declaration · `30W`
   item 6 (store-member decomposition, gated on `rule-only-decomposes-everywhere`) ·
@@ -183,8 +194,6 @@ under the scheduled row; these are the rest:
 - `rule-incarnation-continuity-semantics` — when a recreated context is continuous with its
   predecessor (`28Q:res-incarnation-correlation-door`); `28Q` §3 + pin 4. Not needed by a
   create-if-absent pivot book; needed by any destroy-recreate one.
-- `26K:sit-stdin-copy-exec-amendment` — copy-then-exec vs pipe, before any `260` §5 change;
-  the secret-push line is specimen two. Bites the first pivot book that pushes a secret.
 - the pivot-book cross-host-influence security review (opaque-review tier; OWED per `26M`
   `ack-cross-host-facts-scoping`, out of scope for the design work; needs the human's typed
   ack to dispatch).
