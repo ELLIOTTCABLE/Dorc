@@ -940,3 +940,58 @@ fn the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams() {
         "the production roots resolved to the sandboxed platform variables, where the keyset landed"
     );
 }
+
+/// Asking a plan-producing mode for a stored durable refuses, by naming the flag, through the
+/// binary's own argv handling.
+///
+/// Driven through the real binary on purpose. The parser seat is already pinned beside
+/// `reads_the_receipt` in `dorc_cli`'s own tests — but a guard proven at one seat, in one
+/// direction, is the shape this arc keeps finding after the fact. No loom can express this cell:
+/// its replay blocks require rc 0 and discard stderr, and its lint lane fixes both the subcommand
+/// and the book, so a refusing invocation has nowhere to sit there.
+///
+/// MEASURED in its failing direction: with the refusal disabled `dorc plan --last book.sh` still
+/// exits non-zero, on `cli-file-not-found`. So the exit status alone proves NOTHING — the slug
+/// assertion is the whole test, and a rc check would leave a guard that passes whatever the parser
+/// does. The `why` leg is not decoration: without it the case would pass just as happily if every
+/// invocation refused for every reason, which would prove the flag unusable rather than confined.
+#[test]
+fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary() {
+    const SLUG: &str = "cli-flag-requires-mode";
+
+    // A throwaway profile: these drive the REAL binary, which writes a durable by default, and an
+    // inherited environment would deposit keys and receipts in whoever ran the suite.
+    let sandbox = ProfileSandbox::new("plan-mode-refuses");
+    for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_dorc"));
+        sandbox.apply(&mut command);
+        let refused = command
+            .args([mode, "--receipt-last", "book.sh"])
+            .output()
+            .expect("the built binary runs");
+        assert!(
+            !refused.status.success(),
+            "`dorc {mode} --receipt-last` must not proceed: a stored record stream would stand \
+             where a live measurement belongs"
+        );
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert!(
+            stderr.contains(SLUG) && stderr.contains("--receipt-last"),
+            "`dorc {mode} --receipt-last` must refuse by naming the flag and the mode it belongs \
+             to, rather than by any other refusal that happens to fire first; got: {stderr}"
+        );
+    }
+
+    // The control: the same flag, on the surface that owns it, is not refused for this reason.
+    let mut control = Command::new(env!("CARGO_BIN_EXE_dorc"));
+    sandbox.apply(&mut control);
+    let explained = control
+        .args(["why", "--receipt-last", "--receipts=no-such-directory"])
+        .output()
+        .expect("the built binary runs");
+    let stderr = String::from_utf8_lossy(&explained.stderr);
+    assert!(
+        !stderr.contains(SLUG),
+        "`dorc why --receipt-last` is the one invocation the flag is for; got: {stderr}"
+    );
+}

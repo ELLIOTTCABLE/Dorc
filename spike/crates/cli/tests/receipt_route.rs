@@ -1,4 +1,6 @@
-//! The receipt write routes — plan and apply — driven in process against the real seats.
+//! The receipt write routes — plan and apply — the PIPELINE TIER (`30X` §3): typed in-process
+//! decisions over the real seats, never a render golden and never a state assertion (those are the
+//! loom's and `receipt_state.rs`'s).
 //!
 //! Every seat this exercises past the pipeline is the one the binary calls: the recording seat and
 //! the publication seats all live in `dorc_cli::receipt_edge`, so this battery cannot green while
@@ -24,8 +26,6 @@
     clippy::expect_used,
     reason = "the fixture helpers sit beside the cases, where the in-tests allowance does not reach them"
 )]
-
-mod sandbox;
 
 use dorc_cli::receipt_edge::{
     CONTROLLER_SEMANTICS, PlacedDocument, PlacedIntent, PlacementFailure, PublicationRefusal,
@@ -1610,62 +1610,4 @@ mod deterministic_apply_route {
             "and the one that IS narrows, or the asymmetry would prove nothing"
         );
     }
-}
-
-/// Asking for a stored durable belongs to the explain surface, and the binary is what enforces it.
-///
-/// Driven through the real binary on purpose. The rule is argv handling, and the parser seat is
-/// already pinned beside `reads_the_receipt` in `dorc_cli`'s own tests — but a guard proven at one
-/// seat, in one direction, is the shape this arc keeps finding after the fact. The e2e corpus
-/// cannot express this cell either: its replay blocks require rc 0 and discard stderr, and its
-/// lint lane fixes both the subcommand and the book, so a refusing invocation has nowhere to sit
-/// there. Hence natively, beside the routes it protects.
-///
-/// MEASURED, verifying this in its failing direction: with the refusal disabled `dorc plan --last
-/// book.sh` still exits non-zero, on `cli-file-not-found`. So the exit status alone proves
-/// NOTHING here — the slug assertion is the whole test, and simplifying it to a rc check would
-/// leave a guard that passes whatever the parser does.
-///
-/// The `why` leg is not decoration. Without it the case would pass just as happily if every
-/// invocation refused for every reason, which would prove the flag unusable rather than confined.
-#[test]
-fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary() {
-    const SLUG: &str = "cli-flag-requires-mode";
-
-    // A throwaway profile: these drive the REAL binary, which writes a durable by default, and
-    // an inherited environment would deposit keys and receipts in whoever ran the suite.
-    let sandbox = sandbox::ProfileSandbox::new("receipt-route");
-    for mode in ["plan", "apply", "probe", "round-trip", "bundle"] {
-        let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
-        sandbox.apply(&mut command);
-        let refused = command
-            .args([mode, "--receipt-last", "book.sh"])
-            .output()
-            .expect("the built binary runs");
-        assert!(
-            !refused.status.success(),
-            "`dorc {mode} --receipt-last` must not proceed: a stored record stream would stand \
-             where a live measurement belongs"
-        );
-        let stderr = String::from_utf8_lossy(&refused.stderr);
-        assert!(
-            stderr.contains(SLUG) && stderr.contains("--receipt-last"),
-            "`dorc {mode} --receipt-last` must refuse by naming the flag and the mode it belongs \
-             to, rather than by any other refusal that happens to fire first; got: {stderr}"
-        );
-    }
-
-    // The control: the same flag, on the surface that owns it, is not refused for this reason.
-    // Whatever else a durable-less run reports, it must not be this.
-    let mut control = std::process::Command::new(env!("CARGO_BIN_EXE_dorc"));
-    sandbox.apply(&mut control);
-    let explained = control
-        .args(["why", "--receipt-last", "--receipts=no-such-directory"])
-        .output()
-        .expect("the built binary runs");
-    let stderr = String::from_utf8_lossy(&explained.stderr);
-    assert!(
-        !stderr.contains(SLUG),
-        "`dorc why --receipt-last` is the one invocation the flag is for; got: {stderr}"
-    );
 }

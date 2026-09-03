@@ -126,9 +126,9 @@ harness = false
 name = "definition_frames"
 path = "tests/definition_frames.rs"
 
-# The sh-parity battery's pipeline tier (`30A`). Ordinary-harness, like `definition_frames`: it
-# drives whole worlds through the real pipeline to ask whether a linguistic behaviour cost a site
-# its LICENSE, which no single-crate assertion can answer.
+# The receipt write routes' PIPELINE TIER (`30X` §3). Ordinary-harness: typed in-process decisions
+# over the real publication/read seats with injected capabilities — no render golden, no state
+# assertion. It spawns the harness only where a case needs a real fixture receipt to derive from.
 [[test]]
 name = "receipt_route"
 path = "tests/receipt_route.rs"
@@ -146,6 +146,9 @@ path = "tests/receipt_state.rs"
 name = "recorded_facts_route"
 path = "tests/recorded_facts_route.rs"
 
+# The sh-parity battery's pipeline tier (`30A`). Ordinary-harness, like `definition_frames`: it
+# drives whole worlds through the real pipeline to ask whether a linguistic behaviour cost a site
+# its LICENSE, which no single-crate assertion can answer.
 [[test]]
 name = "sh_parity"
 path = "tests/sh_parity.rs"
