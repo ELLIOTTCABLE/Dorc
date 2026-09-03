@@ -1452,6 +1452,7 @@ fn drive_session(
     session_root: &Path,
     commands: &[String],
     framed: &str,
+    seed: u64,
 ) -> Result<Vec<SessionBlock>, String> {
     let scratch = Scratch::new("session");
 
@@ -1508,10 +1509,11 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle from the shared seat; the clock shadow starts EQUAL to the first invocation's
-    // clock, so the first injection is a no-op unless an author has changed `$DORC_SEED` before it.
-    let [_, (_, invocation0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs(0);
-    for (name, value) in dorc_loom::runner_seams::value_seam_pairs(0) {
+    // The seam bundle from the shared seat under this drive's seed; the clock shadow starts EQUAL to
+    // the first invocation's clock, so the first injection is a no-op unless an author has changed
+    // `$DORC_SEED` before it. The bless second-seed check drives a second time with a different seed.
+    let [_, (_, invocation0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs_for(seed, 0);
+    for (name, value) in dorc_loom::runner_seams::value_seam_pairs_for(seed, 0) {
         command.env(name, value);
     }
     command.env(RUNNER_CLOCK_SHADOW, &invocation0_clock);
@@ -1564,6 +1566,34 @@ fn drive_session(
         ));
     }
     Ok(blocks)
+}
+
+/// A constant xor'd into the run seed to get a DIFFERENT second seed for the bless reproduction
+/// check (`30X:seed-two-affordances`). Nonzero, so the second seed always differs; low-bit-only, so
+/// the result stays under 2^62 for shell-arithmetic parity.
+const SECOND_SEED_XOR: u64 = 0x5EED_5EED_5EED;
+
+/// If the primary and second-seed drives disagree on any block, the transcript carries seed-dependent
+/// bytes that no `$ export DORC_SEED` pins, so blessing it would bake nondeterminism into a golden
+/// (`30X:seed-two-affordances`). Returns a refusal naming the first differing block and the pin
+/// remedy; `None` when every block reproduced.
+fn second_seed_reproduction_refusal(
+    name: &str,
+    primary: &[SessionBlock],
+    recheck: &[SessionBlock],
+) -> Option<String> {
+    primary.iter().zip(recheck).find_map(|(a, b)| {
+        (strip_trailing_newlines(&a.output) != strip_trailing_newlines(&b.output)).then(|| {
+            format!(
+                "FAIL  {name}  [bless refused: `{}` did not reproduce under a second seed, so blessing it would bake nondeterminism into a golden — pin the case by adding `$ export DORC_SEED=<n>` as its first session line]\n{}",
+                a.command,
+                divergence(
+                    &strip_trailing_newlines(&a.output),
+                    &strip_trailing_newlines(&b.output),
+                )
+            )
+        })
+    })
 }
 
 /// The block command's argv, up to (not including) the first redirection token — everything the
@@ -1656,8 +1686,34 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         .iter()
         .map(|block| block.command().to_owned())
         .collect();
-    let captures = drive_session(harness, &dir, &session_root, &commands, &framed)
+    let run_seed = dorc_testbed::run_seed::run_seed();
+    let captures = drive_session(harness, &dir, &session_root, &commands, &framed, run_seed)
         .map_err(|error| Failed::from(format!("FAIL  {}  [session: {error}]", spec.name)))?;
+    // Bless refuses a transcript that does not reproduce under a SECOND seed
+    // (`30X:seed-two-affordances`): re-drive under a different seed WHILE probe-results is still
+    // framed, so a pinned/deterministic case reproduces and a nondeterministic one is caught. Its own
+    // throwaway store, so a publishing block does not collide with the primary drive's receipt.
+    let bless_recheck = if harness.bless {
+        let recheck_root = scratch.path.join("recheck-store");
+        for role in ["config", "state"] {
+            std::fs::create_dir_all(recheck_root.join(role)).expect("create the recheck store");
+        }
+        Some(
+            drive_session(
+                harness,
+                &dir,
+                &recheck_root,
+                &commands,
+                &framed,
+                run_seed ^ SECOND_SEED_XOR,
+            )
+            .map_err(|error| {
+                Failed::from(format!("FAIL  {}  [session recheck: {error}]", spec.name))
+            })?,
+        )
+    } else {
+        None
+    };
     if let Some(raw) = raw_probe_results {
         std::fs::write(&probe_results, raw)
             .expect("restore the raw probe-results.txt for the gates");
@@ -1723,8 +1779,14 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         }
     }
 
-    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`).
+    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`), and
+    // only if the transcript reproduced under the second seed (`30X:seed-two-affordances`).
     if harness.bless && failures.is_empty() {
+        if let Some(recheck) = &bless_recheck
+            && let Some(refusal) = second_seed_reproduction_refusal(&spec.name, &captures, recheck)
+        {
+            return Err(refusal.into());
+        }
         bless_loom(spec, &dir, &captures, harness.bless_floor)?;
     }
 
@@ -3554,7 +3616,14 @@ fn dollar_question_survives_the_clock_injection_selftest(harness: &Harness) -> V
         std::fs::create_dir_all(session_root.join(role)).expect("create the session store");
     }
     let commands = vec!["(exit 3)".to_owned(), "echo $?".to_owned()];
-    match drive_session(harness, &dir, &session_root, &commands, "") {
+    match drive_session(
+        harness,
+        &dir,
+        &session_root,
+        &commands,
+        "",
+        dorc_testbed::run_seed::run_seed(),
+    ) {
         Ok(blocks) => {
             let echoed = blocks
                 .get(1)

@@ -64,7 +64,15 @@ pub fn clock_seam_shell_value(ordinal: usize) -> String {
 /// (no per-seam override), so a receipt id is stable across a session's blocks under one seed.
 #[must_use]
 pub fn value_seam_pairs(block_ordinal: usize) -> [(&'static str, String); 4] {
-    let seed = run_seed();
+    value_seam_pairs_for(run_seed(), block_ordinal)
+}
+
+/// The session-start value-seam pairs for an EXPLICIT seed — the seat the bless second-seed
+/// reproduction check drives its recheck through (`30X:seed-two-affordances`: bless refuses a
+/// transcript that does not reproduce under a second seed). A pinned case's own `export DORC_SEED`
+/// overrides this, so a pinned case reproduces under any seed and a nondeterministic one does not.
+#[must_use]
+pub fn value_seam_pairs_for(seed: u64, block_ordinal: usize) -> [(&'static str, String); 4] {
     [
         (SEED_ENV, seed.to_string()),
         (CLOCK_ENV, clock_seam_value(seed, block_ordinal)),
