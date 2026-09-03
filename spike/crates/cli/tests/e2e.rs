@@ -191,10 +191,30 @@ fn fresh_profile_parent(tag: &str) -> PathBuf {
 /// spelled; the roots are pinned to the runner's throwaway directory by the scrub, not the platform
 /// variables.)
 fn seam_env(command: &mut Command, ordinal: u64) {
-    command.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
-    command.env(SEAM_CLOCK_ENV, "seeded:0");
+    command.env(SEAM_SEED_ENV, RUN_SEED.to_string());
+    command.env(SEAM_CLOCK_ENV, format!("seeded:{ordinal}"));
     command.env(SEAM_POSTURE_ENV, "pinned:interactive");
     command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
+}
+
+/// Build a runner-owned shim dir holding one `dorc` executable that IS the harness binary, so a
+/// loom's `$ dorc …` line resolves to `dorc-harness` on the session `PATH` while the transcript
+/// shows the `dorc` the user typed (`30X:loom-process-driver-is-a-real-shell`).
+///
+/// A COPY of the harness binary named `dorc` (`dorc.exe` on Windows), not a shell script: `sh`
+/// resolves a bare `dorc` by the platform's own name rules — a real executable is found by git's
+/// `sh` on Windows (which appends `.exe`) and by a POSIX `sh` (which honours the execute bit
+/// `std::fs::copy` carries over), with no shebang-emulation edge to depend on.
+fn build_dorc_shim(harness_bin: &Path) -> PathBuf {
+    static SEQ: AtomicUsize = AtomicUsize::new(0);
+    let seq = SEQ.fetch_add(1, Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("dorc-e2e-shim-{}-{seq}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).expect("create the dorc shim dir");
+    let shim = dir.join(if cfg!(windows) { "dorc.exe" } else { "dorc" });
+    std::fs::copy(harness_bin, &shim).expect("copy the harness binary into the shim dir");
+    make_executable(&shim);
+    dir
 }
 
 #[expect(
@@ -225,11 +245,18 @@ struct Harness {
     /// The scratch root under which each case gets its own throwaway per-user profile
     /// ([`fresh_profile_parent`]); removed wholesale on drop.
     profile_parent: PathBuf,
+    /// A runner-owned directory holding one `dorc` executable resolving to `dorc-harness`, put on a
+    /// session's `PATH` so a loom's `$ dorc …` line runs the harness engine while the transcript
+    /// shows `dorc` (`30X:loom-process-driver-is-a-real-shell`). Shared across every case; removed
+    /// on drop. Also the whole of an inspection drive's `PATH` — a deterministic, runner-owned
+    /// literal, never the ambient one (`30X:loom-syntax-grants-no-production-authority`).
+    shim_dir: PathBuf,
 }
 
 impl Drop for Harness {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.profile_parent);
+        let _ = std::fs::remove_dir_all(&self.shim_dir);
     }
 }
 
@@ -283,9 +310,11 @@ impl Harness {
             );
             std::process::exit(2);
         }
+        let harness_bin = PathBuf::from(env!("CARGO_BIN_EXE_dorc-harness"));
+        let shim_dir = build_dorc_shim(&harness_bin);
         Self {
             dorc: PathBuf::from(env!("CARGO_BIN_EXE_dorc")),
-            harness_bin: PathBuf::from(env!("CARGO_BIN_EXE_dorc-harness")),
+            harness_bin,
             dorc_sh: PathBuf::from(env!("CARGO_BIN_EXE_dorc-sh")),
             checker,
             checker_name,
@@ -293,6 +322,7 @@ impl Harness {
             bless_floor,
             floor_shells,
             profile_parent: fresh_profile_parent("main"),
+            shim_dir,
         }
     }
 
@@ -348,6 +378,10 @@ impl Harness {
             std::fs::create_dir_all(profile_root.join(role)).expect("create the case profile");
         }
         sandbox::scrub_harness_env(&mut command, profile_root);
+        // A runner-owned PATH with `dorc` on it (the shim), never the ambient one: an inspection
+        // drive launches the harness by absolute path and needs no PATH to resolve it, but a
+        // deterministic literal is what keeps the scrub's promise (`30X:loom-syntax-grants-no-production-authority`).
+        command.env("PATH", &self.shim_dir);
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
         // inherited: cargo sets a test process.s cwd to the PACKAGE root, under which no case.s
@@ -3624,6 +3658,9 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
         bless_floor: false,
         floor_shells: Vec::new(),
         profile_parent: fresh_profile_parent("foldpass"),
+        // Its OWN shim, not a clone of the real one: `Harness::drop` removes `shim_dir`, and a
+        // shared copy would take the live harness's shim down with this specimen.
+        shim_dir: build_dorc_shim(&harness.harness_bin),
     };
 
     // `if true` with no `fi` is a parse error, so dorc exits non-zero and the crash/empty guard

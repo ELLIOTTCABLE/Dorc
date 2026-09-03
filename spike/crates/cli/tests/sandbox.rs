@@ -101,16 +101,15 @@ pub(crate) fn pin_roots_at(command: &mut std::process::Command, root: &std::path
 /// Scrub a harness spawn to a credential-free environment and pin its roots at `root`
 /// (`30X:loom-syntax-grants-no-production-authority`).
 ///
-/// Starts from `env_clear`, then restores only `PATH` and the roots seam — nothing inherited: no
-/// `HOME`/`APPDATA`, no credential variables. Callers add the rest of the seam bundle afterward.
-/// Measured on Windows: the harness needs none of `SystemRoot`/`ComSpec`/`PATHEXT` — it draws seeded
-/// entropy (no OS randomness), spawns no `cmd`-hosted child, and is launched by absolute path (no
-/// `PATHEXT` resolution) — so `PATH` is the whole of what the OS needs to run it.
+/// Starts from `env_clear`, then restores only the roots seam — nothing inherited: no `PATH`, no
+/// `HOME`/`APPDATA`, no credential variables. The caller sets `PATH` itself, to a runner-owned
+/// literal (the shim dir, plus the case's `mocks/` for a session), so the ambient PATH never
+/// reaches the harness (`30X:loom-syntax-grants-no-production-authority`). Measured on Windows: the
+/// harness needs none of `SystemRoot`/`ComSpec`/`PATHEXT` — it draws seeded entropy (no OS
+/// randomness), spawns no `cmd`-hosted child, and an inspection drive launches it by absolute path
+/// (no `PATHEXT` resolution) — so a runner-owned `PATH` is the whole of what the OS needs.
 pub(crate) fn scrub_harness_env(command: &mut std::process::Command, root: &std::path::Path) {
     command.env_clear();
-    if let Some(path) = std::env::var_os("PATH") {
-        command.env("PATH", path);
-    }
     pin_roots_at(command, root);
 }
 
