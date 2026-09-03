@@ -27,7 +27,7 @@ sysctl__is_converged() {
 }
 
 -- probe-results.txt --
-dorc-records/1 nonce=dorc attempt=1 host=localhost book=9f7c569c72f3cbe4 sites=0 @@dorc@@
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=ca23687f49760296e278132ecad73b98742b5b248b042f3ef7195946fce34f5c sites=0 @@dorc@@
 dorc-records-end/1 nonce=dorc @@dorc@@
 
 -- mocks/.log --
