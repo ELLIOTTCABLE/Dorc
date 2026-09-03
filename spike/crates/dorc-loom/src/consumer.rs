@@ -1106,9 +1106,7 @@ impl DorcConsumer {
             snapshot.oracle_paths(),
             &discovered_oracles,
         );
-        // The session is ONE world across the case's blocks with the per-block seam clock, so a
-        // block that publishes and a later block that reads share it (`30X:tier-in-process-loom`),
-        // and the two drivers derive one clock per block (`gate-two-drivers-agree`).
+        // One world across the case's blocks on the per-block seam clock (`30X:tier-in-process-loom`).
         let seams = crate::runner_seams::session_seams(context.block());
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
@@ -1116,8 +1114,6 @@ impl DorcConsumer {
             argv: command.argv().to_vec(),
             fault,
             shim_dir: args.shim_dir.clone(),
-            // The store LABEL stays the honest `NO_STATE_ROOT`: the loom's world has no per-user
-            // profile, and the real synthetic store path is platform-shaped and never rendered.
             receipt_label: dorc_cli::engine::NO_STATE_ROOT.to_owned(),
             host: args.host.clone(),
             edge: session.edge.clone(),
@@ -1855,6 +1851,10 @@ struct LoomSession {
 }
 
 impl LoomSession {
+    #[expect(
+        clippy::expect_used,
+        reason = "the pinned synthetic root is a runner literal that always resolves; a refusal is a bug"
+    )]
     fn new() -> Self {
         // Platform-shaped, forced by the store's baseline check: a publish whose `directory_sync()`
         // mismatches the roots' `host_platform()` is refused (`store.rs meets_required_baseline`),
@@ -2081,24 +2081,27 @@ fn classify_decline(command: &str) -> LoomDecline {
         return LoomDecline::Unexpressible(command.to_owned());
     };
     match parsed.argv().first().map(String::as_str) {
-        Some("dorc") => match dorc_cli::parse_args_from(parsed.argv()[1..].to_vec()) {
-            Ok(dorc_cli::Invocation::Analyze(args)) => {
-                if args.host.is_some() {
-                    LoomDecline::RemoteApply
-                } else if args.plan.is_some() {
-                    LoomDecline::ApplyWithPlan
-                } else if !args.oracle_dirs.is_empty() {
-                    LoomDecline::OracleDirs
-                } else if matches!(args.receipt_root(), dorc_cli::engine::ReceiptRoot::File(_)) {
-                    LoomDecline::ExplicitReceiptFile
-                } else if args.receipts.is_some() {
-                    LoomDecline::ReceiptsOverride
-                } else {
-                    LoomDecline::Unexpressible(command.to_owned())
+        Some("dorc") => {
+            match dorc_cli::parse_args_from(parsed.argv().get(1..).unwrap_or_default().to_vec()) {
+                Ok(dorc_cli::Invocation::Analyze(args)) => {
+                    if args.host.is_some() {
+                        LoomDecline::RemoteApply
+                    } else if args.plan.is_some() {
+                        LoomDecline::ApplyWithPlan
+                    } else if !args.oracle_dirs.is_empty() {
+                        LoomDecline::OracleDirs
+                    } else if matches!(args.receipt_root(), dorc_cli::engine::ReceiptRoot::File(_))
+                    {
+                        LoomDecline::ExplicitReceiptFile
+                    } else if args.receipts.is_some() {
+                        LoomDecline::ReceiptsOverride
+                    } else {
+                        LoomDecline::Unexpressible(command.to_owned())
+                    }
                 }
+                _ => LoomDecline::Unexpressible(command.to_owned()),
             }
-            _ => LoomDecline::Unexpressible(command.to_owned()),
-        },
+        }
         Some("dorc-sh") => LoomDecline::Unexpressible(command.to_owned()),
         _ => LoomDecline::ShellOrExternal(command.to_owned()),
     }
@@ -2120,15 +2123,14 @@ pub fn render_run_loom_in_process(
     let driver = DorcReplayDriver::new(consumer, case);
     let declined: RefCell<Option<LoomDecline>> = RefCell::new(None);
     let results = drive_case(case, &RunEnv::new(), |command, context| {
-        match driver.drive(command, context) {
-            Some(result) => Ok(result),
-            None => {
-                if declined.borrow().is_none() {
-                    *declined.borrow_mut() = Some(classify_decline(command.original()));
-                }
-                // A placeholder: one decline routes the whole session, so this render is discarded.
-                Ok(ReplayResult::bytes(String::new()))
+        if let Some(result) = driver.drive(command, context) {
+            Ok(result)
+        } else {
+            if declined.borrow().is_none() {
+                *declined.borrow_mut() = Some(classify_decline(command.original()));
             }
+            // A placeholder: one decline routes the whole session, so this render is discarded.
+            Ok(ReplayResult::bytes(String::new()))
         }
     })?;
     if let Some(reason) = declined.into_inner() {

@@ -460,6 +460,9 @@ impl EngineEdges for ProductionEdges<'_> {
 ///
 /// `clock` is the run's clock: order tokens are read from it here, so the caller shares the same
 /// one the engine reads through `EngineEdges::clock`.
+///
+/// # Errors
+/// Returns the closed refusal word when the keyset cannot open for writing or the publication fails.
 pub fn publish_rooted_receipt(
     io: &mut dyn crate::durable::LocalIo,
     edge: &crate::durable::LocalReceiptEdgeV1,
@@ -487,6 +490,9 @@ pub fn publish_rooted_receipt(
 /// Publish over `io` with the generator and id source THIS run's seams select — the shape the loom
 /// needs (`dorc-loom` depends on no receipt crate, so it cannot name the `dyn KeysetGenerator` /
 /// `dyn ReceiptIdSource` [`publish_rooted_receipt`] takes; it hands its `Seams` here instead).
+///
+/// # Errors
+/// As [`publish_rooted_receipt`].
 pub fn publish_seamed_receipt(
     io: &mut dyn crate::durable::LocalIo,
     edge: &crate::durable::LocalReceiptEdgeV1,
@@ -908,6 +914,10 @@ fn production_receipt_edge(
 /// working directory, so a store root settled anywhere downstream could move with a `cd`. Host
 /// bytes, source text, receipt contents and TTY state reach none of it. The KEY root is untouched
 /// by construction — `RootInputs` offers no way for a store root to reach the configuration role.
+///
+/// # Errors
+/// Refuses when the platform cannot place a per-user root, or the `--receipts` override is not
+/// an absolute controller path.
 pub fn production_receipt_edge_over(
     seams: &Seams,
     receipts_override: Option<&str>,

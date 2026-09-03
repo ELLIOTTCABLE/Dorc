@@ -58,10 +58,15 @@ impl dorc_cli::seam::SeamEnv for MapEnv {
 /// This block's `Seams` for the in-process session — the SAME selections the shell exports, keyed
 /// under [`SESSION_ROOT`], through the one parser both drivers use.
 ///
-/// `expect` is the runner asserting its own selections parse: the map is built from these
+/// # Panics
+/// The `expect` is the runner asserting its own selections parse: the map is built from these
 /// functions, never from host input, so a malformed value would be a bug in this seat, not an
 /// untrusted-input path (`inv-no-throw` binds the latter).
 #[must_use]
+#[expect(
+    clippy::expect_used,
+    reason = "the seam map is runner-owned and always valid; a parse failure is a bug in this seat"
+)]
 pub fn session_seams(block_ordinal: usize) -> dorc_cli::seam::Seams {
     let mut map: std::collections::BTreeMap<&'static str, String> =
         value_seam_pairs(block_ordinal).into_iter().collect();

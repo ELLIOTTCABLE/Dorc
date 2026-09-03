@@ -146,12 +146,7 @@ fn sort_lines(value: &str) -> String {
 use internal_tooling::{Posix, which};
 
 // ---------------------------------------------------------------------------
-// the harness's shared, immutable context
-
-/// The run-wide seed and the per-block seam selections both drivers share live in ONE seat,
-/// `dorc_loom::runner_seams` (`30X:loom-seams-are-sh-lines`); the variable NAMES live once in
-/// `dorc_cli::seam`. Neither is re-spelled here — a second copy is how the two drivers would derive
-/// a different clock for one block and stop agreeing (`gate-two-drivers-agree`).
+// the harness's shared, immutable context (the seam seat is `dorc_loom::runner_seams`)
 
 /// Where a case that owns its own per-user profile keeps it, inside its materialization.
 ///
@@ -1435,8 +1430,7 @@ fn drive_session(
     let mut script = String::from("exec 2>&1\n");
     for (index, cmd) in commands.iter().enumerate() {
         // Per-block clock default, applied only while it still holds the runner's own last value
-        // (`30Xa-b1:rul-runner-varies-only-what-it-set`); the block's clock selection comes from the
-        // shared seat, so the two drivers derive one clock per block.
+        // (`30Xa-b1:rul-runner-varies-only-what-it-set`); the selection comes from the shared seat.
         let [_seed, (clock_name, clock_value), ..] =
             dorc_loom::runner_seams::value_seam_pairs(index);
         let _ = writeln!(
@@ -1464,8 +1458,7 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle from the shared seat (`30X:loom-seams-are-sh-lines`); block 0 is `seeded:0`, so
-    // the clock shadow starts EQUAL to the clock.
+    // The seam bundle from the shared seat; the clock shadow starts EQUAL to block 0's clock.
     let [_, (_, block0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs(0);
     for (name, value) in dorc_loom::runner_seams::value_seam_pairs(0) {
         command.env(name, value);
