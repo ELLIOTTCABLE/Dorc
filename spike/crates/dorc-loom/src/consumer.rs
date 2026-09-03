@@ -1028,7 +1028,7 @@ impl DorcConsumer {
         // The source-comparison's CURRENT bytes come from the case's own sections, never real disk:
         // in-process the recorded book/oracle is unchanged, so it renders Matching exactly as the
         // shipped binary reading the materialized case dir does (`30Va:rul-source-comparison-is-one-cli-seat`).
-        let current_sources: std::collections::BTreeMap<String, Vec<u8>> = case
+        let current_sources: BTreeMap<String, Vec<u8>> = case
             .sections()
             .iter()
             .map(|section| {

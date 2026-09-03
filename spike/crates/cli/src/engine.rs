@@ -2194,7 +2194,7 @@ pub fn report_recorded_store(
     register: WhyRegister,
     store: &str,
     sink: &mut dyn OutputSink,
-    current_sources: Option<&std::collections::BTreeMap<String, Vec<u8>>>,
+    current_sources: Option<&BTreeMap<String, Vec<u8>>>,
 ) -> EngineStatus {
     let reading = match answer {
         crate::recorded::StoreAnswer::Unreadable(reason) => {
