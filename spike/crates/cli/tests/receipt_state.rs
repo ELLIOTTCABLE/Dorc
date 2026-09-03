@@ -995,3 +995,119 @@ fn asking_a_plan_producing_mode_for_a_stored_durable_refuses_through_the_binary(
         "`dorc why --receipt-last` is the one invocation the flag is for; got: {stderr}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// The receipt-rooted `why` surface: relations and structure the loom shows but cannot ASSERT.
+// The byte-exact renders are goldened by `why30-receipt-rooted-surface.loom`; these pin the
+// cross-render relations (byte-identity across flags and invocations) and the address-resolution
+// structure (a refusal reason present, a drifted source detected) that a single golden cannot state.
+
+/// `--all` is a labelled synonym for the default on the receipt route, byte for byte.
+///
+/// DEPTH ONLY (`30R:receipt-rooted-attention-and-cli`): the total surface already renders everything
+/// the reconstruction holds, so there is nothing deeper for the flag to reach. The loom SHOWS both
+/// renders; this machine-ENFORCES they stay equal, which two independent goldens do not
+/// (`30X` §4: byte-identity across invocations is Rust's honest home).
+#[test]
+fn all_is_byte_identical_to_the_default_on_the_receipt_route() {
+    let sandbox = ProfileSandbox::new("all-identity");
+    let scratch = Scratch::new("all-identity");
+    plan(&sandbox, &scratch);
+
+    assert_eq!(
+        why(&sandbox, &scratch, &["--receipt-last", "--all"]),
+        why(&sandbox, &scratch, &["--receipt-last"]),
+    );
+}
+
+/// An address naming a file no recorded source reproduces REFUSES, and says so as a datum.
+///
+/// The refusal is in the answer rather than instead of it (`30R`: one unanswerable address is not a
+/// reason to stop explaining the rest), so the surface still renders and carries the typed reason.
+#[test]
+fn an_unmatched_address_refuses_inside_the_answer() {
+    let sandbox = ProfileSandbox::new("address-refusal");
+    let scratch = Scratch::new("address-refusal");
+    plan(&sandbox, &scratch);
+    std::fs::write(scratch.path.join("other.sh"), "#!/bin/sh\ntrue\n").expect("write a stranger");
+
+    let rendered = why(&sandbox, &scratch, &["--receipt-last", "other.sh:2"]);
+    assert!(
+        rendered.contains("address-unplaceable NoRecordedSourceMatches"),
+        "a file the document never recorded is unplaceable, by name; got:\n{rendered}"
+    );
+    assert!(
+        rendered.contains("[unwritten: why-total-section-data]"),
+        "and every unrelated fact still renders; got:\n{rendered}"
+    );
+
+    let missing = why(&sandbox, &scratch, &["--receipt-last", "nowhere.sh:2"]);
+    assert!(
+        missing.contains("address-unplaceable CurrentSourceUnreadable"),
+        "a file that is not there is a different refusal; got:\n{missing}"
+    );
+    let shapeless = why(&sandbox, &scratch, &["--receipt-last", "book.sh"]);
+    assert!(
+        shapeless.contains("address-unplaceable NotAFileAndLine"),
+        "and an address that is not `<file>:<line>` is a third; got:\n{shapeless}"
+    );
+}
+
+/// `--receipt <file>` roots at the named document rather than answering nothing.
+///
+/// The regression this closes by name: the `File` arm matched no store entry, so an explicit file
+/// selected nothing at all and the route emitted a store-unreadable report over a store that had
+/// just been written into.
+#[test]
+fn an_explicit_receipt_file_roots_the_question() {
+    let sandbox = ProfileSandbox::new("file-root");
+    let scratch = Scratch::new("file-root");
+    plan(&sandbox, &scratch);
+
+    let name = published_of(&sandbox, "plan-v1-")
+        .into_iter()
+        .next()
+        .expect("the run published a plan document");
+    let file = store_root(&sandbox).join(name);
+
+    let rooted = why(
+        &sandbox,
+        &scratch,
+        &["--receipt", &file.display().to_string()],
+    );
+    assert_eq!(
+        rooted,
+        why(&sandbox, &scratch, &["--receipt-last"]),
+        "the one document in this store answers the same whether it is named by path or derived"
+    );
+}
+
+/// An AUTHENTICATED receipt's sources are compared without the user naming a file.
+///
+/// The asymmetry the comparison packet rules: for material this controller authenticated, the one
+/// seat rehydrates the recorded path and reads it. Both directions, because a comparison that
+/// always said one thing would be worth nothing — the second half rewrites the book under the
+/// receipt and the same question comes back with the other answer.
+#[test]
+fn an_authenticated_receipt_compares_its_own_sources_unasked() {
+    let sandbox = ProfileSandbox::new("implicit-compare");
+    let scratch = Scratch::new("implicit-compare");
+    plan(&sandbox, &scratch);
+
+    let unchanged = why(&sandbox, &scratch, &["--receipt-last"]);
+    assert!(
+        unchanged.contains("Matching"),
+        "the recorded book is still on disk and the seat read it; got:\n{unchanged}"
+    );
+
+    std::fs::write(
+        scratch.path.join("book.sh"),
+        "#!/bin/sh\nhork tune --profile web\necho drifted\n",
+    )
+    .expect("rewrite the book");
+    let drifted = why(&sandbox, &scratch, &["--receipt-last"]);
+    assert!(
+        drifted.contains("Drifted"),
+        "and a book that moved under the receipt says so; got:\n{drifted}"
+    );
+}
