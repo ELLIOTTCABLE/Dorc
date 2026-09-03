@@ -25,6 +25,8 @@ foobar__is_converged() {
 site 0 effect=holds rc=0
 
 -- replay --
+$ export DORC_SEAM_CLOCK=pinned:1769306437000
+$ export DORC_SEED=1
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
@@ -53,6 +55,6 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 # the store, not this book.
 # foobar sync-certs /etc/nginx/certs   # dorc: elided (already converged / dead branch)
 
+$ export DORC_SEED=2
 $ dorc --book=book.sh --pre-source foobar.oracle.sh --results - < probe-results.txt > /dev/null
-
 $ dorc why --receipt-last > /dev/null
