@@ -2010,6 +2010,141 @@ where
     })
 }
 
+/// Why the in-process driver cannot express a session (`30X:loom-in-process-driver-is-a-closed-grammar`).
+///
+/// One decline anywhere routes the WHOLE session to the process driver, because a session has state
+/// and cannot change drivers midway. This enum IS the closed set — `30X` §9 forbids a roster or a
+/// lexical meta-test that polices it — and it only ever SHRINKS: the expressible set is exactly what
+/// the driver runs today plus the receipt-store arm.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum LoomDecline {
+    /// A `dorc apply --host` — a remote apply, driven only by the scripted transport table
+    /// (`30X:front-transport-scripted-column`), never a real dispatch.
+    RemoteApply,
+    /// A `dorc apply` reading a plan file — no in-process engine run to express it.
+    ApplyWithPlan,
+    /// A `--oracle-dir` load — the in-process driver takes `--pre-source` files only.
+    OracleDirs,
+    /// A `--receipt <file>` out-of-store document root.
+    ExplicitReceiptFile,
+    /// A `--receipts <dir>` store override.
+    ReceiptsOverride,
+    /// A command whose first word is not `dorc`/`dorc-sh` — a shell builtin (`export`, `cd`), a
+    /// pipe, a compound, or an external tool (the shell-line modelling is lane C2's).
+    ShellOrExternal(String),
+    /// Any other command the in-process driver does not express (`dorc strip`, a `dorc-sh` it
+    /// cannot run, an unmodelled durable, a process exit): named so the trial output points at it.
+    Unexpressible(String),
+}
+
+impl LoomDecline {
+    /// One-line reason for the trial output (`30X:loom-driver-is-derived-and-reported`).
+    #[must_use]
+    pub fn reason(&self) -> String {
+        match self {
+            Self::RemoteApply => {
+                "a remote apply (`--host`) — driven only by the process driver".to_owned()
+            }
+            Self::ApplyWithPlan => "an apply reading a plan file".to_owned(),
+            Self::OracleDirs => {
+                "a `--oracle-dir` load (the driver takes `--pre-source` only)".to_owned()
+            }
+            Self::ExplicitReceiptFile => {
+                "a `--receipt <file>` out-of-store document root".to_owned()
+            }
+            Self::ReceiptsOverride => "a `--receipts <dir>` store override".to_owned(),
+            Self::ShellOrExternal(command) => {
+                format!("a shell construct or external tool: `{command}`")
+            }
+            Self::Unexpressible(command) => {
+                format!("a command the in-process driver does not express: `{command}`")
+            }
+        }
+    }
+}
+
+/// The outcome of driving a `run:` loom in-process for `gate-two-drivers-agree`.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum TwoDriverOutcome {
+    /// Every block rendered; the stamped both-streams bytes, one per block, in engine order.
+    Rendered(Vec<String>),
+    /// The session declined and routes to the process driver; its reason.
+    Declined(LoomDecline),
+}
+
+/// Which decline a command the in-process driver could not express falls under.
+///
+/// Re-derived from the command's own argv through the SAME `parse_args_from` the driver used, so it
+/// agrees with the driver's decline decisions rather than being a second, drifting policy.
+fn classify_decline(command: &str) -> LoomDecline {
+    let Ok(parsed) = ReplayCommand::parse(command) else {
+        return LoomDecline::Unexpressible(command.to_owned());
+    };
+    match parsed.argv().first().map(String::as_str) {
+        Some("dorc") => match dorc_cli::parse_args_from(parsed.argv()[1..].to_vec()) {
+            Ok(dorc_cli::Invocation::Analyze(args)) => {
+                if args.host.is_some() {
+                    LoomDecline::RemoteApply
+                } else if args.plan.is_some() {
+                    LoomDecline::ApplyWithPlan
+                } else if !args.oracle_dirs.is_empty() {
+                    LoomDecline::OracleDirs
+                } else if matches!(args.receipt_root(), dorc_cli::engine::ReceiptRoot::File(_)) {
+                    LoomDecline::ExplicitReceiptFile
+                } else if args.receipts.is_some() {
+                    LoomDecline::ReceiptsOverride
+                } else {
+                    LoomDecline::Unexpressible(command.to_owned())
+                }
+            }
+            _ => LoomDecline::Unexpressible(command.to_owned()),
+        },
+        Some("dorc-sh") => LoomDecline::Unexpressible(command.to_owned()),
+        _ => LoomDecline::ShellOrExternal(command.to_owned()),
+    }
+}
+
+/// Drive a committed `run:` loom in-process, the SECOND witness of every session the e2e runner
+/// proves (`gate-two-drivers-agree`; `30X:loom-driver-is-derived-and-reported`).
+///
+/// If the in-process driver declines ANY block, the whole session is `Declined` with its reason;
+/// otherwise every block's stamped both-streams render is returned in engine order
+/// (`30X:loom-transcript-is-what-the-user-saw`), for the caller to compare byte-for-byte.
+///
+/// # Errors
+/// Returns a case-materialization failure (never a decline — that is a value).
+pub fn render_run_loom_in_process(
+    consumer: &DorcConsumer,
+    case: &Case,
+) -> Result<TwoDriverOutcome, RunError> {
+    let driver = DorcReplayDriver::new(consumer, case);
+    let declined: RefCell<Option<LoomDecline>> = RefCell::new(None);
+    let results = drive_case(case, &RunEnv::new(), |command, context| {
+        match driver.drive(command, context) {
+            Some(result) => Ok(result),
+            None => {
+                if declined.borrow().is_none() {
+                    *declined.borrow_mut() = Some(classify_decline(command.original()));
+                }
+                // A placeholder: one decline routes the whole session, so this render is discarded.
+                Ok(ReplayResult::bytes(String::new()))
+            }
+        }
+    })?;
+    if let Some(reason) = declined.into_inner() {
+        return Ok(TwoDriverOutcome::Declined(reason));
+    }
+    let bytes = results
+        .iter()
+        .map(|result| {
+            result
+                .editable_render()
+                .map_or_else(|| result.output().to_owned(), EditableRender::text)
+        })
+        .collect();
+    Ok(TwoDriverOutcome::Rendered(bytes))
+}
+
 impl CaseRenderer for DorcConsumer {
     type Error = String;
 

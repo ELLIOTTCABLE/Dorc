@@ -121,8 +121,12 @@ fn run_case(case: &LoomCase) -> Result<(), Failed> {
 
     // A WHOLE-PRODUCT loom's transcript is proven by running the real binary in the e2e runner,
     // which is the stricter proof and the only one the sanctioned-executor law permits for a case
-    // that materializes mocks. Nothing here reaches for a shell, so this runner asserts only what
-    // it can: that the case declares who does prove it.
+    // that materializes mocks. The SECOND-WITNESS gate (`gate-two-drivers-agree`) is BUILT in
+    // `dorc_loom::render_run_loom_in_process`, but its activation here is HELD pending a conductor
+    // ruling: the in-process driver feeds raw `probe-results.txt` through the non-publishing FIXTURE
+    // intake while e2e frames them into the CONTROLLER intake, so the two drivers diverge on every
+    // `run:` loom until that records-intake is reconciled (`30Xa` C1 execute finding). Until then,
+    // this runner asserts only that the case declares who does prove it.
     if parsed.frontmatter().scalar("fixpoint") == Some("executed") {
         return match parsed.frontmatter().scalar("run") {
             Some(_) => Ok(()),
