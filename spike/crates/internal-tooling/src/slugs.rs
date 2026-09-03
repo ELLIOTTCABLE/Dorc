@@ -322,14 +322,17 @@ fn following_paragraph(lines: &[&str], n: usize) -> String {
 
 // ── extraction ───────────────────────────────────────────────────────────────────────────────
 
-/// The docID a corpus filename or root/steering stem encodes: `271-block-….md` → `271`, else the
-/// display path with `.md` stripped (`KNOBS.md` → `KNOBS`, `spike/CLAUDE.md` → `spike/CLAUDE`).
+/// The docID a corpus filename or steering path encodes: `271-block-….md` → `271`; a root/steering
+/// stem (`KNOBS.md` → `KNOBS`, `spike/CLAUDE.md` → `spike/CLAUDE`); and a crate's steering file by
+/// the crate-relative spelling the corpus already uses in prose (`spike/crates/oracle/CLAUDE.md` →
+/// `oracle/CLAUDE`). Headings and `cited:` share this one derivation, so a `docID:slug` grep hits both.
 pub(crate) fn doc_id_of(display: &str) -> String {
     let filename = display.rsplit('/').next().unwrap_or(display);
-    id_of(filename).map_or_else(
-        || display.strip_suffix(".md").unwrap_or(display).to_owned(),
-        str::to_owned,
-    )
+    if let Some(id) = id_of(filename) {
+        return id.to_owned();
+    }
+    let relative = display.strip_prefix("spike/crates/").unwrap_or(display);
+    relative.strip_suffix(".md").unwrap_or(relative).to_owned()
 }
 
 /// The corpus files to scan: the `docids` universe minus quarantine (never opened by the walker),
@@ -926,10 +929,7 @@ mod tests {
             defs: vec![def("spike/crates/why/CLAUDE.md")],
             ..Default::default()
         };
-        assert_eq!(
-            heading_docref(&crate_claude).as_deref(),
-            Some("spike/crates/why/CLAUDE")
-        );
+        assert_eq!(heading_docref(&crate_claude).as_deref(), Some("why/CLAUDE"));
 
         // Several SITES in ONE document ⇒ still one docref.
         let twice = SlugRow {
