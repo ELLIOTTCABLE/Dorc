@@ -178,8 +178,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   projections; laws marked tentative by the human) · **`plans/30I`** (static loading and
   bundle emission — one load model; §13 the xfail specimen matrix; §15 the ruling ledger) ·
   **`plans/30J`** (predict-qualified family vocabulary — RULED; build deferred to its §10
-  trigger) · **`plans/30L`** (function-body elision regions and loop staging — unbuilt beyond
-  stage 0) · **`plans/30P`** (the emission planner, stream forms, book-load principles;
+  trigger) · **`plans/30L`** (function-body elision regions and loop staging — BUILT r30, `30Nb`/`30Nc`/`30Qa`;
+  residue `pin-book-argv-value-plane`) · **`plans/30P`** (the emission planner, stream forms, book-load principles;
   `KNOBS:kBACKFLIPS` detailed; its `open-rulings`; prior art
   `.claude/research/emission-and-inclusion-prior-art/`) · **`plans/30R`** (durable receipts —
   BUILT; the security review's four boundaries repaired) · **`plans/30S`** (environment
@@ -232,6 +232,9 @@ the license-contamination map. Cross-references are `docID:slug`.
   the tabled apply-side-transport exploration, the payload-declaration decomposition, the
   live queue) whose design-of-record is `plans/30W`. (Same round-id as the tabled multi-host
   r26 above — branch lineage, not chronology.)
+- **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
+  arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
+  only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.
 
 ## Vendor/ (full-history clones)
 
