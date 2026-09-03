@@ -148,7 +148,11 @@ synthesized dispatch.
 
 **`rul-floor-is-uneven-across-forms`** [TYPED 2026-08-22] — most books single-stream fine;
 multipart accepts strictly more book code, and the MOST a construct may cost its author is
-single-stream, never support. One sentence of self-awareness the prior art earns: refusing
+single-stream, never support. GLOSS [human 2026-09-03, `26N:gloss-floor-unevenness-has-trumps`]:
+this binds emission FORMS and is trumped by `kFAIL-withhold` and by secrets-management — the
+unresolvable-load refusal under `the-load-principles` costs support, deliberately; the rule
+cannot satisfy every corner of "we'll make everything work" and is qualified accordingly.
+One sentence of self-awareness the prior art earns: refusing
 the form is the *unusual* posture. The nearest domain sibling met the identical constraint —
 the payload must be pipeable into an interpreter's stdin — and answered it by walking back
 textual inclusion in favour of an archive plus a generated loader [A-ansible-module-architecture-2026].
@@ -175,9 +179,13 @@ one, Dorc's model of the shell is ⊤ and Dorc claims NOTHING from it, at any ti
   the host loads — explicitness alone never licenses a rewrite);
 - no elision below it — the act ran commands, so it is a total wall (no footprint, no survival);
 - nothing shipped on a guess — a copy of a file Dorc cannot prove the author referenced is engine
-  selection, the thing `rul-load-head-is-exact-or-havoc` struck [LEAN, human 2026-08-22, "I'd
-  probably lean no … referential agnosticism"; one typed line to the running conductor settles
-  `30Q:ask-ship-explicit-targets-below-a-clobber`];
+  selection, the thing `rul-load-head-is-exact-or-havoc` struck [RULED 2026-09-03,
+  `26N:rul-unresolvable-book-load-refuses`, closing `30Q:ask-ship-explicit-targets-below-a-clobber`
+  as NO-SHIP: an unresolvable book-custody load — computed, or relative below a clobber or any
+  blind act — refuses the plan before network under one code, naming the load line, the
+  clobbering line, and the `${0%/*}` remedies; never a warning, never ship-and-die; dorc-lang
+  mirroring-without-authority reserved, unbuilt. Receipt: `26N:rul-dorc-acts-are-withhold-shaped`
+  — shipping is a Dorc act and takes the withhold direction when unproven];
 - no engine-side recovery of any kind — not a syntactic check of host bytes, not an oracle's
   claim about the shell model (a wrong one mis-attributes every line below to the wrong author,
   the top of `271:rul-sin-ordering`), not a rewrite into a subshell (`kBACKFLIPS`).
@@ -265,25 +273,38 @@ command's output.
   globs with an EXACT head. Boondoggle fence [ACKED]: Dorc ekes analysis value out of static
   truth up to where it becomes intractable or dominates, never turning it into compilation
   output.
-- **`model-symbolic-dollar-zero`** [ACKED 2026-08-22] — Dorc never reads `$0` from a shell.
-  In analysis `$0` is the AS-GIVEN book path (never realpath'd — sh-parity under symlinks)
-  with two live spellings: slash-bearing, and slashless with cwd = the load cwd (which is
-  what the world means by slashless invocation, and what `dirname` returns `.` for).
-  Authored expressions over it evaluate per spelling under ordinary POSIX expansion
-  semantics — parameter expansion IS shell, not tool modelling. A load is EXACT iff every
-  live spelling resolves to one snapshot file. **`rul-dead-spelling-is-not-unsound`**: a
-  spelling under which the `.` is fatal (`${0%/*}` of a slashless `$0` is the whole word ⇒
-  `book.sh/helpers.sh` ⇒ fatal) is DEAD, not unsound — nothing below it runs, so nothing
-  below it can under-execute; it earns an off-ramp lint ("dies under `sh book.sh`"), never a
-  refusal, and Dorc never TEACHES it (stewardship: no design route may push authors toward
-  off-ramp-destroying shell, `KNOBS:kLANG`). **`rul-dorc-invokes-in-a-modelled-live-spelling`**:
-  Dorc invokes what it ships in a spelling the analysis modelled as live (`sh ./plan.sh` from
-  the generation root); this asserts nothing about sh's `$0`, only how Dorc spells its own
-  invocations, and it is load-bearing because under cwd-parity the plan keeps the author's
-  `${0%/*}` verbatim. Single-stream (`$0` = `sh`) has no mirrored tree and its `.` lines are
-  pasted or refused, so it is outside this. Engineer-side caveat for every hint: `$0` inside a
-  SOURCED file is the main script's path, never the sourced file's (sh has no `__FILE__`) —
-  oracle files use a book-set root (`30I` §2.2), and the `$0` hints are admin-only.
+- **`model-symbolic-dollar-zero`** [ACKED 2026-08-22; AMENDED 2026-09-03 by
+  `26N:rul-dollar-zero-authority-spelling`, ACKED] — Dorc never reads `$0` from a shell. In
+  analysis `$0` is modelled symbolically (never realpath'd — sh-parity under symlinks) under
+  three spellings, with two consumers. For AUTHORITY — EXACT-ness, what ships, what binds,
+  what may vouch — the live spelling is Dorc's OWN invocation: an absolute path to the real
+  plan file in the host's scratch root (`26N` §2 `route-file-backed`), under which `${0%/*}`
+  is cwd-immune by sh semantics (`$0` is unassignable and a sourced file cannot change it).
+  For the OFF-RAMP LINT only, the two as-given spellings stay modelled — the slash-bearing one
+  the admin typed, and slashless with cwd = the load cwd (which is what the world means by
+  slashless invocation, and what `dirname` returns `.` for). Authored expressions over `$0`
+  evaluate per spelling under ordinary POSIX expansion semantics — parameter expansion IS
+  shell, not tool modelling. A load is EXACT iff it resolves to one snapshot file under Dorc's
+  spelling; the invariant that makes the mirrored file land is RELATIVE POSITION (the plan
+  sits where the book sat relative to its dependencies, under the load cwd), and the prefix
+  decides only cwd-immunity. A `cd` whose operand is `$0`-headed rides the same evaluation,
+  so `cd "${0%/*}"` re-establishes a known cwd below a blind act.
+  **`rul-dead-spelling-is-not-unsound`**: a spelling under which the `.` is fatal (`${0%/*}`
+  of a slashless `$0` is the whole word ⇒ `book.sh/helpers.sh` ⇒ fatal; a relative `$0` after
+  a `cd`-ing blind act) is DEAD, not unsound — nothing below it runs, so nothing below it can
+  under-execute; it earns an off-ramp lint ("dies under `sh book.sh`"), never a refusal, and
+  Dorc never TEACHES it (stewardship: no design route may push authors toward
+  off-ramp-destroying shell, `KNOBS:kLANG`). The analysis therefore carries both worlds — the
+  one where Dorc runs the book and the one where the author off-ramps — and no claim survives
+  the off-ramp: the plan's dispositions die with the run, and the generated plan is
+  self-sufficient sh. **`rul-dorc-invokes-in-a-modelled-live-spelling`**: Dorc invokes what it
+  ships in the spelling the analysis modelled for authority — `sh /abs/<scratch root>/<the
+  book's own filename>`, cwd = that root, never changed afterwards (`30I` §7.4/§7.6) — and the
+  plan keeps the author's `${0%/*}` verbatim. Single-stream (`$0` = `sh`) has no mirrored tree
+  and its `.` lines are pasted or refused, so it is outside this. Engineer-side caveat for
+  every hint: `$0` inside a SOURCED file is the main script's path, never the sourced file's
+  (sh has no `__FILE__`) — oracle files use a book-set root (`30I` §2.2), and the `$0` hints
+  are admin-only.
 - **`rul-static-predict-sites-loads`** [ACKED 2026-08-22 "seems like a winner"; unparks
   `ask-authored-pure-predict-may-site-loads` in its STATIC form] — the sanctioned path to a
   command substitution in a load operand. The engine never learns what `dirname` does; a
@@ -469,7 +490,8 @@ loading.
   equivalent-modulo-perf-and-safety to "does this path exist on the host".
 - Open, none blocking: the host spelling of the checks (scaffolding may lean on tools; start
   conservative); whether single-stream should hint when `$0` is used outside a pasted `.` (the
-  author's cwd-independence silently downgrades there); a predicted value consumed OUTSIDE the
+  author's cwd-independence silently downgrades there — a DEFERRED lint with all lints,
+  `26N` §7); a predicted value consumed OUTSIDE the
   load plane (`here=$(dirname "$0")` feeding a `cp` argv) is its own sitting — the load plane
   reads it, nothing else does yet; the exclusion set's `if`-body `.` cell (-GUESS pasteable).
 
@@ -584,7 +606,8 @@ human's; only implementation details are the builder's. General truth, not speci
 parsing: machinery lands in r30 where possible, rulings stay narrow. For the computed `.`
 (`fnd-computed-dot-is-a-whole-book-refusal`, a parse-tier defect to repair): fail-fast
 post-analysis pre-network for now, or whatever is easiest if that is hard [TYPED lean]. This
-subsumes `ask-computed-dot-degrades-to-a-wall`.
+subsumes `ask-computed-dot-degrades-to-a-wall`, and since 2026-09-03 shares one code with the
+relative-below-a-clobber cell (`26N:rul-unresolvable-book-load-refuses`).
 
 ## review-adjudication-inputs — the conductor's stance on `notes/30Pb` (findings, not rulings; the human decides)
 
