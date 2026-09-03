@@ -1085,7 +1085,7 @@ impl DorcConsumer {
             command.input(),
             Some(ReplayInputTarget::File(path)) if path.ends_with("controller-results.txt")
         );
-        let observation = loom_observation(&snapshot, raw_results, controller_results);
+        let observation = loom_observation(raw_results, controller_results);
         // The admin.s REFUSAL, as `main.rs` gates it: naming a store moves WHERE a receipt lands,
         // never WHETHER one is written (`dorc-replay-is-production-semantics`).
         let options = dorc_cli::engine_options_from_args(
@@ -1359,51 +1359,26 @@ fn engine_snapshot(
     )
 }
 
-fn loom_observation(
-    snapshot: &dorc_cli::snapshot::StaticLoadSnapshot,
-    raw_results: Option<String>,
-    controller_results: bool,
-) -> LoomObservation {
+/// Route a `--results` block's bytes to the CONTROLLER intake for EVERY session line
+/// (`30Xa:rul-in-process-sessions-take-the-controller-intake`), so a session's plan is
+/// receipt-eligible and publishes into the store exactly as under the harness.
+///
+/// An already-framed stream (an authored `controller-results.txt`, or any `dorc-records/`-headed
+/// bytes) passes straight through, bounded here and checked against `default_framing`. Raw inner
+/// records — and the empty `/dev/null` target, an empty framed stream — carry to
+/// [`LoomEngineEdges::observe`], which frames them against the engine's own probe stage.
+fn loom_observation(raw_results: Option<String>, controller_results: bool) -> LoomObservation {
     let Some(raw) = raw_results else {
         return LoomObservation::Controller(dorc_plan::records::Admission::NoObservation);
     };
-    let evidence = dorc_plan::records::read_host_evidence(
-        std::io::Cursor::new(&raw),
-        dorc_plan::records::HostEvidenceLimits::spike_default(),
-    );
     if controller_results || raw.starts_with("dorc-records/") {
+        let evidence = dorc_plan::records::read_host_evidence(
+            std::io::Cursor::new(&raw),
+            dorc_plan::records::HostEvidenceLimits::spike_default(),
+        );
         return LoomObservation::Controller(evidence);
     }
-    if raw.is_empty() {
-        return LoomObservation::Fixture(dorc_cli::results::SiteResults::default());
-    }
-    let sources = dorc_cli::results::RunSources {
-        book_name: snapshot.book_path(),
-        book: snapshot.book_src(),
-        oracle_paths: snapshot.oracle_paths(),
-        oracle_sources: snapshot.oracle_srcs(),
-    };
-    let mut clock = dorc_cli::results::RunClock::Absent;
-    let mut interner = Interner::default();
-    let admitted = if raw.starts_with("dorc-records/") {
-        dorc_cli::results::admit_fixture_records(
-            &sources,
-            raw.as_bytes(),
-            &mut clock,
-            &mut interner,
-        )
-    } else {
-        dorc_cli::results::admit_fixture_inner_records(&sources, &raw, &mut clock, &mut interner)
-    };
-    match admitted {
-        dorc_plan::records::Admission::Admitted(records) => {
-            LoomObservation::Fixture(records.scoped.results().clone())
-        }
-        dorc_plan::records::Admission::NoObservation => {
-            LoomObservation::Fixture(dorc_cli::results::SiteResults::default())
-        }
-        dorc_plan::records::Admission::Refused(_) => LoomObservation::Controller(evidence),
-    }
+    LoomObservation::ControllerToFrame(raw)
 }
 
 /// The program name whose invocations both replay chains answer in-process.
@@ -1704,8 +1679,10 @@ struct LoomEngineEdges<'io> {
 }
 
 enum LoomObservation {
+    /// An already-framed controller stream, bounded here and checked against `default_framing`.
     Controller(dorc_plan::records::Admission<dorc_plan::records::BoundedHostBytes>),
-    Fixture(dorc_cli::results::SiteResults),
+    /// Raw inner records, framed against the engine's own probe stage in [`LoomEngineEdges::observe`].
+    ControllerToFrame(String),
 }
 
 impl dorc_cli::engine::EngineEdges for LoomEngineEdges<'_> {
@@ -1724,7 +1701,7 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges<'_> {
     fn observe(
         &mut self,
         request: &dorc_cli::engine::ObservationRequest<'_>,
-        _render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
+        render_probe: &dyn Fn(&dorc_plan::records::Framing) -> String,
     ) -> Result<dorc_cli::engine::Observation, Box<Diag>> {
         if let Some(crate::edge_fault::EdgeFault::HostEvidence(refusal)) = &self.fault {
             return Ok(dorc_cli::engine::Observation::Controller {
@@ -1777,8 +1754,19 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges<'_> {
                         stderr: Vec::new(),
                     }
                 }
-                LoomObservation::Fixture(results) => {
-                    dorc_cli::engine::Observation::Fixture { results }
+                // Frame against the engine's OWN probe stage — the in-process twin of the process
+                // driver's `dorc probe` (`inv-site-keyed-results`) — then admit through the controller.
+                LoomObservation::ControllerToFrame(raw) => {
+                    let probe = render_probe(request.default_framing);
+                    let framed = crate::records_framing::frame_records(&probe, &raw);
+                    dorc_cli::engine::Observation::Controller {
+                        framing: request.default_framing.clone(),
+                        evidence: dorc_plan::records::read_host_evidence(
+                            std::io::Cursor::new(framed.into_bytes()),
+                            dorc_plan::records::HostEvidenceLimits::spike_default(),
+                        ),
+                        stderr: Vec::new(),
+                    }
                 }
             },
         )
@@ -2122,7 +2110,7 @@ pub fn render_run_loom_in_process(
 ) -> Result<TwoDriverOutcome, RunError> {
     let driver = DorcReplayDriver::new(consumer, case);
     let declined: RefCell<Option<LoomDecline>> = RefCell::new(None);
-    let results = drive_case(case, &RunEnv::new(), |command, context| {
+    let outcome = drive_case(case, &RunEnv::new(), |command, context| {
         if let Some(result) = driver.drive(command, context) {
             Ok(result)
         } else {
@@ -2132,7 +2120,18 @@ pub fn render_run_loom_in_process(
             // A placeholder: one decline routes the whole session, so this render is discarded.
             Ok(ReplayResult::bytes(String::new()))
         }
-    })?;
+    });
+    let results = match outcome {
+        Ok(results) => results,
+        // A block only the shell's grammar can express is a decline, never a gate failure
+        // (`30Xa:tc-gate-runerror-should-decline`).
+        Err(error @ RunError::UnsupportedReplayGrammar { .. }) => {
+            return Ok(TwoDriverOutcome::Declined(LoomDecline::Unexpressible(
+                error.to_string(),
+            )));
+        }
+        Err(other) => return Err(other),
+    };
     if let Some(reason) = declined.into_inner() {
         return Ok(TwoDriverOutcome::Declined(reason));
     }
