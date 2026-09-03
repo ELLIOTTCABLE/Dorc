@@ -1496,6 +1496,12 @@ fn drive_session(
     command.env(SEAM_POSTURE_ENV, "pinned:interactive");
     command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
     command.env(RUNNER_CLOCK_SHADOW, "seeded:0");
+    // A throwaway directory a `$ dorc … --artifact-dir=$ARTIFACT_DIR` block publishes into: the
+    // transcript shows the `$ARTIFACT_DIR` variable (a fixpoint), the artifact-set gate is
+    // `run_round_trip`'s own inspection re-drive, and the session's published tree is disposable.
+    let artifact_dir = scratch.path.join("artifacts");
+    std::fs::create_dir_all(&artifact_dir).map_err(|error| format!("artifact dir: {error}"))?;
+    command.env("ARTIFACT_DIR", &artifact_dir);
 
     let framed_stdin =
         std::fs::File::open(&framed_path).map_err(|error| format!("open framed stdin: {error}"))?;
@@ -1544,14 +1550,30 @@ fn drive_session(
     Ok(blocks)
 }
 
+/// The block command's argv, up to (not including) the first redirection token — everything the
+/// product's arg parser would see. NOT the driving grammar (the session runs the line verbatim);
+/// only enough to hand the argv to `parse_args_from` for classification, so it accepts what that
+/// grammar refuses, `$ARTIFACT_DIR` included.
+fn block_argv(command: &str) -> Vec<String> {
+    command
+        .split_whitespace()
+        .take_while(|word| {
+            !(*word == "2>&1"
+                || word.starts_with('<')
+                || word.starts_with('>')
+                || word.starts_with("1>")
+                || word.starts_with("2>"))
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
 /// Does this replay block produce artifacts (a round-trip / plan / apply that emits a probe+apply
 /// pair), classified by the product's OWN parser (`30X:loom-gates-attach-by-kind`)? A non-`dorc`
 /// line (an `export`, say) and a `dorc why`/`bundle` do not.
 fn block_produces_artifacts(command: &str) -> bool {
-    let Ok(parsed) = errorloom::ReplayCommand::parse(command) else {
-        return false;
-    };
-    let Some((head, rest)) = parsed.argv().split_first() else {
+    let argv = block_argv(command);
+    let Some((head, rest)) = argv.split_first() else {
         return false;
     };
     if head != "dorc" {
