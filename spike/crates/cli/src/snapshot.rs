@@ -421,10 +421,9 @@ pub fn root_dependencies(
 ) -> std::collections::BTreeSet<usize> {
     let mut deps: std::collections::BTreeSet<usize> = std::collections::BTreeSet::new();
     let mut cursor = 0;
-    while cursor < srcs.len() {
+    while let Some(src) = srcs.get(cursor) {
         let follow = cursor < ambient || deps.contains(&cursor);
-        let src = &srcs[cursor];
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
         if !follow || !crate::sourcing::satisfies_the_contract(src) {
             continue;
         }
@@ -438,7 +437,11 @@ pub fn root_dependencies(
             else {
                 continue;
             };
-            if idx >= ambient && crate::sourcing::satisfies_the_contract(&srcs[idx]) {
+            if idx >= ambient
+                && srcs
+                    .get(idx)
+                    .is_some_and(|source| crate::sourcing::satisfies_the_contract(source))
+            {
                 deps.insert(idx);
             }
         }
