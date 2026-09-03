@@ -1334,26 +1334,31 @@ fn engine_snapshot(
     ambient: usize,
 ) -> dorc_cli::snapshot::StaticLoadSnapshot {
     let cwd = dorc_core::loadpath::Cwd::default();
-    let reached = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let dependencies = dorc_cli::snapshot::root_dependencies(&cwd, &paths, &srcs, ambient);
     let mut kept_paths = Vec::new();
     let mut kept_srcs = Vec::new();
-    let mut kept_reached = std::collections::BTreeSet::new();
+    let mut kept_book_sourced = std::collections::BTreeSet::new();
+    let mut kept_dependencies = std::collections::BTreeSet::new();
     for (index, (path, source)) in paths.into_iter().zip(srcs).enumerate() {
-        if index >= ambient && !reached.contains(&index) {
+        if index >= ambient && !book_sourced.contains(&index) && !dependencies.contains(&index) {
             continue;
         }
         let kept = kept_paths.len();
         kept_paths.push(path);
         kept_srcs.push(source);
-        if index >= ambient {
-            kept_reached.insert(kept);
+        if book_sourced.contains(&index) {
+            kept_book_sourced.insert(kept);
+        } else if index >= ambient {
+            kept_dependencies.insert(kept);
         }
     }
     dorc_cli::snapshot::StaticLoadSnapshot::over(
         cwd,
         kept_paths,
         kept_srcs,
-        &dorc_cli::snapshot::LoadPositions::book_sourced(kept_reached),
+        &dorc_cli::snapshot::LoadPositions::book_sourced(kept_book_sourced)
+            .with_dependencies(kept_dependencies),
         book_path,
         book_src,
     )

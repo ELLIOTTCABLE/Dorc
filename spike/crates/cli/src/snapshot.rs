@@ -406,6 +406,46 @@ pub fn book_reached(
     reached
 }
 
+/// The sources a run's NAMED ROOTS reach by `.`-sourcing, transitively — the in-memory twin of the
+/// edge's `read_sourced_oracles` for a driver that holds every source already
+/// (`lib-target-is-a-loom-seam`; `28Q:pin-oracle-side-sourcing-amendment`). Roots are indices
+/// `0..ambient`; the returned indices are their contract-satisfying dependencies (the helpers file a
+/// pre-sourced oracle sources — the `28M`-commissioned split-package shape). A source that is BOTH
+/// book-reached and a dependency is [`book_reached`]'s to answer, and `book_sourced` wins there.
+#[must_use]
+pub fn root_dependencies(
+    cwd: &Cwd,
+    paths: &[String],
+    srcs: &[String],
+    ambient: usize,
+) -> std::collections::BTreeSet<usize> {
+    let mut deps: std::collections::BTreeSet<usize> = std::collections::BTreeSet::new();
+    let mut cursor = 0;
+    while cursor < srcs.len() {
+        let follow = cursor < ambient || deps.contains(&cursor);
+        let src = &srcs[cursor];
+        cursor += 1;
+        if !follow || !crate::sourcing::satisfies_the_contract(src) {
+            continue;
+        }
+        for target in crate::sourcing::top_level_load_targets(src) {
+            let Some(wanted) = cwd.resolve_dot(&target) else {
+                continue;
+            };
+            let Some(idx) = paths
+                .iter()
+                .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
+            else {
+                continue;
+            };
+            if idx >= ambient && crate::sourcing::satisfies_the_contract(&srcs[idx]) {
+                deps.insert(idx);
+            }
+        }
+    }
+    deps
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Cwd, LoadPositions, SourceRole, StaticLoadSnapshot, book_reached};
