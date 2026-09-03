@@ -46,6 +46,7 @@ pub use ownership::{
 mod preview;
 mod refusal;
 pub use preview::{CompilePreview, DroppedHole, SectionPreview, compile_preview};
+pub mod records_framing;
 mod staging;
 pub use staging::{
     MAX_STAGING_BYTES, StagedPublication, StagedReplay, StagingError, accept_staged,

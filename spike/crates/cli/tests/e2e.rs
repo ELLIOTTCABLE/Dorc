@@ -42,10 +42,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use libtest_mimic::{Arguments, Failed, Trial};
 
+use dorc_loom::records_framing::{RECORDS_NONCE, RECORDS_TOKEN};
 use support::{
-    E2eCase, E2eKind, LoomCase, RECORDS_NONCE, RECORDS_TOKEN, Selection, case_from_path,
-    case_roots, discover_e2e, discover_looms, report_path_selection, resolve_selection, spike_root,
-    split_path_selectors,
+    E2eCase, E2eKind, LoomCase, Selection, case_from_path, case_roots, discover_e2e,
+    discover_looms, report_path_selection, resolve_selection, spike_root, split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
@@ -850,9 +850,10 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     )
     .stdout;
 
-    // The re-framing itself lives in `support` so the `309` §4 baseline re-frames IDENTICALLY;
-    // this seat keeps the probe invocation, which is the half that differs per driver.
-    support::frame_records(&probe, dir)
+    // The re-framing itself lives in `dorc_loom::records_framing` so BOTH drivers re-frame
+    // IDENTICALLY; this seat keeps the probe invocation, which is the half that differs per driver.
+    let raw = std::fs::read_to_string(dir.join("probe-results.txt")).unwrap_or_default();
+    dorc_loom::records_framing::frame_records(&probe, &raw)
 }
 
 // ---------------------------------------------------------------------------
