@@ -6,7 +6,38 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
-## §0 — state (2026-09-02): design cleared (`30-reviewB` ACK); lane A DISPATCHED
+## §0 — state (2026-09-02, end of the first sitting): lanes A, B1, B2a, B2b BUILT and green; lane C next; a rewound successor resumes HERE
+
+Branch `ai/r30-30X-test-infra-decruft-conductor`; worktree
+`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor`; the tip is the commit
+carrying this §0. Built: the `Seams`/`HarnessSeams` bundle and `dorc-harness` (A, A′); the
+shell-session process driver with gates by kind, both-streams transcripts, the ticking per-block
+clock default under `rul-runner-varies-only-what-it-set`, the why-lens relativization (B1, B1′);
+the needle gate and the baseline scaffold gone, `why30-receipt-rooted-surface` a four-block
+session, the sibling-oracle advisory reconciling by canonical key (B2a); the receipt batteries
+split into `receipt_state.rs` — the ONE state-only home, twenty tests, the shipped-binary liveness
+witness among them — and two pipeline-tier residues (B2b). Every checkpoint ruling is in §2a; the
+lane scopes a successor briefs from, including the C1/C2/C3/D split, are in §5; the steering edits
+owed at close are in §7. Briefs are never committed (human ruling): a successor writes each lane's
+brief into its own scratchpad from §5's scope + §2a's rulings + `spike/CLAUDE.md`'s spawning law
+(the Safety block verbatim; step zero naming the tip; step one with
+`AGENTS.for-builders-only.md` FIRST; the no-subagents clamp; the comment budget with its counting
+command; the report shape), and hands it by absolute path in the dispatch message. Sizing: keep a
+lane well under one Opus context — earlier lanes ran to the edge at ~830k tokens; ~500k remits
+finished cleanly. Builders serial, in this worktree; the conductor touches nothing here while a
+lane is live.
+
+Open, the human's: the re-ack of lane A's five fence re-targets (§2a); the veto window on the two
+product rulings taken inside this suite arc, `rul-why-lens-relativizes-under-the-load-cwd` and
+`rul-sibling-oracle-scan-reconciles-by-canonical-key` (both §2a, both built); the `dorc-sh` bare-`sh`
+finding's roadmap placement (§6). Fold procedure at arc close: rebase this branch over `ai/main`
+(the human rewrites `ai/main` under conductor status commits — expect new hashes), `mise run
+gate:arc` from the populated branch BEFORE folding, the §7 steering edits in conductor voice, then
+`git merge --ff-only`; delete the `LIVING_STATUS` entry (its account moves to the `Research/README.md`
+round map) and reap this worktree and branch only after `merge-base --is-ancestor` proves
+containment.
+
+### How the design got here (the sitting's review trail)
 
 `/opaque-review` `30-reviewA` (pass `initial`, range `3b999e47^..633fd954`) returned, verbatim:
 `NACK Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`; the conductor never opened
@@ -17,9 +48,8 @@ livetest as the explicit composition for ambient capability), then acked the con
 clarity repairs and the added `rul-seam-columns-are-conductor-ruled`. `30-reviewB` (pass `initial`, range
 `3b999e47^..914c49a8`, the same relay kit) returned `ACK` verbatim; its report is committed as `653bddb5`.
 Standing fence, human-typed the same day: NO sealed-review dispatch of any kind without the
-human's typed ack (`LIVING_STATUS` conduct fences). Lane A was dispatched from this branch's tip
-with its brief (uncommitted, by ruling); the conductor touches nothing in this worktree while a
-lane is live.
+human's typed ack (`LIVING_STATUS` conduct fences). Lanes were then dispatched serially from
+this branch's tip with uncommitted briefs.
 
 Successor on-ramp (everything a rewound conductor needs is on this branch): this ledger and `30X`
 as amended (§3a is the non-loom law; §2/§4/§5 carry the post-review tightening). Builder briefs,
@@ -140,6 +170,21 @@ byte-identical to the second) needing no clock pin; its ~1,481-line transcript c
 rewritten `why:` frontmatter is case metadata, not rendered prose — ACCEPTED; the reconciliation
 rule joins `cli/CLAUDE.md` at close beside `rul-why-lens-relativizes-under-the-load-cwd`.
 
+### Checkpoint B2b (`90cec4cd`; both gate legs and `bless:dry` green at `459ea02b`, the final commit a transcript-neutral `why:` retarget)
+
+`durable_route.rs` → `receipt_state.rs`, the one state-only home (twenty tests: the fifteen
+durable-route state/exit/relation tests, four recorded-facts relations — `--all` byte-identity,
+unmatched-address refusal slugs, explicit-file-root identity, source-drift — and the plan-mode
+refusal test from `receipt_route.rs`); `recorded_facts_route.rs` reduced to five pipeline-tier
+typed-derivation tests whose harness spawn is fixture setup (its header says so);
+`receipt_route.rs` stays pipeline-tier minus the moved test. Three render tests DROPPED as exact
+duplicates of `why30-receipt-rooted-surface`'s blocks; no loom minted. Rulings: keeping `--all`
+byte-identity as a Rust RELATION is right (two independently goldened blocks cannot enforce
+equality; §3a class 6) — ACCEPTED; the `catalog_lock` path citation moved at its authoring surface
+(loom `when-fires` + `--accept-metadata` republish, two commits by the tool's own refusal to bundle)
+— ACCEPTED; the why30 `why:` note retarget — case metadata, ACCEPTED. No fence edited; the spawn
+census fence passed unchanged.
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
@@ -257,9 +302,11 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | B1 `lane-b1-session-driver` (split from B after the human's sizing steer) | the shell-session process driver over the `dorc` PATH shim; gates by kind, no position rules; both-streams transcripts (every `run:` loom re-blesses — AUTHORIZED); the runner default becomes the ticking per-block clock; `durable-receipt-ambiguous` re-authored as a clock-pinned session | BUILT to `10debadd` (four floor looms red, known-broken); completion → B1′ |
 | B1′ lane B1 completion | `rul-why-lens-relativizes-under-the-load-cwd`; the four floor looms re-blessed; the known-broken state cleared; both gate legs; `bless:dry` | BUILT to `5ed5e156` (two `emit30-*` green; `pin28`/`pin30` red on the sibling-oracle leak, known-broken); the remainder heads B2a |
 | B2a `lane-b2a-needle-rip-and-baseline-delete` | head: `rul-sibling-oracle-scan-reconciles-by-canonical-key` + the survival locus + the two re-blesses + the gates; then the needle gate ripped whole; `why30-receipt-rooted-surface.loom` as an ordinary multi-block session; `spine_baseline.rs` + `mise run spine:baseline` deleted; `receipt_route.rs` header corrected | BUILT to `49626ae1`; COMPLETE |
-| B2b `lane-b2b-battery-split` | batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness) | DISPATCHED 2026-09-02 |
-| C `lane-c-in-process-receipt-world` | the in-process driver composes the real `LocalReceiptEdgeV1` over `ModelIo` (the new Cargo edge) with seeded entropy and the ticking case clock; the 37 `why-total-*` rows authorable; varied-seed default + the two affordances; `gate-two-drivers-agree`; the post-dispatch durable report authored over that world, witnessed by state-only e2es | not dispatched |
-| — checkpoint C | the durable-failure diagnostic's shape (sibling code vs reason arm) is the conductor's product ruling | — |
+| B2b `lane-b2b-battery-split` | batteries split by assertion kind (loom goldens vs the one state-only home, keeping the shipped-binary witness) | BUILT to `90cec4cd`; COMPLETE |
+| C1 `lane-c1-in-process-receipt-world` (medium) | `dorc-loom` gains the Cargo edge onto `receipt-local` (+ `receipt`/`receipt-crypto` as the edge needs; `ModelIo` is already public — the edge is the ONLY boundary change); the in-process driver composes the REAL `LocalReceiptEdgeV1` over `ModelIo` with the SAME seeded entropy and ticking clock `cli::seam` holds (one generator, reached through `dorc_cli`'s lib); `run_receipt_store_why` reads that store, `ROOTLESS_WORLD` only for a session that never published; a multi-block session runs in-process as ONE world with the per-block clock; a closed typed-decline enum for what it cannot express (`export`, `cd`, pipes, `cat`, external tools, unmodelled durables, process exits) — one decline routes the WHOLE session to the process driver, the set only shrinks, no roster; `gate-two-drivers-agree` in `looms.rs` (a `run:` loom run in-process without decline must equal its committed transcript byte-for-byte; declined sessions are reported by reason, not failed; both-streams order verified against the process transcripts); proof that why30's `[unwritten: why-total-*]` holes resolve through `dorc-loom vars`/`sections` and a dry publish is a fixpoint — no prose authored. OUT: shell-line modelling (C2); seeds (C3); the durable-report surfaces (C3 — extending `run_remote_apply`'s scripted table is a STOP); durable CONTENTS changes are `rul-durable-contents-reviewed-before-design` territory, a hard STOP | not dispatched |
+| C2 `lane-c2-dogfood-session-model` (medium) | the in-process driver models the session's `$` lines with our own `dorc_syntax` parser and env model (`30X` §8: HARD NACK if any kernel invariant softens; HARD DEFER, recorded under `30X:front-dogfood-ceiling`, if it needs invasive kernel change): `export` (seam variables through `HarnessSeams::from_env` over the MODELLED environment — the one parser), `cd`, `<` redirects, exact `echo $?`; everything else stays a typed decline; `rul-runner-varies-only-what-it-set` holds in-process exactly as in the shell | not dispatched |
+| C3 `lane-c3-seeds-affordances-durable-report` (medium) | `seed-varied-by-default` (every seeded seam takes a fresh run seed per run; the run-wide seed printed at the start of every run; every failure names the seed and the one-line pin spelling `$ export DORC_SEED=…`); bless REFUSES a transcript that does not reproduce under a second seed; seed-dependent renders (the three whygallery looms and any other) declare their pin in the case; `seed-declared-is-regression` — one spelling across unit/DST/loom/e2e, hostsim's seed constructors taking the same run seed; the post-dispatch durable report authored over the in-process world — a durable-failure diagnostic carrying the surviving intent (a seeded id) plus the closed write-step word, and the completed apply's intent/outcome identities chrome line — minted with EMPTY prose (`[unwritten:]`, `error-authorship-tier`), each witnessed by a state-only test in `receipt_state.rs` (the store holds an intent and no outcome / holds both) | not dispatched |
+| — checkpoint C3 | whether the durable failure is a sibling of `durable-receipt-unwritten` or a reason arm widening it is the CONDUCTOR's product ruling (`30X` §11), never the builder's | — |
 | D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick | not dispatched |
 
 ## §6 — residue accounting (empty, or kernel-only under `30X:front-dogfood-ceiling`, at close)
@@ -282,4 +329,15 @@ description if the runner merge changes it) · `LIVING_STATUS.md` + the `Researc
 DST topic row · `TODO-ADDTL` `why-surface-close-residue` (the migrated batteries) · from checkpoint A:
 `cli/CLAUDE.md` gains `inspection-redrives-carry-no-durable` and `rul-roots-pinned-is-a-literal`,
 its `lib-target-is-a-loom-seam` bullet is re-cut for `compose.rs` and the `Seams`/`HarnessSeams`
-shape, and the five re-pointed fences are named.
+shape, and the five re-pointed fences are named. From B1/B2: `rul-runner-varies-only-what-it-set`
+(the runner's per-block injection yields to any author assignment), `session-stdin-is-the-framed-stream`
+(a `--results -` block reads the framed records from the session's fd 0; the runner frames raw
+fixture records and restores them for gate-1), `block-argv-classifier-is-read-only` (classification
+hands argv to the product parser, never drives), `rul-why-lens-relativizes-under-the-load-cwd` +
+`rul-sibling-oracle-scan-reconciles-by-canonical-key` (display re-spells and identity reconciles by
+canonical key, at one seat, across the three drivers), and `receipt_state.rs` as the one state-only
+home whose header states the `30X` §3 rule (goldens in looms; state, exits, structure and relations
+in Rust; typed internal decisions stay pipeline-tier). The `run_loom`/`run_round_trip` prose in
+`cli/CLAUDE.md`'s harness section is stale in every bullet that names `run_replay_block`,
+`drive_extra_replays`, `scan_why_receipt`, `expect-why-receipt`, block-0-must-match, or the
+constant fixture clock — re-cut them around the session.
