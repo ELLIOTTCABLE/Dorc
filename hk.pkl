@@ -109,11 +109,32 @@ local linters = new Mapping<String, Step> {
         check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
         fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"
     }
+    // Spelling, over `spike/**` AND the prose corpus (`Research/**/*.md`) AND the LLM-maintained
+    // root docs, listed BY NAME. `{{files}}`, not a fixed root: scanning the whole tree to check a
+    // few staged files is the cost that gets a hook bypassed. Config is discovered per file by
+    // walking up, so `spike/**` uses `spike/_typos.toml` and everything else uses the root
+    // `_typos.toml` (project-vocabulary false positives). The quarantine is `exclude`d because
+    // typos — unlike the docids/slugs tools, which skip it in-tool — would otherwise read it and,
+    // in fix mode, rewrite it. The six human-authored docs (README / DESIGN / IMPLEMENTATION /
+    // TODO / AGENTS / CLAUDE) and the generated `SLUGS.md` are absent by omission — never `*.md` —
+    // because fix mode must never rewrite a human's document or the machine index.
     ["typos"] {
-        glob = "spike/**"
-        // `{{files}}`, not `spike`: scanning the whole tree to check three staged files is the
-        // kind of cost that gets a hook bypassed. `spike/_typos.toml` is still found, because
-        // typos discovers config by walking up from each file it is given.
+        glob = List(
+            "spike/**",
+            "Research/**/*.md",
+            "USER_STORY.md",
+            "KNOBS.md",
+            "ANALYZER-NEEDS.md",
+            "AID-NEEDS.md",
+            "FORFEITS.md",
+            "TODO-ADDTL.md",
+            "ORACLE_PROVIDES.md",
+            "SIBLINGS.md",
+            "ROADMAP.md",
+            "STALENESS-AUDIT.md",
+            "CONTRIBUTING.md"
+        )
+        exclude = "Research/quarantine-DO-NOT-READ/**"
         check = "typos {{files}}"
         fix = "typos --write-changes {{files}}"
     }

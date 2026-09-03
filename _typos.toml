@@ -1,0 +1,117 @@
+# typos config for the prose corpus (Research/**/*.md and the LLM-maintained root docs).
+# `spike/_typos.toml` still governs `spike/**` — typos discovers config by walking UP from
+# each file, and stops at the first one found, so the two are independent (some patterns are
+# deliberately duplicated). Project-vocabulary false positives, each pinned as narrowly as the
+# typos regex engine (no lookaround) allows. The rule of thumb: typos must never REWRITE a KEY
+# (a slug, docID, citation, hash, or machine identifier) in fix mode — that silently breaks a
+# cross-reference — and must never flag project jargon or an accepted variant spelling.
+[default]
+extend-ignore-re = [
+   # `fnd-…` is the Research-corpus slug for a finding — the numbered old form (fnd-1) and the
+   # full-word form (fnd-decline-class-is-push-only). Not a misspelt "find". The bare stem also
+   # covers `fnd-*` (glob) and `fnd-30G-…` (uppercase docID mid-slug), where the class breaks.
+   "\\bfnd-[0-9a-z-]+\\b",
+   "\\bfnd\\b",
+   # `sur-2` — an enumerated ledger sub-item marker (like `fnd-1`), not a misspelt "sure".
+   "\\bsur-[0-9]+\\b",
+   # `mis-` is the English prefix written with a hyphen (mis-chosen, mis-attributed), including
+   # sentence-initial and all-caps (`MIS-KEYED`). Only the "mis-" span is ignored; the suffix
+   # word stays spell-checked. typos otherwise reads "mis" as "miss".
+   "\\b[Mm]is-",
+   "\\bMIS-",
+   # Three-or-more-part hyphenated lowercase tokens are corpus SLUGS (`rul-w3-optin-fold-full-bill`,
+   # `length-prefix-parser-rearch`), the naming convention's citation keys. A slug is an identifier,
+   # not prose; auto-rewriting one component (`optin`->`option`) silently breaks every `docID:slug`
+   # citation — the same corruption the docID and hex rules below guard against. Ordinary 3-part
+   # hyphenated English (up-to-date, state-of-the-art) is correctly spelled, so ignoring it loses
+   # nothing.
+   "\\b[a-z][a-z0-9]*(?:-[a-z0-9]+){2,}\\b",
+   # "the two nevers" is ruling vocabulary (rul-ternary-verdict's pair of never-clauses) — a plural
+   # noun, not a misspelt "never".
+   "\\bnevers\\b",
+   # DELIBERATE near-miss fixtures of the CLI fuzzy-matcher test, quoted in the corpus: `aply`/
+   # `tust`/`boook` are the one-edit-away typos the suggester must resolve. Not to be "fixed".
+   "\\baply\\b",
+   "\\btust\\b",
+   "\\bboook\\b",
+   # `NAMEs`/`UNIONs` = the plural of an all-caps term (POSIX NAME, SQL UNION); typos tokenizes the
+   # uppercase-then-`s` as `NAM`+`Es` / `UNIO`+`Ns` and mis-flags the stem.
+   "\\bNAMEs\\b",
+   "\\bUNIONs\\b",
+   # `ANDed`/`ORed` = a logical operator used as a past-tense verb ("the flags are ANDed").
+   "\\bANDed\\b",
+   "\\bORed\\b",
+   # `+SUREs` = the plural of the `+SURE` confidence marker; the trailing `s` splits the stem.
+   "\\bSUREs\\b",
+   # Accepted variant spellings the typos dictionary disputes but are correct English (the -eable/
+   # -ue British or alternate forms).
+   "\\bunparseable\\b",
+   "\\buncatalogued\\b",
+   "\\bwriteable\\b",
+   "\\bdriveable\\b",
+   "\\bunsharable\\b",
+   "\\bINVOKABLE",
+   "\\binvokable\\b",
+   # "moreso" is accepted informal English; typos' suggestion ("more") drops the meaning.
+   "\\bmoreso\\b",
+   # `criticals`/`alikes`/`sortings` are project vocabulary as plural nouns: crosscheck-severity
+   # "criticals" (paired with "lessers"), "look-alikes"/"233-alikes", "two sortings exist".
+   "\\bcriticals\\b",
+   "alikes\\b",
+   "\\bsortings\\b",
+   "\\bcatch-alls\\b",
+   # `probe-ful` / `PROBE-FUL` — spike-exemplar jargon (a probe-ful arm), the -ful suffix flagged.
+   "\\b[Pp][Rr][Oo][Bb][Ee]-[Ff][Uu][Ll]\\b",
+   # `pre-empted` — the hyphenated spelling of "preempted"; typos flags the "empted" half.
+   "\\bpre-empted\\b",
+   # `crypted` — the crypt(3) password-hash sense ("a crypted hash in /etc/shadow"), not "encrypted".
+   "\\bcrypted\\b",
+   # `ND` — nondeterminism, abbreviated ("when a surface contains ND"); not "AND".
+   "\\bND\\b",
+   # `-ue` — a bucketed shell-flag example (`-eu`/`-ue` -> `set -eu`); the "ue" span, not "use".
+   "\\bue\\b",
+   # `Thm` — Theorem, abbreviated in PLT/lattice citations ("Thm 4.2", "Def 3 + Thm 1").
+   "\\bThm\\b",
+   # `BRE` — Basic Regular Expression (grep/sed BRE vs ERE); not a misspelt "BE".
+   "\\bBRE\\b",
+   # Proper names of tools/products/companies cited in the prior-art research:
+   "\\bHashiCorp\\b",   # HashiCorp
+   "\\bScriptGard\\b",  # ScriptGard (Saxena-Molnar-Livshits, CCS 2011)
+   "\\bHeros\\b",       # Heros, the IFDS/IDE analysis library
+   "\\bJusDB\\b",       # JusDB (auto_explain blog cited)
+   # Real Unix commands/fields whose names typos disputes:
+   "\\brestat\\b",      # Ninja/Make build-system `restat` keyword
+   "\\bstap\\b",        # SystemTap `stap` command
+   "\\bsecon\\b",       # SELinux `secon` command
+   "\\bparm\\b",        # kernel modinfo `parm` field
+   # `FOD`/`FODs` — Nix Fixed-Output Derivations.
+   "\\bFODs?\\b",
+   # `ot-1`, `ot-2` — enumerated ledger sub-item markers (like `fnd-1`), not a misspelt "to"/"of".
+   "\\bot-[0-9]+\\b",
+   # Graded source-ID citations in brackets (`[A-nix-3369-2020]`, `[A-eigenvalue-fod-nd]`): a single
+   # letter, a hyphen, then an identifier. Proper-noun/identifier material, never prose.
+   "\\[[A-Za-z]-[A-Za-z0-9._-]+\\]",
+   # The bracketed-first-letter quotation convention (`[v]arious`, `[i]dentifies`, `[l]ine`): a
+   # single bracketed letter glued to the rest of a quoted word.
+   "\\[[A-Za-z]\\][A-Za-z]+",
+   # Research-corpus docIDs: a round number plus a lane letter, optionally a sub-lane letter
+   # (`28Q`, `27C`, `30Ba`, `30Nd`). Machine identifiers into the corpus, not words — and typos
+   # WRITES over some in fix mode, silently breaking the docid cross-reference (`30Nd`->`30And`).
+   # Keyed on the UPPERCASE letter so ordinal words (`30th`) stay spell-checked.
+   "\\b[0-9]{2,3}[A-Z][a-z]?\\b",
+   # `book=<hex>` / `digest[= ]<hex>` / `<fn>_h<hex>` — machine-generated FNV/digest identifiers
+   # whose accidental hex letter-runs spell typo-triggers (`ede`, `ba`, `hed`). Ignore the token.
+   "book=[0-9a-f]+",
+   "digest[= ][0-9a-f]+",
+   "_h[0-9a-f]{8}\\b",
+   # Git commit SHAs cited throughout the conduct-ledgers (`af83ba0`, `ba805af`, `245afe0`,
+   # `abd7ff8be88067e1b`): 7-40 hex chars whose letter runs spell triggers (`ba`, `afe`, `abd`).
+   # The base64 rule below only catches runs of 32+.
+   "\\b[0-9a-f]{7,40}\\b",
+   # The aeneas release tag pinned by the verify lane: a dated nightly plus a short SHA.
+   "nightly-[0-9.]+-[0-9a-f]+",
+   # Long unbroken base64/alphanumeric runs (armored receipt vectors, bech32 fixture keys): machine
+   # bytes whose accidental letter runs spell triggers. Underscores/hyphens break the class, so
+   # identifiers stay checked.
+   "[A-Za-z0-9+/]{32,}={0,2}",
+]
