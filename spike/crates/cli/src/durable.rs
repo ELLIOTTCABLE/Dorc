@@ -33,11 +33,18 @@ use dorc_receipt::writer::SignedReceipt;
 use dorc_receipt_crypto::{
     Ed25519Verifier, EntropyKeysetGenerator, KeySecretEntropy, KeysetGenerator,
 };
-use dorc_receipt_local::io::LocalIo;
+/// The deterministic model store and its sealed I/O vocabulary, re-exported so `dorc-loom` reaches
+/// the in-process receipt world through THIS crate (`30Xa:Checkpoint C1-map`, route B): the loom
+/// names only `dorc_cli::durable::…`, never `dorc_receipt_local`, and never an authority entry
+/// point — only the shared cli helpers ([`crate::compose::publish_rooted_receipt`],
+/// [`crate::compose::read_rooted_receipt`], [`crate::compose::production_receipt_edge_over`]).
+pub use dorc_receipt_local::DirectorySync;
+pub use dorc_receipt_local::io::{FailureSchedule, LocalIo};
 use dorc_receipt_local::keyset::{
     KeyAvailability, LocalReadKeysV1, LocalReadOpenV1, LocalWriteKeysV1, LocalWriteOpenV1,
     StorePresence, open_for_read, open_or_initialize_for_write,
 };
+pub use dorc_receipt_local::model::ModelIo;
 // `StoreOpenRefusal` joins them because [`EdgeRefusal`] carries it in public: a caller that can
 // receive the value but not name its type would have to reach past this seat to match on one.
 pub use dorc_receipt_local::store::{

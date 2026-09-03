@@ -195,7 +195,7 @@ fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result
             .as_ref()
             .map_or(crate::engine::NO_STATE_ROOT, |edge| edge.state_base());
         let answer = match &edge {
-            Ok(edge) => read_rooted_receipt(edge, args),
+            Ok(edge) => read_rooted_receipt(edge, &mut crate::durable::NativeIo::new(), args),
             Err(refusal) => crate::recorded::StoreAnswer::Unreadable(refusal.token().to_owned()),
         };
         return Ok(crate::engine::report_recorded_store(
@@ -419,28 +419,16 @@ impl EngineEdges for ProductionEdges<'_> {
             Ok(edge) => edge,
             Err(refusal) => return Err(refusal.token().to_owned()),
         };
-        let mut io = crate::durable::NativeIo::new();
         let mut generator = self.seams.keyset_generator();
-        let open = edge
-            .open_for_write(&mut io, &mut *generator)
-            .map_err(|refusal| refusal.token().to_owned())?;
         let mut ids = self.seams.receipt_id_source();
-        let mut order = crate::receipt_edge::RunClockOrder::of(&mut self.clock);
-        let signer = open.keys().signer();
-        let sealer = open.keys().encryption().sealer();
-        let mut placement = open.placement(&mut io);
-        crate::receipt_edge::publish_rich_plan_receipt(
+        publish_rooted_receipt(
+            &mut crate::durable::NativeIo::new(),
+            edge,
+            &mut *generator,
+            &mut *ids,
+            &mut self.clock,
             request,
-            crate::receipt_edge::ReceiptCapabilities::of(
-                &mut *ids,
-                &mut order,
-                signer,
-                &mut placement,
-            ),
-            &sealer,
         )
-        .map(Some)
-        .map_err(|refusal| refusal.token().to_owned())
     }
 
     fn receipt_label(&self) -> &str {
@@ -465,25 +453,56 @@ impl EngineEdges for ProductionEdges<'_> {
     }
 }
 
-/// Read ONE rooted receipt question, so the shared seat can render it.
+/// Publish this run's receipt through ONE open of the durable edge over `io` — the ONE publish
+/// path, driven by `ProductionEdges` over `NativeIo` and by the loom over its session's `ModelIo`,
+/// so the in-process render is production's own bytes (`dorc-replay-is-production-semantics`; a
+/// second implementation in `dorc-loom` is exactly what would falsify that claim).
 ///
-/// Every act here needs a filesystem or a key, which is why it is the only part of this route that
-/// stays at the process edge (`io-at-edges-only`): the RECONSTRUCTION and the render are
-/// `engine::report_recorded_store`'s, so the binary and the loom driver share one.
+/// `clock` is the run's clock: order tokens are read from it here, so the caller shares the same
+/// one the engine reads through `EngineEdges::clock`.
+pub fn publish_rooted_receipt(
+    io: &mut dyn crate::durable::LocalIo,
+    edge: &crate::durable::LocalReceiptEdgeV1,
+    generator: &mut dyn dorc_receipt_crypto::KeysetGenerator,
+    ids: &mut dyn dorc_receipt::ids::ReceiptIdSource,
+    clock: &mut RunClock,
+    request: &crate::engine::ReceiptPublicationRequest<'_>,
+) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
+    let open = edge
+        .open_for_write(io, generator)
+        .map_err(|refusal| refusal.token().to_owned())?;
+    let mut order = crate::receipt_edge::RunClockOrder::of(clock);
+    let signer = open.keys().signer();
+    let sealer = open.keys().encryption().sealer();
+    let mut placement = open.placement(io);
+    crate::receipt_edge::publish_rich_plan_receipt(
+        request,
+        crate::receipt_edge::ReceiptCapabilities::of(ids, &mut order, signer, &mut placement),
+        &sealer,
+    )
+    .map(Some)
+    .map_err(|refusal| refusal.token().to_owned())
+}
+
+/// Read ONE rooted receipt question over `io`, so the shared seat can render it — the ONE read
+/// path, driven by `ProductionEdges` over `NativeIo` and by the loom over its session's `ModelIo`
+/// (`dorc-replay-is-production-semantics`; the `io` is the caller's, so a filesystem read is the
+/// binary's and a modelled read is the loom's, and the RECONSTRUCTION/render stay
+/// `engine::report_recorded_store`'s).
 ///
 /// Read-only in every respect that matters: the keyset is opened through the entry point that
 /// cannot generate, the store through the one that cannot create, and no host is contacted. A
 /// missing keyset, a missing store, or a damaged document is a REPORT state — asking why must
 /// never mint an identity that cannot open the receipt being asked about.
-fn read_rooted_receipt(
+pub fn read_rooted_receipt(
     edge: &crate::durable::LocalReceiptEdgeV1,
+    io: &mut dyn crate::durable::LocalIo,
     args: &Args,
 ) -> crate::recorded::StoreAnswer {
-    let mut io = crate::durable::NativeIo::new();
     let address = named_address(args.why_address.as_deref());
     match args.receipt_root() {
-        crate::engine::ReceiptRoot::File(path) => root_from_file(edge, &mut io, path, address),
-        selection => root_from_store(edge, &mut io, selection, address),
+        crate::engine::ReceiptRoot::File(path) => root_from_file(edge, io, path, address),
+        selection => root_from_store(edge, io, selection, address),
     }
 }
 
@@ -516,7 +535,7 @@ impl HeldReceipt {
 /// Root the question at a document the store holds.
 fn root_from_store(
     edge: &crate::durable::LocalReceiptEdgeV1,
-    io: &mut crate::durable::NativeIo,
+    io: &mut dyn crate::durable::LocalIo,
     selection: crate::engine::ReceiptRoot<'_>,
     address: crate::recorded::AddressAsk,
 ) -> crate::recorded::StoreAnswer {
@@ -554,7 +573,7 @@ fn root_from_store(
 /// about the document (`30Ve:fnd-file-root-order-comes-from-the-name`).
 fn root_from_file(
     edge: &crate::durable::LocalReceiptEdgeV1,
-    io: &mut crate::durable::NativeIo,
+    io: &mut dyn crate::durable::LocalIo,
     path: &str,
     address: crate::recorded::AddressAsk,
 ) -> crate::recorded::StoreAnswer {
@@ -596,7 +615,7 @@ fn root_from_file(
 /// bounded DISCOVERY of typed reverse edges, never a user-visible union of histories.
 fn walk_store(
     open: &crate::durable::ReadEdge,
-    io: &mut crate::durable::NativeIo,
+    io: &mut dyn crate::durable::LocalIo,
     graph: &mut dorc_receipt::graph::ReceiptGraph,
 ) -> Option<(Vec<HeldDocument>, Vec<String>)> {
     let store = open.store();
@@ -850,7 +869,20 @@ impl crate::durable::RootEnvironment for ProcessEnvironment {
     }
 }
 
-/// This invocation's production durable edge, resolved once at the process boundary.
+/// This invocation's production durable edge, resolved once at the process boundary against the
+/// real environment and this invocation's `--receipts` override.
+fn production_receipt_edge(
+    seams: &Seams,
+    args: &Args,
+) -> Result<crate::durable::LocalReceiptEdgeV1, crate::durable::EdgeRefusal> {
+    production_receipt_edge_over(seams, args.receipts.as_deref(), &ProcessEnvironment)
+}
+
+/// Build this run's durable edge from the seams' roots — the ONE edge-from-seams logic, generalized
+/// over the root-resolution query so the loom builds its pinned edge through it too
+/// (`30Xa:Checkpoint C1-map`, R3): the binary passes `&ProcessEnvironment` and its `--receipts`
+/// override, the loom passes an environment that reads nothing (its roots are `Pinned`) and no
+/// override.
 ///
 /// The refusal is CARRIED rather than reported here: whether a run without a per-user root is a
 /// problem depends on what the run was going to do with one, and the seat that knows that is the
@@ -861,14 +893,15 @@ impl crate::durable::RootEnvironment for ProcessEnvironment {
 /// working directory, so a store root settled anywhere downstream could move with a `cd`. Host
 /// bytes, source text, receipt contents and TTY state reach none of it. The KEY root is untouched
 /// by construction — `RootInputs` offers no way for a store root to reach the configuration role.
-fn production_receipt_edge(
+pub fn production_receipt_edge_over(
     seams: &Seams,
-    args: &Args,
+    receipts_override: Option<&str>,
+    environment: &dyn crate::durable::RootEnvironment,
 ) -> Result<crate::durable::LocalReceiptEdgeV1, crate::durable::EdgeRefusal> {
     let roots = seams
-        .base_roots(&ProcessEnvironment)
+        .base_roots(environment)
         .map_err(crate::durable::EdgeRefusal::Roots)?;
-    let roots = match args.receipts.as_deref() {
+    let roots = match receipts_override {
         Some(folder) => roots
             .with_store_root(&absolute_controller_path(folder))
             .map_err(crate::durable::EdgeRefusal::Roots)?,
