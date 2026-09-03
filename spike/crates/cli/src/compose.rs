@@ -264,7 +264,8 @@ fn acquire_engine_request(
         None => String::new(),
     };
     let book_name = book_path.unwrap_or("book.sh");
-    let acquisition_diagnostics = unloaded_sibling_oracle_diagnostics(book_path, &oracle_paths);
+    let acquisition_diagnostics =
+        unloaded_sibling_oracle_diagnostics(cwd, book_path, &oracle_paths);
     let acquired = read_book_sourced(
         cwd,
         book_name,
@@ -3046,7 +3047,11 @@ fn parse_results(
 /// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
 /// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
 /// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[String]) -> Vec<Diag> {
+fn unloaded_sibling_oracle_diagnostics(
+    cwd: &dorc_core::loadpath::Cwd,
+    book: Option<&str>,
+    oracle_paths: &[String],
+) -> Vec<Diag> {
     use std::path::Path;
     let norm = |p: &str| p.replace('\\', "/");
     let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
@@ -3073,7 +3078,7 @@ fn unloaded_sibling_oracle_diagnostics(book: Option<&str>, oracle_paths: &[Strin
             }
         }
     }
-    crate::unloaded_sibling_oracle_diagnostics(oracle_paths, &discovered)
+    crate::unloaded_sibling_oracle_diagnostics(cwd, oracle_paths, &discovered)
 }
 
 fn report_at(
@@ -4020,6 +4025,7 @@ mod tests {
                 &srcs,
                 &refs,
                 &paths,
+                &dorc_core::loadpath::Cwd::unknown(),
                 &dorc_oracle::closure::HelperIndex::build(&refs, None),
                 &checks,
                 &verdict_sets,

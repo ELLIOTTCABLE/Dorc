@@ -1517,26 +1517,36 @@ pub fn transport_apply_failed(host: &str, status: i32) -> InvocationError {
 }
 
 /// Construct the unloaded-sibling advisory from loaded and discovered paths.
+///
+/// Reconciliation is by CANONICAL key, never spelling
+/// (`30Xa:rul-sibling-oracle-scan-reconciles-by-canonical-key`): a `.`-sourced dependency is filed
+/// under an absolute key while its own operand was named relatively, so a spelling compare reports a
+/// loaded file as unloaded and leaks its absolute materialization path. The surviving siblings then
+/// render through the same relativizing seat the why-lens uses, so a path beneath the load cwd shows
+/// relative to it (display plane only — the canonical keys stay absolute).
 #[must_use]
 pub fn unloaded_sibling_oracle_diagnostics(
+    cwd: &dorc_core::loadpath::Cwd,
     loaded_paths: &[String],
     discovered_paths: &[String],
 ) -> Vec<Diag> {
-    let loaded: std::collections::BTreeSet<String> = loaded_paths
-        .iter()
-        .map(|path| oracle_path_key(path))
-        .collect();
-    let mut unloaded: Vec<String> = discovered_paths
+    let key = |path: &str| {
+        cwd.resolve_operand(path)
+            .unwrap_or_else(|| oracle_path_key(path))
+    };
+    let loaded: std::collections::BTreeSet<String> = loaded_paths.iter().map(|p| key(p)).collect();
+    let unloaded: Vec<String> = discovered_paths
         .iter()
         .map(|path| path.replace('\\', "/"))
-        .filter(|path| path.ends_with(".oracle.sh") && !loaded.contains(&oracle_path_key(path)))
+        .filter(|path| path.ends_with(".oracle.sh") && !loaded.contains(&key(path)))
         .collect();
-    unloaded.sort();
-    unloaded.dedup();
     if unloaded.is_empty() {
         return Vec::new();
     }
-    let oracles = unloaded
+    let mut shown = why::relativize_for_display(cwd, &unloaded);
+    shown.sort();
+    shown.dedup();
+    let oracles = shown
         .iter()
         .map(|path| format!("`{path}`"))
         .collect::<Vec<_>>()

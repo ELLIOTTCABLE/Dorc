@@ -23,7 +23,7 @@ use dorc_core::{Interner, Symbol};
 
 use crate::kinds::KindReaches;
 use crate::results::{ResolvOutcome, SiteResults};
-use crate::why::{oracle_locus, render_coord};
+use crate::why::{oracle_locus, relativize_for_display, render_coord};
 use crate::world::ship_predict_body;
 
 /// Lift each oracle's `touches()` set for the authored survival lane, carrying the lift's
@@ -633,6 +633,7 @@ pub fn build_wrapped_analysis(
     oracle_srcs: &[String],
     oracle_refs: &[&str],
     oracle_paths: &[String],
+    cwd: &dorc_core::loadpath::Cwd,
     helpers: &dorc_oracle::closure::HelperIndex,
     checks: &[dorc_oracle::predict::PredictSet],
     verdict_sets: &[dorc_oracle::verdict::VerdictSet],
@@ -664,6 +665,9 @@ pub fn build_wrapped_analysis(
     if candidates.is_empty() {
         return out; // no wrapper oracle ⇒ nothing peels (rung-0 byte-identical)
     }
+    // The carry-attribution locus renders relative to the load cwd, as every other oracle-path
+    // render does (`30Xa:rul-sibling-oracle-scan-reconciles-by-canonical-key`).
+    let oracle_paths = relativize_for_display(cwd, oracle_paths);
 
     // (A) the authored axis-invariance index (`27C` §4(a) pure-predicate carry) — lifted once from
     // every `state_stored_only_in()` body. Empty when no invariance line is declared ⇒ carry never
@@ -833,7 +837,7 @@ pub fn build_wrapped_analysis(
                                 .crossed()
                                 .iter()
                                 .find_map(|d| invariance.invariant_span(k, *d))
-                                .and_then(|sp| oracle_locus(Some(sp), oracle_paths, oracle_srcs))
+                                .and_then(|sp| oracle_locus(Some(sp), &oracle_paths, oracle_srcs))
                                 .map(|loc| (k.clone(), loc))
                         })
                         .collect();
@@ -1373,6 +1377,8 @@ pub fn survival_diagnostics(
         oracle_srcs,
         &oracle_refs,
         oracle_paths,
+        // The hint lane has no load cwd; loci render as spelled.
+        &dorc_core::loadpath::Cwd::unknown(),
         &dorc_oracle::closure::HelperIndex::build(&oracle_refs, None),
         &checks,
         &verdict_sets,

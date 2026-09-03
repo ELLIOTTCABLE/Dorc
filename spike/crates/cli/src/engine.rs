@@ -964,6 +964,7 @@ fn run_status(
         source_srcs,
         &source_refs,
         source_paths,
+        snapshot.cwd(),
         &helpers,
         &checks,
         &verdict_sets,

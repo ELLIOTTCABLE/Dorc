@@ -1068,6 +1068,7 @@ impl DorcConsumer {
             .map(str::to_owned)
             .collect::<Vec<_>>();
         let acquisition_diagnostics = dorc_cli::unloaded_sibling_oracle_diagnostics(
+            snapshot.cwd(),
             snapshot.oracle_paths(),
             &discovered_oracles,
         );
