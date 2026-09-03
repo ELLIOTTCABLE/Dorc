@@ -383,7 +383,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-atmost-completion-signal
 - defined: —
-- cited: 28P 28Q 28Ra 30D 30Q 30T 30U ANALYZER-NEEDS ORACLE_PROVIDES plan/CLAUDE spike/CLAUDE (12)
+- cited: 28P 28Q 28Ra 30D 30Q 30T 30U 310 ANALYZER-NEEDS ORACLE_PROVIDES plan/CLAUDE spike/CLAUDE (13)
 
 ## an-backing-selfframing
 - defined: —
@@ -403,7 +403,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-env-identity-carriage
 - defined: —
-- cited: 30S ANALYZER-NEEDS ORACLE_PROVIDES (3)
+- cited: 30S 310 ANALYZER-NEEDS ORACLE_PROVIDES (4)
 
 ## an-host-capability-handshake
 - defined: —
@@ -415,7 +415,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: ANALYZER-NEEDS ORACLE_PROVIDES ROADMAP Research/LIVING_STATUS (5)
+- cited: 310 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (5)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -884,9 +884,37 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:commit-msg-gate-is-mechanical
 - defined: spike/CLAUDE.md:1132 — — hk's `commit-msg` step REFUSES a message carrying an
 
+## comp-artifact-injectivity
+- defined: —
+- cited: 30T 310 ROADMAP (4)
+
+## comp-backing-detector
+- defined: —
+- cited: 30T 310 ORACLE_PROVIDES ROADMAP (6)
+
+## comp-channel-relative-speech
+- defined: —
+- cited: 30T 310 ROADMAP (3)
+
+## comp-claim-consumption
+- defined: —
+- cited: 30T 310 ROADMAP (4)
+
+## comp-content-establishment
+- defined: —
+- cited: 30T 310 ROADMAP (3)
+
+## comp-fs-binder-member
+- defined: —
+- cited: 30T 310 ORACLE_PROVIDES ROADMAP (8)
+
 ## comp-identity-tier
 - defined: —
-- cited: 26M 30T 30W ORACLE_PROVIDES ROADMAP (6)
+- cited: 26M 30T 30W 310 ORACLE_PROVIDES ROADMAP (7)
+
+## comp-routing-locator
+- defined: —
+- cited: 30T 310 ORACLE_PROVIDES ROADMAP (5)
 
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
@@ -1542,7 +1570,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:dialect-quality-law
 - defined: spike/CLAUDE.md:694 — (`276:rul-base-dialect-ruling-list`) — the dialect is
-- cited: 27L 28P (2)
+- cited: 27L 28P 310 (3)
 
 ## did-aggregate-repair-remain-missing
 - defined: —
@@ -1774,7 +1802,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## empty-world-byte-identical
 - defined: spike/CLAUDE.md:255 — — with no oracles loaded, the entire algebra is
 - defined: spike/crates/plan/CLAUDE.md:195 — — no oracles loaded ⇒ output byte-identical;
-- cited: 26C 27D 27G 27K 27L 27N 27O 27P 28L 28Q 300 300a 30F 30G 30Ne 30Qb 30T (20)
+- cited: 26C 27D 27G 27K 27L 27N 27O 27P 28L 28Q 300 300a 30F 30G 30Ne 30Qb 30T 310 (21)
 
 ## entity-algebra-rebuild
 - defined: Research/notes/24U-round24-closeout.md:109 — (né queue-item-3b; ruled by `24C:rul-selector-pre-stdlib`)
@@ -3070,11 +3098,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## FORFEITS:forfeit-no-host-merging
 - defined: FORFEITS.md:109 — — RULE (`28Q` §3): host identity never merges at v0
-- cited: 26Lb 26M (2)
+- cited: 26Lb 26M 310 (3)
 
 ## FORFEITS:forfeit-plain-sh-inclusion-analysis
 - defined: FORFEITS.md:53 — — RULE (`30P:principle-book-code-source-is-inclusion`,
-- cited: 30O 30P 30Qc ROADMAP (7)
+- cited: 30O 30P 30Qc 310 ROADMAP (7)
 
 ## FORFEITS:forfeit-shell-parity-immunity-model
 - defined: FORFEITS.md:201 — — RULE (as-built; the cheap half may be absorbed
@@ -3113,7 +3141,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:four-rung-gate-ladder
 - defined: spike/CLAUDE.md:1001 — (r30) — one path-routed hk graph serves four fixed
-- cited: 30Qd 30Qf (2)
+- cited: 30Qd 30Qf 310 (3)
 
 ## front-dogfood-ceiling
 - defined: —
@@ -3429,7 +3457,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## inv-fixture-state-never-typeable-into-main
 - defined: —
-- cited: 30X 30Xa 30Xb (3)
+- cited: 30X 30Xa 30Xb 310 (4)
 
 ## Research/notes/28Vc-why-output-strawmen/README:inv-freshness-relativized
 - defined: Research/notes/28Vc-why-output-strawmen/README.md:13 — — every measurement carries its age ("probed 4m ago,
@@ -3501,6 +3529,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## Research/notes/28Vc-why-output-strawmen/README:inv-replay-banner
 - defined: Research/notes/28Vc-why-output-strawmen/README.md:27 — — `--last` renders open with a one-line replayed-voice
+
+## inv-routing-is-exact-or-havoc
+- defined: —
+- cited: 30T 310 (3)
 
 ## Research/notes/28Vc-why-output-strawmen/README:inv-show-the-code-gutter
 - defined: Research/notes/28Vc-why-output-strawmen/README.md:19 — — inlined oracle arms in a source gutter with locus,
@@ -3630,7 +3662,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## core/CLAUDE:kind-fence-movable
 - defined: spike/crates/core/CLAUDE.md:82 — (re-cut `30U`) — cross-kind pairs short-circuit to
-- cited: 300 (2)
+- cited: 300 310 (3)
 
 ## 087:knowable-must-run
 - defined: Research/notes/087-kill-criteria-critique-and-scope-down.md:61 — — proven to need running → run. Same behaviour as just running it.
@@ -3665,6 +3697,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 300:lane-discipline-close
 - defined: Research/notes/300-kernel-arc-conduct-ledger.md:240 — (conductor) — the verified-core CLAUDE.md sections for
 
+## 310:lane-edge-local-exec-and-load
+- defined: Research/plans/310-round31-arc-remit.md:82 — — `cli/` (argv, `transport_edge`, `artifact`),
+
 ## lane-emission-planner
 - defined: —
 - cited: 30O 30Q 30Qb (4)
@@ -3686,6 +3721,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/27N-lane-integration-landing.md:200 — (`27C` §4): the conservative cross-context carry (read-set-closure pass).
 - cited: 26C 277 27C 27O (5)
 
+## 310:lane-file-semantics-binder
+- defined: Research/plans/310-round31-arc-remit.md:175 — — `syntax`/`analysis` (the locator), `oracle` (the binder
+
 ## 30N:lane-first-half-remit
 - defined: Research/notes/30N-second-half-conduct-ledger.md:78 — (`30Mg` R1–R7): FOLDED 2026-08-21 at `566089e2`
 
@@ -3698,6 +3736,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 300:lane-kani-battery-reshape
 - defined: Research/notes/300-kernel-arc-conduct-ledger.md:327 — (queued behind the two above; WSL-heavy,
+
+## 310:lane-kernel-index-rekey
+- defined: Research/plans/310-round31-arc-remit.md:114 — — `core::coord` (the context slot, `ContextKey`, the compare
 
 ## lane-load-plane-precision
 - defined: —
@@ -3737,6 +3778,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 307:lane-stage-zero-ship-seam
 - defined: Research/notes/307-kernel-wave-two-conduct-ledger.md:596 — — QUEUED (new; the drift discovery above): the
+
+## 310:lane-tracers-and-records
+- defined: Research/plans/310-round31-arc-remit.md:48 — — `oracle/` (the predict and verdict tracers, the reaches
 
 ## 28F:lane-w1-voice
 - defined: Research/notes/28F-why-implementation-conduct-ledger.md:40 — (`ai/r28-w1-voice`, off `0355484b`) — 28G Phase W1 whole: the
@@ -4377,6 +4421,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:open-env-epoch-seat-unification
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:105 — (deliberately unresolved; tc-tier) — whether
+- cited: 310 (1)
 
 ## open-in-book-guard-value
 - defined: —
@@ -4520,13 +4565,17 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ia (1)
 
+## pin-book-argv-value-plane
+- defined: —
+- cited: 30L 310 ROADMAP Research/README (4)
+
 ## pin-closure-membership-and-diamond
 - defined: —
 - cited: 28Q 307 30O (5)
 
 ## pin-command-v-load-model
 - defined: —
-- cited: 30I 30Ia 30Ib 30Nf 30Q ORACLE_PROVIDES ROADMAP (8)
+- cited: 30I 30Ia 30Ib 30Nf 30Q 310 ORACLE_PROVIDES ROADMAP (9)
 
 ## pin-emission-planner-universal
 - defined: —
@@ -4568,6 +4617,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## pin-spine-crate-home
 - defined: —
 - cited: 309 30E 30Qd (3)
+
+## pin-ssh-entry-shape
+- defined: —
+- cited: 28Q 310 ROADMAP (4)
 
 ## 262:pin-terminal-determinism
 - defined: Research/plans/262-round26-build-spine.md:98 — — per host, arrival-incremental final plan == single-shot plan
@@ -4797,6 +4850,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
 - cited: 27Xf 300 308 (5)
 
+## q-payload-declaration-speech-act
+- defined: —
+- cited: 26M ORACLE_PROVIDES ROADMAP (3)
+
 ## oracle/CLAUDE:quality-bar-accretions
 - defined: spike/crates/oracle/CLAUDE.md:238 — — quote-as-law · printf-doctrine (never `echo` with
 
@@ -4972,7 +5029,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## core/CLAUDE:relational-compare-chokepoint
 - defined: spike/crates/core/CLAUDE.md:66 — — ALL whole-coordinate comparison sits behind
-- cited: 301 (1)
+- cited: 301 310 (2)
 
 ## render-authority-disclosure
 - defined: —
@@ -5367,7 +5424,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ta (1)
 
 ## ROADMAP:round-r31-language-and-kernel
-- defined: ROADMAP.md:28 — — announced 2026-09-02; scope not yet ruled
+- defined: ROADMAP.md:28 — — announced 2026-09-02; cut 2026-09-02; opens after `notes/30X` folds
 
 ## route-conditional-tail
 - defined: —
@@ -6671,7 +6728,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (40)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 310 AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (41)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -6755,7 +6812,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-strawman-formats-no-compat
 - defined: Research/notes/28Va-aid-extraction-map.md:659 — — pre-user, EVERY versioned wire/format/env
 - defined: spike/CLAUDE.md:670 — — pre-user, EVERY versioned wire/format/env
-- cited: 26K 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 30Xb aid/CLAUDE cli/CLAUDE (26)
+- cited: 26K 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 30Xb 310 ROADMAP aid/CLAUDE cli/CLAUDE (30)
 
 ## rul-strawman-tool-set
 - defined: —
@@ -6965,6 +7022,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## oracle/CLAUDE:rul-vouch-reaches-own-custody-only
 - defined: spike/crates/oracle/CLAUDE.md:106 — (human-ruled 2026-08-17, superseding
 - cited: 30I 30Ia 30Ib FORFEITS ORACLE_PROVIDES (6)
+
+## rul-wait-scope-is-just-shell-modeling
+- defined: —
+- cited: 26Lb ROADMAP (2)
 
 ## rul-weft-geometry-vs-words
 - defined: —
@@ -7342,7 +7403,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## seq-stdlib-gates-on-env-identity
 - defined: —
-- cited: 30S ORACLE_PROVIDES ROADMAP (4)
+- cited: 30S ORACLE_PROVIDES ROADMAP (3)
 
 ## 307b:set-by-any-inconsistent
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:15 — — BUILT, all four seats. The two pre-network ones latch at
@@ -7387,11 +7448,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## sit-stdin-copy-exec-amendment
 - defined: —
-- cited: 26K 26Lb ROADMAP (3)
+- cited: 26K 26Lb ROADMAP (4)
 
 ## sit-wall-transparent-delay-loops
 - defined: —
-- cited: 26K 28Q 28Rf ROADMAP (5)
+- cited: 26K 28Q 28Rf 310 ROADMAP (6)
 
 ## site-identity-is-decide-plane
 - defined: Research/notes/28Va-aid-extraction-map.md:762 — — `SiteId` (`leaf` + optional in-loop `member`) lives
@@ -7494,7 +7555,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28Q:stage-iii-world-scopes
 - defined: Research/plans/28Q-context-kernel-unification.md:649 — (P3): the context-slot host×incarnation coordinates;
-- cited: 30I 30K 30Ka 30O ROADMAP (8)
+- cited: 30I 30K 30Ka 30O ROADMAP (7)
 
 ## 309:stage-spine-census
 - defined: Research/plans/309-spine-reification-and-projections.md:196 — (checkpoint-tier; map-then-execute): enumerate every
@@ -8030,7 +8091,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## oracle/CLAUDE:the-frame-lookup-is-the-only-resolution-seat
 - defined: spike/crates/oracle/CLAUDE.md:46 — (`28Q` §1.3, né
-- cited: 307c 308b 308c 30Qc cli/CLAUDE (7)
+- cited: 307c 308b 308c 30Qc 310 cli/CLAUDE (8)
 
 ## cli/CLAUDE:the-frozen-set-includes-the-function-environment
 - defined: spike/crates/cli/CLAUDE.md:202 — (`28K` §2) — env resolutions (both
