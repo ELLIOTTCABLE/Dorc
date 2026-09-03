@@ -1424,6 +1424,11 @@ const SESSION_SENTINEL: &str = "__dorc_e2e_session_sentinel__";
 /// Runner framing state — not a seam, never read by `dorc`, never in a transcript.
 const RUNNER_CLOCK_SHADOW: &str = "__DORC_RUNNER_CLOCK";
 
+/// The previous block command's exit status, carried across the sentinel and the clock injection so a
+/// `$ echo $?` block reads the command's status and not the runner's framing. Runner framing state —
+/// not a seam, never read by `dorc`, never in a transcript.
+const PREV_RC_SHADOW: &str = "__dorc_prev_rc";
+
 /// One replay block's session capture: the `$` command, both streams merged in order, and the exit.
 struct SessionBlock {
     /// The `$` command, verbatim (the transcript's `$` line IS what the session ran).
@@ -1460,15 +1465,22 @@ fn drive_session(
     for (index, cmd) in commands.iter().enumerate() {
         // Per-block clock default, applied only while it still holds the runner's own last value
         // (`30Xa-b1:rul-runner-varies-only-what-it-set`); the selection comes from the shared seat.
+        // The injection must NOT clobber the previous block's status a `$ echo $?` reads, so restore
+        // `$?` from the carried shadow right before the block runs.
         let [_seed, (clock_name, clock_value), ..] =
             dorc_loom::runner_seams::value_seam_pairs(index);
         let _ = writeln!(
             script,
             "[ \"${clock_name}\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export {clock_name}={clock_value}; {RUNNER_CLOCK_SHADOW}={clock_value}; }}"
         );
+        let _ = writeln!(script, "(exit \"${{{PREV_RC_SHADOW}:-0}}\")");
         script.push_str(cmd);
         script.push('\n');
-        let _ = writeln!(script, "printf '\\n{SESSION_SENTINEL} %s\\n' \"$?\"");
+        let _ = writeln!(script, "{PREV_RC_SHADOW}=$?");
+        let _ = writeln!(
+            script,
+            "printf '\\n{SESSION_SENTINEL} %s\\n' \"${PREV_RC_SHADOW}\""
+        );
     }
     let script_path = scratch.path.join("session.sh");
     std::fs::write(&script_path, &script)
@@ -3519,6 +3531,36 @@ fn floor_bless_selftest() -> Vec<String> {
     fails
 }
 
+/// The per-block clock injection runs a compound command right before each block, so it must not
+/// leave its OWN status where a `$ echo $?` block would read it (`30Xa:Checkpoint C2`,
+/// `tc-echo-dollar-question-sees-the-injection-line`). Drive a two-block session — a block that exits
+/// non-zero, then `echo $?` — and require the echo to read the failing status, not the injection's.
+fn dollar_question_survives_the_clock_injection_selftest(harness: &Harness) -> Vec<String> {
+    let scratch = Scratch::new("rc-preserve");
+    let dir = scratch.path.join("case");
+    std::fs::create_dir_all(&dir).expect("create case dir");
+    let session_root = scratch.path.join("session-store");
+    for role in ["config", "state"] {
+        std::fs::create_dir_all(session_root.join(role)).expect("create the session store");
+    }
+    let commands = vec!["(exit 3)".to_owned(), "echo $?".to_owned()];
+    match drive_session(harness, &dir, &session_root, &commands, "") {
+        Ok(blocks) => {
+            let echoed = blocks
+                .get(1)
+                .map_or_else(String::new, |b| b.output.trim().to_owned());
+            if echoed == "3" {
+                Vec::new()
+            } else {
+                vec![format!(
+                    "rc-preserve: `echo $?` after a failing block read {echoed:?}, not \"3\" — the clock injection clobbered $?"
+                )]
+            }
+        }
+        Err(error) => vec![format!("rc-preserve: session did not drive: {error}")],
+    }
+}
+
 /// Drive the FOLD-ONLY-ON-PASS rule on two throwaway cases under a synthetic bless harness: a
 /// case whose gates fail must leave its committed bytes exactly as authored, and a passing one
 /// must still fold. Both looms are written NON-canonically (no blank line before a header), which
@@ -3856,6 +3898,13 @@ fn preflight(harness: &Harness, discovered: usize) {
         fatal.push(format!(
             "FATAL  bless_folds_only_on_pass_selftest FAILED — bless folds a case its own gates rejected:\n  {}",
             fold_pass.join("\n  ")
+        ));
+    }
+    let rc_preserve = dollar_question_survives_the_clock_injection_selftest(harness);
+    if !rc_preserve.is_empty() {
+        fatal.push(format!(
+            "FATAL  dollar_question_survives_the_clock_injection_selftest FAILED — a `$ echo $?` would read the runner's clock injection, not the block it follows:\n  {}",
+            rc_preserve.join("\n  ")
         ));
     }
     if let Some(message) = dorc_flags_selftest(harness) {
