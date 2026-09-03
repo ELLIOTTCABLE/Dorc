@@ -89,15 +89,29 @@ pub enum SessionInput {
     File(String),
 }
 
-/// The stream suppression the ruled output redirects select: `> /dev/null` discards stdout,
-/// `2>/dev/null` discards stderr. `2>&1` (stderr joins stdout) needs no field — the in-process render
-/// already interleaves both streams in engine order, which is exactly what `2>&1` produces.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+/// Where the ruled output redirects send each stream: `> /dev/null` discards stdout, `> <file>`
+/// captures it to a case-relative file (errorloom's own `RoutingPlan` writes it, and a later
+/// `cat <file>` reads it back), and `2>/dev/null` discards stderr. `2>&1` (stderr joins stdout)
+/// needs no field — the in-process render already interleaves both streams in engine order, which is
+/// exactly what `2>&1` produces.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct OutputRouting {
     /// `> /dev/null` — the block's stdout is discarded.
     pub stdout_to_null: bool,
+    /// `> <file>` — the block's stdout is captured to this case-relative file (errorloom routes it;
+    /// the driver just emits stdout un-suppressed for that routing to reach).
+    pub stdout_to_file: Option<String>,
     /// `2>/dev/null` — the block's stderr is discarded.
     pub stderr_to_null: bool,
+}
+
+impl OutputRouting {
+    /// Whether stdout no longer reaches the terminal — errorloom's `To{File}`/`To{Null}` for stdout,
+    /// as seen through its public `stdout_is_terminal()`. The cross-check requires this to agree with
+    /// errorloom before a `>`-bearing line runs in-process.
+    fn stdout_redirected(&self) -> bool {
+        self.stdout_to_null || self.stdout_to_file.is_some()
+    }
 }
 
 impl SessionReading {
@@ -146,7 +160,9 @@ impl SessionReading {
     /// Whether this reading DISAGREES with errorloom's on the fields both can see: argv, the stdin
     /// target, and whether stdout still points at the terminal. A disagreement is a decline
     /// (`30Xa:rul-minimize-errorloom-changes`): the two grammars must read one accepted line the
-    /// same way or the line is not run in-process.
+    /// same way or the line is not run in-process. `stdout_is_terminal` is errorloom's own reading of
+    /// its `OutputRedirection::To{File}`/`To{Null}` on stdout, so comparing it against our
+    /// [`OutputRouting::stdout_redirected`] cross-checks a `> <file>` capture against errorloom's.
     #[must_use]
     pub fn disagrees_with(
         &self,
@@ -165,7 +181,7 @@ impl SessionReading {
             }
             _ => false,
         };
-        line.argv != argv || !input_matches || line.output.stdout_to_null == stdout_is_terminal
+        line.argv != argv || !input_matches || line.output.stdout_redirected() == stdout_is_terminal
     }
 }
 
@@ -243,8 +259,9 @@ fn is_dollar_question(parts: &[WordPart]) -> bool {
 }
 
 /// The stdin/stdout routing the ruled redirect set selects, or `None` for any redirect outside it:
-/// `< word` on fd 0 · `> /dev/null` (fd 1) · `2>/dev/null` · `2>&1`. Append, here-docs, a write to a
-/// real file, and any other fd algebra decline.
+/// `< word` on fd 0 · `> /dev/null` or `> <file>` (fd 1) · `2>/dev/null` · `2>&1`. Append, here-docs,
+/// and any other fd algebra decline. A `> <file>` target is captured by errorloom's own routing (the
+/// outer gate already vetted its safety), so this reading only has to recognize it and not decline.
 fn routing(ast: &Ast, redirs: &[dorc_core::AstId]) -> Option<(SessionInput, OutputRouting)> {
     let mut input = SessionInput::Inherit;
     let mut output = OutputRouting::default();
@@ -261,9 +278,10 @@ fn routing(ast: &Ast, redirs: &[dorc_core::AstId]) -> Option<(SessionInput, Outp
                     SessionInput::File(path)
                 };
             }
-            (RedirOp::Write, None | Some(1)) if literal_target(ast, target)? == "/dev/null" => {
-                output.stdout_to_null = true;
-            }
+            (RedirOp::Write, None | Some(1)) => match literal_target(ast, target)?.as_str() {
+                "/dev/null" => output.stdout_to_null = true,
+                path => output.stdout_to_file = Some(path.to_owned()),
+            },
             (RedirOp::Write, Some(2)) if literal_target(ast, target)? == "/dev/null" => {
                 output.stderr_to_null = true;
             }
@@ -366,6 +384,16 @@ mod tests {
         assert!(read.output.stdout_to_null);
     }
 
+    /// A `> <file>` capture is inside the ruled set (errorloom admits it and routes it to the file;
+    /// a later `cat` reads it back), so it reads as a stdout-to-file line, not a decline.
+    #[test]
+    fn stdout_to_a_real_file_is_read_as_a_capture() {
+        let read = line("dorc plan --book=book.sh > plan.sh");
+        assert_eq!(read.head, SessionHead::Invocation);
+        assert_eq!(read.output.stdout_to_file.as_deref(), Some("plan.sh"));
+        assert!(!read.output.stdout_to_null);
+    }
+
     #[test]
     fn export_assign_and_mark_are_recognized_dash_semantics() {
         assert_eq!(
@@ -409,10 +437,6 @@ mod tests {
         ));
         assert!(matches!(
             decline("dorc plan --book=book.sh >> log"),
-            LoomDecline::Unexpressible(_)
-        ));
-        assert!(matches!(
-            decline("dorc plan --book=book.sh > out.txt"),
             LoomDecline::Unexpressible(_)
         ));
         assert!(matches!(

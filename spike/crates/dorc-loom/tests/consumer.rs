@@ -10,8 +10,8 @@ use std::path::{Path, PathBuf};
 
 use dorc_aid::prose::{Mint, ProseTier};
 use dorc_loom::{
-    DorcConsumer, DorcSectionEditRefusal, TemplateVariableName, compile_section_edit, replay_case,
-    replay_case_with_inputs,
+    DorcConsumer, DorcSectionEditRefusal, LoomDecline, TemplateVariableName, TwoDriverOutcome,
+    compile_section_edit, render_run_loom_in_process, replay_case, replay_case_with_inputs,
 };
 use errorloom::{
     BlessError, Case, CaseFile, CaseRenderer, FakeGit, ReplayInput, ReplayResult, RunEnv, RunError,
@@ -753,15 +753,18 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
 }
 
 #[test]
-fn source_backed_plan_replays_the_complete_engine_invocation() {
+fn source_backed_plan_replays_the_complete_engine_invocation_and_redirects_its_artifact() {
     // A source-backed plan runs the REAL engine in-process (`dorc-replay-is-production-semantics`):
     // book.sh's `hork "$(wombat)"` is a `cmdsub-operand-top` case, so the render carries the
-    // diagnostic on stderr and the plan artifact on stdout, interleaved as the user saw them.
+    // diagnostic on stderr and the plan artifact on stdout. `> plan.sh` captures stdout to a file
+    // (errorloom routes it), so the natural transcript keeps only stderr, and `cat plan.sh` reads
+    // the artifact back — a round trip the in-process driver expresses (`30X` §9: the set only shrinks).
     let case = Case::parse(
         "---\ncode: cmdsub-operand-top\n---\n\
          -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
          -- replay --\n\
-         $ dorc plan --book=book.sh\nold\n",
+         $ dorc plan --book=book.sh > plan.sh\nold\n\
+         $ cat plan.sh\nold\n",
     )
     .expect("case parses");
 
@@ -772,39 +775,35 @@ fn source_backed_plan_replays_the_complete_engine_invocation() {
 
     assert!(
         results[0].output().contains("cmdsub-operand-top"),
-        "the diagnostic stays in the natural transcript: {}",
-        results[0].output()
-    );
-    assert!(
-        results[0].output().contains("#!/bin/sh"),
-        "the plan artifact is in the interleaved render: {}",
+        "stderr stays in the natural transcript: {}",
         results[0].output()
     );
     assert!(results[0].editable_render().is_some());
+    assert!(
+        results[1].output().contains("#!/bin/sh"),
+        "the redirected stdout artifact is observable through native cat"
+    );
+    assert!(!results[1].output().contains("cmdsub-operand-top"));
 }
 
-/// A stdout redirect to a REAL file is OUTSIDE the ruled output set
-/// (`30X:loom-in-process-driver-is-a-closed-grammar` rules `> /dev/null` only), so the in-process
-/// driver DECLINES it and the whole session defers to the process driver, which runs the redirect and
-/// its `cat` readback natively. Source-backed engine replay itself is proven by `gate-two-drivers-agree`.
+/// A `cd` that would MOVE the cwd off the flat case root is a typed decline: the section names a case
+/// materializes are flat, so a moved cwd would silently misresolve `--book`/`<`/`cat`, and an honest
+/// decline beats that scaffold (`30X:front-dogfood-ceiling`; the reconciliation is a kernel-arc change).
 #[test]
-fn a_stdout_redirect_to_a_real_file_declines_to_the_process_driver() {
+fn a_non_root_cd_declines_as_unexpressible() {
     let case = Case::parse(
         "---\ncode: cmdsub-operand-top\n---\n\
          -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
          -- replay --\n\
-         $ dorc plan --book=book.sh > plan.sh\nold\n",
+         $ cd subdir\n\
+         $ dorc plan --book=book.sh\nold\n",
     )
     .expect("case parses");
 
-    let declined: RefCell<Option<String>> = RefCell::new(None);
-    let _ = replay_case(&case, &DorcConsumer::new(), &RunEnv::new(), |command, _| {
-        *declined.borrow_mut() = Some(command.to_owned());
-        Ok(ReplayResult::bytes(String::new()))
-    });
-    assert_eq!(
-        declined.into_inner().as_deref(),
-        Some("dorc plan --book=book.sh > plan.sh"),
-        "a `> realfile` artifact redirect is outside the ruled set and declines in-process"
-    );
+    match render_run_loom_in_process(&DorcConsumer::new(), &case).expect("drives") {
+        TwoDriverOutcome::Declined(LoomDecline::Unexpressible(command)) => {
+            assert_eq!(command, "cd subdir");
+        }
+        other => panic!("a non-root cd must decline as Unexpressible, got {other:?}"),
+    }
 }

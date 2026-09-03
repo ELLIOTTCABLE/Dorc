@@ -1076,7 +1076,7 @@ impl DorcConsumer {
             &mut sink,
             Some(&current_sources),
         );
-        Some(dorc_engine_replay(status, sink.actions, routing))
+        Some(dorc_engine_replay(status, sink.actions, &routing))
     }
 
     fn run_engine(
@@ -1186,7 +1186,7 @@ impl DorcConsumer {
             &mut sink,
         );
         match result {
-            Ok(result) => Some(dorc_engine_replay(result.status, sink.actions, routing)),
+            Ok(result) => Some(dorc_engine_replay(result.status, sink.actions, &routing)),
             Err(diagnostic) => self.invocation_diagnostic(case, *diagnostic, "dorc"),
         }
     }
@@ -1617,20 +1617,19 @@ fn replay_stdout_posture(command: &ReplayCommand) -> dorc_cli::artifact::StdoutP
     }
 }
 
-/// A `cd <literal>` in the modelled session: move the cwd through `resolve_operand`
-/// (`30X:session-cwd-is-loadpath-cwd`). A cd whose resolved target escapes the modelled root, or an
-/// operand that resolves nowhere (the cwd is unknown), declines the whole session to the process
-/// driver — `RunError::SandboxPathLeak` is the shell driver's equivalent.
+/// A `cd <literal>` in the modelled session. Only a cd that STAYS at the case root (`cd .`) is a
+/// no-op; a cd that would MOVE the cwd declines the whole session to the process driver. The section
+/// names a case materializes are flat, so a moved cwd would silently misresolve every later relative
+/// operand (`--book`, `<`, `cat`) — an honest decline beats that scaffold, and the cwd model that
+/// would meet a moved cwd is a kernel-arc change (`30X:front-dogfood-ceiling`).
 fn replay_cd(
-    session: &mut LoomSession,
+    session: &LoomSession,
     target: &str,
 ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
     let resolved = session.cwd.resolve_operand(target)?;
-    if resolved.starts_with("..") {
-        return None;
-    }
-    session.cwd = dorc_core::loadpath::Cwd::at(resolved);
-    Some(ReplayResult::bytes(String::new()))
+    resolved
+        .is_empty()
+        .then(|| ReplayResult::bytes(String::new()))
 }
 
 struct DorcEngineReplay {
@@ -1650,7 +1649,7 @@ impl DorcEngineReplay {
 fn dorc_engine_replay(
     status: dorc_cli::engine::EngineStatus,
     actions: Vec<dorc_cli::engine::OutputAction>,
-    routing: OutputRouting,
+    routing: &OutputRouting,
 ) -> DorcEngineReplay {
     let diagnostics = actions
         .iter()
@@ -2196,7 +2195,10 @@ fn classify_decline(command: &str) -> LoomDecline {
                 _ => LoomDecline::Unexpressible(command.to_owned()),
             }
         }
-        Some("dorc-sh") => LoomDecline::Unexpressible(command.to_owned()),
+        // A `dorc-sh` the driver cannot run, or a `cd` that would move the cwd off the flat case
+        // root (only a root-staying `cd .` runs): both unexpressible until the sections can meet a
+        // moved cwd (`30X:front-dogfood-ceiling`), distinct from a plain shell/external head.
+        Some("dorc-sh" | "cd") => LoomDecline::Unexpressible(command.to_owned()),
         _ => LoomDecline::ShellOrExternal(command.to_owned()),
     }
 }
