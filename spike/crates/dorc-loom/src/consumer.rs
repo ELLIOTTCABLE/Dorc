@@ -693,7 +693,6 @@ impl DorcConsumer {
         self_reference: SelfReference,
         session: &mut LoomSession,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        session.env.inject_block_clock(context.block());
         let reading = SessionReading::read(command.original());
         if reading.disagrees_with(
             command.argv(),
@@ -716,7 +715,10 @@ impl DorcConsumer {
                 return Some(ReplayResult::bytes(String::new()));
             }
             SessionHead::Cd(target) => return replay_cd(session, &target),
-            SessionHead::Invocation | SessionHead::EchoStatus | SessionHead::Cat(_) => {}
+            // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`); the clock the engine
+            // reads through `session.seams()` below is this invocation's, folded from the current seed.
+            SessionHead::Invocation => session.env.inject_invocation_clock(),
+            SessionHead::EchoStatus | SessionHead::Cat(_) => {}
         }
         let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
         if is_help_case(case, &tokens) {

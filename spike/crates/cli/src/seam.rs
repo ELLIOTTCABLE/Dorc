@@ -27,6 +27,12 @@ use std::path::{Path, PathBuf};
 use dorc_aid::diag::{Diag, DiagCode};
 use dorc_receipt::ids::{EntropyReceiptIds, ReceiptIdEntropy, ReceiptIdSource};
 use dorc_receipt_crypto::{EntropyKeysetGenerator, KeySecretEntropy, KeysetGenerator};
+// The seam-variable NAMES live in the shared substrate below `cli`, so a runner and the loom driver
+// reach them without a mirror (`30X:loom-seams-are-sh-lines`); this crate owns the PARSER over them.
+use dorc_testbed::seam_vars::{
+    CLOCK_ENV, KEY_ENTROPY_ENV, NONCE_ENV, POSTURE_ENV, RECEIPT_IDS_ENV, ROOTS_ENV, SEAM_ENV_VARS,
+    SEED_ENV, SOURCE_MATCH_ENV, TRANSPORT_ENV,
+};
 use dorc_transport::{SessionDriver, SshOptions};
 
 use crate::SourceMatch;
@@ -565,39 +571,6 @@ impl SeamEnv for ProcessSeamEnv {
         std::env::var(name).ok().filter(|value| !value.is_empty())
     }
 }
-
-/// The umbrella seed every `Seeded` member derives its own seed from (seed + a per-seam salt).
-///
-/// The seam-variable names the runner spells are `pub` so the ONE home for them is this parser's
-/// crate: `dorc-loom`'s runner-defaults seat references these consts rather than re-spelling the
-/// strings, so the two drivers cannot drift on what a seam is called (`30X:loom-seams-are-sh-lines`).
-pub const SEED_ENV: &str = "DORC_SEED";
-/// The clock seam variable (`seeded:<block ordinal>` per block).
-pub const CLOCK_ENV: &str = "DORC_SEAM_CLOCK";
-const RECEIPT_IDS_ENV: &str = "DORC_SEAM_RECEIPT_IDS";
-const KEY_ENTROPY_ENV: &str = "DORC_SEAM_KEY_ENTROPY";
-const NONCE_ENV: &str = "DORC_SEAM_NONCE";
-/// The stdout-posture seam variable.
-pub const POSTURE_ENV: &str = "DORC_SEAM_STDOUT_POSTURE";
-/// The source-match seam variable.
-pub const SOURCE_MATCH_ENV: &str = "DORC_SEAM_SOURCE_MATCH";
-/// The transport seam variable (`local:<shell>[;<interpreter>]`).
-pub const TRANSPORT_ENV: &str = "DORC_SEAM_TRANSPORT";
-/// The receipt-roots seam variable (`pinned:<absolute dir>`, required).
-pub const ROOTS_ENV: &str = "DORC_SEAM_ROOTS";
-
-/// Every seam variable this parser reads, so the harness binary can refuse when NONE is set.
-const SEAM_ENV_VARS: &[&str] = &[
-    SEED_ENV,
-    CLOCK_ENV,
-    RECEIPT_IDS_ENV,
-    KEY_ENTROPY_ENV,
-    NONCE_ENV,
-    POSTURE_ENV,
-    SOURCE_MATCH_ENV,
-    TRANSPORT_ENV,
-    ROOTS_ENV,
-];
 
 impl HarnessSeams {
     /// Whether the environment names any seam at all — the harness binary refuses loudly when it

@@ -45,11 +45,12 @@ clap = { version = "4.5.60", features = ["derive"] }
 # stream split and a per-line attribution leader, not an observability stack.
 tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt"] }
-# The ONE run-seed seat (`30X:seed-varied-by-default`): the runner-defaults seat draws this run's
-# seed here so every consumer answers "what is this run's seed" the same way. Repo plumbing, zero
-# deps, dev-only in spirit; `dorc-loom` is authoring tooling outside the DST fences, and the drawn
-# seed only ever reaches the kernel as a value through a seam (`inv-determinism` unmoved).
-internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+# The suite's shared substrate (`30X:seed-varied-by-default`): the runner-defaults seat draws this
+# run's seed and spells the seam-variable names from here, so every consumer answers "what is this
+# run's seed" and "what is a seam called" the same way. Dependency-free std-only plumbing;
+# `dorc-loom` is authoring tooling outside the DST fences, and the drawn seed only ever reaches the
+# kernel as a value through a seam (`inv-determinism` unmoved).
+dorc-testbed = { path = "../testbed", version = "0.0.0" }
 
 [dev-dependencies]
 # The chrome-LINE round-trip proves the WHOLE chain (`28H` ruling 3): a laid-out render, its span

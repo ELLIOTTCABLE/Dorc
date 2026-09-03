@@ -15,9 +15,11 @@
 
 use std::collections::BTreeMap;
 
-use dorc_cli::seam::{CLOCK_ENV, SeamEnv};
+use dorc_cli::seam::SeamEnv;
+use dorc_testbed::run_seed::run_seed;
+use dorc_testbed::seam_vars::{CLOCK_ENV, SEED_ENV};
 
-use crate::runner_seams::{SESSION_ROOT, roots_seam_pair, value_seam_pairs};
+use crate::runner_seams::{SESSION_ROOT, clock_seam_value, roots_seam_pair, value_seam_pairs};
 
 /// One modelled variable: a value (`None` = marked but unset, so no child sees it) and whether it is
 /// exported.
@@ -34,11 +36,14 @@ pub(crate) struct SessionEnv {
     /// The clock value the runner last injected — its OWN framing state, never a seam and never read
     /// by `dorc` (the shell spells it `__DORC_RUNNER_CLOCK`, a shell-local).
     runner_clock: String,
+    /// How many `dorc` INVOCATION blocks have run so far — the clock ordinal. Only invocations tick
+    /// the clock, so a `$ export DORC_SEED=<n>` pin line is ordinal-neutral (`30Xa:Checkpoint C3`).
+    invocation_ordinal: usize,
 }
 
 impl SessionEnv {
-    /// Seed the map with the runner's block-0 defaults (all exported, as the shell's `command.env`
-    /// makes them), with the clock shadow starting EQUAL to block 0's clock.
+    /// Seed the map with the runner's session-start defaults (all exported, as the shell's
+    /// `command.env` makes them), with the clock shadow starting EQUAL to invocation-0's clock.
     #[must_use]
     pub(crate) fn seeded() -> Self {
         let mut vars: BTreeMap<String, Var> = BTreeMap::new();
@@ -63,23 +68,30 @@ impl SessionEnv {
             .get(CLOCK_ENV)
             .and_then(|var| var.value.clone())
             .unwrap_or_default();
-        Self { vars, runner_clock }
+        Self {
+            vars,
+            runner_clock,
+            invocation_ordinal: 0,
+        }
     }
 
-    /// Re-inject this block's default clock, varying ONLY what the runner still owns
-    /// (`30Xa:rul-runner-varies-only-what-it-set`): if the current `DORC_SEAM_CLOCK` still equals the
-    /// runner's last injected value, set both to `seeded:<ordinal>`; otherwise the author has taken
-    /// the variable and the runner never touches it again.
-    pub(crate) fn inject_block_clock(&mut self, ordinal: usize) {
-        let [_seed, (clock_name, clock_value), ..] = value_seam_pairs(ordinal);
+    /// Set this INVOCATION's default clock, then advance the ordinal — called once per `dorc`
+    /// invocation block, never for an `export`/`cd`/`echo $?`/`cat` (`30Xa:Checkpoint C3`: the clock
+    /// ticks one day per invocation). The clock derives from the CURRENT `DORC_SEED` and the
+    /// invocation ordinal by [`clock_seam_value`], so an author's `export DORC_SEED` governs it, and
+    /// varying happens ONLY while the runner still owns the variable (`30Xa:rul-runner-varies-only-what-it-set`):
+    /// if the current `DORC_SEAM_CLOCK` still equals the runner's last injected value the runner
+    /// re-sets it, otherwise the author has taken it and the runner never touches it again.
+    pub(crate) fn inject_invocation_clock(&mut self) {
+        let clock_value = clock_seam_value(self.current_seed(), self.invocation_ordinal);
         if self
             .vars
-            .get(clock_name)
+            .get(CLOCK_ENV)
             .and_then(|var| var.value.as_deref())
             == Some(&self.runner_clock)
         {
             self.vars.insert(
-                clock_name.to_owned(),
+                CLOCK_ENV.to_owned(),
                 Var {
                     value: Some(clock_value.clone()),
                     exported: true,
@@ -87,6 +99,16 @@ impl SessionEnv {
             );
             self.runner_clock = clock_value;
         }
+        self.invocation_ordinal = self.invocation_ordinal.saturating_add(1);
+    }
+
+    /// The session's current `DORC_SEED`, parsed from the exported subset (the runner's default, or
+    /// an author's `export DORC_SEED`); the drawn run seed backs an unset or unparseable value, which
+    /// only arises when the session is already declining on a bad seam.
+    fn current_seed(&self) -> u64 {
+        self.var(SEED_ENV)
+            .and_then(|raw| raw.parse::<u64>().ok())
+            .unwrap_or_else(run_seed)
     }
 
     /// `export NAME=word`: set the value and mark exported.
@@ -127,17 +149,42 @@ impl SeamEnv for SessionEnv {
 #[cfg(test)]
 mod tests {
     use super::SessionEnv;
-    use dorc_cli::seam::{CLOCK_ENV, SEED_ENV, SeamEnv};
+    use crate::runner_seams::clock_seam_value;
+    use dorc_cli::seam::SeamEnv;
+    use dorc_testbed::run_seed::run_seed;
+    use dorc_testbed::seam_vars::{CLOCK_ENV, SEED_ENV};
 
-    /// No author touch: the runner varies the clock per block, so two publishes take distinct order
-    /// tokens (`30Xa:rul-runner-varies-only-what-it-set`).
+    /// No author touch: the runner ticks the clock once per invocation, so two publishes take
+    /// distinct order tokens (`30Xa:rul-runner-varies-only-what-it-set`), each folded from the run
+    /// seed and the invocation ordinal.
     #[test]
-    fn the_runner_owns_the_clock_until_an_author_exports_it() {
+    fn the_runner_ticks_the_clock_once_per_invocation() {
+        let seed = run_seed();
         let mut env = SessionEnv::seeded();
-        env.inject_block_clock(0);
-        assert_eq!(env.var(CLOCK_ENV).as_deref(), Some("seeded:0"));
-        env.inject_block_clock(1);
-        assert_eq!(env.var(CLOCK_ENV).as_deref(), Some("seeded:1"));
+        env.inject_invocation_clock();
+        assert_eq!(
+            env.var(CLOCK_ENV).as_deref(),
+            Some(clock_seam_value(seed, 0).as_str())
+        );
+        env.inject_invocation_clock();
+        assert_eq!(
+            env.var(CLOCK_ENV).as_deref(),
+            Some(clock_seam_value(seed, 1).as_str())
+        );
+    }
+
+    /// An author's `export DORC_SEED` pins every later invocation's clock (and its ids) with one
+    /// line, because the runner still owns the clock variable and recomputes it from the new seed.
+    #[test]
+    fn an_author_seed_export_pins_every_later_clock() {
+        let mut env = SessionEnv::seeded();
+        env.inject_invocation_clock();
+        env.export_assign(SEED_ENV, "7");
+        env.inject_invocation_clock();
+        assert_eq!(
+            env.var(CLOCK_ENV).as_deref(),
+            Some(clock_seam_value(7, 1).as_str())
+        );
     }
 
     /// The `durable-receipt-ambiguous` shape: an author's pinned clock across two publishes, so they
@@ -145,10 +192,10 @@ mod tests {
     #[test]
     fn an_author_export_of_the_clock_ends_the_runners_control_of_it() {
         let mut env = SessionEnv::seeded();
-        env.inject_block_clock(0);
+        env.inject_invocation_clock();
         env.export_assign(CLOCK_ENV, "pinned:1769306437000");
-        env.inject_block_clock(1);
-        env.inject_block_clock(2);
+        env.inject_invocation_clock();
+        env.inject_invocation_clock();
         assert_eq!(env.var(CLOCK_ENV).as_deref(), Some("pinned:1769306437000"));
     }
 

@@ -7,22 +7,15 @@
 //! that legitimately shows a seed-dependent byte (a receipt id, a date) pins its seed as regression
 //! with ONE spelling — `$ export DORC_SEED=<n>` — and the failure note names that spelling.
 //!
-//! Drawing the seed is a nondeterministic edge (env, then OS entropy) and lives here, in dev-only
-//! repo plumbing, never in a kernel crate (`inv-determinism`): the kernel only ever sees the seed as
-//! a value crossing a seam. The value is bounded below 2^62 so both a Rust `u64` and a shell
+//! Drawing the seed is a nondeterministic edge (env, then OS entropy) and lives here, in the suite's
+//! shared substrate, never in a kernel crate (`inv-determinism`): the kernel only ever sees the seed
+//! as a value crossing a seam. The value is bounded below 2^62 so both a Rust `u64` and a shell
 //! `$(( … ))` (which is `intmax_t`/i64) fold it to the same clock — the two drivers must agree.
 
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// The seam-selection environment variable a developer sets to replay a run's seed, and the pin a
-/// case exports as its first session line to become regression. One spelling, suite-wide.
-///
-/// This MIRRORS `dorc_cli::seam::SEED_ENV` (the harness seam parser's own name): this crate sits
-/// below `cli` in the dependency DAG and `cli`'s production code only dev-depends it, so the two
-/// cannot share a definition. Both are `"DORC_SEED"`; a rename touches both in one commit
-/// (`rul-strawman-formats-no-compat`).
-const SEED_ENV: &str = "DORC_SEED";
+use crate::seam_vars::SEED_ENV;
 
 /// The largest seed value drawn, exclusive: kept under 2^62 so the clock fold is identical whether a
 /// `u64` or a shell `$(( … ))` computes it. An env-supplied seed is the developer's own (they take
@@ -48,14 +41,17 @@ pub fn run_seed() -> u64 {
 }
 
 /// Draw a fresh seed from the wall clock and the pid, mixed so nearby draws diverge, and bounded
-/// below [`DRAWN_SEED_CEILING`] for shell-arithmetic parity.
+/// below [`DRAWN_SEED_CEILING`] for shell-arithmetic parity. Seconds and subsecond-nanos are read
+/// separately so no `u128`→`u64` truncation is needed; both fit a `u64` exactly.
 fn drawn_seed() -> u64 {
-    let nanos = SystemTime::now()
+    let elapsed = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_nanos() as u64);
-    let mixed = nanos
+        .unwrap_or_default();
+    let mixed = elapsed
+        .as_secs()
         .wrapping_mul(0x9E37_79B9_7F4A_7C15)
-        .wrapping_add(u64::from(std::process::id()).wrapping_mul(0x2545_F491_4F6C_DD1D));
+        .wrapping_add(u64::from(elapsed.subsec_nanos()).wrapping_mul(0x2545_F491_4F6C_DD1D))
+        .wrapping_add(u64::from(std::process::id()).wrapping_mul(0xD1B5_4A32_D192_ED03));
     // splitmix64 finalizer, so the low bits the clock fold reads are well-spread.
     let mut z = mixed;
     z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);

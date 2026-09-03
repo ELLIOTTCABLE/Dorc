@@ -288,6 +288,10 @@ fn main() {
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
+    // The run-wide seed, printed once (`30X:seed-two-affordances`): an unpinned render reproduces
+    // under any seed, so a case that churns run-to-run has hidden nondeterminism.
+    let seed = dorc_testbed::run_seed::run_seed();
+    eprintln!("{}", dorc_testbed::run_seed::seed_banner(seed));
     let discovered = discover_looms(&case_roots());
     // The DISCOVERY FLOOR (see the e2e runner's): walking the wrong roots yields zero
     // trials, and a suite of zero trials EXITS GREEN.
@@ -313,5 +317,12 @@ fn main() {
         }
         trials.retain(|trial| changed.contains(case_of(trial.name())));
     }
-    libtest_mimic::run(&args, trials).exit();
+    let conclusion = libtest_mimic::run(&args, trials);
+    if conclusion.has_failed() {
+        eprintln!(
+            "{}",
+            dorc_testbed::run_seed::seed_failure_note(seed, "test:looms")
+        );
+    }
+    conclusion.exit();
 }

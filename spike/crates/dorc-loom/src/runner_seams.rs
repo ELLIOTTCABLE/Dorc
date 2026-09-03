@@ -5,15 +5,16 @@
 //! (`consumer.rs`) feeds them to `HarnessSeams::from_env` over a modelled environment. A second
 //! copy of a seam VALUE is exactly how the two drivers would derive a different clock for one block
 //! and stop agreeing (`30X:loom-driver-is-derived-and-reported` → `gate-two-drivers-agree`), so the
-//! values live once, here, and the variable NAMES live once in `dorc_cli::seam` (referenced below,
-//! never re-spelled).
+//! values live once, here, and the variable NAMES live once in `dorc_testbed::seam_vars` (imported
+//! below, never re-spelled).
 //!
-//! The run's seed is `internal_tooling::run_seed()` — `DORC_SEED` from the process env, or drawn
+//! The run's seed is `dorc_testbed::run_seed()` — `DORC_SEED` from the process env, or drawn
 //! once from OS entropy (`30X:seed-varied-by-default`). The clock is derived from that seed and the
 //! block ordinal by ONE formula, so an author's `$ export DORC_SEED=7` pins every later block's clock
 //! and ids together with one line, and the two drivers date a block identically.
 
-use internal_tooling::run_seed::run_seed;
+use dorc_testbed::run_seed::run_seed;
+use dorc_testbed::seam_vars::{CLOCK_ENV, POSTURE_ENV, ROOTS_ENV, SEED_ENV, SOURCE_MATCH_ENV};
 
 /// The synthetic absolute root the in-process session keys its model store under.
 ///
@@ -34,7 +35,7 @@ const CLOCK_SEED_DAY_SPAN: u64 = 36_525;
 /// both drivers date a block identically (`30X` §6; `rul-runner-varies-only-what-it-set`).
 #[must_use]
 pub fn fold_clock_seed(seed: u64, ordinal: usize) -> u64 {
-    (seed % CLOCK_SEED_DAY_SPAN) + ordinal as u64
+    (seed % CLOCK_SEED_DAY_SPAN).saturating_add(ordinal as u64)
 }
 
 /// The `DORC_SEAM_CLOCK` value for a block, from a concrete seed — the in-process twin of the shell's
@@ -51,10 +52,7 @@ pub fn clock_seam_value(seed: u64, ordinal: usize) -> String {
 /// and sh's `intmax_t` fold a seed under 2^62 to the same value.
 #[must_use]
 pub fn clock_seam_shell_value(ordinal: usize) -> String {
-    format!(
-        "seeded:$(( (${} % {CLOCK_SEED_DAY_SPAN}) + {ordinal} ))",
-        dorc_cli::seam::SEED_ENV
-    )
+    format!("seeded:$(( (${SEED_ENV} % {CLOCK_SEED_DAY_SPAN}) + {ordinal} ))")
 }
 
 /// The per-block value-seam `(variable name, value)` pairs both drivers inject at session start.
@@ -68,13 +66,10 @@ pub fn clock_seam_shell_value(ordinal: usize) -> String {
 pub fn value_seam_pairs(block_ordinal: usize) -> [(&'static str, String); 4] {
     let seed = run_seed();
     [
-        (dorc_cli::seam::SEED_ENV, seed.to_string()),
-        (
-            dorc_cli::seam::CLOCK_ENV,
-            clock_seam_value(seed, block_ordinal),
-        ),
-        (dorc_cli::seam::POSTURE_ENV, "pinned:interactive".to_owned()),
-        (dorc_cli::seam::SOURCE_MATCH_ENV, "pinned:off".to_owned()),
+        (SEED_ENV, seed.to_string()),
+        (CLOCK_ENV, clock_seam_value(seed, block_ordinal)),
+        (POSTURE_ENV, "pinned:interactive".to_owned()),
+        (SOURCE_MATCH_ENV, "pinned:off".to_owned()),
     ]
 }
 
@@ -86,5 +81,5 @@ pub fn value_seam_pairs(block_ordinal: usize) -> [(&'static str, String); 4] {
 /// constructor here — the session env IS the seam source (`30X:loom-seams-are-sh-lines`).
 #[must_use]
 pub fn roots_seam_pair(root: &str) -> (&'static str, String) {
-    (dorc_cli::seam::ROOTS_ENV, format!("pinned:{root}"))
+    (ROOTS_ENV, format!("pinned:{root}"))
 }

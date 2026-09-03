@@ -478,6 +478,7 @@ dependencies = [
  "dorc-receipt-crypto",
  "dorc-receipt-local",
  "dorc-syntax",
+ "dorc-testbed",
  "dorc-transport",
  "dorc-why",
  "errorloom",
@@ -538,9 +539,9 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "dorc-testbed",
  "dorc-transport",
  "errorloom",
- "internal-tooling",
  "tracing",
  "tracing-subscriber",
  "weft",
@@ -620,6 +621,10 @@ dependencies = [
  "dorc-aid",
  "dorc-core",
 ]
+
+[[package]]
+name = "dorc-testbed"
+version = "0.0.0"
 
 [[package]]
 name = "dorc-transport"

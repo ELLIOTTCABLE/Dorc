@@ -1337,7 +1337,7 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     shipped
         .current_dir(&sandbox)
         .env(
-            dorc_cli::seam::TRANSPORT_ENV,
+            dorc_testbed::seam_vars::TRANSPORT_ENV,
             format!("local:{};{interpreter}", harness.checker.display()),
         )
         .env("PATH", &probe_path)
@@ -1461,18 +1461,27 @@ fn drive_session(
 
     // The script runs from a FILE so fd 0 stays free for those records (a script on stdin would
     // have `dorc --results -` read the script itself).
+    let clock_name = dorc_testbed::seam_vars::CLOCK_ENV;
     let mut script = String::from("exec 2>&1\n");
-    for (index, cmd) in commands.iter().enumerate() {
-        // Per-block clock default, applied only while it still holds the runner's own last value
-        // (`30Xa-b1:rul-runner-varies-only-what-it-set`); the selection comes from the shared seat.
-        // The injection must NOT clobber the previous block's status a `$ echo $?` reads, so restore
-        // `$?` from the carried shadow right before the block runs.
-        let [_seed, (clock_name, clock_value), ..] =
-            dorc_loom::runner_seams::value_seam_pairs(index);
-        let _ = writeln!(
-            script,
-            "[ \"${clock_name}\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export {clock_name}={clock_value}; {RUNNER_CLOCK_SHADOW}={clock_value}; }}"
-        );
+    let mut invocation_ordinal = 0;
+    for cmd in commands {
+        // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`); an export/cd/echo/cat does
+        // not, so a `$ export DORC_SEED=<n>` pin line is ordinal-neutral. The injected value computes
+        // from `$DORC_SEED` at block time, so an author's `export DORC_SEED` governs it, and it
+        // applies only while it still holds the runner's own last value
+        // (`30Xa:rul-runner-varies-only-what-it-set`). The injection must NOT clobber the previous
+        // block's status a `$ echo $?` reads, so `$?` is restored from the carried shadow below.
+        if block_argv(cmd)
+            .first()
+            .is_some_and(|word| matches!(word.as_str(), "dorc" | "dorc-loom" | "dorc-sh"))
+        {
+            let clock_value = dorc_loom::runner_seams::clock_seam_shell_value(invocation_ordinal);
+            let _ = writeln!(
+                script,
+                "[ \"${clock_name}\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export {clock_name}={clock_value}; {RUNNER_CLOCK_SHADOW}={clock_value}; }}"
+            );
+            invocation_ordinal = invocation_ordinal.saturating_add(1);
+        }
         let _ = writeln!(script, "(exit \"${{{PREV_RC_SHADOW}:-0}}\")");
         script.push_str(cmd);
         script.push('\n');
@@ -1499,12 +1508,13 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle from the shared seat; the clock shadow starts EQUAL to block 0's clock.
-    let [_, (_, block0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs(0);
+    // The seam bundle from the shared seat; the clock shadow starts EQUAL to the first invocation's
+    // clock, so the first injection is a no-op unless an author has changed `$DORC_SEED` before it.
+    let [_, (_, invocation0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs(0);
     for (name, value) in dorc_loom::runner_seams::value_seam_pairs(0) {
         command.env(name, value);
     }
-    command.env(RUNNER_CLOCK_SHADOW, &block0_clock);
+    command.env(RUNNER_CLOCK_SHADOW, &invocation0_clock);
     // A throwaway `$ARTIFACT_DIR` a `--artifact-dir=$ARTIFACT_DIR` block publishes into (disposable;
     // the artifact-set gate is `run_round_trip`'s own re-drive).
     let artifact_dir = scratch.path.join("artifacts");
@@ -4013,7 +4023,7 @@ fn run_kept_stream_refusal(harness: &Harness) -> Result<(), Failed> {
         harness
             .dorc(&kept.path)
             .args(["plan", "book.sh"])
-            .env(dorc_cli::seam::POSTURE_ENV, "pinned:kept")
+            .env(dorc_testbed::seam_vars::POSTURE_ENV, "pinned:kept")
             .stdout(Stdio::piped())
             .stderr(Stdio::piped()),
     );
@@ -4043,6 +4053,10 @@ fn main() {
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
+    // The run-wide seed, printed once (`30X:seed-two-affordances`): an unpinned render reproduces
+    // under any seed, so a case that churns run-to-run has hidden nondeterminism.
+    let seed = dorc_testbed::run_seed::run_seed();
+    eprintln!("{}", dorc_testbed::run_seed::seed_banner(seed));
     let harness = Arc::new(Harness::resolve());
     let discovered = discover_e2e(&case_roots());
     let looms = discover_looms(&case_roots());
@@ -4160,5 +4174,11 @@ fn main() {
     }
     let conclusion = libtest_mimic::run(&args, trials);
     harness.reap();
+    if conclusion.has_failed() {
+        eprintln!(
+            "{}",
+            dorc_testbed::run_seed::seed_failure_note(seed, "test:e2e")
+        );
+    }
     conclusion.exit();
 }
