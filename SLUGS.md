@@ -3102,7 +3102,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## FORFEITS:forfeit-plain-sh-inclusion-analysis
 - defined: FORFEITS.md:53 — — RULE (`30P:principle-book-code-source-is-inclusion`,
-- cited: 30O 30P 30Qc 310 ROADMAP (7)
+- cited: 26N 30O 30P 30Qc 310 ROADMAP (8)
 
 ## FORFEITS:forfeit-shell-parity-immunity-model
 - defined: FORFEITS.md:201 — — RULE (as-built; the cheap half may be absorbed
@@ -4112,7 +4112,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## mech-two-standups
 - defined: —
-- cited: 307 30O 30P 30T ROADMAP (9)
+- cited: 26N 307 30O 30P 30T ROADMAP (11)
 
 ## mech-wall-standing-finality-class
 - defined: —
@@ -4579,7 +4579,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pin-emission-planner-universal
 - defined: —
-- cited: 28Q 307 30A 30I 30L 30Ng 30P 30Qb FORFEITS (11)
+- cited: 26N 28Q 307 30A 30I 30L 30Ng 30P 30Qb FORFEITS (12)
 
 ## 262:pin-fold-permutation
 - defined: Research/plans/262-round26-build-spine.md:96 — — `fold(any permutation of records) ≡ fold(book order)`, property-
@@ -5998,7 +5998,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27Xf 30W (15)
+- cited: 24S 26M 26N 270 272 275 277 279f 27A 27C 27Xf 30W (16)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -6143,7 +6143,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-integrity-failure-withholds-mutation
 - defined: spike/CLAUDE.md:411 — — this does NOT contradict
-- cited: 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (8)
+- cited: 26N 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (9)
+
+## rul-interactivity-is-local-books
+- defined: —
+- cited: 26Lb 26N (2)
 
 ## rul-internal-tool-sharp-edges
 - defined: —
@@ -6332,6 +6336,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:276 — (conductor) — a catalog code whose only
 - cited: 28N (1)
 
+## rul-no-engine-environment-mutation
+- defined: —
+- cited: 26Lb 26N (2)
+
 ## rul-no-mutating-guards
 - defined: Research/plans/271-block-settle-rulings-ledger.md:146 — (task 10b; 2026-07-10; TYPED, emphatic)
 - defined: spike/CLAUDE.md:127 — — a verdict-function body that fails the non-mutation
@@ -6485,7 +6493,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-probe-writes-only-what-it-owns
 - defined: spike/CLAUDE.md:183 — — controller-generated probe plumbing may
-- cited: 26K 30Ne 30T (3)
+- cited: 26K 26N 30Ne 30T (4)
 
 ## rul-promote-is-one-atomic-act
 - defined: —
@@ -6605,7 +6613,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-repeated-probing-reviewed-before-design
 - defined: spike/CLAUDE.md:463 — — Surface: any probing that is not
-- cited: 30L 30P 30T (3)
+- cited: 26N 30L 30P 30T (4)
 
 ## rul-replay-editability-is-provenance
 - defined: —
@@ -6812,7 +6820,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-strawman-formats-no-compat
 - defined: Research/notes/28Va-aid-extraction-map.md:659 — — pre-user, EVERY versioned wire/format/env
 - defined: spike/CLAUDE.md:670 — — pre-user, EVERY versioned wire/format/env
-- cited: 26K 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 30Xb 310 ROADMAP aid/CLAUDE cli/CLAUDE (30)
+- cited: 26K 26N 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 30Xb 310 ROADMAP aid/CLAUDE cli/CLAUDE (32)
 
 ## rul-strawman-tool-set
 - defined: —
@@ -7098,7 +7106,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul24-threefunc-monotonic
 - defined: —
-- cited: 24A 24E KNOBS ORACLE_PROVIDES (5)
+- cited: 24A 24E 26N KNOBS ORACLE_PROVIDES (6)
 
 ## 24C:rul24-totalistic-munge
 - defined: Research/notes/24C-stage-landings-and-residue.md:708 — (prior message, same date; human suspicion + conductor analysis,
@@ -7440,7 +7448,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:silence-licenses-nothing
 - defined: spike/CLAUDE.md:202 — — an unmodeled command / wrapper / dimension / kind is
-- cited: 24D 24Kc 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS (16)
+- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS (18)
 
 ## sit-redirect-routing
 - defined: —
@@ -7448,7 +7456,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## sit-stdin-copy-exec-amendment
 - defined: —
-- cited: 26K 26Lb ROADMAP (4)
+- cited: 26K 26Lb 26N ROADMAP Research/README (6)
 
 ## sit-wall-transparent-delay-loops
 - defined: —
@@ -8233,7 +8241,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28Va-aid-extraction-map.md:594 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
 - defined: spike/CLAUDE.md:737 — — the epistemic tier of every rendered link (STRAWMAN
 - defined: spike/crates/aid/CLAUDE.md:179 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
-- cited: 289 28N 300 300c 306b (5)
+- cited: 26N 289 28N 300 300c 306b (6)
 
 ## spike/CLAUDE:two-binary-floor
 - defined: spike/CLAUDE.md:687 — (`276:rul-spec-two-binary-floor`; `KNOBS:kWHICHSH` WELDED) —
