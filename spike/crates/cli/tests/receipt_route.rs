@@ -16,8 +16,9 @@
 //! the same definition table (`cli/CLAUDE.md one-definition-table-two-drivers`); what is not proven
 //! here is the binary's own assembly of its world. The e2e corpus is where that lives.
 //!
-//! The capabilities are INJECTED, and the binary links no implementation of them — it cannot sign
-//! a document at all, which is why publishing is proven here and not through the subprocess.
+//! The capabilities are INJECTED here so this battery can drive the publication seats directly.
+//! The shipped binary links its own signer and signs for real, which the subprocess corpus exercises
+//! whenever a session publishes a receipt.
 #![expect(
     clippy::panic,
     clippy::expect_used,
