@@ -327,7 +327,20 @@
   hold unless a surface prints a digest over whole document bytes (the required-placement landing
   digest is one candidate) — measure first. Every route is unattractive (stub the encryption · a
   production bypass · leave it untestable); the human carries it into review `[TYPED]`.
-- **`front-dogfood-ceiling`** — where §8 defers, the ideal is written here.
+- **`front-dogfood-ceiling`** — where §8 defers, the ideal is written here. Recorded at lane C2
+  (2026-09-03), three HARD DEFERs, each a kernel-arc change and none a softened invariant. The
+  session's cwd model IS the kernel's (`dorc_core::loadpath::Cwd`); the session's ENVIRONMENT is a
+  concrete dash model in `dorc-loom` (name → value + exported bit) because the kernel's own
+  environment is an abstract may-lattice for books and stands three changes away: (a) the value
+  plane ⊤-clobbers `export NAME=word` (`value::Prep::transfer_lvalue_builtin`'s lvalue-builtin
+  arm) and tracks no exported-ness dimension — modelling the assignment dash actually performs is
+  a precision GAIN that is winner-shifting for books (a resolved variable resolves a `.` load, a
+  resolved load binds definitions, bound definitions license — `28Q` §1's rider), so it is
+  license-review-tier; (b) no public per-word expansion seat exists (`Prep::resolve_site_words`
+  and `word_grade` are private; the only environment-aware expansion is the whole-CFG
+  `value::analyze`); (c) with (a) and (b), the session environment is `ValueFlow::variable_before`
+  over the session script's own CFG — every `$` line one script, analyzed once, read per block.
+  The kernel arc that takes (a) takes all three.
 - **`front-lexical-roster-stands`** — `the_source_comparison_seat_is_the_only_one` stands: "one
   implementation across two crates" is not type-expressible (sealing the trait in `receipt` would
   forbid `cli`'s own impl), and it was minted at explicit direction; existing fences stand.
