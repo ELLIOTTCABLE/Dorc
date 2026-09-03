@@ -540,6 +540,7 @@ dependencies = [
  "dorc-syntax",
  "dorc-transport",
  "errorloom",
+ "internal-tooling",
  "tracing",
  "tracing-subscriber",
  "weft",
