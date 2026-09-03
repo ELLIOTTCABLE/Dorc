@@ -569,6 +569,7 @@ dependencies = [
  "dorc-receipt",
  "dorc-sparing-reference",
  "dorc-syntax",
+ "dorc-testbed",
  "internal-tooling",
 ]
 
@@ -612,6 +613,7 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "dorc-testbed",
 ]
 
 [[package]]

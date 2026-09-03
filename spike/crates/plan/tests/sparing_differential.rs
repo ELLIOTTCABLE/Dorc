@@ -47,6 +47,7 @@ use dorc_hostsim::Lcg;
 use dorc_plan::rederive::{self, Unmappable};
 use dorc_plan::{Backing, DisjointOutcome, EntityCoord, Footprint, Resolutions, disjoint};
 use dorc_sparing_reference as model;
+use dorc_testbed::run_seed::run_seed;
 
 /// How many seeds each differential drives. Cheap (pure in-memory algebra, no I/O), so the count is
 /// set by coverage of the input space rather than by budget.
@@ -258,7 +259,10 @@ fn the_reference_model_and_production_agree_on_every_sparing_verdict() {
     let u = Universe::new(&mut interner);
     let mut census = Census::default();
 
-    for seed in 0..TRIALS {
+    // Offset the trial base from this run's seed (`30X:seed-declared-is-regression`): exploration
+    // varies run to run, and a failing `seed {seed}` replays as the first trial under `DORC_SEED=<seed>`.
+    for i in 0..TRIALS {
+        let seed = run_seed().wrapping_add(i);
         let t = draw_trial(seed, &u);
         let production = disjoint(&t.footprint, &t.backing, &t.resolutions, &t.dialect);
         let reference = rederive::wall_spares(&t.footprint, &t.backing, &t.resolutions, &t.dialect);
@@ -325,7 +329,8 @@ fn the_reference_model_and_production_agree_on_the_ternary_relation() {
     let mut saw_collide_without_identity = 0_u32;
     let mut saw_out_of_domain = 0_u32;
 
-    for seed in 0..TRIALS {
+    for i in 0..TRIALS {
+        let seed = run_seed().wrapping_add(i);
         let mut rng = Lcg::new(seed.wrapping_mul(2_654_435_761));
         let dialect = draw_dialect(&mut rng, &u);
         let resolutions = draw_resolutions(&mut rng, &u);

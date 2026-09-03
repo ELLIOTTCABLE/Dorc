@@ -19,5 +19,10 @@ dorc-oracle = { path = "../oracle", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
 dorc-hostsim = { path = "../hostsim", version = "0.0.0" }
 
+[dev-dependencies]
+# The run-seed seat (`30X:seed-declared-is-regression`): the sweep test offsets its seed base from
+# this run's seed, so exploration varies run to run. Test-only, dependency-free plumbing.
+dorc-testbed = { path = "../testbed", version = "0.0.0" }
+
 [lints]
 workspace = true

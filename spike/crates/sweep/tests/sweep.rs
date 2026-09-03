@@ -16,6 +16,7 @@
 use std::collections::BTreeSet;
 
 use dorc_sweep::{Honesty, Seed, TopologyClass, trial_for_seed};
+use dorc_testbed::run_seed::run_seed;
 
 /// The default seed budget (thousands, fast); `SWEEP_SEEDS=<n>` overrides for a deep run.
 fn seed_count() -> u64 {
@@ -31,7 +32,10 @@ fn seed_count() -> u64 {
 #[test]
 fn end_state_equality_and_attribution_under_lies() {
     let n = seed_count();
-    for s in 0..n {
+    for i in 0..n {
+        // Offset the base from this run's seed (`30X:seed-declared-is-regression`): exploration varies
+        // run to run, and a failing `seed {s}` replays as the first trial under `DORC_SEED=<s>`.
+        let s = run_seed().wrapping_add(i);
         let t = trial_for_seed(Seed(s));
 
         // The flag-OFF baseline demotes every post-wall elision, so it can NEVER diverge from the
@@ -192,7 +196,10 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     let mut flag_distinguishes = 0u64;
     let mut first_all: Option<u64> = None;
 
-    for s in 0..n {
+    for i in 0..n {
+        // Offset the base from this run's seed (`30X:seed-declared-is-regression`): exploration varies
+        // run to run, and a failing `seed {s}` replays as the first trial under `DORC_SEED=<s>`.
+        let s = run_seed().wrapping_add(i);
         let t = trial_for_seed(Seed(s));
         seen.insert(t.topology);
         if matches!(t.honesty, Honesty::Honest) && !t.survivals.is_empty() {
