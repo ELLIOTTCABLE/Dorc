@@ -13,7 +13,7 @@
 //! row's other lines change.
 //!
 //! Why none is wired (measured 2026-09-02, so nobody re-walks it): every in-tree route
-//! (`model2vec-rs`, `ck-search` from source) reaches HuggingFace `tokenizers`, whose C/C++ deps
+//! (`model2vec-rs`, `ck-search` from source) reaches `HuggingFace` `tokenizers`, whose C/C++ deps
 //! (`onig`/`esaxx`) fail to build on Windows — `cargo install ck-search` dies at link on an MSVC
 //! static-vs-dynamic CRT mismatch. The prebuilt `ck` 0.7.11 binary installs on every platform via
 //! mise, but its `--sem` scores were 0.000 on Windows and on WSL over drvfs, and its indexer hung
