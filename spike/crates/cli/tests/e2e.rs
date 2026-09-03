@@ -1545,21 +1545,13 @@ fn drive_session(
 }
 
 /// The block command's argv, up to (not including) the first redirection token — everything the
-/// product's arg parser would see. NOT the driving grammar (the session runs the line verbatim);
-/// only enough to hand the argv to `parse_args_from` for classification, so it accepts what that
-/// grammar refuses, `$ARTIFACT_DIR` included.
+/// product's arg parser would see, read through the ONE session grammar both drivers share
+/// (`30X:loom-gates-attach-by-kind`; `block-argv-classifier-is-read-only`). NOT the driving grammar
+/// (the session runs the line verbatim); only enough to hand the argv to `parse_args_from` for
+/// classification, so it takes the raw word source and accepts what the expressibility reading
+/// refuses, `$ARTIFACT_DIR` included.
 fn block_argv(command: &str) -> Vec<String> {
-    command
-        .split_whitespace()
-        .take_while(|word| {
-            !(*word == "2>&1"
-                || word.starts_with('<')
-                || word.starts_with('>')
-                || word.starts_with("1>")
-                || word.starts_with("2>"))
-        })
-        .map(str::to_owned)
-        .collect()
+    dorc_loom::session_grammar::block_argv(command)
 }
 
 /// Does this replay block produce artifacts (a round-trip / plan / apply that emits a probe+apply
