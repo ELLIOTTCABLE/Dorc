@@ -20,6 +20,10 @@ pub(crate) enum EdgeFault {
     ShimExec(IoFailure),
     ArtifactPublish(&'static str),
     ReceiptPublish(String),
+    /// The read-side twin of [`Self::ReceiptPublish`] (`30Xa:rul-rootless-worlds-are-declared-faults`):
+    /// the store answer a `dorc why` read is DECLARED to hit, so a rootless world is a case the
+    /// author states rather than a session-history flag. Carries the closed refusal word to inject.
+    ReceiptRead(String),
     HostEvidence(dorc_plan::records::AdmissionRefusal),
     ToolRun {
         tool: String,
@@ -85,6 +89,7 @@ impl EdgeFault {
             ["artifact-publish", "directory"] => Self::ArtifactPublish("directory"),
             ["artifact-publish", "write"] => Self::ArtifactPublish("write"),
             ["receipt-publish", reason] => Self::ReceiptPublish((*reason).to_owned()),
+            ["receipt-read", reason] => Self::ReceiptRead((*reason).to_owned()),
             ["host-evidence", "invalid-utf8"] => {
                 Self::HostEvidence(dorc_plan::records::AdmissionRefusal::InvalidUtf8)
             }

@@ -44,3 +44,30 @@ pub fn value_seam_pairs(block_ordinal: usize) -> [(&'static str, String); 4] {
 pub fn roots_seam_pair(root: &str) -> (&'static str, String) {
     (dorc_cli::seam::ROOTS_ENV, format!("pinned:{root}"))
 }
+
+/// A modelled environment backed by a map, so the in-process driver feeds the same seam selections
+/// the shell exports to the ONE parser (`HarnessSeams::from_env`; `30X:loom-seams-are-sh-lines`).
+struct MapEnv(std::collections::BTreeMap<&'static str, String>);
+
+impl dorc_cli::seam::SeamEnv for MapEnv {
+    fn var(&self, name: &str) -> Option<String> {
+        self.0.get(name).cloned()
+    }
+}
+
+/// This block's `Seams` for the in-process session — the SAME selections the shell exports, keyed
+/// under [`SESSION_ROOT`], through the one parser both drivers use.
+///
+/// `expect` is the runner asserting its own selections parse: the map is built from these
+/// functions, never from host input, so a malformed value would be a bug in this seat, not an
+/// untrusted-input path (`inv-no-throw` binds the latter).
+#[must_use]
+pub fn session_seams(block_ordinal: usize) -> dorc_cli::seam::Seams {
+    let mut map: std::collections::BTreeMap<&'static str, String> =
+        value_seam_pairs(block_ordinal).into_iter().collect();
+    let (root_name, root_value) = roots_seam_pair(SESSION_ROOT);
+    map.insert(root_name, root_value);
+    dorc_cli::seam::HarnessSeams::from_env(&MapEnv(map))
+        .expect("the runner seat's own seam selections always parse")
+        .into()
+}

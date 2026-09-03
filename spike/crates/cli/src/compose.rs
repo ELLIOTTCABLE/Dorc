@@ -484,6 +484,21 @@ pub fn publish_rooted_receipt(
     .map_err(|refusal| refusal.token().to_owned())
 }
 
+/// Publish over `io` with the generator and id source THIS run's seams select — the shape the loom
+/// needs (`dorc-loom` depends on no receipt crate, so it cannot name the `dyn KeysetGenerator` /
+/// `dyn ReceiptIdSource` [`publish_rooted_receipt`] takes; it hands its `Seams` here instead).
+pub fn publish_seamed_receipt(
+    io: &mut dyn crate::durable::LocalIo,
+    edge: &crate::durable::LocalReceiptEdgeV1,
+    seams: &Seams,
+    clock: &mut RunClock,
+    request: &crate::engine::ReceiptPublicationRequest<'_>,
+) -> Result<Option<crate::receipt_edge::PlacedDocument>, String> {
+    let mut generator = seams.keyset_generator();
+    let mut ids = seams.receipt_id_source();
+    publish_rooted_receipt(io, edge, &mut *generator, &mut *ids, clock, request)
+}
+
 /// Read ONE rooted receipt question over `io`, so the shared seat can render it — the ONE read
 /// path, driven by `ProductionEdges` over `NativeIo` and by the loom over its session's `ModelIo`
 /// (`dorc-replay-is-production-semantics`; the `io` is the caller's, so a filesystem read is the

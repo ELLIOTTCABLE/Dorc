@@ -1,6 +1,7 @@
 //! The Dorc case renderer and compiled-edit applier (`282` §5 · §13), implemented against a mutable
 //! owned-catalog mirror ([`dorc_aid::catalog::OwnedEntry`]).
 
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt::Write;
 
@@ -673,7 +674,13 @@ impl DorcConsumer {
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let command = ReplayCommand::parse(command).ok()?;
-        self.replay_within(case, &command, context, SelfReference::Allowed)
+        self.replay_within(
+            case,
+            &command,
+            context,
+            SelfReference::Allowed,
+            &mut LoomSession::new(),
+        )
     }
 
     fn replay_within(
@@ -682,6 +689,7 @@ impl DorcConsumer {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
         self_reference: SelfReference,
+        session: &mut LoomSession,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
         let tokens: Vec<&str> = command.argv().iter().map(String::as_str).collect();
         if is_help_case(case, &tokens) {
@@ -698,7 +706,7 @@ impl DorcConsumer {
             return Some(ReplayResult::editable(to_editable_render(&parts)));
         }
         if tokens.first() == Some(&"dorc") {
-            return self.replay_dorc(case, command, context);
+            return self.replay_dorc(case, command, context, session);
         }
         if tokens.first() == Some(&"dorc-sh") {
             return self.replay_dorc_sh(case, &tokens, context);
@@ -711,8 +719,9 @@ impl DorcConsumer {
         case: &Case,
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
+        session: &mut LoomSession,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.replay_dorc_outcome(case, command, context)
+        self.replay_dorc_outcome(case, command, context, session)
             .map(|replay| replay.result)
     }
 
@@ -721,6 +730,7 @@ impl DorcConsumer {
         case: &Case,
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
+        session: &mut LoomSession,
     ) -> Option<DorcEngineReplay> {
         let invocation_argv = command.argv().get(1..)?.to_vec();
         let invocation = match dorc_cli::parse_args_from(invocation_argv) {
@@ -744,9 +754,9 @@ impl DorcConsumer {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
                     self.run_remote_apply(case, &analysis_args, context)
                 } else if analysis_args.reads_the_receipt() {
-                    Some(self.run_receipt_store_why(&analysis_args))
+                    self.run_receipt_store_why(case, &analysis_args, session)
                 } else {
-                    self.run_engine(case, &analysis_args, command, context)
+                    self.run_engine(case, &analysis_args, command, context, session)
                 }
             }
             dorc_cli::Invocation::Strip(_) => None,
@@ -974,25 +984,48 @@ impl DorcConsumer {
         })
     }
 
-    /// Answer a `dorc why` that reads the receipt store, from the world a loom drive has.
+    /// Answer a `dorc why` that reads the receipt store, from the SESSION's own store — production's
+    /// own read core and render seat over the deterministic model store
+    /// (`dorc-replay-is-production-semantics`; `30Xa:rul-rootless-worlds-are-declared-faults`).
     ///
-    /// A loom world holds no per-user profile: nothing here resolves a standard root, so the
-    /// controller root the production edge asks for is genuinely unavailable and the word handed
-    /// to the shared seat is production's own root refusal. That is this world telling the truth
-    /// about itself, not an injected fault — which is why it carries no `edge-fault` declaration
-    /// and why a case cannot ask for a different answer.
-    fn run_receipt_store_why(&self, args: &dorc_cli::Args) -> DorcEngineReplay {
+    /// An empty store answers as production does (`store-not-initialized`); the rootless refusal is
+    /// reachable ONLY through a declared `receipt-read` edge-fault (the read-side twin of
+    /// `receipt-publish`), so `no-controller-root` is a world the case DECLARES rather than a
+    /// session-history flag. `--receipt <file>` (an explicit file root) and `--receipts` (a store
+    /// override) are not expressible in-process and DECLINE (`None` routes the session to the
+    /// process driver).
+    ///
+    /// The store LABEL is always the loom's honest one (`NO_STATE_ROOT`): its world has no per-user
+    /// profile, and the synthetic model-store path is platform-shaped and meaningless to an
+    /// operator, so it never renders; only the ANSWER changes with the world.
+    fn run_receipt_store_why(
+        &self,
+        case: &Case,
+        args: &dorc_cli::Args,
+        session: &mut LoomSession,
+    ) -> Option<DorcEngineReplay> {
+        if matches!(args.receipt_root(), dorc_cli::engine::ReceiptRoot::File(_))
+            || args.receipts.is_some()
+        {
+            return None;
+        }
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+        let answer = if let Some(crate::edge_fault::EdgeFault::ReceiptRead(reason)) = &fault {
+            dorc_cli::recorded::StoreAnswer::Unreadable(reason.clone())
+        } else {
+            dorc_cli::compose::read_rooted_receipt(&session.edge, session.store.as_mut(), args)
+        };
         let mut sink = LoomOutputSink {
             ctx: self.render_ctx(),
             actions: Vec::new(),
         };
         let status = dorc_cli::engine::report_recorded_store(
-            dorc_cli::recorded::StoreAnswer::Unreadable(ROOTLESS_WORLD.to_owned()),
+            answer,
             args.why_register(),
             dorc_cli::engine::NO_STATE_ROOT,
             &mut sink,
         );
-        dorc_engine_replay(status, sink.actions)
+        Some(dorc_engine_replay(status, sink.actions))
     }
 
     fn run_engine(
@@ -1001,6 +1034,7 @@ impl DorcConsumer {
         args: &dorc_cli::Args,
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
+        session: &mut LoomSession,
     ) -> Option<DorcEngineReplay> {
         if args.plan.is_some() || !args.oracle_dirs.is_empty() || args.reads_the_receipt() {
             return None;
@@ -1072,16 +1106,23 @@ impl DorcConsumer {
             snapshot.oracle_paths(),
             &discovered_oracles,
         );
+        // The session is ONE world across the case's blocks with the per-block seam clock, so a
+        // block that publishes and a later block that reads share it (`30X:tier-in-process-loom`),
+        // and the two drivers derive one clock per block (`gate-two-drivers-agree`).
+        let seams = crate::runner_seams::session_seams(context.block());
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
-            clock: dorc_cli::results::RunClock::Absent,
+            clock: seams.clock(),
             argv: command.argv().to_vec(),
             fault,
             shim_dir: args.shim_dir.clone(),
-            // A loom world has no per-user profile, and saying so is the honest label: nothing
-            // here resolves a standard root, so no path could be named that a case would recognize.
+            // The store LABEL stays the honest `NO_STATE_ROOT`: the loom's world has no per-user
+            // profile, and the real synthetic store path is platform-shaped and never rendered.
             receipt_label: dorc_cli::engine::NO_STATE_ROOT.to_owned(),
             host: args.host.clone(),
+            edge: session.edge.clone(),
+            seams,
+            store: session.store.as_mut(),
         };
         let mut sink = LoomOutputSink {
             ctx: self.render_ctx(),
@@ -1168,7 +1209,10 @@ impl DorcConsumer {
                     .ok_or_else(|| format!("`{slug}` is not an authorized defect scenario"));
             }
         }
-        let found = std::cell::RefCell::new(None);
+        let found = RefCell::new(None);
+        // A throwaway session: a diagnostic hunt re-drives the case, and a re-drive that would
+        // publish must root in its own store (`30Xa:inspection-redrives-carry-no-durable`).
+        let session = RefCell::new(LoomSession::new());
         drive_case(case, &RunEnv::new(), |command, context| {
             let words = command
                 .argv()
@@ -1176,7 +1220,9 @@ impl DorcConsumer {
                 .map(String::as_str)
                 .collect::<Vec<_>>();
             let replay = match words.first() {
-                Some(&"dorc") => self.replay_dorc_outcome(case, command, context),
+                Some(&"dorc") => {
+                    self.replay_dorc_outcome(case, command, context, &mut session.borrow_mut())
+                }
                 Some(&"dorc-sh") => self.replay_dorc_sh_outcome(case, &words, context),
                 _ => None,
             };
@@ -1276,13 +1322,6 @@ fn arrangement_index(
                 .position(|entry| entry.slug == slug && entry.occurrence.is_none())
         })
 }
-
-/// The word production's root resolution refuses with when no per-user root can be named.
-///
-/// Spelled here rather than reached for through the production edge because a loom drive never
-/// builds one: what this crate can honestly state is that its world has no root, and this is that
-/// sentence in the edge's own closed vocabulary.
-const ROOTLESS_WORLD: &str = "no-controller-root";
 
 /// Why this tool declines to answer for a whole-product case. One spelling: the decline reaches an
 /// author through `dorc-loom vars` and through the corpus gate.
@@ -1652,7 +1691,7 @@ impl dorc_cli::engine::OutputSink for LoomOutputSink<'_> {
     }
 }
 
-struct LoomEngineEdges {
+struct LoomEngineEdges<'io> {
     observation: Option<LoomObservation>,
     clock: dorc_cli::results::RunClock,
     argv: Vec<String>,
@@ -1660,6 +1699,12 @@ struct LoomEngineEdges {
     shim_dir: Option<String>,
     receipt_label: String,
     host: Option<String>,
+    /// This session's pinned edge and this block's seam selections, over a borrow of the SESSION
+    /// store, so a publish lands in the one world later blocks read
+    /// (`dorc-replay-is-production-semantics`).
+    seams: dorc_cli::seam::Seams,
+    edge: dorc_cli::durable::LocalReceiptEdgeV1,
+    store: &'io mut dyn dorc_cli::durable::LocalIo,
 }
 
 enum LoomObservation {
@@ -1667,7 +1712,7 @@ enum LoomObservation {
     Fixture(dorc_cli::results::SiteResults),
 }
 
-impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
+impl dorc_cli::engine::EngineEdges for LoomEngineEdges<'_> {
     fn materialize_shims(&mut self, files: &BTreeMap<String, String>) -> Result<(), Box<Diag>> {
         if files.is_empty() {
             return Ok(());
@@ -1761,16 +1806,23 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
         Ok(())
     }
 
-    /// A loom drive places no document: its world is materialized bytes, not a per-user profile.
-    /// A declared `receipt-publish` fault is how a case exercises the refusal.
+    /// A loom drive publishes into the SESSION's own model store, through production's ONE publish
+    /// core (`dorc-replay-is-production-semantics`), so a later block reads back what this one wrote.
+    /// A declared `receipt-publish` fault is how a case exercises the refusal without touching it.
     fn publish_receipt(
         &mut self,
-        _request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
+        request: &dorc_cli::engine::ReceiptPublicationRequest<'_>,
     ) -> Result<Option<dorc_cli::receipt_edge::PlacedDocument>, String> {
         if let Some(crate::edge_fault::EdgeFault::ReceiptPublish(reason)) = &self.fault {
             return Err(reason.clone());
         }
-        Ok(None)
+        dorc_cli::compose::publish_seamed_receipt(
+            &mut *self.store,
+            &self.edge,
+            &self.seams,
+            &mut self.clock,
+            request,
+        )
     }
 
     fn receipt_label(&self) -> &str {
@@ -1791,12 +1843,70 @@ impl dorc_cli::engine::EngineEdges for LoomEngineEdges {
     }
 }
 
+/// One in-process session's world: the deterministic model store, born empty at block 0, and the
+/// pinned edge over it (`30X:tier-in-process-loom`). A session is ONE world across a case's blocks —
+/// a block that publishes and a later block that reads share it — and it NEVER crosses a case, a
+/// run, or an inspection re-drive (`receipts-not-a-cache`, `inv-recorded-values-stay-recorded`,
+/// `30Xa:inspection-redrives-carry-no-durable`): a fresh [`DorcReplayDriver`] per drive means a
+/// fresh throwaway store for free, so a re-drive that would publish cannot collide with the first.
+struct LoomSession {
+    store: Box<dyn dorc_cli::durable::LocalIo>,
+    edge: dorc_cli::durable::LocalReceiptEdgeV1,
+}
+
+impl LoomSession {
+    fn new() -> Self {
+        // Platform-shaped, forced by the store's baseline check: a publish whose `directory_sync()`
+        // mismatches the roots' `host_platform()` is refused (`store.rs meets_required_baseline`),
+        // and the pinned roots resolve against `host_platform()`. Rendered bytes carry no platform
+        // path, so both legs agree with one transcript (`30Xa:Checkpoint C1-map`, R2).
+        let store: Box<dyn dorc_cli::durable::LocalIo> = if cfg!(windows) {
+            Box::new(dorc_cli::durable::ModelIo::windows_shaped(
+                dorc_cli::durable::FailureSchedule::intact(),
+            ))
+        } else {
+            Box::new(dorc_cli::durable::ModelIo::new(
+                dorc_cli::durable::FailureSchedule::intact(),
+                dorc_cli::durable::DirectorySync::Synchronized,
+            ))
+        };
+        let edge = dorc_cli::compose::production_receipt_edge_over(
+            &crate::runner_seams::session_seams(0),
+            None,
+            &LoomRootEnv,
+        )
+        .expect("the pinned synthetic root always resolves");
+        Self { store, edge }
+    }
+}
+
+impl std::fmt::Debug for LoomSession {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LoomSession")
+            .field("edge", &self.edge)
+            .finish_non_exhaustive()
+    }
+}
+
+/// The loom's root-resolution query: it reads nothing, because the session's roots are `Pinned` (a
+/// runner-owned literal), so no `APPDATA`/`HOME`/`XDG_*` is ever consulted.
+struct LoomRootEnv;
+
+impl dorc_cli::durable::RootEnvironment for LoomRootEnv {
+    fn var(&self, _name: &str) -> Option<String> {
+        None
+    }
+}
+
 /// Consumer-neutral replay dispatch is implemented by this exact-shape Dorc adapter.
 #[derive(Debug)]
 pub struct DorcReplayDriver<'a> {
     consumer: &'a DorcConsumer,
     case: &'a Case,
     self_reference: SelfReference,
+    /// This drive's one world (`30Xa:inspection-redrives-carry-no-durable`): interior-mutable so the
+    /// shared-`&self` [`ReplayDriver::drive`] can thread it through the replay chain.
+    session: RefCell<LoomSession>,
 }
 
 /// Whether a replay may answer a case's inventory of ITSELF.
@@ -1813,13 +1923,15 @@ enum SelfReference {
 }
 
 impl<'a> DorcReplayDriver<'a> {
-    /// Bind one case to its production-render consumer.
+    /// Bind one case to its production-render consumer, with a fresh throwaway session
+    /// (`30Xa:inspection-redrives-carry-no-durable`).
     #[must_use]
     pub fn new(consumer: &'a DorcConsumer, case: &'a Case) -> Self {
         Self {
             consumer,
             case,
             self_reference: SelfReference::Allowed,
+            session: RefCell::new(LoomSession::new()),
         }
     }
 
@@ -1836,8 +1948,13 @@ impl ReplayDriver<SectionKey, SectionVariableId> for DorcReplayDriver<'_> {
         command: &ReplayCommand,
         context: &ReplayContext<'_>,
     ) -> Option<ReplayResult<SectionKey, SectionVariableId>> {
-        self.consumer
-            .replay_within(self.case, command, context, self.self_reference)
+        self.consumer.replay_within(
+            self.case,
+            command,
+            context,
+            self.self_reference,
+            &mut self.session.borrow_mut(),
+        )
     }
 }
 
