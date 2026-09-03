@@ -179,10 +179,14 @@ fn seam_env(command: &mut Command) {
 /// loom's `$ dorc …` line resolves to `dorc-harness` on the session `PATH` while the transcript
 /// shows the `dorc` the user typed (`30X:loom-process-driver-is-a-real-shell`).
 ///
-/// A COPY of the harness binary named `dorc` (`dorc.exe` on Windows), not a shell script: `sh`
-/// resolves a bare `dorc` by the platform's own name rules — a real executable is found by git's
-/// `sh` on Windows (which appends `.exe`) and by a POSIX `sh` (which honours the execute bit
-/// `std::fs::copy` carries over), with no shebang-emulation edge to depend on.
+/// The shim is a HARD LINK to the harness binary (`dorc.exe` on Windows), never a copy: the harness
+/// is tens of MB and a copy per runner process, never reaped, is what filled the machine's `%TEMP%`
+/// with `dorc-e2e-shim-*/dorc.exe` trees. A link costs no bytes — `std::env::temp_dir` and the cargo
+/// target dir share a volume on both platforms — and `sh` resolves a bare `dorc` to it by the
+/// platform's own name rules: found by git's `sh` on Windows (which appends `.exe`) and by a POSIX
+/// `sh` (which honours the execute bit the link shares with its inode), no shebang-emulation edge.
+/// The dir is reaped at process exit ([`Harness::reap`]); a unix symlink then a full copy are
+/// fallbacks only for a cross-volume temp, and the copy is reaped the same way.
 fn build_dorc_shim(harness_bin: &Path) -> PathBuf {
     static SEQ: AtomicUsize = AtomicUsize::new(0);
     let seq = SEQ.fetch_add(1, Ordering::Relaxed);
@@ -190,9 +194,22 @@ fn build_dorc_shim(harness_bin: &Path) -> PathBuf {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).expect("create the dorc shim dir");
     let shim = dir.join(if cfg!(windows) { "dorc.exe" } else { "dorc" });
-    std::fs::copy(harness_bin, &shim).expect("copy the harness binary into the shim dir");
+    link_shim(harness_bin, &shim);
     make_executable(&shim);
     dir
+}
+
+/// Materialize the `dorc` shim as a near-zero-byte hard link to the harness binary, falling back
+/// to a unix symlink and then a full copy when temp and the target dir sit on different volumes.
+fn link_shim(harness_bin: &Path, shim: &Path) {
+    if std::fs::hard_link(harness_bin, shim).is_ok() {
+        return;
+    }
+    #[cfg(unix)]
+    if std::os::unix::fs::symlink(harness_bin, shim).is_ok() {
+        return;
+    }
+    std::fs::copy(harness_bin, shim).expect("materialize the dorc shim");
 }
 
 #[expect(
@@ -231,10 +248,21 @@ struct Harness {
     shim_dir: PathBuf,
 }
 
+impl Harness {
+    /// Remove the runner-owned temp roots — the shim dir and the per-case profile parent.
+    /// Idempotent, and called EXPLICITLY at every process-exit path ([`main`] and [`preflight`]'s
+    /// abort) because `libtest_mimic`'s `.exit()` and `std::process::exit` both skip `Drop`: the
+    /// live harness is held in an `Arc` across every trial and never dropped, so without this it
+    /// leaks its shim once per pid on every run (`30X` §3a class (1), the suite's own machinery).
+    fn reap(&self) {
+        let _ = std::fs::remove_dir_all(&self.shim_dir);
+        let _ = std::fs::remove_dir_all(&self.profile_parent);
+    }
+}
+
 impl Drop for Harness {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(&self.profile_parent);
-        let _ = std::fs::remove_dir_all(&self.shim_dir);
+        self.reap();
     }
 }
 
@@ -3849,6 +3877,7 @@ fn preflight(harness: &Harness, discovered: usize) {
             eprintln!("{message}");
         }
         eprintln!("aborting.");
+        harness.reap();
         std::process::exit(3);
     }
 }
@@ -4083,9 +4112,12 @@ fn main() {
     if !changed.is_empty() {
         let minted: BTreeSet<&str> = trials.iter().map(Trial::name).collect();
         if !report_path_selection(&changed, &minted, &case_roots()) {
+            harness.reap();
             return;
         }
         trials.retain(|trial| changed.contains(trial.name()));
     }
-    libtest_mimic::run(&args, trials).exit();
+    let conclusion = libtest_mimic::run(&args, trials);
+    harness.reap();
+    conclusion.exit();
 }
