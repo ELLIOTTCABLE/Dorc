@@ -131,10 +131,15 @@ local linters = new Mapping<String, Step> {
             "ORACLE_PROVIDES.md",
             "SIBLINGS.md",
             "ROADMAP.md",
-            "STALENESS-AUDIT.md",
             "CONTRIBUTING.md"
         )
-        exclude = "Research/quarantine-DO-NOT-READ/**"
+        // Verbatim material fix-mode must never rewrite: the quarantine (never opened at all) and
+        // the archived transcripts / imported sources (someone else's words, spelling included).
+        exclude = List(
+            "Research/quarantine-DO-NOT-READ/**",
+            "Research/archive/**",
+            "Research/sources/**"
+        )
         check = "typos {{files}}"
         fix = "typos --write-changes {{files}}"
     }
