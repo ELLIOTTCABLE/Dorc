@@ -9,8 +9,11 @@
 ## §0 — state (2026-09-02, end of the first sitting): lanes A, B1, B2a, B2b BUILT and green; lane C next; a rewound successor resumes HERE
 
 Branch `ai/r30-30X-test-infra-decruft-conductor`; worktree
-`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor`; the tip is the commit
-carrying this §0. Built: the `Seams`/`HarnessSeams` bundle and `dorc-harness` (A, A′); the
+`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor`; `mise run both
+gate:full-quiet` GREEN at `7e7a73ba` (the sitting's last build-bearing tip; this ledger commit is
+docs-only on top of it). Fold state at the sitting's close: the human already folded the arc's
+design half into `ai/main` (merge-base `8ab53489`, their tightening commit); the build half is the
+34 commits above it, to be rebased over the rewritten `ai/main` at arc close. Built: the `Seams`/`HarnessSeams` bundle and `dorc-harness` (A, A′); the
 shell-session process driver with gates by kind, both-streams transcripts, the ticking per-block
 clock default under `rul-runner-varies-only-what-it-set`, the why-lens relativization (B1, B1′);
 the needle gate and the baseline scaffold gone, `why30-receipt-rooted-surface` a four-block
