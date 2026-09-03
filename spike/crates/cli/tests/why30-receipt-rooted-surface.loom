@@ -1,7 +1,7 @@
 ---
 run: round-trip
 fixpoint: executed
-why: 30V section 5 - the whole-product proof of the receipt-rooted why. One block publishes a receipt into the session store; the later blocks read it back and render the total surface (`--receipt-last`), its `--json` register, and `--all`, which is the shape no single drive can demonstrate. The transcript IS the assertion (`loom-transcript-is-what-the-user-saw`); --all byte-identity and --json well-formedness are read straight off the goldened both-streams output, and the explicit file root and both address directions are pinned by recorded_facts_route.rs.
+why: 30V section 5 - the whole-product proof of the receipt-rooted why. One block publishes a receipt into the session store; the later blocks read it back and render the total surface (`--receipt-last`), its `--json` register, and `--all`, which is the shape no single drive can demonstrate. The transcript IS the assertion (`loom-transcript-is-what-the-user-saw`); --all byte-identity and --json well-formedness are read straight off the goldened both-streams output, and the explicit file root and both address directions are pinned by receipt_state.rs.
 ---
 -- book.sh --
 #!/bin/sh
