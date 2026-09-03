@@ -1409,44 +1409,170 @@ const CLOSED_LOOP_HOST: &str = "closed-loop.invalid";
 /// authored fixture, which is what makes the real-vs-fixture comparison possible at all.
 const CLOSED_LOOP_CASE: &str = "context-entry-babby-elides";
 
-/// The canonical round-trip invocation for a materialized case: exactly what the runner drives,
-/// rendered as the transcript's command line. The committed command must EQUAL this, so a
-/// transcript can never show one invocation while the gates run another.
-fn round_trip_command(dir: &Path) -> String {
-    let mut command = String::from("dorc --book=book.sh");
-    let mut oracles: Vec<String> = std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
-        .filter(|name| name.ends_with(".oracle.sh"))
-        .collect();
-    oracles.sort();
-    for oracle in oracles {
-        let _ = write!(command, " --pre-source {oracle}");
-    }
-    if let Ok(Some(flags)) = marker(dir, "DORC_FLAGS") {
-        let _ = write!(command, " {flags}");
-    }
-    // DISCLOSED: naming an artifact stream decides which FORM the run takes. A shell VARIABLE
-    // rather than the scratch path, because a committed transcript must be a fixpoint.
-    if has_marker(dir, "ARTIFACT_SET") {
-        command.push_str(" --artifact-dir=$ARTIFACT_DIR");
-    }
-    // `owed-no-flag-defaults-to-stdin`: the records lane no longer takes stdin unless a `-` names
-    // it, and the runner always feeds a framed stream -- so the invocation says so, always.
-    command.push_str(" --results -");
-    if dir.join("probe-results.txt").is_file() {
-        command.push_str(" < probe-results.txt");
-    }
-    command
+// ---------------------------------------------------------------------------
+// the shell-session process driver (`30X:loom-process-driver-is-a-real-shell`)
+
+/// The per-session sentinel `printf`ed after each block with `$?`, so per-block output and exit
+/// status are recovered exactly. Distinctive enough that no `dorc`/`sh` output carries it; it never
+/// reaches a committed transcript, which is the bytes BETWEEN sentinels.
+const SESSION_SENTINEL: &str = "__dorc_e2e_session_sentinel__";
+
+/// A runner-owned shadow of the clock value the runner last exported, so its per-block injection
+/// varies ONLY what it still owns: any author `export DORC_SEAM_CLOCK=…` ends the runner's control
+/// of the variable for the rest of the session (`30Xa-b1:rul-runner-varies-only-what-it-set`).
+/// Runner framing state — not a seam, never read by `dorc`, never in a transcript.
+const RUNNER_CLOCK_SHADOW: &str = "__DORC_RUNNER_CLOCK";
+
+/// One replay block's session capture: the `$` command, both streams merged in order, and the exit.
+struct SessionBlock {
+    /// The `$` command, verbatim (the transcript's `$` line IS what the session ran).
+    command: String,
+    /// Both streams, interleaved as the user saw them, as the committed transcript spells it
+    /// (`30X:loom-transcript-is-what-the-user-saw`).
+    output: String,
+    /// The block command's own exit status.
+    status: i32,
 }
 
-/// Drive one loom-form case: materialize, run the dir-form battery, then fold any blessed
-/// bytes back into the `.loom` (the loom, not the scratch dir, is what is committed).
+/// Drive every `$` line of a round-trip loom through ONE persistent `sh` session
+/// (`30X:loom-process-driver-is-a-real-shell`): materialize the case into `dir`, start one shell
+/// there with a scrubbed environment, `dorc` on a shim `PATH`, and the seam bundle, then feed each
+/// block verbatim — sentinel-framed, both streams captured in order (`exec 2>&1`). The session's own
+/// store (`session_root`) is where a block that publishes lands and a later block that reads finds
+/// it: a session is ONE process, not one-per-block, precisely so that state carries across blocks.
+fn drive_session(
+    harness: &Harness,
+    dir: &Path,
+    session_root: &Path,
+    commands: &[String],
+    framed: &str,
+) -> Result<Vec<SessionBlock>, String> {
+    let scratch = Scratch::new("session");
+
+    // The stdin the session's `$ dorc … --results -` blocks read is the FRAMED record stream (what
+    // the old harness fed the block-0 drive), so a block that names `-` with no `<` redirect still
+    // sees the records. A block that does redirect (`< probe-results.txt`) reads the materialized
+    // file instead, which `run_loom` has re-written to the SAME framed bytes.
+    let framed_path = scratch.path.join("framed.txt");
+    std::fs::write(&framed_path, framed).map_err(|error| format!("write framed stdin: {error}"))?;
+
+    // The script runs from a FILE, not stdin, so the session's own fd 0 stays free for the framed
+    // records above — a script fed on stdin would have `dorc --results -` read the script itself.
+    let mut script = String::from("exec 2>&1\n");
+    for (index, cmd) in commands.iter().enumerate() {
+        // Per-block clock default, injected ONLY while the variable still holds the runner's own
+        // last value (`30Xa-b1:rul-runner-varies-only-what-it-set`).
+        let _ = writeln!(
+            script,
+            "[ \"$DORC_SEAM_CLOCK\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export DORC_SEAM_CLOCK=seeded:{index}; {RUNNER_CLOCK_SHADOW}=seeded:{index}; }}"
+        );
+        script.push_str(cmd);
+        script.push('\n');
+        let _ = writeln!(script, "printf '\\n{SESSION_SENTINEL} %s\\n' \"$?\"");
+    }
+    let script_path = scratch.path.join("session.sh");
+    std::fs::write(&script_path, &script)
+        .map_err(|error| format!("write session script: {error}"))?;
+
+    let mut command = Command::new(&harness.checker);
+    command.current_dir(dir).arg(&script_path);
+    sandbox::scrub_harness_env(&mut command, session_root);
+    // PATH is the shim (so `$ dorc …` resolves to the harness) then the case's mocks when present,
+    // and nothing inherited (`30X:loom-syntax-grants-no-production-authority`).
+    let mut path_dirs = vec![harness.shim_dir.clone()];
+    let mocks = dir.join("mocks");
+    if mocks.is_dir() {
+        path_dirs.push(mocks);
+    }
+    command.env(
+        "PATH",
+        std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
+    );
+    // The seam bundle in the session environment (`30X:loom-seams-are-sh-lines`): a constant run
+    // seed, the clock at the first block's base, posture pinned interactive, source-match off. The
+    // clock shadow starts EQUAL to the clock so block 0's own injection takes control of it.
+    command.env(SEAM_SEED_ENV, RUN_SEED.to_string());
+    command.env(SEAM_CLOCK_ENV, "seeded:0");
+    command.env(SEAM_POSTURE_ENV, "pinned:interactive");
+    command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
+    command.env(RUNNER_CLOCK_SHADOW, "seeded:0");
+
+    let framed_stdin =
+        std::fs::File::open(&framed_path).map_err(|error| format!("open framed stdin: {error}"))?;
+    let out = capture(
+        command
+            .stdin(Stdio::from(framed_stdin))
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null()),
+    );
+    let merged = out.stdout;
+
+    // Split on sentinel lines: block N's output is everything between sentinel N-1 and sentinel N;
+    // the digits after the token are that block's exit status. The one `\n` the printf emits before
+    // the token is the delimiter — `strip_trailing_newlines` removes it (and every trailing blank,
+    // as the transcript compare does on both sides).
+    let mut blocks: Vec<SessionBlock> = Vec::new();
+    let mut current = String::new();
+    let prefix = format!("{SESSION_SENTINEL} ");
+    for line in merged.split_inclusive('\n') {
+        let bare = line.strip_suffix('\n').unwrap_or(line);
+        if let Some(rest) = bare.strip_prefix(&prefix) {
+            let status = rest.trim().parse::<i32>().unwrap_or(-1);
+            let output = strip_trailing_newlines(&strip_cr(&current));
+            let index = blocks.len();
+            blocks.push(SessionBlock {
+                command: commands.get(index).cloned().unwrap_or_default(),
+                output: if output.is_empty() {
+                    String::new()
+                } else {
+                    format!("{output}\n")
+                },
+                status,
+            });
+            current.clear();
+        } else {
+            current.push_str(line);
+        }
+    }
+    if blocks.len() != commands.len() {
+        return Err(format!(
+            "the session framed {} blocks for {} commands — a block hung, or the sentinel leaked into output:\n{merged}",
+            blocks.len(),
+            commands.len()
+        ));
+    }
+    Ok(blocks)
+}
+
+/// Does this replay block produce artifacts (a round-trip / plan / apply that emits a probe+apply
+/// pair), classified by the product's OWN parser (`30X:loom-gates-attach-by-kind`)? A non-`dorc`
+/// line (an `export`, say) and a `dorc why`/`bundle` do not.
+fn block_produces_artifacts(command: &str) -> bool {
+    let Ok(parsed) = errorloom::ReplayCommand::parse(command) else {
+        return false;
+    };
+    let Some((head, rest)) = parsed.argv().split_first() else {
+        return false;
+    };
+    if head != "dorc" {
+        return false;
+    }
+    matches!(
+        dorc_cli::parse_args_from(rest.to_vec()),
+        Ok(dorc_cli::Invocation::Analyze(args))
+            if matches!(
+                args.mode,
+                dorc_cli::Mode::RoundTrip | dorc_cli::Mode::Plan | dorc_cli::Mode::Apply
+            )
+    )
+}
+
+/// Drive one loom-form case: materialize, then route by shape. A lint loom keeps today's
+/// single-invocation path; a round-trip loom is driven through the session and its gates attach by
+/// block kind, with the transcript folded back into the `.loom` (the loom, not the scratch dir, is
+/// committed).
 fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
-    // Before materialization, so a refused floor cell leaves the committed `.loom` untouched:
-    // `bless_loom` below writes the whole file back, gates or no gates.
+    // Before materialization, so a refused floor cell leaves the committed `.loom` untouched.
     let carries_manifest = spec
         .case
         .sections()
@@ -1465,134 +1591,124 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     std::fs::create_dir_all(&dir).expect("create loom case dir");
     materialize_loom(spec, &dir)
         .map_err(|error| Failed::from(format!("FAIL  {}  [loom: {error}]", spec.name)))?;
-    if spec.case.frontmatter().scalar("code").is_some() {
-        for role in ["config", "state", "home"] {
-            std::fs::create_dir_all(dir.join(OWN_PROFILE_DIR).join(role))
-                .expect("create the case's own profile");
-        }
+
+    // A lint loom stays single-invocation (`dev-lint-looms-stay-single-invocation`): single-block,
+    // it drives the shipped binary under a scrubbed `PATH` (lint reads no seam) and renders to
+    // stdout, so routing it through the seam-driven session would change the binary under test for
+    // no multi-block or both-streams gain.
+    if spec.run == LoomRun::Lint {
+        let case = E2eCase {
+            name: spec.name.clone(),
+            dir,
+            kind: E2eKind::Lint,
+        };
+        return run_lint(harness, &case);
     }
 
-    let case = E2eCase {
-        name: spec.name.clone(),
-        dir: dir.clone(),
-        kind: match spec.run {
-            LoomRun::RoundTrip => E2eKind::RoundTrip,
-            LoomRun::Lint => E2eKind::Lint,
-        },
-    };
-    if spec.run == LoomRun::RoundTrip {
-        let want = round_trip_command(&dir);
-        let got = spec.case.replay().blocks()[0].command();
-        if got != want {
-            return Err(format!(
-                "FAIL  {}  [loom: the committed replay command is not the invocation the gates drive]\n      committed: {got}\n      drives:    {want}",
-                spec.name
-            )
-            .into());
-        }
+    // The round-trip session: one `sh`, every `$` line, both streams, one store.
+    let session_root = scratch.path.join("session-store");
+    for role in ["config", "state"] {
+        std::fs::create_dir_all(session_root.join(role)).expect("create the session store");
     }
-    let mut stderr = String::new();
-    let outcome = match spec.run {
-        LoomRun::RoundTrip => run_round_trip(harness, &case, &mut stderr),
-        LoomRun::Lint => run_lint(harness, &case),
-    };
-    let (extra, mut extra_failures) = drive_extra_replays(harness, spec, &dir);
-    stderr.push_str(&extra.stderr);
-    extra_failures.extend(defined_code_fired(spec, &stderr));
-    // A FAILING case folds nothing. Safe because no bless workflow depends on partial folding:
-    // every gate that compares against a bless-WRITTEN golden is already bless-aware and cannot
-    // fail on staleness — the content diff and the extra-replay compare are `!bless`-guarded,
-    // `exec_check`/`run_lint`/gate-9 write-and-return before theirs. What remains reachable under
-    // bless is structural (`-n`, crash/empty, guard-shape, redirects), authored-fixture (gate-1's
-    // `probe-results.txt`, the needle declarations), or environmental — none of it healable by a
-    // write, and gate-1 says so in its own message. Ungated, `exec_check`'s early `expected.ran`
-    // write would fold into a case whose transcript a later gate had just failed. XFAIL is
-    // untouched: the lens returns `Ok` above, so its deliberate golden-text-blindness survives.
-    if harness.bless && outcome.is_ok() {
-        bless_loom(spec, &dir, &extra.outputs, harness.bless_floor)?;
+    // The framed record stream: what a `$ dorc … --results -` block reads on the session's stdin,
+    // and — where a block redirects `< probe-results.txt` — what that file is re-written to hold, so
+    // the session and the inspection re-drive read ONE identical world (`frame_records` is
+    // idempotent, so a later re-drive's re-framing of the framed file is a no-op).
+    let args = shared_args(&dir)
+        .map_err(|message| Failed::from(format!("FAIL  {}  [session: {message}]", spec.name)))?;
+    let framed = framed_results(harness, &dir, &args);
+    let probe_results = dir.join("probe-results.txt");
+    if probe_results.is_file() {
+        std::fs::write(&probe_results, &framed)
+            .expect("re-write probe-results.txt as the framed record stream");
     }
-    match (outcome, extra_failures.is_empty()) {
-        (Ok(()), true) => Ok(()),
-        (Ok(()), false) => Err(extra_failures.join("\n").into()),
-        (Err(failed), true) => Err(failed),
-        (Err(failed), false) => Err(format!(
-            "{}\n{}",
-            failed.message().unwrap_or_default(),
-            extra_failures.join("\n")
-        )
-        .into()),
-    }
-}
+    let commands: Vec<String> = spec
+        .case
+        .replay()
+        .blocks()
+        .iter()
+        .map(|block| block.command().to_owned())
+        .collect();
+    let captures = drive_session(harness, &dir, &session_root, &commands, &framed)
+        .map_err(|error| Failed::from(format!("FAIL  {}  [session: {error}]", spec.name)))?;
 
-/// Drive replay blocks 1..N — the SAME input-state seen through other invocations
-/// (`282:rul-multi-replay-per-case`) — sequentially in the one materialized dir that block 0's
-/// battery just ran in. Sequential-in-one-dir is the whole point: blocks that share scratch state
-/// — a run that publishes, and the later invocation that reads what it published — must see it.
-///
-/// Each command is driven with `cwd` = the case dir and its committed words verbatim, so the
-/// invocation a reader sees IS the one that ran, and every path a render echoes back stays
-/// case-relative (an absolute host path in a transcript is not committable).
-///
-/// Returns the captured outputs for blocks 1..N (empty when anything failed, so bless leaves
-/// the committed bytes alone) and the failure lines.
-fn drive_extra_replays(
-    harness: &Harness,
-    spec: &LoomCaseSpec,
-    dir: &Path,
-) -> (ExtraReplays, Vec<String>) {
-    let blocks = spec.case.replay().blocks();
-    if blocks.len() < 2 {
-        return (ExtraReplays::default(), Vec::new());
-    }
-    let name = &spec.name;
     let mut failures: Vec<String> = Vec::new();
-    let args = match shared_args(dir) {
-        Ok(args) => args,
-        Err(message) => {
-            return (
-                ExtraReplays::default(),
-                vec![format!("FAIL  {name}  [replay: {message}]")],
-            );
-        }
-    };
-    let scratch = Scratch::new("replay");
-    let framed_path = scratch.path.join("framed.txt");
-    std::fs::write(&framed_path, framed_results(harness, dir, &args)).expect("write framed");
 
-    let mut outputs: Vec<String> = Vec::new();
-    let mut stderr = String::new();
-    for (index, block) in blocks.iter().enumerate().skip(1) {
-        let ordinal = u64::try_from(index).unwrap_or(0);
-        match run_replay_block(harness, dir, &framed_path, block.command(), ordinal) {
-            Ok(got) if scratch_path_leaked(&got.transcript, dir) => failures.push(format!(
-                "FAIL  {name}  [replay {index}: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable (`282` §7); spell the invocation with case-relative paths]",
-                block.command()
-            )),
-            Ok(got) => {
-                if !harness.bless && got.transcript != block.output() {
-                    failures.push(format!(
-                        "FAIL  {name}  [replay {index}: `{}` no longer reproduces its committed transcript]\n{}",
-                        block.command(),
-                        divergence(
-                            &strip_trailing_newlines(block.output()),
-                            &strip_trailing_newlines(&got.transcript)
-                        )
-                    ));
-                }
-                stderr.push_str(&got.stderr);
-                outputs.push(got.transcript);
-            }
-            Err(message) => failures.push(format!(
-                "FAIL  {name}  [replay {index}: `{}` — {message}]",
-                block.command()
-            )),
+    // GATES BY KIND: the round-trip battery attaches to the artifact-producing block, re-driving it
+    // with SPLIT streams into a throwaway store (`30X:loom-gates-attach-by-kind`,
+    // `inspection-redrives-carry-no-durable`). Every round-trip loom's block 0 is that block, and
+    // `run_round_trip` in loom mode drives it as an inspection re-drive with its content diff and
+    // `expected.out` bless suppressed — the session below owns transcript compare and bless.
+    if commands
+        .iter()
+        .any(|command| block_produces_artifacts(command))
+    {
+        let case = E2eCase {
+            name: spec.name.clone(),
+            dir: dir.clone(),
+            kind: E2eKind::RoundTrip,
+        };
+        if let Err(failed) = run_round_trip(harness, &case, &mut String::new(), true) {
+            failures.push(failed.message().unwrap_or_default().to_owned());
         }
     }
-    let extra = ExtraReplays { outputs, stderr };
+
+    // The DIAGNOSTIC gate every block gets: the `code:` assertion, over the whole session's output.
+    // Both streams are merged, so a diagnostic on any block's stderr is a transcript line the scan
+    // reads (`30X:loom-transcript-is-what-the-user-saw`).
+    let session_output: String = captures
+        .iter()
+        .map(|capture| capture.output.as_str())
+        .collect();
+    failures.extend(defined_code_fired(spec, &session_output));
+
+    for capture in &captures {
+        // A committed transcript may not carry the machine-specific materialization path (`282` §7).
+        if scratch_path_leaked(&capture.output, &dir) {
+            failures.push(format!(
+                "FAIL  {}  [session: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable; spell the invocation with case-relative paths]",
+                spec.name, capture.command
+            ));
+        }
+        // A non-artifact block (a why, a read, an `export`) must exit 0 — a crash the transcript
+        // alone could miss. The artifact block's own exit is `run_round_trip`'s (against `DORC_EXIT`).
+        if capture.status != 0 && !block_produces_artifacts(&capture.command) {
+            failures.push(format!(
+                "FAIL  {}  [session: `{}` exited rc={}]",
+                spec.name, capture.command, capture.status
+            ));
+        }
+    }
+
+    // The transcript compare (unless blessing): each block's captured both-streams output IS its
+    // committed transcript, compared under `strip_trailing_newlines` as every other golden is.
+    if !harness.bless {
+        for (block, capture) in spec.case.replay().blocks().iter().zip(&captures) {
+            if strip_trailing_newlines(&capture.output) != strip_trailing_newlines(block.output()) {
+                failures.push(format!(
+                    "FAIL  {}  [session: `{}` no longer reproduces its committed transcript]\n{}",
+                    spec.name,
+                    capture.command,
+                    divergence(
+                        &strip_trailing_newlines(block.output()),
+                        &strip_trailing_newlines(&capture.output)
+                    )
+                ));
+            }
+        }
+    }
+
+    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`): the
+    // battery's own `expected.ran` write happened above, and `bless_loom` folds it in with the
+    // transcript.
+    if harness.bless && failures.is_empty() {
+        bless_loom(spec, &dir, &captures, harness.bless_floor)?;
+    }
+
     if failures.is_empty() {
-        (extra, failures)
+        Ok(())
     } else {
-        (ExtraReplays::default(), failures)
+        Err(failures.join("\n").into())
     }
 }
 
@@ -1657,24 +1773,6 @@ fn defined_code_fired(spec: &LoomCaseSpec, stderr: &str) -> Vec<String> {
     )]
 }
 
-/// What blocks 1..N produced, across the drives.
-#[derive(Default)]
-struct ExtraReplays {
-    /// Per-block stdout, for the bless fold; empty when anything failed.
-    outputs: Vec<String>,
-    /// Every drive's stderr, concatenated — a diagnostic belongs to the CASE, not to whichever
-    /// block happened to provoke it.
-    stderr: String,
-}
-
-/// What one replay drive produced: the bytes its block commits, and the bytes only a gate reads.
-struct ReplayCapture {
-    /// Stdout, as the committed transcript spells it.
-    transcript: String,
-    /// Stderr, which no transcript carries and the code-fired gate needs.
-    stderr: String,
-}
-
 /// Did a render echo back the per-run materialization dir? Renders that quote an argv path
 /// (the `why` heading does) turn an absolute invocation into bytes no other machine reproduces,
 /// so `282` §7 refuses them at capture rather than committing them. Both separator spellings are
@@ -1685,96 +1783,11 @@ fn scratch_path_leaked(output: &str, dir: &Path) -> bool {
     output.contains(&native) || output.contains(&slashed)
 }
 
-/// Execute one committed replay command and return its stdout as transcript bytes, beside the
-/// stderr it wrote.
-///
-/// The accepted shape is deliberately tiny: a `dorc` invocation, optionally reading the case's
-/// `probe-results.txt` (which resolves to the framed stream the battery feeds, exactly as block
-/// 0's committed `< probe-results.txt` does) and optionally discarding stdout. Only STDOUT is
-/// transcript (`stdout-contract`), but stderr is KEPT: a later drive can be the only one to emit a
-/// diagnostic, and a gate that cannot see it is one the case could never satisfy.
-fn run_replay_block(
-    harness: &Harness,
-    dir: &Path,
-    framed: &Path,
-    command: &str,
-    ordinal: u64,
-) -> Result<ReplayCapture, String> {
-    let mut words: Vec<&str> = command.split_whitespace().collect();
-    let mut stdin_framed = false;
-    let mut discard = false;
-    while words.len() >= 2 {
-        let (redirect, target) = (words[words.len() - 2], words[words.len() - 1]);
-        match redirect {
-            "<" if target == "probe-results.txt" => stdin_framed = true,
-            "<" => {
-                return Err(format!(
-                    "only `< probe-results.txt` is supported, not `{target}`"
-                ));
-            }
-            ">" if target == "/dev/null" => discard = true,
-            ">" => return Err(format!("only `> /dev/null` is supported, not `{target}`")),
-            _ => break,
-        }
-        words.truncate(words.len().saturating_sub(2));
-    }
-    // `--results=probe-results.txt` resolves to the framed stream exactly as `< probe-results.txt`
-    // does -- the authored file is the gates. EXPECTATION, never the bytes dorc is fed.
-    let framed_flag = format!("--results={}", framed.display());
-    let words: Vec<&str> = words
-        .into_iter()
-        .map(|word| {
-            if word == "--results=probe-results.txt" {
-                framed_flag.as_str()
-            } else {
-                word
-            }
-        })
-        .collect();
-    match words.split_first() {
-        Some((&"dorc", rest)) if !rest.is_empty() => {
-            // A real run into the case's SHARED store, each block offsetting the seed by its ordinal
-            // so the publishes mint distinct ids (shared store, shared clock — the name is the id).
-            let mut child = harness.dorc_shared(dir);
-            child.env(SEAM_SEED_ENV, RUN_SEED.wrapping_add(ordinal).to_string());
-            child
-                .current_dir(dir)
-                .args(rest)
-                .stderr(Stdio::piped())
-                .stdout(if discard {
-                    Stdio::null()
-                } else {
-                    Stdio::piped()
-                });
-            child.stdin(if stdin_framed {
-                Stdio::from(std::fs::File::open(framed).map_err(|error| format!("{error}"))?)
-            } else {
-                Stdio::null()
-            });
-            let out = capture(&mut child);
-            if out.code != 0 {
-                return Err(format!("exited rc={}\n{}", out.code, out.stderr));
-            }
-            let got = strip_trailing_newlines(&strip_cr(&out.stdout));
-            Ok(ReplayCapture {
-                transcript: if got.is_empty() {
-                    String::new()
-                } else {
-                    format!("{got}\n")
-                },
-                stderr: out.stderr,
-            })
-        }
-        _ => Err(String::from("not a `dorc` invocation")),
-    }
-}
-
 /// Fold the freshly-blessed `expected.out` / `expected.ran` — and, under the floor mint, the
 /// re-measured `expected.emitted` — back into the committed `.loom`.
 ///
-/// `extra` carries blocks 1..N's captured outputs; empty means either a single-block case or a
-/// failed drive, and `set_replay_outputs` then leaves those blocks' committed bytes untouched
-/// rather than overwriting them with broken output.
+/// `captures` carries EVERY block's session output (both streams), in order — the transcript the
+/// session just proved.
 ///
 /// `mint_manifest` is [`Harness::bless_floor`]. Folding the manifest HERE, in the same write that
 /// commits the transcript, is what makes the mint one coherent act: the `book=<sha256>` a reader
@@ -1783,12 +1796,14 @@ fn run_replay_block(
 fn bless_loom(
     spec: &LoomCaseSpec,
     dir: &Path,
-    extra: &[String],
+    captures: &[SessionBlock],
     mint_manifest: bool,
 ) -> Result<(), Failed> {
     let mut case = spec.case.clone();
-    let mut outputs = vec![read_or_empty(&dir.join("expected.out"))];
-    outputs.extend_from_slice(extra);
+    let outputs: Vec<String> = captures
+        .iter()
+        .map(|capture| capture.output.clone())
+        .collect();
     case.set_replay_outputs(outputs);
     let ran = dir.join("expected.ran");
     if ran.is_file() && !case.set_section_content("expected.ran", &read_or_empty(&ran)) {
@@ -1868,10 +1883,16 @@ fn args_reading_stdin_records(args: &[String]) -> Vec<String> {
 }
 
 /// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
+///
+/// `loom` is set when this is the artifact-gate battery over a loom's block 0 rather than a
+/// standalone dir-case (`rul-one-battery-two-orchestrations-until-d`): the drive is then an
+/// inspection re-drive into a throwaway store, and the content diff + `expected.out` bless are
+/// suppressed because the session layer owns transcript compare and bless.
 fn run_round_trip(
     harness: &Harness,
     case: &E2eCase,
     drive_stderr: &mut String,
+    loom: bool,
 ) -> Result<(), Failed> {
     let dir = &case.dir;
     let name = &case.name;
@@ -1920,8 +1941,14 @@ fn run_round_trip(
     });
 
     let book = dir.join("book.sh");
-    // THE run: it publishes into the case's shared store; inspection re-drives use throwaways.
-    let mut command = harness.dorc_shared(dir);
+    // THE run: a dir-case publishes into its shared store; a loom's block-0 battery is an
+    // inspection re-drive into a throwaway, because the SESSION is the loom's real publishing run
+    // (`inspection-redrives-carry-no-durable`).
+    let mut command = if loom {
+        harness.dorc(dir)
+    } else {
+        harness.dorc_shared(dir)
+    };
     command
         .arg(format!("--shim-dir={}", shim_dir.display()))
         .arg(format!("--book={}", book.display()));
@@ -2075,6 +2102,17 @@ fn run_round_trip(
 
     if xfail_active && head_ran_drifted(harness, dir, &mocks, &apply_art, run_root) {
         run.head_ran_drifted = true;
+    }
+
+    // A loom's block-0 battery ends here: the session (not this drive) owns the transcript, so the
+    // content diff and the `expected.out` bless below are the session layer's, and a loom is never
+    // XFAIL (`rul-one-battery-two-orchestrations-until-d`).
+    if loom {
+        return if run.failures.is_empty() {
+            Ok(())
+        } else {
+            Err(run.failures.join("\n").into())
+        };
     }
 
     if run.failures.is_empty() && !harness.bless && !xfail_active {
@@ -3590,7 +3628,6 @@ fn floor_bless_selftest() -> Vec<String> {
     let scratch = Scratch::new("floorbless");
     let dir = scratch.path.join("case");
     std::fs::create_dir_all(&dir).expect("create specimen dir");
-    std::fs::write(dir.join("expected.out"), "fresh transcript\n").expect("write transcript");
     std::fs::write(dir.join("expected.emitted"), "live\n").expect("write manifest");
     std::fs::write(dir.join("expected.ran"), "").expect("write run-set");
     let source = "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n#!/bin/sh\nprintf 'live\\n'\n\n-- expected.emitted --\nstale\n\n-- expected.ran --\n\n-- replay --\n$ dorc --book=book.sh\nstale transcript\n";
@@ -3601,8 +3638,14 @@ fn floor_bless_selftest() -> Vec<String> {
         case: errorloom::Case::parse(text).expect("parse specimen"),
         run: LoomRun::RoundTrip,
     };
+    // The session's one-block capture the fold commits (block 0's both-streams transcript).
+    let captures = [SessionBlock {
+        command: "dorc --book=book.sh".to_owned(),
+        output: "fresh transcript\n".to_owned(),
+        status: 0,
+    }];
 
-    if bless_loom(&spec(source), &dir, &[], false).is_err() {
+    if bless_loom(&spec(source), &dir, &captures, false).is_err() {
         fails
             .push("fb-default (the default fold refused a case it should have blessed)".to_owned());
     }
@@ -3616,7 +3659,7 @@ fn floor_bless_selftest() -> Vec<String> {
         );
     }
 
-    if bless_loom(&spec(source), &dir, &[], true).is_err() {
+    if bless_loom(&spec(source), &dir, &captures, true).is_err() {
         fails.push("fb-mint (the mint fold refused a well-formed case)".to_owned());
     }
     let minted = read_or_empty(&loom);
@@ -3627,7 +3670,7 @@ fn floor_bless_selftest() -> Vec<String> {
     }
     // Idempotence: minting an already-correct case must move no byte, or every mint of one drifted
     // cell would carry its neighbours' whitespace along for the ride.
-    if bless_loom(&spec(&minted), &dir, &[], true).is_err() {
+    if bless_loom(&spec(&minted), &dir, &captures, true).is_err() {
         fails.push("fb-remint (a second mint over its own output refused)".to_owned());
     }
     if read_or_empty(&loom) != minted {
@@ -4172,7 +4215,7 @@ fn main() {
         let harness = Arc::clone(&harness);
         match case.kind {
             E2eKind::RoundTrip => trials.push(Trial::test(case.name.clone(), move || {
-                run_round_trip(&harness, &case, &mut String::new())
+                run_round_trip(&harness, &case, &mut String::new(), false)
             })),
             E2eKind::Lint => trials.push(Trial::test(case.name.clone(), move || {
                 run_lint(&harness, &case)
