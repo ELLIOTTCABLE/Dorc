@@ -4500,7 +4500,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:one-definition-table-two-drivers
 - defined: spike/crates/cli/CLAUDE.md:222 — (`28K` §2; the seat UNIFIED at `28Q` §1's conversion) —
-- cited: 307c 308 308b 308c 30Nc 30Qb 30Qc 30Qd (10)
+- cited: 307c 308 308b 308c 30Nc 30Qb 30Qc 30Qd 30Xa (11)
 
 ## cli/CLAUDE:one-fixpoint-authority-per-case
 - defined: spike/crates/cli/CLAUDE.md:395 — — `crates/cli/tests/looms.rs` render-fixpoints every committed
@@ -7727,7 +7727,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:source-comparison-is-one-cli-seat
 - defined: spike/crates/cli/CLAUDE.md:166 — (opaque-ruled 2026-08-31;
-- cited: 30Va (1)
+- cited: 30Va 30Xa (2)
 
 ## 27R:source-external-shellcheck
 - defined: Research/notes/27R-lint-entrypoint-plan.md:74 — + **source-external-checkbashisms** — §4.
