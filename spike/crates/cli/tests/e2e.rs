@@ -378,9 +378,7 @@ impl Harness {
             std::fs::create_dir_all(profile_root.join(role)).expect("create the case profile");
         }
         sandbox::scrub_harness_env(&mut command, profile_root);
-        // A runner-owned PATH with `dorc` on it (the shim), never the ambient one: an inspection
-        // drive launches the harness by absolute path and needs no PATH to resolve it, but a
-        // deterministic literal is what keeps the scrub's promise (`30X:loom-syntax-grants-no-production-authority`).
+        // A runner-owned PATH (the shim), never the ambient one (`30X:loom-syntax-grants-no-production-authority`).
         command.env("PATH", &self.shim_dir);
         // THE ANALYSIS CWD (`30I:rul-dot-resolves-as-sh`), and it is the CASE DIRECTORY — the shape
         // an admin gets by running `dorc` where their book and oracles are. Pinned rather than
@@ -1409,9 +1407,6 @@ const CLOSED_LOOP_HOST: &str = "closed-loop.invalid";
 /// authored fixture, which is what makes the real-vs-fixture comparison possible at all.
 const CLOSED_LOOP_CASE: &str = "context-entry-babby-elides";
 
-// ---------------------------------------------------------------------------
-// the shell-session process driver (`30X:loom-process-driver-is-a-real-shell`)
-
 /// The per-session sentinel `printf`ed after each block with `$?`, so per-block output and exit
 /// status are recovered exactly. Distinctive enough that no `dorc`/`sh` output carries it; it never
 /// reaches a committed transcript, which is the bytes BETWEEN sentinels.
@@ -1449,19 +1444,16 @@ fn drive_session(
 ) -> Result<Vec<SessionBlock>, String> {
     let scratch = Scratch::new("session");
 
-    // The stdin the session's `$ dorc … --results -` blocks read is the FRAMED record stream (what
-    // the old harness fed the block-0 drive), so a block that names `-` with no `<` redirect still
-    // sees the records. A block that does redirect (`< probe-results.txt`) reads the materialized
-    // file instead, which `run_loom` has re-written to the SAME framed bytes.
+    // The session's stdin: the FRAMED record stream a `--results -` block with no `<` redirect reads.
     let framed_path = scratch.path.join("framed.txt");
     std::fs::write(&framed_path, framed).map_err(|error| format!("write framed stdin: {error}"))?;
 
-    // The script runs from a FILE, not stdin, so the session's own fd 0 stays free for the framed
-    // records above — a script fed on stdin would have `dorc --results -` read the script itself.
+    // The script runs from a FILE so fd 0 stays free for those records (a script on stdin would
+    // have `dorc --results -` read the script itself).
     let mut script = String::from("exec 2>&1\n");
     for (index, cmd) in commands.iter().enumerate() {
-        // Per-block clock default, injected ONLY while the variable still holds the runner's own
-        // last value (`30Xa-b1:rul-runner-varies-only-what-it-set`).
+        // Per-block clock default, applied only while it still holds the runner's own last value
+        // (`30Xa-b1:rul-runner-varies-only-what-it-set`).
         let _ = writeln!(
             script,
             "[ \"$DORC_SEAM_CLOCK\" = \"${RUNNER_CLOCK_SHADOW}\" ] && {{ export DORC_SEAM_CLOCK=seeded:{index}; {RUNNER_CLOCK_SHADOW}=seeded:{index}; }}"
@@ -1477,8 +1469,7 @@ fn drive_session(
     let mut command = Command::new(&harness.checker);
     command.current_dir(dir).arg(&script_path);
     sandbox::scrub_harness_env(&mut command, session_root);
-    // PATH is the shim (so `$ dorc …` resolves to the harness) then the case's mocks when present,
-    // and nothing inherited (`30X:loom-syntax-grants-no-production-authority`).
+    // PATH is the shim then the case's mocks, nothing inherited (`30X:loom-syntax-grants-no-production-authority`).
     let mut path_dirs = vec![harness.shim_dir.clone()];
     let mocks = dir.join("mocks");
     if mocks.is_dir() {
@@ -1488,17 +1479,14 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle in the session environment (`30X:loom-seams-are-sh-lines`): a constant run
-    // seed, the clock at the first block's base, posture pinned interactive, source-match off. The
-    // clock shadow starts EQUAL to the clock so block 0's own injection takes control of it.
+    // The seam bundle (`30X:loom-seams-are-sh-lines`); the clock shadow starts EQUAL to the clock.
     command.env(SEAM_SEED_ENV, RUN_SEED.to_string());
     command.env(SEAM_CLOCK_ENV, "seeded:0");
     command.env(SEAM_POSTURE_ENV, "pinned:interactive");
     command.env(SEAM_SOURCE_MATCH_ENV, "pinned:off");
     command.env(RUNNER_CLOCK_SHADOW, "seeded:0");
-    // A throwaway directory a `$ dorc … --artifact-dir=$ARTIFACT_DIR` block publishes into: the
-    // transcript shows the `$ARTIFACT_DIR` variable (a fixpoint), the artifact-set gate is
-    // `run_round_trip`'s own inspection re-drive, and the session's published tree is disposable.
+    // A throwaway `$ARTIFACT_DIR` a `--artifact-dir=$ARTIFACT_DIR` block publishes into (disposable;
+    // the artifact-set gate is `run_round_trip`'s own re-drive).
     let artifact_dir = scratch.path.join("artifacts");
     std::fs::create_dir_all(&artifact_dir).map_err(|error| format!("artifact dir: {error}"))?;
     command.env("ARTIFACT_DIR", &artifact_dir);
@@ -1513,10 +1501,8 @@ fn drive_session(
     );
     let merged = out.stdout;
 
-    // Split on sentinel lines: block N's output is everything between sentinel N-1 and sentinel N;
-    // the digits after the token are that block's exit status. The one `\n` the printf emits before
-    // the token is the delimiter — `strip_trailing_newlines` removes it (and every trailing blank,
-    // as the transcript compare does on both sides).
+    // Split on sentinel lines: block N's output is everything between sentinel N-1 and sentinel N,
+    // the digits after the token its exit status; `strip_trailing_newlines` drops the delimiter `\n`.
     let mut blocks: Vec<SessionBlock> = Vec::new();
     let mut current = String::new();
     let prefix = format!("{SESSION_SENTINEL} ");
@@ -1581,9 +1567,9 @@ fn block_produces_artifacts(command: &str) -> bool {
     }
     matches!(
         dorc_cli::parse_args_from(rest.to_vec()),
-        Ok(dorc_cli::Invocation::Analyze(args))
+        Ok(dorc_cli::Invocation::Analyze(analyzed))
             if matches!(
-                args.mode,
+                analyzed.mode,
                 dorc_cli::Mode::RoundTrip | dorc_cli::Mode::Plan | dorc_cli::Mode::Apply
             )
     )
@@ -1594,7 +1580,6 @@ fn block_produces_artifacts(command: &str) -> bool {
 /// block kind, with the transcript folded back into the `.loom` (the loom, not the scratch dir, is
 /// committed).
 fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
-    // Before materialization, so a refused floor cell leaves the committed `.loom` untouched.
     let carries_manifest = spec
         .case
         .sections()
@@ -1615,9 +1600,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         .map_err(|error| Failed::from(format!("FAIL  {}  [loom: {error}]", spec.name)))?;
 
     // A lint loom stays single-invocation (`dev-lint-looms-stay-single-invocation`): single-block,
-    // it drives the shipped binary under a scrubbed `PATH` (lint reads no seam) and renders to
-    // stdout, so routing it through the seam-driven session would change the binary under test for
-    // no multi-block or both-streams gain.
+    // shipped-binary, scrubbed `PATH`, stdout-only — the seam-driven session buys it nothing.
     if spec.run == LoomRun::Lint {
         let case = E2eCase {
             name: spec.name.clone(),
@@ -1627,15 +1610,12 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         return run_lint(harness, &case);
     }
 
-    // The round-trip session: one `sh`, every `$` line, both streams, one store.
     let session_root = scratch.path.join("session-store");
     for role in ["config", "state"] {
         std::fs::create_dir_all(session_root.join(role)).expect("create the session store");
     }
-    // The framed record stream: what a `$ dorc … --results -` block reads on the session's stdin,
-    // and — where a block redirects `< probe-results.txt` — what that file must hold for the session
-    // to read framed records. The AUTHORED (raw) file is restored below before the artifact battery,
-    // whose gate-1 compares the mocked probe against the raw fixture, not the wire form.
+    // The framed record stream feeds the session (stdin and, where a block redirects,
+    // `probe-results.txt`); the raw fixture is restored below for gate-1's mocked-probe compare.
     let args = shared_args(&dir)
         .map_err(|message| Failed::from(format!("FAIL  {}  [session: {message}]", spec.name)))?;
     let framed = framed_results(harness, &dir, &args);
@@ -1663,11 +1643,9 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
 
     let mut failures: Vec<String> = Vec::new();
 
-    // GATES BY KIND: the round-trip battery attaches to the artifact-producing block, re-driving it
-    // with SPLIT streams into a throwaway store (`30X:loom-gates-attach-by-kind`,
-    // `inspection-redrives-carry-no-durable`). Every round-trip loom's block 0 is that block, and
-    // `run_round_trip` in loom mode drives it as an inspection re-drive with its content diff and
-    // `expected.out` bless suppressed — the session below owns transcript compare and bless.
+    // GATES BY KIND (`30X:loom-gates-attach-by-kind`, `inspection-redrives-carry-no-durable`): the
+    // round-trip battery attaches to the artifact-producing block, re-driven split-stream into a
+    // throwaway with its own content diff + `expected.out` bless suppressed (the session owns those).
     if commands
         .iter()
         .any(|command| block_produces_artifacts(command))
@@ -1682,9 +1660,8 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         }
     }
 
-    // The DIAGNOSTIC gate every block gets: the `code:` assertion, over the whole session's output.
-    // Both streams are merged, so a diagnostic on any block's stderr is a transcript line the scan
-    // reads (`30X:loom-transcript-is-what-the-user-saw`).
+    // The `code:` assertion (`30X:loom-transcript-is-what-the-user-saw`): over the merged output, so
+    // a diagnostic on any block's stderr is a transcript line the scan reads.
     let session_output: String = captures
         .iter()
         .map(|capture| capture.output.as_str())
@@ -1692,15 +1669,13 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     failures.extend(defined_code_fired(spec, &session_output));
 
     for capture in &captures {
-        // A committed transcript may not carry the machine-specific materialization path (`282` §7).
         if scratch_path_leaked(&capture.output, &dir) {
             failures.push(format!(
                 "FAIL  {}  [session: `{}` echoed the throwaway materialization path — a transcript carrying a machine-specific absolute path is not committable; spell the invocation with case-relative paths]",
                 spec.name, capture.command
             ));
         }
-        // A non-artifact block (a why, a read, an `export`) must exit 0 — a crash the transcript
-        // alone could miss. The artifact block's own exit is `run_round_trip`'s (against `DORC_EXIT`).
+        // A non-artifact block must exit 0 (the artifact block's exit is `run_round_trip`'s).
         if capture.status != 0 && !block_produces_artifacts(&capture.command) {
             failures.push(format!(
                 "FAIL  {}  [session: `{}` exited rc={}]",
@@ -1709,8 +1684,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         }
     }
 
-    // The transcript compare (unless blessing): each block's captured both-streams output IS its
-    // committed transcript, compared under `strip_trailing_newlines` as every other golden is.
+    // The transcript compare (unless blessing): each block's both-streams capture IS its transcript.
     if !harness.bless {
         for (block, capture) in spec.case.replay().blocks().iter().zip(&captures) {
             if strip_trailing_newlines(&capture.output) != strip_trailing_newlines(block.output()) {
@@ -1727,9 +1701,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         }
     }
 
-    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`): the
-    // battery's own `expected.ran` write happened above, and `bless_loom` folds it in with the
-    // transcript.
+    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`).
     if harness.bless && failures.is_empty() {
         bless_loom(spec, &dir, &captures, harness.bless_floor)?;
     }
@@ -1970,9 +1942,8 @@ fn run_round_trip(
     });
 
     let book = dir.join("book.sh");
-    // THE run: a dir-case publishes into its shared store; a loom's block-0 battery is an
-    // inspection re-drive into a throwaway, because the SESSION is the loom's real publishing run
-    // (`inspection-redrives-carry-no-durable`).
+    // A dir-case publishes into its shared store; a loom's block-0 battery is an inspection re-drive
+    // into a throwaway (the SESSION is the loom's real run — `inspection-redrives-carry-no-durable`).
     let mut command = if loom {
         harness.dorc(dir)
     } else {
@@ -2133,9 +2104,8 @@ fn run_round_trip(
         run.head_ran_drifted = true;
     }
 
-    // A loom's block-0 battery ends here: the session (not this drive) owns the transcript, so the
-    // content diff and the `expected.out` bless below are the session layer's, and a loom is never
-    // XFAIL (`rul-one-battery-two-orchestrations-until-d`).
+    // A loom's block-0 battery ends here (`rul-one-battery-two-orchestrations-until-d`): the session
+    // owns the content diff + `expected.out` bless below, and a loom is never XFAIL.
     if loom {
         return if run.failures.is_empty() {
             Ok(())
@@ -3730,8 +3700,7 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
         bless_floor: false,
         floor_shells: Vec::new(),
         profile_parent: fresh_profile_parent("foldpass"),
-        // Its OWN shim, not a clone of the real one: `Harness::drop` removes `shim_dir`, and a
-        // shared copy would take the live harness's shim down with this specimen.
+        // Its OWN shim: `Harness::drop` removes `shim_dir`, so a clone would down the live one.
         shim_dir: build_dorc_shim(&harness.harness_bin),
     };
 
