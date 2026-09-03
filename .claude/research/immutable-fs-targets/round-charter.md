@@ -187,17 +187,37 @@ Dated; paraphrased closely; nothing here is a ruling unless it says so.
   context, abstract SHAPE and CARDINALITY first, coverage-per-target someday (expensive,
   needs a robust capability system first).
 
+## Second sitting (2026-09-03, design duck over the returned fronts) — human-typed acks; text in `notes/26N`
+
+- ack `rul-delivery-shape-file-backed-default` (the sh-visible behaviour; specifics may vary
+  per platform and by user configuration; Windows needs its own tune) · ack the
+  single-streamed tree, for the spike, suspicious · ack `rul-preflight-over-probe-time` (typed:
+  anything not affecting the reviewed plan preflights immediately before mutation; probe-time
+  only for late decisions that reduce review load; forward human attention nearly never owed)
+  · ack the on-demand, tree-shaped, single-artifact standup; "full and upfront" is a lean ·
+  NACK ship-both forms ("we hold the line on how we hide things") · ack the `$0` authority
+  spelling after the both-worlds argument (the lattice carries the Dorc world and the off-ramp
+  world; no claim survives the off-ramp; bytes untouched; nothing taught) · lints dropped as
+  meaningless, all hints deferred · materialise under the input filename · Dorc moves no file
+  whose loading path it does not manage · TABLED the shebang as dialect declaration · ack that
+  the flagship fixture is guard-at-most; havoc is never a denial · HARD ACK
+  `rul-dorc-acts-are-withhold-shaped` ("first, do no harm") · ack `rul-unresolvable-book-load-refuses`
+  as no-ship, the custody split reserved for dorc-lang · ack the floor-unevenness gloss (trumped
+  by kFAIL-withhold and secrets) · ack the `30Q` supersessions · the census question left OPEN
+  as the next sitting.
+
 ## Conductor state (running; overwrite in place)
 
 - All four fronts returned and folded (`plan.md` addenda 1–3; turn01/04/05/06 are their
   records); manifest at 117 sources (all `graded-by: subagent`; re-verification of the
-  load-bearing grades is owed if any is ever cited as load-bearing in a stamped plan). No
-  front in flight; no measurement lane (constrained machine); no further dispatches this
-  sitting (conductor context). The round's direction-setting synthesis is
-  **`Research/notes/26N-host-capabilities-and-the-weird-host-frontier.md`** — read that, not
-  this directory, for takeaways; this directory is the evidence base. Human-as-debugger asks
+  load-bearing grades is owed if any is ever cited as load-bearing in a stamped plan). The
+  design sitting over them is CLOSED with the acks above; the round's direction-setting
+  synthesis is **`Research/notes/26N-host-capabilities-and-the-weird-host-frontier.md`** —
+  read that, not this directory, for takeaways; this directory is the evidence base. No
+  front in flight; no measurement lane (constrained machine). Human-as-debugger asks
   outstanding: the Ubiquiti page (archiver 403), HPE iLO's CLP guide (empty bodies), a
   fish/csh login shell for the marker-line measurement, and the population/habit question.
+  Next sitting: `26N:open-census-needs-value-plane`.
 
 ## Exclusions
 

@@ -105,7 +105,7 @@ serve poorly. DREP and return channels are in scope.
   under fish (`$status`) or csh? A one-line measurement; needs such a shell somewhere.
 - `amb-installer-remount-ro` — unverified that the Debian installer writes it; low stakes.
 
-## My read (a lean, NOT a decision)
+## My read (a lean at the time; SUPERSEDED as direction by `Research/notes/26N` §2, ruled 2026-09-03)
 
 O4 is well supported, and the evidence changed the WHY. The steady odd-host motive for a
 no-fs fallback is weak — appliances give you a tmpfs — while the failed-host motive is
