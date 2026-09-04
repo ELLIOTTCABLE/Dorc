@@ -2923,15 +2923,16 @@ fn dual_rail_check(
 fn run_lint_real(
     harness: &Harness,
     tool: &str,
-    fixture: Option<&PathBuf>,
+    fixture: &Path,
     extra_path: &str,
 ) -> Result<(), Failed> {
-    let Some(dir) = fixture.filter(|dir| dir.join("book.sh").is_file()) else {
+    if !fixture.join("book.sh").is_file() {
         return Err(format!(
             "FAIL  lint-real/{tool}  [lint-real: listed tool has no fixture (a `lint-real-{tool}/book.sh` case dir)]"
         )
         .into());
-    };
+    }
+    let dir = fixture;
     let (coverage, finding): (&str, &[&str]) = match tool {
         "shellcheck" => (
             "\"name\":\"shellcheck\",\"status\":\"ran\"",
@@ -3332,14 +3333,18 @@ fn case_shape_selftest() -> Vec<String> {
         .into_iter()
         .map(|case| (case.name, case.kind))
         .collect();
-    for (name, want) in [
-        ("shape-missing-out", E2eKind::MissingExpectedOut),
-        ("shape-real-tools", E2eKind::LintReal),
-    ] {
-        let got = kinds.get(name).copied();
-        if got != Some(want) {
-            fails.push(format!("cs-{name} (want {want:?}, got {got:?})"));
-        }
+    // `book.sh` + anything else is an authoring error the walk mints a red trial for; `book.sh`
+    // ALONE is a real-tools fixture the walk SKIPS (the real-tools trials own it by path).
+    let missing = kinds.get("shape-missing-out").copied();
+    if missing != Some(E2eKind::MissingExpectedOut) {
+        fails.push(format!(
+            "cs-shape-missing-out (want MissingExpectedOut, got {missing:?})"
+        ));
+    }
+    if kinds.contains_key("shape-real-tools") {
+        fails.push(String::from(
+            "cs-shape-real-tools (a `book.sh`-alone dir must be skipped, never a corpus case)",
+        ));
     }
     fails
 }
@@ -3724,17 +3729,16 @@ fn gate_differential(harness: &Harness, sh_dir: &Path) -> Option<String> {
 /// Run every confound battery before any case. A failing battery ABORTS (exit 3) exactly
 /// as the sh harness does: a lying judge is worse than no judge, so no case may report
 /// green underneath one.
-fn preflight(harness: &Harness, discovered: usize, looms: usize) {
+fn preflight(harness: &Harness, looms: usize) {
     let mut fatal: Vec<String> = Vec::new();
     // The DISCOVERY FLOOR. Walking the wrong roots yields zero trials, and a suite of zero
     // trials EXITS GREEN — the one failure mode this runner's own path constants can cause
-    // and not report. A count is deliberately not pinned (`count-drifts`); non-empty is. Both
-    // populations are floored (`30X:loom-one-runner`): the corpus has dir-cases AND looms, so a
-    // broken loom walk beside a live dir walk must not slip through.
-    if discovered == 0 || looms == 0 {
+    // and not report. A count is deliberately not pinned (`count-drifts`); non-empty is. Only the
+    // LOOM population is floored now (`30X:loom-one-runner`): since the dir-case conversion the
+    // corpus is looms plus the real-tools fixtures, and `discover_e2e` legitimately finds nothing.
+    if looms == 0 {
         fatal.push(format!(
-            "FATAL  discovery floor: {} found under any of {:?} — the collection is not where the runner looks, and an empty suite would otherwise pass.",
-            if discovered == 0 { "no dir-cases" } else { "no looms" },
+            "FATAL  discovery floor: no looms found under any of {:?} — the collection is not where the runner looks, and an empty suite would otherwise pass.",
             case_roots()
         ));
     }
@@ -3962,7 +3966,7 @@ fn main() {
     let harness = Arc::new(Harness::resolve());
     let discovered = discover_e2e(&case_roots());
     let looms = discover_looms(&case_roots());
-    preflight(&harness, discovered.len(), looms.len());
+    preflight(&harness, looms.len());
 
     let mut trials: Vec<Trial> = Vec::new();
     {
@@ -4000,12 +4004,8 @@ fn main() {
             run_loom_case(&harness, &loom)
         });
     }
-    let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
     for case in discovered {
         match case.kind {
-            E2eKind::LintReal => {
-                real_fixtures.insert(case.name.clone(), case.dir);
-            }
             E2eKind::MissingExpectedOut => {
                 let name = case.name.clone();
                 push_trial(&mut trials, seed, name.clone(), move || {
@@ -4025,18 +4025,15 @@ fn main() {
     {
         let tools: Vec<String> = list.split(',').map(str::to_owned).collect();
         let path = Arc::new(real_tools_path(&tools));
-        let fixtures = Arc::new(real_fixtures);
+        // The real-tools lane owns its fixtures directly (`d-brief.md` item 5): each
+        // `lint-real-<tool>` dir sits beside this crate's `.rs` tests, no longer a corpus case.
+        let tests_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
         for tool in tools {
             let harness = Arc::clone(&harness);
             let path = Arc::clone(&path);
-            let fixtures = Arc::clone(&fixtures);
+            let fixture = tests_dir.join(format!("lint-real-{tool}"));
             push_trial(&mut trials, seed, format!("lint-real/{tool}"), move || {
-                run_lint_real(
-                    &harness,
-                    &tool,
-                    fixtures.get(&format!("lint-real-{tool}")),
-                    &path,
-                )
+                run_lint_real(&harness, &tool, &fixture, &path)
             });
         }
     }

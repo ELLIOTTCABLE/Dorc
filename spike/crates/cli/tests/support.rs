@@ -159,17 +159,16 @@ pub(crate) fn report_path_selection(
 }
 
 /// What a discovered dir-form case is driven as.
+///
+/// A `book.sh`-ALONE dir is a real-tools fixture and is NOT a corpus case (the real-tools trials
+/// own it by constructed path — `d-brief.md` item 5); only the authoring-error shape below is
+/// discovered as a dir.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum E2eKind {
-    /// A real-external-linter fixture, driven only under `DORC_E2E_REAL_TOOLS`.
-    LintReal,
     /// A dir carrying `book.sh` plus more than `book.sh` alone — an authoring error, minted as a
-    /// RED trial (`30Qa:fnd-missing-expected-out-hides-a-case`).
-    ///
-    /// The shape table above admits a real-tools fixture as `book.sh` ALONE, so anything beside it
-    /// is not a recognized case (the author meant a loom). Before this, such a dir classified
-    /// `LintReal` and its name matched no `lint-real-<tool>` lookup, so the whole case vanished from
-    /// the suite with nothing said — the failure mode the discovery floor exists to make impossible.
+    /// RED trial (`30Qa:fnd-missing-expected-out-hides-a-case`). The shape table admits a real-tools
+    /// fixture as `book.sh` ALONE, so anything beside it is not a recognized case (the author meant
+    /// a loom).
     MissingExpectedOut,
 }
 
@@ -240,13 +239,15 @@ pub(crate) fn discover_e2e(roots: &[PathBuf]) -> Vec<E2eCase> {
             if !path.is_dir() || multi_file_loom(&name, &path).is_some() {
                 continue;
             }
-            let kind = if !path.join("book.sh").is_file() {
+            if !path.join("book.sh").is_file() {
                 continue;
-            } else if round_trip_residue(&path).is_empty() {
-                E2eKind::LintReal
-            } else {
-                E2eKind::MissingExpectedOut
-            };
+            }
+            // `book.sh` ALONE is a real-tools fixture (`lint-real-<tool>`), owned directly by the
+            // real-tools trials that construct its path — not a corpus case (`d-brief.md` item 5).
+            if round_trip_residue(&path).is_empty() {
+                continue;
+            }
+            let kind = E2eKind::MissingExpectedOut;
             assert!(
                 !cases.iter().any(|case| case.name == name),
                 "duplicate case name `{name}` across roots"
