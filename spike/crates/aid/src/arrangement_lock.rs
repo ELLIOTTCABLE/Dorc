@@ -2245,4 +2245,11 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         why: "288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.",
         words: Some(ProseTier::Slop(&["for `why`: the same answer as one machine-readable JSON document on stdout -- version-unstable, and a value the engine withholds appears as an explicit marker, never a missing key"])),
     },
+    ArrangementEntry {
+        slug: "cli-apply-identities-line",
+        occurrence: None,
+        when_used: "after a `dorc apply --host` records BOTH its intent and outcome, the apply console's own decision digest closes with this line so the user's next act is `dorc why` over exactly those two ids. cli/compose.rs emit_apply_identities.",
+        why: "30X section 11 (the post-dispatch surfaces). The intent and outcome identities are the run's own seeded values, never fixture literals; the line's words are UNWRITTEN (error-authorship-tier) until a case authors them.",
+        words: None,
+    },
 ];
