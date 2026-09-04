@@ -3642,6 +3642,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:invocation-errors-are-registry-codes
 - defined: spike/crates/cli/CLAUDE.md:28 — (`288` §6) — the parsers return typed `Diag`s, never
+- cited: 30Xa (1)
 
 ## cli/CLAUDE:io-at-edges-only
 - defined: spike/crates/cli/CLAUDE.md:37 — — keep I/O in `run()`/`main`; the pipeline
@@ -4156,6 +4157,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28N:lock-tier-by-mechanism
 - defined: Research/notes/28N-loomability-ledger.md:16 — — the words live in a generated lock and are edited by the
 - cited: 28L (2)
+
+## loom-driver-is-derived-and-reported
+- defined: —
+- cited: 30X 30Xa (2)
 
 ## cli/CLAUDE:loom-form-is-the-same-battery
 - defined: spike/crates/cli/CLAUDE.md:378 — (`288:phase-e2e-loom-conversion`) — a whole-product case may be
