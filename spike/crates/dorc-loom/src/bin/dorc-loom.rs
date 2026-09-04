@@ -1040,6 +1040,18 @@ fn inspect_cases(
             .map_err(|error| format!("parse HEAD case {relative_path}: {error}"))?;
         selected.push(relative_path.clone());
         let mut body = Vec::new();
+        // A candidate must reproduce under a SECOND seed before it may be blessed, so publishing
+        // never bakes nondeterminism into a golden (`30Xa:Checkpoint D1`, rider d; the mirror of the
+        // e2e bless refusal). A pinned case reproduces trivially; a seed-dependent one names the pin.
+        if let Some(refusal) = dorc_loom::second_seed_reproduction_refusal(&consumer, &case)
+            .map_err(|error| format!("{}: {error}", path.display()))?
+        {
+            refused = refused.saturating_add(1);
+            writeln!(body, "second-seed reproduction refused: {refusal}")
+                .map_err(|error| error.to_string())?;
+            emit_case(out, path, &body, quiet)?;
+            continue;
+        }
         let results = drive_replays(&case, &consumer, env, path, &source)?;
         let InspectedBlocks {
             inspected_replays,

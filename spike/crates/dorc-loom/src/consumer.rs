@@ -1910,15 +1910,24 @@ struct LoomSession {
 }
 
 impl LoomSession {
+    fn new() -> Self {
+        Self::with_env(SessionEnv::seeded())
+    }
+
+    /// A session seeded with an explicit run seed, so a blessing authority can re-render the same
+    /// case under a SECOND seed (`30Xa:Checkpoint D1`, rider d).
+    fn new_seeded(seed: u64) -> Self {
+        Self::with_env(SessionEnv::seeded_with(seed))
+    }
+
     #[expect(
         clippy::expect_used,
         reason = "the pinned synthetic root is a runner literal that always resolves; a refusal is a bug"
     )]
-    fn new() -> Self {
+    fn with_env(env: SessionEnv) -> Self {
         let store: Box<dyn dorc_cli::durable::LocalIo> = Box::new(platform_model_io(
             dorc_cli::durable::FailureSchedule::intact(),
         ));
-        let env = SessionEnv::seeded();
         let seams: dorc_cli::seam::Seams = dorc_cli::seam::HarnessSeams::from_env(&env)
             .expect("the runner's seeded defaults always parse")
             .into();
@@ -2154,6 +2163,18 @@ impl<'a> DorcReplayDriver<'a> {
             case,
             self_reference: SelfReference::Allowed,
             session: RefCell::new(LoomSession::new()),
+        }
+    }
+
+    /// The same driver under an explicit run seed, so a second-seed re-render can prove a candidate
+    /// reproduced before a blessing authority writes it (`30Xa:Checkpoint D1`, rider d).
+    #[must_use]
+    pub fn new_seeded(consumer: &'a DorcConsumer, case: &'a Case, seed: u64) -> Self {
+        Self {
+            consumer,
+            case,
+            self_reference: SelfReference::Allowed,
+            session: RefCell::new(LoomSession::new_seeded(seed)),
         }
     }
 
@@ -2432,6 +2453,74 @@ pub fn render_run_loom_in_process(
         })
         .collect();
     Ok(TwoDriverOutcome::Rendered(bytes))
+}
+
+/// This case's block outputs under one run seed (the stamped part stream where a block renders
+/// editable prose, else its raw bytes). A declined session yields `None` — it is proven by the
+/// shell, so a blessing authority has nothing to reproduce here.
+fn block_outputs_under_seed(
+    consumer: &DorcConsumer,
+    case: &Case,
+    seed: u64,
+) -> Result<Option<Vec<String>>, RunError> {
+    let driver = DorcReplayDriver::new_seeded(consumer, case, seed);
+    let declined = RefCell::new(false);
+    let outcome = drive_case(case, &RunEnv::new(), |command, context| {
+        driver.drive(command, context).map_or_else(
+            || {
+                *declined.borrow_mut() = true;
+                Ok(ReplayResult::bytes(String::new()))
+            },
+            Ok,
+        )
+    });
+    match outcome {
+        Ok(results) if !*declined.borrow() => Ok(Some(
+            results
+                .iter()
+                .map(|result| {
+                    result
+                        .editable_render()
+                        .map_or_else(|| result.output().to_owned(), EditableRender::text)
+                })
+                .collect(),
+        )),
+        Ok(_) | Err(RunError::UnsupportedReplayGrammar { .. }) => Ok(None),
+        Err(other) => Err(other),
+    }
+}
+
+/// Re-render `case` under a SECOND seed and refuse a divergence, so `dorc-loom publish` — the
+/// in-process blessing authority — never writes a transcript that baked in nondeterminism
+/// (`30X:seed-two-affordances`; `30Xa:Checkpoint D1`, rider d). The mirror of
+/// `e2e.rs::second_seed_reproduction_refusal` and the `run_loom` bless path. Returns the first
+/// differing block's command and the pin remedy, or `None` when every block reproduced (or the
+/// session declines — a declined case is the shell's to prove).
+///
+/// # Errors
+/// Returns a case-materialization failure (never a decline — that is a `None`).
+pub fn second_seed_reproduction_refusal(
+    consumer: &DorcConsumer,
+    case: &Case,
+) -> Result<Option<String>, RunError> {
+    let seed = dorc_testbed::run_seed::run_seed();
+    let (Some(primary), Some(second)) = (
+        block_outputs_under_seed(consumer, case, seed)?,
+        block_outputs_under_seed(consumer, case, dorc_testbed::run_seed::second_seed(seed))?,
+    ) else {
+        return Ok(None);
+    };
+    Ok(primary
+        .iter()
+        .zip(&second)
+        .zip(case.replay().blocks())
+        .find(|((a, b), _)| a != b)
+        .map(|((_, _), block)| {
+            format!(
+                "`{}` did not reproduce under a second seed, so publishing it would bake nondeterminism into a golden — pin the case by adding `$ export DORC_SEED=<n>` as its first session line",
+                block.command()
+            )
+        }))
 }
 
 impl CaseRenderer for DorcConsumer {

@@ -19,7 +19,7 @@ use dorc_cli::seam::SeamEnv;
 use dorc_testbed::run_seed::run_seed;
 use dorc_testbed::seam_vars::{CLOCK_ENV, SEED_ENV};
 
-use crate::runner_seams::{SESSION_ROOT, clock_seam_value, roots_seam_pair, value_seam_pairs};
+use crate::runner_seams::{SESSION_ROOT, clock_seam_value, roots_seam_pair, value_seam_pairs_for};
 
 /// One modelled variable: a value (`None` = marked but unset, so no child sees it) and whether it is
 /// exported.
@@ -39,15 +39,26 @@ pub(crate) struct SessionEnv {
     /// How many `dorc` INVOCATION blocks have run so far — the clock ordinal. Only invocations tick
     /// the clock, so a `$ export DORC_SEED=<n>` pin line is ordinal-neutral (`30Xa:Checkpoint C3`).
     invocation_ordinal: usize,
+    /// This drive's run seed — the fallback for an unset/unparseable `DORC_SEED`, so a second-seed
+    /// re-render (`30Xa:Checkpoint D1`, rider d) folds every clock from the seed it was handed.
+    seed: u64,
 }
 
 impl SessionEnv {
-    /// Seed the map with the runner's session-start defaults (all exported, as the shell's
-    /// `command.env` makes them), with the clock shadow starting EQUAL to invocation-0's clock.
+    /// Seed the map with THIS run's seed (`dorc_testbed::run_seed`).
     #[must_use]
     pub(crate) fn seeded() -> Self {
+        Self::seeded_with(run_seed())
+    }
+
+    /// Seed the map with an explicit run seed, so a blessing authority can re-render the same case
+    /// under a SECOND seed and refuse a transcript that did not reproduce (`30X:seed-two-affordances`).
+    /// All defaults are exported, as the shell's `command.env` makes them, with the clock shadow
+    /// starting EQUAL to invocation-0's clock.
+    #[must_use]
+    pub(crate) fn seeded_with(seed: u64) -> Self {
         let mut vars: BTreeMap<String, Var> = BTreeMap::new();
-        for (name, value) in value_seam_pairs(0) {
+        for (name, value) in value_seam_pairs_for(seed, 0) {
             vars.insert(
                 name.to_owned(),
                 Var {
@@ -72,6 +83,7 @@ impl SessionEnv {
             vars,
             runner_clock,
             invocation_ordinal: 0,
+            seed,
         }
     }
 
@@ -108,7 +120,7 @@ impl SessionEnv {
     fn current_seed(&self) -> u64 {
         self.var(SEED_ENV)
             .and_then(|raw| raw.parse::<u64>().ok())
-            .unwrap_or_else(run_seed)
+            .unwrap_or(self.seed)
     }
 
     /// `export NAME=word`: set the value and mark exported.

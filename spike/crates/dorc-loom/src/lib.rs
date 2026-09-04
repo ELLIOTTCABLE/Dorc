@@ -19,7 +19,7 @@ mod consumer;
 pub use consumer::{
     DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, DorcReplayDriver, LoomDecline,
     SectionVariables, SeedRefusal, ShellDecline, TwoDriverOutcome, render_run_loom_in_process,
-    replay_case, replay_case_with_inputs, shell_decline,
+    replay_case, replay_case_with_inputs, second_seed_reproduction_refusal, shell_decline,
 };
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};
