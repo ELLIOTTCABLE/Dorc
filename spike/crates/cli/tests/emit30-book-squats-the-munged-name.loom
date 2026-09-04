@@ -1,0 +1,158 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# A book that DEFINES the munged name the emission was about to bind does not get to answer the
+# guard (`30Pb:fnd-emitted-names-need-freshness-and-hygiene`; `271:rul-sin-ordering`, pope-sin tier).
+#
+# CFG SHAPE: four top-level statements — an `alias` (the definition vector that puts the whole
+# artifact into defensive emission, so every emitted name munges), a funcdef spelling the exact
+# `<role>_h<8 hex>` the pre-sourced oracle's body hashes to, the unmodeled `hork` wall that turns the
+# site below it from an elision into a GUARD, and the described `wombat sync` that guard sits on.
+#
+# WHY IT IS SQUATTABLE AT ALL: `<name>_h<digest>` is computable by anyone who can read the artifact —
+# it is SHA-256 over the oracle's own bytes, published in every plan — so it is not a hash accident
+# but a name a person can write down and claim. The preamble hoists ABOVE the whole book, and sh is
+# last-wins, so a book-sited definition of that name would rebind it before the guard runs and the
+# guard would invoke the ADMIN's body while attributing the ORACLE's judgment.
+#
+# WHAT IT OBSERVES: `ran: wombat cmp -- a.conf` — the oracle's own check. The allocator holds every
+# name the book names and lengthens the digest until the candidate is free, so the emission binds a
+# name one hex longer and the squat below is left to be exactly what it looks like: a function the
+# book defined and nothing calls. `ran: wombat squat` here would be the pope-sin.
+alias dorc_local_ls='ls -l'
+wombat__is_converged_h9713bef5() { wombat squat "$@" ;}
+hork provision
+wombat sync a.conf
+
+-- wombat.oracle.sh --
+# dorc-lang/v0.2
+# An ordinary verdict body, pre-sourced: its bindings are AMBIENT, so the artifact carries them in
+# the hoisted preamble and nowhere else — which is what makes the emitted NAME the only thing
+# standing between the book's squat and the guard.
+wombat__is_converged() {
+   case "${1-}" in
+   sync) wombat cmp -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Site numbering (leaves in book order; a funcdef is not one): 0 the `alias`, 1 the unmodeled wall,
+# 2 the described `wombat sync`. Only site 2 is measured, and it sits PAST `hork`'s wall, so a
+# `holds` cell mints a GUARD rather than an elision — which is what puts an emitted name on the apply
+# surface at all.
+site 2 effect=holds
+
+-- mocks/.log --
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0. `hork` is a non-functional stub name —
+# under the harness's mocks-only PATH this file is the only thing an executed artifact can reach.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0. `wombat` is a non-functional stub name —
+# under the harness's mocks-only PATH this file is the only thing an executed artifact can reach.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp -- a.conf
+
+-- replay --
+$ dorc --book=book.sh --pre-source wombat.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=91dea46051a3d4b59bfd66eca45e20107af0d6ee9833fb866b744681fa29976f sites=1 @@dorc@@\n'
+# site 2: dorc-auto:wombat@converged
+wombat__is_converged() {
+   case "${1-}" in
+   sync) wombat cmp -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+wombat__is_converged 'sync' 'a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: operand 2 is an unresolvable positional
+parameter (`$@`/`$*`/`$N`), so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:21:49
+   21 | wombat__is_converged_h9713bef5() { wombat squat "$@" ;}
+      |                                                 \__/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `alias dorc_local_ls='ls -l'`, `hork provision` -- run `dorc
+why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:20:1
+   20 | alias dorc_local_ls='ls -l'
+      | \_________________________/
+
+   = help:  sm site runs `alias dorc_local_ls='ls -l'`
+why: ran because operand 2 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 21:36 `wombat squat "$@"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: site 2 guard [dorc-auto:wombat] -- licensed by the dorc-auto:wombat oracle's vouch (at wombat.oracle.sh:7) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+hint: 'alias' (line 20) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+wombat__is_converged_h9713bef55() {
+   case "${1-}" in
+   sync) wombat cmp -- "${2-}" ;;
+   *) return 2 ;;
+   esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+# A book that DEFINES the munged name the emission was about to bind does not get to answer the
+# guard (`30Pb:fnd-emitted-names-need-freshness-and-hygiene`; `271:rul-sin-ordering`, pope-sin tier).
+#
+# CFG SHAPE: four top-level statements — an `alias` (the definition vector that puts the whole
+# artifact into defensive emission, so every emitted name munges), a funcdef spelling the exact
+# `<role>_h<8 hex>` the pre-sourced oracle's body hashes to, the unmodeled `hork` wall that turns the
+# site below it from an elision into a GUARD, and the described `wombat sync` that guard sits on.
+#
+# WHY IT IS SQUATTABLE AT ALL: `<name>_h<digest>` is computable by anyone who can read the artifact —
+# it is SHA-256 over the oracle's own bytes, published in every plan — so it is not a hash accident
+# but a name a person can write down and claim. The preamble hoists ABOVE the whole book, and sh is
+# last-wins, so a book-sited definition of that name would rebind it before the guard runs and the
+# guard would invoke the ADMIN's body while attributing the ORACLE's judgment.
+#
+# WHAT IT OBSERVES: `ran: wombat cmp -- a.conf` — the oracle's own check. The allocator holds every
+# name the book names and lengthens the digest until the candidate is free, so the emission binds a
+# name one hex longer and the squat below is left to be exactly what it looks like: a function the
+# book defined and nothing calls. `ran: wombat squat` here would be the pope-sin.
+alias dorc_local_ls='ls -l'
+wombat__is_converged_h9713bef5() { wombat squat "$@" ;}
+hork provision
+( wombat__is_converged_h9713bef55 sync a.conf ) || wombat sync a.conf   # dorc: guard [dorc-auto:wombat converged-vouch; probe: holds]
+dorc: plan-summary sites=3 elide=0 omit=0 guard=1 run=2 may-alias=0
+dorc: decision-digest 7771642b4b44386933a359a0d79505806024d7b291cbd8f33fe5e003584dfaeb

@@ -1,7 +1,0 @@
-#!/bin/sh
-# INERT shim — dual-use: the service probe (`systemctl is-enabled -- <svc>`) AND the apply
-# mutator (`systemctl enable <svc>`). HOST: nginx enabled (is-enabled ⇒ rc 0 ⇒ holds), so
-# `enable` is converged. The mutating verb just logs + exits 0. Mutates nothing.
-. "${0%/*}/.log"; _dorc_logged "$@"
-case $1 in is-enabled) exit 0 ;; esac
-exit 0

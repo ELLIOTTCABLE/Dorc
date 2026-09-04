@@ -1,0 +1,165 @@
+---
+---
+-- book.sh --
+# strawman24-alias-provides (24F Stage 5 — the aliasing-closure flagship). The wall and the victim
+apt-get install nginx
+apt-get install nginx-full
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# Kind-owner resolver case: sm_dorc_Package__resolve() is keyed by KIND — its NAME is the
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;; esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}
+
+sm_dorc_Package__resolve() {
+   dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
+}
+
+sm_dorc_Package__state_stored_only_in() {
+   printf '/var/lib/dpkg\n'                  : stored-in fs
+   : undivided-by-transit-across user
+}
+
+-- probe-results.txt --
+site 0 effect=absent
+site 1 effect=holds
+resolv sm.dorc.Package:nginx canon=nginx
+resolv sm.dorc.Package:nginx-full canon=nginx
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — dpkg-query serves TWO read-only uses in this fixture:
+#   (1) RESOLVER `dpkg-query -W -f '${Package}\n' -- <pkg>` (the `-f` form): print the CANONICAL
+#       package. HOST model: `nginx-full` is a provides-alias of `nginx`, so BOTH canonicalize to
+#       `nginx` ⇒ the closure sees the alias.
+#   (2) CONVERGENCE `dpkg-query -W <pkg>` (no `-f`): exit rc. HOST: nginx NOT installed
+#       (rc 1 ⇒ diverged ⇒ the wall RUNS); nginx-full installed (rc 0 ⇒ converged ⇒ would-elide).
+# Read-only (a query, never a mutator); logs its argv for symmetry. Pure-sh (no real dpkg-query
+# under PATH=mocks-only).
+. "${0%/*}/.log"; _dorc_logged "$@"
+case " $* " in
+  *" -f "*) printf 'nginx\n' ;;
+  *) case " $* " in *" nginx-full "*) exit 0 ;; *) exit 1 ;; esac ;;
+esac
+
+-- expected.ran --
+ran: apt-get install nginx
+ran: dpkg-query -W nginx-full
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1f716a4fa3488693694abceab787ea77b509b26e570670c99f467a4956eff7e4 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:nginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}
+apt_get__is_converged 'install' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx-full@installed
+apt_get__is_converged 'install' 'nginx-full'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc resolver-probe (read-only, 24F section 3): owner-declared identity canonicalization. Each
+# resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
+# prints the canonical form (or a dangling marker), re-keyed by the coordinate:
+#   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling
+# The engine canonicalizes both footprint and backing coords through this before disjoint.
+
+# resolv sm.dorc.Package:nginx via sm.dorc.Package.resolve()
+sm_dorc_Package__resolve() {
+   dpkg-query -W -f '${Package}\n' -- "$1" 2>/dev/null || printf '%s\n' "$1"
+}
+_c=$(sm_dorc_Package__resolve 'nginx' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Package:nginx canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Package:nginx dangling @@dorc@@\n'; fi
+# resolv sm.dorc.Package:nginx-full via sm.dorc.Package.resolve()
+_c=$(sm_dorc_Package__resolve 'nginx-full' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Package:nginx-full canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Package:nginx-full dangling @@dorc@@\n'; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:27) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in install) dpkg-query -W "$1" >/dev/null 2>&1 ;; *) return 2 ;; esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+# strawman24-alias-provides (24F Stage 5 — the aliasing-closure flagship). The wall and the victim
+apt-get install nginx
+( apt_get__is_converged install nginx-full ) || apt-get install nginx-full   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 85a556bf9d78c75ad812fc3284a252baf5654bf760e72f8141dcb6856dcca0cf

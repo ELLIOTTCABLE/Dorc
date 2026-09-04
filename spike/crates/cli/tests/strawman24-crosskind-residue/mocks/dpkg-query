@@ -1,4 +1,0 @@
-#!/bin/sh
-# INERT probe shim: nginx NOT installed (rc 1 ⇒ absent ⇒ `apt-get install nginx` RUNS = the wall).
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 1

@@ -1,0 +1,143 @@
+---
+---
+-- book.sh --
+# strawman24-alias-symlink (24F Stage 5 — the aliasing closure on the `fs` KIND, per-kind gradual
+writeconf /etc/app.conf
+writeconf /etc/app.conf.lnk
+
+-- fs.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal fs (config-file) oracle for a `writeconf <path>` tool — the 24F closure on the `fs` kind.
+writeconf__predict() {
+   path : sm.dorc.Fs = "$1"
+   conf-exists "$path" : sm.dorc.Fs:"$path"@written
+}
+
+writeconf__disturbs() {
+   printf '%s\n' "$1" : disturbs sm.dorc.Fs
+}
+
+writeconf__is_converged() {
+   conf-exists "$1"
+}
+
+sm_dorc_Fs__resolve() {
+   realpath -m -- "$1"
+}
+
+-- probe-results.txt --
+site 0 effect=absent
+site 1 effect=holds
+resolv sm.dorc.Fs:/etc/app.conf canon=/etc/app.conf
+resolv sm.dorc.Fs:/etc/app.conf.lnk canon=/etc/app.conf
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/conf-exists --
+#!/bin/sh
+# INERT read-only convergence shim — `conf-exists <path>`. HOST: /etc/app.conf.lnk present
+# (rc 0 ⇒ converged ⇒ would-elide); /etc/app.conf absent (rc 1 ⇒ diverged ⇒ the wall RUNS).
+# Never a mutator; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${1:-} in *.lnk) exit 0 ;; *) exit 1 ;; esac
+
+-- mocks/realpath --
+#!/bin/sh
+# INERT strawman mock — `realpath -m -- <path>` (the fs resolver). Read-only: a `.lnk` symlink
+# resolves to its TARGET's canonical path (both `/etc/app.conf` and `/etc/app.conf.lnk` ⇒
+# `/etc/app.conf`), so the closure sees them as one referent. The path is the last arg. Pure-sh
+# (no real realpath under PATH=mocks-only); logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+for _p in "$@"; do :; done
+case $_p in *.lnk) printf '%s\n' "${_p%.lnk}" ;; *) printf '%s\n' "$_p" ;; esac
+
+-- mocks/writeconf --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: writeconf /etc/app.conf
+ran: conf-exists /etc/app.conf.lnk
+
+-- replay --
+$ dorc --book=book.sh --pre-source fs.oracle.sh --risk-faultless-skips --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=4c5bda41e3f58c69fa78eb73066ce9417462e6ede6ac337b24ea2ef871507184 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Fs:/etc/app.conf@written
+writeconf__is_converged() {
+   conf-exists "$1"
+}
+writeconf__is_converged '/etc/app.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Fs:/etc/app.conf.lnk@written
+writeconf__is_converged '/etc/app.conf.lnk'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# dorc resolver-probe (read-only, 24F section 3): owner-declared identity canonicalization. Each
+# resolver-bearing coordinate runs its kind's <kind>.resolve() with the entity; when run it
+# prints the canonical form (or a dangling marker), re-keyed by the coordinate:
+#   resolv <kind:entity> canon=<canonical>   |   resolv <kind:entity> dangling
+# The engine canonicalizes both footprint and backing coords through this before disjoint.
+
+# resolv sm.dorc.Fs:/etc/app.conf via sm.dorc.Fs.resolve()
+sm_dorc_Fs__resolve() {
+   realpath -m -- "$1"
+}
+_c=$(sm_dorc_Fs__resolve '/etc/app.conf' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Fs:/etc/app.conf canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Fs:/etc/app.conf dangling @@dorc@@\n'; fi
+# resolv sm.dorc.Fs:/etc/app.conf.lnk via sm.dorc.Fs.resolve()
+_c=$(sm_dorc_Fs__resolve '/etc/app.conf.lnk' 2>/dev/null); _rr=$?; if [ "$_rr" -eq 0 ] && [ -n "$_c" ]; then printf 'dorc resolv sm.dorc.Fs:/etc/app.conf.lnk canon=%s @@dorc@@\n' "$_c"; else printf 'dorc resolv sm.dorc.Fs:/etc/app.conf.lnk dangling @@dorc@@\n'; fi
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 guard [sm.dorc.Fs] -- licensed by the sm.dorc.Fs oracle's vouch (at fs.oracle.sh:14) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+writeconf__is_converged() {
+   conf-exists "$1"
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+# strawman24-alias-symlink (24F Stage 5 — the aliasing closure on the `fs` KIND, per-kind gradual
+writeconf /etc/app.conf
+( writeconf__is_converged /etc/app.conf.lnk ) || writeconf /etc/app.conf.lnk   # dorc: guard [sm.dorc.Fs converged-vouch; probe: holds]
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest fde9e761eb0b3815f8373912c5aed3f9bd164b24a23d44cde15058ff2f0abd2d

@@ -1,0 +1,204 @@
+---
+---
+-- book.sh --
+# guard23-reingest-collision-verbatim (the off-ramp closure — a PASSING floor). This book
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+}
+apt_get__predict install -y nginx || apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg), lifted statically by dorc — the guard23-* fixture
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# NO records: the funcdef is not a probeable site, the call is an un-oracled opaque, and
+# the install sits behind the call's rc in the AndOr; nothing probes at HEAD.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` — nginx ABSENT (rc 1): the book's own
+# hand-carried guard function falls through at exec and the install runs.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
+
+-- expected.ran --
+ran: dpkg-query -W nginx
+ran: apt-get install -y nginx
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --results - < probe-results.txt
+reserved: warning[reserved-namespace-squat]: Book function `apt_get__predict`
+sits in the `__predict` namespace reserved for oracle functions; Dorc treats it
+as ordinary shell and runs it verbatim, but a shipped oracle preamble defining
+the same name would collide with it. Rename it to stay clear of `*__predict`.
+      [ book.sh:2:1
+   2 | apt_get__predict() {
+     | \______________/
+cfg: warning[cfg-inline-refused]: call to `apt_get__predict` not inlined: its
+body uses `shift` (out of the modeled subset) -- it runs as an ordinary
+unmodeled command
+      [ book.sh:9:1
+   9 | apt_get__predict install -y nginx || apt-get install -y nginx
+     | \_______________________________/
+loading: warning[role-family-contested]: This `apt_get__predict` overrides the
+definition at package.oracle.sh:4 with nothing spelling the choice, so Dorc
+withholds every license from the `apt_get` family and its sites run -- an `unset
+-f apt_get__predict` between the two spells the override as chosen.
+      [ book.sh:2:1
+   2 | apt_get__predict() {
+     | \______________/
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e9c728ad63a333b4ac3069b3295613333225e228b078439b0df135f5995c18c4 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:3:10
+   3 |    while [ "${1#-}" != "$1" ]; do shift; done
+     |          ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:5:10
+   5 |    while [ "${1#-}" != "$1" ]; do shift; done
+     |          ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: the command word is an unquoted field-split
+/ glob / tilde expansion, so Dorc cannot know its value until the command runs
+on the host -- there is nothing to resolve and no read-only probe to check. Dorc
+elides a command only when it can prove the command's effect is already in
+place, so this one is left to run on every apply.
+      [ book.sh:7:7
+   7 |    if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+     |       ^
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: operand 2 is a runtime-dynamic variable
+value (unset or branch-conflicted), so Dorc cannot know its value until the
+command runs on the host -- there is nothing to resolve and no read-only probe
+to check. Dorc elides a command only when it can prove the command's effect is
+already in place, so this one is left to run on every apply.
+      [ book.sh:7:41
+   7 |    if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+     |                                         \____/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `apt_get__predict install -y nginx`, `apt-get install -y
+nginx` -- run `dorc why` for the per-site detail (the apply runs each anyway, to
+stay safe)
+      [ book.sh:9:1
+   9 | apt_get__predict install -y nginx || apt-get install -y nginx
+     | \_______________________________/
+
+   = help:  sm site runs `apt_get__predict install -y nginx`
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 3:10 `[ "${1#-}" != "$1" ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 5:10 `[ "${1#-}" != "$1" ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because the command word is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 7:7 `[ "$2" = "" ]`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because operand 2 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 7:27 `dpkg-query -W "$pkg" >/dev/null 2>&1`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: 'apt_get__predict' (line 9) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-reingest-collision-verbatim (the off-ramp closure — a PASSING floor). This book
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg="$1"
+   if [ "$2" = "" ]; then dpkg-query -W "$pkg" >/dev/null 2>&1; fi
+}
+apt_get__predict install -y nginx || apt-get install -y nginx
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest d17a24cffe0264cad288c62d5ec4b732cf638836e846c0cfff6343b52635087a

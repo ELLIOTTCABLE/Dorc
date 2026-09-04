@@ -1,0 +1,87 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# payload-bare-sh-c-walls (274 §12 finding-scope-clarification; lane-payload-v1 rung-0): a bare
+# `sh -c` payload site with NO eval'er oracle loaded WALLS opaquely — the payload decomposition is
+# invisible without consumption (MODELS-only lane; empty-world-byte-identical). The site runs
+# verbatim; `sh` is the escape-hatch head that licenses nothing here.
+sh -c 'hork tune'
+
+-- probe-results.txt --
+# bare `sh -c` walls (no eval'er oracle) ⇒ the site runs unprobed; no probe site.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/sh --
+#!/bin/sh
+# INERT strawman mock (never a real evaluator): logs its argv for the run-set, mutates nothing and
+# does NOT evaluate the payload (the wall runs the site verbatim; the payload is not decomposed).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sh -c hork tune
+
+-- replay --
+$ dorc --book=book.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e188082fdbf3ddc6af18e58660f306ee573a6310a676ea42677c67efa78a6c35 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sh -c 'hork tune'` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:6:1
+   6 | sh -c 'hork tune'
+     | \_______________/
+
+   = help:  sm site runs `sh -c 'hork tune'`
+hint: 'sh' (line 6) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# payload-bare-sh-c-walls (274 §12 finding-scope-clarification; lane-payload-v1 rung-0): a bare
+# `sh -c` payload site with NO eval'er oracle loaded WALLS opaquely — the payload decomposition is
+# invisible without consumption (MODELS-only lane; empty-world-byte-identical). The site runs
+# verbatim; `sh` is the escape-hatch head that licenses nothing here.
+sh -c 'hork tune'
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 9157d93e3c99cde7bad9b6c55c284b0b80737d5211d1fb5346a1453a1b594c9d

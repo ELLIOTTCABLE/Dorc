@@ -1,0 +1,114 @@
+---
+probe-results: authored
+---
+-- book.sh --
+#!/bin/sh
+# decline27-tier3-dynamic (`27W` §3 tier-3): the book calls a sysctl write-only trigger key. The
+# oracle's is_converged declines it, but its `decline <class>` emission is built from a DYNAMIC
+# format string, so the STATIC inventory cannot read the class (class None). The class is recovered
+# at RUNTIME: the probe's report-drain (or, here, an injected report-lane record) carries
+# `decline unsound …`, and the tier-3 pairing folds it onto the site's decline evidence — so the
+# class + emitting-arm file:line surface on the why-lens. No vouch ⇒ the site RUNS.
+sysctl vm.drop_caches
+
+-- sysctl.oracle.sh --
+# sysctl oracle (`27W` §3 tier-3): a MARKERLESS verdict function. Its declining arm emits a
+# `decline <class> …` line to the versioned report sink, but the format string is DYNAMIC
+# (`printf "$fmt"`), so the static reader yields class None — the class is a RUNTIME fact.
+sysctl__is_converged() {
+   key=$1
+   fmt='decline unsound %s is a write-only trigger key\n'
+   case $key in
+   vm.drop_caches|vm.compact_memory)
+      printf "$fmt" "$key" >>"${DREP_V1:-/dev/null}"
+      return 2 ;;
+   *) sysctl -n -- "$key" >/dev/null 2>&1 ;;
+   esac
+}
+
+-- probe-results.txt --
+dorc-records/1 nonce=dorc attempt=1 host=localhost book=d76780cd4051afcd86e1ccd52d6efd42299b1a218da4ad03897853a676edfeb0 sites=0 @@dorc@@
+dorc report site=0 decline unsound vm.drop_caches is a write-only trigger key @@dorc@@
+dorc-records-end/1 nonce=dorc @@dorc@@
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/sysctl --
+#!/bin/sh
+# INERT mock: the book runs `sysctl vm.drop_caches` (the decline means no elision — it RUNS).
+# In the probe, the reached arm only `printf`s to the report sink + `return 2` (no external
+# command), so this mock is invoked ONLY by the apply. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sysctl vm.drop_caches
+
+-- replay --
+$ dorc --book=book.sh --pre-source sysctl.oracle.sh --results - < probe-results.txt
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=d76780cd4051afcd86e1ccd52d6efd42299b1a218da4ad03897853a676edfeb0 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sysctl vm.drop_caches` -- run `dorc why` for the per-site detail
+(the apply runs each anyway, to stay safe)
+      [ book.sh:8:1
+   8 | sysctl vm.drop_caches
+     | \___________________/
+
+   = help:  sm site runs `sysctl vm.drop_caches`
+note: author declines [unsound] at site 0 -- vm.drop_caches is a write-only trigger key
+why: author declines [unsound] (at sysctl.oracle.sh:10) -- a deliberate decline the author classed, so the site runs
+hint: 'sysctl' (line 8) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# decline27-tier3-dynamic (`27W` §3 tier-3): the book calls a sysctl write-only trigger key. The
+# oracle's is_converged declines it, but its `decline <class>` emission is built from a DYNAMIC
+# format string, so the STATIC inventory cannot read the class (class None). The class is recovered
+# at RUNTIME: the probe's report-drain (or, here, an injected report-lane record) carries
+# `decline unsound …`, and the tier-3 pairing folds it onto the site's decline evidence — so the
+# class + emitting-arm file:line surface on the why-lens. No vouch ⇒ the site RUNS.
+sysctl vm.drop_caches
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 5b92382d601933eb600ab74c4564ff74318af3eb88f3af179e0989a5cd814b4e

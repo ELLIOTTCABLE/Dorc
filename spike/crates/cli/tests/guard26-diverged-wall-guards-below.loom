@@ -1,0 +1,138 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# guard26-diverged-wall-guards-below — a measured-diverged `hork` runs as an attributed wall.
+# Both converged, vouched drops retain the guard rung and re-check live below it.
+# Evidence: `30K:target-effective-reach-replaces-walks`.
+hork provision
+wombat a.conf /etc/a.conf
+wombat b.conf /etc/b.conf
+
+-- hork.oracle.sh --
+# dorc-lang/v0.2
+# Answers `provision` with a real measurement, markless body (the typeless floor: the site keys the
+# per-provider auto-cell). The mock's `hork status` exits 1, so the site measures DIVERGED and the
+# line really runs — a modeled, attributed, RUNNING wall. Every other invocation-shape declines.
+hork__is_converged() {
+   [ "$1" = provision ] || return 2
+   hork status
+}
+
+-- wombat.oracle.sh --
+# dorc-lang/v0.2
+# The two-operand drop: converged when the destination already holds the source's bytes. The bind
+# names the entity, the trailing verdict mark names the cell the exit status witnesses, so the two
+# sites key `sm.dorc.File:/etc/a.conf@content` and `…:/etc/b.conf@content` — distinct cells.
+wombat__is_converged() {
+   dst : sm.dorc.File = "$2"
+   wombat cmp -- "$1" "$dst"   : sm.dorc.File:"$dst"@content
+}
+
+-- probe-results.txt --
+# hork's own check measures DIVERGED (the mock's `status` exits 1), so `hork provision` really
+# runs. Both drops report converged on their OWN authored cells (/etc/a.conf and /etc/b.conf).
+site 0 effect=absent rc=1
+site 1 effect=holds rc=0
+site 2 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock. `status` answers rc 1 so the verdict reads `diverged` and the book line really runs;
+# everything else (the apply's `provision`) answers rc 0. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+[ "$1" = status ] && exit 1
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock. Mutates nothing; `cmp` answers rc 0 so the verdict reads `holds`.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork provision
+ran: wombat cmp -- a.conf /etc/a.conf
+ran: wombat cmp -- b.conf /etc/b.conf
+
+-- replay --
+$ dorc --book=book.sh --pre-source hork.oracle.sh --pre-source wombat.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=2aec2191da561cf1330a37fae467b0c6215c57a39faa5188fdb58141cf821751 sites=3 @@dorc@@\n'
+# site 0: dorc-auto:hork@converged
+hork__is_converged() {
+   [ "$1" = provision ] || return 2
+   hork status
+}
+hork__is_converged 'provision'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.File:/etc/a.conf@content
+wombat__is_converged() {
+   dst="$2"
+   wombat cmp -- "$1" "$dst"
+}
+wombat__is_converged 'a.conf' '/etc/a.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.File:/etc/b.conf@content
+wombat__is_converged 'b.conf' '/etc/b.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 guard [sm.dorc.File] -- licensed by the sm.dorc.File oracle's vouch (at wombat.oracle.sh:7) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+why: site 2 guard [sm.dorc.File] -- licensed by the sm.dorc.File oracle's vouch (at wombat.oracle.sh:7) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+wombat__is_converged() {
+   dst="$2"
+   wombat cmp -- "$1" "$dst"
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+# guard26-diverged-wall-guards-below — a measured-diverged `hork` runs as an attributed wall.
+# Both converged, vouched drops retain the guard rung and re-check live below it.
+# Evidence: `30K:target-effective-reach-replaces-walks`.
+hork provision
+( wombat__is_converged a.conf /etc/a.conf ) || wombat a.conf /etc/a.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
+( wombat__is_converged b.conf /etc/b.conf ) || wombat b.conf /etc/b.conf   # dorc: guard [sm.dorc.File converged-vouch; probe: holds]
+dorc: plan-summary sites=3 elide=0 omit=0 guard=2 run=1 may-alias=0
+dorc: decision-digest 963a9bbbeb6547d4b7d08225d4f9e1fc00122d4f129dd038c2d461f73df85c27

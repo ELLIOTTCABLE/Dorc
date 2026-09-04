@@ -1340,6 +1340,30 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Materialize a committed ANCHOR loom into a fresh scratch dir, the way [`materialize_loom`] does,
+/// and return the guard, the dir, and the parsed case. The pre-flight self-tests and the closed-loop
+/// trial reach specific cases by CONTENT rather than through the ordinary loom drive; with the dir
+/// form gone, they materialize the loom's sections into a throwaway they own.
+fn materialize_anchor(name: &str) -> Result<(Scratch, PathBuf, errorloom::Case), String> {
+    let path = own_cases().join(format!("{name}.loom"));
+    let text = std::fs::read_to_string(&path)
+        .map_err(|error| format!("anchor `{name}` is missing ({}): {error}", path.display()))?;
+    let case =
+        errorloom::Case::parse(&text).map_err(|error| format!("anchor `{name}`: {error}"))?;
+    let scratch = Scratch::new("anchor");
+    let dir = scratch.path.join(name);
+    std::fs::create_dir_all(&dir).map_err(|error| format!("{error}"))?;
+    for (rel, content) in case.materialized_files() {
+        let target = dir.join(&rel);
+        if let Some(parent) = target.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| format!("{error}"))?;
+        }
+        std::fs::write(&target, content).map_err(|error| format!("{error}"))?;
+        make_executable(&target);
+    }
+    Ok((scratch, dir, case))
+}
+
 /// The exit a session's `$ echo $?` block declares (its committed output), or `0` when it has none.
 /// The exit respell turns an `exit:` key into that block, so a case's exit lives where the session
 /// shows it rather than in frontmatter (`30X:loom-frontmatter-is-registry-metadata-only`).
@@ -1415,12 +1439,16 @@ fn lint_flags(spec: &LoomCaseSpec) -> Result<String, String> {
 ///
 /// Hermetic throughout — the local driver is a shell, the shipped probe sees only the case's inert
 /// mocks, and no socket is opened.
-fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Failed> {
+fn run_closed_loop(harness: &Harness) -> Result<(), Failed> {
+    let (_anchor, dir, case) = materialize_anchor(CLOSED_LOOP_CASE).map_err(Failed::from)?;
+    let dir = dir.as_path();
+    let mocks = dir.join("mocks");
+    let mocks = mocks.as_path();
     let scratch = Scratch::new("loop");
     let sandbox = scratch.path.join("sand");
     std::fs::create_dir_all(&sandbox).expect("create sandbox");
 
-    let inputs = RoundTripInputs::from_markers(dir).map_err(Failed::from)?;
+    let inputs = RoundTripInputs::from_session(&case).map_err(Failed::from)?;
     let args = shared_args(dir, &inputs.flags);
     let shim_dir = scratch.path.join("shims");
     std::fs::create_dir_all(&shim_dir).expect("create shim dir");
@@ -4076,16 +4104,12 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
 /// `--risk-faultless-skips` and assert the elision count DIFFERS. If it matches, the flag is
 /// inert and a flagged survival case's gate-6 attribution would lie.
 fn dorc_flags_selftest(harness: &Harness) -> Option<String> {
-    let dir = own_cases().join("strawman24-survive-multiwall");
-    if !dir.is_dir() {
-        // The sh original skipped a missing anchor. Since the collection moved, a missing
-        // anchor now most likely means the runner is looking in the wrong place — the one
-        // failure that would otherwise disable this battery in silence.
-        return Some(format!(
-            "dorc_flags_selftest: the flagship anchor is missing ({}) — the case collection is not where the runner looks.",
-            dir.display()
-        ));
-    }
+    // A missing anchor now most likely means the runner is looking in the wrong place — the one
+    // failure that would otherwise disable this battery in silence.
+    let (_anchor, dir, _case) = match materialize_anchor("strawman24-survive-multiwall") {
+        Ok(materialized) => materialized,
+        Err(error) => return Some(format!("dorc_flags_selftest: {error}")),
+    };
     let oracle = dir.join("package.oracle.sh").display().to_string();
     let book = format!("--book={}", dir.join("book.sh").display());
     let elide = |args: &[String]| -> String {
@@ -4146,13 +4170,11 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
             harness.dorc.display()
         ));
     }
-    let oracle = own_cases().join("strawman24-alias-provides/package.oracle.sh");
-    if !oracle.is_file() {
-        return Some(format!(
-            "dorc_sh_smoke: the strip anchor is missing ({}) — the case collection is not where the runner looks.",
-            oracle.display()
-        ));
-    }
+    let (_anchor, anchor_dir, _case) = match materialize_anchor("strawman24-alias-provides") {
+        Ok(materialized) => materialized,
+        Err(error) => return Some(format!("dorc_sh_smoke: {error}")),
+    };
+    let oracle = anchor_dir.join("package.oracle.sh");
     {
         let stripped = capture(
             Command::new(&harness.dorc)
@@ -4515,15 +4537,6 @@ fn main() {
     let looms = discover_looms(&case_roots());
     preflight(&harness, discovered.len(), looms.len());
 
-    let closed_loop_dir = discovered
-        .iter()
-        .find(|case| {
-            case.name == CLOSED_LOOP_CASE
-                && case.dir.join("mocks").is_dir()
-                && case.dir.join("probe-results.txt").is_file()
-        })
-        .map(|case| case.dir.clone());
-
     let mut trials: Vec<Trial> = Vec::new();
     {
         let harness = Arc::clone(&harness);
@@ -4611,11 +4624,10 @@ fn main() {
         }
     }
 
-    if let Some(dir) = closed_loop_dir {
+    {
         let harness = Arc::clone(&harness);
-        let mocks = dir.join("mocks");
         push_trial(&mut trials, seed, "closed-loop".to_owned(), move || {
-            run_closed_loop(&harness, &dir, &mocks)
+            run_closed_loop(&harness)
         });
     }
 

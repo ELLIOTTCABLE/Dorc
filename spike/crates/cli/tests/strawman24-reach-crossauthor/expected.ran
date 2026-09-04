@@ -1,2 +1,0 @@
-ran: hork tune nginx
-ran: installfile /etc/nginx/nginx.conf

@@ -1,9 +1,0 @@
-ran: apt-get install -y nginx
-ran: apt-get update
-ran: apt-get install -y curl
-ran: apt-get install -y htop
-ran: systemctl enable nginx
-ran: systemctl start nginx
-ran: dpkg -s vim
-ran: apt-get install -y vim
-ran: ufw allow 80/tcp

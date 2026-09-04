@@ -1,3 +1,0 @@
-ran because operand 3 is a command-substitution
-apt-get install -y "$PKG"
-[resolve-dynamism]

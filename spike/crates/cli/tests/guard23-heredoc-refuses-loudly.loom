@@ -1,0 +1,152 @@
+---
+---
+-- book.sh --
+# guard23-heredoc-refuses-loudly (the ratified refuse-home posture, human ruling 2026-07-02:
+hork wombat
+apt-get install -y nginx <<EOF
+guard23 heredoc payload
+EOF
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg), lifted statically by dorc — the guard23-* fixture variant.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 1 (the vouched heredoc-carrying install, past the hork wall): holds. The witness
+# completes — and the guard is then REFUSED at its structurally-awkward home; run verbatim.
+site 1 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` — nginx installed (rc 0 => holds). Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork wombat
+ran: apt-get install -y nginx
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ee7260bfdf663a31a9c57a4c3d58f204ab4ccc3eb330502d4a00ab73859e8f92 sites=1 @@dorc@@\n'
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork wombat` -- run `dorc why` for the per-site detail (the apply
+runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork wombat
+     | \_________/
+
+   = help:  sm site runs `hork wombat`
+why: site 1 guard refused -- the site's structurally-awkward form (a heredoc body, or a non-`/dev/null` output redirect) would corrupt the artifact or suppress an admin-spelled side-effect, so the original bytes RUN VERBATIM (to stay safe), the sm.dorc.Package oracle's vouch that it is already satisfied notwithstanding
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged, and un-wall 1 downstream site
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+render: error[render-heredoc-refused]: Dorc cannot guard `apt-get install -y
+nginx <<EOF` as planned: rewriting the line would strand the heredoc body below
+its `<<` opener, so the command stays in place and runs verbatim.
+      [ book.sh:3:1
+   3 | apt-get install -y nginx <<EOF
+     | \____________________________/
+
+   = help:  Move the heredoc's content out of the command -- feed it with printf
+            or redirect from a file -- and Dorc can then elide or guard the
+            site.
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-heredoc-refuses-loudly (the ratified refuse-home posture, human ruling 2026-07-02:
+hork wombat
+apt-get install -y nginx <<EOF
+guard23 heredoc payload
+EOF
+dorc: plan-summary sites=2 elide=0 omit=0 guard=1 run=1 may-alias=0
+dorc: decision-digest 02befd0a2facff094d6070e4107452ead01a85bc9b0372de2375a7bced4f7d6a

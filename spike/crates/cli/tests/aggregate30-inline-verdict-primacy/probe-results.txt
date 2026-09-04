@@ -1,3 +1,0 @@
-# Each inlined establish is vouched by a verdict body that returns 1.
-site 0.0 effect=absent rc=1
-site 0.1 effect=absent rc=1

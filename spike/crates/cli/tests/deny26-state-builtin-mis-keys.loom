@@ -1,0 +1,97 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# deny26-state-builtin-mis-keys (`26I:fnd-state-builtins-silently-mis-key`, `26J`): the oracle's
+# predict body rebinds the positionals with `set --` BETWEEN the bind and the probe. Before the
+# deny, the engine keyed this site's own entity (`install`) while the shipped probe body measured
+# `alpha` — a converged `holds` about alpha would then license folding a mutator on install, the
+# priority-1 under-execute. The head is refused, the site is unresolvable, and it RUNS.
+wombat install
+
+-- wombat.oracle.sh --
+# dorc-lang/v0.2
+# The `set --` is the whole point: it is idiomatic POSIX (THE list workaround), no contract clause
+# warns against it, and the tracer used to walk straight past it with its own positionals intact.
+wombat__predict() {
+   set -- alpha
+   pkg : sm.dorc.Thing = "$1"
+   wombat query "$pkg" >/dev/null 2>&1 : sm.dorc.Thing:"$pkg"@present
+}
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/wombat --
+#!/bin/sh
+# INERT mock: the site is unresolvable (no probe ships), so this is invoked ONLY by the apply.
+# Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: wombat install
+
+-- replay --
+$ dorc --book=book.sh --pre-source wombat.oracle.sh --results -
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=e6167eb2a4ba81919f5481350f6e3c2edacc9a77e7e8ac884b905307f8f147c4 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `wombat install` (selected path reached `set` (rewrites the
+positionals => runs)) -- run `dorc why` for the per-site detail (the apply runs
+each anyway, to stay safe)
+      [ book.sh:7:1
+   7 | wombat install
+     | \____________/
+
+   = help:  sm site runs `wombat install`
+hint: 'wombat' (line 7) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# deny26-state-builtin-mis-keys (`26I:fnd-state-builtins-silently-mis-key`, `26J`): the oracle's
+# predict body rebinds the positionals with `set --` BETWEEN the bind and the probe. Before the
+# deny, the engine keyed this site's own entity (`install`) while the shipped probe body measured
+# `alpha` — a converged `holds` about alpha would then license folding a mutator on install, the
+# priority-1 under-execute. The head is refused, the site is unresolvable, and it RUNS.
+wombat install
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 66ef75fa757dc7acb7869b3e0e988e2df5a8087bb5b2f2b2b6215814cfb4a1c1

@@ -1,2 +1,0 @@
-ran: hork tune-packages
-ran: aptcheck -q -- curl

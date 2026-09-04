@@ -1,2 +1,0 @@
-ran: apt-get update
-ran: apt-get install -y nginx

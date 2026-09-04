@@ -1,1 +1,0 @@
-ran: chroot /mnt policyctl swappiness 10

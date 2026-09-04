@@ -1,3 +1,0 @@
-# The verdict body returns 1 for both members, so verdict primacy must emit these records.
-site 0.0 effect=absent rc=1
-site 0.1 effect=absent rc=1

@@ -1,2 +1,0 @@
-ran: apt-get purge oldpkg
-ran: apt-get install -y nginx

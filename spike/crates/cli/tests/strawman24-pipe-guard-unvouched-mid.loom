@@ -1,0 +1,158 @@
+---
+tolerate: pipe-stage-order
+---
+-- book.sh --
+# strawman24-pipe-guard-unvouched-mid (24J NEGATIVE CONTROL — silence-is-wall preserved). The same
+otelcol --version | cat | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+
+-- grep.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# stdlib grep oracle (24J §1 — the pipe-guard MEDIUM core). grep IS stdlib material
+grep__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pat : sm.dorc.GrepMatch = "$1"
+   grep -q -- "$pat" :? sm.dorc.GrepMatch:"$pat"@matched
+}
+
+-- otelcol.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# otelcol oracle — the tool author's own, full role-split (rul-role-split). predict()'s `--version`
+# is a read-only OBSERVE that DELEGATES to the real command (271:rul-only-oracle-bytes-ship). Here
+# the unvouched middle `cat` still walls the pipe (NEGATIVE CONTROL), so otelcol stays an orphan and
+# runs — the clean predict shape does not rescue a non-connected pipe.
+otelcol__predict() {
+   case $1 in
+      --version)
+         collector : io.opentelemetry.Collector = "otelcol"
+         otelcol --version :? io.opentelemetry.Collector:"otelcol"@version
+         ;;
+   esac
+}
+otelcol__is_converged() {
+   case $1 in
+      --version) otelcol --version | grep -q 0.155.0 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The unvouched middle stage `cat` makes the pipe NON-connected (24J narrow-first): grep and
+# otelcol are ORPHAN stages (stdin-dependent, no independent fact) ⇒ they ship NO probe
+# (silence-is-wall). cat is Opaque. Every site is unresolvable ⇒ no records ⇒ nothing elides.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/cat --
+#!/bin/sh
+# INERT cat shim (the UNVOUCHED middle stage): logs argv, passes stdin->stdout verbatim. No oracle
+# models it, so it is Opaque ⇒ the pipe is NOT a connected check-pipe (24J narrow-first). Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+while IFS= read -r line; do printf '%s\n' "$line"; done
+
+-- mocks/curl --
+#!/bin/sh
+# INERT mock (fallback mutator stage): logs if it runs. On a CONVERGED host the bare book
+# short-circuits it; the OWED future elides it. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/grep --
+#!/bin/sh
+# INERT grep shim: logs argv, real literal substring match over stdin (exit 0 match / 1 no-match).
+. "${0%/*}/.log"; _dorc_logged "$@"
+pat=
+for a in "$@"; do case $a in -*) ;; *) pat=$a ;; esac; done
+found=1
+while IFS= read -r line; do case $line in *"$pat"*) found=0 ;; esac; done
+exit "$found"
+
+-- mocks/otelcol --
+#!/bin/sh
+# INERT mock: logs argv, prints a NON-matching version so `grep -q "0.155.0"` finds no match (rc 1)
+# ⇒ the `||` fires ⇒ curl|tar RUN (the fallback is not wrongly elided — the pipe walled). Mutates
+# nothing. (Diverged host, like strawman24-pipe-guard-floor — so the short-circuited fallback runs
+# in both the bare book and the un-elided apply, keeping gate-5's resolved-argv ⊆ bare-log honest.)
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf 'otelcol version 0.99.0\n'
+exit 0
+
+-- mocks/tar --
+#!/bin/sh
+# INERT mock (fallback mutator stage): logs if it runs. On a CONVERGED host the bare book
+# short-circuits it; the OWED future elides it. Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: cat
+ran: curl -sL https://example.com/otelcol.tar.gz
+ran: grep -q 0.155.0
+ran: otelcol --version
+ran: tar xz
+
+-- replay --
+$ dorc --book=book.sh --pre-source grep.oracle.sh --pre-source otelcol.oracle.sh --results - < probe-results.txt
+oracle: warning[oracle-matched-zero-sites]: [unwritten:
+oracle-matched-zero-sites]
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=0bbe458b68faf8434d4e08b47dc6370e8b0ec29570feb9527c7e91f93c91fcb7 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+# site:3 unresolvable-no-probe
+# site:4 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 5 sites run unprobed (no read-only check
+could be shipped): `otelcol --version`, `cat`, `grep -q "0.155.0"`, `curl -sL
+https://example.com/otelcol.tar.gz`, `tar xz` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | otelcol --version | cat | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+     | \_______________/
+
+   = help:  sm site runs `otelcol --version`
+hint: 'otelcol' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 4 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# strawman24-pipe-guard-unvouched-mid (24J NEGATIVE CONTROL — silence-is-wall preserved). The same
+otelcol --version | cat | grep -q "0.155.0" || curl -sL https://example.com/otelcol.tar.gz | tar xz
+dorc: plan-summary sites=5 elide=0 omit=0 guard=0 run=5 may-alias=0
+dorc: decision-digest fff4296f09e3c38bce3fde9fcee52285f750eede17abbdba677bd5549df4a285

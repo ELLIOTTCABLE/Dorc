@@ -1,0 +1,154 @@
+---
+---
+-- book.sh --
+# guard23-already-hand-guarded-runs (no-double-guard — a PASSING floor). The admin already
+hork wombat
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg), lifted statically by dorc — the guard23-* fixture
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- pkgstate.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package-status QUERY oracle (`dpkg -s <pkg>` reads pkgstate:<pkg>#installed; task-D2
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> [rc=<n>]
+# site 1 is the admin's hand-written QUERY guard (`dpkg -s`, pkgstate oracle): query
+# probes ship even past the hork wall (their FOLD-validity is what the wall kills, not
+# their shipping) — nginx absent, rc 1. site 2 (the vouched install) ships nothing at
+# HEAD (establish past wall); if the guard tier's past-wall probing lands
+# (guard23-ternary-flagship pins it), re-author consciously — the load-bearing pin HERE
+# is only that the hand-guarded line runs VERBATIM, with no second guard stacked on.
+site 1 effect=absent rc=1
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT shim for `dpkg -s <pkg>` — nginx ABSENT (rc 1): the admin's hand-guard falls
+# through at exec and the install runs, exactly as on the real host.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT shim for `dpkg-query -W <pkg>` — nginx ABSENT (rc 1), world-consistent with the
+# `dpkg -s` shim (both report nginx absent). NOTHING invokes it at HEAD (the hand-guarded
+# line runs verbatim; the probe uses `dpkg -s`). It is a TRIPWIRE (conv-2 / 23C-fd6): if a
+# build wrongly STACKS a machine-guard onto the admin's hand-written one, the stacked check
+# calls `dpkg-query -W nginx`, which now LOGS an extra run-set line (rc 1 ⇒ falls through, the
+# install still runs) ⇒ the exec gate reds — instead of 127-ing invisibly into a
+# byte-identical log that only the (bless-rewritable) content diff could catch.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 1
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork wombat
+ran: dpkg -s nginx
+ran: apt-get install -y nginx
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=1fb6a4e1e97558492270469cafeb9c07ac629da76b543fe1baae76b943b62b2d sites=1 @@dorc@@\n'
+# site 1: sm.dorc.PkgState:nginx@installed
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg="$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 2 sites run unprobed (no read-only check
+could be shipped): `hork wombat`, `apt-get install -y nginx` -- run `dorc why`
+for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:2:1
+   2 | hork wombat
+     | \_________/
+
+   = help:  sm site runs `hork wombat`
+hint: 'hork' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# guard23-already-hand-guarded-runs (no-double-guard — a PASSING floor). The admin already
+hork wombat
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+dorc: plan-summary sites=3 elide=0 omit=0 guard=0 run=3 may-alias=0
+dorc: decision-digest 7d4ec6dbfd05f34a55dab30cc5bae3da2f36f219ea8944aa7601289b90cf15e4

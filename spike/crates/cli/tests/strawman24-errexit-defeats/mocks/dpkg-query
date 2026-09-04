@@ -1,5 +1,0 @@
-#!/bin/sh
-# INERT probe shim — the package kind's `dpkg-query -W <pkg>`. HOST: every package installed
-# (rc 0 ⇒ holds), so all installs are converged. Read-only; logs for run-set symmetry.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

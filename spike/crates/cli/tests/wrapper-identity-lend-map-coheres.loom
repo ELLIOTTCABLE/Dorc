@@ -1,0 +1,109 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# wrapper-identity-lend-map-coheres (273 §8 identity wrappers): a `nice` oracle — bare-"$@" predict
+# (peel-transparent, claims nothing on env) + an all-full-lend lend_map (every dimension the same
+# world). It lifts clean and coheres (the identity wrapper's inner sits in HostDefault). The
+# wrapped site still walls (peel not yet consumed) — zero new trust.
+nice hork tune
+
+-- nice.oracle.sh --
+# dorc-lang/v0.2
+# An IDENTITY wrapper (nice): the model drops the niceness (irrelevant to state) and re-execs the
+# guest — a bare-"$@" peel that claims NOTHING on env (271:rul-env-claim-inversion). Its lend_map
+# colon-lines every dimension = full lend (same world everywhere) ⇒ inner = HostDefault.
+nice__predict() {
+   while [ "${1#-}" != "$1" ]; do shift 2; done
+   "$@"
+}
+nice__lend_map() {
+   while [ "${1#-}" != "$1" ]; do shift 2; done
+   : lends user
+   : lends fs-view
+   : lends netns
+   "$@"
+}
+
+-- probe-results.txt --
+# `nice hork tune` walls (nice modeled-but-not-consumed) ⇒ no probe site.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/hork --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/nice --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: nice hork tune
+
+-- replay --
+$ dorc --book=book.sh --pre-source nice.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=83b0f6ad97d852d38d152523ecd364de9a8afcb789c8602da462e19f25aafa63 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `nice hork tune` -- run `dorc why` for the per-site detail (the
+apply runs each anyway, to stay safe)
+      [ book.sh:6:1
+   6 | nice hork tune
+     | \____________/
+
+   = help:  sm site runs `nice hork tune`
+hint: 'nice' (line 6) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# wrapper-identity-lend-map-coheres (273 §8 identity wrappers): a `nice` oracle — bare-"$@" predict
+# (peel-transparent, claims nothing on env) + an all-full-lend lend_map (every dimension the same
+# world). It lifts clean and coheres (the identity wrapper's inner sits in HostDefault). The
+# wrapped site still walls (peel not yet consumed) — zero new trust.
+nice hork tune
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 8c3ec88dcf0f7ff66f1865f71e0744d75c72473fcf0c7a223b9883497973a532

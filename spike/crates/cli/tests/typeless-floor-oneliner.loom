@@ -1,0 +1,84 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# typeless-floor-oneliner (DESIGN.md's founding oracle one-liner — `mycmd.is_converged() { mycmd
+# --dry-run "$@" ;}`). The markerless delegation vouches (quoted "$@" resolves), and a converged
+# probe elides the site. Pins the founding example: it MUST license, and never silently regress.
+mycmd apply-config /etc/mycmd.conf
+
+-- mycmd.oracle.sh --
+mycmd__is_converged() { mycmd --dry-run "$@" ;}
+
+-- probe-results.txt --
+# site 0 = the founding one-liner (24L §2 floor auto-cell dorc-auto:mycmd): its markerless
+# `mycmd --dry-run "$@"` ran on the host ⇒ rc 0 ⇒ CONVERGED (holds) ⇒ the site elides.
+site 0 effect=holds rc=0
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/mycmd --
+#!/bin/sh
+# INERT mock: the verdict runs `mycmd --dry-run apply-config /etc/mycmd.conf` in the probe;
+# respond rc 0 (converged, nothing to do). The book's mutating `apply-config` (no --dry-run) is
+# never invoked (the site elides). Mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh --pre-source mycmd.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=0ba58bf79806c2910b9d73116f202724bb7441c30ae4d1b6812a331d46088ef5 sites=1 @@dorc@@\n'
+# site 0: dorc-auto:mycmd@converged
+mycmd__is_converged() { mycmd --dry-run "$@" ;}
+mycmd__is_converged 'apply-config' '/etc/mycmd.conf'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# typeless-floor-oneliner (DESIGN.md's founding oracle one-liner — `mycmd.is_converged() { mycmd
+# --dry-run "$@" ;}`). The markerless delegation vouches (quoted "$@" resolves), and a converged
+# probe elides the site. Pins the founding example: it MUST license, and never silently regress.
+# mycmd apply-config /etc/mycmd.conf   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 5eea1b7a3c1061c56eb4a3b1747d56d89a96c76fdfd600a09f8f176454e4c2f7

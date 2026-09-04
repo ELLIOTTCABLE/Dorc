@@ -1,4 +1,0 @@
-#!/bin/sh
-# INERT mock. Mutates nothing; `cmp` answers rc 0 so the verdict reads `holds`.
-. "${0%/*}/.log"; _dorc_logged "$@"
-exit 0

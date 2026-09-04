@@ -1,0 +1,171 @@
+---
+---
+-- book.sh --
+# strawman24-survive-multiwall (plans/240 Stage 2): a fact surviving TWO footprinted walls, then
+apt-get install -y oldpkg
+apt-get install -y badpkg
+apt-get install -y nginx
+apt-get purge -y gonepkg
+apt-get install -y curl
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package oracle — predict() install/purge; touches() emits a footprint ONLY for install. purge
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {                              # STRAWMAN footprint — install only (no purge arm)
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# sites 0,1 (oldpkg,badpkg) absent ⇒ diverged walls; site 2 (nginx) holds ⇒ converged, survives;
+# site 3 (purge gonepkg) is MustRun ⇒ unresolvable ⇒ no probe record; site 4 (curl) holds ⇒
+# converged but demotes past the footprint-less total wall.
+site 0 effect=absent
+site 1 effect=absent
+site 2 effect=holds
+site 4 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT strawman mock (never a real mutator): logs its argv for the run-set, mutates nothing.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim — `dpkg-query -W <pkg>`. HOST: oldpkg & badpkg NOT installed (rc 1 ⇒ absent
+# ⇒ their installs RUN = the two footprinted walls); nginx & curl installed (rc 0 ⇒ holds).
+. "${0%/*}/.log"; _dorc_logged "$@"
+case ${2:-} in oldpkg|badpkg) exit 1 ;; *) exit 0 ;; esac
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+ran: apt-get install -y badpkg
+ran: apt-get purge -y gonepkg
+ran: dpkg-query -W curl
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=fb63dd0f341308b121e06e647cf8766074f692436b78c6bc0586f40757609b3b sites=4 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:badpkg@installed
+apt_get__is_converged 'install' '-y' 'badpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 4: sm.dorc.Package:curl@installed
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 4 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:3 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `apt-get purge -y gonepkg` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:5:1
+   5 | apt-get purge -y gonepkg
+     | \______________________/
+
+   = help:  sm site runs `apt-get purge -y gonepkg`
+why: site 2 survives+elides past wall site 0 (apt-get touches {sm.dorc.Package:oldpkg}), wall site 1 (apt-get touches {sm.dorc.Package:badpkg}) -- backing sm.dorc.Package:nginx disjoint (trusted footprint); vouched at package.oracle.sh:31
+why: site 4 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:31) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+# strawman24-survive-multiwall (plans/240 Stage 2): a fact surviving TWO footprinted walls, then
+apt-get install -y oldpkg
+apt-get install -y badpkg
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+apt-get purge -y gonepkg
+( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+dorc: plan-summary sites=5 elide=1 omit=0 guard=1 run=3 may-alias=0
+dorc: decision-digest b7983726f299f31fd1d1750e35d1c02202f3b9a7d5eaa6402c852849db072ef1

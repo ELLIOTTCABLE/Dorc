@@ -1,6 +1,0 @@
-#!/bin/sh
-# INERT probe shim — `dpkg-query -W <pkg>` ($1=-W, $2=pkg). HOST: oldpkg NOT installed
-# (rc 1 ⇒ absent ⇒ diverged ⇒ `apt-get install oldpkg` RUNS, the modeled wall); nginx
-# installed (rc 0 ⇒ holds ⇒ converged). Read-only; logs for symmetry.
-. "${0%/*}/.log"; _dorc_logged "$@"
-case ${2:-} in oldpkg) exit 1 ;; *) exit 0 ;; esac

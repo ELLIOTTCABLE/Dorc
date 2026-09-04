@@ -1,0 +1,351 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# pi-webhost provision — a scrappy real book (the lazy admin lets dorc do idempotency).
+set -e
+
+dpkg -s ca-certificates >/dev/null 2>&1
+
+dpkg -s nginx >/dev/null 2>&1 || apt-get install -y nginx
+
+apt-get update
+apt-get install -y curl
+apt-get install -y htop
+
+systemctl enable nginx
+systemctl start nginx
+
+dpkg -s vim >/dev/null 2>&1 || apt-get install -y vim
+
+ufw allow 80/tcp
+
+-- firewall.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# firewall oracle (ufw). `ufw allow <rule>` establishes firewall:<rule>#allowed.
+ufw__predict() {
+   verb=$1; shift
+   rule : sm.dorc.Firewall = "$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 : sm.dorc.Firewall:"$rule"@allowed ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 :! sm.dorc.Firewall:"$rule"@allowed ;;
+   esac
+}
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal apt-get oracle, lifted statically by dorc. ONE body per provider: `apt-get` spans two
+# kinds -- the package, and the package INDEX -- and one function describes both, because marks
+# are per-line and nothing ties a body to a single kind (28K section 7).
+#
+# Binds are ARM-LOCAL, deliberately. A shared bind above the case would put an ambient kind on
+# every arm's path, including `update`'s, whose coordinate is an entity-less singleton needing no
+# bind at all -- and resolving that bind's value against a nullary verb's empty argv tops the
+# whole check. Keep new arms in this shape.
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      update) test -n fresh : sm.dorc.PkgIndex@fresh ;;
+      install)
+         pkg : sm.dorc.Package = "$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed
+         fi ;;
+      purge)
+         pkg : sm.dorc.Package = "$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed
+         fi ;;
+   esac
+}
+
+-- pkgstate.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# package-status QUERY oracle (the DESIGN `dpkg -s nginx || apt-get install` idiom).
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg : sm.dorc.PkgState = "$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1 :? sm.dorc.PkgState:"$pkg"@installed
+}
+
+-- service.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# service oracle (systemd). enable->#enabled, start->#active (distinct selectors).
+systemctl__predict() {
+   verb=$1; shift
+   svc : sm.dorc.Service = "$1"
+   case $verb in
+      enable)  systemctl is-enabled -- "$svc" : sm.dorc.Service:"$svc"@enabled ;;
+      start)   systemctl is-active  -- "$svc" : sm.dorc.Service:"$svc"@active ;;
+      disable) systemctl is-enabled -- "$svc" :! sm.dorc.Service:"$svc"@enabled ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# pkgstate (Query) sites carry an rc — the fold/substitution reads a VALID guard's rc.
+# site 1 (the bare ca-certificates guard) is VALID ⇒ its rc=0 substitutes it to `true`.
+# site 2 (nginx, valid) is absent ⇒ its || install is live (runs). site 9 (vim) is below
+# mutators ⇒ INVALID ⇒ its rc is withheld by the firewall regardless. Establish-site rcs
+# are firewalled (never fold-usable), so they are omitted.
+#
+# Mock host: ca-certificates + curl installed; nginx/vim/htop NOT; apt lists fresh; nginx
+# service active+enabled; ufw 80/tcp allowed. (A PARTIAL-convergence host.)
+site 1 effect=holds rc=0
+site 2 effect=absent rc=1
+site 3 effect=absent
+site 4 effect=holds
+site 5 effect=holds
+site 6 effect=absent
+site 7 effect=holds
+site 8 effect=holds
+site 9 effect=absent rc=1
+site 10 effect=absent
+site 11 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe. `${0##*/}` (not
+# `basename`) reads the invoked name with no external command (PATH is mocks-only).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg --
+#!/bin/sh
+# INERT shim for `dpkg` — used BOTH as the apply's verbatim Query guards (`dpkg -s nginx`,
+# `dpkg -s vim`, run for real) AND as the pkgstate kind's probe (`dpkg -s <pkg>`; so
+# $1=-s, $2=the package). The mock host has ca-certificates installed but NOT nginx/vim,
+# so the shim branches on the operand to reproduce the fixture's pkgstate sites (site 1
+# ca-certificates=holds, sites 2/9 nginx/vim=absent). Read-only; logs the argv for the run-set.
+. "${0%/*}/.log"; _dorc_logged "$@"
+# R3: the probe ships `dpkg -s -- <pkg>` (the stripped check body); the book's own guards
+# ship `dpkg -s <pkg>` — skip the `-s` flag + optional `--` separator to read the operand.
+pkg=$2; [ "$pkg" = "--" ] && pkg=$3
+case $pkg in
+  ca-certificates) exit 0 ;;  # installed ⇒ holds (the valid bare guard, substituted to `true`)
+  *)               exit 1 ;;  # nginx/vim not installed ⇒ absent
+esac
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` (the `package` kind's establish probe; so
+# $1=-W, $2=the package name). The mock host has curl installed but NOT nginx/vim/htop, so
+# the shim branches on the operand to reproduce the fixture's per-package convergence
+# (site 5 curl=holds; sites 3/6/10 nginx/htop/vim=absent). Read-only; logs for symmetry.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case $2 in
+  curl) exit 0 ;;  # installed ⇒ holds (the converged install, runs anyway under set -e)
+  *)    exit 1 ;;  # nginx/htop/vim not installed ⇒ absent
+esac
+
+-- mocks/find --
+#!/bin/sh
+# INERT probe shim for `find` (the pkgindex kind's freshness probe runs
+# `test -n "$(find /var/lib/apt/lists/ … -newermt '-1 hour')"`). This mock host's apt
+# lists ARE fresh, so the shim prints one matching path ⇒ `test -n` is true ⇒ the
+# pkgindex check maps to `holds` (fixture site 5). Authoring the fixture AND the shim
+# together for a fresh-host mock is honest (not retro-fabrication — contrast the existing
+# exec-singleton-update, whose fixture asserts a real host; tc-find-shim, 20G). Read-only.
+. "${0%/*}/.log"; _dorc_logged "$@"
+printf '%s\n' '/var/lib/apt/lists/deb.debian.org_dists_stable_InRelease'
+exit 0
+
+-- mocks/grep --
+#!/bin/sh
+# INERT probe shim for `grep` — the firewall kind's probe pipes `ufw status` into
+# `grep -q "<rule>"`. PATH is mocks-only, so the real grep is unavailable; this shim does
+# a minimal LITERAL substring match over stdin so the firewall probe is genuine (it still
+# depends on what `ufw status` printed — not a hardcoded answer). Supports the one form
+# the probe uses: `grep -q <pattern>` reading stdin. Read-only; no log (the firewall
+# check's running is witnessed by its record, and grep is not a tracked mutator).
+pat=
+for a in "$@"; do
+  case $a in
+    -q|-*) ;;        # flags (only -q is used) — skip
+    *) pat=$a ;;     # the pattern (last non-flag arg)
+  esac
+done
+found=1
+while IFS= read -r line; do
+  case $line in
+    *"$pat"*) found=0 ;;
+  esac
+done
+exit "$found"
+
+-- mocks/systemctl --
+#!/bin/sh
+# INERT shim for `systemctl` — used as the apply mutator (`systemctl enable/start nginx`,
+# logs + exits 0) AND as the service kind's probe (`systemctl is-active --quiet nginx`).
+# The mock host has nginx active, so `is-active` exits 0 ⇒ both service sites (8 #enabled,
+# 9 #active — the oracle under-probes both via is-active) map to `holds`. The probe form
+# (`is-active`) is read-only; the mutating verbs just log.
+. "${0%/*}/.log"; _dorc_logged "$@"
+if [ "$1" = "is-active" ] || [ "$1" = "is-enabled" ]; then
+  exit 0   # nginx active/enabled on this mock host ⇒ holds
+fi
+exit 0
+
+-- mocks/ufw --
+#!/bin/sh
+# INERT shim for `ufw` — used as the apply mutator (`ufw allow 80/tcp`, logs + exits 0)
+# AND as the firewall kind's probe (`ufw status`, piped to grep). On `status` it prints
+# the mock host's rule table (80/tcp present ⇒ the firewall probe finds it ⇒ `holds`,
+# fixture site 12); on any mutating verb it just logs. Read-only on `status`.
+. "${0%/*}/.log"; _dorc_logged "$@"
+if [ "$1" = "status" ]; then
+  printf '%s\n' 'Status: active'
+  printf '%s\n' 'To                         Action      From'
+  printf '%s\n' '80/tcp                     ALLOW       Anywhere'
+fi
+exit 0
+
+-- expected.ran --
+ran: apt-get install -y nginx
+ran: apt-get update
+ran: apt-get install -y curl
+ran: apt-get install -y htop
+ran: systemctl enable nginx
+ran: systemctl start nginx
+ran: dpkg -s vim
+ran: apt-get install -y vim
+ran: ufw allow 80/tcp
+
+-- replay --
+$ dorc --book=book.sh --pre-source firewall.oracle.sh --pre-source package.oracle.sh --pre-source pkgstate.oracle.sh --pre-source service.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=113616b2c79d72ca836ad159506185b94771cc1d9defa6e35e170e6d421c169d sites=11 @@dorc@@\n'
+# site 1: sm.dorc.PkgState:ca-certificates@installed
+dpkg__predict() {
+   case $1 in -s) shift ;; esac
+   pkg="$1"
+   dpkg -s -- "$pkg" >/dev/null 2>&1
+}
+dpkg__predict '-s' 'ca-certificates'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: sm.dorc.PkgState:nginx@installed
+dpkg__predict '-s' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: sm.dorc.Package:nginx@installed
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      update) test -n fresh ;;
+      install)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
+      purge)
+         pkg="$1"
+         if [ "${2-}" = "" ]; then
+            dpkg-query -W "$pkg" >/dev/null 2>&1
+         fi ;;
+   esac
+}
+apt_get__predict 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 4: sm.dorc.PkgIndex@fresh
+apt_get__predict 'update'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 4 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 5: sm.dorc.Package:curl@installed
+apt_get__predict 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 5 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 6: sm.dorc.Package:htop@installed
+apt_get__predict 'install' '-y' 'htop'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 6 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 7: sm.dorc.Service:nginx@enabled
+systemctl__predict() {
+   verb=$1; shift
+   svc="$1"
+   case $verb in
+      enable)  systemctl is-enabled -- "$svc" ;;
+      start)   systemctl is-active  -- "$svc" ;;
+      disable) systemctl is-enabled -- "$svc" ;;
+   esac
+}
+systemctl__predict 'enable' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 7 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 8: sm.dorc.Service:nginx@active
+systemctl__predict 'start' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 8 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 9: sm.dorc.PkgState:vim@installed
+dpkg__predict '-s' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 9 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 10: sm.dorc.Package:vim@installed
+apt_get__predict 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 10 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 11: sm.dorc.Firewall:80/tcp@allowed
+ufw__predict() {
+   verb=$1; shift
+   rule="$1"
+   case $verb in
+      allow) ufw status "$rule" >/dev/null 2>&1 ;;
+      deny) ufw status "$rule" >/dev/null 2>&1 ;;
+   esac
+}
+ufw__predict 'allow' '80/tcp'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 11 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# pi-webhost provision — a scrappy real book (the lazy admin lets dorc do idempotency).
+set -e
+
+# dpkg -s ca-certificates >/dev/null 2>&1   # dorc: elided (already converged / dead branch)
+
+false || apt-get install -y nginx   # dorc: elided [dpkg -s nginx >/dev/null 2>&1] (already converged / dead branch)
+
+apt-get update
+apt-get install -y curl
+apt-get install -y htop
+
+systemctl enable nginx
+systemctl start nginx
+
+dpkg -s vim >/dev/null 2>&1 || apt-get install -y vim
+
+ufw allow 80/tcp
+dorc: plan-summary sites=12 elide=2 omit=0 guard=0 run=10 may-alias=0
+dorc: decision-digest 4c4c76b52d3a58937899bc78bf949dd4014247d5a693231155cd3d17f5598755

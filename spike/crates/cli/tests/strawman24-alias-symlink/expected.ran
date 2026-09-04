@@ -1,2 +1,0 @@
-ran: writeconf /etc/app.conf
-ran: conf-exists /etc/app.conf.lnk

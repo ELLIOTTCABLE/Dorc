@@ -1,0 +1,94 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# payload-composed-shape-walls (24T §1 acceptance shape; lane-payload-v1 rung-0): the composed
+# `pipeline ∘ context ∘ payload` shape analyzes end-to-end WITHOUT crashing. With no wrapper or
+# eval'er oracle loaded (MODELS-only lane), every leg walls: the pipe composes, the `sudo` context
+# leg takes the honest wall, and the site runs verbatim (empty-world-byte-identical). When
+# lane-context-entry + eval'er oracles land, this site upgrades transparently. (The brief's shape
+# uses a `>> /etc/f` redirect; a read-only payload is used here so the exec gate stays sandbox-safe —
+# the `sudo` wall never evaluates the payload anyway.)
+echo data | sudo sh -c 'cat /etc/motd'
+
+-- probe-results.txt --
+# the composed shape walls end-to-end (no wrapper/eval'er oracle) ⇒ sites run unprobed.
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/sudo --
+#!/bin/sh
+# INERT strawman mock (never a real context-entry): logs its argv for the run-set, mutates nothing
+# and does NOT enter a context or evaluate the payload (the wall runs the site verbatim).
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: sudo sh -c cat /etc/motd
+
+-- replay --
+$ dorc --book=book.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=71da83c2c68b513e6f197fed71769fb7af56c9a9d0191494f79fad8a9366e79a sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `sudo sh -c 'cat /etc/motd'` -- run `dorc why` for the per-site
+detail (the apply runs each anyway, to stay safe)
+      [ book.sh:9:13
+   9 | echo data | sudo sh -c 'cat /etc/motd'
+     |             \________________________/
+
+   = help:  sm site runs `sudo sh -c 'cat /etc/motd'`
+hint: 'sudo' (line 9) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# payload-composed-shape-walls (24T §1 acceptance shape; lane-payload-v1 rung-0): the composed
+# `pipeline ∘ context ∘ payload` shape analyzes end-to-end WITHOUT crashing. With no wrapper or
+# eval'er oracle loaded (MODELS-only lane), every leg walls: the pipe composes, the `sudo` context
+# leg takes the honest wall, and the site runs verbatim (empty-world-byte-identical). When
+# lane-context-entry + eval'er oracles land, this site upgrades transparently. (The brief's shape
+# uses a `>> /etc/f` redirect; a read-only payload is used here so the exec gate stays sandbox-safe —
+# the `sudo` wall never evaluates the payload anyway.)
+echo data | sudo sh -c 'cat /etc/motd'
+dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
+dorc: decision-digest 92207e18192aa56913bdbcd8bc9753173e85a19e2e5c49adcba01ac80cf67540

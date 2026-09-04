@@ -1,0 +1,214 @@
+---
+xfail: p-x-book-exports-meet-oracle-envelopes
+---
+-- book.sh --
+#!/bin/sh
+export VERBOSE=true
+wombat ensure alpha
+snipe ensure gamma
+AWS_PROFILE=staging grebe ensure web1
+AWS_PROFILE=prod grebe ensure web1
+export PATH="/opt/fake:$PATH"
+wombat ensure beta
+
+-- grebe.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+grebe__predict() {
+   verb=$1; shift
+   ent : test.dorc.Widget = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         ensure) grebecheck -q -- "$ent" : test.dorc.Widget:"$ent"@converged ;;
+      esac
+   fi
+}
+
+grebe__is_converged() {
+   [ "$1" = ensure ] || return 2
+   grebe status -- "$2"
+}
+
+-- snipe.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+snipe__predict() {
+   verb=$1; shift
+   ent : test.dorc.Widget = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         ensure) snipecheck -q -- "$ent" : test.dorc.Widget:"$ent"@converged ;;
+      esac
+   fi
+}
+
+snipe__is_converged() {
+   [ "$1" = ensure ] || return 2
+   snipe status -- "$2"
+}
+
+-- wombat.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+wombat__predict() {
+   verb=$1; shift
+   ent : test.dorc.Widget = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         ensure) wombatcheck -q -- "$ent" : test.dorc.Widget:"$ent"@converged ;;
+      esac
+   fi
+}
+
+wombat__is_converged() {
+   [ "$1" = ensure ] || return 2
+   env -i PATH=/usr/bin:/bin wombat status -- "$2"
+}
+
+-- probe-results.txt --
+# Five oracled sites in book order: wombat/alpha (1), snipe/gamma (2), grebe/web1-staging (3),
+# grebe/web1-prod (4), wombat/beta (6). The two `export` lines (0, 5) mint no site of their own.
+site 1 effect=holds rc=0
+site 2 effect=holds rc=0
+site 3 effect=holds rc=0
+site 4 effect=absent rc=1
+site 6 effect=holds rc=0
+
+-- mocks/.log --
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg in "$@"; do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/grebe --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+case "$1" in
+   status)
+      shift
+      [ "$1" = "--" ] && shift
+      case "$1" in
+         web1) exit 0 ;;
+         *) exit 1 ;;
+      esac
+      ;;
+   *) exit 0 ;;
+esac
+
+-- mocks/grebecheck --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/snipe --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+case "$1" in
+   status)
+      shift
+      [ "$1" = "--" ] && shift
+      case "$1" in
+         gamma) exit 0 ;;
+         *) exit 1 ;;
+      esac
+      ;;
+   *) exit 0 ;;
+esac
+
+-- mocks/snipecheck --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/wombat --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+case "$1" in
+   status)
+      shift
+      [ "$1" = "--" ] && shift
+      case "$1" in
+         alpha) exit 0 ;;
+         beta) exit 0 ;;
+         *) exit 1 ;;
+      esac
+      ;;
+   *) exit 0 ;;
+esac
+
+-- mocks/wombatcheck --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: grebe ensure web1
+ran: grebe ensure web1
+ran: wombat ensure beta
+
+-- replay --
+$ dorc --book=book.sh --pre-source grebe.oracle.sh --pre-source snipe.oracle.sh --pre-source wombat.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ac50df3f597123f02125d4bbb716cca13d6ce37f43bb0424db442c42ca30b8c6 sites=5 @@dorc@@\n'
+# site 1: test.dorc.Widget:alpha@converged
+wombat__is_converged() {
+   [ "$1" = ensure ] || return 2
+   env -i PATH=/usr/bin:/bin wombat status -- "$2"
+}
+wombat__is_converged 'ensure' 'alpha'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 2: test.dorc.Widget:gamma@converged
+snipe__is_converged() {
+   [ "$1" = ensure ] || return 2
+   snipe status -- "$2"
+}
+snipe__is_converged 'ensure' 'gamma'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: test.dorc.Widget:web1@converged
+grebe__is_converged() {
+   [ "$1" = ensure ] || return 2
+   grebe status -- "$2"
+}
+grebe__is_converged 'ensure' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 4: test.dorc.Widget:web1@converged
+grebe__is_converged 'ensure' 'web1'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 4 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 6: test.dorc.Widget:beta@converged
+wombat__is_converged 'ensure' 'beta'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 6 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:5 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+records: note[shared-cell-measurements-disagree]: 2 probe sites all measure one
+shared coordinate (test.dorc.Widget:web1@converged) and their reports did not
+agree, so Dorc holds it unknown and every site on it runs -- the
+cleanly-reporting ones included (an authored verdict coordinate would split them
+apart).
+why: site 6 guard [test.dorc.Widget] -- licensed by the test.dorc.Widget oracle's vouch (at wombat.oracle.sh:15) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+wombat__is_converged() {
+   [ "$1" = ensure ] || return 2
+   env -i PATH=/usr/bin:/bin wombat status -- "$2"
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+export VERBOSE=true
+# wombat ensure alpha   # dorc: elided (already converged / dead branch)
+# snipe ensure gamma   # dorc: elided (already converged / dead branch)
+AWS_PROFILE=staging grebe ensure web1
+AWS_PROFILE=prod grebe ensure web1
+export PATH="/opt/fake:$PATH"
+( wombat__is_converged ensure beta ) || wombat ensure beta   # dorc: guard [test.dorc.Widget converged-vouch; probe: holds]
+dorc: plan-summary sites=7 elide=2 omit=0 guard=1 run=4 may-alias=0
+dorc: decision-digest b8e134feb2881a05712a9a77aa6e9cbcac891acbef184e7d6d1ed44ddac2b786

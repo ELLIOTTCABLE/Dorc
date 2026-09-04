@@ -423,6 +423,65 @@ pub const PINS: &[Pin] = &[
         },
         state: PinState::Live,
     },
+    Pin {
+        name: "p-x-book-exports-meet-oracle-envelopes",
+        trigger: "the `env30-book-exports-meet-oracle-envelopes` whole-product demonstration \
+                  (`plans/30S`): env identity is unbuilt, so the bare-prefix retarget on `grebe`, \
+                  the value-blind rho-fold, the `export` index-fence, and the pin-or-sever probing \
+                  envelope are all treated as if no export or prefix ran. Greens once `plans/30S` \
+                  §2's model lands and the four r31 `30S` unit pins green together \
+                  (`30S:model-pin-or-sever-composition` + `30S:rul-export-is-an-index-fence` + \
+                  `30S:rul-prefix-joins-site-identity`)",
+        horizon: Horizon::Unscheduled {
+            marker: "r31",
+            why: "`plans/30S` §5 names the env-identity work an attention-call, not a scheduled \
+                  build stage; this boundary is where the census should force the question",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-load-point-havoc-and-script-relative",
+        trigger: "the `load30-point-havoc-and-script-relative` whole-product demonstration: an \
+                  unknown `.` source havocs the whole tail and `${0%/*}` does not resolve, so \
+                  nothing is described and nothing elides. Greens once a later unconditional role \
+                  definition below an unresolvable `.` is modelled and `${0%/*}`-relative script \
+                  location binds (`principle-unknown-source-is-a-point-havoc` + \
+                  `30P` §5's `${0%/*}` load operand)",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r30",
+            why: "`plans/30P` §5 names load-model script-location an attention-call, not a \
+                  scheduled build stage, and this pin is NEVER re-horizoned — an expired horizon \
+                  here is the census forcing the question, not a slip to defer",
+        },
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-load31-punted-load-shapes",
+        trigger: "the `load31-punted-load-shapes` whole-product demonstration: none of the three \
+                  punted load operands resolve, so no package is acquired, nothing is described, \
+                  and every site runs. Greens with the absolutizing `$(cd ... && pwd)` script \
+                  location, the set-valued source glob, and plain-sh `.` inclusion \
+                  (`p-x-load-operand-cd-pwd-of-dollar-zero` · `p-x-glob-load-acquires-members` · \
+                  `p-x-book-code-source-is-inclusion`)",
+        horizon: Horizon::Scheduled("r31:book-load-acceptance"),
+        state: PinState::Live,
+    },
+    Pin {
+        name: "p-x-loop-cell-disjoint-siblings-replace",
+        trigger: "the `loop30-cell-disjoint-siblings-would-replace` whole-product demonstration: \
+                  cell-blind self-reach (`Reach::is_pristine`) walls the shared `install_pkg` \
+                  region to GUARD though its establishes are provably disjoint from the sibling \
+                  direct mutator's cells; a cell-aware self-reach would let it REPLACE \
+                  (`FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`; the flagged \
+                  widening `30Qa:tc-self-reach-cell-blind-widening`)",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the cell-aware self-reach widening is a flagged design question \
+                  (`30Qa:tc-self-reach-cell-blind-widening`), not a scheduled build stage; this \
+                  boundary is where the census should force the question",
+        },
+        state: PinState::Live,
+    },
 ];
 
 /// The pin registered under `name`.

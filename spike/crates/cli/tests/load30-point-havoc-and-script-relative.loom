@@ -1,0 +1,156 @@
+---
+xfail: p-x-load-point-havoc-and-script-relative
+---
+-- book.sh --
+#!/bin/sh
+# TARGET (`principle-unknown-source-is-a-point-havoc` +
+# `principle-load-operands-evaluate-over-controller-known-inputs`, the `${0%/*}` half): a book that
+# sources an unreadable host profile keeps every binding made AFTERWARDS, and finds its own sibling
+# package from `$0` with no command run to locate it. Both loads are unconditional and the package
+# load sits BELOW the unknown one, so the package's definitions are exactly what the havoc must not
+# swallow.
+#
+# TARGET RUN SET: empty. `hork tune web` is the book's only mutating line, the probe fixture says
+# its cell holds, and the package's own verdict function vouches for it — so the published plan
+# runs nothing under the mocks. Anything in `expected.ran` means a binding made below the unknown
+# source was lost and the site fell back to running.
+. "${SITE_PROFILE:-/dev/null}"
+
+. "${0%/*}/hork.dorc.sh"
+
+hork tune web
+
+-- hork.dorc.sh --
+# dorc-lang/v0.2
+# The sibling package the book locates from `$0`. It carries both members for `hork`: the model
+# that names the cell, and the verdict that vouches for it. Both bind BELOW the unknown source, so
+# the case fails whenever the havoc reaches past its own line.
+hork__predict() {
+   verb=$1; shift
+   widget : sm.dorc.Widget = "$1"
+   case $verb in
+      tune) hork status --tuned -- "$widget"   : sm.dorc.Widget:"$widget"@tuned ;;
+   esac
+}
+
+hork__is_converged() {
+   verb=$1; shift
+   case $verb in
+      tune) hork status --tuned -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# The cell `hork tune web` names, reported as converged: the target is that the site ELIDES.
+# site 2 is the third book leaf (the two loads are 0 and 1); if a future numbering moves it, the
+# promotion re-blesses this file along with the transcript.
+site 2 effect=holds
+
+-- mocks/.log --
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock: logs that it ran, mutates NOTHING, exits 0. `hork` is a non-functional stub name —
+# under the harness's mocks-only PATH this file is the only thing an executed artifact can reach.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+-- replay --
+$ dorc --book=book.sh --artifact-dir=$ARTIFACT_DIR --results - < probe-results.txt
+cfg: warning[cfg-errexit-unknown]: Dorc could not tell whether `set -e` is in
+effect at one or more commands (a non-literal `set` argument, or paths that
+disagree), so it plans as though each might abort the book on failure -- the
+cautious reading; it can cost elisions, never correctness.
+loading: warning[script-relative-load-dies-slashless]: [unwritten:
+script-relative-load-dies-slashless]
+      [ book.sh:15:1
+   15 | . "${0%/*}/hork.dorc.sh"
+      | \______________________/
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:15:1
+   15 | . "${0%/*}/hork.dorc.sh"
+      | \______________________/
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=24b422a19ba373b5de95b565b175f2abd04ca3fcafaeffb38950c4ab9006b524 sites=0 @@dorc@@\n'
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+# site:2 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+classify: note[cmdsub-operand-top]: operand 1 is a command-substitution `$(...)`
+/ arithmetic / operator-form expansion, so Dorc cannot know its value until the
+command runs on the host -- there is nothing to resolve and no read-only probe
+to check. Dorc elides a command only when it can prove the command's effect is
+already in place, so this one is left to run on every apply.
+      [ book.sh:13:3
+   13 | . "${SITE_PROFILE:-/dev/null}"
+      |   \__________________________/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+classify: note[cmdsub-operand-top]: operand 1 is a command-substitution `$(...)`
+/ arithmetic / operator-form expansion, so Dorc cannot know its value until the
+command runs on the host -- there is nothing to resolve and no read-only probe
+to check. Dorc elides a command only when it can prove the command's effect is
+already in place, so this one is left to run on every apply.
+      [ book.sh:15:3
+   15 | . "${0%/*}/hork.dorc.sh"
+      |   \____________________/
+
+   = repair:  Give the operand a value Dorc can resolve statically -- a literal,
+              or a variable assigned from one -- so Dorc can probe it and elide
+              the command once it has converged. If the value must stay dynamic,
+              load an oracle that vouches for this command's convergence, and
+              Dorc will guard the command instead of running it every time.
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `. "${SITE_PROFILE:-/dev/null}"`, `. "${0%/*}/hork.dorc.sh"`,
+`hork tune web` -- run `dorc why` for the per-site detail (the apply runs each
+anyway, to stay safe)
+      [ book.sh:13:1
+   13 | . "${SITE_PROFILE:-/dev/null}"
+      | \____________________________/
+
+   = help:  sm site runs `. "${SITE_PROFILE:-/dev/null}"`
+why: ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 13:1 `. "${SITE_PROFILE:-/dev/null}"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 15:1 `. "${0%/*}/hork.dorc.sh"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+hint: '.' (line 13) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# TARGET (`principle-unknown-source-is-a-point-havoc` +
+# `principle-load-operands-evaluate-over-controller-known-inputs`, the `${0%/*}` half): a book that
+# sources an unreadable host profile keeps every binding made AFTERWARDS, and finds its own sibling
+# package from `$0` with no command run to locate it. Both loads are unconditional and the package
+# load sits BELOW the unknown one, so the package's definitions are exactly what the havoc must not
+# swallow.
+#
+# TARGET RUN SET: empty. `hork tune web` is the book's only mutating line, the probe fixture says
+# its cell holds, and the package's own verdict function vouches for it — so the published plan
+# runs nothing under the mocks. Anything in `expected.ran` means a binding made below the unknown
+# source was lost and the site fell back to running.
+. "${SITE_PROFILE:-/dev/null}"
+
+. "${0%/*}/hork.dorc.sh"
+
+hork tune web
+dorc: plan-summary sites=3 elide=0 omit=0 guard=0 run=3 may-alias=0
+dorc: decision-digest 976127e7aad905e813258331c076a77f0d760a8b5fa92604cbbb281e0a14e2fe

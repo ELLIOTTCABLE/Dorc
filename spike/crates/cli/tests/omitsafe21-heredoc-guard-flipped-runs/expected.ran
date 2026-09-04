@@ -1,2 +1,0 @@
-ran: dpkg -s nginx
-ran: apt-get install -y nginx

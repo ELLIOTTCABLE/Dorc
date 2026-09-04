@@ -1,0 +1,181 @@
+---
+---
+-- book.sh --
+# tiedown-survive-statebearing (24B §3 — a flavour-C tie-down for the round-24 chronology net).
+apt-get install -y oldpkg
+apt-get install -y nginx
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg) — predict() + touches() (STRAWMAN spellings, 24A §1b).
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__disturbs() {                              # STRAWMAN footprint spelling (24A §1b)
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install|purge) printf '%s\n' "$1" : disturbs sm.dorc.Package ;;
+   esac
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records. site 0 = package:oldpkg#installed (absent ⇒ diverged ⇒
+# oldpkg install RUNS = the footprinted wall); site 1 = package:nginx#installed (holds ⇒
+# converged). Under --risk-faultless-skips the nginx install SURVIVES the running oldpkg wall
+# (package:nginx disjoint from footprint package:oldpkg) ⇒ elides. Mock-reproducible (dpkg-query
+# returns 1 for oldpkg, 0 for nginx) ⇒ NOT PROBE_RESULTS=authored ⇒ gate-6 runs.
+site 0 effect=absent
+site 1 effect=holds
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/.state --
+# The tie-down's state-bearing package DB (24B §3). Pure sh only — PATH is mocks-only, so there
+# is NO grep/cp/mv/cat available; state is kept in ./state (the sandbox cwd, fresh per run) using
+# builtins + redirection. This is the ONLY home of the state-bearing-mock protocol: it makes
+# `apt-get install X` really make `dpkg-query -W X` succeed, so the probe reads a FAITHFUL
+# mini-world — the real-dash anchor that ties the in-memory hostsim model to reality.
+#
+# S0 (the probe-time world) is baked here: nginx installed, oldpkg NOT. Seeded into ./state on
+# first touch; install adds, purge removes. ru-26 spike note: authored inline (not derived) for
+# the spike's tie-down handful — a real oracle would emit its own footprint (Stage 4).
+_S0='nginx'
+
+_state_init() {
+   [ -f ./state ] && return 0
+   for _p in $_S0; do printf '%s\n' "$_p"; done > ./state
+}
+
+_state_has() {
+   while IFS= read -r _sl; do
+      [ "$_sl" = "$1" ] && return 0
+   done < ./state
+   return 1
+}
+
+_state_add() { _state_has "$1" || printf '%s\n' "$1" >> ./state; }
+
+_state_del() {
+   _kept=''
+   while IFS= read -r _sl; do
+      [ "$_sl" = "$1" ] || _kept="$_kept$_sl
+"
+   done < ./state
+   printf '%s' "$_kept" > ./state
+}
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT state-bearing mock (tie-down; NEVER a real mutator): logs its argv for the run-set, and
+# reflects install/purge into the per-run package DB (./state) so a later dpkg-query probe reads
+# a faithful world. `apt-get install X` ⇒ X becomes present; `purge X` ⇒ absent. Mutates only the
+# disposable sandbox DB, never the host.
+. "${0%/*}/.log"; _dorc_logged "$@"
+. "${0%/*}/.state"; _state_init
+_verb=$1; shift
+while [ "${1#-}" != "$1" ]; do shift; done
+case $_verb in
+   install) _state_add "$1" ;;
+   purge)   _state_del "$1" ;;
+esac
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT read-only probe mock (tie-down, state-bearing): `dpkg-query -W <pkg>` ($1=-W, $2=pkg).
+# rc 0 iff <pkg> is present in the per-run DB (./state, seeded from S0 = nginx installed, oldpkg
+# not). Read-only — reflects state, never mutates it; logs for symmetry. This is what makes gate-1
+# validate the model's S0 against a real file-backed world instead of a hardcoded rc table.
+. "${0%/*}/.log"; _dorc_logged "$@"
+. "${0%/*}/.state"; _state_init
+if _state_has "$2"; then exit 0; else exit 1; fi
+
+-- expected.ran --
+ran: apt-get install -y oldpkg
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --risk-faultless-skips --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ea1b55cedf12a3595f64eedd9ba12e2d0d6dff34dcb334ef7a838049eec9cb06 sites=2 @@dorc@@\n'
+# site 0: sm.dorc.Package:oldpkg@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'oldpkg'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 1: sm.dorc.Package:nginx@installed
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+why: site 1 survives+elides past wall site 0 (apt-get touches {sm.dorc.Package:oldpkg}) -- backing sm.dorc.Package:nginx disjoint (trusted footprint); vouched at package.oracle.sh:31
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# tiedown-survive-statebearing (24B §3 — a flavour-C tie-down for the round-24 chronology net).
+apt-get install -y oldpkg
+# apt-get install -y nginx   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=2 elide=1 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest b033744aa0407aa2e3422803c98611ea57f8460dd8d491dbbc6cc305ae0e9b45

@@ -1,0 +1,116 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# `30L:pin-whole-helper-derived-only` (§8): full elision of a helper is DERIVED, never primitive.
+# Every body establish is converged and the call's own consumed observables are reproducible, so
+# the CALL replaces with the ordinary stand-in — and the definition it no longer reaches keeps its
+# authored bytes. No delete-helper mechanism exists, and no region stand-in is written into a body
+# no route can execute.
+main() {
+   apt-get install -y nginx
+   apt-get install -y curl
+}
+
+main "$@"
+
+-- pkgindex-predict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- pkgindex-verdict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# Every body establish already holds, so the CALL itself elides and the body never runs.
+site 0.0 effect=holds rc=0
+site 0.1 effect=holds rc=0
+
+-- mocks/.log --
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg in "$@"; do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/apt-get --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/aptcheck --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+
+
+-- replay --
+$ dorc --book=book.sh --pre-source pkgindex-predict.oracle.sh --pre-source pkgindex-verdict.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=9e071ffaee25050539a5c60d26f5ff9dbf28b68586b885159809d3e9afe77a5d sites=2 @@dorc@@\n'
+# site 0.0: sm.dorc.Package:nginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 0.1: sm.dorc.Package:curl@installed
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.1 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+#!/bin/sh
+# `30L:pin-whole-helper-derived-only` (§8): full elision of a helper is DERIVED, never primitive.
+# Every body establish is converged and the call's own consumed observables are reproducible, so
+# the CALL replaces with the ordinary stand-in — and the definition it no longer reaches keeps its
+# authored bytes. No delete-helper mechanism exists, and no region stand-in is written into a body
+# no route can execute.
+main() {
+   apt-get install -y nginx
+   apt-get install -y curl
+}
+
+# main "$@"   # dorc: elided (already converged / dead branch)
+dorc: plan-summary sites=1 elide=1 omit=0 guard=0 run=0 may-alias=0
+dorc: decision-digest 8021b022de2c33232d022c83a8e9125e125a496d1719735cca0d0bc5b5718bea

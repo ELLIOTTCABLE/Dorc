@@ -1,0 +1,177 @@
+---
+---
+-- book.sh --
+# guard23-nounset-book-survives (23C-fd2: a `set -u` book — the inserted guard must not kill
+set -u
+hork wombat
+apt-get install -y curl
+apt-get install -y vim
+
+-- package.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+# minimal package oracle (apt/dpkg) — the guard23 SET-U fixture variant (23C-fd2). The predict()
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+         purge) dpkg-query -W "$pkg" >/dev/null 2>&1 :! sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+
+-- probe-results.txt --
+# probe-results: site-keyed records (task-D1 WIRE). Grammar:
+#   site <leafid> effect=<holds|absent|cant-tell>
+# site 0 = `set -u`; site 1 = hork (opaque wall). sites 2/3 sit PAST the wall; at HEAD their
+# establish-probes never ship (unresolvable-no-probe), so these records are consumed by nothing
+# (the xfail's gate-1 half). Under the guard tier the vouched sites keep their read-only probes.
+# site 2 (curl) holds ⇒ guard minted — the single-operand invocation's check body must not DIE
+#   on its `"$2"` read under set -u (the 23C-fd2 crash); the mitigation runs curl bare via
+#   fall-through, so the book completes exactly as bare (kFAIL-perform: over-running is safe).
+# site 3 (vim) absent ⇒ diverged ⇒ runs; it is the downstream victim a naive guard's crash eats.
+site 2 effect=holds
+site 3 effect=absent
+
+-- mocks/.log --
+# newline-safe argv logger for the inert mock shims (slice-4). Sourced by each shim via
+# `. "${0%/*}/.log"` (the shim's own dir); a DOTFILE so gate-5/gate-6's `ls`-derived shimset
+# never lists it. Replaces the old inline `printf 'ran: %s %s\n' "${0##*/}" "$*"` — an arg with
+# an embedded NEWLINE would split the `ran:` line and silently break every line-based compare
+# (exec_check, gate-5, gate-6). Shims run under PATH=mocks-only ⇒ BUILTINS ONLY (no sed/awk).
+#
+# GRAMMAR (what expected.ran goldens carry): one `ran: <name> <arg>…` line per invocation; each
+# arg is encoded — a literal backslash as `\\`, an embedded newline as the two chars `\n`. The
+# two passes run in THIS order (backslash first) so a newline's encoded `\n` backslash is not
+# re-doubled. A newline-free, backslash-free argv encodes to itself ⇒ byte-identical to the old
+# format (per-arg space-join == the old `"$*"` join) ⇒ zero golden churn.
+_dorc_logged() {
+  _dl_out="ran: ${0##*/}"
+  for _dl_a in "$@"; do
+    _dl_o=""                                          # pass 1: \ -> \\
+    while case $_dl_a in *\\*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%\\*}\\\\"; _dl_a=${_dl_a#*\\}
+    done
+    _dl_a="$_dl_o$_dl_a"
+    _dl_o=""                                          # pass 2: newline -> \n
+    while case $_dl_a in *"$_DL_NL"*) true ;; *) false ;; esac; do
+      _dl_o="$_dl_o${_dl_a%%"$_DL_NL"*}\\n"; _dl_a=${_dl_a#*"$_DL_NL"}
+    done
+    _dl_out="$_dl_out $_dl_o$_dl_a"
+  done
+  printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+_DL_NL='
+'
+
+-- mocks/apt-get --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+# INERT probe shim for `dpkg-query -W <pkg>` (the package kind's probe) — the flagship
+# host: nginx and curl installed (rc 0 ⇒ holds), vim ABSENT (rc 1 ⇒ absent). Read-only;
+# logs argv. Under the guard tier this same body re-runs at apply as site 2's guard.
+. "${0%/*}/.log"; _dorc_logged "$@"
+case $* in
+  *vim*) exit 1 ;;
+esac
+exit 0
+
+-- mocks/hork --
+#!/bin/sh
+# INERT mock (ap-2 exec harness): logs that it ran, mutates NOTHING, exits 0. The
+# book calls the real name; under the harness's PATH=mocks-only this shim is the only
+# thing that runs, so executing a rendered apply is provably safe.
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork wombat
+ran: dpkg-query -W curl
+ran: apt-get install -y vim
+
+-- replay --
+$ dorc --book=book.sh --pre-source package.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=5c070c47a00b5ce9d213a9456cdcfd52bd6541264e7288842d0853c3f3a89928 sites=2 @@dorc@@\n'
+# site 2: sm.dorc.Package:curl@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 3: sm.dorc.Package:vim@installed
+apt_get__is_converged 'install' '-y' 'vim'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 3 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site:0 unresolvable-no-probe
+# site:1 unresolvable-no-probe
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 1 site run unprobed (no read-only check could
+be shipped): `hork wombat` -- run `dorc why` for the per-site detail (the apply
+runs each anyway, to stay safe)
+      [ book.sh:3:1
+   3 | hork wombat
+     | \_________/
+
+   = help:  sm site runs `hork wombat`
+why: site 2 guard [sm.dorc.Package] -- licensed by the sm.dorc.Package oracle's vouch (at package.oracle.sh:23) that it is already satisfied; the original bytes survive and the check re-runs live at apply (to stay safe)
+hint: 'hork' (line 3) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged, and un-wall 1 downstream site
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$1" >/dev/null 2>&1 ;;
+      esac
+   fi
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+# guard23-nounset-book-survives (23C-fd2: a `set -u` book — the inserted guard must not kill
+set -u
+hork wombat
+( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+apt-get install -y vim
+dorc: plan-summary sites=4 elide=0 omit=0 guard=1 run=3 may-alias=0
+dorc: decision-digest 8812426bd5d6fa54be4437b5eea7805dc76d72501cc79780856c1ce2c3acb39a

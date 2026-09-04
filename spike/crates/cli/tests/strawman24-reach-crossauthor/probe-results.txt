@@ -1,3 +1,0 @@
-site 0 effect=absent
-site 1 effect=holds
-reach sm.dorc.Package:nginx arm=0 entity=/etc/nginx/nginx.conf

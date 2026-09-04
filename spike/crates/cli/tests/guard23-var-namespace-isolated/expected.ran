@@ -1,3 +1,0 @@
-ran: hork wombat
-ran: dpkg-query -W curl
-ran: apt-get install -y vim

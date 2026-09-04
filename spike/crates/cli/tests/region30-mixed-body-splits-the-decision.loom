@@ -1,0 +1,147 @@
+---
+---
+-- book.sh --
+#!/bin/sh
+# THE MOTIVATING SHAPE (`plans/30L` §1): the whole book wrapped in one function, with one live
+# command in the middle. Under the all-or-nothing CALL license a single unmodeled `hork` forfeited
+# the ENTIRE body; region decisions forfeit only the region that failed.
+#
+# What this pins: three different answers inside ONE definition, decided independently.
+#   nginx  converged, nothing before it            => Replace, at the authored region
+#   hork   unmodeled                               => Run (it is the wall)
+#   curl   converged, but past hork's running wall => Guard (re-decides live; rul-ternary-verdict)
+# and `main "$@"` stays a CALL, untouched (`30L:rul-edit-authored-definition-once`).
+main() {
+   apt-get install -y nginx
+   hork tune-packages
+   apt-get install -y curl
+}
+
+main "$@"
+
+-- pkgindex-predict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__predict() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   pkg : sm.dorc.Package = "$1"
+   if [ "${2-}" = "" ]; then
+      case $verb in
+         install) dpkg-query -W "$pkg" >/dev/null 2>&1 : sm.dorc.Package:"$pkg"@installed ;;
+      esac
+   fi
+}
+
+-- pkgindex-verdict.oracle.sh --
+#!/usr/bin/env dorc-sh
+# dorc-lang/v0.2
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+-- probe-results.txt --
+# nginx and curl are already installed; the unmodeled `hork` between them is the wall.
+site 0.0 effect=holds rc=0
+site 0.2 effect=holds rc=0
+
+-- mocks/.log --
+_dorc_logged() {
+   _dl_out="ran: ${0##*/}"
+   for _dl_arg in "$@"; do _dl_out="$_dl_out $_dl_arg"; done
+   printf '%s\n' "$_dl_out" >>"$DORC_LOG"
+}
+
+-- mocks/apt-get --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/aptcheck --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/dpkg-query --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- mocks/hork --
+#!/bin/sh
+. "${0%/*}/.log"; _dorc_logged "$@"
+exit 0
+
+-- expected.ran --
+ran: hork tune-packages
+ran: aptcheck -q -- curl
+
+-- replay --
+$ dorc --book=book.sh --pre-source pkgindex-predict.oracle.sh --pre-source pkgindex-verdict.oracle.sh --results - < probe-results.txt
+#!/bin/sh
+# dorc probe (read-only): checks per-SITE convergence, mutates nothing.
+# When run, emits one results-record per site on stdout (the return channel):
+#   site <leafid> effect=<holds|absent|cant-tell> rc=<n>
+# effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
+# rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
+
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=b4bb662c36418e8325a79b43dd57761f8d0def8a5d2490c5962c0b414c2820d8 sites=2 @@dorc@@\n'
+# site 0.0: sm.dorc.Package:nginx@installed
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+apt_get__is_converged 'install' '-y' 'nginx'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.0 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+# site 0.2: sm.dorc.Package:curl@installed
+apt_get__is_converged 'install' '-y' 'curl'; _rc=$?; if [ "$_rc" -eq 0 ]; then _e=holds; elif [ "$_rc" -eq 1 ]; then _e=absent; else _e=cant-tell; fi; printf 'dorc site 0.2 effect=%s rc=%s @@dorc@@\n' "$_e" "$_rc"
+printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+#!/bin/sh
+# dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
+
+# dorc guard preamble: the vouching oracle's own verdict body, shipped strip-only
+# (dialect annotations removed, nothing else changed -- rul-ternary-verdict: the
+# authored bytes verbatim, no engine-synthesized sh).
+apt_get__is_converged() {
+   while [ "${1#-}" != "$1" ]; do shift; done
+   verb=$1; shift
+   while [ "${1#-}" != "$1" ]; do shift; done
+   case $verb in
+      install) aptcheck -q -- "$1" ;;
+      *) return 2 ;;
+   esac
+}
+
+# dorc: end of lifted material; the book follows, in its authored order.
+
+#!/bin/sh
+# THE MOTIVATING SHAPE (`plans/30L` §1): the whole book wrapped in one function, with one live
+# command in the middle. Under the all-or-nothing CALL license a single unmodeled `hork` forfeited
+# the ENTIRE body; region decisions forfeit only the region that failed.
+#
+# What this pins: three different answers inside ONE definition, decided independently.
+#   nginx  converged, nothing before it            => Replace, at the authored region
+#   hork   unmodeled                               => Run (it is the wall)
+#   curl   converged, but past hork's running wall => Guard (re-decides live; rul-ternary-verdict)
+# and `main "$@"` stays a CALL, untouched (`30L:rul-edit-authored-definition-once`).
+main() {
+   true   # dorc: elided [apt-get install -y nginx] (already converged / dead branch)
+   hork tune-packages
+   ( apt_get__is_converged install -y curl ) || apt-get install -y curl   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
+}
+
+main "$@"
+dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
+dorc: decision-digest 178210fecd7b8116f8a173455c031dca93ef257bfe2202a647891b87fafb84b7

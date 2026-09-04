@@ -1,4 +1,0 @@
-site 0 effect=absent
-site 1 effect=holds
-resolv sm.dorc.Fs:/etc/app.conf canon=/etc/app.conf
-resolv sm.dorc.Fs:/etc/app.conf.lnk canon=/etc/app.conf
