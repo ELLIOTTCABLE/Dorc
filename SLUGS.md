@@ -4161,6 +4161,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/cli/CLAUDE.md:378 — (`288:phase-e2e-loom-conversion`) — a whole-product case may be
 - cited: 28L 30Qb 30X 30Xa spike/CLAUDE (5)
 
+## loom-one-runner
+- defined: —
+- cited: 30X 30Xa (2)
+
 ## loom-publication-followed-the-named-store
 - defined: —
 - cited: 30Rk (1)
