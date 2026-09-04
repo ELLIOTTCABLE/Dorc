@@ -3479,6 +3479,46 @@ mod tests {
         );
     }
 
+    /// A first write needs the row's hole NAMES and ARITY, not its value bytes: an unwritten
+    /// value-bearing row surfaces `v0`/`v1` for the inventory while its render stays the
+    /// placeholder, so overtyping it resolves (`arrangement-words-are-a-sequence-nothing-splits`).
+    #[test]
+    fn an_unwritten_value_bearing_row_lists_its_holes_while_rendering_the_placeholder() {
+        use dorc_aid::arrangement::push_arrangement_sentence;
+        use dorc_aid::tagged::RenderParts;
+
+        let consumer = DorcConsumer {
+            mirror: Vec::new(),
+            arrangements: vec![OwnedArrangement {
+                slug: "cli-apply-identities-line".to_owned(),
+                occurrence: None,
+                when_used: String::new(),
+                why: String::new(),
+                words: None,
+            }],
+            mint: Mint::Slop,
+            demoted: Vec::new(),
+        };
+        let mut parts = RenderParts::new();
+        {
+            let ctx = consumer.render_ctx();
+            push_arrangement_sentence(
+                &mut parts,
+                ctx.arrangements(),
+                "cli-apply-identities-line",
+                None,
+                &["deadbeef", "cafef00d"],
+            );
+        }
+        let render = to_editable_render(&parts);
+        assert_eq!(render.text(), "[unwritten: cli-apply-identities-line]");
+        let holes: Vec<String> = used_variables_of(&render)
+            .into_iter()
+            .map(|(name, _)| name.0)
+            .collect();
+        assert_eq!(holes, vec!["v0".to_owned(), "v1".to_owned()]);
+    }
+
     #[test]
     fn split_editable_fields_refuse_every_segment_without_conflating_other_fields() {
         let split = SectionKey {

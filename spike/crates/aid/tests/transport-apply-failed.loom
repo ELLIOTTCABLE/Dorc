@@ -23,3 +23,5 @@ $ dorc-loom --this vars
 case: transport-apply-failed
 {{host}} = "web1.example.net"
 {{status}} = "2"
+{{v0}} = ""
+{{v1}} = ""

@@ -219,7 +219,10 @@ impl ComponentText {
 
     /// Stamp the component onto a part stream as its own editable line — `words[0]`, `values[0]`,
     /// `words[1]`, … — so the transport re-splits an edit at exactly the boundaries the render
-    /// placed.
+    /// placed. An unwritten value-bearing row has one placeholder word and empty-text values, so
+    /// the values beyond that word stamp `v0…v{n-1}` — the row's holes are nameable for a first
+    /// write while the render stays the placeholder
+    /// (`arrangement-words-are-a-sequence-nothing-splits`).
     pub fn push_parts(&self, parts: &mut RenderParts) {
         for (index, word) in self.words.iter().enumerate() {
             parts.push(RenderPart::ArrangementWords {
@@ -235,6 +238,14 @@ impl ComponentText {
                     index,
                 });
             }
+        }
+        for (index, value) in self.values.iter().enumerate().skip(self.words.len()) {
+            parts.push(RenderPart::ArrangementValue {
+                text: value.clone(),
+                slug: self.slug,
+                occurrence: self.occurrence,
+                index,
+            });
         }
     }
 }
@@ -254,7 +265,10 @@ pub fn component_text(
                 words.iter().map(|word| (*word).to_owned()).collect(),
                 values.iter().map(|value| (*value).to_owned()).collect(),
             ),
-            None => (vec![unwritten_placeholder(slug)], Vec::new()),
+            None => (
+                vec![unwritten_placeholder(slug)],
+                values.iter().map(|_| String::new()).collect(),
+            ),
         };
     let text = interleave(&words, &values);
     ComponentText {
