@@ -2,24 +2,25 @@
 ---
 -- book.sh --
 #!/bin/sh
-# TARGET (REDS sibling of `loop30-direct-and-called-mutators-share-a-loop-body`,
-# `FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`): byte-identical CFG, oracles, mocks,
-# and convergence facts to that green case — only this file's expected outcome differs.
+# A cell-disjoint sibling of `loop30-direct-and-called-mutators-share-a-loop-body`: byte-identical
+# CFG, oracles, mocks, and convergence facts, and DESCRIPTIVE of what the engine emits today
+# (`FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`).
 #
 # CFG shape: a top-level `for` over two literal words; its body holds one direct command leaf AND
 # one call whose spliced body holds one command leaf (the region). All four cells converged; the two
 # families are cell-disjoint (`lib*` versus bare).
 #
-# TODAY: the region's own per-member establishes reach the direct mutator back over the loop's edge,
-# and self-reach (`Reach::is_pristine`) is CELL-BLIND — it cannot see that `lib$pkg` and `$pkg` never
-# alias — so disjointness buys nothing and the direct mutator's running walls the region down to
-# GUARD (`30Qa:fnd-self-reach-is-cell-blind-across-the-back-edge`).
+# WHAT RUNS TODAY: the region's own per-member establishes reach the direct mutator back over the
+# loop's edge, and self-reach (`Reach::is_pristine`) is CELL-BLIND — it cannot see that `lib$pkg` and
+# `$pkg` never alias — so disjointness buys nothing and the direct mutator's running walls the shared
+# `install_pkg` region down to GUARD (`30Qa:fnd-self-reach-is-cell-blind-across-the-back-edge`). A
+# runtime check therefore ships at apply-time, and BOTH the direct mutator and the guarded region
+# run — all four commands are in the run-set (`expected.ran`, this case).
 #
-# TARGET: a cell-AWARE self-reach (`30Qa:tc-self-reach-cell-blind-widening`, flagged not built) would
-# see the direct mutator's establish and the region's read/establish as provably-disjoint cells, so
-# the region's self-reach stays pristine and the shared `install_pkg` definition takes full elision
-# (Replace) instead of Guard — observed as: no runtime check ships at apply-time, and the direct
-# mutator is the ONLY thing in the run-set (`expected.ran`, this case).
+# THE WIDENING: a cell-AWARE self-reach (`30Qa:tc-self-reach-cell-blind-widening`, flagged not built)
+# would see the direct mutator's establish and the region's read/establish as provably-disjoint
+# cells, so the region's self-reach would stay pristine and the shared definition would take full
+# elision (Replace) rather than Guard — leaving the direct mutator the only line in the run-set.
 install_pkg() {
    apt-get install -y "$1"
 }
@@ -103,7 +104,7 @@ $ dorc --book=book.sh --pre-source pkgindex-predict.oracle.sh --pre-source pkgin
 # effect is derived from the probe command's rc (0=holds, 1=absent, else cant-tell);
 # rc is the raw PROBE-command status (opaque to Dorc -- the record is the out-of-band lane).
 
-printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=ab113127bc0dd1a01b80387b09fc48ec12227bd78afaaa8aa1497c78b3f5d1f0 sites=4 @@dorc@@\n'
+printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a718d5e3a4459197c6ea87db0935913324e707b0c8d6c2239a23e62a18bbcb50 sites=4 @@dorc@@\n'
 # site 0.0: sm.dorc.Package:libnginx@installed
 apt_get__is_converged() {
    while [ "${1#-}" != "$1" ]; do shift; done
@@ -127,8 +128,8 @@ parameter (`$@`/`$*`/`$N`), so Dorc cannot know its value until the command runs
 on the host -- there is nothing to resolve and no read-only probe to check. Dorc
 elides a command only when it can prove the command's effect is already in
 place, so this one is left to run on every apply.
-      [ book.sh:21:23
-   21 |    apt-get install -y "$1"
+      [ book.sh:22:23
+   22 |    apt-get install -y "$1"
       |                       \__/
 
    = repair:  Give the operand a value Dorc can resolve statically -- a literal,
@@ -136,7 +137,7 @@ place, so this one is left to run on every apply.
               the command once it has converged. If the value must stay dynamic,
               load an oracle that vouches for this command's convergence, and
               Dorc will guard the command instead of running it every time.
-why: ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 21:4 `apt-get install -y "$1"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
+why: ran because operand 3 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 22:4 `apt-get install -y "$1"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
@@ -157,24 +158,25 @@ apt_get__is_converged() {
 # dorc: end of lifted material; the book follows, in its authored order.
 
 #!/bin/sh
-# TARGET (REDS sibling of `loop30-direct-and-called-mutators-share-a-loop-body`,
-# `FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`): byte-identical CFG, oracles, mocks,
-# and convergence facts to that green case — only this file's expected outcome differs.
+# A cell-disjoint sibling of `loop30-direct-and-called-mutators-share-a-loop-body`: byte-identical
+# CFG, oracles, mocks, and convergence facts, and DESCRIPTIVE of what the engine emits today
+# (`FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`).
 #
 # CFG shape: a top-level `for` over two literal words; its body holds one direct command leaf AND
 # one call whose spliced body holds one command leaf (the region). All four cells converged; the two
 # families are cell-disjoint (`lib*` versus bare).
 #
-# TODAY: the region's own per-member establishes reach the direct mutator back over the loop's edge,
-# and self-reach (`Reach::is_pristine`) is CELL-BLIND — it cannot see that `lib$pkg` and `$pkg` never
-# alias — so disjointness buys nothing and the direct mutator's running walls the region down to
-# GUARD (`30Qa:fnd-self-reach-is-cell-blind-across-the-back-edge`).
+# WHAT RUNS TODAY: the region's own per-member establishes reach the direct mutator back over the
+# loop's edge, and self-reach (`Reach::is_pristine`) is CELL-BLIND — it cannot see that `lib$pkg` and
+# `$pkg` never alias — so disjointness buys nothing and the direct mutator's running walls the shared
+# `install_pkg` region down to GUARD (`30Qa:fnd-self-reach-is-cell-blind-across-the-back-edge`). A
+# runtime check therefore ships at apply-time, and BOTH the direct mutator and the guarded region
+# run — all four commands are in the run-set (`expected.ran`, this case).
 #
-# TARGET: a cell-AWARE self-reach (`30Qa:tc-self-reach-cell-blind-widening`, flagged not built) would
-# see the direct mutator's establish and the region's read/establish as provably-disjoint cells, so
-# the region's self-reach stays pristine and the shared `install_pkg` definition takes full elision
-# (Replace) instead of Guard — observed as: no runtime check ships at apply-time, and the direct
-# mutator is the ONLY thing in the run-set (`expected.ran`, this case).
+# THE WIDENING: a cell-AWARE self-reach (`30Qa:tc-self-reach-cell-blind-widening`, flagged not built)
+# would see the direct mutator's establish and the region's read/establish as provably-disjoint
+# cells, so the region's self-reach would stay pristine and the shared definition would take full
+# elision (Replace) rather than Guard — leaving the direct mutator the only line in the run-set.
 install_pkg() {
    ( apt_get__is_converged install -y "$1" ) || apt-get install -y "$1"   # dorc: guard [sm.dorc.Package converged-vouch; probe: holds]
 }
@@ -184,4 +186,4 @@ for pkg in nginx curl; do
    install_pkg "$pkg"
 done
 dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
-dorc: decision-digest d19fb68957862235779e474d94ca20dd428bcd4b81ec43fc212551a2c4b4cfd9
+dorc: decision-digest 943125d9f851138c100587abec6c86a1ee5ac7ef8cc094a749aa5780edf959ce
