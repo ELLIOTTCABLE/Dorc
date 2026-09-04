@@ -865,6 +865,8 @@ impl DorcConsumer {
                     return None;
                 } else if let Some(crate::edge_fault::EdgeFault::ShimExec(failure)) = &fault {
                     dorc_cli::shim_exec_error(&failure.error())
+                } else if matches!(fault, Some(crate::edge_fault::EdgeFault::ShimNoShell)) {
+                    dorc_cli::shim_no_shell_error()
                 } else {
                     return None;
                 }

@@ -1443,6 +1443,12 @@ pub fn shim_exec_error(error: &std::io::Error) -> InvocationError {
     ))
 }
 
+/// Map `dorc-sh` finding no POSIX shell to run the stripped script under (`one-shell-answer`).
+#[must_use]
+pub fn shim_no_shell_error() -> InvocationError {
+    Diag::new_spanless_site(DiagCode::DorcShNoShell(dorc_aid::diag::DorcShNoShell))
+}
+
 /// Map carriage-return detection before transport.
 #[must_use]
 pub fn transport_crlf_error(which: &str, line: usize) -> InvocationError {

@@ -3643,11 +3643,12 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
         .checker
         .parent()
         .map_or_else(|| PathBuf::from("/bin"), Path::to_path_buf);
+    let shim_path = dorc_sh_path(&sh_dir);
     let out = capture(
         Command::new(&harness.dorc_sh)
             .current_dir(&scratch.path)
             .env_clear()
-            .env("PATH", &sh_dir)
+            .env("PATH", &shim_path)
             .env("LC_ALL", "C")
             .env("TZ", "UTC")
             .arg(&marked)
@@ -3666,7 +3667,21 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
             out.stdout
         ));
     }
-    gate_differential(harness, &sh_dir)
+    gate_differential(harness, &shim_path)
+}
+
+/// The PATH `dorc-sh` needs to resolve its shell through `one-shell-answer`: the shell's own dir,
+/// plus git's on Windows, where the seat derives the userland from `git --exec-path` (the shell dir
+/// is git's `usr/bin`, which ships no `git`). A real user shell has git on PATH; the scrubbed smoke
+/// must too, or the seat refuses. Elsewhere the seat finds `dash`/`sh` on the shell dir directly.
+fn dorc_sh_path(sh_dir: &Path) -> std::ffi::OsString {
+    let mut dirs = vec![sh_dir.to_path_buf()];
+    if cfg!(windows)
+        && let Some(git_dir) = which("git").as_deref().and_then(Path::parent)
+    {
+        dirs.push(git_dir.to_path_buf());
+    }
+    std::env::join_paths(dirs).unwrap_or_else(|_| sh_dir.as_os_str().to_owned())
 }
 
 /// The and-or GATE differential: the tracer's static answer for `[ … ] || return 2` must be the
@@ -3674,11 +3689,11 @@ fn dorc_sh_smoke(harness: &Harness) -> Option<String> {
 /// does not; here the SAME body runs under the harness's POSIX shell, through `dorc-sh` (which
 /// strips and execs it), and its stdout/rc say which path the shell actually took.
 ///
-/// Builtin-only by construction — the body is `[`, `printf`, and `return`, and `PATH` is the shell's
-/// own directory — so this runs no tool whatever the environment, exactly as the smoke above does.
+/// Builtin-only by construction — the body is `[`, `printf`, and `return` — so it runs no tool
+/// whatever the environment or PATH, exactly as the smoke above does.
 /// This is the closest sanctioned execution differential the corpus has: it rides the one runner
 /// allowed to execute fixture material rather than opening a second execution lane.
-fn gate_differential(harness: &Harness, sh_dir: &Path) -> Option<String> {
+fn gate_differential(harness: &Harness, shim_path: &std::ffi::OsStr) -> Option<String> {
     let scratch = Scratch::new("dorcgate");
     let marked = scratch.path.join("gate.sh");
     std::fs::write(
@@ -3703,7 +3718,7 @@ fn gate_differential(harness: &Harness, sh_dir: &Path) -> Option<String> {
         command
             .current_dir(&scratch.path)
             .env_clear()
-            .env("PATH", sh_dir)
+            .env("PATH", shim_path)
             .env("LC_ALL", "C")
             .env("TZ", "UTC")
             .arg(&marked);

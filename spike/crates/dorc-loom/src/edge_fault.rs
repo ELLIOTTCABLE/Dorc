@@ -18,6 +18,9 @@ pub(crate) enum EdgeFault {
         failure: IoFailure,
     },
     ShimExec(IoFailure),
+    /// No POSIX shell resolved through the `one-shell-answer` seat, so `dorc-sh` refuses before it
+    /// can run the stripped script.
+    ShimNoShell,
     ArtifactPublish(&'static str),
     ReceiptPublish(String),
     /// The read-side twin of [`Self::ReceiptPublish`] (`30Xa:rul-rootless-worlds-are-declared-faults`):
@@ -90,6 +93,7 @@ impl EdgeFault {
                 failure: io_failure(outcome, body)?,
             },
             ["shim-exec", outcome] => Self::ShimExec(io_failure(outcome, body)?),
+            ["shim-no-shell"] => Self::ShimNoShell,
             ["artifact-publish", "directory"] => Self::ArtifactPublish("directory"),
             ["artifact-publish", "write"] => Self::ArtifactPublish("write"),
             ["receipt-publish", reason] => Self::ReceiptPublish((*reason).to_owned()),

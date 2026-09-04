@@ -1,0 +1,15 @@
+---
+code: dorc-sh-no-shell
+when-fires: dorc-sh resolved no POSIX shell through the one-shell-answer seat (dorc_transport::Posix::find), so it refuses before running the stripped script. cli/bin/dorc-sh.rs.
+why: on native Windows a bare `sh` PATH lookup finds `%SystemRoot%\System32\bash.exe`, the WSL launcher, not a POSIX shell; resolving through the seat and refusing loudly when git's userland is absent is the difference between an actionable 'install git' and a silent wrong-shell run. Remediation register (help) wanted.
+---
+-- webhost.sh --
+#!/bin/sh
+true
+
+-- edge-fault --
+shim-no-shell
+
+-- replay --
+$ dorc-sh webhost.sh
+dorc-sh: error[dorc-sh-no-shell]: [unwritten: dorc-sh-no-shell]

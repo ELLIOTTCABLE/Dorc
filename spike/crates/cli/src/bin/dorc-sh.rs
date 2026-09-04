@@ -22,6 +22,7 @@
     reason = "dorc-sh is an I/O edge: its own errors go to stderr; the stripped script owns stdout"
 )]
 
+use std::ffi::{OsStr, OsString};
 use std::process::{Command, ExitCode};
 
 /// `dorc-sh`'s three errors join the registry like every other surface
@@ -58,18 +59,36 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    // The resolved shell is an edge value (`one-shell-answer`): NEVER a bare PATH lookup, which on
+    // native Windows resolves `%SystemRoot%\System32\bash.exe`, the WSL launcher.
+    let Ok(shell) = dorc_transport::Posix::find() else {
+        report(&dorc_cli::shim_no_shell_error());
+        return ExitCode::from(127);
+    };
+    strip_and_exec(&shell, &script, &src, args)
+}
 
+/// Strip `src` if marked and run it under the resolved `shell`, forwarding `$0`/`$@`.
+///
+/// The shell arrives as a VALUE (`30X:inv-division-at-the-narrowest-edge`): `main` acquires every
+/// edge value and this body resolves nothing. `sh -c "$stripped" "$script" "$@"` (POSIX `sh -c cmd
+/// name args…` assigns `$0` from `name`). On Windows git's shells do not resolve their own
+/// `sed`/`awk`/`grep` siblings, so the child gets the seat's `child_path`; elsewhere it inherits.
+fn strip_and_exec(
+    shell: &dorc_transport::Posix,
+    script: &OsStr,
+    src: &str,
+    args: impl Iterator<Item = OsString>,
+) -> ExitCode {
     let mut interner = dorc_core::Interner::default();
-    let stripped = dorc_oracle::strip_file(&mut interner, &src).value;
+    let stripped = dorc_oracle::strip_file(&mut interner, src).value;
 
-    // sh -c "$stripped" "$script" "$@": the script path becomes $0, the remaining argv is "$@".
-    let status = Command::new("sh")
-        .arg("-c")
-        .arg(&stripped)
-        .arg(&script) // $0
-        .args(args) // "$@"
-        .status();
-    match status {
+    let mut command = Command::new(&shell.shell);
+    command.arg("-c").arg(&stripped).arg(script).args(args);
+    if shell.utils_dir.is_some() {
+        command.env("PATH", shell.child_path());
+    }
+    match command.status() {
         // A POSIX exit status is 0..=255; `try_from` keeps it lint-clean (no truncating `as`).
         Ok(s) => ExitCode::from(u8::try_from(s.code().unwrap_or(1)).unwrap_or(1)),
         Err(e) => {

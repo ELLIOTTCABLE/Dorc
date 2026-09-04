@@ -432,6 +432,8 @@ pub enum DiagCode {
     DorcShScriptUnreadable(DorcShScriptUnreadable),
     /// `dorc-sh` could not exec the stock shell.
     DorcShExecFailed(DorcShExecFailed),
+    /// `dorc-sh` found no POSIX shell to run the stripped script under.
+    DorcShNoShell(DorcShNoShell),
     /// The per-run PATH shim directory could not be created or written.
     CliShimDirUnwritable(CliShimDirUnwritable),
     /// Bytes about to be shipped to a host carry a carriage return.
@@ -576,6 +578,7 @@ impl DiagCode {
             DiagCode::DorcShUsage(_) => "dorc-sh-usage",
             DiagCode::DorcShScriptUnreadable(_) => "dorc-sh-script-unreadable",
             DiagCode::DorcShExecFailed(_) => "dorc-sh-exec-failed",
+            DiagCode::DorcShNoShell(_) => "dorc-sh-no-shell",
             DiagCode::CliShimDirUnwritable(_) => "cli-shim-dir-unwritable",
             DiagCode::TransportCrlfRefused(_) => "transport-crlf-refused",
             DiagCode::TransportSessionLost(_) => "transport-session-lost",
@@ -2146,6 +2149,13 @@ pub struct DorcShExecFailed {
     pub detail: ForeignBytes,
 }
 
+/// Payload of [`DiagCode::DorcShNoShell`]: no POSIX shell resolved through the `one-shell-answer`
+/// seat. Unit — the seat's remedy embeds a `git --exec-path`-derived path, and builders author zero
+/// user-facing strings (`error-authorship-tier`), so the code refuses and a human authors the
+/// install remedy as prose.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DorcShNoShell;
+
 /// Payload of [`DiagCode::CliShimDirUnwritable`]: the `--shim-dir` materialization edge failed.
 /// NOT in `291` §5a's mapped inventory — the one-error-type-through-`run` extraction surfaced it
 /// as the last raw string on the surface, and `one-catalog-no-legacy` leaves it nowhere to hide.
@@ -3130,6 +3140,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
         | DiagCode::DorcShUsage(_)
         | DiagCode::DorcShScriptUnreadable(_)
         | DiagCode::DorcShExecFailed(_)
+        | DiagCode::DorcShNoShell(_)
         | DiagCode::TransportCrlfRefused(_)
         | DiagCode::TransportSessionLost(_)
         | DiagCode::TransportSpawnRefused(_)
@@ -3541,7 +3552,8 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         | DiagCode::CliNoBookGiven(CliNoBookGiven)
         | DiagCode::ApplyReceiptNotOptional(ApplyReceiptNotOptional)
         | DiagCode::LintNoLintableFiles(LintNoLintableFiles)
-        | DiagCode::DorcShUsage(DorcShUsage) => vec![],
+        | DiagCode::DorcShUsage(DorcShUsage)
+        | DiagCode::DorcShNoShell(DorcShNoShell) => vec![],
         DiagCode::CliStripGotAFlag(CliStripGotAFlag { got }) => vec![ours("got", got.clone())],
         DiagCode::CliUnknownMode(CliUnknownMode { mode, suggestion }) => {
             vec![
