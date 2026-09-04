@@ -236,3 +236,7 @@ case: why-analysis-opener-guarded
 {{v0}} = "book.sh"
 {{v1}} = "guarded"
 {{v2}} = "skipped"
+{{v0}} = "plan 2026-01-26 02:00:42"
+{{v1}} = "localhost"
+{{v2}} = "1"
+{{v3}} = "1"

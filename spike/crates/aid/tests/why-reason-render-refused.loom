@@ -114,3 +114,6 @@ case: why-reason-render-refused
 {{v1}} = "localhost"
 {{v2}} = "1"
 {{v3}} = "1"
+{{v0}} = "book.sh"
+{{v1}} = "skipped"
+{{v2}} = "guarded"

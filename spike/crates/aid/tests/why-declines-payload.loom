@@ -264,3 +264,7 @@ case: why-declines-payload
 {{v0}} = "book.sh"
 {{v1}} = "ran"
 {{v2}} = "guarded"
+{{v0}} = "plan 2026-01-29 02:00:38"
+{{v1}} = "localhost"
+{{v2}} = "0"
+{{v3}} = "0"
