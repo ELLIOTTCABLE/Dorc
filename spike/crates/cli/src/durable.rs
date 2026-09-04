@@ -39,7 +39,10 @@ use dorc_receipt_crypto::{
 /// point — only the shared cli helpers ([`crate::compose::publish_rooted_receipt`],
 /// [`crate::compose::read_rooted_receipt`], [`crate::compose::production_receipt_edge_over`]).
 pub use dorc_receipt_local::DirectorySync;
-pub use dorc_receipt_local::io::{FailureSchedule, LocalIo};
+// `Op`/`Side`/`IoFault` ride beside `FailureSchedule` so the ONE seat naming the local edge can hand
+// the deterministic model a scheduled fault (the loom's post-dispatch outcome-unwritable world),
+// without a second crate naming `dorc_receipt_local` (`crate_fences.rs` roster).
+pub use dorc_receipt_local::io::{FailureSchedule, IoFault, LocalIo, Op, Side};
 use dorc_receipt_local::keyset::{
     KeyAvailability, LocalReadKeysV1, LocalReadOpenV1, LocalWriteKeysV1, LocalWriteOpenV1,
     StorePresence, open_for_read, open_or_initialize_for_write,

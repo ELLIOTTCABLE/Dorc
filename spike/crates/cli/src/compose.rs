@@ -2703,9 +2703,45 @@ fn ship_consented_apply(
             )));
         }
     };
+    // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
+    // nothing here constructs: an apply that cannot publish its intent refuses before the host is
+    // contacted, which is what the pre-dispatch boundary is for.
+    let edge = production_receipt_edge(seams, args)
+        .map_err(|refusal| apply_edge_refused(&refusal, crate::engine::NO_STATE_ROOT))?;
+    let mut io = crate::durable::NativeIo::new();
+    dispatch_and_report_apply(&mut io, &edge, seams, sink, args, &artifact, host)
+}
+
+/// Dispatch one consented apply over `io` and report both what it shipped and what it recorded —
+/// the ONE apply route, driven by `ship_consented_apply` over `NativeIo` and by the loom over its
+/// session's `ModelIo` (`dorc-replay-is-production-semantics`; `30X` §11's post-dispatch surfaces).
+///
+/// The `io` and `edge` are the caller's, so a filesystem write is the binary's and a modelled one
+/// is the loom's; the transport is `seams`' own column (`RealSsh` in production, the scripted
+/// column in-process). Both post-dispatch surfaces render here so the loom witnesses production's
+/// own bytes: after both documents are recorded, the intent/outcome identities chrome line; when
+/// the outcome could not be recorded, the durable-failure diagnostic carrying the surviving intent.
+///
+/// # Errors
+/// Refuses a plan carrying a carriage return, a `--host` that is not a destination, a durable edge
+/// that will not open for writing, and a publication that reached no dispatch — each before any
+/// shipment.
+#[expect(
+    clippy::result_large_err,
+    reason = "the Err is a full `Diag`, as everywhere on this once-per-process path"
+)]
+pub fn dispatch_and_report_apply(
+    io: &mut dyn crate::durable::LocalIo,
+    edge: &crate::durable::LocalReceiptEdgeV1,
+    seams: &Seams,
+    sink: &mut dyn OutputSink,
+    args: &Args,
+    plan: &[u8],
+    host: &str,
+) -> Result<RunOutcome, Diag> {
     // Before any identity is minted and any session stood up: these bytes are a file the user has
     // had in their hands and may have edited on any OS, and no parser of ours has seen them.
-    if let Some(line) = transport_edge::first_carriage_return(&artifact) {
+    if let Some(line) = transport_edge::first_carriage_return(plan) {
         return Err(transport_edge::crlf_refusal("the plan", line));
     }
     let destination =
@@ -2716,7 +2752,7 @@ fn ship_consented_apply(
     let mut clock = seams.clock();
     let invocation = crate::apply::apply_invocation(host, clock.now());
     let request = crate::apply::ConsentedApplyRequest {
-        plan: &artifact,
+        plan,
         destination: &destination,
         nonce: &seams.attempt_nonce(),
         timeout: args.apply_timeout.map(std::time::Duration::from_secs),
@@ -2726,22 +2762,16 @@ fn ship_consented_apply(
         // context axis is unentered, so what it produced is controller-authored.
         standup_account: dorc_core::influence::InfluenceAccount::authored_before_contact(),
     };
-    let mut ids = seams.receipt_id_source();
-    // The REQUIRED arm, and the only one this binary can build. A bypass is a disjoint type
-    // nothing here constructs: an apply that cannot publish its intent refuses before the host is
-    // contacted, which is what the pre-dispatch boundary is for.
-    let edge = production_receipt_edge(seams, args)
-        .map_err(|refusal| apply_edge_refused(&refusal, crate::engine::NO_STATE_ROOT))?;
     let store = edge.state_base().to_owned();
-    let mut io = crate::durable::NativeIo::new();
+    let mut ids = seams.receipt_id_source();
     let mut generator = seams.keyset_generator();
     let open = edge
-        .open_for_write(&mut io, &mut *generator)
+        .open_for_write(io, &mut *generator)
         .map_err(|refusal| apply_edge_refused(&refusal, &store))?;
     let mut order = crate::receipt_edge::RunClockOrder::of(&mut clock);
     let signer = open.keys().signer();
     let sealer = open.keys().encryption().sealer();
-    let mut placement = open.placement(&mut io);
+    let mut placement = open.placement(io);
     // The driver is built only once the durable edge is open. It opens nothing by itself, but a
     // run that cannot record its intent should not have announced a transport either — the
     // pre-dispatch boundary is easier to read when nothing transport-shaped precedes it.
@@ -2765,16 +2795,96 @@ fn ship_consented_apply(
     )
     .map_err(|refusal| apply_refused(&refusal, &store))?;
 
-    // What the durable recorded — the published intent and outcome, and a failure past the permit —
-    // is DELIBERATELY unread here. Both are user-facing surfaces with no honest driving or authoring
-    // route until the in-process receipt world exists, so the reporting half of
-    // `30Rs:fix-apply-durable-reporting` is deferred to `notes/30X` §11 lane C. The pre-dispatch
-    // half is not: a refusal still carries the edge's own word and its store.
-    Ok(report_shipment(
+    // The transport diagnostic prints first; the recorded-durable line is the decision digest's
+    // LAST line (`law-render-overlay-never-artifact`), so it reads after the shipment's own report.
+    let intent = reached.intent;
+    let outcome = reached.outcome;
+    let durable_failure = reached.durable_failure;
+    let run_outcome = report_shipment(
         sink,
         host,
         transport_edge::classify_shipment(reached.shipped),
+    );
+    report_recorded_apply(sink, intent, outcome, durable_failure);
+    Ok(run_outcome)
+}
+
+/// Render what the apply's durable recorded — the post-dispatch surfaces `30X` §11 assigns here.
+///
+/// After both documents are recorded, ONE chrome line carries the intent and outcome identities so
+/// the user's next act is `dorc why` over exactly those ids (`30Rs:fix-apply-durable-reporting`);
+/// when the outcome could not be recorded, the durable-failure diagnostic names the surviving intent
+/// and the write-step that did not close. Both reach stderr under `law-render-overlay-never-artifact`
+/// — the apply console's own decision digest — so nothing here touches the byte-floored artifact
+/// (`two-surfaces`).
+fn report_recorded_apply(
+    sink: &mut dyn OutputSink,
+    intent: Option<dorc_receipt::ids::ApplyIntentId>,
+    outcome: Option<dorc_receipt::ids::ApplyOutcomeId>,
+    durable_failure: Option<dorc_receipt::dispatch::DurableFailure>,
+) {
+    if let (Some(intent), Some(failure)) = (intent, durable_failure) {
+        report_at(
+            sink,
+            true,
+            "apply",
+            None,
+            &[apply_outcome_unwritten(intent, failure)],
+        );
+        return;
+    }
+    if let (Some(intent), Some(outcome)) = (intent, outcome) {
+        emit_apply_identities(sink, intent, outcome);
+    }
+}
+
+/// The post-dispatch durable-failure diagnostic (`30X` §11): the intent published and the machine
+/// was touched, but the outcome could not be recorded. A SIBLING of `durable-receipt-unwritten`
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`) carrying the surviving intent and the write
+/// step that did not close. The receipt crate owns the typed `DurableFailure`; the map to the
+/// aid-plane step is a total `match` here so a new receipt variant breaks the build, never a comment.
+fn apply_outcome_unwritten(
+    intent: dorc_receipt::ids::ApplyIntentId,
+    failure: dorc_receipt::dispatch::DurableFailure,
+) -> Diag {
+    use dorc_aid::diag::ApplyWriteStep;
+    use dorc_receipt::dispatch::DurableFailure;
+    let step = match failure {
+        DurableFailure::Projection => ApplyWriteStep::Projection,
+        DurableFailure::Grammar => ApplyWriteStep::Grammar,
+        DurableFailure::Seal => ApplyWriteStep::Seal,
+        DurableFailure::Signature => ApplyWriteStep::Signature,
+        DurableFailure::Sink => ApplyWriteStep::Sink,
+    };
+    Diag::new_spanless_site(DiagCode::ApplyOutcomeUnwritten(
+        dorc_aid::diag::ApplyOutcomeUnwritten {
+            intent: intent.hex(),
+            step,
+        },
     ))
+}
+
+/// The completed-apply identities chrome line: the intent and outcome ids, a registry-homed chrome
+/// line (`289:rul-arrangement-home-is-registry-plus-transcripts`) whose words are UNWRITTEN
+/// (`error-authorship-tier`) until a case authors them. The ids are the run's own seeded values,
+/// never fixture literals (`rul-fixture-identity-never-production`).
+fn emit_apply_identities(
+    sink: &mut dyn OutputSink,
+    intent: dorc_receipt::ids::ApplyIntentId,
+    outcome: dorc_receipt::ids::ApplyOutcomeId,
+) {
+    let intent_hex = intent.hex();
+    let outcome_hex = outcome.hex();
+    let mut parts = crate::chrome_line_parts(
+        &sink.render_ctx(),
+        "cli-apply-identities-line",
+        &[&intent_hex, &outcome_hex],
+    );
+    parts.push(dorc_aid::tagged::RenderPart::Arrangement {
+        text: String::from("\n"),
+        slug: "cli-chrome-line-ending",
+    });
+    sink.emit(OutputEvent::plain_tagged(OutputChannel::Stderr, parts));
 }
 
 /// Report one classified shipment and answer with the run's own status.

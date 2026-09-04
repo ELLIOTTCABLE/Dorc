@@ -391,6 +391,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     // before any book is read, and an apply reads none at all, so there is no AST to point at.
     "ApplyReceiptNotOptional",
     "ApplyPlanNotDispatchable",
+    "ApplyOutcomeUnwritten",
     // transport — about a SESSION, not about bytes we parsed. The CRLF refusal can fire on a
     // rendered plan no parser of ours saw, so its line is a payload value, not an AST span.
     "TransportCrlfRefused",

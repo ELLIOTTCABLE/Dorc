@@ -32,7 +32,7 @@ use dorc_testbed::seam_vars::{
     CLOCK_ENV, KEY_ENTROPY_ENV, NONCE_ENV, POSTURE_ENV, RECEIPT_IDS_ENV, ROOTS_ENV, SEAM_ENV_VARS,
     SEED_ENV, SOURCE_MATCH_ENV, TRANSPORT_ENV,
 };
-use dorc_transport::{SessionDriver, SshOptions};
+use dorc_transport::{SessionDriver, SimDriver, SimScript, SshOptions};
 
 use crate::SourceMatch;
 use crate::artifact::StdoutPosture;
@@ -317,8 +317,9 @@ pub struct LocalTransport {
     pub interpreter: Option<String>,
 }
 
-/// The transport member. `RealSsh` is production-only (`Seams::os`); the local interpreter is the
-/// fixture; there is NO `Os` variant (`30X:model-seams-are-one-bundle`: transport has no `Os`).
+/// The transport member. `RealSsh` is production-only (`Seams::os`); the local interpreter and the
+/// scripted column are fixtures; there is NO `Os` variant (`30X:model-seams-are-one-bundle`:
+/// transport has no `Os`).
 #[derive(Debug, Clone)]
 pub enum TransportSeam {
     /// The production ssh driver — mintable only by [`Seams::os`].
@@ -326,6 +327,12 @@ pub enum TransportSeam {
     /// A local fixture interpreter, or `None` when the harness set no transport (a `--host` run
     /// then reaches an unspawnable driver and lands on the ordinary host-not-reached path).
     Local(Option<LocalTransport>),
+    /// The scripted column (`30X:front-transport-scripted-column`): what a case DECLARES the remote
+    /// session returned, answered through the same [`SessionDriver`] the ssh and local drivers
+    /// implement so the apply route runs unchanged. Reachable only through
+    /// [`HarnessSeams::with_scripted_transport`] (the in-process driver), never [`Seams::os`] or
+    /// [`HarnessSeams::from_env`] (`rul-fixture-identity-never-production`).
+    Scripted(SimScript),
 }
 
 impl TransportSeam {
@@ -358,6 +365,9 @@ impl TransportSeam {
             Self::Local(None) => {
                 Box::new(dorc_transport::LocalDriver::same_spelling(PathBuf::new()))
             }
+            // The scripted column answers one session from the case's own declaration, through the
+            // same marker scan the real drivers use (`sim.rs`); the width-one apply ships once.
+            Self::Scripted(script) => Box::new(SimDriver::new(vec![script])),
         }
     }
 }
@@ -496,14 +506,19 @@ impl Seams {
     }
 }
 
-/// The transport subtype the ordinary harness parses: a local interpreter or nothing. No `RealSsh`
-/// variant exists (`30X:bin-harness-sibling-not-produced-cli`).
+/// The transport subtype the ordinary harness parses: a local interpreter, nothing, or the scripted
+/// column. No `RealSsh` variant exists (`30X:bin-harness-sibling-not-produced-cli`).
 #[derive(Debug, Clone)]
 pub enum HarnessTransportSeam {
     /// The fixture local interpreter (`local:<shell>[:<interp>]`).
     Local(LocalTransport),
     /// No transport configured — a `--host` run reaches an unspawnable driver.
     Unset,
+    /// The scripted column, injected by the in-process driver through
+    /// [`HarnessSeams::with_scripted_transport`] — never parsed from the environment, so the harness
+    /// binary that reads only [`HarnessSeams::from_env`] can never carry it either
+    /// (`rul-fixture-identity-never-production`).
+    Scripted(SimScript),
 }
 
 /// The roots subtype the ordinary harness parses: a runner-owned pinned directory, never `Os`
@@ -545,6 +560,7 @@ impl From<HarnessSeams> for Seams {
             transport: match harness.transport {
                 HarnessTransportSeam::Local(local) => TransportSeam::Local(Some(local)),
                 HarnessTransportSeam::Unset => TransportSeam::Local(None),
+                HarnessTransportSeam::Scripted(script) => TransportSeam::Scripted(script),
             },
             roots: match harness.roots {
                 HarnessRootsSeam::Pinned(directory) => RootsSeam::Pinned(directory),
@@ -580,6 +596,19 @@ impl HarnessSeams {
         SEAM_ENV_VARS
             .iter()
             .any(|name| environment.var(name).is_some())
+    }
+
+    /// Replace this bundle's transport with the scripted column (`30X:front-transport-scripted-column`).
+    ///
+    /// The ONE constructor of a scripted transport, called by the in-process driver alone: it never
+    /// appears in [`Self::from_env`], so a bundle carrying [`HarnessTransportSeam::Scripted`] cannot
+    /// be reached by the shipped `dorc` (which builds only [`Seams::os`]) or the harness binary
+    /// (which reads only `from_env`) — the type is the fence
+    /// (`rul-fixture-identity-never-production`; `sinv-production-fences`).
+    #[must_use]
+    pub fn with_scripted_transport(mut self, script: SimScript) -> Self {
+        self.transport = HarnessTransportSeam::Scripted(script);
+        self
     }
 
     /// Parse the harness bundle from the environment. A malformed selection is a typed refusal,

@@ -410,6 +410,10 @@ pub enum DiagCode {
     /// A `dorc apply --host` invocation could not turn the bytes it was handed into something a
     /// dispatch permit may be minted over, so it dispatched nothing.
     ApplyPlanNotDispatchable(ApplyPlanNotDispatchable),
+    /// A `dorc apply --host` published its intent, touched the machine, and then could not record
+    /// the outcome — a SIBLING of [`Self::DurableReceiptUnwritten`], a different world with a
+    /// different repair (`AID-NEEDS:law-codes-vary-by-world-not-grammar`).
+    ApplyOutcomeUnwritten(ApplyOutcomeUnwritten),
     /// An input file does not exist.
     CliFileNotFound(CliFileNotFound),
     /// An input file exists but is not readable by this process.
@@ -562,6 +566,7 @@ impl DiagCode {
             DiagCode::CliModeNeedsFlag(_) => "cli-mode-needs-flag",
             DiagCode::ApplyReceiptNotOptional(_) => "apply-receipt-not-optional",
             DiagCode::ApplyPlanNotDispatchable(_) => "apply-plan-not-dispatchable",
+            DiagCode::ApplyOutcomeUnwritten(_) => "apply-outcome-unwritten",
             DiagCode::CliFileNotFound(_) => "cli-file-not-found",
             DiagCode::CliFilePermissionDenied(_) => "cli-file-permission-denied",
             DiagCode::CliFileUnreadable(_) => "cli-file-unreadable",
@@ -2178,6 +2183,59 @@ pub struct ApplyPlanNotDispatchable {
     pub store: String,
 }
 
+/// Which durable act of writing an apply outcome did not close (`28L:rul-reason-enums-not-sibling-codes`).
+///
+/// A typed reason BESIDE the payload rather than a family of sibling codes: which step failed is a
+/// reason WITHIN one world (the intent published and the outcome did not), never a new world.
+/// Mirrors `dorc_receipt::dispatch::DurableFailure` because `aid → core` is this crate's only edge,
+/// so the cli edge that maps the receipt type to this one is a total `match` a new variant breaks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ApplyWriteStep {
+    /// The document could not be projected from what the run held.
+    Projection,
+    /// A projected row did not satisfy the grammar.
+    Grammar,
+    /// The region could not be sealed.
+    Seal,
+    /// The document could not be signed.
+    Signature,
+    /// The sink did not place the document.
+    Sink,
+}
+
+impl ApplyWriteStep {
+    /// The closed word for this write step (`{step}`). Shares the spellings the pre-dispatch
+    /// [`DiagCode::ApplyPlanNotDispatchable`] uses for the same acts; the words ride
+    /// `27V:rul-output-form-unwelded`.
+    #[must_use]
+    pub const fn word(self) -> &'static str {
+        match self {
+            Self::Projection => "receipt-not-projectable",
+            Self::Grammar => "receipt-out-of-grammar",
+            Self::Seal => "receipt-not-sealed",
+            Self::Signature => "receipt-not-signed",
+            Self::Sink => "receipt-not-placed",
+        }
+    }
+}
+
+/// Payload of [`DiagCode::ApplyOutcomeUnwritten`]: a remote apply published its intent, touched the
+/// machine, and then could not record its outcome.
+///
+/// A SIBLING of [`DurableReceiptUnwritten`] rather than a reason arm widening it
+/// (`AID-NEEDS:law-codes-vary-by-world-not-grammar`): that is the plan-time world — nothing was
+/// touched, re-plan; this is the post-dispatch world — the intent WAS published, the machine MAY
+/// have changed, and the repair is to check the host and keep the intent id. `{intent}` is the
+/// surviving intent (a seeded id under the harness, never a fixture literal); `{step}` is the closed
+/// word for which durable act did not close.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ApplyOutcomeUnwritten {
+    /// The surviving intent id the user keeps for a later `dorc why` (`{intent}`).
+    pub intent: String,
+    /// Which durable act of recording the outcome did not close (`{step}`).
+    pub step: ApplyWriteStep,
+}
+
 /// Payload of [`DiagCode::TransportCrlfRefused`]: bytes bound for a host are not LF-only.
 ///
 /// A CRLF shebang is an exec failure the remote kernel reports before any shell of ours exists,
@@ -2965,6 +3023,14 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
+        // The post-dispatch sibling: the intent published and the machine was touched, so the
+        // outcome that could not be recorded is an integrity loss the user must chase, error-floored
+        // on the same footing as its plan-time sibling.
+        DiagCode::ApplyOutcomeUnwritten(_) => CodeSpec {
+            severity: Severity::Error,
+            floor: Floor::WarnOrDeny,
+            remediation: RemediationClass::Structural,
+        },
         // A READ that found nothing is not a failure of the run being asked about, so it warns:
         // there is no durable to explain, and the repair is the operator's own profile.
         DiagCode::DurableReceiptUnreadable(_) => CodeSpec {
@@ -3561,6 +3627,12 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
             vec![
                 ours("reason", (*reason).to_owned()),
                 ours("store", store.clone()),
+            ]
+        }
+        DiagCode::ApplyOutcomeUnwritten(ApplyOutcomeUnwritten { intent, step }) => {
+            vec![
+                ours("intent", intent.clone()),
+                ours("step", step.word().to_owned()),
             ]
         }
         DiagCode::TransportCrlfRefused(TransportCrlfRefused { which, line }) => {

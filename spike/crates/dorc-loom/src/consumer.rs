@@ -782,7 +782,7 @@ impl DorcConsumer {
             dorc_cli::Invocation::Lint(args) => self.run_lint(case, &args, context),
             dorc_cli::Invocation::Analyze(analysis_args) => {
                 if analysis_args.mode == dorc_cli::Mode::Apply && analysis_args.host.is_some() {
-                    self.run_remote_apply(case, &analysis_args, context)
+                    self.run_apply(case, &analysis_args, context, session, output)
                 } else if analysis_args.reads_the_receipt() {
                     self.run_receipt_store_why(case, &analysis_args, session, output)
                 } else {
@@ -850,69 +850,60 @@ impl DorcConsumer {
         })
     }
 
-    fn staged_diagnostic(
-        &self,
-        case: &Case,
-        stage: &str,
-        diagnostic: Diag,
-        status: i32,
-    ) -> Option<DorcEngineReplay> {
-        if case.frontmatter().scalar("code") != Some(diagnostic.code.slug()) {
-            return None;
-        }
-        let event =
-            dorc_cli::engine::diagnostic_event(&self.render_ctx(), stage, &diagnostic, "", "");
-        let render = event.tagged_parts()?.clone();
-        Some(DorcEngineReplay {
-            result: ReplayResult::emitted(
-                ReplayStatus::new(status),
-                vec![ReplayEmission::editable(
-                    errorloom::ReplayChannel::Stderr,
-                    to_editable_render(&render),
-                )],
-            ),
-            diagnostics: vec![diagnostic],
-        })
-    }
-
-    fn run_remote_apply(
+    /// The in-process `dorc apply --host` route (`30X` §11): the REAL `ship_consented_apply` over the
+    /// session's model store, its transport answered by the scripted column. `run_remote_apply`'s
+    /// hand-rolled `edge-fault` diagnostic table is GONE — its rows are now what the real apply route
+    /// renders when the same fault is injected (`rul-strawman-formats-no-compat`; rip, never adapt).
+    fn run_apply(
         &self,
         case: &Case,
         args: &dorc_cli::Args,
         context: &ReplayContext<'_>,
+        session: &mut LoomSession,
+        output: OutputRouting,
     ) -> Option<DorcEngineReplay> {
         let host = args.host.as_deref()?;
         let plan = args.plan.as_deref()?;
-        let fault = crate::edge_fault::EdgeFault::from_case(case)
-            .ok()
-            .flatten()?;
-        let _artifact = context.read_file(plan)?;
-        let (diagnostic, status) = match fault {
-            crate::edge_fault::EdgeFault::Transport(
-                crate::edge_fault::TransportFailure::Crlf { line },
-            ) => (dorc_cli::transport_crlf_error(plan, line), 13),
-            crate::edge_fault::EdgeFault::Transport(
-                crate::edge_fault::TransportFailure::SessionLost,
-            ) => (
-                dorc_cli::transport_session_lost(
-                    host,
-                    1,
-                    &dorc_transport::TransportDiagnosis::ChildLost,
-                ),
-                14,
-            ),
-            crate::edge_fault::EdgeFault::Transport(
-                crate::edge_fault::TransportFailure::SpawnRefused(detail),
-            ) => (dorc_cli::transport_spawn_refused(host, &detail), 13),
-            crate::edge_fault::EdgeFault::Transport(
-                crate::edge_fault::TransportFailure::MarkerUnusable,
-            ) => (dorc_cli::transport_marker_unusable(host), 13),
-            crate::edge_fault::EdgeFault::Transport(
-                crate::edge_fault::TransportFailure::ApplyFailed { status },
-            ) => (dorc_cli::transport_apply_failed(host, status), 15),
-            _ => return None,
+        let mut artifact = context.read_file(plan)?.into_bytes();
+        let fault = crate::edge_fault::EdgeFault::from_case(case).ok().flatten();
+
+        // A carriage return is a nonportable byte the LF-only case cannot carry, so the declaration
+        // stands in for it: inject the CR and the real route's own check fires exactly as production.
+        if let Some(crate::edge_fault::EdgeFault::Transport(
+            crate::edge_fault::TransportFailure::Crlf { line },
+        )) = &fault
+        {
+            artifact = inject_carriage_return(&artifact, *line);
+        }
+
+        let outcome_unwritable = matches!(fault, Some(crate::edge_fault::EdgeFault::ApplyOutcome));
+        // The scripted session: the transport-fault half, the outcome-fault's own success transport,
+        // or the `hosts/<name>/…` success half; a `--host` apply declaring none is a typed decline.
+        let script = scripted_session(case, host, fault.as_ref(), outcome_unwritable)?;
+        let seams = session.scripted_seams(script)?;
+        let edge = session.edge.clone();
+
+        let mut sink = LoomOutputSink {
+            ctx: self.render_ctx(),
+            actions: Vec::new(),
         };
-        self.staged_diagnostic(case, "transport", diagnostic, status)
+        let result = if outcome_unwritable {
+            drive_apply_outcome_unwritable(&edge, &seams, &mut sink, args, &artifact, host)
+        } else {
+            dorc_cli::compose::dispatch_and_report_apply(
+                session.store.as_mut(),
+                &edge,
+                &seams,
+                &mut sink,
+                args,
+                &artifact,
+                host,
+            )
+        };
+        match result {
+            Ok(status) => Some(dorc_engine_replay(status, sink.actions, &output)),
+            Err(diagnostic) => self.invocation_diagnostic(case, diagnostic, "dorc"),
+        }
     }
 
     fn run_lint(
@@ -1936,20 +1927,9 @@ impl LoomSession {
         reason = "the pinned synthetic root is a runner literal that always resolves; a refusal is a bug"
     )]
     fn new() -> Self {
-        // Platform-shaped, forced by the store's baseline check: a publish whose `directory_sync()`
-        // mismatches the roots' `host_platform()` is refused (`store.rs meets_required_baseline`),
-        // and the pinned roots resolve against `host_platform()`. Rendered bytes carry no platform
-        // path, so both legs agree with one transcript (`30Xa:Checkpoint C1-map`, R2).
-        let store: Box<dyn dorc_cli::durable::LocalIo> = if cfg!(windows) {
-            Box::new(dorc_cli::durable::ModelIo::windows_shaped(
-                dorc_cli::durable::FailureSchedule::intact(),
-            ))
-        } else {
-            Box::new(dorc_cli::durable::ModelIo::new(
-                dorc_cli::durable::FailureSchedule::intact(),
-                dorc_cli::durable::DirectorySync::Synchronized,
-            ))
-        };
+        let store: Box<dyn dorc_cli::durable::LocalIo> = Box::new(platform_model_io(
+            dorc_cli::durable::FailureSchedule::intact(),
+        ));
         let env = SessionEnv::seeded();
         let seams: dorc_cli::seam::Seams = dorc_cli::seam::HarnessSeams::from_env(&env)
             .expect("the runner's seeded defaults always parse")
@@ -1972,6 +1952,168 @@ impl LoomSession {
             .ok()
             .map(Into::into)
     }
+
+    /// This block's `Seams` with the transport replaced by the scripted column
+    /// (`30X:front-transport-scripted-column`): the `--host` apply route answers its session from the
+    /// case's own declaration through the SAME `SessionDriver` the ssh and local drivers implement.
+    fn scripted_seams(&self, script: dorc_transport::SimScript) -> Option<dorc_cli::seam::Seams> {
+        dorc_cli::seam::HarnessSeams::from_env(&self.env)
+            .ok()
+            .map(|harness| harness.with_scripted_transport(script).into())
+    }
+}
+
+/// The platform-shaped model store, forced by the store's baseline check: a publish whose
+/// `directory_sync()` mismatches the roots' `host_platform()` is refused
+/// (`store.rs meets_required_baseline`), and the pinned roots resolve against `host_platform()`.
+/// Rendered bytes carry no platform path, so both legs agree with one transcript
+/// (`30Xa:Checkpoint C1-map`, R2). The `schedule` is `intact()` for a session's own world and a
+/// scheduled fault for the post-dispatch outcome-unwritable drive.
+fn platform_model_io(schedule: dorc_cli::durable::FailureSchedule) -> dorc_cli::durable::ModelIo {
+    if cfg!(windows) {
+        dorc_cli::durable::ModelIo::windows_shaped(schedule)
+    } else {
+        dorc_cli::durable::ModelIo::new(schedule, dorc_cli::durable::DirectorySync::Synchronized)
+    }
+}
+
+/// Put a carriage return at the end of the 1-based `line` of `bytes`, so the transport's own
+/// `first_carriage_return` check reports that line — the CR the LF-only case format cannot carry.
+fn inject_carriage_return(bytes: &[u8], line: usize) -> Vec<u8> {
+    let text = String::from_utf8_lossy(bytes);
+    let mut out = Vec::new();
+    for (index, segment) in text.split_inclusive('\n').enumerate() {
+        if index + 1 == line {
+            match segment.strip_suffix('\n') {
+                Some(body) => {
+                    out.extend_from_slice(body.as_bytes());
+                    out.extend_from_slice(b"\r\n");
+                }
+                None => {
+                    out.extend_from_slice(segment.as_bytes());
+                    out.push(b'\r');
+                }
+            }
+        } else {
+            out.extend_from_slice(segment.as_bytes());
+        }
+    }
+    out
+}
+
+/// The scripted session outcome a `--host` apply answers from: the transport-fault half (the
+/// `SimScript` a real driver would produce), the outcome-fault's own success transport, or the
+/// `hosts/<name>/apply-outcome` success declaration (`282` §2's reserved convention; spelling
+/// strawman, `rul-strawman-formats-no-compat`). `None` is a typed decline: no scripted outcome for
+/// host `<name>` (`LoomDecline::RemoteApply`).
+fn scripted_session(
+    case: &Case,
+    host: &str,
+    fault: Option<&crate::edge_fault::EdgeFault>,
+    outcome_unwritable: bool,
+) -> Option<dorc_transport::SimScript> {
+    use crate::edge_fault::{EdgeFault, TransportFailure};
+    use dorc_transport::SimScript;
+    match fault {
+        Some(EdgeFault::Transport(TransportFailure::ApplyFailed { status })) => {
+            Some(SimScript::Completes {
+                stdout: Vec::new(),
+                status: *status,
+            })
+        }
+        Some(EdgeFault::Transport(TransportFailure::SessionLost)) => {
+            Some(SimScript::SeveredAfter { stdout: Vec::new() })
+        }
+        Some(EdgeFault::Transport(TransportFailure::SpawnRefused(detail))) => {
+            Some(SimScript::NotSpawnable {
+                reason: detail.clone(),
+            })
+        }
+        // A CRLF refuses pre-dispatch, before the driver is built; the script is a harmless stand-in.
+        Some(EdgeFault::Transport(TransportFailure::Crlf { .. })) => Some(SimScript::Completes {
+            stdout: Vec::new(),
+            status: 0,
+        }),
+        // The marker-unusable world is not a driver outcome (the seeded nonce is always marker-safe),
+        // so no `--host` apply reaches it through the scripted column; it stays a decline here.
+        Some(EdgeFault::Transport(TransportFailure::MarkerUnusable)) => None,
+        // The outcome-unwritable world has a SUCCESS transport; the outcome write is what fails.
+        _ if outcome_unwritable => Some(SimScript::Completes {
+            stdout: Vec::new(),
+            status: 0,
+        }),
+        _ => scripted_host_outcome(case, host),
+    }
+}
+
+/// Parse a `hosts/<name>/apply-outcome` section into the success transport it declares: `status <n>`
+/// on the head line, the captured stdout in the body (spelling strawman).
+fn scripted_host_outcome(case: &Case, host: &str) -> Option<dorc_transport::SimScript> {
+    let wanted = format!("hosts/{host}/apply-outcome");
+    let section = case.sections().iter().find(|s| s.name() == wanted)?;
+    let content = section.content();
+    let (head, body) = content.split_once('\n').unwrap_or((content, ""));
+    let status = match head.split_ascii_whitespace().collect::<Vec<_>>().as_slice() {
+        ["status", value] => value.parse::<i32>().ok()?,
+        _ => return None,
+    };
+    Some(dorc_transport::SimScript::Completes {
+        stdout: body.as_bytes().to_vec(),
+        status,
+    })
+}
+
+/// Drive one apply whose OUTCOME document cannot be written — the loom's post-dispatch failure world
+/// (`30X` §11). The outcome's own create is DISCOVERED on a throwaway store rather than named by a
+/// fragile constant, then faulted, so the intent publishes and the outcome does not; the render is
+/// the durable-failure diagnostic.
+fn drive_apply_outcome_unwritable(
+    edge: &dorc_cli::durable::LocalReceiptEdgeV1,
+    seams: &dorc_cli::seam::Seams,
+    sink: &mut LoomOutputSink<'_>,
+    args: &dorc_cli::Args,
+    artifact: &[u8],
+    host: &str,
+) -> Result<dorc_cli::engine::EngineStatus, Diag> {
+    let mut probe = platform_model_io(dorc_cli::durable::FailureSchedule::intact());
+    let mut discard = LoomOutputSink {
+        ctx: sink.ctx.clone(),
+        actions: Vec::new(),
+    };
+    let _ = dorc_cli::compose::dispatch_and_report_apply(
+        &mut probe,
+        edge,
+        seams,
+        &mut discard,
+        args,
+        artifact,
+        host,
+    );
+    let occurrence = last_create_file_occurrence(probe.schedule());
+    let mut store = platform_model_io(dorc_cli::durable::FailureSchedule::faulting_occurrence(
+        dorc_cli::durable::Op::CreateFileExclusive,
+        dorc_cli::durable::Side::Before,
+        occurrence,
+        dorc_cli::durable::IoFault::Denied,
+    ));
+    dorc_cli::compose::dispatch_and_report_apply(
+        &mut store, edge, seams, sink, args, artifact, host,
+    )
+}
+
+/// The 0-based occurrence of the LAST `CreateFileExclusive` a run reached — the outcome document's
+/// own create in an apply (the keyset docs, the manifest, and the intent all precede it). A run that
+/// created nothing (unreachable for an apply) yields 0.
+fn last_create_file_occurrence(schedule: &dorc_cli::durable::FailureSchedule) -> usize {
+    schedule
+        .arrivals()
+        .iter()
+        .filter(|(op, side)| {
+            *op == dorc_cli::durable::Op::CreateFileExclusive
+                && *side == dorc_cli::durable::Side::Before
+        })
+        .count()
+        .saturating_sub(1)
 }
 
 impl std::fmt::Debug for LoomSession {

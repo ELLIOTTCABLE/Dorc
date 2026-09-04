@@ -31,6 +31,10 @@ pub(crate) enum EdgeFault {
         stdout: Vec<u8>,
     },
     Transport(TransportFailure),
+    /// The apply's OUTCOME document could not be written after its intent published and the machine
+    /// was touched (`30X` §11's post-dispatch world). The transport succeeds; the store refuses the
+    /// outcome write, so `dorc apply --host` reaches its durable-failure surface.
+    ApplyOutcome,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -113,6 +117,7 @@ impl EdgeFault {
                 Self::Transport(TransportFailure::SpawnRefused(body.trim_end().to_owned()))
             }
             ["transport", "marker-unusable"] => Self::Transport(TransportFailure::MarkerUnusable),
+            ["apply-outcome"] => Self::ApplyOutcome,
             ["transport", "apply-failed", status] => {
                 Self::Transport(TransportFailure::ApplyFailed {
                     status: status
