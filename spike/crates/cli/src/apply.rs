@@ -677,7 +677,7 @@ mod tests {
         request: FormRequest,
     ) -> dorc_receipt::image::ApplyArtifactImage {
         let cwd = Cwd::default();
-        let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, book);
+        let reached = crate::snapshot::book_reached(&cwd, &paths, &srcs, "book.sh", book);
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd.clone(),
             paths,

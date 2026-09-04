@@ -886,8 +886,13 @@ fn run_status(
         book_source,
         &load_head_notices(&parsed.value, &cfg.value, &env, &book_src),
     );
-    for (file, diags) in helper_conflict_diagnostics(&helpers, source_paths, &source_refs) {
-        let source = source_paths
+    // The contested-helper diagnostic's two loci (the `{prior}` field and its span) render a
+    // `.`-sourced dep's absolute canonical key through the one relativizing seat, the class B1/B2a
+    // ruled (`30Xa:tc-load30-subshell-transcript-carries-a-machine-path`).
+    let loading_source_paths = relativize_for_display(snapshot.cwd(), source_paths);
+    for (file, diags) in helper_conflict_diagnostics(&helpers, &loading_source_paths, &source_refs)
+    {
+        let source = loading_source_paths
             .get(file)
             .zip(source_refs.get(file))
             .map(|(path, src)| (path.as_str(), *src));

@@ -682,7 +682,7 @@ mod tests {
 
     fn projection(book: &str, paths: Vec<String>, srcs: Vec<String>) -> BundleProjection {
         let cwd = Cwd::default();
-        let reached = book_reached(&cwd, &paths, &srcs, book);
+        let reached = book_reached(&cwd, &paths, &srcs, "book.sh", book);
         let snapshot = StaticLoadSnapshot::over(
             cwd,
             paths,

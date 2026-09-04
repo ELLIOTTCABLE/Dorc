@@ -47,5 +47,6 @@ why` for the per-site detail (the apply runs each anyway, to stay safe)
 why: ran because operand 1 is a command-substitution `$(...)` or runtime-dynamic value -- its value couldn't be resolved (first seen at 2:1 `. "${0%/*}/helpers.sh"`); so dorc runs it, to stay safe (when unsure, run). to skip it, make the operand a literal Dorc can resolve+probe [resolve-dynamism]
 hint: '.' (line 2) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 1 more unmodeled wall -- dorc why
 dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
 dorc: plan-summary sites=2 elide=0 omit=0 guard=0 run=2 may-alias=0
 dorc: decision-digest 848aca3cb6c1dcb720d697fb59a33231f532d3b3623122a371dc250e2ab4aa62

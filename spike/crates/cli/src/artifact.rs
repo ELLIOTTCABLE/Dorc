@@ -1873,7 +1873,7 @@ mod tests {
         BundleProjection,
         Vec<super::BookLoad>,
     ) {
-        let reached = crate::snapshot::book_reached(cwd, &paths, &srcs, book);
+        let reached = crate::snapshot::book_reached(cwd, &paths, &srcs, "book.sh", book);
         let snapshot = crate::snapshot::StaticLoadSnapshot::over(
             cwd.clone(),
             paths,

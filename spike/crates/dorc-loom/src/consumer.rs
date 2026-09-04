@@ -1177,11 +1177,15 @@ impl DorcConsumer {
             Some(ReplayInputTarget::File(path)) if path.ends_with("controller-results.txt")
         );
         let observation = loom_observation(raw_results, controller_results);
+        // The stdout posture is the SEAM's, as `compose::run` reads it — never the block's
+        // `> /dev/null` redirect, which drove a kept-stream `Selection` where the binary rendered
+        // (`30Xa:tc-artifact-form-fallback-note-binary-only`).
+        let seams = session.seams()?;
         // The admin.s REFUSAL, as `main.rs` gates it: naming a store moves WHERE a receipt lands,
         // never WHETHER one is written (`dorc-replay-is-production-semantics`).
         let options = dorc_cli::engine_options_from_args(
             args,
-            replay_stdout_posture(command),
+            seams.stdout_posture(),
             args.artifact_dir.is_some(),
             !args.no_receipt,
         );
@@ -1198,7 +1202,6 @@ impl DorcConsumer {
             &discovered_oracles,
         );
         let routing = output;
-        let seams = session.seams()?;
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
             clock: seams.clock(),
@@ -1423,7 +1426,7 @@ fn engine_snapshot(
     ambient: usize,
 ) -> dorc_cli::snapshot::StaticLoadSnapshot {
     let cwd = cwd.clone();
-    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_src);
+    let book_sourced = dorc_cli::snapshot::book_reached(&cwd, &paths, &srcs, book_path, book_src);
     let dependencies = dorc_cli::snapshot::root_dependencies(&cwd, &paths, &srcs, ambient);
     let mut kept_paths = Vec::new();
     let mut kept_srcs = Vec::new();
@@ -1639,14 +1642,6 @@ fn replay_source(
         path,
         &std::io::Error::new(std::io::ErrorKind::NotFound, "not found in replay sandbox"),
     )))
-}
-
-fn replay_stdout_posture(command: &ReplayCommand) -> dorc_cli::artifact::StdoutPosture {
-    if command.stdout_is_terminal() {
-        dorc_cli::artifact::StdoutPosture::Interactive
-    } else {
-        dorc_cli::artifact::StdoutPosture::NonInteractive
-    }
 }
 
 /// A `cd <literal>` in the modelled session. Only a cd that STAYS at the case root (`cd .`) is a

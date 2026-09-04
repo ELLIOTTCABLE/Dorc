@@ -365,31 +365,36 @@ pub fn book_reached(
     cwd: &Cwd,
     paths: &[String],
     srcs: &[String],
+    book_path: &str,
     book_src: &str,
 ) -> std::collections::BTreeSet<usize> {
-    let at = |target: &str| -> Option<usize> {
-        let wanted = cwd.resolve_dot(target)?;
+    // REACHED is the book's own act; MODELLING is `LoadPositions::role_of`'s separate answer
+    // (`30P:principle-book-code-source-is-inclusion`). Only a file that CLAIMS the dialect and fails
+    // its contract stays out — the acquisition refuses to hold one, and calling it reached here would
+    // make the two drivers disagree about a file one of them lacks.
+    let contract_ok = |file: usize| {
+        srcs.get(file).is_some_and(|src| {
+            crate::sourcing::satisfies_the_contract(src) || !dorc_oracle::marker::has_marker(src)
+        })
+    };
+    let at_canonical = |canonical: &str| -> Option<usize> {
         paths
             .iter()
-            .position(|path| cwd.resolve_operand(path).as_deref() == Some(wanted.as_str()))
-            .filter(|&file| {
-                // REACHED is a question about the book's own act, not about what the target
-                // signed: an ordinary sh file a book `.` names is reached, and MODELLING it is
-                // what [`LoadPositions::role_of`] answers separately
-                // (`30P:principle-book-code-source-is-inclusion`). What stays out is a file that
-                // CLAIMS the dialect and fails its own contract — the acquisition refuses those
-                // outright, and treating one as reached here would let the two drivers disagree
-                // about a file only one of them holds.
-                srcs.get(file).is_some_and(|src| {
-                    crate::sourcing::satisfies_the_contract(src)
-                        || !dorc_oracle::marker::has_marker(src)
-                })
-            })
+            .position(|path| cwd.resolve_operand(path).as_deref() == Some(canonical))
+            .filter(|&file| contract_ok(file))
     };
+    let at = |target: &str| -> Option<usize> { at_canonical(&cwd.resolve_dot(target)?) };
     let mut reached: std::collections::BTreeSet<usize> = book_load_targets(book_src)
         .iter()
         .filter_map(|target| at(target))
         .collect();
+    // The literal scan cannot see a `$0`-relative operand (`${0%/*}/x`); resolve those as the
+    // binary's acquisition does (`30Xa:tc-load30-script-relative-two-driver-disagreement`).
+    for canonical in book_resolved_load_targets(cwd, book_path, book_src) {
+        if let Some(file) = at_canonical(&canonical) {
+            reached.insert(file);
+        }
+    }
     // Transitive: what a book-reached package sources is book-reached too. Terminates because the
     // frontier only ever grows and is bounded by the loaded set.
     let mut frontier: Vec<usize> = reached.iter().copied().collect();
@@ -404,6 +409,36 @@ pub fn book_reached(
         }
     }
     reached
+}
+
+/// The canonical targets a book `.`/`source` resolves, INCLUDING `$0`-relative operands the literal
+/// [`book_load_targets`] scan cannot see. It runs the ScriptSpellings-aware resolution the binary's
+/// acquisition (`compose::read_book_sourced`) uses — [`crate::world::definition_table`] carries the
+/// `$0` model — over the book alone (empty sources, so every named target reads as `wanted`), so the
+/// in-process partition matches the binary's for a `${0%/*}`-headed load.
+fn book_resolved_load_targets(
+    cwd: &Cwd,
+    book_path: &str,
+    book_src: &str,
+) -> std::collections::BTreeSet<String> {
+    let ast = dorc_syntax::parse(book_src).value;
+    let cfg = dorc_analysis::cfg::build(&ast).value;
+    let mut interner = dorc_core::Interner::default();
+    let value = dorc_analysis::value::analyze(&cfg, &ast, &mut interner);
+    let plane = dorc_analysis::funcenv::SourceLiteralPlane::new(&value, &interner);
+    let snapshot = StaticLoadSnapshot::over(
+        cwd.clone(),
+        Vec::new(),
+        Vec::new(),
+        &LoadPositions::roots_only(),
+        book_path,
+        book_src,
+    );
+    let defs = crate::world::definition_table(&snapshot, &ast);
+    dorc_analysis::funcenv::analyze(&ast, &cfg, &defs, &plane)
+        .loads()
+        .wanted()
+        .clone()
 }
 
 /// The sources a run's NAMED ROOTS reach by `.`-sourcing, transitively — the in-memory twin of the
@@ -593,7 +628,7 @@ mod tests {
         ];
         let book = "OPS_LIB=./oracles\n. \"$OPS_LIB/alpha.dorc.sh\"\nalpha\n";
         assert_eq!(
-            book_reached(&Cwd::at(""), &paths, &srcs, book),
+            book_reached(&Cwd::at(""), &paths, &srcs, "book.sh", book),
             [0, 1].into(),
             "the entrypoint AND its own dependency; the co-loaded stranger is not book-reached"
         );
@@ -612,7 +647,7 @@ mod tests {
         let paths = vec!["child.sh".to_owned()];
         let srcs = vec!["f() { :; }\n".to_owned()];
         assert_eq!(
-            book_reached(&Cwd::at(""), &paths, &srcs, ". ./child.sh\n"),
+            book_reached(&Cwd::at(""), &paths, &srcs, "book.sh", ". ./child.sh\n"),
             [0].into(),
             "unmarked ⇒ reached, so the artifact has bytes to mirror"
         );
@@ -633,7 +668,7 @@ mod tests {
 
         let claiming = vec![format!("{MARKER}f() {{ :; }}\nfalse\n")];
         assert!(
-            book_reached(&Cwd::at(""), &paths, &claiming, ". ./child.sh\n").is_empty(),
+            book_reached(&Cwd::at(""), &paths, &claiming, "book.sh", ". ./child.sh\n").is_empty(),
             "a file that claims the dialect and fails its contract is held by nobody"
         );
     }
@@ -649,6 +684,7 @@ mod tests {
                 &Cwd::at(""),
                 &paths,
                 &srcs,
+                "book.sh",
                 "(\n   . ./fallback.dorc.sh\n)\n"
             ),
             [0].into()
