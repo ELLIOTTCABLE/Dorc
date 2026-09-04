@@ -284,6 +284,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "dorc-sh-usage",
     "dorc-sh-script-unreadable",
     "dorc-sh-exec-failed",
+    "dorc-sh-no-shell",
     "transport-crlf-refused",
     "transport-session-lost",
     "transport-spawn-refused",
@@ -388,6 +389,7 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "DorcShUsage",
     "DorcShScriptUnreadable",
     "DorcShExecFailed",
+    "DorcShNoShell",
     // apply — about an INVOCATION and its authority, not about bytes we parsed. Both are decided
     // before any book is read, and an apply reads none at all, so there is no AST to point at.
     "ApplyReceiptNotOptional",

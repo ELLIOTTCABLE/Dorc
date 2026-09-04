@@ -1076,4 +1076,13 @@ pub const CATALOG: &[CatalogEntry] = &[
         message: None,
         help: HelpRegister::Absent,
     },
+    CatalogEntry {
+        slug: "dorc-sh-no-shell",
+        when_fires: "dorc-sh resolved no POSIX shell through the one-shell-answer seat (dorc_transport::Posix::find), so it refuses before running the stripped script. cli/bin/dorc-sh.rs.",
+        why: "on native Windows a bare `sh` PATH lookup finds `%SystemRoot%\\System32\\bash.exe`, the WSL launcher, not a POSIX shell; resolving through the seat and refusing loudly when git's userland is absent is the difference between an actionable 'install git' and a silent wrong-shell run. Remediation register (help) wanted.",
+        params: &[],
+        example: "[unwritten: dorc-sh-no-shell]",
+        message: None,
+        help: HelpRegister::Absent,
+    },
 ];
