@@ -641,6 +641,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## aid/CLAUDE:authoring-a-replay-block-is-blind
 - defined: spike/crates/aid/CLAUDE.md:268 — — nothing fills a NEW replay block in place: you append
+- cited: 30Xa (2)
 
 ## core/CLAUDE:auto-cell-is-the-markless-floor
 - defined: spike/crates/core/CLAUDE.md:88 — — `auto_fact` mints the typeless floor's
