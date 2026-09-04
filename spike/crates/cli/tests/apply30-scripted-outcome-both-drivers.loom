@@ -8,5 +8,7 @@
 status 0
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc apply --host web1.example.net --plan plan.sh
 [unwritten: cli-apply-identities-line]

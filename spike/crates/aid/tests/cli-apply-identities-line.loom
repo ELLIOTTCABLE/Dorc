@@ -12,5 +12,7 @@ why: 30X section 11 (the post-dispatch surfaces). The intent and outcome identit
 status 0
 
 -- replay --
+$ export DORC_SEED=0
+
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
 [unwritten: cli-apply-identities-line]
