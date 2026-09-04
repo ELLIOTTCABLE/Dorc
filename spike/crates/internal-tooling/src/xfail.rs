@@ -474,15 +474,15 @@ pub const PINS: &[Pin] = &[
                   direct mutator's cells; a cell-aware self-reach would let it REPLACE \
                   (`FORFEITS:forfeit-cell-blind-self-reach-walls-loop-siblings`; the flagged \
                   widening `30Qa:tc-self-reach-cell-blind-widening`)",
-        horizon: Horizon::Deferred {
-            was: "end-of-r31",
-            now: "end-of-r31",
-            why: "the loom is now DESCRIPTIVE — its transcript is the engine's current GUARD \
-                  output, so the target-tense golden (a REPLACE apply naming only the direct \
-                  mutator in its run-set) has no loom home and nothing calls this pin. The \
-                  boundary is unchanged; it re-homes and the pin greens when the cell-aware \
-                  self-reach widening (`30Qa:tc-self-reach-cell-blind-widening`) lands and the \
-                  case re-blesses to that target",
+        horizon: Horizon::Unscheduled {
+            marker: "end-of-r31",
+            why: "the loom is DESCRIPTIVE — its transcript is the engine's current GUARD output, so \
+                  the target-tense golden (a REPLACE apply naming only the direct mutator in its \
+                  run-set) has no loom home and nothing calls this pin. The cell-aware self-reach \
+                  widening is direction-ruled but unscheduled \
+                  (`30Qa:tc-self-reach-cell-blind-widening`), so this boundary is where the census \
+                  should force the question; it greens and the case re-blesses to that target when \
+                  the widening lands",
         },
         state: PinState::Reserved,
     },
