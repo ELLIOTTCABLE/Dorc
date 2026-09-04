@@ -179,6 +179,50 @@ pub fn run(seams: &Seams) -> ExitCode {
     }
 }
 
+/// Strip `src` if it is dorc-marked and run it under the resolved `shell`, forwarding `$0`/`$@` —
+/// the body of the `dorc-sh` off-ramp runner, below the seam.
+///
+/// The shell arrives as a VALUE (`30X:inv-division-at-the-narrowest-edge`): the shipped `dorc-sh`
+/// `main` acquires every edge value (the script path, its bytes, the resolved shell) and calls this
+/// once, so nothing above the seam branches, parses, or decides. `sh -c "$stripped" "$script" "$@"`
+/// (POSIX `sh -c cmd name args…` assigns `$0` from `name`, so no temp file is needed). On Windows
+/// git's shells do not resolve their own `sed`/`awk`/`grep` siblings, so the child gets the seat's
+/// `child_path`; elsewhere it inherits. The spike spawn-and-waits and forwards the child's exit code
+/// rather than `exec`-replacing (`churn-avoidance-disclosure`): portable (incl. msys), and the
+/// replacement is an optimization, not a correctness requirement.
+#[must_use]
+pub fn shim_strip_and_run(
+    shell: &dorc_transport::Posix,
+    script: &std::ffi::OsStr,
+    src: &str,
+    args: impl Iterator<Item = std::ffi::OsString>,
+) -> ExitCode {
+    let mut interner = Interner::default();
+    let stripped = dorc_oracle::strip_file(&mut interner, src).value;
+
+    let mut command = std::process::Command::new(&shell.shell);
+    command.arg("-c").arg(&stripped).arg(script).args(args);
+    if shell.utils_dir.is_some() {
+        command.env("PATH", shell.child_path());
+    }
+    match command.status() {
+        // A POSIX exit status is 0..=255; `try_from` keeps it lint-clean (no truncating `as`).
+        Ok(s) => ExitCode::from(u8::try_from(s.code().unwrap_or(1)).unwrap_or(1)),
+        Err(e) => {
+            eprint!(
+                "{}",
+                crate::shim_error_parts(
+                    &render_ctx(),
+                    &crate::shim_exec_error(&e),
+                    &Interner::default(),
+                )
+                .text()
+            );
+            ExitCode::from(127)
+        }
+    }
+}
+
 #[expect(
     clippy::result_large_err,
     reason = "the binary print seat consumes the full diagnostic"

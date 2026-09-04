@@ -10,9 +10,8 @@
 //! the spike ships the zero-arg form. `ARG_MAX` bounds the `-c` string for pathological script
 //! sizes — disclosed (`ru-26`), fine for fixtures.
 //!
-//! SPIKE NOTE (`churn-avoidance-disclosure`): the spike uses spawn-and-wait forwarding the child's
-//! exit code, not true process-replacement `exec` — portable (incl. msys), and the replacement is an
-//! optimization, not a correctness requirement.
+//! The strip-and-exec BODY lives below the seam in `dorc_cli::compose::shim_strip_and_run`
+//! (`30X:inv-division-at-the-narrowest-edge`): this file is edge values plus one call.
 
 #![forbid(unsafe_code)]
 // The I/O edge (workspace policy: I/O-edge crates may `#[expect]` these at the crate root, with
@@ -22,8 +21,7 @@
     reason = "dorc-sh is an I/O edge: its own errors go to stderr; the stripped script owns stdout"
 )]
 
-use std::ffi::{OsStr, OsString};
-use std::process::{Command, ExitCode};
+use std::process::ExitCode;
 
 /// `dorc-sh`'s three errors join the registry like every other surface
 /// (`288` §6 rul-dorc-sh-not-carved-out) — slugs, canonical looms, auditable. The terse `dorc-sh: `
@@ -65,35 +63,5 @@ fn main() -> ExitCode {
         report(&dorc_cli::shim_no_shell_error());
         return ExitCode::from(127);
     };
-    strip_and_exec(&shell, &script, &src, args)
-}
-
-/// Strip `src` if marked and run it under the resolved `shell`, forwarding `$0`/`$@`.
-///
-/// The shell arrives as a VALUE (`30X:inv-division-at-the-narrowest-edge`): `main` acquires every
-/// edge value and this body resolves nothing. `sh -c "$stripped" "$script" "$@"` (POSIX `sh -c cmd
-/// name args…` assigns `$0` from `name`). On Windows git's shells do not resolve their own
-/// `sed`/`awk`/`grep` siblings, so the child gets the seat's `child_path`; elsewhere it inherits.
-fn strip_and_exec(
-    shell: &dorc_transport::Posix,
-    script: &OsStr,
-    src: &str,
-    args: impl Iterator<Item = OsString>,
-) -> ExitCode {
-    let mut interner = dorc_core::Interner::default();
-    let stripped = dorc_oracle::strip_file(&mut interner, src).value;
-
-    let mut command = Command::new(&shell.shell);
-    command.arg("-c").arg(&stripped).arg(script).args(args);
-    if shell.utils_dir.is_some() {
-        command.env("PATH", shell.child_path());
-    }
-    match command.status() {
-        // A POSIX exit status is 0..=255; `try_from` keeps it lint-clean (no truncating `as`).
-        Ok(s) => ExitCode::from(u8::try_from(s.code().unwrap_or(1)).unwrap_or(1)),
-        Err(e) => {
-            report(&dorc_cli::shim_exec_error(&e));
-            ExitCode::from(127)
-        }
-    }
+    dorc_cli::compose::shim_strip_and_run(&shell, &script, &src, args)
 }
