@@ -6,49 +6,27 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
-## §0 — state (2026-09-04, end of the third sitting): EVERY lane BUILT and green on both legs at `97f536e1` (zero `DORC_KNOWN_BROKEN`; `bless:dry` clean; `xfail:census` coherent); HELD by the human before the close batch — a successor resumes HERE
+## §0 — state: CLOSED 2026-09-04 (the fourth sitting) — every lane BUILT and green on both legs; the close batch landed; the arc folds to `ai/main`
 
-What remains, in order: (1) one small lane, **D2b′** — the two deferred tenants of `dorc-testbed`: hostsim's sweeps and `hostsim/examples/differential.rs` taking the run seed through a DEV-dep under `rul-coverage-assertions-are-base-robust-or-fixed` (`Checkpoint C3a`), and `xfail` + `Posix` + `repo_root` (a fifth tenant: `xfail`'s tree walk needs it) out of `internal-tooling` into the leaf, every pin site and dev-dep re-pointed, `oracle`'s unused `internal-tooling` dependency dropped, end state "zero crates depend on `internal-tooling`" (`Checkpoint D2b`); (2) the close batch, the conductor's own: the §7 steering edits in conductor voice (the list has grown at every checkpoint — read them all; `cli/CLAUDE.md`'s harness section is re-cut whole around sessions, the derived driver, gates by what a block produced, the thirteen keys, the moved XFAIL lens; `spike/CLAUDE.md`'s Safety-block sentence, `rul-fixture-identity-never-production`, `flat-test-tree-and-loom-placement`'s shape table, the Build/test/run table and `task-bodies-are-shell-free`; `aid/CLAUDE.md`'s runner pointers and `seam-tolerated-nondeterminism`; `plans/30P`'s what-landed pins; `CONTRIBUTING.md`'s clean-worktree paragraph; the `e2e` runner-name decision), `TODO-ADDTL`'s testing-residue row, `Research/README.md`'s round map and DST row, `LIVING_STATUS`'s entry deleted, `mise run gate:arc` from this branch, the ff to `ai/main`, the worktree reaped after containment; (3) the human's veto list, delivered ONCE at close: the two lane-B product rulings, lane A's five fence re-targets, C1's route-B re-export, `rul-post-dispatch-durable-failure-is-a-sibling-code`, the source-comparison seat's injectable reader, the unwritten identities line dropping its values, exit 0 on an unrecorded outcome, the binary's lint error now carrying its slug, the three display relativizations, the thirteen keys. The lane briefs, uncommitted, are in the conductor's scratchpad named below.
-
-Branch `ai/r30-30X-test-infra-decruft-conductor`; worktree
-`C:\Users\ec\Sync\Code\Dorc\.tmp\trees\r30-30X-test-infra-decruft-conductor`. Lane briefs are
-never committed (human ruling); this sitting's live in the conductor's scratchpad at
-`C:\Users\ec\AppData\Local\Temp\claude\C--Users-ec-Sync-Code-Dorc\98f0da77-1d12-44a8-bc56-c82d8db17c2e\scratchpad\`
-(`c1-brief.md` carries the invariants/OUT/process/report shape every later brief cites;
-`c1-execute-brief.md`, `c1-prime-brief.md`, `c1-double-prime-brief.md`, `c2-brief.md`,
-`c3a-brief.md`, `c3b-brief.md` record what landed; **`d-brief.md` is the next dispatch — D1 then D2,
-one builder each**, its amendments from the C checkpoints already folded in). A successor in a new
-session re-reads them there or re-cuts from §5 and the checkpoint tables. The branch RIDES
-`ai/main`: rebased 2026-09-03 before lane C rather than at close, so the slug-index and spelling
-hooks that landed on `ai/main` govern the remaining lanes as they build (the slug index regenerates
-as one `(- AI tool)` commit at each rebase; `mise run both gate:full-quiet` was green at the
-rebase); it is re-rebased in every between-lanes gap in which `ai/main` has moved, never while a
-lane is live. Built: the `Seams`/`HarnessSeams` bundle and `dorc-harness` (A, A′); the
-shell-session process driver with gates by kind, both-streams transcripts, the ticking per-block
-clock default under `rul-runner-varies-only-what-it-set`, the why-lens relativization (B1, B1′);
-the needle gate and the baseline scaffold gone, `why30-receipt-rooted-surface` a four-block
-session, the sibling-oracle advisory reconciling by canonical key (B2a); the receipt batteries
-split into `receipt_state.rs` — the ONE state-only home, twenty tests, the shipped-binary liveness
-witness among them — and two pipeline-tier residues (B2b). Every checkpoint ruling is in §2a; the
-lane scopes a successor briefs from, including the C1/C2/C3/D split, are in §5; the steering edits
-owed at close are in §7. Briefs are never committed (human ruling): a successor writes each lane's
-brief into its own scratchpad from §5's scope + §2a's rulings + `spike/CLAUDE.md`'s spawning law
-(the Safety block verbatim; step zero naming the tip; step one with
-`AGENTS.for-builders-only.md` FIRST; the no-subagents clamp; the comment budget with its counting
-command; the report shape), and hands it by absolute path in the dispatch message. Sizing: keep a
-lane well under one Opus context — earlier lanes ran to the edge at ~830k tokens; ~500k remits
-finished cleanly. Builders serial, in this worktree; the conductor touches nothing here while a
-lane is live.
-
-Open, the human's: the re-ack of lane A's five fence re-targets (§2a); the veto window on the two
-product rulings taken inside this suite arc, `rul-why-lens-relativizes-under-the-load-cwd` and
-`rul-sibling-oracle-scan-reconciles-by-canonical-key` (both §2a, both built); the `dorc-sh` bare-`sh`
-finding's roadmap placement (§6). Fold procedure at arc close: rebase this branch over `ai/main`
-(the human rewrites `ai/main` under conductor status commits — expect new hashes), `mise run
-gate:arc` from the populated branch BEFORE folding, the §7 steering edits in conductor voice, then
-`git merge --ff-only`; delete the `LIVING_STATUS` entry (its account moves to the `Research/README.md`
-round map) and reap this worktree and branch only after `merge-base --is-ancestor` proves
-containment.
+The rebuild is complete at the branch tip: lanes A–D2c (D ran as D1 · D1′ · D1″ · D2a · D2a′ ·
+D2a″ · D2b · D2b′ · D2c) all built and green on `mise run both gate:full-quiet`; `bless:dry`
+clean; `xfail:census` coherent (25 live · 3 reserved); zero `DORC_KNOWN_BROKEN`;
+`internal-tooling` with zero dependents; the two-driver proof census 0 disagreeing over 427
+trials. The close sitting's typed rulings: every item of the former veto list ACKED — output
+relativization at one seat; the five fence re-targets (the fences' EXISTENCE not acked, punted,
+recorded nowhere); the route-B re-export (left to the opaque review); the post-dispatch sibling
+code; exit 0 on an unrecorded outcome (the structural exit-code ruling lives in `AID-NEEDS`);
+the lint slug; the thirteen keys; unwritten rows keep dropping their values, and a conductor may
+mint SHORT `Slop`-tier words (`spike/CLAUDE.md error-prose-conductor-flow`). The
+unloaded-sibling-oracle advisory RETIRED whole (lane D2c, its directory scan with it); `dorc-sh`'s
+shell resolved through the one seat, now PRODUCT code in `transport`, with `dorc-sh-no-shell`
+minted unwritten (lane D2b′); `tolerate:` stays as built — a harness-instrument race no seam can
+own, and the product owns xtrace. No to-ack or owed list survives anywhere durable: what was not
+built is not built. Lane briefs were never committed (human ruling) and died with the conductor
+sessions that held them. The steering re-cuts, the registers, and the round map landed in the
+close batch; git carries them. Fold: `gate:arc` from this branch, the opaque review
+(authorized), rebase over `ai/main`'s human commit, `merge --ff-only`, the `LIVING_STATUS` entry
+deleted, the worktree and branch reaped after `merge-base --is-ancestor` proves containment.
 
 ### How the design got here (the sitting's review trail)
 
@@ -105,8 +83,9 @@ this sitting that this branch rebases over before any fold.
 | `exceed-convert-dir-cases-to-looms` (109 cli dir cases → looms; one-off converter deleted after use; lane D tail) | ACKED 2026-09-02 ("no legacy e2e") |
 | `amend-shape-c-assertion-rule` (§4) | ACKED 2026-09-02 in sharpened form — `30X` §3a (prose primacy · seven classes · stop-at-the-conductor · one mechanism per arc) |
 | the reviewer-driven tightening (`8ab53489`) + the conductor's five clarity repairs + `rul-seam-columns-are-conductor-ruled` | ACKED 2026-09-02 ("Ack; proceed with your cleaning. I believe we're ready to deploy") |
-| `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; the human corrects in-chat if the other reading was meant |
-| the five fence re-targets (`main.rs` → `compose.rs`; §2a last row) | awaiting the human's re-ack |
+| `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; stood uncorrected through the close |
+| the close sitting's veto items (both lane-B product rulings · the route-B re-export · `rul-post-dispatch-durable-failure-is-a-sibling-code` · the source-comparison seat's reader · the unwritten identities line · exit 0 on an unrecorded outcome · the lint slug · the three relativizations · the thirteen keys) | ACKED 2026-09-04 as §0 records; the advisory the second lane-B ruling served was then RETIRED at the human's word |
+| the five fence re-targets (`main.rs` → `compose.rs`; §2a last row) | ACKED 2026-09-04 ("if there's fences they need to scan the right file"); the fences' existence NOT acked, punted |
 | sealed review over lane A's implementation (builder-flow relay, §2a) | DECLINED by the human 2026-09-02: no opaque review within the arc; end-of-arc is their call |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
 | `exceed-port-or-delete-yardstick` | acked with the plan 2026-09-02 |
@@ -490,37 +469,24 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | C2 `lane-c2-dogfood-session-model` (medium) | the in-process driver models the session's `$` lines with our own `dorc_syntax` parser and env model (`30X` §8: HARD NACK if any kernel invariant softens; HARD DEFER, recorded under `30X:front-dogfood-ceiling`, if it needs invasive kernel change): `export` (seam variables through `HarnessSeams::from_env` over the MODELLED environment — the one parser), `cd`, `<` redirects, exact `echo $?`; everything else stays a typed decline; `rul-runner-varies-only-what-it-set` holds in-process exactly as in the shell | COMPLETE at `d3c479a9` (`Checkpoint C2`): 108 of 109 `run:` looms render in-process and agree on both legs; three small residues fold into C3a |
 | C3 `lane-c3-seeds-affordances-durable-report` (medium) | `seed-varied-by-default` (every seeded seam takes a fresh run seed per run; the run-wide seed printed at the start of every run; every failure names the seed and the one-line pin spelling `$ export DORC_SEED=…`); bless REFUSES a transcript that does not reproduce under a second seed; seed-dependent renders (the three whygallery looms and any other) declare their pin in the case; `seed-declared-is-regression` — one spelling across unit/DST/loom/e2e, hostsim's seed constructors taking the same run seed; the post-dispatch durable report authored over the in-process world — a durable-failure diagnostic carrying the surviving intent (a seeded id) plus the closed write-step word, and the completed apply's intent/outcome identities chrome line — minted with EMPTY prose (`[unwritten:]`, `error-authorship-tier`), each witnessed by a state-only test in `receipt_state.rs` (the store holds an intent and no outcome / holds both) | SPLIT 2026-09-03 into C3a (seeds: the varied default, the two affordances, one spelling across every tier, bless refusing under a second seed; plus C2's three residues) and C3b (the transport seam's scripted column, success half, so an apply runs in-process; the consumer stops discarding; the durable-report surfaces) — each a builder's budget on its own. C3a COMPLETE at `31852952` (`Checkpoint C3a`; its two budget deferrals fold into D1/D2); C3b COMPLETE at `397983ed` (`Checkpoint C3b`; one shell-driver gap folds into D1, one word table into D2) |
 | — checkpoint C3 | RULED `rul-post-dispatch-durable-failure-is-a-sibling-code` (conductor, 2026-09-03; the human's veto stands open at close): the post-dispatch durable failure is a SIBLING code of `durable-receipt-unwritten`, never a reason arm — `AID-NEEDS:law-codes-vary-by-world-not-grammar`: the plan-time world (no durable, nothing touched, re-plan) and the post-dispatch world (the intent published, the machine perhaps changed, the outcome unrecorded — check the host, keep the intent id) differ in world and in repair, and the why-lens must never let them be confused; WHICH write step failed is a typed reason enum within the one code (`28L:rul-reason-enums-not-sibling-codes`). C3b executes it. | — |
-| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick. Dispatched as TWO serial sub-lanes: D1 (the runner merge, the derived driver, the frontmatter collapse) inheriting C1″'s `vars` over every session block and C3a's two residues (the publish authority's second-seed refusal; the run seed on every FAIL line); D2 (the dir-case conversion, the lint fold, the fixture seat's fate, `xfail` and `Posix` out of `internal-tooling` into `dorc-testbed` so it has no dependents, the doctest noise, yardstick) inheriting hostsim's sweeps under `rul-coverage-assertions-are-base-robust-or-fixed` | D1 §1 and rider (e) BUILT at `2950fc13`; D1′ BUILT the derived driver, rider (d), rider (f) part 1 at `1897d5f1` (`Checkpoint D1′`; three fidelity disagreements red as named `tc-*`); D1″ BUILT the `dorc-sh` decline, the every-block `vars`, and the apply session at `9834a071` (`Checkpoint D1″`); the collapse re-homes into D2a (the two converters: the frontmatter collapse and the dir-case conversion, one family), D2b the rest of D2 (the lint fold with its two fidelity fixes, the fixture seat, `xfail`/`Posix` out of `internal-tooling`, hostsim's sweeps, the word table, doctest noise, yardstick) |
+| D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick. Dispatched as TWO serial sub-lanes: D1 (the runner merge, the derived driver, the frontmatter collapse) inheriting C1″'s `vars` over every session block and C3a's two residues (the publish authority's second-seed refusal; the run seed on every FAIL line); D2 (the dir-case conversion, the lint fold, the fixture seat's fate, `xfail` and `Posix` out of `internal-tooling` into `dorc-testbed` so it has no dependents, the doctest noise, yardstick) inheriting hostsim's sweeps under `rul-coverage-assertions-are-base-robust-or-fixed` | D1 §1 and rider (e) BUILT at `2950fc13`; D1′ BUILT the derived driver, rider (d), rider (f) part 1 at `1897d5f1` (`Checkpoint D1′`; three fidelity disagreements red as named `tc-*`); D1″ BUILT the `dorc-sh` decline, the every-block `vars`, and the apply session at `9834a071` (`Checkpoint D1″`); the collapse re-homes into D2a (the two converters: the frontmatter collapse and the dir-case conversion, one family), D2b the rest of D2 (the lint fold with its two fidelity fixes, the fixture seat, `xfail`/`Posix` out of `internal-tooling`, hostsim's sweeps, the word table, doctest noise, yardstick) — D2b BUILT (`Checkpoint D2b`); D2b′ BUILT the last tenants (`xfail` + `repo_root` into `dorc-testbed`; `Posix` into `transport` as PRODUCT code, because the shipped `dorc-sh` now consumes it — the conductor's lean over this row's earlier "into `dorc-testbed`"; hostsim's family on the run seed with its coverage sweep kept at a fixed base by argument; `oracle`'s dead edge dropped; zero dependents of `internal-tooling`) and the `dorc-sh` fix (`Command::new("sh")` → the seat; `dorc-sh-no-shell`, exit 127, minted unwritten); D2c RETIRED the unloaded-sibling-oracle advisory whole and moved `dorc-sh`'s strip-and-exec body below the seam (`compose::shim_strip_and_run`), then dropped the unfed acquisition-diagnostics channel on the conductor's reversal |
 
-## §6 — residue accounting (empty, or kernel-only under `30X:front-dogfood-ceiling`, at close)
+## §6 — residue accounting
 
-- Not this arc's: `dorc-sh` resolves `sh` by a bare `Command::new("sh")` (a latent
-  `one-shell-answer` gap on Windows; pre-existing product behaviour, found by lane A). Roadmap
-  placement is the human's.
+Empty. The one entry this section ever held — `dorc-sh` resolving `sh` by a bare
+`Command::new("sh")` — was fixed in lane D2b′ at the human's word.
 
-## §7 — steering and register edits owed at close (conductor voice, once)
+## §7 — steering and register edits
 
-Per `30X` §11, plus what this arc learned: `crates/cli/CLAUDE.md` (the harness contract re-cut
-around sessions, gates-by-kind, the derived driver, the narrowest-edge invariant, the
-apply-host driving route) · `spike/CLAUDE.md` (`rul-fixture-identity-never-production`'s
-public-interfaces reading; the Safety block's "central e2e runner" sentence; the
-`flat-test-tree-and-loom-placement` shape list losing `X/X.loom` and, if converted, the dir
-shape; the Build/test/run task table) · `crates/aid/CLAUDE.md` (runner pointers; the
-`seam-tolerated-nondeterminism` spelling) · `plans/282` §2/§7 (in-place correction of the two
-superseded clauses) · `CONTRIBUTING.md` (the stale clean-worktree paragraph; the gate
-description if the runner merge changes it) · `LIVING_STATUS.md` + the `Research/README.md`
-DST topic row · `TODO-ADDTL` `why-surface-close-residue` (the migrated batteries) · from checkpoint A:
-`cli/CLAUDE.md` gains `inspection-redrives-carry-no-durable` and `rul-roots-pinned-is-a-literal`,
-its `lib-target-is-a-loom-seam` bullet is re-cut for `compose.rs` and the `Seams`/`HarnessSeams`
-shape, and the five re-pointed fences are named. From B1/B2: `rul-runner-varies-only-what-it-set`
-(the runner's per-block injection yields to any author assignment), `session-stdin-is-the-framed-stream`
-(a `--results -` block reads the framed records from the session's fd 0; the runner frames raw
-fixture records and restores them for gate-1), `block-argv-classifier-is-read-only` (classification
-hands argv to the product parser, never drives), `rul-why-lens-relativizes-under-the-load-cwd` +
-`rul-sibling-oracle-scan-reconciles-by-canonical-key` (display re-spells and identity reconciles by
-canonical key, at one seat, across the three drivers), and `receipt_state.rs` as the one state-only
-home whose header states the `30X` §3 rule (goldens in looms; state, exits, structure and relations
-in Rust; typed internal decisions stay pipeline-tier). The `run_loom`/`run_round_trip` prose in
-`cli/CLAUDE.md`'s harness section is stale in every bullet that names `run_replay_block`,
-`drive_extra_replays`, `scan_why_receipt`, `expect-why-receipt`, block-0-must-match, or the
-constant fixture clock — re-cut them around the session.
+Landed in the close batch (git carries them): `crates/cli/CLAUDE.md` (the harness section
+re-cut whole around sessions, the derived driver, gates by what a block produced, the thirteen
+keys; the composition-root law re-cut for `compose.rs` and the `Seams` bundle; the
+relativization and sibling-code bullets) · `spike/CLAUDE.md` (the Safety block's runner sentence;
+`rul-fixture-identity-never-production`'s public-interfaces reading; the shape list; the task
+table; `one-shell-answer` and `xfail-pins-ride-one-seat` re-pointed; the conductor's short-prose
+licence) · `crates/aid/CLAUDE.md` (runner pointers; the run-log normalizer's spelling) ·
+`plans/282` §2 · `plans/30P`'s pin table · `CONTRIBUTING.md` · `TODO-ADDTL` (the testing-residue
+section deleted, not replaced) · `AID-NEEDS` (the advisory's row gone; the exit-code family's
+structural ruling) · `Research/README.md` (the r12 and r30 rows). The five re-pointed fences:
+`plan/src/spine.rs`'s composition scan, two self-scans in `cli/src/compose.rs`, one in
+`cli/src/engine.rs`, and `dorc-loom/src/defect.rs`'s production-names-no-loom-authority scan.
