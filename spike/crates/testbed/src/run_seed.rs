@@ -52,7 +52,6 @@ fn drawn_seed() -> u64 {
         .wrapping_mul(0x9E37_79B9_7F4A_7C15)
         .wrapping_add(u64::from(elapsed.subsec_nanos()).wrapping_mul(0x2545_F491_4F6C_DD1D))
         .wrapping_add(u64::from(std::process::id()).wrapping_mul(0xD1B5_4A32_D192_ED03));
-    // splitmix64 finalizer, so the low bits the clock fold reads are well-spread.
     let mut z = mixed;
     z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
     z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);

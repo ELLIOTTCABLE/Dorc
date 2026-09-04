@@ -288,8 +288,7 @@ fn main() {
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
-    // The run-wide seed, printed once (`30X:seed-two-affordances`): an unpinned render reproduces
-    // under any seed, so a case that churns run-to-run has hidden nondeterminism.
+    // The run-wide seed, printed once (`30X:seed-two-affordances`); a case that churns run-to-run has hidden nondeterminism.
     let seed = dorc_testbed::run_seed::run_seed();
     eprintln!("{}", dorc_testbed::run_seed::seed_banner(seed));
     let discovered = discover_looms(&case_roots());

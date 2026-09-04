@@ -27,8 +27,7 @@ use std::path::{Path, PathBuf};
 use dorc_aid::diag::{Diag, DiagCode};
 use dorc_receipt::ids::{EntropyReceiptIds, ReceiptIdEntropy, ReceiptIdSource};
 use dorc_receipt_crypto::{EntropyKeysetGenerator, KeySecretEntropy, KeysetGenerator};
-// The seam-variable NAMES live in the shared substrate below `cli`, so a runner and the loom driver
-// reach them without a mirror (`30X:loom-seams-are-sh-lines`); this crate owns the PARSER over them.
+// The seam-variable NAMES live in the shared substrate (`30X:loom-seams-are-sh-lines`); this crate owns the PARSER over them.
 use dorc_testbed::seam_vars::{
     CLOCK_ENV, KEY_ENTROPY_ENV, NONCE_ENV, POSTURE_ENV, RECEIPT_IDS_ENV, ROOTS_ENV, SEAM_ENV_VARS,
     SEED_ENV, SOURCE_MATCH_ENV, TRANSPORT_ENV,

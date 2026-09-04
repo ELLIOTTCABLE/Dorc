@@ -715,8 +715,7 @@ impl DorcConsumer {
                 return Some(ReplayResult::bytes(String::new()));
             }
             SessionHead::Cd(target) => return replay_cd(session, &target),
-            // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`); the clock the engine
-            // reads through `session.seams()` below is this invocation's, folded from the current seed.
+            // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`); `session.seams()` below reads this invocation's.
             SessionHead::Invocation => session.env.inject_invocation_clock(),
             SessionHead::EchoStatus | SessionHead::Cat(_) => {}
         }
@@ -2197,9 +2196,7 @@ fn classify_decline(command: &str) -> LoomDecline {
                 _ => LoomDecline::Unexpressible(command.to_owned()),
             }
         }
-        // A `dorc-sh` the driver cannot run, or a `cd` that would move the cwd off the flat case
-        // root (only a root-staying `cd .` runs): both unexpressible until the sections can meet a
-        // moved cwd (`30X:front-dogfood-ceiling`), distinct from a plain shell/external head.
+        // A `dorc-sh` the driver cannot run, or a non-root `cd` (`30X:front-dogfood-ceiling`): unexpressible, distinct from a plain shell/external head.
         Some("dorc-sh" | "cd") => LoomDecline::Unexpressible(command.to_owned()),
         _ => LoomDecline::ShellOrExternal(command.to_owned()),
     }

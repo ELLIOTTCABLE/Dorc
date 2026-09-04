@@ -33,8 +33,7 @@ fn seed_count() -> u64 {
 fn end_state_equality_and_attribution_under_lies() {
     let n = seed_count();
     for i in 0..n {
-        // Offset the base from this run's seed (`30X:seed-declared-is-regression`): exploration varies
-        // run to run, and a failing `seed {s}` replays as the first trial under `DORC_SEED=<s>`.
+        // Offset the base from this run's seed (`30X:seed-declared-is-regression`); a failing `seed {s}` replays first under `DORC_SEED=<s>`.
         let s = run_seed().wrapping_add(i);
         let t = trial_for_seed(Seed(s));
 
@@ -197,8 +196,7 @@ fn every_topology_class_and_both_behaviours_are_reached() {
     let mut first_all: Option<u64> = None;
 
     for i in 0..n {
-        // Offset the base from this run's seed (`30X:seed-declared-is-regression`): exploration varies
-        // run to run, and a failing `seed {s}` replays as the first trial under `DORC_SEED=<s>`.
+        // Offset the base from this run's seed (`30X:seed-declared-is-regression`); a failing `seed {s}` replays first under `DORC_SEED=<s>`.
         let s = run_seed().wrapping_add(i);
         let t = trial_for_seed(Seed(s));
         seen.insert(t.topology);

@@ -259,8 +259,7 @@ fn the_reference_model_and_production_agree_on_every_sparing_verdict() {
     let u = Universe::new(&mut interner);
     let mut census = Census::default();
 
-    // Offset the trial base from this run's seed (`30X:seed-declared-is-regression`): exploration
-    // varies run to run, and a failing `seed {seed}` replays as the first trial under `DORC_SEED=<seed>`.
+    // Offset the trial base from this run's seed (`30X:seed-declared-is-regression`); a failing `seed {seed}` replays as the first trial under `DORC_SEED=<seed>`.
     for i in 0..TRIALS {
         let seed = run_seed().wrapping_add(i);
         let t = draw_trial(seed, &u);

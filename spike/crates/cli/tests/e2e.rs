@@ -1466,12 +1466,7 @@ fn drive_session(
     let mut script = String::from("exec 2>&1\n");
     let mut invocation_ordinal = 0;
     for cmd in commands {
-        // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`); an export/cd/echo/cat does
-        // not, so a `$ export DORC_SEED=<n>` pin line is ordinal-neutral. The injected value computes
-        // from `$DORC_SEED` at block time, so an author's `export DORC_SEED` governs it, and it
-        // applies only while it still holds the runner's own last value
-        // (`30Xa:rul-runner-varies-only-what-it-set`). The injection must NOT clobber the previous
-        // block's status a `$ echo $?` reads, so `$?` is restored from the carried shadow below.
+        // Only a `dorc` invocation ticks the clock (`30Xa:Checkpoint C3`), from `$DORC_SEED` at block time (`rul-runner-varies-only-what-it-set`); `$?` is restored below so a `$ echo $?` reads the block it follows.
         if block_argv(cmd)
             .first()
             .is_some_and(|word| matches!(word.as_str(), "dorc" | "dorc-loom" | "dorc-sh"))
@@ -1509,9 +1504,7 @@ fn drive_session(
         "PATH",
         std::env::join_paths(path_dirs).map_err(|error| format!("join session PATH: {error}"))?,
     );
-    // The seam bundle from the shared seat under this drive's seed; the clock shadow starts EQUAL to
-    // the first invocation's clock, so the first injection is a no-op unless an author has changed
-    // `$DORC_SEED` before it. The bless second-seed check drives a second time with a different seed.
+    // The seam bundle under this drive's seed; the clock shadow starts EQUAL to the first invocation's clock, so the first injection is a no-op unless an author changed `$DORC_SEED` first.
     let [_, (_, invocation0_clock), ..] = dorc_loom::runner_seams::value_seam_pairs_for(seed, 0);
     for (name, value) in dorc_loom::runner_seams::value_seam_pairs_for(seed, 0) {
         command.env(name, value);
@@ -1689,10 +1682,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     let run_seed = dorc_testbed::run_seed::run_seed();
     let captures = drive_session(harness, &dir, &session_root, &commands, &framed, run_seed)
         .map_err(|error| Failed::from(format!("FAIL  {}  [session: {error}]", spec.name)))?;
-    // Bless refuses a transcript that does not reproduce under a SECOND seed
-    // (`30X:seed-two-affordances`): re-drive under a different seed WHILE probe-results is still
-    // framed, so a pinned/deterministic case reproduces and a nondeterministic one is caught. Its own
-    // throwaway store, so a publishing block does not collide with the primary drive's receipt.
+    // Bless refuses a transcript that does not reproduce under a SECOND seed (`30X:seed-two-affordances`): re-drive under a different seed while probe-results is still framed, in its OWN store so a publishing block does not collide with the primary drive's receipt.
     let bless_recheck = if harness.bless {
         let recheck_root = scratch.path.join("recheck-store");
         for role in ["config", "state"] {
@@ -1779,8 +1769,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         }
     }
 
-    // BLESS folds the whole session back only on a clean pass (`bless-folds-only-on-pass`), and
-    // only if the transcript reproduced under the second seed (`30X:seed-two-affordances`).
+    // BLESS folds only on a clean pass (`bless-folds-only-on-pass`) that reproduced under the second seed (`30X:seed-two-affordances`).
     if harness.bless && failures.is_empty() {
         if let Some(recheck) = &bless_recheck
             && let Some(refusal) = second_seed_reproduction_refusal(&spec.name, &captures, recheck)
@@ -4122,8 +4111,7 @@ fn main() {
     if args.format.is_none() && std::env::var("DORC_E2E_QUIET").as_deref() == Ok("1") {
         args.format = Some(libtest_mimic::FormatSetting::Terse);
     }
-    // The run-wide seed, printed once (`30X:seed-two-affordances`): an unpinned render reproduces
-    // under any seed, so a case that churns run-to-run has hidden nondeterminism.
+    // The run-wide seed, printed once (`30X:seed-two-affordances`); a case that churns run-to-run has hidden nondeterminism.
     let seed = dorc_testbed::run_seed::run_seed();
     eprintln!("{}", dorc_testbed::run_seed::seed_banner(seed));
     let harness = Arc::new(Harness::resolve());

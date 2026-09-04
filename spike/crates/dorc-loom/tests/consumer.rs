@@ -756,9 +756,7 @@ fn both_replay_chains_claim_the_same_invocation_shapes() {
 fn source_backed_plan_replays_the_complete_engine_invocation_and_redirects_its_artifact() {
     // A source-backed plan runs the REAL engine in-process (`dorc-replay-is-production-semantics`):
     // book.sh's `hork "$(wombat)"` is a `cmdsub-operand-top` case, so the render carries the
-    // diagnostic on stderr and the plan artifact on stdout. `> plan.sh` captures stdout to a file
-    // (errorloom routes it), so the natural transcript keeps only stderr, and `cat plan.sh` reads
-    // the artifact back — a round trip the in-process driver expresses (`30X` §9: the set only shrinks).
+    // diagnostic on stderr and the plan artifact on stdout; `> plan.sh` captures stdout to a file and `cat plan.sh` reads it back — a round trip the in-process driver expresses (`30X` §9).
     let case = Case::parse(
         "---\ncode: cmdsub-operand-top\n---\n\
          -- book.sh --\n#!/bin/sh\nhork \"$(wombat)\"\n\n\
