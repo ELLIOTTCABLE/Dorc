@@ -1,0 +1,14 @@
+---
+arrangement: cli-apply-identities-line
+envelope: stderr
+---
+-- webhost.dorc-plan.sh --
+#!/bin/sh
+:
+
+-- hosts/web1.example.net/apply-outcome --
+status 0
+
+-- replay --
+$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
+[unwritten: cli-apply-identities-line]
