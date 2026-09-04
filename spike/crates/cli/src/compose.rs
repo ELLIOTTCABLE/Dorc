@@ -5546,4 +5546,112 @@ apt_get__is_converged() {
             "the surviving diagnostic is the Error (the never-hide floor): {kept:?}"
         );
     }
+
+    /// The post-dispatch state witness (`30X` §11 shape (c)): an apply whose OUTCOME document cannot
+    /// be written leaves the intent in the store and no outcome, so the durable failure is a genuine
+    /// integrity loss over a real publish, never a fabricated flag. Homed beside the apply core as an
+    /// in-process `ModelIo` state test rather than in `receipt_state.rs`, whose header promises tests
+    /// that cross a process boundary (conductor ruling; the completed-apply witness that DOES cross
+    /// one stands there as `the_default_apply_publishes_its_intent_then_dispatches_and_records`).
+    #[test]
+    fn an_outcome_write_failure_leaves_the_intent_and_never_the_outcome() {
+        use crate::durable::{FailureSchedule, IoFault, ModelIo, Op, Side};
+
+        struct MapEnv(BTreeMap<&'static str, &'static str>);
+        impl crate::seam::SeamEnv for MapEnv {
+            fn var(&self, name: &str) -> Option<String> {
+                self.0.get(name).map(|value| (*value).to_owned())
+            }
+        }
+        struct NoRoots;
+        impl crate::durable::RootEnvironment for NoRoots {
+            fn var(&self, _name: &str) -> Option<String> {
+                None
+            }
+        }
+        struct SilentSink;
+        impl OutputSink for SilentSink {
+            fn emit(&mut self, _event: OutputEvent) {}
+            fn flush(&mut self, _channel: OutputChannel) {}
+        }
+
+        let env = MapEnv(BTreeMap::from([
+            ("DORC_SEED", "0"),
+            ("DORC_SEAM_ROOTS", "pinned:/dorc-apply-witness"),
+        ]));
+        let seams: Seams = crate::seam::HarnessSeams::from_env(&env)
+            .expect("the pinned defaults parse")
+            .with_scripted_transport(dorc_transport::SimScript::Completes {
+                stdout: Vec::new(),
+                status: 0,
+            })
+            .into();
+        let edge = production_receipt_edge_over(&seams, None, &NoRoots)
+            .expect("the pinned synthetic root resolves");
+        let crate::Invocation::Analyze(args) = parse_args_from(vec![
+            "apply".to_owned(),
+            "--host".to_owned(),
+            "web1.example.net".to_owned(),
+            "--plan".to_owned(),
+            "plan.sh".to_owned(),
+        ])
+        .expect("a well-formed apply invocation") else {
+            panic!("apply parses to an analysis");
+        };
+        let plan = b"#!/bin/sh\n:\n";
+        let model_io = |schedule| {
+            if cfg!(windows) {
+                ModelIo::windows_shaped(schedule)
+            } else {
+                ModelIo::new(schedule, crate::durable::DirectorySync::Synchronized)
+            }
+        };
+
+        // The outcome document's own create is discovered on a throwaway intact store.
+        let mut probe = model_io(FailureSchedule::intact());
+        let _ = dispatch_and_report_apply(
+            &mut probe,
+            &edge,
+            &seams,
+            &mut SilentSink,
+            &args,
+            plan,
+            "web1.example.net",
+        );
+        let outcome_create = probe
+            .schedule()
+            .arrivals()
+            .iter()
+            .filter(|(op, side)| *op == Op::CreateFileExclusive && *side == Side::Before)
+            .count()
+            .checked_sub(1)
+            .expect("an apply creates its receipt documents");
+
+        // Re-drive with the outcome's create faulted: the intent's earlier create still succeeds.
+        let mut store = model_io(FailureSchedule::faulting_occurrence(
+            Op::CreateFileExclusive,
+            Side::Before,
+            outcome_create,
+            IoFault::Denied,
+        ));
+        let _ = dispatch_and_report_apply(
+            &mut store,
+            &edge,
+            &seams,
+            &mut SilentSink,
+            &args,
+            plan,
+            "web1.example.net",
+        );
+
+        let paths = store.paths();
+        assert!(
+            paths.iter().any(|path| path.contains("apply-intent")),
+            "the published intent survives the outcome write failure: {paths:?}"
+        );
+        assert!(
+            !paths.iter().any(|path| path.contains("apply-outcome")),
+            "the outcome was NOT recorded — the integrity loss is real, not a flag: {paths:?}"
+        );
+    }
 }
