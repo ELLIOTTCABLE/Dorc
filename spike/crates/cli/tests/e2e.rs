@@ -1183,15 +1183,13 @@ impl RoundTripInputs {
     }
 }
 
-/// The plan/apply flags a session's `$ dorc` line carries beyond the head, the book, the glob-sorted
-/// `--pre-source` oracles, the results stream, and `--artifact-dir` — everything [`shared_args`] adds
-/// for itself, so a flag here is one the case genuinely declared (`--risk-faultless-skips` and its
-/// kind).
+/// The plan/apply flags a session's `$ dorc` line carries beyond the head, the bare MODE word, the
+/// book, the glob-sorted `--pre-source` oracles, the results stream, and `--artifact-dir` —
+/// everything [`shared_args`] and the round-trip drive supply for themselves, so a flag here is one
+/// the case genuinely declared (`--risk-faultless-skips` and its kind).
 fn extra_flags(argv: &[String]) -> Vec<String> {
     let mut flags = Vec::new();
-    let mut idx = 1; // skip the `dorc` head
-    // A bare word right after `dorc` is the MODE (`plan`/`apply`), which the round-trip drive
-    // supplies for itself — never a flag.
+    let mut idx = 1;
     if argv.get(idx).is_some_and(|word| !word.starts_with('-')) {
         idx += 1;
     }
@@ -1321,9 +1319,7 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
         std::fs::write(into.join(name), body).map_err(|error| format!("{error}"))
     };
     if spec.run == LoomRun::Lint {
-        // A lint case stays single-invocation until D2b's fold: `run_lint` reads the flags from `cmd`
-        // and the expected exit from the session's own `$ echo $?` block (the exit respell —
-        // `30X:loom-frontmatter-is-registry-metadata-only`).
+        // Single-invocation until D2b's fold: the flags from `cmd`, the exit from the `$ echo $?` block.
         write("cmd", format!("{}\n", lint_flags(spec)?))?;
         write("expected-rc", format!("{}\n", echoed_exit(&spec.case)))?;
     }
