@@ -1,0 +1,15 @@
+---
+code: apply-outcome-unwritten
+when-fires: a `dorc apply --host` published its intent and touched the machine, then could not record its outcome. cli/compose.rs dispatch_and_report_apply, over cli/apply.rs consented_apply's post-dispatch outcome publication. {intent} is the surviving intent id the user keeps for a later `dorc why`; {step} is the closed word for which durable act of recording the outcome did not close.
+why: AID-NEEDS:law-codes-vary-by-world-not-grammar. A SIBLING of durable-receipt-unwritten, not a reason arm widening it: that is the plan-time world where nothing was touched and the repair is to re-plan; this is the post-dispatch world where the intent WAS published, the machine MAY have changed, and the repair is to check the host and keep the intent id. 30X section 11 (the post-dispatch surfaces); 30Rs fix-apply-durable-reporting. Remediation register (help) wanted.
+---
+-- webhost.dorc-plan.sh --
+#!/bin/sh
+:
+
+-- edge-fault --
+apply-outcome
+
+-- replay --
+$ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
+apply: error[apply-outcome-unwritten]: [unwritten: apply-outcome-unwritten]
