@@ -510,15 +510,6 @@ pub const CATALOG: &[CatalogEntry] = &[
         help: HelpRegister::Absent,
     },
     CatalogEntry {
-        slug: "aid-unloaded-sibling-oracle",
-        when_fires: "the cli-edge scan found `*.oracle.sh` files on disk beside the loaded oracles (or the book) that were NOT loaded this run. cli emit_unloaded_sibling_oracles.",
-        why: "24H ack-6 (suggest, never auto-load): a likely-forgotten oracle is a common cause of a wall that a present-but-unloaded oracle would lift; the run is unchanged (advisory Note). The hole is typed: `{oracles}` is the sorted unloaded-sibling list, joined by the cli.",
-        params: &["oracles"],
-        example: "sibling oracle files exist on disk but were not loaded: `redis.oracle.sh`",
-        message: Some(ProseTier::Slop("sibling oracle files exist on disk but were not loaded: {{oracles}}")),
-        help: HelpRegister::Written(ProseTier::Slop("load them with `--pre-source <file>` (or point `--oracle-dir` at their directory); dorc never loads an oracle you did not name")),
-    },
-    CatalogEntry {
         slug: "authored-decline-class",
         when_fires: "a verdict arm carries a report-sink emission whose `<verb> <class>` header WAS readable statically. lint/source_oracle_solo.rs, tier-1 inventory. `{class}` is the read class token.",
         why: "27W decline-class-emission - classing a decline is enhancement, and the inventory is how an author sees what they classed. Advisory only, never gates; the license plane never reads a class.",
