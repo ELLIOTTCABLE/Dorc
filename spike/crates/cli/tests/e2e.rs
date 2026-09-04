@@ -6,12 +6,14 @@
 //!
 //! Every gate below is the sh harness's, moved verbatim in behaviour: the `dash -n`
 //! runnability floor, exec-under-inert-mocks with `PATH=<case>/mocks` only, the ordered
-//! run-set compare, gate-1(a)–(d) on the executed probe, the
-//! gate-2 redirect scan, the gate-3 stderr-severity floor, gate-5's argv-echo
-//! differential, gate-6's dual-rail license judge, gate-7/gate-hint/gate-8 needles, the
-//! guard-shape floor, the XFAIL/XPASS lens and its two-sided `head-expected.ran` pin,
-//! and BLESS. The per-gate rationale lives in `crates/cli/CLAUDE.md`'s harness contract
-//! and in each gate's doc comment here; the sh source is git history.
+//! run-set compare, gate-1(a)–(d) on the executed probe, the gate-2 redirect scan, gate-5's
+//! argv-echo differential, gate-6's dual-rail license judge, gate-9's two-binary floor
+//! differential, the guard-shape floor, the loom XFAIL/XPASS lens (a `xfail:` pin's structural
+//! gates tolerated-and-reported while the transcript stays enforced), and BLESS. A loom's
+//! diagnostic assertions ride its session transcript compare and `defined_code_fired`, so the
+//! dir-form needle scans (gate-3/7/hint/8) and the `head-expected.ran` pin retired with the dir
+//! path. The per-gate rationale lives in `crates/cli/CLAUDE.md`'s harness contract and in each
+//! gate's doc comment here; the sh source is git history.
 //!
 //! DELIBERATE DEVIATIONS from the sh original, all noted at their site:
 //! - the `env -i` scrub is `Command::env_clear`, and `umask 022` rides an
