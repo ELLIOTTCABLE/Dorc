@@ -67,10 +67,6 @@ _DL_NL='
 . "${0%/*}/.log"; _dorc_logged "$@"
 exit 0
 
--- expected.ran --
-ran: apt-get install -y nginx
-ran: apt-get install -y curl
-
 -- replay --
 $ dorc --book=book.sh --pre-source package.oracle.sh --results - < probe-results.txt
 parse: error[syntax-unsupported]: `eval` executes constructed code

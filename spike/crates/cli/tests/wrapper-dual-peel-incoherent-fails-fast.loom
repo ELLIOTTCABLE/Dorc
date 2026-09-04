@@ -56,9 +56,6 @@ _DL_NL='
 . "${0%/*}/.log"; _dorc_logged "$@"
 exit 0
 
--- expected.ran --
-ran: hork setup
-
 -- replay --
 $ dorc --book=book.sh --pre-source w.oracle.sh --results - < probe-results.txt
 wrapper: error[wrapper-peel-incoherent]: Wrapper `w`'s `__predict` and
