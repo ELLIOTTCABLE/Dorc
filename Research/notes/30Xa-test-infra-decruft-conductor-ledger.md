@@ -317,6 +317,17 @@ Built: `ShellDecline::RuntimeObjectBlock` for `dorc-sh` heads (census: both 139 
 | `ask-apply-uses-plan-flag-not-positional` | ACCEPT (`--plan`); the brief's spelling was wrong. | — |
 | the collapse unstarted | ACCEPT; re-homed into D2a with the dir-case conversion, the same converter family. | — |
 
+### Checkpoint D2a (`68ccaa41`; both legs green except the two D2b reds; the builder stopped cleanly before the dir-case conversion with a grounded map)
+
+Built: `RoundTripInputs` (shape B) with a `from_session` filler (flags and `--artifact-dir` from the artifact-producing block's argv through the session grammar; `probe-results`/`tolerate` from the surviving frontmatter; dual-rail derived from the book's own multiline argv; the exit from `$ echo $?`) and a `from_markers` filler the conversion deletes; the frontmatter collapse — 110 looms respelled by a throwaway converter (`flags`/`why-addr`/`artifact-set` were already on the session line; `dual-rail` and the four `expect-*` keys dropped, with a new runner check `transcript_slugs_are_catalog` validating every transcript diagnostic header against the catalog; `exit` → six `$ echo $?` blocks, the only rendered additions); `FRONTMATTER_KEYS` one list, `run_lane`/`is_run_lane_key`/`defining_form_refusal` gone. Rulings taken at the scouting stop: `rul-xfail-is-a-registry-keyed-key` (a twelfth key `xfail: <pin-slug>`, the pin registered in the one xfail registry; structural gates tolerated and reported, the transcript ENFORCED, XPASS loud — "a loom is never XFAIL" inverts under "no legacy e2e"); converted transcripts are BOTH streams via a scoped bless with two one-time checks that die with the converter (the blessed stdout projection equals the former `expected.out` byte for byte; every retired `expected-*` needle appears in the blessed stderr).
+
+| item | ruling | the conductor's own mistake, named |
+|---|---|---|
+| `tc-apply-exit-has-no-session-spelling` — `apply-exit` is the exec rail's expected exit for the rendered apply under mocks, a runner-only execution no session line can spell; the builder dropped the loom-side assertion (one non-zero case) | REVERSED: `apply-exit` SURVIVES (default 0) — a case-level declaration about the exec rail's world, by `rul-survivors-are-the-criterion-not-the-count`; the exec_check rc assertion is restored for looms. THIRTEEN keys. D2a′. | the survivor ruling enumerated eleven from the mapping's blind spots and missed this one. |
+| `dev-dual-rail-derived-from-book-quotes` (a multiline quoted string opens the rail; no escaped-quote handling) | ACCEPT: a fooled trigger loses a check, never fails falsely; noted. | — |
+| `dev-eleven-not-twelve` (`xfail` joins with its lens and cases in the conversion) · `dev-binder-assert-deleted-not-swapped` · `dev-from-session-lands-in-deliverable-2` | fine. | — |
+| deliverable 3 unstarted at ~660k | ACCEPT; D2a′ from the map, a fresh builder. | — |
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
