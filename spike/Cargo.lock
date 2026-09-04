@@ -553,7 +553,6 @@ dependencies = [
  "dorc-aid",
  "dorc-core",
  "dorc-syntax",
- "internal-tooling",
 ]
 
 [[package]]
