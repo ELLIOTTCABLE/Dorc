@@ -39,7 +39,7 @@
 mod sandbox;
 mod support;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -1635,11 +1635,9 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     if commands
         .iter()
         .any(|command| block_produces_artifacts(command))
+        && let Err(failed) = run_round_trip(harness, &spec.name, &dir, &inputs, &mut String::new())
     {
-        if let Err(failed) = run_round_trip(harness, &spec.name, &dir, &inputs, &mut String::new())
-        {
-            structural.push(failed.message().unwrap_or_default().to_owned());
-        }
+        structural.push(failed.message().unwrap_or_default().to_owned());
     }
 
     // The `code:` assertion (`30X:loom-transcript-is-what-the-user-saw`): over the merged output, so
@@ -3329,19 +3327,18 @@ fn case_shape_selftest() -> Vec<String> {
             std::fs::write(dir.join(file), "").expect("write specimen file");
         }
     }
-    let kinds: BTreeMap<String, E2eKind> = discover_e2e(&[root])
-        .into_iter()
-        .map(|case| (case.name, case.kind))
-        .collect();
-    // `book.sh` + anything else is an authoring error the walk mints a red trial for; `book.sh`
+    // `book.sh` + anything else is the one authoring error the walk still classifies; `book.sh`
     // ALONE is a real-tools fixture the walk SKIPS (the real-tools trials own it by path).
-    let missing = kinds.get("shape-missing-out").copied();
-    if missing != Some(E2eKind::MissingExpectedOut) {
-        fails.push(format!(
-            "cs-shape-missing-out (want MissingExpectedOut, got {missing:?})"
+    let classified: BTreeSet<String> = discover_e2e(&[root])
+        .into_iter()
+        .map(|case| case.name)
+        .collect();
+    if !classified.contains("shape-missing-out") {
+        fails.push(String::from(
+            "cs-shape-missing-out (a `book.sh`-plus-extra dir must classify as a case)",
         ));
     }
-    if kinds.contains_key("shape-real-tools") {
+    if classified.contains("shape-real-tools") {
         fails.push(String::from(
             "cs-shape-real-tools (a `book.sh`-alone dir must be skipped, never a corpus case)",
         ));
