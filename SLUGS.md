@@ -1125,7 +1125,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 260:dec-26-hosts-spelling
 - defined: Research/plans/260-round26-multihost-plan.md:628 — — hosts are invocation-plane only (`-H` + `--hosts FILE`,
-- cited: 26Lb 26Ob (2)
+- cited: 26Lb 26Ob (3)
 
 ## 260:dec-26-liveness-tier
 - defined: Research/plans/260-round26-multihost-plan.md:609 — — v1 "live plan" = per-HOST arrival granularity (plans print as
@@ -1973,6 +1973,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 251:felt-when-it-fires
 - defined: Research/notes/251-fieldtrial-slurp-synthesis.md:281 — (n=1, weak, held loosely): the line that vanished past a wall — did it
 - cited: 252 (1)
+
+## fence-capabilities-are-engine-vocabulary
+- defined: —
+- cited: 26N 26Ob (2)
 
 ## fence-capture-never-feeds-closure-pass
 - defined: —
@@ -4318,7 +4322,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## never-derive-separation
 - defined: Research/notes/277-entity-algebra-design.md:470 — (`272` §4): derivation yields keying, never separation;
 - defined: spike/CLAUDE.md:205 — (`272` §4) — derivation yields *keying*, never
-- cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S Research/notes/27x-strawmen-topology/README core/CLAUDE (25)
+- cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S Research/notes/27x-strawmen-topology/README core/CLAUDE (27)
 
 ## spike/CLAUDE:never-filter-a-task
 - defined: spike/CLAUDE.md:1082 — — if a task is too loud, run its `-quiet` variant; if it has
@@ -4544,7 +4548,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## park-re-parse-carve-explainer
 - defined: —
-- cited: 26N 26Ob (3)
+- cited: 26N 26Ob (4)
 
 ## 30P:parse-never-fails-on-floor-text
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:596
@@ -5262,7 +5266,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## res-incarnation-correlation-door
 - defined: —
-- cited: 28Q 28R 28Re 28Rf ROADMAP (6)
+- cited: 26Ob 28Q 28R 28Re 28Rf ROADMAP (9)
 
 ## 28P:res-instrument-lanes-stay-ambient
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:271
@@ -5886,7 +5890,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dimension-owned-compose-ops
 - defined: —
-- cited: 26O 27C 27D (4)
+- cited: 26O 26Ob 27C 27D (5)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6455,7 +6459,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-no-hopeful-transfer
 - defined: spike/CLAUDE.md:420 — (human-typed 2026-09-04) — NO admin data transits any
-- cited: 26Ob (6)
+- cited: 26Ob (7)
 
 ## rul-no-mutating-guards
 - defined: Research/plans/271-block-settle-rulings-ledger.md:146 — (task 10b; 2026-07-10; TYPED, emphatic)
@@ -6614,7 +6618,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-probe-writes-only-what-it-owns
 - defined: spike/CLAUDE.md:183 — — controller-generated probe plumbing may
-- cited: 26N 26O 30Ne 30T (4)
+- cited: 26N 26O 26Ob 30Ne 30T (6)
 
 ## rul-promote-is-one-atomic-act
 - defined: —
@@ -8361,7 +8365,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:top-identifies-with-nothing
 - defined: spike/CLAUDE.md:247 — — ⊤ identifies with nothing, including itself;
-- cited: 27G 300 300a 300e (4)
+- cited: 26Ob 27G 300 300a 300e (5)
 
 ## analysis/CLAUDE:top-licenses-nothing
 - defined: spike/crates/analysis/CLAUDE.md:135 — (rider 1; `28O:res-polyfill-binding-tops-pending-fold`) —
@@ -8631,7 +8635,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## watch-dependent-chain-scheduling
 - defined: —
-- cited: 26B 26C (3)
+- cited: 26B 26C 26Ob (4)
 
 ## watch-kfacts-substrate-lean
 - defined: —

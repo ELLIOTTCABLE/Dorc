@@ -214,6 +214,45 @@ human's table, sized and dated, is `6-tier-two-work-units`.
   behind an upfront, consumed opt-in of the posture kind (`lean-cohort-defaults-posture`
   material); never by default. The division stays careful and alive and is never crossed
   without consuming the opt-in.
+- `ack-target-not-machine` [TYPED 2026-09-04] — "machine" is past the bounds of any
+  sane, could-be-assumed-by-everybody barrier; the noun is TARGET. Every "is or is not
+  the same target" carries a rider: to which category of admin is THIS the definition
+  under which "Dorc will keep probing and applying to the same target for you" is what
+  they expect. Sameness is a cohort-declared expectation, never a fact about hardware
+  (the liquid-nitrogen RAM transplant is the test case).
+- `nack-disk-stamp-is-e-stop-only` [TYPED 2026-09-04] — a Dorc-minted identifier
+  written into the target's scratch is weak for anything but an emergency stop: trace
+  any `Must`-disjoint that licenses or causes a mutation and a broken target has been
+  handed authorization. It licenses NOTHING in either direction (no `same`, no
+  `disjoint`); a mismatch may stop an apply; a match affirms nothing. The first draft's
+  "mismatch is strong evidence" is withdrawn.
+- `ack-witnesses-verify-intent-only` [TYPED 2026-09-04] — every identity mechanism has
+  exactly one job: VERIFYING DORC'S MODEL OF USER INTENT, because Dorc cannot ask. If the
+  book wanted the target cycled between two lines but kept its address, the witness is
+  what detects that and dispatches the correct sureness into the lattice. Never a guess
+  about intent; never (in this sitting) security reasoning.
+- `req-terminology-as-policy-against-platform` [TYPED 2026-09-04] — when a term is
+  made precise, define it as a UNION of the general policy (what is conceptually applied
+  to any weird target to decide how to treat, test, and promise about it; the yardstick
+  for our own success) against how a user sees what was decided on a common platform
+  (init's lifetime on Linux; a RAM-resident process on a machine). About twenty percent
+  more general than "the OS instance"; not over-generalised beyond that.
+- `ack-rich-internals-keyed-by-the-matrix` [TYPED 2026-09-04] — the internal
+  representation stays RICH: values are keyed by, and decisions made from, the full
+  identity matrix (`10e`), because cohort defaults or flags may request a different
+  analysis, and because it provides a fallback promise for the worst cases
+  (a bundle dropped into a sibling tool's generated script; Dorc-as-child). The pin
+  (`10f`) is the default promise and the row the public word "target" binds to, never the
+  internal key.
+- `ack-the-target-pin-provisional` [ACKED provisionally, "I think I mostly ack this",
+  2026-09-04] — the pin of `10f` (a target is one continuous period of existence of the
+  entered thing) is accepted as the working core concept; its NAME is unchosen
+  (`prop-tenure-as-the-name`); the human reserves the right to reject it in favour of
+  front-loading the whole comparison matrix if the ops world proves too shattered.
+- `req-ledger-becomes-design-docs` [TYPED 2026-09-04] — this ledger will have to turn
+  into design documents: rewrites or updates where a design changed, and a new one where
+  the material is simply new. Which is which is not yet known; `13-design-doc-destination-candidates`
+  enumerates the candidates so the next sitting starts there.
 - `lean-cohort-defaults-posture` [LEAN, human, not ruled] — the sitting is walling off
   oceans of day-one value, correctly; this will badly want a one-time posture setting
   (`--hardened` versus a homelab-nice bundle, the security-posture setting `26O` names
@@ -277,6 +316,26 @@ human's table, sized and dated, is `6-tier-two-work-units`.
   the entry-form rule; do not weld it. Request/response channels consume the guest
   elsewhere and inline it; the general law is "the entry body consumes the guest exactly
   once and the fidelity claim says what evaluates it".
+- `prop-target-is-one-tenure` [PROPOSED; provisionally acked as the concept,
+  `ack-the-target-pin-provisional`] — the pinned meaning of "a target" for docs and
+  promises: one continuous period during which the entered thing exists and runs,
+  between the events its kind's owner declares as its beginning and its end; identity is
+  continuity of existence, witnessed live, never a name and never a disk. Full statement,
+  consequences, and the case against: `10f`.
+- `prop-tenure-as-the-name` [PROPOSED; name unchosen] — the ops community has no term
+  of art for exactly this. Distributed systems uses INCARNATION for precisely "one
+  lifetime of a re-creatable process, disambiguated from its predecessors" (SWIM
+  incarnation numbers; TCP connection incarnations, `28Q`'s source; Erlang distribution's
+  node "creation"); no PLT collision is known to the conductor (PLT has activation and
+  instantiation), but the corpus already uses "incarnation" for the broader LINEAGE
+  relation and the human wants a word that can never be confused. Every obvious word
+  collides with something of ours (session, instance, run, spell, sitting, generation,
+  epoch, era, boot). Candidates that collide with nothing in ops, PLT, distsys, or this
+  corpus: **`tenure`** (conductor's lean: "within one tenure", "a tenure boundary",
+  "tenure-keyed cells" replacing "boot-keyed", "a tenure witness") · `stint` (shorter,
+  more casual). If `tenure` is taken, `incarnation` stays the corpus-internal name for
+  the lineage relation (`28Q:res-incarnation-correlation-door`: which prior tenure a new
+  one continues), and "boot" leaves the public vocabulary.
 - `prop-plan-is-a-two-world-file` [PROPOSED; restates `26N:nack-ship-both-forms`] — the
   reviewed artifact is the whole controller-side plan; the head describes and drives the
   shipping; the shipped bytes are exactly the lines below the head. Headless forms
@@ -373,6 +432,20 @@ gates · the conductor's lean · size of the ruling.
   attributed) but it touches the compare chokepoint's generator list. Lean: the shape
   above; which assumptions are in the bundle is a user-story question (W-C). Size:
   small ruling, medium design. Rides W-B/W-C.
+- **`q10-the-target-pin-and-its-name`** — ratify `prop-target-is-one-tenure` and choose
+  the name (`prop-tenure-as-the-name`). Kernel: YES — the world coordinate's identity
+  semantics (`10b`'s per-index relation for the tenure kind), the Boot index-kind of
+  `30W` §1 renamed and generalised to the tenure of any entered kind, the continuity
+  relation (`28Q:res-incarnation-correlation-door`) becoming a DECLARED generator that
+  disk- and hardware-class reads feed, and `260` §5's host-key continuity re-read as a
+  continuity witness rather than an identity. Size: small ruling, medium threading;
+  rides W-2.
+- **`q11-compare-laws-over-worlds`** — the three asks in `10b`
+  (`ask-placeholder-per-entry-chain` · `ask-store-trichotomy-composes-compare` ·
+  `ask-names-never-separate`). Kernel: YES, and minispec-tracked (`28Q` §7: any stage
+  that moves compare semantics lands there first). Size: small rulings; the build is
+  the retrofit-hostile one. Rides W-2; the conductor's read is that the third is already
+  implied by `never-derive-separation`.
 
 ## 6-tier-two-work-units
 
@@ -383,7 +456,7 @@ What is on the human's table, and when. Under `lean-punt-transport-to-its-own-ro
 |---|---|---|---|---|
 | **W-0 mint the transport round** | ack the punt; name the round; move the candidates in `11-r31-re-homing-candidates`; leave r31 the kernel-critical residue | one ack plus a `ROADMAP`/`310` edit | before r31 opens | r31's shape |
 | **W-1 Tier-1 small rulings** | `q1`, `q5`, `q6` typed; `q4` dissolves with `q2` | one short sitting | at the transport round's open | its Host-entry unit |
-| **W-2 the `30W` §10 sitting, widened by `q3`** | the six `30W` rulings plus `10-q3-and-entailments` | one large sitting | before any context-slot product build (r31 or the transport round) | the re-key |
+| **W-2 the `30W` §10 sitting, widened by `q3`, `q8`, `q10`, `q11`** | the six `30W` rulings plus `10-q3-and-entailments` whole: the pin and its name, the compare laws over worlds, the entered-kind forking, Host un-blessing | one large sitting, possibly two | before any context-slot product build (r31 or the transport round) | the re-key |
 | **W-3 the argv-landing tracer model** | `lean-replace-wrapper-detection-with-argv-landing` ruled or nacked; `q2` under it; `$*`/IFS | one short sitting, then lane 1 | before lane 1's tracer work touches wrappers | r31 lane 1's wrapper-adjacent units |
 | **W-A the synthetic head** | the head grammar per route; the line-budget fence as the one exception to `27C:route-conditional-tail`'s NACK; the head's reason annotation and `dorc why` address; headless faces stay requested forms; `nack-ship-both-forms` restated; fusion boundaries at reingest | one medium sitting | before a plan head is emitted (transport round) | plan emission there |
 | **W-B editable transport lines** | `defer-host-identity-mismatch-posture` (yours); edited flags versus refag (the measured-standup floor); the `30W` witness becomes load-bearing | your thought, then a short sitting | before the head is admin-editable | nothing before that |
@@ -392,7 +465,7 @@ What is on the human's table, and when. Under `lean-punt-transport-to-its-own-ro
 | **W-E the security review's inputs** | outer scratch holds the inner stream; security-floor flags move to stdlib; `q7`; `q6`'s forged-frame cell; edited destination; hostile inner host; the fused-session protocol if W-M rules it | the review's | after the core plan, before threading (human-typed order) | threading this note |
 | **W-F transport-tier mechanics** | probe-artifact flatness versus nesting; inbound armouring per link; bastion as two entries; nested retry origin; pacing per destination; the `30X` entry-chain seam column | builder-tier with small conductor rulings | at the delivery build; return to LAST | nothing |
 | **W-G stdlib prerequisites** | the ssh oracle (entry, lend_map, fidelity) and cp/cmp, small and focused; `prop-entry-forms-only-subtract-interactivity` as an authoring rule; `park-oracle-value-manipulation`; `park-oracles-knowing-stdin` | authoring, mostly | before hand-authoring the trial oracles | `arc-block-stdlib` |
-| **W-M the M:N channel topology** | `10-q3-and-entailments` third hard thing: the batching key; the transit schedule (CFG-with-transits → CFG-with-sync-points); the apply-side fork (engine-emitted lines only · an admin opt-in spelling · probe-only) which reopens `26M`'s tabled apply-side transport in a narrow form; nesting, shell concurrency, reach failures | one large sitting | the transport round, after W-2 | that round's executor-shaped work |
+| **W-M the M:N channel topology** | `10d`: the batching key; the transit schedule (CFG-with-transits → CFG-with-sync-points); the apply-side fork (engine-emitted lines only · an admin opt-in spelling · probe-only) which reopens `26M`'s tabled apply-side transport in a narrow form; the executor as the portable tenure witness and the sibling rendezvous (`10e`); nesting, shell concurrency, reach failures | one large sitting | the transport round, after W-2 | that round's executor-shaped work |
 
 Reading the table: if the punt is acked, r31 needs W-0 and W-3 (short) and keeps its
 non-transport lanes; W-2 and W-M are the transport round's first two sittings; W-A, W-B,
@@ -657,6 +730,60 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   relation's own grade (a measured identity is an observation; its "sameness" rests on
   the owner's referent-transparency declaration) is vouch-tier for transport, as `30W` §2
   already has it.
+- `res-measured-index-value-is-a-placeholder-per-entry-chain` [PROPOSED; the one
+  genuinely new object] — a context is a finite map from index-kinds to index-values; an
+  absent kind means the caller's value (the identity element,
+  `27C:rul-dimension-owned-compose-ops`); the empty map is the ambient world. An
+  index-value has one of three provenances: ENTERED (a literal that flowed through a
+  `lend_map`: `user=root`, `host=web1` as a name); MEASURED (a value the kind owner's
+  identity read binds at intake, which the analysis holds as a placeholder until the
+  standup answers); FRESH (⊤, nothing lent and nothing measurable). The placeholder is
+  `sk(E, K)`: "the value of index-kind K under entry chain E", E being the syntactic
+  entry chain (spelling after the peel, vantage, resolution unwalled across the span).
+  Two sites under one E share one placeholder BEFORE anything is measured — an
+  existential instantiation, a Skolem constant: the value is unknown, but there is one,
+  and both sites see it. That is what lets analysis key the sites together, plan one
+  standup, and let an establish at line 3 reach line 9 pre-network. After the standup
+  binds `sk(E, K)` to a measured token, different chains' placeholders compare by token.
+- `res-per-index-relation-table` [PROPOSED] — `rel_K(v1, v2)` per index-kind K:
+  both absent → `same` · one absent, one present → `unknown` · both entered names →
+  `same` iff names equal AND vantages equal AND the name's resolution cell is unwalled
+  between the sites, else `unknown`, NEVER `disjoint` (names are names, `30W` §1) · both
+  placeholders → `same` iff the same `sk(E, K)`; both bound → `same` iff tokens equal
+  and the kind is declared referent-transparent, `disjoint` iff tokens differ and the
+  kind is referent-transparent, else `unknown`; an unbound placeholder against anything
+  else → `unknown` · ⊤ against anything, itself included → `unknown`
+  (`top-identifies-with-nothing`).
+- `res-cell-level-relation-is-the-filtered-meet` [PROPOSED] — for cell-kind C at
+  contexts c1 and c2: for each index-kind K present in either, consult C's owner's
+  store declaration against K (`30W` §4's trichotomy): INVARIANT across K → K is
+  irrelevant to this cell, skip it (a volume mounted on two targets stays one referent);
+  KEYED by K → take `rel_K`; ⊤ (owner silent) → `unknown`. Then meet across the relevant
+  kinds: `same` iff every relevant K is `same`; `disjoint` iff any relevant K is
+  `disjoint`; else `unknown`. Consumers unchanged: transport wants `same`; sparing wants
+  `disjoint` under the flag; `unknown` is safe for both; any unknown member collides.
+- `res-two-identity-tiers-map-onto-two-dispositions` [PROPOSED; closes the soundness
+  worry about the placeholder tier] — an analysis-time `same` between two sites under
+  one entry chain licenses transport, and transport feeds elision at the later site. That
+  is enough exactly where `ack-guards-reach-elisions-witness` already confines elision:
+  a Dorc-owned transit runs both sites in one session (same target by construction) and
+  the CLI target's head runs under a witness that re-measures at apply. At an admin's
+  bare transit line elision is withheld regardless (guard ceiling) and a guard measures
+  in place, so transport there is moot. The syntactic tier licenses nothing the witness
+  or the single session does not stand behind.
+- `ask-placeholder-per-entry-chain` · `ask-store-trichotomy-composes-compare` ·
+  `ask-names-never-separate` — the three typed acks W-2 needs to cut the re-key
+  (`q11`). The conductor's read: the third is already implied by
+  `never-derive-separation` and only needs restating over the world coordinate.
+- `bld-consequences-for-the-re-key` — the compare chokepoint consults the store
+  trichotomy per index-kind and never key equality; the settle and wall seats compute
+  kill-traffic ACROSS worlds with the world relation per pair (a mutation at
+  `ssh 10.0.0.5 …` walls a fact measured at `ssh host1 …` unless their measured
+  identities differ); fact keys are minted with placeholders and resolved before
+  settlement, which is the reactive-era shape (`26C` item 3, host-captured values
+  entering the value plane) arriving one round early in its single-shot form; `30S`'s
+  ρ-fold must be world-scoped (an `export` on the controller never fences a remote
+  world's facts, since env does not cross `ssh`) — the context-slot audit records it.
 
 ### 10c-what-host-identity-is
 
@@ -770,6 +897,159 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   apply-side fork: without a Dorc-owned far side there is no witness, so the admin
   opt-in spelling (ii) is what buys elision past admin transits at all.
 
+### 10e-witness-inventory-and-identity-classes
+
+Every way a target can say "I'm me", classed by WHERE the identity lives; each class is
+one cohort's meaning of "same target" and carries its own horizon. Nothing lives outside
+these four, which is why the hunt for an identity independent of disks and names ended at
+"running RAM space".
+
+| class | generators | what `same` means | horizon | cohort whose word it is |
+|---|---|---|---|---|
+| RAM-resident | the executor nonce (`res-executor-nonce-is-a-tenure-witness`); the kernel's per-boot identity; a held session; the sibling rendezvous (`ipc-kernel-local-rendezvous-with-challenge`) | same continuously-running instance | a snapshot restored twice (one RAM image, two instances) | the VM operator; the container operator; the homelabber, until a reboot |
+| hardware-bound | a TPM; a DMI serial | same box | migration; virtual TPMs | bare-metal ops |
+| disk-resident | the machine identity file; ssh host keys | same install | cloning | the image-and-fleet cohort |
+| name-resident | hostname; address; the spelling | same name | renumbering; split horizon; NAT reuse | the homelabber's default expectation |
+
+- `res-executor-nonce-is-a-tenure-witness` [PROPOSED] — a short-lived receiver
+  process that outlives a tunnel drop and accepts the next tunnel, holding a
+  controller-minted nonce in memory and by design never writing it, establishes on
+  answering: the process that received the nonce is the process answering, so the far
+  end is one continuous instance since the probe, across the drop. That is `same` on the
+  tenure axis and only that axis — nothing about disk (swappable under a running
+  kernel), addresses (renumbered under it), or the box (migrated under it). Presence
+  affirms `same` for tenure-keyed cells (the owner's `: process` stores, tmpfs,
+  `Service@active`); absence is `unknown` for every axis, since a missing executor cannot
+  distinguish "same target, restarted" from "different target" from "the executor died".
+  Asymmetric and honest; presence is NOT weak the way the disk stamp's is, because RAM is
+  not multiply-mounted. It is the kernel's per-boot identity re-derived portably (same
+  class, same strength, same snapshot horizon) at the price of a resident process across
+  the consent gap plus a rendezvous; its lifetime is a natural plan-validity window (when
+  it dies, tenure-keyed elisions honestly demote). It is the same object the M:N topology
+  needs (wait with the line open for the next command), so it is one more job for the
+  `kCOMMS` executor pole with a bounded lifetime inside the agentless weld's spirit —
+  never a durable agent. For containers it is the ONLY portable tenure witness, since the
+  kernel's per-boot identity is kernel-wide and shared by every container on a host.
+- `nack-disk-stamp-is-e-stop-only` — see `2-rulings-and-acks-taken`; a Dorc-written
+  identifier in the target's scratch is a brake, never a generator; presence is defeated
+  by a shared mount, absence by a cleaned or volatile filesystem; and it costs a
+  resident file across the consent gap (softening `SIBLINGS`' "leaves nothing resident"),
+  residue from abandoned plans that `rul-probe-writes-only-what-it-owns` forbids this
+  run from reaping, and a receipt-contents change.
+- `ipc-kernel-local-rendezvous-with-challenge` [PROPOSED] — for concurrent siblings
+  within one run: sibling A listens on a UNIX-domain socket (or a FIFO) inside its own
+  owned scratch; sibling B, arriving on its own tunnel, connects at the controller-literal
+  path and asks A to answer with the nonce the controller shipped to A. Success proves B
+  is on the same kernel as A. Resistant to sane-world target-splitting structurally:
+  sockets and FIFOs are kernel objects, not file contents, so on a shared or
+  multiply-mounted scratch the file appears elsewhere but a connect from there fails
+  (+SURE for sockets; ~SUSPECT for FIFOs); a round-robin or twin-estates sibling that
+  landed elsewhere finds no listener and fails safe; a stale socket file fails safe. On
+  Linux the abstract socket namespace keys by network namespace instead of by path.
+  Refag holds: this is knowledge about Dorc's own scaffolding's environment
+  (`26N:fence-capabilities-are-engine-vocabulary`), measured by the attempt.
+- `ipc-the-only-payload-is-identity` [PROPOSED] — nothing else crosses between
+  siblings: A's facts already reached the controller on A's lane and the controller
+  minted both siblings, so B learns "I am where A was" from the handshake and A's facts
+  transport to B's world by `same`. Sibling-to-sibling data on the target is
+  `26B:watch-dependent-chain-scheduling`'s host-computed-coordinates hazard; left to the
+  review.
+- `ipc-multiplexing-makes-it-moot` — sibling sessions on one multiplexed connection are
+  the same far endpoint process by construction; the rendezvous is the fallback where the
+  `sibling-session` link capability is absent. The controller-owned per-run channel
+  `260` §5 reserved is the M:N topology's home.
+- `hor-same-kernel-is-not-same-target-for-container-cohorts` — a scratch path
+  deliberately bind-mounted into a container lets the container's sibling reach the
+  host's listener; the controller-literal scratch root makes that an admin's deliberate
+  act; the finer read (a cgroup or namespace identity) is that cohort's kind read.
+- `rdg-writes-only-what-it-owns-is-run-scoped` — a rule-reading, not a change:
+  `rul-probe-writes-only-what-it-owns` is scoped to the RUN, not the process, so B
+  connecting to A's socket is a read of a sibling's owned object within one run, never an
+  unowned pathname.
+
+### 10f-the-target-pin
+
+- `def-target-is-one-tenure` [PROPOSED; provisionally acked as the concept; name open]
+  — stated as `req-terminology-as-policy-against-platform` demands, policy against
+  platform: A target is one continuous period during which the thing Dorc entered exists
+  and runs, between the events its kind's owner declares as its beginning and its end.
+  The policy, applied to any weird thing we enter and used as our own yardstick: identity
+  is continuity of existence, witnessed live, never a name and never a disk. What a user
+  sees on a common platform is the concrete event pair — on Linux, init's lifetime; on a
+  VM, boot to shutdown; on a container, start to stop; on a widget, power-on to
+  power-off; on something stranger, whatever its oracle's owner says begins and ends it.
+  Across a boundary nothing carries over except what each kind's owner declares survives,
+  checked by a continuity witness the owner names. Where Dorc cannot witness continuity,
+  it guards.
+- `why-this-row-of-the-matrix` — it is the only identity every witness found
+  establishes NATIVELY: a held session by construction; the executor nonce and the
+  per-boot identity across drops and the consent gap; the rendezvous between siblings;
+  measured tokens across entry chains. Every other row is a READ with a clone,
+  migration, or renumbering horizon. The pin is the one thing the machinery is already
+  good at, which is what "no lies" requires.
+- `why-this-promise-cohort-by-cohort` — the VM operator means an instance; the
+  container operator a container lifetime, which is an init lifetime; the homelabber "my
+  box, running", and never notices the difference until a reboot; the RAM transplant is
+  the same target to everyone but the bare-metal cohort. Twin estates come out RIGHT for
+  free: two instances with cloned disk identities are two targets because they have two
+  lifetimes; round-robin members are two targets; aliases reaching one instance are one
+  target, witnessed, the measured-tier merge `30W` §5 already permits.
+- `res-restart-is-a-different-target-and-continuity-is-a-declared-relation` — under
+  the pin "same machine, rebooted" is not a hard question; it is a different target. The
+  relationship between old and new is a separate, declared, opt-in relation —
+  CONTINUITY, `28Q:res-incarnation-correlation-door` exactly — and it is where the disk
+  and hardware classes live: a machine identity or host-key equality is a continuity
+  witness across tenures, consumed only through the kind owner's invariance line for the
+  cells that survive a restart. `30W` §7's patch day is the pin in action already
+  (packages and persistent files carry boot-invariance and elide across the reboot;
+  `Service@active` is tenure-keyed and guards); nothing new is built, the pin names why
+  that render is right.
+- `where-everything-else-goes` — HORIZON: a snapshot restored twice; a deliberately
+  shared scratch mount into a container; one sentence each, disclosed. CONFIGURATION: the
+  continuity relation a cohort wants across restarts — same install (machine identity,
+  host keys), same box (a hardware read), same name (spelling, the homelab posture) —
+  the cohort-defaults setting (`q9`), the only place the other rows reach a default user.
+  SPECIAL ENTRY: transports with no RAM-class witness across sessions (a serial line with
+  no live process; no-return channels) — guard-only faces, honest. EXPERT LEVERS:
+  per-kind invariance lines; the identity tier's per-aspect relations; container-cohort
+  reads; the survival flag.
+- `csq-restart-during-review-demotes` — a target that restarts during plan review is a
+  new target, so the plan's tenure-keyed elisions demote to guards at apply; the safe
+  direction; the why-line says "the target restarted".
+- `csq-host-key-continuity-is-re-read` — `260` §5's host-key continuity becomes a
+  continuity witness across sessions rather than an identity; the executor nonce (or the
+  per-boot identity read) takes its old job.
+- `case-against-the-pin` [recorded at the human's request] — it surprises exactly the
+  cohorts whose intuition is "same box" or "same name" when a mid-review restart costs
+  them elisions, and it makes the executor (or a per-boot read) load-bearing for
+  cross-session elision on every target. Against front-loading the whole matrix on every
+  concept a user touches: the pin does not hide the matrix; it chooses the row the
+  default promise is made on and turns every other row into a named relation an expert
+  declares; the default user never sees the matrix; the product statement stays sayable
+  in two sentences. ~SUSPECT the pin wins; the human reserves the rejection.
+- `fallback-promise-for-headless-faces` — a bundle dropped into a sibling tool's
+  generated script, with no session and no executor, has no tenure witness, so the
+  promise there is the guard-half only, unless that face's owner declares a read of the
+  sibling's own identity (a cloud instance identifier handed to the payload). Consistent
+  with headless faces being guards-only already.
+
+### 10g-twin-estates-the-second-design-target
+
+- `def-twin-estates` [named at the human's request as the second first-class design
+  target beside the bastion] — two or more sites stamped from one image and one address
+  plan, each reachable only through its own jump host, and meant to be converged by the
+  same book. Every spelling collides ACROSS sites (`10.0.0.5`, `web1`, `web1.internal`
+  each name a different target per vantage; the cloned images share host keys and machine
+  identities, so even the disk-class read cannot tell the twins apart, only the vantage
+  or the tenure can); every target has several spellings WITHIN a site (short name,
+  FQDN, v4 literal, v6 literal, an ssh-config alias); DHCP inside the sites moves
+  addresses mid-run; periodic re-imaging yields tenures with identical disk identities.
+  Forces falsehoods 1, 2, 5, 6, 12, 13, 14, 15–18, 32, 49, 50, 54–56, 63 at once;
+  exercises both failure directions of world identity (wrongly merging the twins; wrongly
+  splitting one target's spellings). Real shapes: franchise branches; a customer-site
+  replica of a lab; dev/staging/prod cut from one Terraform module; two houses with the
+  same router defaults. Bastion tests reach; twin-estates tests naming and identity.
+
 ## 11-r31-re-homing-candidates
 
 Under `lean-punt-transport-to-its-own-round` [LEAN]; for the human's ack, one by one;
@@ -839,3 +1119,50 @@ about to assume · where it now lands.
   default gateway, the internet, or a DNS server exists (7, 9, 10, 13, 17, 18): the
   design never resolves anything itself, so those live entirely in the transport
   oracle's world and the admin's book.
+
+## 13-design-doc-destination-candidates
+
+Per `req-ledger-becomes-design-docs`: where each cluster of this ledger most plausibly
+lands when it is promoted. Candidates only; the human decides rewrite-versus-new; nothing
+here is threaded yet.
+
+- `dest-new-plan-transport-entry` — NEW design-of-record for the genuinely new material:
+  the transport oracle's authored surface (`8`), the pin and its name (`10f`), the witness
+  inventory and identity classes (`10e`), the resolution cell keyed by vantage and
+  set-valued (`10a`), the synthetic head (`prop-cli-target-is-a-synthetic-head`,
+  `prop-plan-is-a-two-world-file`), twin-estates (`10g`). Probable ID: the next in the
+  `26O` lineage or the transport round's own charter, at the human's choice.
+- `dest-rewrite-30W` — `plans/30W`: the Boot index-kind generalised to the tenure of any
+  entered kind; index-value provenances (entered / measured-placeholder / fresh); the
+  per-index relation and the filtered meet (`10b`); Host un-blessed (`q8`); the vantage
+  as an index-kind; `lends` accepting user-minted kind coordinates (item 7, already
+  there).
+- `dest-update-27C` — `plans/27C`: the entry-form rule generalised from `"$@"`-verbatim
+  to "the guest lands once at an evaluating landing" (`ack-entry-verbatim-cannot-hold`);
+  `prop-entry-forms-only-subtract-interactivity`; the in-guest preamble punt dissolved
+  into the payload lane.
+- `dest-update-273-and-274` — `notes/273`/`274` are notes (historical), so the
+  argv-landing model (`lean-replace-wrapper-detection-with-argv-landing`) wants a
+  superseded-by pointer there and its own home in the new plan or in `plans/281`'s
+  successor.
+- `dest-update-28Q` — `plans/28Q`: §0 vocabulary (tenure beside incarnation, or
+  replacing it publicly); §9 item 11 resolved; §3's re-parse carve pointing at the
+  fidelity claim.
+- `dest-update-26N-and-26O` — `notes/26N` §10's `park-re-parse-carve-explainer`
+  answered (superseded pointer); `plans/26O` §7/§10 pointers to the new plan; §2's
+  capability tables gaining the two-key sharpening
+  (`prop-capabilities-one-vocabulary-two-keys`).
+- `dest-update-260` — `plans/260` §5: host-key continuity re-read as a continuity
+  witness (`csq-host-key-continuity-is-re-read`); `dec-26-hosts-spelling` rewritten; the
+  fleet-kernel sections re-graded under `lean-fleet-is-a-book` when W-C rules.
+- `dest-root-registers` — `KNOBS:kBOOT`/`kCOMMS` pointers; `ANALYZER-NEEDS` rows
+  (fidelity claim; `$*`/IFS; the transit schedule; measured index values; the
+  resolution cell); `ORACLE_PROVIDES` (entry, fidelity, identity read, resolution
+  backing); `FORFEITS` (no new rows — every withhold here is a transport condition or a
+  horizon, not an analysis limitation); `SIBLINGS` ("leaves nothing resident" if the
+  executor lands); `TODO-ADDTL` (the user-story porch item); `ROADMAP`/`310` per
+  `11-r31-re-homing-candidates`.
+- `dest-spike-claude-md` — steering: `rul-no-hopeful-transfer` (landed);
+  `ack-guards-reach-elisions-witness` as a standing invariant once typed into a plan; the
+  `writes-only-what-it-owns` run-scoping reading; the two-contracts framing as a
+  horizon-declaration rule.
