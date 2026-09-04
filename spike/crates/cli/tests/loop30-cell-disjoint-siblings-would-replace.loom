@@ -1,5 +1,4 @@
 ---
-xfail: p-x-loop-cell-disjoint-siblings-replace
 ---
 -- book.sh --
 #!/bin/sh
