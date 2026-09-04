@@ -348,7 +348,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## aid-error-exit-code-family
 - defined: —
-- cited: 28D AID-NEEDS (2)
+- cited: 28D 30Xa AID-NEEDS (3)
 
 ## aid-is-dst-clean
 - defined: Research/notes/28Va-aid-extraction-map.md:604 — — pure data + render. No clock, RNG, filesystem, or network,
@@ -4939,7 +4939,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## aid/CLAUDE:prose-provenance-states
 - defined: spike/crates/aid/CLAUDE.md:72 — (`27U` §4/§5; `28A` §2p) — BOTH registries key on one type,
-- cited: 30Nh spike/CLAUDE (2)
+- cited: 30Nh 30Xa spike/CLAUDE (3)
 
 ## 28Va:prose-three-state
 - defined: Research/notes/28Va-aid-extraction-map.md:587 — (`27U` §4/§5; `28A` §2p) — a written register is `sm `-prefixed
