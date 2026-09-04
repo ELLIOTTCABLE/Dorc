@@ -1,0 +1,14 @@
+---
+run: round-trip
+fixpoint: executed
+---
+-- plan.sh --
+#!/bin/sh
+:
+
+-- hosts/web1.example.net/apply-outcome --
+status 0
+
+-- replay --
+$ dorc apply --host web1.example.net --plan plan.sh
+[unwritten: cli-apply-identities-line]
