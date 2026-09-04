@@ -27,6 +27,13 @@ sessions that held them. The steering re-cuts, the registers, and the round map 
 close batch; git carries them. Fold: `gate:arc` from this branch, the opaque review
 (authorized), rebase over `ai/main`'s human commit, `merge --ff-only`, the `LIVING_STATUS` entry
 deleted, the worktree and branch reaped after `merge-base --is-ancestor` proves containment.
+HELD at the fold: the end-of-arc opaque review `30-reviewC` (pass `initial`, range `ai/main..` the
+gated tip) returned `NACK Research/quarantine-DO-NOT-READ/30-reviewC-30X-testing-rebuild-opaque-report.md`,
+committed on this branch and unopened by the conductor; the human adjudicates, as they did
+`30-reviewA`. Gate evidence at that tip: both builder-completion legs green; the three arc-tier
+verifiers green (`verify-translate-check` · `verify-lean-badges` · `verify-kani`); `bless:dry` clean;
+the Windows leg re-green after the last docs-only rebase (the WSL leg at that exact tip could not be
+hosted by the machine's memory; its content-identical run stands).
 
 ### How the design got here (the sitting's review trail)
 
