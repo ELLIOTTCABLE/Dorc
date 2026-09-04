@@ -169,11 +169,15 @@ $ dorc plan --book=book.sh --format=jsonl < probe-results.txt
   `hosts/<name>/probe-results.txt` section names; the replay command names hosts.
 - **The replay section** (always last): a sequence of blocks; each block = one
   `$ `-prefixed command line + its inlined output (until the next `$ ` line or
-  section end). Commands run SEQUENTIALLY in one materialized temp dir with a
-  shared per-case scratch — required for run-then-`dorc why --last` sequences (the
-  whylog flows between commands). Each command's spelling is the user-shaped
-  invocation with case-relative paths; harness-only environment must not appear
-  (framed records in fixtures, not `DORC_ALLOW_LEGACY_RESULTS`).
+  section end). Commands run SEQUENTIALLY as one shell session in one materialized
+  temp dir with a shared per-case scratch and receipt store — required for
+  plan-then-`dorc why --receipt-last` sequences (the receipt flows between blocks).
+  Each command's spelling is the user-shaped invocation with case-relative paths.
+  Seam selection is spelled IN the session as sh (`$ export DORC_SEED=…`,
+  `$ export DORC_SEAM_<NAME>=…` — the harness binary's documented typed surface,
+  `30X:loom-seams-are-sh-lines`); fixture AUTHORITY still never appears (no
+  legacy-results switch; raw fixture records are framed by the runner's one seat
+  into the controller intake, on both drivers).
 - **Used-variable replay**: every defining case commits a generated `dorc-loom vars
   --used CASE` block before its diagnostic replay. Its output names the defining
   code/field and lists only variables used by editable prose, in first-use order,
@@ -322,14 +326,18 @@ enforces defining-case ownership and applies edits to the catalog lock.
 - The reusable generic executor runs with a controlled environment (`env -i`-style,
   PATH pinned by the embedding consumer to the built tool + inert mocks; cwd = the
   temp dir so paths render RELATIVE — absolute host paths in a transcript are a
-  regeneration-time refusal). It captures combined output (`2>&1`) v1; a command
-  wanting stream separation spells its own redirection. Combined-capture interleaving
-  is deterministic only while the tested surfaces remain effectively single-stream;
-  split-capture is the escape hatch.
+  regeneration-time refusal). It captures BOTH streams in the order the user saw
+  them (`30X:loom-transcript-is-what-the-user-saw`); a command wanting a stream
+  routed away spells its own redirection. Interleaving is deterministic at the
+  source: the in-process driver emits ordered events for both streams, and the
+  shell driver's `2>&1` capture must agree with it byte for byte
+  (`gate-two-drivers-agree`) — there is no split-capture escape hatch and no
+  post-hoc normalizer.
 - Safety: identical rails to the e2e harness (inert mocks only, no real mutators,
   worktree-local, no network). Case execution is git-free.
 - Determinism: same DST discipline as e2e; committed transcripts are byte-stable
-  under re-execution or the bless refuses. Multihost transcripts additionally
+  under re-execution under a SECOND run seed or the bless refuses
+  (`30X:seed-two-affordances`; a seed-dependent case pins `$ export DORC_SEED=0`). Multihost transcripts additionally
   require deterministic cross-host output ordering — a named CHECK on the r26
   reactive work (`26B` confluence targets plans, not stderr streams), not work here.
 
