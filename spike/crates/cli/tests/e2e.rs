@@ -1811,7 +1811,14 @@ fn run_loom_case(harness: &Harness, loom: &LoomCase) -> Result<(), Failed> {
     let in_process_proven = matches!(&in_process, Ok(dorc_loom::TwoDriverOutcome::Rendered(_)));
     let in_process_decline: Option<String> = match &in_process {
         Ok(dorc_loom::TwoDriverOutcome::Rendered(bytes)) => {
-            failures.extend(in_process_disagreements(&loom.name, &parsed, bytes));
+            let diffs = in_process_disagreements(&loom.name, &parsed, bytes);
+            if !diffs.is_empty() {
+                // The render-fixpoint failure is where `authoring-a-replay-block-is-blind`'s rescue
+                // belongs: point at the DUMP loop and write the candidate when it is armed.
+                let candidate = dorc_loom::DorcConsumer::new().render_case(&parsed).ok();
+                failures.extend(diffs);
+                failures.push(candidate_rescue(&loom.name, candidate.as_deref()));
+            }
             None
         }
         Ok(dorc_loom::TwoDriverOutcome::Declined(reason)) => Some(reason.reason()),
