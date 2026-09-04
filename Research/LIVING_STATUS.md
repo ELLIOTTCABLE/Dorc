@@ -28,7 +28,7 @@
 
 ---
 
-## IN FLIGHT (2026-09-03 — the test-architecture REBUILD; lanes A and B built and green; lane C1 building; the arc branch rides today's `ai/main`)
+## IN FLIGHT (2026-09-03 — the test-architecture REBUILD; lanes A, B, C1, C2, C3a built and green; C3b building; D next; the arc branch rides today's `ai/main`)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -57,13 +57,23 @@ the `Seams`/`HarnessSeams` bundle, `compose::run`, `dorc-harness`, seeded entrop
 pins retired, the scrubbed session, literal runner-owned roots; lane B — one persistent `sh`
 session per `run:` loom with gates by kind and both-streams transcripts, the ticking per-block
 clock default, the needle gate and the baseline scaffold gone, the receipt-rooted why loom a
-four-block session, the receipt batteries split into one state-only home. Lane C runs as three
-small lanes (C1 the in-process receipt world + two-drivers-agree — DISPATCHED 2026-09-03 · C2 the
-dogfooded session model · C3 varied seeds, the two affordances, the durable-report surfaces),
-then lane D (one runner, the frontmatter collapse, dir-case and lint-loom conversion). The arc
-branch was rebased onto `ai/main` before C1 (not at close, as the ledger's §0 planned) so the
-slug-index and spelling gates govern the remaining lanes as they build; a re-rebase over the
-r31-remit commits waits for a between-lanes gap. Two product rulings were taken inside
+four-block session, the receipt batteries split into one state-only home. Lane C ran as four
+lanes, three COMPLETE and green on both legs: C1 (the in-process driver owns a real seeded
+receipt world over the model store, reached through `dorc_cli::durable` re-exports; one
+io-parameterized receipt edge shared with the shipped binary; the typed `LoomDecline`;
+`gate-two-drivers-agree` LIVE with 107 `run:` looms agreeing byte-for-byte; the runners now reap
+their temp after the 2026-09-03 disk-full incident their shim copies caused) · C2 (the session
+grammar through `dorc_syntax`, a concrete dash environment feeding the one seam parser, the
+kernel's own `Cwd`; 108 agree; the kernel-side dogfood ceiling recorded in `30X` §10) · C3a (the
+dependency-free `dorc-testbed` crate holding the run seed — varied by default, printed, named in
+failures — and the seam vocabulary; the clock ticking per invocation; nine cases pinned at
+`DORC_SEED=0`; the e2e bless refusing under a second seed). C3b (the transport seam's scripted
+column so an apply runs in-process; the consumer stops discarding its intent/outcome;
+`apply-outcome-unwritten` as a sibling code) is BUILDING; then D1 (one runner, the derived
+driver, the frontmatter collapse) and D2 (the dir-case conversion, the lint fold, `xfail` and
+`Posix` out of `internal-tooling`, the doctest noise, yardstick). The arc branch is re-rebased
+onto `ai/main` in every between-lanes gap, never mid-lane. Lane briefs are uncommitted, in the
+conductor's scratchpad (absolute path in the ledger's §0). Two product rulings were taken inside
 this suite arc and stand open to the human's veto (the why-lens relativizes `.`-sourced
 dependency paths under the load cwd; the unloaded-sibling-oracle advisory reconciles by
 canonical key); lane A's five fence re-targets await re-ack. No sealed review within the arc
