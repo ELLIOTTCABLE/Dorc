@@ -109,7 +109,11 @@ lines Dorc can Must-conclude would have run under plain sh are perform-shaped
 book-custody load refuses the plan before network — never shipped on a guess, never left to
 die halfway (`26N:rul-unresolvable-book-load-refuses`). The delivery shape is ruled (`26N`
 §2), and `$0` under Dorc is the absolute path of the real plan file wherever a filesystem
-exists (`26N:rul-dollar-zero-authority-spelling`).
+exists (`26N:rul-dollar-zero-authority-spelling`). Every world Dorc stands up carries its own
+scaffold and sink, and records never cross a link as records
+(`26O:rul-every-world-carries-its-own-scaffold`); which of control / aid / raw rides which
+lane is planned per run after measurement and analysis, never fixed by the language, with
+collapse a last resort (`plans/26O` §5); the probe lane never holds a pty.
 
 ## Conduct fences (standing; bind any successor)
 

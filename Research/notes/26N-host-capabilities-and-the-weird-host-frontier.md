@@ -13,7 +13,8 @@
 > fronts), `turn02`/`03` (the conductor's corpus reads), `sources.json` (117 sources; all
 > `graded-by: subagent`; the load-bearing grades are owed main-context re-verification and are
 > cited here as provisional). Sibling: `plans/26K`, whose `sit-stdin-copy-exec-amendment` this
-> note closes.
+> note closes. The channels design-of-record minted from the same day's later sitting is
+> `plans/26O`; where this note and it disagree on streams or sinks, `26O` wins.
 
 ## §0 — one screen
 
@@ -631,6 +632,10 @@ covers.
   loses its records today, and the candidate remote home (the entered context's own scratch,
   drained by the entry scaffold, re-framed by the outer records lane) are owed as an
   explainer before any ruling.
+  <!-- /* superseded by plans/26O (2026-09-03): the explainer became the design; the sink's
+  home is the entered world's own scaffold (`26O:rul-every-world-carries-its-own-scaffold`),
+  records never cross a link as records (no re-framing by the outer lane), and the one ruling
+  still owed is `26O:open-sinkless-world-record-policy`. */ -->
 - `park-oracles-knowing-stdin-stdout` — unruled: whether a predict body may speak for its
   tool's stdin consumption (the `uci batch` class) under refag; the census can derive stdin
   consumption only for `read` and for modelled commands whose predict body reads stdin.

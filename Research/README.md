@@ -236,7 +236,12 @@ the license-contamination map. Cross-references are `docID:slug`.
   `tc-dollar-zero-is-script-anchored`; the withhold framing of `kFAIL` and the
   unresolvable-load refusal; host capabilities as a measured, context-keyed SYSTEM, census
   OPEN; the weird-host pareto frontier; the three floors; evidence base
-  `.claude/research/immutable-fs-targets/`).
+  `.claude/research/immutable-fs-targets/`) · **`plans/26O`** (channels and stream routing,
+  2026-09-03 — the design-of-record on the channels topic: the two-stream universal floor;
+  world and link capabilities and their matrix; the per-world scaffold that dissolves the
+  report sink's remote home; the per-run routing planner under `kCOMMS`; the arrangements —
+  probe dark · apply quiet · streaming · the xtrace cursor · live apply; `notes/26Oa` is its
+  strawman, a live-and-daily pivot book, frozen evidence, never execute).
   (Same round-id as the tabled multi-host r26 above — branch lineage, not chronology.)
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
