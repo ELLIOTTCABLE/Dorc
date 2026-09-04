@@ -3399,7 +3399,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## idiom-honest-read
 - defined: —
-- cited: 27C (1)
+- cited: 26Ob 27C (2)
 
 ## idiom-subject-explicit
 - defined: —
@@ -3559,7 +3559,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## inv-referent-agnostic
 - defined: spike/CLAUDE.md:509 — — the engine never decodes an `OpaqueToken`'s or kind's
 - defined: spike/crates/core/CLAUDE.md:141 — — never decode a token's/kind's text for meaning;
-- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 27C 27D 27I 27O 28L oracle/CLAUDE (36)
+- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 26Ob 27C 27D 27I 27O 28L oracle/CLAUDE (37)
 
 ## inv-referent-agnostic-here
 - defined: Research/notes/28Va-aid-extraction-map.md:612 — — resolving interned tokens to text in this crate is for
@@ -4318,7 +4318,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## never-derive-separation
 - defined: Research/notes/277-entity-algebra-design.md:470 — (`272` §4): derivation yields keying, never separation;
 - defined: spike/CLAUDE.md:205 — (`272` §4) — derivation yields *keying*, never
-- cited: 24S 26G 26Lb 26M 271 272 273 275 279f 27C 27K 28Q 300 30S Research/notes/27x-strawmen-topology/README core/CLAUDE (24)
+- cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S Research/notes/27x-strawmen-topology/README core/CLAUDE (25)
 
 ## spike/CLAUDE:never-filter-a-task
 - defined: spike/CLAUDE.md:1082 — — if a task is too loud, run its `-quiet` variant; if it has
@@ -5903,7 +5903,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dorc-acts-are-withhold-shaped
 - defined: —
-- cited: 26N 30P KNOBS Research/LIVING_STATUS (4)
+- cited: 26N 26Ob 30P KNOBS Research/LIVING_STATUS (5)
 
 ## rul-dorc-embeds-are-validated-links
 - defined: —
@@ -6099,7 +6099,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 270 272 275 277 279f 27A 27C 27Xf 30W (16)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W (17)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that

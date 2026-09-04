@@ -144,6 +144,19 @@ human's table, sized and dated, is `6-tier-two-work-units`.
   is too much architecture for r31; the `26N`/`26O`/this-note lineage is a round by itself.
   Keep in r31 only what is kernel-critical (threaded through analysis); re-home the rest.
   Candidates: `11-r31-re-homing-candidates`.
+- `ack-entry-verbatim-cannot-hold` [TYPED 2026-09-04] — `"$@"`-verbatim-in-command-position
+  as the ONLY entry shape cannot hold either: a wrapper may enter with one word of its
+  argv and consume the rest itself, or transform the guest before passing it on. The
+  replacement is the same one as for predicts (`lean-replace-wrapper-detection-with-argv-landing`,
+  applied to entry bodies): an entry form is a body in which the engine's GUEST lands
+  exactly once, at an evaluating landing (command position, or a `dorc:sh` code operand
+  under a fidelity claim), through modelled transformations; a guest consumed as data,
+  duplicated, or dropped is not an entry form and declines. `27C`'s punted in-guest
+  preamble becomes one more landing (`sudo -n sh -c 'umask 022; exec "$@"' _ "$@"` lands
+  the guest as the positionals of a `dorc:sh` payload) and is supported when the payload
+  lane supports positional binding (`24T` L3), never as a special rule.
+  `prop-guest-slot-generality-reserved` reads under this: nothing to reserve, the general
+  law IS the rule.
 - `lean-nack-argument-slot-reaches-an-evaluator` [LEAN nack, human] — widening wrapper
   detection to "the argument slot reaches an evaluator" would further entrench a shaky
   model ("but now you can't modify, reorder, or thread arguments"); the old model may be
@@ -434,60 +447,172 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   known to be the same thing without a principled proof with clear horizons, residue, and
   admin-explicable semantics; the same family of question as authored host resolution
   (`30W` §5; `26M:ack-authored-host-sameness-parallel`) and as file/filesystem
-  containment (`30T`, `30W` `overlaps`).
-- `res-batching-key-is-the-spelling` — the engine may BATCH by spelling: sites whose
-  transport argv (destination and options, after the oracle's peel) are byte-identical
-  share one probe standup. This is syntactic, engine-derivable, refag-clean (the bytes the
-  `lend_map` yielded), and cheap. It is a batching key, never an identity claim.
-- `res-world-identity-is-measured` — what makes two entries ONE WORLD is measured
-  identity, never spelling: the Host binder measures at standup a referent-transparent
-  identity (`30W` §1: host key, machine identity, and the boot identity as the strong
-  witness), and equality merges only because `30W` declares Host referent-transparent.
-  Sameness is the dangerous direction for hosts (`28Q` §3 carve 2: a wrong merge lets one
-  host's measurement license another's elision), so the merge witness must be strong.
-  Horizon, stated for the admin: cloned images that share host key AND machine identity
-  AND present the same boot identity are treated as one machine, and that is the
-  admin's residue, disclosed by name. Different spellings that measure as one machine
-  (aliases) do not merge at v0 (`FORFEITS:forfeit-no-host-merging` stands): they probe
-  twice and share no facts; a why-line may say so, never a license.
-- `res-the-witness-reconciles-batching-and-identity` — the chicken-and-egg (you cannot
-  measure identity before standing up, but you want to stand up once) resolves because
-  batching is by spelling, identity is measured inside the batch's standup, and the
-  `30W` §4 witness re-asserts that identity at apply standup and after every fired index
-  disturbance. A spelling that reached a different machine at apply than at probe is an
-  integrity withhold (`rul-integrity-failure-withholds-mutation`), never a wrong elision.
+  containment (`30T`, `30W` `overlaps`). The human's challenge to the first draft of this
+  section [TYPED 2026-09-04]: the engine cannot know that the mutation-time target of
+  `host1.widget.tld` was not changed between two call sites by something opaque in the
+  script; it must PROVE it, and the proof must involve oracles, contracted claims about
+  the Host kind, and a horizon. Conceded; the draft's "batching by spelling is
+  refag-clean" was a hole, and is replaced below.
+- `res-the-destination-denotes-a-resolution-cell` [PROPOSED] — a destination string is a
+  NAME; what it denotes at a line is the value of a controller-world cell — the Host
+  kind's resolution of that name (STRAWMAN coordinate `sm.dorc.Host:host1.widget.tld@resolution`)
+  — and that cell has a BACKING the Host kind's owner declares in sh, exactly as any
+  other kind's stores are declared (`kind__state_stored_in`): the ssh client's
+  configuration files, the hosts file, the resolver and name-service switch
+  configuration, and the relevant environment. Silence declares nothing, so the backing is
+  ⊤ and EVERY running mutator between two transit sites walls the resolution — the safe
+  default. A modelled mutator with a footprint disjoint from the declared backing spares
+  it only under the survival flag, as every other spared cell (`kSURVIVAL-trusted`;
+  `rul-flag-is-razor-residue`). An opaque mutator is a total wall as everywhere. A
+  converged day has no running mutator between the transits, so the resolution is
+  unwalled by construction (an elided command casts no wall — the stage-3 story).
+
+  ```sh
+  sm_dorc_Host__state_stored_in() {                        # STRAWMAN; the stdlib Host owner
+     case "${2-}" in
+     resolution) printf '/etc/hosts\n'          : fs
+                 printf '/etc/resolv.conf\n'    : fs
+                 printf '/etc/nsswitch.conf\n'  : fs
+                 printf '/etc/ssh/ssh_config\n' : fs
+                 printf '%s\n' "$HOME/.ssh/config"  : fs   # the honest read of HOME, 27C:idiom-honest-read
+                 ;;
+     esac
+     # deliberately NO `stored nothing-else`: external name service is a store the owner
+     # cannot enumerate, so the resolution stays open-world and collides with any unknown
+  }
+  ```
+
+- `res-batching-is-derived-not-assumed` [PROPOSED; replaces the withdrawn spelling key]
+  — two transit sites may share one probe standup iff (i) their transport argv after the
+  oracle's peel is byte-identical, (ii) the resolution cell is UNWALLED between them by
+  the ordinary reach machinery over its declared backing, and (iii) they share an entry
+  chain. (i) is syntactic; (ii) is the same wall/reach/survival computation every other
+  cell gets; (iii) is the composition algebra. Nothing here is a claim about machines:
+  it is a claim that no book line the engine can see disturbed what the name denotes, on
+  the kind owner's word about where that denotation lives. Batching within ONE session
+  is additionally safer than two sessions: an open connection cannot change machines.
+- `res-external-resolution-is-the-integrity-plane` [PROPOSED] — what the backing cannot
+  enumerate (the name service, DHCP, a load balancer) is UNATTRIBUTED churn, and the
+  corpus already carved "which machine am I talking to" out of the same-host-drift
+  WONTFIX (`toctou-scope`) and into the integrity plane (`260` §5 host-identity stop-3;
+  `rul-integrity-failure-withholds-mutation`: not knowing whether we are still talking to
+  the world we think we are). Integrity is established by a WITNESS re-measured at apply
+  (`10c-what-host-identity-is`), and a witness needs Dorc's own scaffolding on the far
+  side.
+- `fnd-elision-needs-a-witness-a-guard-does-not` [PROPOSED; the load-bearing
+  consequence] — a guard at a remote site runs its check IN the world the apply reaches
+  (`( ssh__enter … <check> ) || <the line>`), so it is sound without any identity
+  argument. An elision at a remote site is a Dorc act (a line removed) resting on facts
+  measured in the world the PROBE reached; under `26N:rul-dorc-acts-are-withhold-shaped`
+  it is withhold-shaped unless the apply can witness that it reaches the same world.
+  Where Dorc owns the far-side standup (the CLI target's head; a Dorc-owned transit) the
+  witness runs at apply standup and elision is licensable; where the transit is the
+  admin's bare `ssh` line, nothing of Dorc's runs on the far side, no witness exists, and
+  the ceiling is GUARD. Said plainly for the product: Dorc guards what it can reach and
+  elides only what it can witness; hand Dorc the transit and it can witness. This makes
+  the admin opt-in spelling of `10d` (`fork-admin-opt-in-spelling`) the elide-half for
+  pivot books, not a luxury. Parity check against `sudo`: a `sudo` site elides today
+  without a witness because its "which world" question is local (the user referent's
+  disturbances are claimed by local oracles such as `useradd`, and the residue is
+  same-host drift under the WONTFIX); Host is the one dimension whose "which world" is
+  external, which is why `260` treated it differently already.
+- `res-aliases-and-clones` [PROPOSED] — different spellings that measure as one machine
+  do not merge at v0 (`FORFEITS:forfeit-no-host-merging`): they probe twice and share no
+  facts; a why-line may say so, never a license. Cloned machines that present identical
+  identity reads are treated as one, and that is the admin's residue, disclosed by the
+  kind owner's horizon sentence.
 - `res-position-is-ordinary-reach` — `host1@L3` versus `host1@L9` also differ by
   position: things happened between them. That is the world plane's ordinary machinery:
   a CLAIMED index disturbance between them (a modelled reboot's footprint on the Boot
-  index-value cell) re-keys downstream (`30W` §4); nothing claimed means the same world
-  persists (`30W` §9: exits are never inferred); UNCLAIMED churn is the witness's job.
+  index-value cell; a write to a declared resolution store) re-keys downstream
+  (`30W` §4); nothing claimed means the same world persists (`30W` §9: exits are never
+  inferred); UNCLAIMED churn is the witness's job.
 
-### 10b-lattices-across-lattices
+### 10b-worlds-are-coordinates-not-partitions
 
-- `hard-thing-two` [human, restated] — the state lattice of a world must dominate the
-  lattices of everything it contains: what value A may take on `host1@L3` versus on
-  `host1@L9` are separate maps, separately must/may-shaped, maintained apart until a join
-  or meet proves the two worlds same-referent or disjoint.
-- `res-one-product-lattice-partitioned-by-world` — the corpus already has this shape, so
-  the answer is a confirmation with sharper terms. There is ONE fact lattice over keys,
-  and the world (the context slot) is PART of the key (`FactKey.context`; `30W` item 1
-  makes it a product over index-kinds). Two sites in different worlds have different keys,
-  so their cells never interact: no establish reaches across, no transport, by
-  construction. That is "separate maps per world" represented as one map keyed by (world,
-  cell). "Dominate" is the right instinct with a plainer name: the world partition is
-  coarser than the cell lattice and GATES it — nothing crosses a partition boundary
-  without a generator saying `same` (`30W` §2's relation table; the compare chokepoint in
-  `core`). For Host the only generators are measurement-tier (`10a`), never names.
-  Must/May shapes live inside each partition unchanged.
+- `hard-thing-two` [human, restated and sharpened, TYPED 2026-09-04] — "part of the key"
+  is observably not enough: the engine holds Must-fed and May-fed requirements in
+  separate keys, and key inequality does not differentiate PROVABLY DISTINCT from
+  UNKNOWN. Because the source of "are these hostnames the same" is itself a lattice
+  value, two keys being different must never be read as disjointness when the hosts may
+  be the same, and thus the same file, the same cell.
+- `retraction-partitioned-lattice` — the first draft's "one product lattice partitioned
+  by world" was wrong as an implementation model, for exactly that reason: a partition
+  invites the settle/wall seat to treat cells in other partitions as untouched by a
+  mutation here.
+- `res-worlds-compare-through-the-chokepoint` [PROPOSED; kernel-critical] — a world is a
+  COORDINATE in a cell's key, and two cells' worlds relate only through the same ternary
+  chokepoint entities do (`compare-consumer-map`): `same`, `provably-disjoint`,
+  `unrelated`, `unknown`. Key inequality yields NEITHER `same` nor `disjoint`; it yields
+  `unknown`. The two consumers read it in opposite directions (`273` §4's inversion):
+  TRANSPORT of a fact from `host1@L3` to `host1@L9` needs `same` (a vouch-tier
+  generator: the Host owner's measured identity, `10c`); SPARING — letting a fact
+  survive a mutation in a world spelled differently — needs `provably-disjoint` (the
+  referent-transparent inequality of measured identities, under the flag). Absent both,
+  a mutation at `ssh 10.0.0.5 …` WALLS facts measured through `ssh host1 …`, because
+  the engine cannot know they are two machines. This is `never-derive-separation`
+  applied to the world coordinate: address-inequality (a different spelling, a different
+  key) is not referent-inequality. Consequence for `30W` item 1's build: the settle and
+  wall seats must compute kill-traffic ACROSS all worlds and consult the world relation
+  per pair, never key equality; only the transport consumer may read key equality (as a
+  cheap pre-filter for `same`, since equal keys with an unwalled resolution are the
+  batching case of `10a`).
 - `res-the-join-is-the-compare-chokepoint` — the "later join/meet point" the human
   describes is not a lattice join; it is a compare verdict consumed by exactly one
-  consumer: `same` feeds transport, `provably-disjoint` feeds sparing, `unknown` and
-  `unrelated` feed neither (`compare-consumer-map`). Under `set-lifting-universal-meet`
-  any unknown member collides, so partial knowledge never leaks across worlds. The new
-  thing for hosts is only which generators are admissible: measured identity (same),
-  referent-transparent inequality (disjoint), and nothing name-tier.
+  consumer, with `unknown` the default and `set-lifting-universal-meet` making any
+  unknown member collide. Must/May shapes live inside each cell unchanged; the world
+  relation's own grade (a measured identity is an observation; its "sameness" rests on
+  the owner's referent-transparency declaration) is vouch-tier for transport, as `30W` §2
+  already has it.
 
-### 10c-m-to-n-channels-and-the-transit-schedule
+### 10c-what-host-identity-is
+
+- `hard-thing-identity` [human, TYPED 2026-09-04] — "host identity" has been discussed
+  and never defined. Refag: what IS it? An oracle says `open_serial_port COM1` and dumps
+  sh down it — what is the identity, how does Dorc know, and is a Linux-specific
+  mechanism being assumed? The human does not know how a Linux host is uniquely
+  identified besides its hostname.
+- `res-the-engine-has-no-notion-of-host-identity` [PROPOSED] — none, and it must not: an
+  identity is whatever the Host kind's OWNER can measure in the entered context and is
+  willing to answer for, spelled as an ordinary authored member (STRAWMAN name
+  `sm_dorc_Host__identity`), executed in the denoted context at the latest sound phase
+  (`30W` §6, ask-the-world), returning bytes the engine compares for EQUALITY ONLY as an
+  opaque token (`inv-referent-agnostic`), or declining (rc ≥ 2) which reads as `unknown`
+  — the safe bottom for both consumers. The horizon is the owner's, in one sentence per
+  read. There is no universal identifier; there are candidate reads, each partial:
+
+  ```sh
+  sm_dorc_Host__identity() {                          # STRAWMAN; the stdlib Host owner, Linux arm
+     m=$(cat /etc/machine-id 2>/dev/null) || return 2          # systemd-era, 128-bit; cloned images share it
+     b=$(cat /proc/sys/kernel/random/boot_id 2>/dev/null) || return 2   # per boot; a fresh incarnation
+     printf '%s %s\n' "$m" "$b"                                 # the token; equality means same machine, same boot
+  }
+  ```
+
+  Candidates the owner may compose, honestly graded: the machine identity file
+  (systemd-era Linux; absent on BSD, busybox routers, macOS; documented as confidential;
+  clones share it) · the per-boot random identity (Linux; unique per incarnation; a
+  snapshot restored mid-boot is the residue) · the DMI product identifier (root-readable;
+  hypervisor-assigned; clones may share) · the platform identifier on macOS · the ssh host
+  keys — NOT a machine identity but an ENDPOINT witness the ssh oracle may contribute
+  (`30W` §5: edge facts are keyed by vantage and far end), cloned across images, absent
+  on a serial line · the hostname, the weakest (mutable, non-unique) and the one thing
+  every host has. A serial console with nothing readable declines ⇒ `unknown` ⇒ every
+  transit is its own world ⇒ no transport, no elision past it, guards still work: honest
+  but unglamorous, and correct.
+- `res-the-witness-is-the-identity-read-re-run` [PROPOSED] — the `30W` §4 witness is
+  nothing more than the same authored read executed again at apply standup and after
+  every fired index disturbance, compared as an opaque token to the probe's; inequality
+  is an integrity withhold, never a verdict input. The one case needing no witness at
+  all: probe and apply over ONE open session (a fused transit; live mode's single
+  session), where "same machine" holds by construction — an argument for
+  engine-owned transits that `10d` records.
+- `res-no-linux-assumption-in-the-engine` [PROPOSED] — the Linux-specific mechanisms
+  above live in the stdlib Host oracle's Linux arm; a BSD arm reads its kernel
+  environment, a macOS arm its platform registry, a busybox arm may decline. The engine
+  ships the arm, compares tokens, and never learns what a machine-id is.
+
+### 10d-m-to-n-channels-and-the-transit-schedule
 
 - `hard-thing-three` [human, restated] — the engine must control channels M:N: stand up
   connections that correlate to no admin line (probing, out-of-band control during
@@ -546,9 +671,11 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   subsequent transits to that key re-standup and re-witness, or withhold.
 - `res-what-is-kernel-critical-here` — the batching key derivation (from the peel), the
   transit schedule (serial relation over the CFG per key), the measured-identity witness
-  as an integrity input, and the per-world partition of the fact key. Everything else in
-  `10c` is transport-tier (the executor protocol, markers, sessions) and belongs to the
-  transport round.
+  as an integrity input, and the world coordinate compared through the chokepoint
+  (`10b`). Everything else in `10d` is transport-tier (the executor protocol, markers,
+  sessions) and belongs to the transport round. `10a`'s witness finding narrows the
+  apply-side fork: without a Dorc-owned far side there is no witness, so the admin
+  opt-in spelling (ii) is what buys elision past admin transits at all.
 
 ## 11-r31-re-homing-candidates
 
