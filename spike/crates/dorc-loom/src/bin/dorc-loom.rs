@@ -1115,7 +1115,6 @@ fn inspect_blocks(
     quiet: bool,
     body: &mut Vec<u8>,
 ) -> Result<InspectedBlocks, String> {
-    let executed_elsewhere = case.frontmatter().scalar("run").is_some();
     let mut found = InspectedBlocks {
         inspected_replays: Vec::new(),
         previews: Vec::new(),
@@ -1133,11 +1132,10 @@ fn inspect_blocks(
         // The committed bytes ARE the render's bytes, so an edit compiles against them directly
         // (`28L:rul-editability-is-stamped-never-re-derived`).
         let dirty = block.output().to_owned();
-        let editable = if executed_elsewhere {
-            None
-        } else {
-            routed.editable_render().cloned()
-        };
+        // The ACTUAL in-process drive result decides editability (`30Xa:Checkpoint D1`): with the
+        // two-driver gate proving the render equal to the binary's bytes, a whole-product block's
+        // stamped render is its authoring provenance exactly as a catalog block's is.
+        let editable = routed.editable_render().cloned();
         if let Some(render) = editable {
             let baseline = consumer
                 .baseline_from_render(case, render)
@@ -1149,9 +1147,7 @@ fn inspect_blocks(
                 }
             }
         } else {
-            if !executed_elsewhere
-                && (block.output() != routed.output() || head_block.output() != routed.output())
-            {
+            if block.output() != routed.output() || head_block.output() != routed.output() {
                 found.case_refusal = Some((
                     index,
                     DorcSectionEditRefusal::Unchanged,
@@ -1161,12 +1157,7 @@ fn inspect_blocks(
             // Structure, not a change: a bytes-only replay that actually diverged took the
             // refusal branch above, so quiet loses nothing by dropping the inventory line.
             if !quiet {
-                let why = if executed_elsewhere {
-                    "executed elsewhere"
-                } else {
-                    "bytes-only"
-                };
-                writeln!(body, "replay: {index} {why}").map_err(|error| error.to_string())?;
+                writeln!(body, "replay: {index} bytes-only").map_err(|error| error.to_string())?;
             }
         }
         found

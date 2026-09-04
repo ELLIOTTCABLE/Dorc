@@ -465,12 +465,6 @@ impl DorcConsumer {
     /// Returns the replay refusal, names the case whose first replay carries no editable prose, or
     /// declines a case whose bytes this tool does not produce.
     pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
-        // An in-process render of a whole-product case is a DIFFERENT world's bytes, and an
-        // inventory that disagrees with the compiler is worse than none — the same reason this
-        // drives the case rather than re-deriving one.
-        if case.frontmatter().scalar("run").is_some() {
-            return Err(EXECUTED_ELSEWHERE.to_owned());
-        }
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
@@ -1367,13 +1361,6 @@ fn arrangement_index(
                 .position(|entry| entry.slug == slug && entry.occurrence.is_none())
         })
 }
-
-/// Why this tool declines to answer for a whole-product case. One spelling: the decline reaches an
-/// author through `dorc-loom vars` and through the corpus gate.
-pub const EXECUTED_ELSEWHERE: &str = "this case declares `run:`, so its transcript is what the real binary printed under the e2e \
-     runner; `dorc-loom` runs no binary, and an inventory over a different world's render is one \
-     an edit could not compile against. Its prose surface is owed a path that reads the executed \
-     transcript.";
 
 fn engine_snapshot(
     cwd: &dorc_core::loadpath::Cwd,
@@ -2298,7 +2285,60 @@ impl LoomDecline {
     }
 }
 
-/// The outcome of driving a `run:` loom in-process for `gate-two-drivers-agree`.
+/// Why the SHELL driver cannot prove a case (`30Xa:rul-drivers-decline-symmetrically`).
+///
+/// The symmetric twin of [`LoomDecline`]: each driver owns a typed decline set, and the runner
+/// reads both to derive which driver proves a case. The shell declines a nonportable outcome it
+/// cannot make happen, and any block that invokes the in-process tooling's own binary — nothing
+/// else. This set does not grow without a conductor ruling.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ShellDecline {
+    /// The case declares an `edge-fault` section: an injected nonportable I/O or transport outcome
+    /// the shell cannot reproduce (only the in-process driver scripts it).
+    EdgeFault,
+    /// A `dorc-loom` invocation — the in-process authoring tool has no shipped binary the shell
+    /// session's shim provides, so it is in-process authority by content.
+    LoomToolBlock(String),
+}
+
+impl ShellDecline {
+    /// One-line reason for the trial's proof label (`30X:loom-driver-is-derived-and-reported`).
+    #[must_use]
+    pub fn reason(&self) -> String {
+        match self {
+            Self::EdgeFault => {
+                "an `edge-fault` section — a nonportable outcome the shell cannot make happen"
+                    .to_owned()
+            }
+            Self::LoomToolBlock(command) => {
+                format!("a `dorc-loom` invocation (in-process authoring tool): `{command}`")
+            }
+        }
+    }
+}
+
+/// Why the shell driver declines `case`, or `None` when the shell proves it
+/// (`30Xa:rul-drivers-decline-symmetrically`). Read by the runner beside [`render_run_loom_in_process`]'s
+/// [`LoomDecline`] so which driver proves the case is DERIVED, never declared.
+#[must_use]
+pub fn shell_decline(case: &Case) -> Option<ShellDecline> {
+    if case.sections().iter().any(|s| s.name() == "edge-fault") {
+        return Some(ShellDecline::EdgeFault);
+    }
+    case.replay()
+        .blocks()
+        .iter()
+        .map(errorloom::ReplayBlock::command)
+        .find(|command| {
+            crate::session_grammar::block_argv(command)
+                .first()
+                .map(String::as_str)
+                == Some("dorc-loom")
+        })
+        .map(|command| ShellDecline::LoomToolBlock(command.to_owned()))
+}
+
+/// The outcome of driving a loom in-process for `gate-two-drivers-agree`.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum TwoDriverOutcome {
     /// Every block rendered; the stamped both-streams bytes, one per block, in engine order.

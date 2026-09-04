@@ -1123,20 +1123,6 @@ struct LoomCaseSpec {
     run: LoomRun,
 }
 
-/// The frontmatter keys a loom-form case may carry, and the dir-form artifact each becomes.
-/// Anything else is refused — an unread key is a silently-ineffective assertion.
-///
-/// A PROJECTION of `dorc_loom::FRONTMATTER_KEYS` rather than a second list: the looms runner sees
-/// whole-product cases too, so a key this runner accepted and that one did not would refuse the
-/// same file from the other side. `owns` is read by neither runner — it is the prose-ownership
-/// resolver's (`dorc_loom::corpus_ownership`), which scans EVERY collection — and is in the subset
-/// because THIS runner's refusal is what a whole-product case's author meets, and refusing the key
-/// here left a prose-component rendered only by this collection with no authoring home at all
-/// (`28L:rul-ownership-declaration-adopted`).
-fn loom_keys() -> Vec<&'static str> {
-    dorc_loom::run_lane_key_names()
-}
-
 /// Scalar-or-list frontmatter items (an absent key is the empty list).
 fn loom_items(case: &errorloom::Case, key: &str) -> Vec<String> {
     match case.frontmatter().get(key) {
@@ -1146,46 +1132,46 @@ fn loom_items(case: &errorloom::Case, key: &str) -> Vec<String> {
     }
 }
 
-/// Read and classify one `.loom`, or `Ok(None)` when it carries no `run:` key (an ordinary
-/// catalog case, the looms runner's).
+/// Classify one `.loom` for the SHELL driver, or `Ok(None)` when the shell declines it
+/// (`30Xa:rul-drivers-decline-symmetrically`): the shell proves what it does not decline, and which
+/// driver a block goes to is DERIVED from the session's content, never declared with `run:`.
 fn loom_spec(case: &LoomCase) -> Result<Option<LoomCaseSpec>, String> {
     let text = std::fs::read_to_string(&case.path)
         .map_err(|error| format!("read {}: {error}", case.path.display()))?;
     let parsed = errorloom::Case::parse(&text).map_err(|error| format!("{error}"))?;
-    let declared = parsed.frontmatter().scalar("run").map(str::to_owned);
-    let executed = parsed.frontmatter().scalar("fixpoint") == Some("executed");
-    let Some(declared) = declared else {
-        return if executed {
-            // Without a `run:` key nothing executes this case, so `fixpoint: executed` would
-            // hand its transcript to a driver that never runs — no proof at all.
-            Err(format!(
-                "`{}` declares `fixpoint: executed` but no `run:` — nothing would ever execute it",
-                case.name
-            ))
-        } else {
-            Ok(None)
-        };
-    };
-    let run = match declared.as_str() {
-        "round-trip" => LoomRun::RoundTrip,
-        "lint" => LoomRun::Lint,
-        other => return Err(format!("unknown `run: {other}`")),
-    };
-    if let Some(unknown) = parsed
-        .frontmatter()
-        .keys()
-        .find(|key| !dorc_loom::is_run_lane_key(key))
-    {
-        return Err(format!(
-            "unread frontmatter key `{unknown}` — the key vocabulary is closed, and a key no gate \
-             reads is an assertion the author only believes they made. A whole-product case reads \
-             {}; `dorc-loom keys` says what each one is read by",
-            loom_keys().join(", ")
-        ));
+    loom_spec_of(&case.name, &case.path, parsed)
+}
+
+/// The already-parsed twin of [`loom_spec`]: the shell proves the case unless it declines, and the
+/// driver KIND (round-trip session vs single-invocation lint) is derived from the block the case
+/// runs, not from a retired `run:` key.
+fn loom_spec_of(
+    name: &str,
+    path: &Path,
+    parsed: errorloom::Case,
+) -> Result<Option<LoomCaseSpec>, String> {
+    if dorc_loom::shell_decline(&parsed).is_some() {
+        return Ok(None);
     }
+    // LINT is the single-invocation shape `run_lint` drives — the first `dorc` invocation a
+    // `dorc lint … book.sh` (`dev-lint-looms-stay-single-invocation`, ended by D2). Any other lint
+    // invocation runs through the ordinary session like every other block.
+    let first_invocation = parsed.replay().blocks().iter().find_map(|block| {
+        let argv = dorc_loom::session_grammar::block_argv(block.command());
+        (argv.first().map(String::as_str) == Some("dorc")).then_some(argv)
+    });
+    let run = match first_invocation {
+        Some(argv)
+            if argv.get(1).map(String::as_str) == Some("lint")
+                && argv.last().map(String::as_str) == Some("book.sh") =>
+        {
+            LoomRun::Lint
+        }
+        _ => LoomRun::RoundTrip,
+    };
     Ok(Some(LoomCaseSpec {
-        name: case.name.clone(),
-        path: case.path.clone(),
+        name: name.to_owned(),
+        path: path.to_owned(),
         case: parsed,
         run,
     }))
@@ -1435,15 +1421,14 @@ const RUNNER_CLOCK_SHADOW: &str = "__DORC_RUNNER_CLOCK";
 /// not a seam, never read by `dorc`, never in a transcript.
 const PREV_RC_SHADOW: &str = "__dorc_prev_rc";
 
-/// One replay block's session capture: the `$` command, both streams merged in order, and the exit.
+/// One replay block's session capture: the `$` command and both streams merged in order (a block's
+/// exit status is asserted only where a later `$ echo $?` block reads it into the transcript).
 struct SessionBlock {
     /// The `$` command, verbatim (the transcript's `$` line IS what the session ran).
     command: String,
     /// Both streams, interleaved as the user saw them, as the committed transcript spells it
     /// (`30X:loom-transcript-is-what-the-user-saw`).
     output: String,
-    /// The block command's own exit status.
-    status: i32,
 }
 
 /// Drive every `$` line of a round-trip loom through ONE persistent `sh` session
@@ -1539,8 +1524,7 @@ fn drive_session(
     let prefix = format!("{SESSION_SENTINEL} ");
     for line in merged.split_inclusive('\n') {
         let bare = line.strip_suffix('\n').unwrap_or(line);
-        if let Some(rest) = bare.strip_prefix(&prefix) {
-            let status = rest.trim().parse::<i32>().unwrap_or(-1);
+        if bare.strip_prefix(&prefix).is_some() {
             let output = strip_trailing_newlines(&strip_cr(&current));
             let index = blocks.len();
             blocks.push(SessionBlock {
@@ -1550,7 +1534,6 @@ fn drive_session(
                 } else {
                     format!("{output}\n")
                 },
-                status,
             });
             current.clear();
         } else {
@@ -1566,11 +1549,6 @@ fn drive_session(
     }
     Ok(blocks)
 }
-
-/// A constant xor'd into the run seed to get a DIFFERENT second seed for the bless reproduction
-/// check (`30X:seed-two-affordances`). Nonzero, so the second seed always differs; low-bit-only, so
-/// the result stays under 2^62 for shell-arithmetic parity.
-const SECOND_SEED_XOR: u64 = 0x5EED_5EED_5EED;
 
 /// If the primary and second-seed drives disagree on any block, the transcript carries seed-dependent
 /// bytes that no `$ export DORC_SEED` pins, so blessing it would bake nondeterminism into a golden
@@ -1701,7 +1679,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
                 &recheck_root,
                 &commands,
                 &framed,
-                run_seed ^ SECOND_SEED_XOR,
+                dorc_testbed::run_seed::second_seed(run_seed),
             )
             .map_err(|error| {
                 Failed::from(format!("FAIL  {}  [session recheck: {error}]", spec.name))
@@ -1749,13 +1727,8 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
                 spec.name, capture.command
             ));
         }
-        // A non-artifact block must exit 0 (the artifact block's exit is `run_round_trip`'s).
-        if capture.status != 0 && !block_produces_artifacts(&capture.command) {
-            failures.push(format!(
-                "FAIL  {}  [session: `{}` exited rc={}]",
-                spec.name, capture.command, capture.status
-            ));
-        }
+        // A block's exit status is asserted only where the session reads it (`$ echo $?`); an errored
+        // diagnostic block's transcript is its own assertion (`30Xa:rul-gates-attach-to-what-a-block-produced`).
     }
 
     // The transcript compare (unless blessing): each block's both-streams capture IS its transcript.
@@ -1793,28 +1766,80 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
 }
 
 // ---------------------------------------------------------------------------
-// loom hygiene + render-fixpoint (`30X:loom-one-runner`: the retired looms.rs, folded in so ONE
-// trial per case witnesses both drivers — the render fixpoint / two-driver gate here, and the
-// materialize + shell gate battery in `run_loom` above)
+// the derived driver (`30Xa:rul-drivers-decline-symmetrically`, `30X:loom-one-runner`): each driver
+// owns a typed decline set, the runner drives every driver that does not decline, both must agree,
+// and a case no driver proves is refused. Which driver proved a case is REPORTED, never declared.
 
-/// One trial per loom: the hygiene + render-fixpoint arm ALWAYS, and — for a whole-product loom —
-/// the materialize + shell gate battery too, so one committed transcript is proven by both drivers
-/// (`30X:loom-driver-is-derived-and-reported`, `gate-two-drivers-agree`). Both arms' failures are
-/// reported together rather than short-circuiting, so a reader sees every red at once.
+/// The proof census, tallied across every loom trial and printed once after the run.
+static PROVEN_BOTH: AtomicUsize = AtomicUsize::new(0);
+static PROVEN_SHELL_ONLY: AtomicUsize = AtomicUsize::new(0);
+static PROVEN_IN_PROCESS_ONLY: AtomicUsize = AtomicUsize::new(0);
+static PROVEN_NEITHER: AtomicUsize = AtomicUsize::new(0);
+
+/// One trial per loom (`30X:loom-one-runner`): hygiene ALWAYS, then each driver that does not
+/// decline drives the session, and the two must agree on the committed transcript
+/// (`gate-two-drivers-agree`). Which driver proved it is derived from the two decline sets and
+/// reported (`30X:loom-driver-is-derived-and-reported`); a case neither driver proves is refused.
+/// Both arms' failures are reported together, so a reader sees every red at once.
 fn run_loom_case(harness: &Harness, loom: &LoomCase) -> Result<(), Failed> {
+    let text = std::fs::read_to_string(&loom.path).map_err(|error| {
+        format!(
+            "FAIL  {}  [read {}: {error}]",
+            loom.name,
+            loom.path.display()
+        )
+    })?;
+    let parsed = errorloom::Case::parse(&text)
+        .map_err(|error| format!("FAIL  {}  [case does not parse: {error}]", loom.name))?;
+    let shell = dorc_loom::shell_decline(&parsed);
     let mut failures: Vec<String> = Vec::new();
-    if let Err(failed) = run_case(loom) {
+
+    if let Err(failed) = run_case_hygiene(&loom.name, &parsed, shell.is_none()) {
         failures.push(failed.message().unwrap_or_default().to_owned());
     }
-    match loom_spec(loom) {
-        Ok(None) => {}
-        Ok(Some(spec)) => {
-            if let Err(failed) = run_loom(harness, &spec) {
-                failures.push(failed.message().unwrap_or_default().to_owned());
-            }
+
+    // IN-PROCESS arm: the second witness of every session, and the sole proof of a case the shell
+    // declines. A `Declined` session defers wholly; a `Rendered` one must equal the transcript.
+    let in_process =
+        dorc_loom::render_run_loom_in_process(&dorc_loom::DorcConsumer::new(), &parsed);
+    let in_process_proven = matches!(&in_process, Ok(dorc_loom::TwoDriverOutcome::Rendered(_)));
+    let in_process_decline: Option<String> = match &in_process {
+        Ok(dorc_loom::TwoDriverOutcome::Rendered(bytes)) => {
+            failures.extend(in_process_disagreements(&loom.name, &parsed, bytes));
+            None
         }
-        Err(message) => failures.push(format!("FAIL  {}  [loom: {message}]", loom.name)),
+        Ok(dorc_loom::TwoDriverOutcome::Declined(reason)) => Some(reason.reason()),
+        Err(error) => {
+            failures.push(format!("FAIL  {}  [two-driver gate: {error}]", loom.name));
+            Some(format!("driver error: {error}"))
+        }
+    };
+
+    // SHELL arm: the authoritative whole-product execution of every session it does not decline.
+    if shell.is_none() {
+        match loom_spec_of(&loom.name, &loom.path, parsed.clone()) {
+            Ok(Some(spec)) => {
+                if let Err(failed) = run_loom(harness, &spec) {
+                    failures.push(failed.message().unwrap_or_default().to_owned());
+                }
+            }
+            Ok(None) => {}
+            Err(message) => failures.push(format!("FAIL  {}  [loom: {message}]", loom.name)),
+        }
     }
+
+    if shell.is_some() && !in_process_proven {
+        PROVEN_NEITHER.fetch_add(1, Ordering::Relaxed);
+        failures.push(format!(
+            "FAIL  {}  [neither driver proves this case: shell declined ({}); in-process declined ({})]",
+            loom.name,
+            shell.as_ref().map(dorc_loom::ShellDecline::reason).unwrap_or_default(),
+            in_process_decline.clone().unwrap_or_default(),
+        ));
+    } else {
+        report_proof(&loom.name, shell.as_ref(), in_process_decline.as_deref());
+    }
+
     if failures.is_empty() {
         Ok(())
     } else {
@@ -1822,10 +1847,58 @@ fn run_loom_case(harness: &Harness, loom: &LoomCase) -> Result<(), Failed> {
     }
 }
 
-/// Is this case's transcript proven by the whole-product execution rather than by the render
-/// fixpoint? (`one-fixpoint-authority-per-case`; `run:` retires in D1's derived-driver step.)
-fn deferred_to_e2e(parsed: &errorloom::Case) -> bool {
-    parsed.frontmatter().scalar("run").is_some()
+/// Emit the trial's derived proof label (`30X:loom-driver-is-derived-and-reported`) and tally it.
+/// The both-prove path is the ordinary case and stays silent; a driver's decline is reported.
+fn report_proof(
+    name: &str,
+    shell: Option<&dorc_loom::ShellDecline>,
+    in_process_decline: Option<&str>,
+) {
+    match (shell, in_process_decline) {
+        (None, None) => {
+            PROVEN_BOTH.fetch_add(1, Ordering::Relaxed);
+        }
+        (None, Some(reason)) => {
+            PROVEN_SHELL_ONLY.fetch_add(1, Ordering::Relaxed);
+            eprintln!("  {name}: [proven by: shell; in-process declined: {reason}]");
+        }
+        (Some(shell), None) => {
+            PROVEN_IN_PROCESS_ONLY.fetch_add(1, Ordering::Relaxed);
+            eprintln!(
+                "  {name}: [proven by: in-process; shell declined: {}]",
+                shell.reason()
+            );
+        }
+        (Some(_), Some(_)) => {}
+    }
+}
+
+/// Every block on which the in-process render disagrees with the committed transcript
+/// (`gate-two-drivers-agree`; `30X:model-determinism-at-the-source`): a mismatch is the gate
+/// FAILING, never a normalizer. The rendered bytes are the stamped part stream, so an agreement is
+/// also the provenance an edit compiles against (`28L:rul-editability-is-stamped-never-re-derived`).
+fn in_process_disagreements(name: &str, case: &errorloom::Case, bytes: &[String]) -> Vec<String> {
+    let blocks = case.replay().blocks();
+    if bytes.len() != blocks.len() {
+        return vec![format!(
+            "FAIL  {name}  [two-driver gate: the in-process driver rendered {} blocks, the committed transcript has {}]",
+            bytes.len(),
+            blocks.len()
+        )];
+    }
+    blocks
+        .iter()
+        .zip(bytes)
+        .filter_map(|(block, got)| {
+            (strip_trailing_newlines(block.output()) != strip_trailing_newlines(got)).then(|| {
+                format!(
+                    "FAIL  {name}  [two-driver gate: block `{}` — the in-process render disagrees with the committed transcript the binary proved]\n{}",
+                    block.command(),
+                    divergence(block.output(), got)
+                )
+            })
+        })
+        .collect()
 }
 
 /// Refuse a frontmatter key no gate reads: it is an assertion the author only believes they made.
@@ -1848,93 +1921,24 @@ fn known_frontmatter_keys(name: &str, case: &errorloom::Case) -> Result<(), Fail
     .into())
 }
 
-/// Parse, hygiene-check, and render-fixpoint one committed loom.
-fn run_case(case: &LoomCase) -> Result<(), Failed> {
-    let name = &case.name;
-    let text = std::fs::read_to_string(&case.path)
-        .map_err(|error| format!("FAIL  {name}  [read {}: {error}]", case.path.display()))?;
-    let parsed = errorloom::Case::parse(&text)
-        .map_err(|error| format!("FAIL  {name}  [case does not parse: {error}]"))?;
-    known_frontmatter_keys(name, &parsed)?;
-    if let Some(why) = dorc_loom::defining_form_refusal(
-        parsed.frontmatter().scalar("code").is_some(),
-        deferred_to_e2e(&parsed),
-        parsed.frontmatter().scalar("fixpoint"),
-    ) {
-        return Err(format!("FAIL  {name}  [{why}]").into());
-    }
-    // A whole-product case's code fires at the REAL BINARY, so no in-process render surfaces it;
-    // the assertion MOVES to `run_loom`'s session scan, marker-collision binding either way.
-    let surfaced = (!deferred_to_e2e(&parsed)).then_some("code");
+/// Parse-time hygiene for one committed loom: the closed key vocabulary, and the same-slug
+/// diagnostic check. A `shell_proven` case has its `code:` proven at the real binary by
+/// [`defined_code_fired`], so it does not surface in the in-process render's hygiene check; a case
+/// the shell declines surfaces its code in that render.
+fn run_case_hygiene(
+    name: &str,
+    parsed: &errorloom::Case,
+    shell_proven: bool,
+) -> Result<(), Failed> {
+    known_frontmatter_keys(name, parsed)?;
+    let surfaced = (!shell_proven).then_some("code");
     if let Err(error) = parsed.check_hygiene(surfaced) {
-        let candidate = dorc_loom::DorcConsumer::new().render_case(&parsed).ok();
+        let candidate = dorc_loom::DorcConsumer::new().render_case(parsed).ok();
         return Err(format!(
             "FAIL  {name}  [hygiene: {error}]{}",
             candidate_rescue(name, candidate.as_deref())
         )
         .into());
-    }
-
-    // A WHOLE-PRODUCT loom is proven by the shell gate battery running the real binary; this arm
-    // drives the SAME session in-process as a second witness, and a declined session defers wholly.
-    if parsed.frontmatter().scalar("fixpoint") == Some("executed") {
-        return match parsed.frontmatter().scalar("run") {
-            Some(_) => gate_two_drivers_agree(name, &parsed),
-            None => Err(format!(
-                "FAIL  {name}  [fixpoint: `executed` with no `run:` — no runner would ever execute this case, so its transcript is proven by nothing]"
-            )
-            .into()),
-        };
-    }
-
-    let file = errorloom::CaseFile::new(format!("{name}.loom"), text.clone());
-    if errorloom::fixpoint_check(&dorc_loom::DorcConsumer::new(), std::slice::from_ref(&file))
-        .is_ok()
-    {
-        return transcript_bytes_equal_production_bytes(name, &parsed);
-    }
-    let rendered = dorc_loom::DorcConsumer::new()
-        .render_case(
-            &errorloom::Case::parse(&text).map_err(|error| format!("FAIL  {name}  [{error}]"))?,
-        )
-        .map_err(|error| format!("FAIL  {name}  [render: {error}]"))?;
-    Err(format!(
-        "FAIL  {name}  [render fixpoint: the case no longer reproduces from the current engine + catalog — re-bless it, or fix the drift]\n{}{}",
-        divergence(&text, &rendered),
-        candidate_rescue(name, Some(&rendered))
-    )
-    .into())
-}
-
-/// The committed transcript is the bytes the render seat produced — for the PROVENANCE answer too
-/// (`28L:rul-editability-is-stamped-never-re-derived`): the stamped part stream an edit is
-/// attributed against must be the same bytes the fixpoint above just reproduced.
-fn transcript_bytes_equal_production_bytes(
-    name: &str,
-    case: &errorloom::Case,
-) -> Result<(), Failed> {
-    let consumer = dorc_loom::DorcConsumer::new();
-    let routed = dorc_loom::replay_case(case, &consumer, &errorloom::RunEnv::new(), |_c, _x| {
-        Err(errorloom::RunError::ShellNotConfigured)
-    })
-    .map_err(|error| {
-        format!("FAIL  {name}  [no stamped provenance for a reproduced transcript: {error}]")
-    })?;
-    for (block, result) in case.replay().blocks().iter().zip(&routed) {
-        let stamped = result.editable_render().map_or_else(
-            || result.output().to_owned(),
-            errorloom::EditableRender::text,
-        );
-        if stamped != block.output() {
-            return Err(format!(
-                "FAIL  {name}  [`{}`: the committed transcript and the stamped part stream are \
-                 different bytes, so an edit would be attributed against something the reader \
-                 never saw]\n{}",
-                block.command(),
-                divergence(block.output(), &stamped)
-            )
-            .into());
-        }
     }
     Ok(())
 }
@@ -1965,46 +1969,6 @@ fn candidate_rescue(name: &str, rendered: Option<&str>) -> String {
         };
     out.push_str(&written);
     out
-}
-
-/// `gate-two-drivers-agree` (`30X:loom-driver-is-derived-and-reported`): the in-process driver
-/// renders the SAME session the shell gate battery runs, and a RENDERED session must equal the
-/// committed transcript block-for-block under `strip_trailing_newlines`. A DECLINED session passes
-/// with its reason and defers wholly to the shell driver; a mismatch is the gate FAILING, never a
-/// normalizer or a golden edit (`30X:model-determinism-at-the-source`).
-fn gate_two_drivers_agree(name: &str, case: &errorloom::Case) -> Result<(), Failed> {
-    let outcome = dorc_loom::render_run_loom_in_process(&dorc_loom::DorcConsumer::new(), case)
-        .map_err(|error| format!("FAIL  {name}  [two-driver gate: {error}]"))?;
-    let bytes = match outcome {
-        dorc_loom::TwoDriverOutcome::Declined(reason) => {
-            eprintln!(
-                "  {name}: in-process driver declined — {}; proven by the shell driver",
-                reason.reason()
-            );
-            return Ok(());
-        }
-        dorc_loom::TwoDriverOutcome::Rendered(bytes) => bytes,
-    };
-    let blocks = case.replay().blocks();
-    if bytes.len() != blocks.len() {
-        return Err(format!(
-            "FAIL  {name}  [two-driver gate: the in-process driver rendered {} blocks, the committed transcript has {}]",
-            bytes.len(),
-            blocks.len()
-        )
-        .into());
-    }
-    for (block, got) in blocks.iter().zip(&bytes) {
-        if strip_trailing_newlines(block.output()) != strip_trailing_newlines(got) {
-            return Err(format!(
-                "FAIL  {name}  [two-driver gate: block `{}` — the in-process render disagrees with the committed transcript the binary proved]\n{}",
-                block.command(),
-                divergence(block.output(), got)
-            )
-            .into());
-        }
-    }
-    Ok(())
 }
 
 /// The `(severity, slug)` a line names, if the line is a real diagnostic HEADER.
@@ -2260,7 +2224,24 @@ fn run_round_trip(
     // about the DRIVE — a case whose code fired and whose golden then diverged must still say so.
     drive_stderr.push_str(&out.stderr);
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
-    if out.code != expected_dorc_exit || got.is_empty() {
+    // GATES ATTACH TO WHAT THE BLOCK PRODUCED (`30Xa:rul-gates-attach-to-what-a-block-produced`): the
+    // artifact battery runs only when the block's stdout IS an artifact (non-empty, shebang-led). A
+    // mode that errored emits no artifact — a diagnostic on stderr, at most a plan-summary on stdout —
+    // so its transcript is its assertion. The crash guard narrows to a dead engine: an
+    // artifact-producing mode that exited 0 with EMPTY stdout. (A dir-case keeps its `DORC_EXIT`
+    // contract until D2 converts it.)
+    if loom {
+        if !got.trim_start().starts_with("#!") {
+            if out.code == 0 && got.is_empty() {
+                return Err(format!(
+                    "FAIL  {name}  [dorc exited 0 with EMPTY stdout — an artifact-producing mode that emits nothing is a dead engine]\n{}",
+                    out.stderr
+                )
+                .into());
+            }
+            return Ok(());
+        }
+    } else if out.code != expected_dorc_exit || got.is_empty() {
         return Err(format!(
             "FAIL  {name}  [dorc exited rc={} (expected {expected_dorc_exit}) / produced no output — a dead engine, or a wrong exit-code contract, is never green]\n{}",
             out.code, out.stderr
@@ -3776,7 +3757,6 @@ fn floor_bless_selftest() -> Vec<String> {
     let captures = [SessionBlock {
         command: "dorc --book=book.sh".to_owned(),
         output: "fresh transcript\n".to_owned(),
-        status: 0,
     }];
 
     if bless_loom(&spec(source), &dir, &captures, false).is_err() {
@@ -4474,6 +4454,15 @@ fn main() {
     }
     let conclusion = libtest_mimic::run(&args, trials);
     harness.reap();
+    // The derived-driver census (`30Xa:rul-drivers-decline-symmetrically`): which driver proved how
+    // many. A refusal is also a FAIL; disagreements are the two-driver gate FAILs above.
+    eprintln!(
+        "proof census: both={} shell-only={} in-process-only={} refused={}",
+        PROVEN_BOTH.load(Ordering::Relaxed),
+        PROVEN_SHELL_ONLY.load(Ordering::Relaxed),
+        PROVEN_IN_PROCESS_ONLY.load(Ordering::Relaxed),
+        PROVEN_NEITHER.load(Ordering::Relaxed),
+    );
     // The seed note rides every FAIL line now (`push_trial`), so no once-per-run summary.
     conclusion.exit();
 }

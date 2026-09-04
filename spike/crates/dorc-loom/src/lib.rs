@@ -17,9 +17,9 @@ use errorloom::{EditableFragment, EditableRender, EditableSection, RenderCompone
 
 mod consumer;
 pub use consumer::{
-    DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, DorcReplayDriver, EXECUTED_ELSEWHERE,
-    LoomDecline, SectionVariables, SeedRefusal, TwoDriverOutcome, render_run_loom_in_process,
-    replay_case, replay_case_with_inputs,
+    DorcApplyRefusal, DorcConsumer, DorcEditableBaseline, DorcReplayDriver, LoomDecline,
+    SectionVariables, SeedRefusal, ShellDecline, TwoDriverOutcome, render_run_loom_in_process,
+    replay_case, replay_case_with_inputs, shell_decline,
 };
 mod compile;
 pub use compile::{CompileRefusal, CompiledFragment, CompiledSection, compile_fragments};

@@ -570,16 +570,6 @@ fn vars_answers_for_every_committed_case() {
         }
         let case = Case::parse(&std::fs::read_to_string(&path).expect("case is readable"))
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
-        // Asserted rather than skipped: a silent skip would let the day this starts answering for
-        // a whole-product case pass unnoticed.
-        if case.frontmatter().scalar("run").is_some() {
-            let refusal = consumer
-                .editable_baseline(&case)
-                .err()
-                .unwrap_or_else(|| panic!("{}: answered for an executed case", path.display()));
-            assert_eq!(refusal, dorc_loom::EXECUTED_ELSEWHERE, "{}", path.display());
-            continue;
-        }
         let baseline = consumer
             .editable_baseline(&case)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));

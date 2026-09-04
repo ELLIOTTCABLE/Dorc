@@ -59,6 +59,19 @@ fn drawn_seed() -> u64 {
     z % DRAWN_SEED_CEILING
 }
 
+/// A constant xor'd into a seed to get a DIFFERENT second seed for the bless reproduction check
+/// (`30X:seed-two-affordances`). Nonzero, so the second seed always differs; low-bit-only, so the
+/// result stays under 2^62 for shell-arithmetic parity. The ONE derivation both blessing
+/// authorities share — the e2e runner and `dorc-loom publish` (`30Xa:Checkpoint D1`, rider d).
+pub const SECOND_SEED_XOR: u64 = 0x5EED_5EED_5EED;
+
+/// The second seed a bless re-renders the candidate under, to prove its transcript reproduced and is
+/// not baked-in nondeterminism (`30X:seed-two-affordances`).
+#[must_use]
+pub fn second_seed(seed: u64) -> u64 {
+    seed ^ SECOND_SEED_XOR
+}
+
 /// The start-of-run banner every runner prints once (`30X:seed-two-affordances`): the seed, and the
 /// replay spelling that reproduces this exact run.
 #[must_use]
