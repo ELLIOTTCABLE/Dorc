@@ -18,9 +18,9 @@ struct Reach {
     want_seen: bool,
 }
 
-/// Both directions, because that glob is a COST decision as much as a coverage one: the two
-/// shapes a whole-product case comes in must be seen, and the `aid` catalog looms must not be —
-/// the e2e runner mints no trial for those, so reaching them would spawn it to do nothing.
+/// Every case shape the ONE corpus runner drives must be seen (`30X:loom-one-runner`): a
+/// single-file whole-product loom, a dir-shaped case, AND an `aid` catalog loom — the merged runner
+/// now hygiene-checks the last too, so an edit to one must draw its tier rather than pass in silence.
 const REACH: &[Reach] = &[
     Reach {
         name: "sees-a-single-file-whole-product-loom",
@@ -35,10 +35,10 @@ const REACH: &[Reach] = &[
         want_seen: true,
     },
     Reach {
-        name: "leaves-an-aid-catalog-loom-alone",
+        name: "sees-an-aid-catalog-loom",
         step: "e2e",
         path: "spike/crates/aid/tests/cli-help-page.loom",
-        want_seen: false,
+        want_seen: true,
     },
     // The detached-unit fmt step fails open the same way: `cargo fmt --manifest-path
     // spike/Cargo.toml` cannot reach a crate carrying its own `[workspace]`, so if this glob

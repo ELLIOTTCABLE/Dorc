@@ -179,10 +179,6 @@ struct Partition {
 
 const PARTITION: &[Partition] = &[
     Partition {
-        step: "loom-hygiene",
-        excused: true,
-    },
-    Partition {
         step: "minispec",
         excused: true,
     },
