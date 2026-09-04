@@ -538,19 +538,16 @@ default gate.
 
 ## what-landed — the executable specification
 
-Lane `ai/r30-lane-load-xfails`, folded (pins `6785fada`; scanner fix `5148fe84`; atlas
-`da12ef00` + `fdd87fc3`): seventeen live pins, census coherent, horizons as minted.
+The load-model pins, as registered in `dorc_testbed::xfail::PINS` (`mise run xfail:census`
+renders them; a whole-product loom names its pin through its `xfail:` key):
 
 | pin | horizon | target |
 |---|---|---|
-| `p-x-unknown-source-is-a-point-havoc` | end-of-r30 | later unconditional role definition is live below an unresolvable `.` |
-| `p-x-load-operand-param-expansion-of-dollar-zero` | end-of-r30 | `. "${0%/*}/helpers.dorc.sh"` acquires and binds |
-| `p-x-load-operand-dirname-of-dollar-zero` · `…-cd-pwd-of-dollar-zero` | r31:book-load-acceptance | trigger names `ask-dollar-zero-command-substitution-path` (now `rul-static-predict-sites-loads`'s) |
+| `p-x-load-point-havoc-and-script-relative` (the `load30-point-havoc-and-script-relative` loom's) | end-of-r30, never re-horizoned | a later unconditional role definition is live below an unresolvable `.`; `${0%/*}`-relative script location binds |
+| `p-x-load-operand-case-over-dollar-zero` · `…-dirname-of-dollar-zero` · `…-cd-pwd-of-dollar-zero` | r31:book-load-acceptance | the three script-location spellings under `rul-static-predict-sites-loads` and `model-symbolic-dollar-zero` |
 | `p-x-glob-load-acquires-members` · `…-members-are-order-unknown` · `…-no-match-aborts` | r31:book-load-acceptance | the set-valued operand, its withhold, its (fatal) failure |
 | `p-x-book-code-source-is-inclusion` | r31:book-load-acceptance | unconditional plain-sh `. ./helpers.sh` binds; the guarded cell holds `May` |
-
-Whole-product XFAIL cases: `load30-point-havoc-and-script-relative` (expected to pass before
-the end of r30) · `load31-punted-load-shapes`.
+| `p-x-load31-punted-load-shapes` (the `load31-punted-load-shapes` loom's) | r31:book-load-acceptance | greens with the absolutizing script location, the source glob, and plain-sh inclusion together |
 
 ## findings-this-sitting
 

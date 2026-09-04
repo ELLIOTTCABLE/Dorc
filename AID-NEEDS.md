@@ -163,7 +163,6 @@ Registry
 | aid-plan-summary-tally | the "N to run, M to verify (K skipped)" contract line | same | rev▶ ci▶ | d | plan-summary grammar (stable slugs) | B |
 | aid-first-wall-nudge | which unmodeled command forms the first wall; how many sites an oracle for it would recover | text+orcl+topo | rev▶ blo▶ olo▶ | d | first-wall walk (`cli`); USER_STORY st.2–3 | B |
 | aid-oracle-coverage-nudge | "this looks like a guard — an oracle would lift it" (company-it-keeps enrichment) | text+topo | blo▶ olo▶ | g | an-enrichment-nudge | S |
-| aid-unloaded-sibling-oracle | sibling `*.oracle.sh` files exist but are not loaded (suggest, never auto-load) | invoc+text | blo▶ rev▶ | d | `24H` ack-6 | S |
 | aid-loaded-oracle-inventory | which `dorc-lang` sources/dirs were actually loaded this run | invoc | rev▶ ci▶ | m | ordered receipt source identities with source class + digest; full valid-`dorc-lang` bytes withheld | B |
 | aid-survives-attribution | whose at-most claim licensed each survival; the disjointness derivation; the resolver involved | facts+topo | rev▶ post◀ | m+c+d | SurvivalWitness; an-attribution-lanes | B |
 | aid-guard-license-attribution | whose check guards each verify line, under whose vouch | facts+topo | rev▶ post◀ | c+d | GuardLicense lane | B |
@@ -223,7 +222,7 @@ compact split is a named SELECTION POLICY (`289:rul-lint-render-split-is-policy`
 | aid | what the user learns | demand | moments | grade | mech | st |
 |---|---|---|---|---|---|---|
 | aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining-case-transcript-authored prose + fixpoint-protected committed catalog (`27V` §3; `282` generation flip) | S |
-| aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`) | O |
+| aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`); RULED 2026-09-04 (human): exit codes are STRUCTURAL — an exhaustive in-code list of named, consumed-and-never-reused exit STATES, so every collapse of several states onto one code is visible in code, plus ONE home for any user-configurable mapping of those states onto the constrained user-visible code space; unbuilt (applied-but-unrecorded, `apply-outcome-unwritten`, exits as the apply did today) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; ApplyOutcome receipt feeds | S |
 | aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT end-to-end (`27U`: recognition + noise-tolerant ingestion; the runtime drain on a controller-owned scratch directory, degrading to an inert sink when it cannot be created — `spike/CLAUDE.md` decline-class-emission) | B |
 

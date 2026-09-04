@@ -38,11 +38,11 @@ mise run dorc --help          # run Dorc! (args are passed in raw.)
 mise run test errexit_unknown_is_conservative
 ```
 
-Our tests include both [errorloom][]s (executable, *authoritative* e2e txtar
-files that you edit in-place; see below) and a small residue of non-loomable e2e
-tests, all of which are run by the above `mise run gate`. `mise run tests` runs
-*only* the Rust unit-tests, and is less valuable. `mise run` will list all
-available tasks.
+Our tests are [errorloom][]s (executable, *authoritative* txtar files — each one a
+shell session against the tool, which you edit in-place; see below) plus a few Rust
+batteries asserting state, exits, and relations that a transcript cannot; one runner
+drives all of them under the above `mise run gate`. `mise run tests` runs *only* the
+Rust unit-tests, and is less valuable. `mise run` will list all available tasks.
 
    [mise]: <https://mise.jdx.dev/getting-started.html> "mise-en-place, a cross-platform tool/version manager and dev-environment manager"
    [errorloom]: <https://github.com/ELLIOTTCABLE/Dorc/tree/main/spike/crates/errorloom> "our format for e2e tests and prose-authorship"
@@ -174,13 +174,12 @@ git commit spike\crates\aid\tests\cli-help-page.loom \
    -m "(- re doc) Reword the ..."
 ```
 
-Note that you *must* have a clean worktree for this. Loom-editing is *only*
-allowed in a completely clean working-dir. This is because loom is a
-*render-back* process - it reads what you changed, then re-renders everything
-from scratch, and *overwrites* your edits. (You may `git add` before compiling
-if you wish, but still, the only modified files must be looms if *any* edited
-file is a loom.) The render-back depends on the entire project's state and is
-inherently E2E.
+Loom-editing is a *render-back* process - it reads what you changed, then
+re-renders the affected cases from scratch, and *overwrites* your edits. The
+publish therefore checks its own blast radius, not the whole tree: the generated
+locks must be byte-equal to `HEAD`, and each case you name must be wholly staged
+or wholly unstaged; everything else in your working-dir is ignored. The
+render-back depends on the entire project's state and is inherently E2E.
 
 The publish prints your changes as a diff first. If it would give up a hole it
 writes nothing and exits nonzero; re-run with `--verbatim` to accept what it

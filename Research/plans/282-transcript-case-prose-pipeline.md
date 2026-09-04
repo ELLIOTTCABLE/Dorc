@@ -160,9 +160,12 @@ $ dorc plan --book=book.sh --format=jsonl < probe-results.txt
 ```
 
 - **Frontmatter** (flat subset, `282:lean-flat-frontmatter-subset`): `code` (the
-  defining slug; absent for non-defining corpus cases), `when-fires`, `why`.
-  Params are NOT declared here — they derive from the typed payload and templates
-  into the generated catalog lock. Keep the key set minimal; every addition is a
+  defining slug; absent for non-defining corpus cases), `when-fires`, `why`, and the
+  registry-metadata keys that survive `30X:loom-frontmatter-is-registry-metadata-only` — the
+  closed thirteen-key vocabulary is `dorc_loom::FRONTMATTER_KEYS` (`dorc-loom keys` prints it;
+  `crates/cli/CLAUDE.md` thirteen-keys-by-criterion). Run knobs are never frontmatter: they are
+  spelled in the session. Params are NOT declared here — they derive from the typed payload and
+  templates into the generated catalog lock. Keep the key set minimal; every addition is a
   format commitment.
 - **File sections**: verbatim, LF-only (materializer pins LF; CRLF in a section is
   a regeneration-time refusal). Multihost convention (format-neutral, build nothing now):

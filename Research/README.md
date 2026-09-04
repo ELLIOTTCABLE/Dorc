@@ -62,6 +62,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   `(result × diagnostics)` never-throw).
 - **r12 cross-network TDD / DST** — → `plans/128` (DST; the one all-nondeterminism seam is
   the controller↔host transport; `plans/121` is the frozen mid-round map); notes `120`–`127`.
+  The suite's generalization — every nondeterministic edge a typed column of ONE seam bundle,
+  looms as shell sessions, seeds varied by default — is **`notes/30X`** (r30, built).
 - **r13 platform-compat** — `kLANG` weld; tier-A/B targets; CRLF. → `plans/139` ·
   `plans/deferred/13A` (Win32 bootstrap addendum).
 - **r14 transport (`kCOMMS`)** — executorless-OOB. → `plans/142` (read its Resolution — it
@@ -150,8 +152,7 @@ the license-contamination map. Cross-references are `docID:slug`.
 - **r28** (BUILD COMPLETE 2026-07-20) — the syntax v0.2 unification + the errorloom prose
   pipeline. Specs: **`plans/280`** (charter) · **`plans/281`** (THE annotation mark-grammar,
   v0.2 in-code; the grep-map in its tail is history) · **`plans/282`** (errorloom: the
-  transcript-case prose pipeline; §2/§7 carry two clauses the `30X` rebuild corrects in
-  place) · `plans/286` (the `dorc explain` teaching surface — design-tier, build-punted;
+  transcript-case prose pipeline; kept current against `notes/30X`) · `plans/286` (the `dorc explain` teaching surface — design-tier, build-punted;
   research base `.claude/research/explain-prose-reuse/`) · `plans/288` (aid/loom
   unification) → `notes/289` (+ maps `28Va`/`28Vb`). Build record: **`notes/28A`** (THE
   conduct ledger — every ruling + the human deferred-queue) · `28B` (respell map) · `28C`
@@ -170,7 +171,7 @@ the license-contamination map. Cross-references are `docID:slug`.
   `.claude/research/refinement-types-industrial-cost/`).
 - **r29** — a quarantined lane (`Research/quarantine-DO-NOT-READ/`); off-limits.
 - **r30 (OPEN)** — correctness tooling, Spine, the kernel close-out, durable receipts, the
-  receipt-backed why surface, and (in flight) the test-architecture rebuild. Design
+  receipt-backed why surface, and the test-architecture rebuild. Design
   documents, each the design-of-record for its topic unless marked:
   `plans/302` (the solve-certifier spec) · `plans/306c` (influence-and-refusal build
   sequencing) · **`notes/306b`** (THE conductor-facing influence vocabulary/law; §10 rules
@@ -190,7 +191,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   successor rewrite) · **`plans/30W`** (index-kinds and owner-answered referents — pivot
   books; §10 rulings owed) · **`notes/30D`** (+`30Da`) (predict channel claims and OOB
   confirmation — RULED; the current-kernel rider) · **`notes/30X`** (the testing
-  architecture: seams, sessions, seeds — design + build planning; in flight).
+  architecture: seams, sessions, seeds — the design-of-record for the suite; BUILT; its §10
+  carries the one legal deferral class, kernel-mutating dogfood).
   Ledgers and records, in order: `notes/300` (+`300a`–`e`: Kani lane, prompt-review audit,
   speech-act gapcheck, sparing-reference lane + bundle) · `301` (minispec and dorc-verify)
   · `303`/`303a` (certifier call-site census + cross-lineage review) · `304`
@@ -215,8 +217,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   fruit arc, blind-act retrofit) · `30Rk` (durable-transition residue) · `30Ta` (adversarial
   review of the pre-rewrite `30T` draft) · `30V` (why-surface state-space re-exploration;
   §6 the deferred set) + `30Va` (conduct) / `30Vb`,`30Vc` (strawmen — raw, read-optional) /
-  `30Vd` (lane ledger) · `30Xa`–`d` (the rebuild's conductor ledger, lane A brief, scout
-  inventory, sealed-review kit). Current state: `LIVING_STATUS.md`; what follows:
+  `30Vd` (lane ledger) · `30Xa` (the rebuild's conductor ledger: every checkpoint ruling, the
+  lane table, the typed acks of the close). Current state: `LIVING_STATUS.md`; what follows:
   `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
   against a real machine: the ssh executor (`dorc apply host <plan.sh` does its own ssh'ing),

@@ -54,14 +54,6 @@ in `30O:register-and-steering-debt`, not here.
   the opt-in `mise run test:floor` lane proves six sentinel manifests only
   (`spike/CLAUDE.md` floor-differential-lane-opt-in, `28P`).
 
-## Testing residue the `30X` rebuild may subsume (check before re-raising)
-
-* [ ] the why-surface close's unwitnessed branches (the comparison seat's authentication
-  asymmetry + non-following read; the `vouched-severally` voice-set) · the loom `run:`-lane
-  widening for receipt-driving cases · a typed order accessor for `--receipt <file>` · whether
-  `receipt_route.rs`/`spine_baseline.rs` migrate into the corpus (`30Va`; lanes B/C of `30X`
-  touch all of these) · the DST rung ladder (`128` §3/§7).
-
 ## Smaller, still model-flagged
 
 * [ ] **human-root-doc-queue (his voice)** — fix-gsub-strip-claim ·
