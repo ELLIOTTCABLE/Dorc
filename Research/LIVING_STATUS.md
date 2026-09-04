@@ -28,7 +28,7 @@
 
 ---
 
-## IN FLIGHT (2026-09-03 — the test-architecture REBUILD; lanes A, B, C1, C2, C3a built and green; C3b building; D next; the arc branch rides today's `ai/main`)
+## IN FLIGHT (2026-09-04 — the test-architecture REBUILD; every lane BUILT and green on both legs; HELD before the close batch by the human; a successor resumes from the ledger's §0)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
 non-concurrent suite-only arc (product work stays separate). Design converged in a
@@ -69,11 +69,17 @@ dependency-free `dorc-testbed` crate holding the run seed — varied by default,
 failures — and the seam vocabulary; the clock ticking per invocation; nine cases pinned at
 `DORC_SEED=0`; the e2e bless refusing under a second seed). C3b (the transport seam's scripted
 column so an apply runs in-process; the consumer stops discarding its intent/outcome;
-`apply-outcome-unwritten` as a sibling code) is BUILDING; then D1 (one runner, the derived
-driver, the frontmatter collapse) and D2 (the dir-case conversion, the lint fold, `xfail` and
-`Posix` out of `internal-tooling`, the doctest noise, yardstick). The arc branch is re-rebased
-onto `ai/main` in every between-lanes gap, never mid-lane. Lane briefs are uncommitted, in the
-conductor's scratchpad (absolute path in the ledger's §0). Two product rulings were taken inside
+`apply-outcome-unwritten` as a sibling code) and lane D (one runner minting 427 trials; drivers
+declining symmetrically so the proving driver is DERIVED and reported; gates attaching to what
+a block produced; thirteen surviving frontmatter keys, `xfail` among them keyed to the one
+registry; every dir-case converted to a loom and the marker grammar deleted; the lint fold; the
+census tier reading the loom corpus; yardstick gone) are BUILT and green at the branch tip —
+zero `DORC_KNOWN_BROKEN`, `bless:dry` clean. REMAINING, held by the human before the close
+batch (2026-09-04): one small lane (hostsim's sweeps on the run seed; `xfail`/`Posix`/`repo_root`
+out of `internal-tooling` into `dorc-testbed`), then the conductor's close batch (the steering
+re-cuts, the registers, `gate:arc`, the ff) — all enumerated in the ledger's §0. The arc branch
+is re-rebased onto `ai/main` in every between-lanes gap, never mid-lane. Lane briefs are
+uncommitted, in the conductor's scratchpad (absolute path in the ledger's §0). Two product rulings were taken inside
 this suite arc and stand open to the human's veto (the why-lens relativizes `.`-sourced
 dependency paths under the load cwd; the unloaded-sibling-oracle advisory reconciles by
 canonical key); lane A's five fence re-targets await re-ack. No sealed review within the arc
