@@ -5588,7 +5588,7 @@ apt_get__is_converged() {
             .into();
         let edge = production_receipt_edge_over(&seams, None, &NoRoots)
             .expect("the pinned synthetic root resolves");
-        let crate::Invocation::Analyze(args) = parse_args_from(vec![
+        let Invocation::Analyze(args) = parse_args_from(vec![
             "apply".to_owned(),
             "--host".to_owned(),
             "web1.example.net".to_owned(),

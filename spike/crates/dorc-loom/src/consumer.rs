@@ -887,6 +887,7 @@ impl DorcConsumer {
             ctx: self.render_ctx(),
             actions: Vec::new(),
         };
+        let routing = output;
         let result = if outcome_unwritable {
             drive_apply_outcome_unwritable(&edge, &seams, &mut sink, args, &artifact, host)
         } else {
@@ -901,7 +902,7 @@ impl DorcConsumer {
             )
         };
         match result {
-            Ok(status) => Some(dorc_engine_replay(status, sink.actions, &output)),
+            Ok(status) => Some(dorc_engine_replay(status, sink.actions, &routing)),
             Err(diagnostic) => self.invocation_diagnostic(case, diagnostic, "dorc"),
         }
     }
@@ -1983,19 +1984,14 @@ fn inject_carriage_return(bytes: &[u8], line: usize) -> Vec<u8> {
     let text = String::from_utf8_lossy(bytes);
     let mut out = Vec::new();
     for (index, segment) in text.split_inclusive('\n').enumerate() {
-        if index + 1 == line {
-            match segment.strip_suffix('\n') {
-                Some(body) => {
-                    out.extend_from_slice(body.as_bytes());
-                    out.extend_from_slice(b"\r\n");
-                }
-                None => {
-                    out.extend_from_slice(segment.as_bytes());
-                    out.push(b'\r');
-                }
-            }
+        if line.checked_sub(1) != Some(index) {
+            out.extend_from_slice(segment.as_bytes());
+        } else if let Some(body) = segment.strip_suffix('\n') {
+            out.extend_from_slice(body.as_bytes());
+            out.extend_from_slice(b"\r\n");
         } else {
             out.extend_from_slice(segment.as_bytes());
+            out.push(b'\r');
         }
     }
     out
@@ -2067,6 +2063,10 @@ fn scripted_host_outcome(case: &Case, host: &str) -> Option<dorc_transport::SimS
 /// (`30X` §11). The outcome's own create is DISCOVERED on a throwaway store rather than named by a
 /// fragile constant, then faulted, so the intent publishes and the outcome does not; the render is
 /// the durable-failure diagnostic.
+#[expect(
+    clippy::result_large_err,
+    reason = "the Err is production's full `Diag`, as on the apply route it drives"
+)]
 fn drive_apply_outcome_unwritable(
     edge: &dorc_cli::durable::LocalReceiptEdgeV1,
     seams: &dorc_cli::seam::Seams,
