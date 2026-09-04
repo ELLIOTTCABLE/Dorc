@@ -129,6 +129,25 @@ fn required_token_gate() {
 }
 
 #[test]
+fn seam_export_block_is_exempt_from_the_required_token() {
+    let exempt = Case::parse(
+        "---\ncode: the-slug\n---\n-- replay --\n$ export DORC_SEED=0\n\n$ go\nthe-slug fired\n",
+    )
+    .expect("parses");
+    exempt
+        .check_hygiene(Some("code"))
+        .expect("an export block before a surfacing block passes");
+
+    let empty = Case::parse("---\ncode: the-slug\n---\n-- replay --\n$ go\n\n$ go\nthe-slug\n")
+        .expect("parses");
+    let err = empty.check_hygiene(Some("code")).unwrap_err();
+    assert!(matches!(
+        err,
+        CaseError::MissingRequiredToken { block: 0, .. }
+    ));
+}
+
+#[test]
 fn materialized_files_are_relative() {
     let case =
         Case::parse("---\n---\n-- hosts/web1/probe.txt --\nsite 0\n-- replay --\n$ go\nok\n")

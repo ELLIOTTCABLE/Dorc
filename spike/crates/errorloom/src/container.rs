@@ -546,8 +546,9 @@ impl Case {
 
     /// The static hygiene gates over the current replay blocks (`28A` §1): every
     /// output line that parses as a txtar marker refuses; when `required_key` is
-    /// set and present in frontmatter, every block's output must surface its
-    /// scalar value.
+    /// set and present in frontmatter, every non-export block's output must surface
+    /// its scalar value — a seam-export block (`export NAME=value`, output-less by
+    /// construction) is exempt (`rul-seam-export-blocks-surface-nothing`).
     ///
     /// # Errors
     /// Returns [`CaseError::MarkerCollision`] or [`CaseError::MissingRequiredToken`].
@@ -566,6 +567,9 @@ impl Case {
             && !token.is_empty()
         {
             for (block_index, block) in self.replay.blocks.iter().enumerate() {
+                if is_seam_export(&block.command) {
+                    continue;
+                }
                 if !block.output.contains(token) {
                     return Err(CaseError::MissingRequiredToken {
                         block: block_index,
@@ -778,6 +782,18 @@ fn strip_trailing_separator(content: &str) -> String {
         Some(rest) if rest.is_empty() || rest.ends_with('\n') => rest.to_owned(),
         _ => content.to_owned(),
     }
+}
+
+/// Whether a replay command is a seam export (`export NAME=value`): output-less by
+/// construction, so the required-token gate exempts it from surfacing a code slug
+/// (`rul-seam-export-blocks-surface-nothing`). Consumer-neutral — errorloom names no
+/// Dorc variable (`282:rul-generic-executor-consumer-dispatch`).
+fn is_seam_export(command: &str) -> bool {
+    command
+        .trim()
+        .strip_prefix("export ")
+        .and_then(|rest| rest.split_whitespace().next())
+        .is_some_and(|first| first.contains('='))
 }
 
 /// Parse a replay section's content into `$ `-prefixed command blocks.
