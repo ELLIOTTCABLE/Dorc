@@ -1151,7 +1151,7 @@ impl RoundTripInputs {
                 .iter()
                 .any(|arg| arg == "--artifact-dir" || arg.starts_with("--artifact-dir=")),
             probe_results_authored: case.frontmatter().scalar("probe-results") == Some("authored"),
-            dual_rail_suppressed: book_has_multiline_argv(&book),
+            dual_rail_suppressed: book_has_multiline_argv(book),
             tolerances,
         })
     }
@@ -1341,8 +1341,10 @@ fn echoed_exit(case: &errorloom::Case) -> String {
         .blocks()
         .iter()
         .find(|block| block.command().trim() == "echo $?")
-        .map(|block| strip_trailing_newlines(block.output()))
-        .unwrap_or_else(|| String::from("0"))
+        .map_or_else(
+            || String::from("0"),
+            |block| strip_trailing_newlines(block.output()),
+        )
 }
 
 /// Give a materialized mock the execute bit `PATH` resolution needs on unix (txtar carries no
@@ -2636,6 +2638,10 @@ fn divergence(want: &str, got: &str) -> String {
 /// runs that generation's own `plan.sh` from inside it — the product an operator receives, at the
 /// cwd `30I` §7.6 gives it. Without one the rendered text runs alone in an empty sandbox, which is
 /// the flattened form's honest world and every existing case's.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the sh gate's parameter set, plus shape-B inputs"
+)]
 fn exec_check(
     harness: &Harness,
     name: &str,
@@ -2721,6 +2727,10 @@ fn exec_check(
 /// completeness + grammar, (c) vouch-closure (no rc=127), (b) record parity against the
 /// authored fixture, and (d) deriv-coord parity. (b)/(c)/(d) are disabled by a
 /// `PROBE_RESULTS=authored` marker; (a) always holds.
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the sh gate's parameter set, plus the probe-results opt-out"
+)]
 fn probe_exec_check(
     harness: &Harness,
     name: &str,
