@@ -17,11 +17,11 @@ $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
 apply: error[transport-apply-failed]: The apply artifact on web1.example.net ran
 to completion and exited 2; the status is the artifact's own, and a fresh `dorc
 plan` measures what actually converged.
-[unwritten: cli-apply-identities-line]
+apply: recorded intent c02e48a7f9cff5ed0ff9086402e75e03f2b9446a573d1a03d93e95cf523a5f80 and outcome 74341e7fb3d150a2b3454043a7207aa6c68e7661d3485f411dd450cb32e36e59 -- dorc why takes either id
 
 $ dorc-loom --this vars
 case: transport-apply-failed
 {{host}} = "web1.example.net"
 {{status}} = "2"
-{{v0}} = ""
-{{v1}} = ""
+{{v0}} = "c02e48a7f9cff5ed0ff9086402e75e03f2b9446a573d1a03d93e95cf523a5f80"
+{{v1}} = "74341e7fb3d150a2b3454043a7207aa6c68e7661d3485f411dd450cb32e36e59"

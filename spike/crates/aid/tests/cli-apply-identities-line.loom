@@ -15,4 +15,4 @@ status 0
 $ export DORC_SEED=0
 
 $ dorc apply --host web1.example.net --plan webhost.dorc-plan.sh
-[unwritten: cli-apply-identities-line]
+apply: recorded intent c02e48a7f9cff5ed0ff9086402e75e03f2b9446a573d1a03d93e95cf523a5f80 and outcome 74341e7fb3d150a2b3454043a7207aa6c68e7661d3485f411dd450cb32e36e59 -- dorc why takes either id

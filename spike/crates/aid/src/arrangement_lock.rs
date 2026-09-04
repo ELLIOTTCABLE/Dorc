@@ -2250,6 +2250,6 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         occurrence: None,
         when_used: "after a `dorc apply --host` records BOTH its intent and outcome, the apply console's own decision digest closes with this line so the user's next act is `dorc why` over exactly those two ids. cli/compose.rs emit_apply_identities.",
         why: "30X section 11 (the post-dispatch surfaces). The intent and outcome identities are the run's own seeded values, never fixture literals; the line's words are UNWRITTEN (error-authorship-tier) until a case authors them.",
-        words: None,
+        words: Some(ProseTier::Slop(&["apply: recorded intent ", " and outcome ", " -- dorc why takes either id"])),
     },
 ];
