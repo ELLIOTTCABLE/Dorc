@@ -186,8 +186,6 @@ pub struct EngineRequest<'a> {
     pub snapshot: &'a StaticLoadSnapshot,
     /// Parsed and edge-observed semantic choices.
     pub options: &'a EngineOptions,
-    /// Diagnostics produced by source acquisition at the filesystem edge.
-    pub acquisition_diagnostics: &'a [Diag],
 }
 
 /// What the engine asks the production or harness controller to observe after probe publication.
@@ -658,16 +656,6 @@ fn run_status(
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
-    // Source-acquisition diagnostics from the filesystem edge (a general seam; no producer today).
-    if mode != Mode::Bundle {
-        report_at(
-            sink,
-            advisory,
-            "oracle",
-            None,
-            request.acquisition_diagnostics,
-        );
-    }
     // `--last` desync guard (`22F` book-identity): re-read digests must match the durable's.
     // ack-8: the book-stage diags (parse/cfg/classify/probe/render) all span into `book_src`;
     // this pair feeds their file:line:col frames (rul24-lineno-identity — the SOURCE line space).
@@ -4331,7 +4319,6 @@ mod tests {
             &EngineRequest {
                 snapshot: &snapshot,
                 options: &options,
-                acquisition_diagnostics: &[],
             },
             &mut edges,
             &mut sink,

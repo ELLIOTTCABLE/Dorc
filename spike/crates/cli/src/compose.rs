@@ -274,7 +274,6 @@ fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result
         &EngineRequest {
             snapshot: &ready.snapshot,
             options: &options,
-            acquisition_diagnostics: &[],
         },
         &mut edges,
         sink,

@@ -1212,7 +1212,6 @@ impl DorcConsumer {
             &dorc_cli::engine::EngineRequest {
                 snapshot: &snapshot,
                 options: &options,
-                acquisition_diagnostics: &[],
             },
             &mut edges,
             &mut sink,

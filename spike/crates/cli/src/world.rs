@@ -185,7 +185,6 @@ impl WhyWorld {
             &crate::engine::EngineRequest {
                 snapshot,
                 options: &options,
-                acquisition_diagnostics: &[],
             },
             &mut edges,
             &mut output,
