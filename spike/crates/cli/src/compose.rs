@@ -1002,9 +1002,12 @@ fn parse_args() -> Result<Invocation, Diag> {
 /// The lint OPERATIONAL print seat (`27R` §5 exit trichotomy): the lint itself is compromised, so
 /// the message rides the `dorc: lint: ` chrome and the caller returns `EXIT_LINT_OPERATIONAL`.
 fn report_lint_operational(diag: &Diag) {
-    eprintln!(
+    // The `error[slug]` header the in-process render carries, wrapped on the BODY alone with the
+    // `dorc: lint: ` chrome PREPENDED — the same seat and the same layout the loom's `run_lint`
+    // uses (`30Xa:tc-lint-error-render-carries-slug-in-process-only`), so the two drivers agree.
+    eprint!(
         "dorc: lint: {}",
-        dorc_aid::diag::render_body(diag, &Interner::default())
+        dorc_aid::diag::render_cli_parts(&render_ctx(), diag, "", "", &Interner::default()).text()
     );
 }
 
