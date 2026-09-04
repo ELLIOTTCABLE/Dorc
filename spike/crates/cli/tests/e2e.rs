@@ -52,8 +52,8 @@ use errorloom::CaseRenderer as _;
 
 use dorc_loom::records_framing::{RECORDS_NONCE, RECORDS_TOKEN};
 use support::{
-    E2eCase, E2eKind, LoomCase, Selection, case_from_path, case_roots, discover_e2e,
-    discover_looms, report_path_selection, resolve_selection, spike_root, split_path_selectors,
+    E2eKind, LoomCase, Selection, case_from_path, case_roots, discover_e2e, discover_looms,
+    report_path_selection, resolve_selection, spike_root, split_path_selectors,
 };
 
 /// This crate's own `tests/` dir — the home of the round-trip collection, and the anchor
@@ -115,11 +115,6 @@ impl Drop for Scratch {
 /// Read a file, or the empty string when it is absent.
 fn read_or_empty(path: &Path) -> String {
     std::fs::read_to_string(path).unwrap_or_default()
-}
-
-/// A file exists and is non-empty (`[ -f x ] && [ -s x ]`).
-fn nonempty_file(path: &Path) -> bool {
-    std::fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() > 0)
 }
 
 /// Emulate `$(…)`: a command substitution strips every trailing newline.
@@ -711,33 +706,6 @@ fn catalog_has_slug(slug: &str) -> bool {
         .any(|entry| entry.slug == slug)
 }
 
-/// Does one haystack line carry every ` && `-conjoined needle of `pattern`?
-fn needle_lands(haystack: &[&str], pattern: &str) -> bool {
-    pattern
-        .split(" && ")
-        .filter(|needle| !needle.is_empty())
-        .fold(haystack.to_vec(), |candidates, needle| {
-            candidates
-                .into_iter()
-                .filter(|line| line.contains(needle))
-                .collect()
-        })
-        .iter()
-        .any(|_| true)
-}
-
-/// The patterns of `decl` that no `haystack` line satisfies. Blank and `#`-comment lines
-/// are skipped (`needles_missing`).
-fn needles_missing(haystack: &str, decl: &Path) -> Vec<String> {
-    let text = read_or_empty(decl);
-    let lines = lines_of(haystack);
-    text.lines()
-        .filter(|pattern| !pattern.is_empty() && !pattern.starts_with('#'))
-        .filter(|pattern| !needle_lands(&lines, pattern))
-        .map(str::to_owned)
-        .collect()
-}
-
 // ---------------------------------------------------------------------------
 // gate-6: the dual-rail judge (pure — driven by the confound battery on fabricated input)
 
@@ -1147,15 +1115,6 @@ fn book_has_multiline_argv(book: &str) -> bool {
 // ---------------------------------------------------------------------------
 // loom-form cases (`288` §7 — the whole-product transcript)
 
-/// What a loom-form case's `run:` frontmatter selects.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum LoomRun {
-    /// The whole-pipeline round-trip; the replay output is the two rendered artifacts.
-    RoundTrip,
-    /// A `dorc lint` case; the replay output is the lint render.
-    Lint,
-}
-
 /// A `.loom` whose frontmatter declares an executable shape (`288` §7).
 ///
 /// The loom is the AUTHORING surface — one file, sections instead of a dir of fixtures,
@@ -1175,8 +1134,6 @@ struct LoomCaseSpec {
     path: PathBuf,
     /// The parsed case.
     case: errorloom::Case,
-    /// Which driver owns it.
-    run: LoomRun,
 }
 
 /// Classify one `.loom` for the SHELL driver, or `Ok(None)` when the shell declines it
@@ -1189,33 +1146,17 @@ fn loom_spec(case: &LoomCase) -> Result<Option<LoomCaseSpec>, String> {
     Ok(loom_spec_of(&case.name, &case.path, parsed))
 }
 
-/// The already-parsed twin of [`loom_spec`]: the shell proves the case unless it declines, and the
-/// driver KIND (round-trip session vs single-invocation lint) is derived from the block the case
-/// runs, not from a retired `run:` key.
+/// The already-parsed twin of [`loom_spec`]: the shell proves the case unless it declines. Every
+/// case the shell proves runs as a session now — a `$ dorc lint` block drives through the harness
+/// like any other (`d-brief.md` item 6 fold; `dev-lint-looms-stay-single-invocation` ended by D2b).
 fn loom_spec_of(name: &str, path: &Path, parsed: errorloom::Case) -> Option<LoomCaseSpec> {
     if dorc_loom::shell_decline(&parsed).is_some() {
         return None;
     }
-    // LINT is the single-invocation `dorc lint … book.sh` shape `run_lint` drives
-    // (`dev-lint-looms-stay-single-invocation`, ended by D2); any other lint runs through the session.
-    let first_invocation = parsed.replay().blocks().iter().find_map(|block| {
-        let argv = dorc_loom::session_grammar::block_argv(block.command());
-        (argv.first().map(String::as_str) == Some("dorc")).then_some(argv)
-    });
-    let run = match first_invocation {
-        Some(argv)
-            if argv.get(1).map(String::as_str) == Some("lint")
-                && argv.last().map(String::as_str) == Some("book.sh") =>
-        {
-            LoomRun::Lint
-        }
-        _ => LoomRun::RoundTrip,
-    };
     Some(LoomCaseSpec {
         name: name.to_owned(),
         path: path.to_owned(),
         case: parsed,
-        run,
     })
 }
 
@@ -1232,11 +1173,6 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
     let write = |name: &str, body: String| -> Result<(), String> {
         std::fs::write(into.join(name), body).map_err(|error| format!("{error}"))
     };
-    if spec.run == LoomRun::Lint {
-        // Single-invocation until D2b's fold: the flags from `cmd`, the exit from the `$ echo $?` block.
-        write("cmd", format!("{}\n", lint_flags(spec)?))?;
-        write("expected-rc", format!("{}\n", echoed_exit(&spec.case)))?;
-    }
     let transcript = spec
         .case
         .replay()
@@ -1271,20 +1207,6 @@ fn materialize_anchor(name: &str) -> Result<(Scratch, PathBuf, errorloom::Case),
     Ok((scratch, dir, case))
 }
 
-/// The exit a session's `$ echo $?` block declares (its committed output), or `0` when it has none.
-/// The exit respell turns an `exit:` key into that block, so a case's exit lives where the session
-/// shows it rather than in frontmatter (`30X:loom-frontmatter-is-registry-metadata-only`).
-fn echoed_exit(case: &errorloom::Case) -> String {
-    case.replay()
-        .blocks()
-        .iter()
-        .find(|block| block.command().trim() == "echo $?")
-        .map_or_else(
-            || String::from("0"),
-            |block| strip_trailing_newlines(block.output()),
-        )
-}
-
 /// Give a materialized mock the execute bit `PATH` resolution needs on unix (txtar carries no
 /// mode). A no-op on Windows, where `PATH` resolution does not consult it.
 #[cfg(unix)]
@@ -1299,38 +1221,6 @@ fn make_executable(path: &Path) {
 
 #[cfg(not(unix))]
 fn make_executable(_path: &Path) {}
-
-/// The lint flag vector a `run: lint` loom's replay command carries, minus the `dorc lint`
-/// head and the trailing book path the driver appends itself. Deriving the `cmd` file from the
-/// COMMAND is what keeps the committed transcript's first line honest: the flags a reader sees
-/// are the flags the case runs.
-fn lint_flags(spec: &LoomCaseSpec) -> Result<String, String> {
-    let command = spec
-        .case
-        .replay()
-        .blocks()
-        .first()
-        .ok_or_else(|| String::from("no replay block"))?
-        .command();
-    let words: Vec<&str> = command.split_whitespace().collect();
-    match words.split_first() {
-        Some((&"dorc", rest)) if rest.first() == Some(&"lint") => {}
-        _ => return Err(format!("`{command}` is not a `dorc lint` invocation")),
-    }
-    if words.last() != Some(&"book.sh") {
-        return Err(format!(
-            "`{command}` must end in the book path the driver appends (`book.sh`)"
-        ));
-    }
-    let mut flags: Vec<&str> = Vec::new();
-    for word in words.iter().skip(2).take(words.len().saturating_sub(3)) {
-        if !word.starts_with('-') {
-            return Err(format!("`{command}` carries a non-flag word `{word}`"));
-        }
-        flags.push(word);
-    }
-    Ok(flags.join(" "))
-}
 
 /// T1, the closed loop (`26D` §5): probe REALLY executed, its REAL captured output admitted, a
 /// plan built from it — with no authored `probe-results.txt` anywhere in that chain.
@@ -1679,17 +1569,6 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     std::fs::create_dir_all(&dir).expect("create loom case dir");
     materialize_loom(spec, &dir)
         .map_err(|error| Failed::from(format!("FAIL  {}  [loom: {error}]", spec.name)))?;
-
-    // A lint loom stays single-invocation (`dev-lint-looms-stay-single-invocation`): single-block,
-    // shipped-binary, scrubbed `PATH`, stdout-only — the seam-driven session buys it nothing.
-    if spec.run == LoomRun::Lint {
-        let case = E2eCase {
-            name: spec.name.clone(),
-            dir,
-            kind: E2eKind::Lint,
-        };
-        return run_lint(harness, &case);
-    }
 
     let session_root = scratch.path.join("session-store");
     for role in ["config", "state"] {
@@ -3038,54 +2917,6 @@ fn dual_rail_check(
 // ---------------------------------------------------------------------------
 // the lint case drivers
 
-/// A `dorc lint` case: the flags in `cmd`, run from INSIDE the case dir under a SCRUBBED
-/// `PATH` so the external linters are deterministically absent.
-fn run_lint(harness: &Harness, case: &E2eCase) -> Result<(), Failed> {
-    let dir = &case.dir;
-    let name = &case.name;
-    let flags: Vec<String> = read_or_empty(&dir.join("cmd"))
-        .split_whitespace()
-        .map(str::to_owned)
-        .collect();
-    let want_rc: i32 = strip_trailing_newlines(&read_or_empty(&dir.join("expected-rc")))
-        .parse()
-        .unwrap_or(0);
-    let empty = Scratch::new("lintpath");
-    let out = capture(
-        Command::new(&harness.dorc)
-            .current_dir(dir)
-            .env("PATH", &empty.path)
-            .arg("lint")
-            .args(&flags)
-            .arg("book.sh")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null()),
-    );
-    if out.code != want_rc {
-        return Err(format!(
-            "FAIL  {name}  [lint: exit rc={}, expected {want_rc}]",
-            out.code
-        )
-        .into());
-    }
-    let got = strip_trailing_newlines(&strip_cr(&out.stdout));
-    // A lint case's golden is written HERE, like every other gate's: without this the only route
-    // to re-blessing one was a hand edit, which is a golden nothing mechanically produced.
-    if harness.bless {
-        std::fs::write(dir.join("expected.out"), format!("{got}\n")).expect("bless expected.out");
-        return Ok(());
-    }
-    let want = strip_trailing_newlines(&strip_cr(&read_or_empty(&dir.join("expected.out"))));
-    if got != want {
-        return Err(format!(
-            "FAIL  {name}  [lint: stdout content diff]\n{}",
-            divergence(&want, &got)
-        )
-        .into());
-    }
-    Ok(())
-}
-
 /// The opt-in real-external-tools lint lane (`spike/CLAUDE.md` real-tools-lane-opt-in).
 /// Registered ONLY when `DORC_E2E_REAL_TOOLS` is set; the LIST is the coverage assertion,
 /// so a listed tool with no fixture, or an absent tool, fails loudly.
@@ -3545,7 +3376,6 @@ fn floor_bless_selftest() -> Vec<String> {
         name: "specimen".to_owned(),
         path: loom.clone(),
         case: errorloom::Case::parse(text).expect("parse specimen"),
-        run: LoomRun::RoundTrip,
     };
     // The session's one-block capture the fold commits (block 0's both-streams transcript).
     let captures = [SessionBlock {
@@ -3670,7 +3500,6 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
             name: tag.to_owned(),
             path: path.clone(),
             case: errorloom::Case::parse(&source).expect("parse specimen"),
-            run: LoomRun::RoundTrip,
         };
         let passed = run_loom(&bless, &spec).is_ok();
         if passed != want_written {
@@ -4173,11 +4002,7 @@ fn main() {
     }
     let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
     for case in discovered {
-        let harness = Arc::clone(&harness);
         match case.kind {
-            E2eKind::Lint => push_trial(&mut trials, seed, case.name.clone(), move || {
-                run_lint(&harness, &case)
-            }),
             E2eKind::LintReal => {
                 real_fixtures.insert(case.name.clone(), case.dir);
             }

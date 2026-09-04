@@ -1,3 +1,12 @@
+---
+---
+-- book.sh --
+for i in {1..10}; do
+   echo "$i"
+done
+
+-- replay --
+$ dorc lint book.sh
 dorc lint findings (advisory; the machine format `--format=jsonl` is the stable surface):
 
 (run):
@@ -8,3 +17,5 @@ book.sh:
   1:10 warn [loop-brace-range:for-loop-brace-range-runs-once] [unwritten: for-loop-brace-range-runs-once]
 
 dorc lint: 0 errors, 1 warning, 2 infos across 1 file.
+$ echo $?
+0

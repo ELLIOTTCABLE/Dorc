@@ -161,8 +161,6 @@ pub(crate) fn report_path_selection(
 /// What a discovered dir-form case is driven as.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum E2eKind {
-    /// A `dorc lint` case: `cmd` carries the flags, `expected.out` the hand-authored render.
-    Lint,
     /// A real-external-linter fixture, driven only under `DORC_E2E_REAL_TOOLS`.
     LintReal,
     /// A dir carrying `book.sh` plus more than `book.sh` alone — an authoring error, minted as a
@@ -242,9 +240,7 @@ pub(crate) fn discover_e2e(roots: &[PathBuf]) -> Vec<E2eCase> {
             if !path.is_dir() || multi_file_loom(&name, &path).is_some() {
                 continue;
             }
-            let kind = if path.join("cmd").is_file() {
-                E2eKind::Lint
-            } else if !path.join("book.sh").is_file() {
+            let kind = if !path.join("book.sh").is_file() {
                 continue;
             } else if round_trip_residue(&path).is_empty() {
                 E2eKind::LintReal
