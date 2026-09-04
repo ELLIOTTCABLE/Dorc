@@ -339,10 +339,7 @@ pub enum DiagCode {
     /// would pick a document by the value least related to when it was written.
     DurableReceiptAmbiguous(DurableReceiptAmbiguous),
 
-    // ── cli/main.rs (aid hints) — `AID-NEEDS:aid-unloaded-sibling-oracle` (gap-5, ack-6) ──────
-    /// Sibling `*.oracle.sh` files sit on disk beside the loaded set but were not loaded — a
-    /// suggest-never-auto-load hint (`24H` ack-6). Advisory; the run is unchanged.
-    AidUnloadedSiblingOracle(AidUnloadedSiblingOracle),
+    // ── cli/main.rs (aid hints) ──────
     /// A LOADED oracle's `__is_converged` verdict never vouched any site this run — the
     /// silent-decline value-evaporation detector (`30Qe:fruit-oracle-matched-zero-sites`;
     /// `KNOBS:kWARN` rich, tune-high). Advisory; the run is unchanged.
@@ -542,7 +539,6 @@ impl DiagCode {
             DiagCode::DurableReceiptUnwritten(_) => "durable-receipt-unwritten",
             DiagCode::DurableReceiptUnreadable(_) => "durable-receipt-unreadable",
             DiagCode::DurableReceiptAmbiguous(_) => "durable-receipt-ambiguous",
-            DiagCode::AidUnloadedSiblingOracle(_) => "aid-unloaded-sibling-oracle",
             DiagCode::OracleMatchedZeroSites(_) => "oracle-matched-zero-sites",
             DiagCode::UnmodeledWallInventory(_) => "unmodeled-wall-inventory",
             DiagCode::VerdictTerminalPipeline(_) => "verdict-terminal-pipeline",
@@ -1866,15 +1862,6 @@ pub struct DurableReceiptAmbiguous {
     pub count: String,
 }
 
-/// Payload of [`DiagCode::AidUnloadedSiblingOracle`] (PASSTHROUGH `{detail}`; `AID-NEEDS:aid-unloaded-
-/// sibling-oracle`, gap-5 / `24H` ack-6): the cli-edge scan builds `detail` listing the sibling
-/// `*.oracle.sh` files found on disk but not loaded (suggest, never auto-load). Spanless.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AidUnloadedSiblingOracle {
-    /// The unloaded sibling files, backticked and comma-joined (`{oracles}`).
-    pub oracles: String,
-}
-
 /// Payload of [`DiagCode::OracleMatchedZeroSites`] (`30Qe:fruit-oracle-matched-zero-sites`): the
 /// loaded oracle file whose verdict never vouched a site this run. Spanless — the claim is about
 /// the FILE, not any one book command.
@@ -3053,13 +3040,6 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::None,
             remediation: RemediationClass::Structural,
         },
-        // The unloaded-sibling hint: a Note (suggest, never auto-load); ProvideModel — the oracle
-        // exists on disk, loading it provides the model that would lift the wall.
-        DiagCode::AidUnloadedSiblingOracle(_) => CodeSpec {
-            severity: Severity::Note,
-            floor: Floor::None,
-            remediation: RemediationClass::ProvideModel,
-        },
         // Warning (`KNOBS:kWARN` tune-high): nothing broke, but the detection is wanted loud.
         DiagCode::OracleMatchedZeroSites(_) => CodeSpec {
             severity: Severity::Warning,
@@ -3520,9 +3500,6 @@ fn params_of_raw(ctx: &RenderCtx<'_>, code: &DiagCode) -> Vec<(&'static str, Par
         }
         DiagCode::DurableReceiptAmbiguous(DurableReceiptAmbiguous { count }) => {
             vec![ours("count", count.clone())]
-        }
-        DiagCode::AidUnloadedSiblingOracle(AidUnloadedSiblingOracle { oracles }) => {
-            vec![ours("oracles", oracles.clone())]
         }
         DiagCode::OracleMatchedZeroSites(OracleMatchedZeroSites { oracle }) => {
             vec![ours("oracle", oracle.clone())]

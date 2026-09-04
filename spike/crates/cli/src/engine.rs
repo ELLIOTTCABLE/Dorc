@@ -658,8 +658,7 @@ fn run_status(
     // CONCATENATE into one analyzed unit (`\n`-joined so no two files' lines merge). `book_name`
     // is the display path (the first book) — for a single book (the norm) the frame's line numbers
     // are exact source lines; a multi-book unit's line numbers are into the concatenation.
-    //
-    // The unloaded-sibling-oracle hint (gap-5 / `24H` ack-6): a cli-edge, filesystem-reading disclosure.
+    // Source-acquisition diagnostics from the filesystem edge (a general seam; no producer today).
     if mode != Mode::Bundle {
         report_at(
             sink,

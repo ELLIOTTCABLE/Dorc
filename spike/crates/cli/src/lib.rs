@@ -1522,64 +1522,6 @@ pub fn transport_apply_failed(host: &str, status: i32) -> InvocationError {
     ))
 }
 
-/// Construct the unloaded-sibling advisory from loaded and discovered paths.
-///
-/// Reconciliation is by CANONICAL key, never spelling
-/// (`30Xa:rul-sibling-oracle-scan-reconciles-by-canonical-key`): a `.`-sourced dependency is filed
-/// under an absolute key while its own operand was named relatively, so a spelling compare reports a
-/// loaded file as unloaded and leaks its absolute materialization path. The surviving siblings then
-/// render through the same relativizing seat the why-lens uses, so a path beneath the load cwd shows
-/// relative to it (display plane only — the canonical keys stay absolute).
-#[must_use]
-pub fn unloaded_sibling_oracle_diagnostics(
-    cwd: &dorc_core::loadpath::Cwd,
-    loaded_paths: &[String],
-    discovered_paths: &[String],
-) -> Vec<Diag> {
-    let key = |path: &str| {
-        cwd.resolve_operand(path)
-            .unwrap_or_else(|| oracle_path_key(path))
-    };
-    let loaded: std::collections::BTreeSet<String> = loaded_paths.iter().map(|p| key(p)).collect();
-    let unloaded: Vec<String> = discovered_paths
-        .iter()
-        .map(|path| path.replace('\\', "/"))
-        .filter(|path| path.ends_with(".oracle.sh") && !loaded.contains(&key(path)))
-        .collect();
-    if unloaded.is_empty() {
-        return Vec::new();
-    }
-    let mut shown = why::relativize_for_display(cwd, &unloaded);
-    shown.sort();
-    shown.dedup();
-    let oracles = shown
-        .iter()
-        .map(|path| format!("`{path}`"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    vec![Diag::new_spanless_site(DiagCode::AidUnloadedSiblingOracle(
-        dorc_aid::diag::AidUnloadedSiblingOracle { oracles },
-    ))]
-}
-
-/// Normalize an oracle path for loaded-versus-discovered comparison without filesystem access.
-#[must_use]
-pub fn oracle_path_key(path: &str) -> String {
-    use std::path::{Component, Path, PathBuf};
-
-    let slash_separated = path.replace('\\', "/");
-    let keyed: PathBuf = Path::new(&slash_separated)
-        .components()
-        .filter(|component| !matches!(component, Component::CurDir))
-        .collect();
-    let keyed = keyed.to_string_lossy().replace('\\', "/");
-    if keyed.is_empty() {
-        ".".to_owned()
-    } else {
-        keyed
-    }
-}
-
 /// The parsed `dorc lint` invocation (`27R` §5). Files + oracle sources + the render/exit knobs.
 #[derive(Debug)]
 pub struct LintArgs {

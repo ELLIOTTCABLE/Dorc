@@ -128,8 +128,6 @@ const MIGRATED_PAYLOADS: &[&str] = &[
     "ReachesProviderCollision",
     "WrapperEntryIncoherent",
     "WrapperPeelIncoherent",
-    // cli/main.rs (aid hint) — AID-NEEDS:aid-unloaded-sibling-oracle (gap-5 / 24H ack-6)
-    "AidUnloadedSiblingOracle",
     // lint — the lane-local namespace retired (`288` §5)
     "UnmodeledWallInventory",
     "VerdictTerminalPipeline",
@@ -247,7 +245,6 @@ const MIGRATED_SLUGS: &[&str] = &[
     "durable-receipt-unwritten",
     "durable-receipt-unreadable",
     "durable-receipt-ambiguous",
-    "aid-unloaded-sibling-oracle",
     "oracle-matched-zero-sites",
     "unmodeled-wall-inventory",
     "verdict-terminal-pipeline",
@@ -344,8 +341,6 @@ const SPANLESS_SITE_PAYLOADS: &[&str] = &[
     "DurableReceiptUnwritten",
     "DurableReceiptUnreadable",
     "DurableReceiptAmbiguous",
-    // cli/main.rs — the unloaded-sibling hint is a whole-run disclosure with no source point.
-    "AidUnloadedSiblingOracle",
     // cli/main.rs — a zero-matched-sites verdict is a claim about the whole ORACLE FILE, not any
     // one book command site.
     "OracleMatchedZeroSites",

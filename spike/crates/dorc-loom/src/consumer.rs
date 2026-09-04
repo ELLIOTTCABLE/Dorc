@@ -1191,18 +1191,6 @@ impl DorcConsumer {
             args.artifact_dir.is_some(),
             !args.no_receipt,
         );
-        let discovered_oracles = case
-            .sections()
-            .iter()
-            .map(errorloom::Section::name)
-            .filter(|path| path.ends_with(".oracle.sh"))
-            .map(str::to_owned)
-            .collect::<Vec<_>>();
-        let acquisition_diagnostics = dorc_cli::unloaded_sibling_oracle_diagnostics(
-            snapshot.cwd(),
-            snapshot.oracle_paths(),
-            &discovered_oracles,
-        );
         let routing = output;
         let mut edges = LoomEngineEdges {
             observation: Some(observation),
@@ -1224,7 +1212,7 @@ impl DorcConsumer {
             &dorc_cli::engine::EngineRequest {
                 snapshot: &snapshot,
                 options: &options,
-                acquisition_diagnostics: &acquisition_diagnostics,
+                acquisition_diagnostics: &[],
             },
             &mut edges,
             &mut sink,

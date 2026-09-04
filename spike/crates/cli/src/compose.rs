@@ -230,7 +230,7 @@ fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result
         &EngineRequest {
             snapshot: &ready.snapshot,
             options: &options,
-            acquisition_diagnostics: &ready.acquisition_diagnostics,
+            acquisition_diagnostics: &[],
         },
         &mut edges,
         sink,
@@ -241,7 +241,6 @@ fn run_analysis(seams: &Seams, args: &Args, sink: &mut dyn OutputSink) -> Result
 
 struct AcquiredReady {
     snapshot: crate::snapshot::StaticLoadSnapshot,
-    acquisition_diagnostics: Vec<Diag>,
 }
 
 #[expect(
@@ -265,8 +264,6 @@ fn acquire_engine_request(
         None => String::new(),
     };
     let book_name = book_path.unwrap_or("book.sh");
-    let acquisition_diagnostics =
-        unloaded_sibling_oracle_diagnostics(cwd, book_path, &oracle_paths);
     let acquired = read_book_sourced(
         cwd,
         book_name,
@@ -284,10 +281,7 @@ fn acquire_engine_request(
         book_name,
         &book_src,
     );
-    Ok(Box::new(AcquiredReady {
-        snapshot,
-        acquisition_diagnostics,
-    }))
+    Ok(Box::new(AcquiredReady { snapshot }))
 }
 
 struct ProductionEdges<'a> {
@@ -3186,47 +3180,6 @@ fn parse_results(
     out
 }
 
-/// The unloaded-sibling-oracle hint (`AID-NEEDS:aid-unloaded-sibling-oracle`, gap-5 / `24H`
-/// ack-6): scan the directories of the loaded oracles + the book(s) for `*.oracle.sh` files that were
-/// NOT loaded, and disclose them (suggest, never auto-load). A cli-edge disclosure — it reads the
-/// filesystem, so it lives here, never in the kernel; the `read_dir` order is OS-dependent, so the
-/// result is SORTED (`inv-determinism` at the edge). The payload's `detail` carries the DATA (the
-/// sorted backtick-quoted path list); the user-facing framing prose stays `[unwritten:]` for the
-/// conductor (`27V:rul-error-authorship-tier` — the builder authors no user-facing prose).
-fn unloaded_sibling_oracle_diagnostics(
-    cwd: &dorc_core::loadpath::Cwd,
-    book: Option<&str>,
-    oracle_paths: &[String],
-) -> Vec<Diag> {
-    use std::path::Path;
-    let norm = |p: &str| p.replace('\\', "/");
-    let mut dirs: BTreeSet<std::path::PathBuf> = BTreeSet::new();
-    for p in oracle_paths.iter().map(String::as_str).chain(book) {
-        if let Some(parent) = Path::new(p).parent() {
-            // An empty parent (a bare filename) means the current directory.
-            let dir = if parent.as_os_str().is_empty() {
-                Path::new(".").to_path_buf()
-            } else {
-                parent.to_path_buf()
-            };
-            dirs.insert(dir);
-        }
-    }
-    let mut discovered = Vec::new();
-    for dir in &dirs {
-        let Ok(entries) = std::fs::read_dir(dir) else {
-            continue;
-        };
-        for entry in entries.flatten() {
-            let shown = norm(&entry.path().to_string_lossy());
-            if shown.ends_with(".oracle.sh") {
-                discovered.push(shown);
-            }
-        }
-    }
-    crate::unloaded_sibling_oracle_diagnostics(cwd, oracle_paths, &discovered)
-}
-
 fn report_at(
     sink: &mut dyn OutputSink,
     advisory: bool,
@@ -3328,7 +3281,6 @@ fn severity_style(severity: Severity) -> (&'static str, anstyle::Style) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::oracle_path_key;
     use dorc_core::{EntityRef, FactKey, Interner, KindId, OpaqueToken, SelectorId};
     use dorc_plan::{LeafId, ProbePlan, ProbePredict, ProbeSiteKind};
     #[test]
@@ -3397,38 +3349,6 @@ mod tests {
             ));
             assert!(parts.parts().len() > 1);
         }
-    }
-
-    /// `289:rider-sibling-note-false-fires-relative`: the loaded `-o` spelling and the `read_dir`
-    /// spelling of ONE file must key alike, or the unloaded-sibling hint accuses every relatively
-    /// named oracle of being unloaded. The bare-name/dot-slash pair is the exact shape every
-    /// in-corpus case drives (`-o firewall.oracle.sh` against a `read_dir(".")` walk), so it is the
-    /// pair worth pinning; the sub-directory rows guard against a fix that only special-cases `.`.
-    #[test]
-    fn loaded_and_discovered_oracle_spellings_share_one_key() {
-        assert_eq!(
-            oracle_path_key("firewall.oracle.sh"),
-            oracle_path_key("./firewall.oracle.sh"),
-            "a bare -o name and its read_dir(\".\") path are one file"
-        );
-        assert_eq!(
-            oracle_path_key("oracles/fw.oracle.sh"),
-            oracle_path_key("oracles\\fw.oracle.sh"),
-            "separators normalize, so a Windows walk matches a forward-slash arg"
-        );
-        // The three spellings must land on ONE key, not merely agree pairwise: the bug this replaced
-        // folded separators AFTER reading components, so on Unix the backslash spelling grew a `./`
-        // prefix its forward-slash twin never had, and only the platform that splits `\` was green.
-        assert_eq!(
-            oracle_path_key("oracles\\fw.oracle.sh"),
-            oracle_path_key("./oracles/fw.oracle.sh"),
-            "a leading `.` is dropped at any depth, on either platform"
-        );
-        assert_ne!(
-            oracle_path_key("a/fw.oracle.sh"),
-            oracle_path_key("b/fw.oracle.sh"),
-            "same basename in different dirs stays distinct — the hint must still fire"
-        );
     }
 
     /// cheap-7: the firehose-suppression classifier. Assignments and pure/no-target-state builtins
