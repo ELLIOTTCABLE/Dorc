@@ -28,63 +28,31 @@
 
 ---
 
-## IN FLIGHT (2026-09-04 — the test-architecture REBUILD; every lane BUILT and green on both legs; HELD before the close batch by the human; a successor resumes from the ledger's §0)
+## IN FLIGHT (2026-09-04 — the test-architecture REBUILD: BUILT and gated at its tip, the close batch landed; HELD at the fold on the opaque review's NACK, for the human's adjudication)
 
 The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
-non-concurrent suite-only arc (product work stays separate). Design converged in a
-Fable⇄human sitting 2026-09-01: one `Seams` bundle with per-seam selection (a tier is a row
-of the seam×implementation matrix, never a separate harness); a sibling `dorc-harness`
-binary carrying runtime seam injection while the shipped `dorc` loses even its env pins
-(`inv-division-at-the-narrowest-edge`); looms as unrestricted shell sessions with gates
-attached by block KIND, seams spelled as `$ export` lines, transcripts carrying both streams;
-varied seed by default, declared seed as per-case regression opt-in in every tier; one runner
-with the driver derived; frontmatter 24→9; the needle gate ripped; the batteries split into
-loom goldens vs state-only Rust e2e. Four serial lanes, all in scope, no deferrals except
-kernel-mutating improvements. The design statement and its build-planning tail: **`notes/30X`**.
-The arc is OPEN (2026-09-02): conductor worktree `.tmp/trees/r30-30X-test-infra-decruft-conductor`
-on `ai/r30-30X-test-infra-decruft-conductor`; the conductor ledger sits beside `30X` on that
-branch and folds with it (typed rulings · reconciliation deltas · the dir-cases-versus-looms
-analysis · the lane table). The human's
-2026-09-02 rulings are folded into `30X` §3/§3a (no legacy e2e — every dir-case converts to a
-loom; all prose is loomed; a non-loom test is licensed only by seven closed classes; every
-loom-escape impulse stops at a conductor; one handbuilt test mechanism per arc) and §11.
-`/opaque-review` `30-reviewA` returned NACK; the human adjudicated it into `30X` (`RealSsh` and
-`Os` roots out of the ordinary harness; a `HarnessSeams` subtype; the scrubbed session;
-livetest as the explicit ambient composition; `rul-seam-columns-are-conductor-ruled`), and
-`30-reviewB` over the re-stabilized design returned ACK (both reports committed on the arc
-branch, unopened by the conductor). BUILT and green on both gate legs (as of the branch tip carrying the ledger's §0): lane A —
-the `Seams`/`HarnessSeams` bundle, `compose::run`, `dorc-harness`, seeded entropy, the six env
-pins retired, the scrubbed session, literal runner-owned roots; lane B — one persistent `sh`
-session per `run:` loom with gates by kind and both-streams transcripts, the ticking per-block
-clock default, the needle gate and the baseline scaffold gone, the receipt-rooted why loom a
-four-block session, the receipt batteries split into one state-only home. Lane C ran as four
-lanes, three COMPLETE and green on both legs: C1 (the in-process driver owns a real seeded
-receipt world over the model store, reached through `dorc_cli::durable` re-exports; one
-io-parameterized receipt edge shared with the shipped binary; the typed `LoomDecline`;
-`gate-two-drivers-agree` LIVE with 107 `run:` looms agreeing byte-for-byte; the runners now reap
-their temp after the 2026-09-03 disk-full incident their shim copies caused) · C2 (the session
-grammar through `dorc_syntax`, a concrete dash environment feeding the one seam parser, the
-kernel's own `Cwd`; 108 agree; the kernel-side dogfood ceiling recorded in `30X` §10) · C3a (the
-dependency-free `dorc-testbed` crate holding the run seed — varied by default, printed, named in
-failures — and the seam vocabulary; the clock ticking per invocation; nine cases pinned at
-`DORC_SEED=0`; the e2e bless refusing under a second seed). C3b (the transport seam's scripted
-column so an apply runs in-process; the consumer stops discarding its intent/outcome;
-`apply-outcome-unwritten` as a sibling code) and lane D (one runner minting 427 trials; drivers
-declining symmetrically so the proving driver is DERIVED and reported; gates attaching to what
-a block produced; thirteen surviving frontmatter keys, `xfail` among them keyed to the one
-registry; every dir-case converted to a loom and the marker grammar deleted; the lint fold; the
-census tier reading the loom corpus; yardstick gone) are BUILT and green at the branch tip —
-zero `DORC_KNOWN_BROKEN`, `bless:dry` clean. REMAINING, held by the human before the close
-batch (2026-09-04): one small lane (hostsim's sweeps on the run seed; `xfail`/`Posix`/`repo_root`
-out of `internal-tooling` into `dorc-testbed`), then the conductor's close batch (the steering
-re-cuts, the registers, `gate:arc`, the ff) — all enumerated in the ledger's §0. The arc branch
-is re-rebased onto `ai/main` in every between-lanes gap, never mid-lane. Lane briefs are
-uncommitted, in the conductor's scratchpad (absolute path in the ledger's §0). Two product rulings were taken inside
-this suite arc and stand open to the human's veto (the why-lens relativizes `.`-sourced
-dependency paths under the load cwd; the unloaded-sibling-oracle advisory reconciles by
-canonical key); lane A's five fence re-targets await re-ack. No sealed review within the arc
-(human, 2026-09-02). Builder briefs are never committed (human, same day); a rewound conductor
-resumes from the ledger's §0 on that branch, which carries every lane's scope and every ruling.
+non-concurrent suite-only arc. Design of record **`notes/30X`**; conductor ledger **`notes/30Xa`**
+(every checkpoint ruling, the lane table, the typed acks of the close sitting). Built, on
+`ai/r30-30X-test-infra-decruft-conductor` (worktree `.tmp/trees/r30-30X-test-infra-decruft-conductor`,
+riding `ai/main`): one `Seams` bundle with per-seam selection and the `dorc-harness` sibling
+binary, the shipped `dorc` reading no harness environment; looms as shell sessions with gates by
+block kind and both-streams transcripts; the in-process receipt world over the deterministic store
+with `gate-two-drivers-agree`; seeds varied by default, `$ export DORC_SEED=<n>` the one pin
+spelling, bless refusing under a second seed; one runner; thirteen frontmatter keys by criterion
+and every dir-case converted; the dependency-free `dorc-testbed` substrate (the run seed, the seam
+vocabulary, the xfail registry) leaving `internal-tooling` with zero dependents; the
+shell-resolution seat moved to `transport` as product code and consumed by `dorc-sh`
+(`dorc-sh-no-shell` minted unwritten); the unloaded-sibling-oracle advisory retired whole; the
+apply identities line authored; the steering re-cuts (`spike/CLAUDE.md`, `crates/cli/CLAUDE.md`,
+`crates/aid/CLAUDE.md`), registers, plans, and round map current. Gate at the tip: both
+builder-completion legs green, the three arc-tier verifiers green, `bless:dry` clean, `xfail:census`
+coherent. The close sitting's typed rulings are in `30Xa` §0; no to-ack or owed list survives
+anywhere durable (human, 2026-09-04: lose work rather than mint pending work; no TODOs in any
+CLAUDE.md). HELD: `/opaque-review` `30-reviewC` returned NACK —
+`Research/quarantine-DO-NOT-READ/30-reviewC-30X-testing-rebuild-opaque-report.md` on the arc
+branch, unopened by the conductor; the human adjudicates (as for `30-reviewA`). The fold (ff into
+`ai/main`, this entry's deletion with its account moving to the README round map, the worktree and
+branch reaped) waits on that; the branch re-rebases over `ai/main` docs-only before it.
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 

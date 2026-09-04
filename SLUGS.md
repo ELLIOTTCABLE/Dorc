@@ -3491,7 +3491,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## inv-division-at-the-narrowest-edge
 - defined: —
-- cited: 30X 30Xa 30Xb Research/LIVING_STATUS (7)
+- cited: 30X 30Xa 30Xb (6)
 
 ## inv-every-expression-has-a-face
 - defined: —
