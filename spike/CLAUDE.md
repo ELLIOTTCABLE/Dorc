@@ -417,6 +417,22 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   "run". Malformed, truncated, ambiguous, or stale authority material must never
   round up to either verdict. Type the distinction; test it in every
   phase × user × oracle-reliability cell.
+- **rul-no-hopeful-transfer** (human-typed 2026-09-04) — NO admin data transits any
+  connection, in ANY direction, without a `Must`-grade analysis result feeding that
+  transfer. There is never prospective or hopeful shipping of content. The ONE
+  exception: bytes that are (1) UNINFLUENCED — influenced by no host in any way,
+  engine loading and selection decisions included (`core/CLAUDE.md
+  the-influence-account-is-carried-never-stamped`) — AND (2) pure, non-mutative,
+  PUBLIC dorc-lang bytes: oracles, and nothing else. Over-shipping is never "merely
+  waste": the engine does not know what user bytes contain, so a book, plan, config,
+  or data byte shipped on a guess is a leak, not an inefficiency. What this licenses
+  today is exactly the first transportation, to the first hop, of exclusively
+  zero-influence, exclusively public code; reactive probing may later refine
+  what-may-influence-what and will still exclude every admin/book/plan/user/config/
+  data byte. Generalizes `26N:rul-unresolvable-book-load-refuses` (book-custody files
+  never ship on a guess) and bounds `26N:res-dorc-lang-mirroring-without-authority-reserved`
+  (the reserved right is exactly the exception). Recorded because three conductors in
+  a row assumed over-shipping was merely wasteful.
 - **rul-refusal-takes-the-whole-target-down** (`309` §3; human-typed 2026-08-23) — a
   `Refused` intake takes the WHOLE target down for this invocation: once its planned
   collection has finished, no apply-able plan and no further on-host activity until a
