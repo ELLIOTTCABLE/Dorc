@@ -1816,6 +1816,8 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     // GATES BY KIND (`30X:loom-gates-attach-by-kind`, `inspection-redrives-carry-no-durable`): the
     // round-trip battery attaches to the artifact-producing block, re-driven split-stream into a
     // throwaway with its own content diff + `expected.out` bless suppressed (the session owns those).
+    // These are the STRUCTURAL gates a `xfail:` pin tolerates (`rul-xfail-is-a-registry-keyed-key`).
+    let mut structural: Vec<String> = Vec::new();
     if commands
         .iter()
         .any(|command| block_produces_artifacts(command))
@@ -1826,7 +1828,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
             kind: E2eKind::RoundTrip,
         };
         if let Err(failed) = run_round_trip(harness, &case, &inputs, &mut String::new(), true) {
-            failures.push(failed.message().unwrap_or_default().to_owned());
+            structural.push(failed.message().unwrap_or_default().to_owned());
         }
     }
 
@@ -1864,6 +1866,32 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
                 ));
             }
         }
+    }
+
+    // The XFAIL lens (`rul-xfail-is-a-registry-keyed-key`): a `xfail: <pin>` loom names a defect the
+    // engine has not fixed, so its STRUCTURAL gates are tolerated-and-reported while the transcript
+    // (the engine's own target-tense output) stays ENFORCED above. Every structural gate passing is a
+    // loud XPASS naming the pin to promote. Not under bless: bless captures the transcript to fold,
+    // and the XPASS fires on the next ordinary run.
+    match spec.case.frontmatter().scalar("xfail") {
+        None => failures.extend(structural),
+        Some(pin) if !harness.bless => {
+            if structural.is_empty() {
+                failures.push(format!(
+                    "XPASS {}  [every structural gate passed — the pinned defect `{pin}` appears fixed; promote the pin and drop the `xfail:` key]",
+                    spec.name
+                ));
+            } else {
+                for line in &structural {
+                    eprintln!(
+                        "  {}: [xfail `{pin}` tolerated] {}",
+                        spec.name,
+                        line.lines().next().unwrap_or_default()
+                    );
+                }
+            }
+        }
+        Some(_) => {}
     }
 
     // BLESS folds only on a clean pass (`bless-folds-only-on-pass`) that reproduced under the second seed (`30X:seed-two-affordances`).

@@ -592,7 +592,11 @@ pub fn workspace_sources() -> Vec<(String, String)> {
     out
 }
 
-/// The pin slugs the workspace's sources actually call, with the files that call them.
+/// The pin slugs the workspace's sources actually call, with the files that call them: a `.rs`
+/// `xfail_until(...)`, and a committed loom's `xfail:` frontmatter key. A whole-product loom pinning
+/// a not-yet-implemented defect is a call site exactly as a unit `xfail_until` is
+/// (`rul-xfail-is-a-registry-keyed-key`): the transcript is its target-tense assertion and the pin
+/// is what the census counts.
 #[must_use]
 pub fn call_sites() -> Vec<(String, String)> {
     let mut out = Vec::new();
@@ -601,8 +605,59 @@ pub fn call_sites() -> Vec<(String, String)> {
             out.push((slug, path.clone()));
         }
     }
+    out.extend(loom_call_sites());
     out.sort();
     out
+}
+
+/// The pin each committed loom names in its `xfail:` frontmatter key, with the loom that names it.
+#[must_use]
+pub fn loom_call_sites() -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut stack = vec![crate::repo_root().join("spike").join("crates")];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                if path.file_name().is_some_and(|name| name == "target") {
+                    continue;
+                }
+                stack.push(path);
+            } else if path.extension().is_some_and(|ext| ext == "loom")
+                && !path.to_string_lossy().contains(".sync-conflict-")
+                && let Ok(text) = std::fs::read_to_string(&path)
+                && let Some(slug) = loom_xfail_key(&text)
+            {
+                out.push((slug, path.display().to_string().replace('\\', "/")));
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+/// The `xfail:` value of a loom, read from the `---`-fenced frontmatter block ALONE — never the
+/// transcript below it, where a `xfail:` in output would be a decoy the way a doc comment is for
+/// the `.rs` scan.
+#[must_use]
+pub fn loom_xfail_key(text: &str) -> Option<String> {
+    let mut lines = text.lines();
+    if lines.next()?.trim_end() != "---" {
+        return None;
+    }
+    for line in lines {
+        if line.trim_end() == "---" {
+            return None;
+        }
+        if let Some(rest) = line.strip_prefix("xfail:") {
+            let slug = rest.trim();
+            return (!slug.is_empty()).then(|| slug.to_owned());
+        }
+    }
+    None
 }
 
 /// The pin slugs `text` calls, in occurrence order — the pure half of [`call_sites`].
@@ -648,7 +703,7 @@ pub fn call_sites_in(text: &str) -> Vec<String> {
 mod tests {
     use super::{
         CURRENT_ROUND, Horizon, Outcome, PINS, Pin, PinState, call_sites, call_sites_in,
-        census_report, round_of, xfail_outcome,
+        census_report, loom_xfail_key, round_of, xfail_outcome,
     };
 
     /// The scan survives the two shapes that made it lie, and the census's whole authority rests on
@@ -753,6 +808,23 @@ mod tests {
             problems.len(),
             problems.join("\n  ")
         );
+    }
+
+    /// The loom scan reads the `xfail:` key from the frontmatter block ALONE: a `xfail:` line in the
+    /// transcript below the second `---` is a decoy the way a doc comment is for the `.rs` scan, and
+    /// counting it would redden the census over a pin the case only mentions.
+    #[test]
+    fn the_loom_xfail_scan_reads_frontmatter_and_ignores_the_transcript() {
+        assert_eq!(
+            loom_xfail_key("---\nxfail: p-x-real-pin\n---\n-- replay --\n$ dorc\nok\n"),
+            Some("p-x-real-pin".to_owned())
+        );
+        assert_eq!(
+            loom_xfail_key("---\n---\n-- replay --\n$ dorc\nxfail: p-x-decoy\n"),
+            None,
+            "a `xfail:` in the transcript is not a declaration"
+        );
+        assert_eq!(loom_xfail_key("not a loom\n"), None);
     }
 
     /// A `Deferred` horizon cannot exist without its reason, and the render surfaces both markers —
