@@ -155,13 +155,13 @@ the whole lane waits; `unit-env-identity` alone may start before them (§4b).
   The compare chokepoint stays the one seat (`core/CLAUDE.md` relational-compare-chokepoint).
   One seat RESERVED, nothing built: a per-context measured-supply projection keyed by the new
   key, beside a per-chunk requirement set (`26N` §4.4) and the per-leaf stream demands of
-  `plans/26O` §5 — the capability system's representation, built under `ROADMAP`'s
-  `arc-host-capabilities`.
+  `26O:5-the-routing-planner` — the capability system's representation, built under
+  `ROADMAP`'s `arc-host-capabilities`.
 - `unit-host-index-and-entry` (medium; GATED additionally on `28Q:pin-ssh-entry-shape` and on
-  lane 2's `unit-delivery-shape` having landed; the entered world it stands up carries the
-  per-world scaffold of `plans/26O` §4 — its own scratch, sink, frames written at minting, a
-  closing count — so an entry-composed remote probe never drops its records: the `sudo` case
-  rides this unit's shim carrier, the `ssh` case waits on the pin) —
+  lane 2's `unit-delivery-shape` having landed; the entered context it stands up carries the
+  per-context scaffold of `26O:4-the-per-context-scaffold` — its own scratch, sink, frames
+  written at minting, a closing count — so an entry-composed remote probe never drops its
+  records: the `sudo` case rides this unit's shim carrier, the `ssh` case waits on the pin) —
   `30W` items 2 and 3 for Host only: Host as an entered index whose value is the wrapper's
   mapped lend; the Host binder minimal (destination string is the entity; no merging —
   `FORFEITS:forfeit-no-host-merging` stands; host-key continuity at the transport is the

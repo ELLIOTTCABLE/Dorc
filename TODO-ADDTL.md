@@ -79,8 +79,7 @@ in `30O:register-and-steering-debt`, not here.
 * [ ] **`26L` §15's owed investigations** (real glue strawmen, live sibling docs, the minimal
   native-runner shape, preview contract, planner costs) — exploration-tier; the human's
   standing lean is punt-for-now; listed so the next meta-orchestration sitting starts there.
-* [ ] **channel arrangements, designed and unowned** — `plans/26O` §6's live apply (two
-  sessions, the terminal attached, control on a sibling session), the xtrace cursor, and the
-  fd-3 / sibling-session upgrades are designed, unscheduled, owed by nobody (the human's
-  2026-09-03 read: fascinating, probably not for-build-now). The one ruling owed sits on the
-  roadmap's r31 gate (`26O:open-sinkless-world-record-policy`).
+* [ ] **channel arrangements, designed and unowned** — `26O:6-the-arrangements`' live apply
+  (two sessions, the terminal attached, control on a sibling session), the xtrace cursor, and
+  the fd-3 / sibling-session upgrades are designed, unscheduled, owed by nobody (the human's
+  2026-09-03 read: fascinating, probably not for-build-now).

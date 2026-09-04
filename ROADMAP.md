@@ -76,10 +76,11 @@ Rulings that gate lanes (the human's; each blocks the lane it names and nothing 
   for pivot books: `26K:sit-stdin-copy-exec-amendment` is RULED
   (`26N:rul-delivery-shape-file-backed-default`; its build is lane 2's `unit-delivery-shape`,
   which lands before Host entry) · the report sink's remote home is DISSOLVED by
-  `plans/26O` (every world Dorc stands up carries its own sink and scaffold,
-  `26O:rul-every-world-carries-its-own-scaffold`; records never cross a link as records);
+  `plans/26O` (every context Dorc stands up carries its own sink and scaffold,
+  `26O:rul-every-context-carries-its-own-scaffold`; records never cross a link as records);
   what still gates Host entry there is `28Q:pin-ssh-entry-shape` alone, and the one ruling
-  owed is `26O:open-sinkless-world-record-policy`, whose conservative reading builds without
+  owed is the sinkless-context record policy (`26N` §4.5, the human's lean;
+  `26O:rul-sinkless-context-record-policy`), whose conservative reading builds without
   waiting.
 - the load-model trio — `tc-dollar-zero-is-script-anchored` is RULED yes
   (`26N:rul-dollar-zero-authority-spelling`; the flagship red
@@ -133,7 +134,7 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
   context-keyed supply; a derived per-chunk requirement census; the join at the standups
   under `26N:rul-preflight-over-probe-time`; never a plan line, never a license. Its census
   question is OPEN (`26N:open-census-needs-value-plane`, the next sitting); streams are its
-  first non-boolean demand, and `plans/26O` §5 is the planner that consumes the join. Builds with
+  first non-boolean demand, and `26O:5-the-routing-planner` consumes the join. Builds with
   `arc-payload-declaration`, when demand first becomes non-empty; r31 only reserves the seat
   (`310:unit-context-slot-product`). Recording measured supply in the receipt clears
   `rul-durable-contents-reviewed-before-design` first.

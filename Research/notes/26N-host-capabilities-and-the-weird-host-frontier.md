@@ -633,9 +633,9 @@ covers.
   drained by the entry scaffold, re-framed by the outer records lane) are owed as an
   explainer before any ruling.
   <!-- /* superseded by plans/26O (2026-09-03): the explainer became the design; the sink's
-  home is the entered world's own scaffold (`26O:rul-every-world-carries-its-own-scaffold`),
+  home is the entered context's own scaffold (`26O:rul-every-context-carries-its-own-scaffold`),
   records never cross a link as records (no re-framing by the outer lane), and the one ruling
-  still owed is `26O:open-sinkless-world-record-policy`. */ -->
+  still owed is this note's §4.5 lean, carried as `26O:rul-sinkless-context-record-policy`. */ -->
 - `park-oracles-knowing-stdin-stdout` — unruled: whether a predict body may speak for its
   tool's stdin consumption (the `uci batch` class) under refag; the census can derive stdin
   consumption only for `read` and for modelled commands whose predict body reads stdin.

@@ -102,8 +102,8 @@ Explicitly NOT in the batch: redirect-routing (own sitting, after), os-release
   tree crossing the pipe as one stream, `capabilities=` on the marker); the
   build is r31 lane 2 (`310:unit-delivery-shape`), and the `260` §5 invocation
   line changes with that build.
-- channels, streams, and the report sink's home in entered worlds: the
-  design-of-record is `plans/26O` (the per-world scaffold; the routing planner;
+- channels, streams, and the report sink's home in entered contexts: the
+  design-of-record is `plans/26O` (the per-context scaffold; the routing planner;
   probe dark, apply quiet, live attaches the terminal). §3's "report lane breaks
   FIRST under channel degradation" reads under it.
 

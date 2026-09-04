@@ -629,6 +629,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26M:axis-carrier-geometry
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:99 — — where the code is: (a) an argv operand, nameable only
+- cited: 26O (1)
 
 ## 26M:axis-dialect-and-fidelity
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:105 — — the dialect claim (sh vs jsonpath/jq/SQL, which stay
@@ -3774,7 +3775,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lane-interpreter-and-login-shell-measurement
 - defined: —
-- cited: 26N 26O (2)
+- cited: 26N 26O (3)
 
 ## 300:lane-kani-battery-reshape
 - defined: Research/notes/300-kernel-arc-conduct-ledger.md:327 — (queued behind the two above; WSL-heavy,
@@ -4472,10 +4473,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## open-in-book-guard-value
 - defined: —
 - cited: 271 (1)
-
-## open-sinkless-world-record-policy
-- defined: —
-- cited: 26N 26O ROADMAP TODO-ADDTL (5)
 
 ## operands-are-pure-and-capped
 - defined: Research/notes/28Va-aid-extraction-map.md:569 — — every operand is a `Copy` scalar or an interned
@@ -6019,6 +6016,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/271-block-settle-rulings-ledger.md:416 — (2026-07-11; TYPED)
 - cited: 274 (2)
 
+## rul-every-context-carries-its-own-scaffold
+- defined: —
+- cited: 26N 26O ROADMAP Research/LIVING_STATUS (4)
+
 ## spike/CLAUDE:rul-every-erased-establish-is-vouched
 - defined: spike/CLAUDE.md:167 — — the vouch requirement follows the
 - cited: 28P 28Q 30K 30Nb 30Qa 30T 30Ta (8)
@@ -6026,10 +6027,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-every-property-meets-universally
 - defined: —
 - cited: 30L 30Nc (2)
-
-## rul-every-world-carries-its-own-scaffold
-- defined: —
-- cited: 26N 26O ROADMAP Research/LIVING_STATUS (4)
 
 ## rul-explain-is-the-fourth-tier
 - defined: —
@@ -6823,6 +6820,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-singleton-bind-drops
 - defined: —
 - cited: 28A (2)
+
+## rul-sinkless-context-record-policy
+- defined: —
+- cited: 26N 26O ROADMAP (3)
 
 ## 271:rul-skip-ban-is-llm-facing
 - defined: Research/plans/271-block-settle-rulings-ledger.md:677 — (2026-07-12; TYPED — scope clarification of the
@@ -8166,7 +8167,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30P:the-design-in-one-screen
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:21
-- cited: 30T 30U (2)
+- cited: 26O 30T 30U (3)
 
 ## 30P:the-emission-planner
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:56 — — one component, two modes, a closed vocabulary
