@@ -2310,8 +2310,8 @@ impl LoomDecline {
 ///
 /// The symmetric twin of [`LoomDecline`]: each driver owns a typed decline set, and the runner
 /// reads both to derive which driver proves a case. The shell declines a nonportable outcome it
-/// cannot make happen, and any block that invokes the in-process tooling's own binary — nothing
-/// else. This set does not grow without a conductor ruling.
+/// cannot make happen, and any block that names a binary the session's shim does not provide (only
+/// `dorc` is shimmed) — nothing else. This set does not grow without a conductor ruling.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ShellDecline {
     /// The case declares an `edge-fault` section: an injected nonportable I/O or transport outcome
@@ -2320,6 +2320,11 @@ pub enum ShellDecline {
     /// A `dorc-loom` invocation — the in-process authoring tool has no shipped binary the shell
     /// session's shim provides, so it is in-process authority by content.
     LoomToolBlock(String),
+    /// A `dorc-sh` invocation — the runtime object (`276:rul-unsafe-is-bare-sh`, the third row of
+    /// the dorc-sh trio) resolves its stock `sh` by bare PATH, which the mocks-only session rail
+    /// cannot honour, and the shim provides only `dorc`. In-process authority by content, symmetric
+    /// with [`Self::LoomToolBlock`].
+    RuntimeObjectBlock(String),
 }
 
 impl ShellDecline {
@@ -2334,6 +2339,11 @@ impl ShellDecline {
             Self::LoomToolBlock(command) => {
                 format!("a `dorc-loom` invocation (in-process authoring tool): `{command}`")
             }
+            Self::RuntimeObjectBlock(command) => {
+                format!(
+                    "a `dorc-sh` runtime-object invocation (no shipped binary the shim provides): `{command}`"
+                )
+            }
         }
     }
 }
@@ -2346,17 +2356,23 @@ pub fn shell_decline(case: &Case) -> Option<ShellDecline> {
     if case.sections().iter().any(|s| s.name() == "edge-fault") {
         return Some(ShellDecline::EdgeFault);
     }
+    // A block naming a binary the session's shim does not provide is in-process authority by content:
+    // `dorc-loom` (the authoring tool) and `dorc-sh` (the runtime object) both resolve outside the
+    // one-shimmed-`dorc` rail.
     case.replay()
         .blocks()
         .iter()
         .map(errorloom::ReplayBlock::command)
-        .find(|command| {
-            crate::session_grammar::block_argv(command)
+        .find_map(|command| {
+            match crate::session_grammar::block_argv(command)
                 .first()
                 .map(String::as_str)
-                == Some("dorc-loom")
+            {
+                Some("dorc-loom") => Some(ShellDecline::LoomToolBlock(command.to_owned())),
+                Some("dorc-sh") => Some(ShellDecline::RuntimeObjectBlock(command.to_owned())),
+                _ => None,
+            }
         })
-        .map(|command| ShellDecline::LoomToolBlock(command.to_owned()))
 }
 
 /// The outcome of driving a loom in-process for `gate-two-drivers-agree`.
