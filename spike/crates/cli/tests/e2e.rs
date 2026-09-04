@@ -1139,19 +1139,15 @@ fn loom_spec(case: &LoomCase) -> Result<Option<LoomCaseSpec>, String> {
     let text = std::fs::read_to_string(&case.path)
         .map_err(|error| format!("read {}: {error}", case.path.display()))?;
     let parsed = errorloom::Case::parse(&text).map_err(|error| format!("{error}"))?;
-    loom_spec_of(&case.name, &case.path, parsed)
+    Ok(loom_spec_of(&case.name, &case.path, parsed))
 }
 
 /// The already-parsed twin of [`loom_spec`]: the shell proves the case unless it declines, and the
 /// driver KIND (round-trip session vs single-invocation lint) is derived from the block the case
 /// runs, not from a retired `run:` key.
-fn loom_spec_of(
-    name: &str,
-    path: &Path,
-    parsed: errorloom::Case,
-) -> Result<Option<LoomCaseSpec>, String> {
+fn loom_spec_of(name: &str, path: &Path, parsed: errorloom::Case) -> Option<LoomCaseSpec> {
     if dorc_loom::shell_decline(&parsed).is_some() {
-        return Ok(None);
+        return None;
     }
     // LINT is the single-invocation shape `run_lint` drives — the first `dorc` invocation a
     // `dorc lint … book.sh` (`dev-lint-looms-stay-single-invocation`, ended by D2). Any other lint
@@ -1169,12 +1165,12 @@ fn loom_spec_of(
         }
         _ => LoomRun::RoundTrip,
     };
-    Ok(Some(LoomCaseSpec {
+    Some(LoomCaseSpec {
         name: name.to_owned(),
         path: path.to_owned(),
         case: parsed,
         run,
-    }))
+    })
 }
 
 /// Materialize a loom-form case into the dir shape the gates read.
@@ -1829,16 +1825,10 @@ fn run_loom_case(harness: &Harness, loom: &LoomCase) -> Result<(), Failed> {
     };
 
     // SHELL arm: the authoritative whole-product execution of every session it does not decline.
-    if shell.is_none() {
-        match loom_spec_of(&loom.name, &loom.path, parsed.clone()) {
-            Ok(Some(spec)) => {
-                if let Err(failed) = run_loom(harness, &spec) {
-                    failures.push(failed.message().unwrap_or_default().to_owned());
-                }
-            }
-            Ok(None) => {}
-            Err(message) => failures.push(format!("FAIL  {}  [loom: {message}]", loom.name)),
-        }
+    if let Some(spec) = loom_spec_of(&loom.name, &loom.path, parsed.clone())
+        && let Err(failed) = run_loom(harness, &spec)
+    {
+        failures.push(failed.message().unwrap_or_default().to_owned());
     }
 
     if shell.is_some() && !in_process_proven {
@@ -1902,14 +1892,15 @@ fn in_process_disagreements(name: &str, case: &errorloom::Case, bytes: &[String]
     blocks
         .iter()
         .zip(bytes)
-        .filter_map(|(block, got)| {
-            (strip_trailing_newlines(block.output()) != strip_trailing_newlines(got)).then(|| {
-                format!(
-                    "FAIL  {name}  [two-driver gate: block `{}` — the in-process render disagrees with the committed transcript the binary proved]\n{}",
-                    block.command(),
-                    divergence(block.output(), got)
-                )
-            })
+        .filter(|(block, got)| {
+            strip_trailing_newlines(block.output()) != strip_trailing_newlines(got)
+        })
+        .map(|(block, got)| {
+            format!(
+                "FAIL  {name}  [two-driver gate: block `{}` — the in-process render disagrees with the committed transcript the binary proved]\n{}",
+                block.command(),
+                divergence(block.output(), got)
+            )
         })
         .collect()
 }
