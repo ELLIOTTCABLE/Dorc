@@ -269,7 +269,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         println!("docids: NO_LINT_DOCIDS is set — skipping (escape hatch)");
         return ExitCode::SUCCESS;
     }
-    let root = internal_tooling::repo_root();
+    let root = dorc_testbed::repo_root();
     let mut known = BTreeSet::new();
     for dir in DOC_DIRS {
         doc_ids(&root.join(dir), &mut known);

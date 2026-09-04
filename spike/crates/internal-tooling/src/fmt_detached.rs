@@ -26,7 +26,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let mut refused = Vec::new();
     for manifest in DETACHED {
         let mut cargo = Command::new("cargo");
-        cargo.current_dir(internal_tooling::repo_root()).args([
+        cargo.current_dir(dorc_testbed::repo_root()).args([
             "fmt",
             "--all",
             "--manifest-path",

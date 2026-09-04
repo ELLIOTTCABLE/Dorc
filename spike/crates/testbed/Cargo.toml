@@ -12,13 +12,13 @@ publish = false
 # question `internal-tooling` cannot be (that crate is the xtask BINARY's plumbing and is meant to
 # have no dependents).
 #
-# Tenants today: the run-seed seat (`run_seed`) and the seam-variable vocabulary (`seam_vars`, the
+# Tenants today: the run-seed seat (`run_seed`); the seam-variable vocabulary (`seam_vars`, the
 # `DORC_SEED`/`DORC_SEAM_*` names — `cli::seam` owns the PARSER and its value grammar and imports
-# these names). Charter tenants NOT yet moved here: the xfail-pin seat (`internal_tooling::xfail`,
-# so `internal-tooling` loses its dependents); the seeded LCG (`cli::seam::SeamLcg` and
-# `hostsim::Lcg` are byte-identical today — same `6_364_136_223_846_793_005` /
-# `1_442_695_040_888_963_407` constants — so one home is owed); and the scratch/sandbox guard the
-# suite mints in many copies.
+# these names); and the xfail-pin seat with its census (`xfail`) plus the `repo_root` its corpus
+# walk resolves from — moved out of `internal-tooling` so that crate keeps no dependents. Charter
+# tenants NOT yet moved here: the seeded LCG (`cli::seam::SeamLcg` and `hostsim::Lcg` are
+# byte-identical today — same `6_364_136_223_846_793_005` / `1_442_695_040_888_963_407` constants —
+# so one home is owed); and the scratch/sandbox guard the suite mints in many copies.
 
 [lib]
 name = "dorc_testbed"

@@ -232,7 +232,7 @@ fn a_described_host_conditional_definition_is_may_bound() {
     // Setup outside the closure: a panic in there would read as the target still failing.
     let (lifted, _) = lifted_and_detected(HORK_CONDITIONAL);
     let conditional = classes_of(&[HORK_CONDITIONAL], "hork tune web\n");
-    internal_tooling::xfail::xfail_until("p-x-blessed-toplevel-conditional", || {
+    dorc_testbed::xfail::xfail_until("p-x-blessed-toplevel-conditional", || {
         assert_eq!(
             lifted,
             vec!["hork".to_owned()],
@@ -827,7 +827,7 @@ fn both_participants_of_a_plural_compound_ship() {
     let both = [COMPOUND_STAGE_A, COMPOUND_STAGE_B];
     let a = stage_ships(&both, "otelcol");
     let b = stage_ships(&both, "grep");
-    internal_tooling::xfail::xfail_until("p-x-intra-compound-plurality", || {
+    dorc_testbed::xfail::xfail_until("p-x-intra-compound-plurality", || {
         assert!(
             a && b,
             "each participant needs its OWN helper live where its own body runs; per-segment \

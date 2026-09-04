@@ -7,7 +7,7 @@
 //! proof is built around still comes from the real census, so no test invents an identity.
 //!
 //! Where a cell's target behaviour needs the settlement/render stages, it is pinned RED-FIRST
-//! through `internal_tooling::xfail` with the greening lane named, never asserted as if it worked.
+//! through `dorc_testbed::xfail` with the greening lane named, never asserted as if it worked.
 
 #![expect(
     clippy::panic,

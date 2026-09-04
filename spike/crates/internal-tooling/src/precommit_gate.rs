@@ -126,7 +126,7 @@ fn run_shim(case: &Shim, posix: &Posix, hook: &Path, dir: &Path) -> Result<Outco
     let _ = std::fs::remove_file(&log);
     let out = Command::new(&posix.shell)
         .arg(hook)
-        .current_dir(internal_tooling::repo_root())
+        .current_dir(dorc_testbed::repo_root())
         .env("PATH", stub_path(dir, posix))
         .env("DORC_KNOWN_BROKEN", case.ack)
         .env("DORC_STUB_LOG", &log)
@@ -209,7 +209,7 @@ const DISABLED: &str = "disabled by active profile";
 
 fn plan(hk: &Path, profile: Option<&str>) -> Result<String, String> {
     let mut cmd = Command::new(hk);
-    cmd.current_dir(internal_tooling::repo_root())
+    cmd.current_dir(dorc_testbed::repo_root())
         .args(["run", "pre-commit", "--plan"]);
     if let Some(profile) = profile {
         cmd.args(["--profile", profile]);
@@ -278,7 +278,7 @@ pub(crate) fn run() -> u8 {
         eprintln!("precommit-gate: hk is not on PATH — the pinned one comes from mise.toml");
         return 2;
     };
-    let hook = internal_tooling::repo_root().join(".githooks/pre-commit");
+    let hook = dorc_testbed::repo_root().join(".githooks/pre-commit");
     let dir = std::env::temp_dir().join(format!("dorc-precommit-gate-{}", std::process::id()));
     if let Err(why) = std::fs::create_dir_all(&dir)
         .and_then(|()| std::fs::write(dir.join("mise"), STUB))

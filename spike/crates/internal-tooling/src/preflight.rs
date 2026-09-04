@@ -138,7 +138,7 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
     let state = if warm { "warm" } else { "COLD" };
 
     let cache = free_disk(root);
-    let host = wsl_host_mount(internal_tooling::repo_root());
+    let host = wsl_host_mount(dorc_testbed::repo_root());
     let host_free = host.as_ref().map(|mnt| free_disk(mnt));
     let disk = bound_of(&cache, host_free.as_ref());
     let note = host_note(host.as_deref(), host_free.as_ref());
@@ -269,7 +269,7 @@ impl Cache {
             Self::Lean => user_cache().map(|c| {
                 c.join(format!(
                     "dorc-minispec-lean-{}",
-                    internal_tooling::repo_root().file_name().map_or_else(
+                    dorc_testbed::repo_root().file_name().map_or_else(
                         || "root".to_owned(),
                         |name| name.to_string_lossy().into_owned()
                     )
@@ -587,7 +587,7 @@ mod tests {
     fn a_volume_is_measurable_through_a_path_that_does_not_exist_yet() {
         // The cold case: preflight runs before the target dir is created, so the probe has
         // to walk up to an ancestor that does exist rather than erroring out.
-        let absent = internal_tooling::repo_root()
+        let absent = dorc_testbed::repo_root()
             .join("no-such-dir")
             .join("nor-this-one");
         assert!(free_disk(&absent).is_ok(), "cold probe must still answer");

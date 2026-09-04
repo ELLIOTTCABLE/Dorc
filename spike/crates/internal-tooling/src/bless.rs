@@ -26,7 +26,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         .filter(|arg| !arg.starts_with('-'))
         .cloned()
         .collect();
-    let spike = internal_tooling::repo_root().join("spike");
+    let spike = dorc_testbed::repo_root().join("spike");
 
     // The mint's pre-flight. `expected.emitted` is what the floor binaries AGREED on, so a mint
     // that can only ask one of them has nothing to commit — and finding that out after a ten-minute

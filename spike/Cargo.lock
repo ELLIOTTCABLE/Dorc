@@ -458,7 +458,7 @@ dependencies = [
  "dorc-core",
  "dorc-oracle",
  "dorc-syntax",
- "internal-tooling",
+ "dorc-testbed",
 ]
 
 [[package]]
@@ -1063,6 +1063,7 @@ dependencies = [
 name = "internal-tooling"
 version = "0.0.0"
 dependencies = [
+ "dorc-testbed",
  "fs4",
 ]
 

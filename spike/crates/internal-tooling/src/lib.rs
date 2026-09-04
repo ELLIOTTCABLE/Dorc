@@ -1,14 +1,12 @@
 //! Internal repo tooling — NOT part of Dorc. See `Cargo.toml` for why this crate exists.
 //!
-//! Two exports. [`Posix`] is the answer to "where is a POSIX shell on this machine", computed once,
-//! explicitly, from a source we already depend on. [`xfail`] is the workspace's ONE xfail-pin seat
-//! and its census — test scaffolding rather than shell plumbing, but sited here for the same reason:
-//! every crate can dev-depend this one, and a second copy is how the first silently rots.
+//! [`Posix`] is the answer to "where is a POSIX shell on this machine", computed once, explicitly,
+//! from a source we already depend on. [`target_dir`] answers where cargo puts build output. The
+//! xfail-pin seat and `repo_root` now live in `dorc_testbed`, the shared test substrate, so this
+//! crate — the xtask binary's plumbing — keeps no dependents.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
-
-pub mod xfail;
 
 /// The POSIX shell this repo's tooling and test corpus drive.
 ///
@@ -174,15 +172,6 @@ pub fn which(name: &str) -> Option<PathBuf> {
     })
 }
 
-/// The worktree root, from this crate's compile-time location (`<root>/spike/crates/…`).
-#[must_use]
-pub fn repo_root() -> &'static Path {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(3)
-        .unwrap_or(Path::new("."))
-}
-
 /// Where cargo puts build output — the ONE answer, for the reason `Posix::find` is the one
 /// answer about shells.
 ///
@@ -191,6 +180,8 @@ pub fn repo_root() -> &'static Path {
 /// empty directory and reports a missing binary as an absent feature. Read this instead.
 #[must_use]
 pub fn target_dir() -> PathBuf {
-    std::env::var_os("CARGO_TARGET_DIR")
-        .map_or_else(|| repo_root().join("spike").join("target"), PathBuf::from)
+    std::env::var_os("CARGO_TARGET_DIR").map_or_else(
+        || dorc_testbed::repo_root().join("spike").join("target"),
+        PathBuf::from,
+    )
 }

@@ -2132,7 +2132,7 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until("p-x-load-operand-case-over-dollar-zero", || {
+        dorc_testbed::xfail::xfail_until("p-x-load-operand-case-over-dollar-zero", || {
             assert_eq!(loaded.found, ["helpers.dorc.sh"]);
             assert!(matches!(helper, LiveDefinition::Live(_)));
         });
@@ -2163,7 +2163,7 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until("p-x-load-operand-dirname-of-dollar-zero", || {
+        dorc_testbed::xfail::xfail_until("p-x-load-operand-dirname-of-dollar-zero", || {
             assert_eq!(loaded.found, ["helpers.dorc.sh"]);
             assert_eq!(loaded.reached, [0].into());
             assert!(matches!(helper, LiveDefinition::Live(_)));
@@ -2194,7 +2194,7 @@ mod acquisition_tests {
         );
         let helper = loaded.at_exit("book_helper");
 
-        internal_tooling::xfail::xfail_until("p-x-load-operand-cd-pwd-of-dollar-zero", || {
+        dorc_testbed::xfail::xfail_until("p-x-load-operand-cd-pwd-of-dollar-zero", || {
             assert_eq!(loaded.found, ["helpers.dorc.sh"]);
             assert_eq!(loaded.reached, [0].into());
             assert!(matches!(helper, LiveDefinition::Live(_)));
@@ -2224,7 +2224,7 @@ mod acquisition_tests {
         let book_loads = loaded.book_loads();
         let (a, b) = (loaded.at_exit("a_helper"), loaded.at_exit("b_helper"));
 
-        internal_tooling::xfail::xfail_until("p-x-glob-load-acquires-members", || {
+        dorc_testbed::xfail::xfail_until("p-x-glob-load-acquires-members", || {
             assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
             assert_eq!(loaded.reached, [0, 1].into());
             assert_eq!(book_loads, ["a.dorc.sh", "b.dorc.sh"]);
@@ -2277,7 +2277,7 @@ mod acquisition_tests {
         let shared = loaded.at_exit("shared_helper");
         let removed = loaded.at_exit("only_in_a");
 
-        internal_tooling::xfail::xfail_until("p-x-glob-load-members-are-order-unknown", || {
+        dorc_testbed::xfail::xfail_until("p-x-glob-load-members-are-order-unknown", || {
             assert_eq!(loaded.found, ["a.dorc.sh", "b.dorc.sh"]);
             assert_eq!(
                 shared,
@@ -2318,7 +2318,7 @@ mod acquisition_tests {
         );
         let wanted = loaded.env.loads().wanted().clone();
 
-        internal_tooling::xfail::xfail_until("p-x-glob-load-no-match-aborts", || {
+        dorc_testbed::xfail::xfail_until("p-x-glob-load-no-match-aborts", || {
             assert!(
                 loaded.found.is_empty(),
                 "nothing matched, so nothing is acquired: {:?}",
@@ -2377,7 +2377,7 @@ mod acquisition_tests {
         let optional = guarded.at_exit("optional_helper");
         let guarded_role = guarded.at_exit("hork__is_converged");
 
-        internal_tooling::xfail::xfail_until("p-x-book-code-source-is-inclusion", || {
+        dorc_testbed::xfail::xfail_until("p-x-book-code-source-is-inclusion", || {
             assert_eq!(unconditional.found, ["helpers.sh"]);
             assert_eq!(unconditional.reached, [0].into());
             assert!(

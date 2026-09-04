@@ -33,7 +33,7 @@ fn census(text: &str) -> ([usize; 3], Vec<String>) {
 }
 
 pub(crate) fn run() -> ExitCode {
-    let root = internal_tooling::repo_root();
+    let root = dorc_testbed::repo_root();
     let mut human = Vec::new();
     for lock in LOCKS {
         let path = root.join(lock);

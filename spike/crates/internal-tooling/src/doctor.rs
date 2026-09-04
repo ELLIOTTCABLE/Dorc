@@ -294,7 +294,7 @@ fn landed(sha: &str, lineage: Option<&str>) -> &'static str {
     };
     let Ok(out) = Command::new("git")
         .arg("-C")
-        .arg(internal_tooling::repo_root())
+        .arg(dorc_testbed::repo_root())
         .args(["merge-base", "--is-ancestor", sha, target])
         .output()
     else {
@@ -320,7 +320,7 @@ fn rev_parse(rev: &str) -> Option<String> {
 /// query — `doctor` reports, and the moment it also writes, the report stops being something a
 /// conductor can run twice without consequence.
 fn git(args: &[&str]) -> Result<String, String> {
-    git_in(internal_tooling::repo_root(), args)
+    git_in(dorc_testbed::repo_root(), args)
 }
 
 /// As [`git`], but rooted at one worktree — the only way to ask a per-tree question.
@@ -536,7 +536,7 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn an_absent_packages_directory_finds_nothing() {
-        let absent = internal_tooling::repo_root().join("no-such-packages-dir");
+        let absent = dorc_testbed::repo_root().join("no-such-packages-dir");
         assert!(vhdxs_under(&absent).is_empty());
     }
 
@@ -643,7 +643,7 @@ locked
 
     #[test]
     fn a_missing_directory_inventories_as_empty_rather_than_panicking() {
-        let absent = internal_tooling::repo_root().join("no-such-store");
+        let absent = dorc_testbed::repo_root().join("no-such-store");
         assert!(children_with_sizes(&absent).is_empty());
         assert_eq!(tree_size(&absent), 0);
     }

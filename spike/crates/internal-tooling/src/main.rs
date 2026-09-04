@@ -50,7 +50,7 @@ fn main() -> ExitCode {
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
         // shares its one renderer rather than re-deriving the screen.
         Some("xfail-census") => {
-            print!("{}", internal_tooling::xfail::census_report());
+            print!("{}", dorc_testbed::xfail::census_report());
             ExitCode::SUCCESS
         }
         other => {

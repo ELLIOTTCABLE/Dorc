@@ -86,7 +86,7 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 13] = [
     },
     FrontmatterKey {
         name: "xfail",
-        read_by: "names a pin in `internal_tooling::xfail::PINS`: the round-trip battery's \
+        read_by: "names a pin in `dorc_testbed::xfail::PINS`: the round-trip battery's \
                   structural gates are TOLERATED and reported per gate while the transcript compare \
                   stays enforced, and every structural gate passing is a loud XPASS naming the pin \
                   to promote",

@@ -32,7 +32,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    let cases = internal_tooling::repo_root()
+    let cases = dorc_testbed::repo_root()
         .join("spike")
         .join("crates")
         .join("cli")

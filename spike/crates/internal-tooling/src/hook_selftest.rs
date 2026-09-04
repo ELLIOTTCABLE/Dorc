@@ -313,7 +313,7 @@ pub(crate) fn run() -> u8 {
             return 2;
         }
     };
-    let hook = internal_tooling::repo_root().join(".githooks/commit-msg");
+    let hook = dorc_testbed::repo_root().join(".githooks/commit-msg");
     let msg_file = std::env::temp_dir().join(format!("dorc-hook-selftest-{}", std::process::id()));
 
     // ~2.4s for 15 shell spawns, which is why this rides `mise run gate` and NOT the

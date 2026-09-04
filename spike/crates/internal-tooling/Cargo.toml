@@ -22,6 +22,13 @@ path = "src/main.rs"
 name = "internal_tooling"
 path = "src/lib.rs"
 
+# The shared test substrate — std-only, dependency-free — carries the xfail-pin seat and
+# `repo_root` (this crate's plumbing consumes the leaf; the leaf never consumes this crate).
+# A workspace path crate with no external deps of its own, so it neither re-imports a platform
+# assumption nor costs real disk — the dependency bar above is met.
+[dependencies]
+dorc-testbed = { path = "../testbed", version = "0.0.0" }
+
 [lints]
 workspace = true
 

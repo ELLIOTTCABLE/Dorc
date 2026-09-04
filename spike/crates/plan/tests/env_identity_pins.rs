@@ -1,7 +1,7 @@
 //! Reds for `30S` — environment identity (`30S:finding-prefix-stripped-at-dispatch` ·
 //! `30S:finding-rho-fold-value-blind` · `30S:finding-export-never-fences`). Target
 //! behaviour the engine does not implement yet; every test rides
-//! `internal_tooling::xfail::xfail_until` per `spike/CLAUDE.md xfail-pins-ride-one-seat`.
+//! `dorc_testbed::xfail::xfail_until` per `spike/CLAUDE.md xfail-pins-ride-one-seat`.
 //!
 //! Harness idiom lifted from `plan/tests/observable_matrix.rs`'s `plan_for`: one fixture
 //! provider (`wombat`, verb `ensure`, establishes kind `instance`) driven through the
@@ -170,7 +170,7 @@ fn prefix_assignment_splits_fact_identity() {
         "interim: the prefix is dropped at dispatch (`30S:finding-prefix-stripped-at-dispatch`), \
          so both prefixed sites share one FactKey and both elide off the single held fact"
     );
-    internal_tooling::xfail::xfail_until("p-x-prefix-assignment-splits-fact-identity", || {
+    dorc_testbed::xfail::xfail_until("p-x-prefix-assignment-splits-fact-identity", || {
         assert!(
             !reps[1],
             "target: distinct prefix VALUES mint distinct fact identity, so the prod-prefixed \
@@ -211,7 +211,7 @@ fn env_wrapper_context_carries_values() {
         "interim: `RhoAccum::fold`/`RhoClaim` carry the claimed variable's NAME only, so \
          `env A=a` and `env A=b` compose one wrapped-context key"
     );
-    internal_tooling::xfail::xfail_until("p-x-env-wrapper-context-carries-values", || {
+    dorc_testbed::xfail::xfail_until("p-x-env-wrapper-context-carries-values", || {
         assert_ne!(
             ctx_a, ctx_b,
             "target: the claimed variable's VALUE must join the composed context key, so \
@@ -247,7 +247,7 @@ fn ambient_export_fences_fact_transport() {
         "interim: `export` never fences transport (`30S:finding-export-never-fences`), so the \
          below-export site shares the above site's fact and both elide"
     );
-    internal_tooling::xfail::xfail_until("p-x-ambient-export-fences-fact-transport", || {
+    dorc_testbed::xfail::xfail_until("p-x-ambient-export-fences-fact-transport", || {
         assert!(
             !reps[1],
             "target: an ambient export is an index fence — the below-export site must not \
@@ -271,7 +271,7 @@ fn unwitnessed_env_delta_withholds_probe() {
         "interim: no pin-or-sever machinery exists yet (`30S:model-pin-or-sever-composition`), \
          so a hand-fed converged fact still elides the site"
     );
-    internal_tooling::xfail::xfail_until("p-x-unwitnessed-env-delta-withholds-probe", || {
+    dorc_testbed::xfail::xfail_until("p-x-unwitnessed-env-delta-withholds-probe", || {
         assert!(
             !is_replaced(&plan, "wombat ensure web1"),
             "target: the verdict body neither pins nor severs VERBOSE, so the site must \

@@ -590,7 +590,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let no_near = args.iter().any(|a| a == "--no-near");
     let stats = args.iter().any(|a| a == "--stats");
 
-    let root = internal_tooling::repo_root();
+    let root = dorc_testbed::repo_root();
     let files = corpus_files(root);
     let rows = build_rows(&files);
 

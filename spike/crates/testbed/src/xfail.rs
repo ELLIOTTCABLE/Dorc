@@ -533,7 +533,7 @@ pub fn xfail_until(name: &str, target: impl FnOnce()) {
     let registered = pin(name);
     assert!(
         registered.is_some(),
-        "xfail pin {name:?} is not in `internal_tooling::xfail::PINS`; register it with its \
+        "xfail pin {name:?} is not in `dorc_testbed::xfail::PINS`; register it with its \
          trigger and its round horizon, or the census cannot say what is owed"
     );
     let trigger = registered.map_or("<unregistered>", |pin| pin.trigger);
@@ -642,7 +642,7 @@ pub fn workspace_sources() -> Vec<(String, String)> {
                 stack.push(path);
             } else if path.extension().is_some_and(|ext| ext == "rs") {
                 let display = path.display().to_string().replace('\\', "/");
-                if display.ends_with("internal-tooling/src/xfail.rs") {
+                if display.ends_with("testbed/src/xfail.rs") {
                     continue; // this file's own doc text and self-tests name the seat
                 }
                 if let Ok(text) = std::fs::read_to_string(&path) {

@@ -1701,7 +1701,7 @@ mod tests {
         )
         .expect("auto always lands somewhere");
         let decided = carried(&selection);
-        internal_tooling::xfail::xfail_until("p-x-front-hoist-lifts-a-clean-bundle", || {
+        dorc_testbed::xfail::xfail_until("p-x-front-hoist-lifts-a-clean-bundle", || {
             assert_eq!(
                 decided
                     .iter()
@@ -1732,18 +1732,15 @@ mod tests {
         )
         .expect("auto always lands somewhere");
         let decided = carried(&selection);
-        internal_tooling::xfail::xfail_until(
-            "p-x-front-hoist-munges-a-colliding-role-name",
-            || {
-                assert!(
-                    decided.iter().all(|decision| matches!(
-                        (decision.placement(), decision.why()),
-                        (Placement::Hoist, PlacementReason::HoistedMunged { .. })
-                    )),
-                    "the one collision is a role name, so the lift survives under a munge: {decided:?}"
-                );
-            },
-        );
+        dorc_testbed::xfail::xfail_until("p-x-front-hoist-munges-a-colliding-role-name", || {
+            assert!(
+                decided.iter().all(|decision| matches!(
+                    (decision.placement(), decision.why()),
+                    (Placement::Hoist, PlacementReason::HoistedMunged { .. })
+                )),
+                "the one collision is a role name, so the lift survives under a munge: {decided:?}"
+            );
+        });
     }
 
     /// Every placement decision this selection took over a book-reached source, in source order.

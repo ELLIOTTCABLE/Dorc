@@ -18,7 +18,7 @@ pub(crate) fn run(label: &str, rel: &str, args: &[String], env: &[(&str, OsStrin
             return ExitCode::from(3);
         }
     };
-    let script = internal_tooling::repo_root().join(rel);
+    let script = dorc_testbed::repo_root().join(rel);
     if !script.is_file() {
         eprintln!("{label}: no script at {}", script.display());
         return ExitCode::from(3);

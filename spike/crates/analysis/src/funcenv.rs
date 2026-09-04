@@ -5389,7 +5389,7 @@ mod tests {
 
         let (env, cfg, _) = solve_positional(book, &table);
 
-        internal_tooling::xfail::xfail_until("p-x-book-level-dot-locals", || {
+        dorc_testbed::xfail::xfail_until("p-x-book-level-dot-locals", || {
             assert_eq!(
                 targets_of(&env, LoadRoute::Taken),
                 ["root.sh", "entry.sh", "vendored/common.sh"]
@@ -5714,7 +5714,7 @@ mod tests {
             None,
             "interim: the assertion refines nothing, so the site's argv stays ⊤"
         );
-        internal_tooling::xfail::xfail_until("p-x-test-literal-narrows-a-variable", || {
+        dorc_testbed::xfail::xfail_until("p-x-test-literal-narrows-a-variable", || {
             assert_eq!(
                 plane.variable_text(site, "IMAGE").as_deref(),
                 Some("nginx"),
@@ -5738,7 +5738,7 @@ mod tests {
             Flat::Top,
             "interim: the head is a point havoc, so the load binds nothing"
         );
-        internal_tooling::xfail::xfail_until("p-x-assertion-makes-a-dynamic-load-exact", || {
+        dorc_testbed::xfail::xfail_until("p-x-assertion-makes-a-dynamic-load-exact", || {
             assert_eq!(
                 solved.binding_before(exit, ROLE),
                 Flat::Elem(Binding::Defined(lib)),
@@ -5762,7 +5762,7 @@ mod tests {
             1,
             "interim: the check mints no contents fact, so the load walls"
         );
-        internal_tooling::xfail::xfail_until("p-x-exact-check-narrows-file-contents", || {
+        dorc_testbed::xfail::xfail_until("p-x-exact-check-narrows-file-contents", || {
             assert!(
                 solved.unresolvable_loads().is_empty(),
                 "contents proven equal to authored bytes: no havoc, no wall"
@@ -5785,15 +5785,12 @@ mod tests {
             1,
             "interim: the write mints no contents fact, so the load walls"
         );
-        internal_tooling::xfail::xfail_until(
-            "p-x-known-write-establishes-sourced-contents",
-            || {
-                assert!(
-                    solved.unresolvable_loads().is_empty(),
-                    "the contents are the book's own bytes: no havoc, no wall"
-                );
-            },
-        );
+        dorc_testbed::xfail::xfail_until("p-x-known-write-establishes-sourced-contents", || {
+            assert!(
+                solved.unresolvable_loads().is_empty(),
+                "the contents are the book's own bytes: no havoc, no wall"
+            );
+        });
     }
 
     /// `FORFEITS:forfeit-shell-parity-immunity-model` — the funcenv models none of sh's own
@@ -5820,15 +5817,12 @@ mod tests {
             Flat::Top,
             "interim: the operand is cwd-relative, so the blind act above costs it its authority"
         );
-        internal_tooling::xfail::xfail_until(
-            "p-x-dollar-zero-expansion-survives-a-blind-load",
-            || {
-                assert_eq!(
-                    solved.binding_before(exit, ROLE),
-                    Flat::Elem(Binding::Defined(lib)),
-                    "`$0` is immutable and the expansion runs no command"
-                );
-            },
-        );
+        dorc_testbed::xfail::xfail_until("p-x-dollar-zero-expansion-survives-a-blind-load", || {
+            assert_eq!(
+                solved.binding_before(exit, ROLE),
+                Flat::Elem(Binding::Defined(lib)),
+                "`$0` is immutable and the expansion runs no command"
+            );
+        });
     }
 }

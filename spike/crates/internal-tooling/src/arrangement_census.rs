@@ -92,7 +92,7 @@ fn declarations(root: &Path) -> Vec<String> {
 }
 
 pub(crate) fn run() -> ExitCode {
-    let root = internal_tooling::repo_root();
+    let root = dorc_testbed::repo_root();
     let path = root.join(LOCK);
     let Ok(lock) = std::fs::read_to_string(&path) else {
         eprintln!("arrangement-census: cannot read {}", path.display());

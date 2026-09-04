@@ -7501,7 +7501,7 @@ apt_get__is_converged() { return 0; }
         let guards = plan.disposition_counts().guard;
         let once = plan.pinned_definitions();
         let hoisted = once.typeset(&Placement::Hoist);
-        internal_tooling::xfail::xfail_until("p-x-placement-tuning-pair", || {
+        dorc_testbed::xfail::xfail_until("p-x-placement-tuning-pair", || {
             assert_eq!(guards, 1, "the single site still guards");
             assert!(
                 !hoisted.contains("apt_get__is_converged"),

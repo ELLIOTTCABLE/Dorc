@@ -85,7 +85,7 @@ const REACH: &[Reach] = &[
 /// has, must FAIL this battery rather than quietly satisfy it.
 fn step_sees(hk: &Path, step: &str, path: &str) -> Result<bool, String> {
     let out = Command::new(hk)
-        .current_dir(internal_tooling::repo_root())
+        .current_dir(dorc_testbed::repo_root())
         .args(["run", "pre-commit", "--plan", "--step", step, path])
         .env("HK_SKIP_HOOK", "")
         .stderr(Stdio::null())

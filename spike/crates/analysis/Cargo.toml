@@ -17,11 +17,11 @@ dorc-syntax = { path = "../syntax", version = "0.0.0" }
 # kind-index to drive the ambient∧invariant reaching-defs gate (note 162 O-1).
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
 
-# TEST-ONLY, and NOT product code: the workspace's one `xfail_until` seat and its census live there
-# (`30A` §1 d3), so a pin in this crate wears the same registry every other crate's does. The kernel
-# gains no dependency and stays `inv-determinism`-clean.
+# TEST-ONLY, and NOT product code: the workspace's one `xfail_until` seat and its census live in the
+# shared test substrate (`30A` §1 d3), so a pin in this crate wears the same registry every other
+# crate's does. The kernel gains no dependency and stays `inv-determinism`-clean.
 [dev-dependencies]
-internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+dorc-testbed = { path = "../testbed", version = "0.0.0" }
 
 [lints]
 workspace = true
