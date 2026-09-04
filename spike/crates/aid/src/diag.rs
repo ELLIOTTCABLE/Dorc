@@ -3023,9 +3023,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             floor: Floor::WarnOrDeny,
             remediation: RemediationClass::Structural,
         },
-        // The post-dispatch sibling: the intent published and the machine was touched, so the
-        // outcome that could not be recorded is an integrity loss the user must chase, error-floored
-        // on the same footing as its plan-time sibling.
+        // The post-dispatch sibling, error-floored on the same footing as its plan-time one.
         DiagCode::ApplyOutcomeUnwritten(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

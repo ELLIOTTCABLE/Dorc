@@ -2030,8 +2030,7 @@ fn scripted_session(
             stdout: Vec::new(),
             status: 0,
         }),
-        // The marker-unusable world is not a driver outcome (the seeded nonce is always marker-safe),
-        // so no `--host` apply reaches it through the scripted column; it stays a decline here.
+        // The marker-unusable world is not a driver outcome (the seeded nonce is always marker-safe).
         Some(EdgeFault::Transport(TransportFailure::MarkerUnusable)) => None,
         // The outcome-unwritable world has a SUCCESS transport; the outcome write is what fails.
         _ if outcome_unwritable => Some(SimScript::Completes {
