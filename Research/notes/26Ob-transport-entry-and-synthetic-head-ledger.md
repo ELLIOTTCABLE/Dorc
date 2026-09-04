@@ -208,6 +208,12 @@ human's table, sized and dated, is `6-tier-two-work-units`.
   "transport forces it to know destinations address hosts"; under this sitting transport
   is an oracle). File stays blessed (sh semantics force it). ~SUSPECT Host un-blesses;
   `q8`.
+- `ack-prospective-admin-bytes-opt-in-for-aid` [TYPED 2026-09-04] — a carve-out from
+  `rul-no-hopeful-transfer`, explicit and immediate: the AID plane (the plan-time drift
+  display for sites whose world is unknown) may ship admin bytes prospectively ONLY
+  behind an upfront, consumed opt-in of the posture kind (`lean-cohort-defaults-posture`
+  material); never by default. The division stays careful and alive and is never crossed
+  without consuming the opt-in.
 - `lean-cohort-defaults-posture` [LEAN, human, not ruled] — the sitting is walling off
   oceans of day-one value, correctly; this will badly want a one-time posture setting
   (`--hardened` versus a homelab-nice bundle, the security-posture setting `26O` names

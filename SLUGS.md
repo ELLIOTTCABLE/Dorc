@@ -6455,7 +6455,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-no-hopeful-transfer
 - defined: spike/CLAUDE.md:420 — (human-typed 2026-09-04) — NO admin data transits any
-- cited: 26Ob (5)
+- cited: 26Ob (6)
 
 ## rul-no-mutating-guards
 - defined: Research/plans/271-block-settle-rulings-ledger.md:146 — (task 10b; 2026-07-10; TYPED, emphatic)
