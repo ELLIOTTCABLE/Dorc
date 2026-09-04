@@ -4324,11 +4324,30 @@ fn run_kept_stream_refusal(harness: &Harness) -> Result<(), Failed> {
 
 // ---------------------------------------------------------------------------
 
-/// The case a repo path belongs to, or `None` for an argument that is not a case path.
-///
-/// The case is the segment after `tests/`, so a file nested in a case's `mocks/` attributes to its
-/// case rather than to `mocks`. Both separators are accepted because the caller is a git hook and
-/// git reports forward slashes even on Windows.
+/// Append the run seed and its replay/pin spelling to a failing trial's message
+/// (`30X:seed-two-affordances`): every FAIL line, not once per run, so an intermittent red is never
+/// agent-retry fodder — the seed that produced it and the one-line pin are right there.
+fn append_seed_note(failed: &Failed, seed: u64) -> Failed {
+    Failed::from(format!(
+        "{}\n{}",
+        failed.message().unwrap_or_default(),
+        dorc_testbed::run_seed::seed_failure_note(seed, "test:e2e")
+    ))
+}
+
+/// Mint one trial whose failure carries the seed note. The ONE seat that wraps every trial, so no
+/// per-case function has to remember the note.
+fn push_trial(
+    trials: &mut Vec<Trial>,
+    seed: u64,
+    name: String,
+    body: impl FnOnce() -> Result<(), Failed> + Send + 'static,
+) {
+    trials.push(Trial::test(name, move || {
+        body().map_err(|failed| append_seed_note(&failed, seed))
+    }));
+}
+
 fn main() {
     let (passthrough, changed) = split_path_selectors(std::env::args());
     let mut args = Arguments::from_iter(passthrough);
@@ -4355,15 +4374,21 @@ fn main() {
     let mut trials: Vec<Trial> = Vec::new();
     {
         let harness = Arc::clone(&harness);
-        trials.push(Trial::test("bundle-integration".to_owned(), move || {
-            run_bundle_integration(&harness)
-        }));
+        push_trial(
+            &mut trials,
+            seed,
+            "bundle-integration".to_owned(),
+            move || run_bundle_integration(&harness),
+        );
     }
     {
         let harness = Arc::clone(&harness);
-        trials.push(Trial::test("kept-stream-refusal".to_owned(), move || {
-            run_kept_stream_refusal(&harness)
-        }));
+        push_trial(
+            &mut trials,
+            seed,
+            "kept-stream-refusal".to_owned(),
+            move || run_kept_stream_refusal(&harness),
+        );
     }
     for loom in looms {
         // ONE trial per loom (`30X:loom-one-runner`): hygiene + render-fixpoint for every case,
@@ -4378,26 +4403,26 @@ fn main() {
         }
         let harness = Arc::clone(&harness);
         let loom = Arc::new(loom);
-        trials.push(Trial::test(loom.name.clone(), move || {
+        push_trial(&mut trials, seed, loom.name.clone(), move || {
             run_loom_case(&harness, &loom)
-        }));
+        });
     }
     let mut real_fixtures: BTreeMap<String, PathBuf> = BTreeMap::new();
     for case in discovered {
         let harness = Arc::clone(&harness);
         match case.kind {
-            E2eKind::RoundTrip => trials.push(Trial::test(case.name.clone(), move || {
+            E2eKind::RoundTrip => push_trial(&mut trials, seed, case.name.clone(), move || {
                 run_round_trip(&harness, &case, &mut String::new(), false)
-            })),
-            E2eKind::Lint => trials.push(Trial::test(case.name.clone(), move || {
+            }),
+            E2eKind::Lint => push_trial(&mut trials, seed, case.name.clone(), move || {
                 run_lint(&harness, &case)
-            })),
+            }),
             E2eKind::LintReal => {
                 real_fixtures.insert(case.name.clone(), case.dir);
             }
             E2eKind::MissingExpectedOut => {
                 let name = case.name.clone();
-                trials.push(Trial::test(name.clone(), move || {
+                push_trial(&mut trials, seed, name.clone(), move || {
                     let residue = support::round_trip_residue(&case.dir).join(", ");
                     Err(format!(
                         "FAIL  {name}  [a round-trip case needs `expected.out`; \
@@ -4406,7 +4431,7 @@ fn main() {
                          real-tools lane.]"
                     )
                     .into())
-                }));
+                });
             }
         }
     }
@@ -4420,23 +4445,23 @@ fn main() {
             let harness = Arc::clone(&harness);
             let path = Arc::clone(&path);
             let fixtures = Arc::clone(&fixtures);
-            trials.push(Trial::test(format!("lint-real/{tool}"), move || {
+            push_trial(&mut trials, seed, format!("lint-real/{tool}"), move || {
                 run_lint_real(
                     &harness,
                     &tool,
                     fixtures.get(&format!("lint-real-{tool}")),
                     &path,
                 )
-            }));
+            });
         }
     }
 
     if let Some(dir) = closed_loop_dir {
         let harness = Arc::clone(&harness);
         let mocks = dir.join("mocks");
-        trials.push(Trial::test("closed-loop".to_owned(), move || {
+        push_trial(&mut trials, seed, "closed-loop".to_owned(), move || {
             run_closed_loop(&harness, &dir, &mocks)
-        }));
+        });
     }
 
     if !changed.is_empty() {
@@ -4449,11 +4474,6 @@ fn main() {
     }
     let conclusion = libtest_mimic::run(&args, trials);
     harness.reap();
-    if conclusion.has_failed() {
-        eprintln!(
-            "{}",
-            dorc_testbed::run_seed::seed_failure_note(seed, "test:e2e")
-        );
-    }
+    // The seed note rides every FAIL line now (`push_trial`), so no once-per-run summary.
     conclusion.exit();
 }
