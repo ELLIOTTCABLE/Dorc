@@ -1117,9 +1117,10 @@ struct RoundTripInputs {
 impl RoundTripInputs {
     /// Fill from a loom's session (`30X:loom-frontmatter-is-registry-metadata-only`): the flags and
     /// `--artifact-dir` from the artifact-producing block's argv, the surviving `probe-results` and
-    /// `tolerate` from frontmatter, and dual-rail suppression derived from the book's own multiline
-    /// argv rather than a declared key. The exit is the session's `$ echo $?` block (a loom reads
-    /// exit-0/shebang, so `dorc_exit` is unused) and the apply's exec rc has no session block.
+    /// `tolerate` and `apply-exit` from frontmatter, and dual-rail suppression derived from the
+    /// book's own multiline argv rather than a declared key. The plan exit is the session's
+    /// `$ echo $?` block (a loom reads exit-0/shebang, so `dorc_exit` is unused); the apply's exec
+    /// rc is `apply-exit` (default 0), the exec rail's own execution no session line spells.
     fn from_session(case: &errorloom::Case) -> Result<Self, String> {
         let argv = case
             .replay()
@@ -1143,10 +1144,16 @@ impl RoundTripInputs {
                 .collect::<Result<_, _>>()?,
             None => Vec::new(),
         };
+        let apply_exit = match case.frontmatter().scalar("apply-exit") {
+            Some(value) => value
+                .parse()
+                .map_err(|_| format!("apply-exit: `{value}` is not an integer"))?,
+            None => 0,
+        };
         Ok(Self {
             flags: extra_flags(&argv),
             dorc_exit: 0,
-            apply_exit: 0,
+            apply_exit,
             artifact_set: argv
                 .iter()
                 .any(|arg| arg == "--artifact-dir" || arg.starts_with("--artifact-dir=")),
@@ -2454,7 +2461,6 @@ fn run_round_trip(
             &apply_art,
             run_root,
             inputs,
-            loom,
             &mut run.failures,
         );
         probe_exec_check(
@@ -2650,7 +2656,6 @@ fn exec_check(
     artifact: &str,
     run_root: Option<&Path>,
     inputs: &RoundTripInputs,
-    loom: bool,
     failures: &mut Vec<String>,
 ) {
     let unsafe_lines = scan_redirects(artifact);
@@ -2683,10 +2688,10 @@ fn exec_check(
         piped
     };
     let out = capture(command.stdout(Stdio::piped()).stderr(Stdio::piped()));
-    // A dir case pins the apply's exec rc through its `EXIT_RC` marker; a loom has no session block
-    // that runs the apply under its mocks, so the run-set below is its assertion and the committed
-    // apply bytes imply the rc (`d2a:tc-apply-exit-has-no-session-spelling`).
-    if !loom && out.code != inputs.apply_exit {
+    // The apply's exec rc is a case-level declaration about the exec rail's own world
+    // (`30Xa:rul-survivors-are-the-criterion-not-the-count`): a dir case spells it `EXIT_RC`, a loom
+    // spells it `apply-exit:` (default 0), and both flow through `inputs.apply_exit`.
+    if out.code != inputs.apply_exit {
         failures.push(format!(
             "FAIL  {name}  [ap-2-exec: rendered apply exited rc={}, expected {}]\n      {}",
             out.code,

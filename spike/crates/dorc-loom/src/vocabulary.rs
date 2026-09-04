@@ -9,8 +9,10 @@
 //! Frontmatter survives ONLY for what is ABOUT THE CASE AS AN AUTHORING HOME
 //! (`30X:loom-frontmatter-is-registry-metadata-only`; `30Xa:rul-survivors-are-the-criterion-not-the-count`):
 //! everything that was a run knob or an assertion is spelled in the session instead (flags on the
-//! `$ dorc` line, the exit as a `$ echo $?` block, the artifact set as `--artifact-dir`, the
-//! diagnostics as the transcript), leaving the eleven below.
+//! `$ dorc` line, the plan exit as a `$ echo $?` block, the artifact set as `--artifact-dir`, the
+//! diagnostics as the transcript), leaving the thirteen below. Two of those thirteen are case-level
+//! declarations about the RUN no session line can honestly carry (`30Xa:rul-survivors-are-the-criterion-not-the-count`):
+//! `apply-exit` (the exec rail's own expected exit) and `xfail` (a registry-keyed defect pin).
 
 /// One legal frontmatter key and the gate that gives it effect.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -35,7 +37,7 @@ pub const DEFINING_KEYS_NOTE: &str = "a case declares exactly ONE of `code:` or 
 ///
 /// `todo` is the one deliberate exception and is why it is safe unread: it asserts nothing about
 /// the case, being an author's note about the case's own future.
-pub const FRONTMATTER_KEYS: [FrontmatterKey; 11] = [
+pub const FRONTMATTER_KEYS: [FrontmatterKey; 13] = [
     FrontmatterKey {
         name: "code",
         read_by: "the diagnostic code this case defines; keys its catalog row. On a whole-product \
@@ -75,6 +77,19 @@ pub const FRONTMATTER_KEYS: [FrontmatterKey; 11] = [
         name: "tolerate",
         read_by: "a named nondeterminism class, whose normalizer is applied to the RUN LOG at bless \
                   and at check. Never to rendered output",
+    },
+    FrontmatterKey {
+        name: "apply-exit",
+        read_by: "the exec rail's expected exit for the rendered apply under the case's mocks; \
+                  `exec_check` asserts the apply's rc against it. A runner-only execution no \
+                  session line spells, default 0",
+    },
+    FrontmatterKey {
+        name: "xfail",
+        read_by: "names a pin in `internal_tooling::xfail::PINS`: the round-trip battery's \
+                  structural gates are TOLERATED and reported per gate while the transcript compare \
+                  stays enforced, and every structural gate passing is a loud XPASS naming the pin \
+                  to promote",
     },
     FrontmatterKey {
         name: "tests-critical-law",

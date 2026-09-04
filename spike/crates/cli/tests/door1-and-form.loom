@@ -1,4 +1,5 @@
 ---
+apply-exit: 1
 ---
 -- book.sh --
 # door1-and-form (door-1 && DUAL, charter 20V §4 / note 215): the `&&` direction of the
