@@ -73,22 +73,31 @@ impl DorcEditableBaseline {
     /// Rendered editable variables in deterministic first-use order.
     #[must_use]
     pub fn used_variables(&self) -> Vec<(TemplateVariableName, String)> {
-        let mut used = Vec::new();
-        for component in self.render.components() {
-            let RenderComponent::EditableSection(section) = component else {
+        used_variables_of(&self.render)
+    }
+}
+
+/// The rendered editable variables a render holds, in first-use order — a render-only view, so a
+/// `code:` case whose typed payload the driver cannot reconstruct (a receipt diagnostic that needs
+/// a live store) still lists its holes for `dorc-loom vars`.
+fn used_variables_of(
+    render: &EditableRender<SectionKey, SectionVariableId>,
+) -> Vec<(TemplateVariableName, String)> {
+    let mut used = Vec::new();
+    for component in render.components() {
+        let RenderComponent::EditableSection(section) = component else {
+            continue;
+        };
+        for fragment in section.fragments() {
+            let EditableFragment::Variable { id, rendered } = fragment else {
                 continue;
             };
-            for fragment in section.fragments() {
-                let EditableFragment::Variable { id, rendered } = fragment else {
-                    continue;
-                };
-                if !used.iter().any(|(name, _)| name == &id.name) {
-                    used.push((id.name.clone(), rendered.clone()));
-                }
+            if !used.iter().any(|(name, _)| name == &id.name) {
+                used.push((id.name.clone(), rendered.clone()));
             }
         }
-        used
     }
+    used
 }
 
 /// The Dorc case renderer and compiled-edit applier.
@@ -453,7 +462,8 @@ impl DorcConsumer {
         dorc_cli::invocation_error_parts(&ctx, diag, &interner)
     }
 
-    /// The editable baseline of a case's FIRST replay — what `dorc-loom vars` reports.
+    /// Every editable render a case's replays produce, in block order — the one driving core the
+    /// singular baseline (first render) and the every-block `vars` inventory share.
     ///
     /// It drives the case exactly as `publish` does rather than re-deriving a world of its own
     /// (`_loom-final-map` §2c): a second derivation answered only for the plain diagnostic shape, so
@@ -462,9 +472,11 @@ impl DorcConsumer {
     /// than no inventory.
     ///
     /// # Errors
-    /// Returns the replay refusal, names the case whose first replay carries no editable prose, or
-    /// declines a case whose bytes this tool does not produce.
-    pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+    /// Returns the replay refusal, or names a case whose replays render no editable prose at all.
+    fn editable_renders(
+        &self,
+        case: &Case,
+    ) -> Result<Vec<EditableRender<SectionKey, SectionVariableId>>, String> {
         // The generation lag, stated before the driver can only shrug about it: a case naming a
         // slug with no committed row renders nothing, and the honest answer names the repair.
         if let Some(slug) = case.frontmatter().scalar("arrangement") {
@@ -472,20 +484,38 @@ impl DorcConsumer {
         }
         // Declining the case's own inventory block is what makes the block legal to write down.
         let driver = DorcReplayDriver::new(self, case).without_self_reference();
-        let render = drive_case(case, &RunEnv::new(), |command, context| {
+        let renders: Vec<_> = drive_case(case, &RunEnv::new(), |command, context| {
             Ok(driver
                 .drive(command, context)
                 .unwrap_or_else(|| ReplayResult::bytes(String::new())))
         })
         .map_err(|error: RunError| error.to_string())?
         .into_iter()
-        .find_map(|result| result.editable_render().cloned())
-        .ok_or_else(|| {
-            "no replay of this case renders editable prose; `vars` reports the render an edit \
-             compiles against, so a case whose replays are all bytes-only has no inventory"
-                .to_owned()
-        })?;
-        self.baseline_from_render(case, render)
+        .filter_map(|result| result.editable_render().cloned())
+        .collect();
+        if renders.is_empty() {
+            return Err(
+                "no replay of this case renders editable prose; `vars` reports the render \
+                        an edit compiles against, so a case whose replays are all bytes-only has \
+                        no inventory"
+                    .to_owned(),
+            );
+        }
+        Ok(renders)
+    }
+
+    /// The editable baseline of a case's FIRST editable replay — the render a `publish` edit
+    /// compiles against.
+    ///
+    /// # Errors
+    /// Returns the replay refusal, or names the case whose replays carry no editable prose.
+    pub fn editable_baseline(&self, case: &Case) -> Result<DorcEditableBaseline, String> {
+        let first = self
+            .editable_renders(case)?
+            .into_iter()
+            .next()
+            .ok_or_else(|| String::from("no editable render"))?;
+        self.baseline_from_render(case, first)
     }
 
     fn require_arrangement_row(&self, slug: &str) -> Result<(), String> {
@@ -515,17 +545,39 @@ impl DorcConsumer {
     /// values, so a variable-less case contributes no row at either seat rather than a `case:` line
     /// with nothing under it (`30C` item 4).
     ///
+    /// EVERY editable block is inventoried, not just the first (`30Xa:open-every-block-vars-reverted`):
+    /// a whole-product session whose diagnostic fires on a later block would otherwise be invisible
+    /// to the author. `Used` names are stamped per-render, so the DISTINCT variable-values across
+    /// all blocks are listed in block order (a single-block case is unchanged; identical holes a
+    /// later block repeats add no noise); `All` names are semantic payload params and union by name.
+    ///
     /// # Errors
     /// Returns the baseline refusal for a case whose replays render no editable prose.
     pub fn vars_inventory(&self, target: &Case, breadth: Breadth) -> Result<String, String> {
-        let baseline = self.editable_baseline(target)?;
-        let values = match breadth {
-            Breadth::Used => baseline.used_variables(),
-            Breadth::All => baseline
-                .all_variables()
-                .iter()
-                .map(|(name, value)| (name.clone(), value.clone()))
-                .collect(),
+        let mut used: Vec<(TemplateVariableName, String)> = Vec::new();
+        let mut all: BTreeMap<TemplateVariableName, String> = BTreeMap::new();
+        for render in self.editable_renders(target)? {
+            match breadth {
+                // Used reads the render's own fragments, so it never needs the typed payload
+                // `baseline_from_render` reconstructs (and can refuse for a store-rooted diagnostic).
+                Breadth::Used => {
+                    for pair in used_variables_of(&render) {
+                        if !used.contains(&pair) {
+                            used.push(pair);
+                        }
+                    }
+                }
+                Breadth::All => all.extend(
+                    self.baseline_from_render(target, render)?
+                        .all_variables()
+                        .iter()
+                        .map(|(name, value)| (name.clone(), value.clone())),
+                ),
+            }
+        }
+        let values: Vec<(TemplateVariableName, String)> = match breadth {
+            Breadth::Used => used,
+            Breadth::All => all.into_iter().collect(),
         };
         if values.is_empty() {
             return Ok(String::new());
