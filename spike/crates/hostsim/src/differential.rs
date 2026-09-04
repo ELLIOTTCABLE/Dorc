@@ -1514,6 +1514,7 @@ pub fn emit_finding(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dorc_testbed::run_seed::run_seed;
 
     /// Locate the spike root from this crate's manifest dir (`crates/hostsim` → `spike`).
     fn spike_root() -> PathBuf {
@@ -1542,7 +1543,10 @@ mod tests {
 
     #[test]
     fn generate_is_deterministic_in_seed() {
-        for seed in 0..50u64 {
+        // Base offset from this run's seed: determinism holds for EVERY seed, so a varied window is a free re-proof of the invariant; a failing `seed` replays as `DORC_SEED=<seed>` (`30X:seed-exploration-asserts-invariants`, `delta-hostsim-seed-print`).
+        let base = run_seed();
+        for i in 0..50u64 {
+            let seed = base.wrapping_add(i);
             let a = generate(seed);
             let b = generate(seed);
             assert_eq!(a.book, b.book, "seed {seed}: book reproduces");
@@ -1560,8 +1564,11 @@ mod tests {
             eprintln!("skip: tools not located");
             return;
         };
+        // Cleanliness holds for EVERY seed, so the window rides this run's seed (`delta-hostsim-seed-print`).
+        let base = run_seed();
         let mut bad = Vec::new();
-        for seed in 0..200u64 {
+        for i in 0..200u64 {
+            let seed = base.wrapping_add(i);
             let trial = generate(seed);
             if let Err(e) = dash_n(&tools, &trial.book) {
                 bad.push((seed, trial.shape, e, trial.book));
@@ -1569,7 +1576,7 @@ mod tests {
         }
         assert!(
             bad.is_empty(),
-            "generator emitted {} non-dash-n-clean book(s): {:#?}",
+            "generator emitted {} non-dash-n-clean book(s) (replay: DORC_SEED={base}): {:#?}",
             bad.len(),
             bad
         );

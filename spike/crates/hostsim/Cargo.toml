@@ -18,6 +18,9 @@ dorc-analysis = { path = "../analysis", version = "0.0.0" }
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
 dorc-oracle = { path = "../oracle", version = "0.0.0" }
 dorc-plan = { path = "../plan", version = "0.0.0" }
+# The ONE run-seed seat (`30X:seed-two-affordances`): the invariant sweeps here and the
+# `differential` example offset their base from this run's seed. Std-only, dev-only.
+dorc-testbed = { path = "../testbed", version = "0.0.0" }
 
 [lints]
 workspace = true

@@ -34,11 +34,12 @@ use dorc_hostsim::differential::{
     self, FindingClass, Tools, Trial, Verdict, emit_finding, generate, judge, minimize, run_trial,
     shimmed_apply_cmds,
 };
+use dorc_testbed::run_seed::{run_seed, seed_banner};
 
 struct Opts {
     seed: Option<u64>,
     sweep: Option<u64>,
-    start_seed: u64,
+    start_seed: Option<u64>,
     max_secs: Option<u64>,
     emit_findings: bool,
 }
@@ -109,6 +110,11 @@ fn one_trial(tools: &Tools, seed: u64, spike_root: &Path, emit: bool) {
 
 /// Run a sweep, streaming a one-line tick per finding and a final summary.
 fn sweep(tools: &Tools, spike_root: &Path, opts: &Opts, count: u64) -> std::process::ExitCode {
+    // An unpinned sweep bases on this run's seed so it explores a fresh window each run (`30X:seed-two-affordances`); `--start-seed N` pins the base for replay.
+    let base = opts.start_seed.unwrap_or_else(run_seed);
+    if opts.start_seed.is_none() {
+        println!("{}", seed_banner(base));
+    }
     let start = Instant::now();
     let mut trials = 0u64;
     let mut clean = 0u64;
@@ -123,7 +129,7 @@ fn sweep(tools: &Tools, spike_root: &Path, opts: &Opts, count: u64) -> std::proc
             println!("(budget {budget}s reached after {trials} trials)");
             break;
         }
-        let seed = opts.start_seed.wrapping_add(i);
+        let seed = base.wrapping_add(i);
         let trial = generate(seed);
         trials = trials.saturating_add(1);
         match run_trial(tools, &trial) {
@@ -207,7 +213,7 @@ fn short(s: &str) -> String {
 fn parse_opts() -> Result<Opts, String> {
     let mut seed = None;
     let mut sweep = None;
-    let mut start_seed = 0u64;
+    let mut start_seed = None;
     let mut max_secs = None;
     let mut emit_findings = false;
     let mut it = std::env::args().skip(1);
@@ -228,10 +234,11 @@ fn parse_opts() -> Result<Opts, String> {
                 );
             }
             "--start-seed" => {
-                start_seed = it
-                    .next()
-                    .and_then(|v| v.parse().ok())
-                    .ok_or("--start-seed needs a u64")?;
+                start_seed = Some(
+                    it.next()
+                        .and_then(|v| v.parse().ok())
+                        .ok_or("--start-seed needs a u64")?,
+                );
             }
             "--max-secs" => {
                 max_secs = Some(

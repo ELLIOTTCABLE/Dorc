@@ -512,6 +512,7 @@ dependencies = [
  "dorc-oracle",
  "dorc-plan",
  "dorc-syntax",
+ "dorc-testbed",
 ]
 
 [[package]]
