@@ -1041,8 +1041,7 @@ fn inspect_cases(
         selected.push(relative_path.clone());
         let mut body = Vec::new();
         // A candidate must reproduce under a SECOND seed before it may be blessed, so publishing
-        // never bakes nondeterminism into a golden (`30Xa:Checkpoint D1`, rider d; the mirror of the
-        // e2e bless refusal). A pinned case reproduces trivially; a seed-dependent one names the pin.
+        // never bakes nondeterminism into a golden (`30Xa:Checkpoint D1`, rider d).
         if let Some(refusal) = dorc_loom::second_seed_reproduction_refusal(&consumer, &case)
             .map_err(|error| format!("{}: {error}", path.display()))?
         {
@@ -1144,9 +1143,8 @@ fn inspect_blocks(
         // The committed bytes ARE the render's bytes, so an edit compiles against them directly
         // (`28L:rul-editability-is-stamped-never-re-derived`).
         let dirty = block.output().to_owned();
-        // The ACTUAL in-process drive result decides editability (`30Xa:Checkpoint D1`): with the
-        // two-driver gate proving the render equal to the binary's bytes, a whole-product block's
-        // stamped render is its authoring provenance exactly as a catalog block's is.
+        // The ACTUAL in-process drive result decides editability (`30Xa:Checkpoint D1`): the
+        // two-driver gate proves a whole-product block's render is its authoring provenance too.
         let editable = routed.editable_render().cloned();
         if let Some(render) = editable {
             let baseline = consumer

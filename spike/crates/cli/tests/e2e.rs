@@ -1149,9 +1149,8 @@ fn loom_spec_of(name: &str, path: &Path, parsed: errorloom::Case) -> Option<Loom
     if dorc_loom::shell_decline(&parsed).is_some() {
         return None;
     }
-    // LINT is the single-invocation shape `run_lint` drives — the first `dorc` invocation a
-    // `dorc lint … book.sh` (`dev-lint-looms-stay-single-invocation`, ended by D2). Any other lint
-    // invocation runs through the ordinary session like every other block.
+    // LINT is the single-invocation `dorc lint … book.sh` shape `run_lint` drives
+    // (`dev-lint-looms-stay-single-invocation`, ended by D2); any other lint runs through the session.
     let first_invocation = parsed.replay().blocks().iter().find_map(|block| {
         let argv = dorc_loom::session_grammar::block_argv(block.command());
         (argv.first().map(String::as_str) == Some("dorc")).then_some(argv)
@@ -1497,10 +1496,8 @@ fn drive_session(
         command.env(name, value);
     }
     command.env(RUNNER_CLOCK_SHADOW, &invocation0_clock);
-    // A runner-owned default transport, so a `$ dorc apply --host` block runs the LOCAL fixture
-    // interpreter in the shell exactly as `receipt_state.rs`'s apply tests drive it
-    // (`30Xa:Checkpoint C3b`, rider f; `rul-runner-varies-only-what-it-set` — an author's own
-    // `export DORC_SEAM_TRANSPORT` wins). The `local:<shell>;<interp>` spelling matches `run_closed_loop`.
+    // A runner-owned default transport so a `$ dorc apply --host` block runs the LOCAL fixture
+    // interpreter in the shell (`30Xa:Checkpoint C3b`, rider f; `rul-runner-varies-only-what-it-set`).
     let interpreter = if cfg!(windows) {
         format!("/usr/bin/{}", harness.checker_name)
     } else {
@@ -2245,16 +2242,10 @@ fn run_round_trip(
     // about the DRIVE — a case whose code fired and whose golden then diverged must still say so.
     drive_stderr.push_str(&out.stderr);
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
-    // GATES ATTACH TO WHAT THE BLOCK PRODUCED (`30Xa:rul-gates-attach-to-what-a-block-produced`): the
-    // artifact battery runs only when the block's stdout IS an artifact (non-empty, shebang-led). A
-    // mode that errored emits no artifact — a diagnostic on stderr, at most a plan-summary on stdout —
-    // so its transcript is its assertion. The crash guard narrows to a dead engine: an
-    // artifact-producing mode that exited 0 with EMPTY stdout. (A dir-case keeps its `DORC_EXIT`
-    // contract until D2 converts it.)
+    // `30Xa:rul-gates-attach-to-what-a-block-produced`: the artifact battery judges only a CLEAN
+    // plan's artifact (exit 0, shebang-led); an errored plan ships the book's own bytes verbatim
+    // (`two-surfaces`) and its transcript is its assertion. The dir-case keeps `DORC_EXIT` until D2.
     if loom {
-        // Only a CLEAN plan (exit 0, shebang-led stdout) has an artifact the gates judge; an errored
-        // one ships the book's own bytes verbatim (`two-surfaces`) and its transcript is its
-        // assertion. The dead engine is exit 0 with empty stdout.
         if out.code != 0 || !got.trim_start().starts_with("#!") {
             if out.code == 0 && got.is_empty() {
                 return Err(format!(
@@ -2384,10 +2375,8 @@ fn run_round_trip(
 
     floor_differential(harness, name, dir, &mocks, &mut run.failures);
 
-    // The diagnostic and needle gates are the DIR-case surface; for a loom the SESSION transcript
-    // compare (every byte both drivers saw) and `defined_code_fired` are its diagnostic assertion,
-    // so re-scanning the artifact re-drive's stderr is redundant and reads a world the case's `code:`
-    // already declares (`30Xa:rul-gates-attach-to-what-a-block-produced`; `loom-transcript-is-what-the-user-saw`).
+    // A loom's diagnostic assertion is the SESSION transcript compare + `defined_code_fired`; the
+    // re-drive's diagnostic/needle scans are the DIR-case surface (`loom-transcript-is-what-the-user-saw`).
     if !loom {
         scan_diagnostics(name, &out.stderr, dir, &mut run.failures);
         scan_why(name, &out.stderr, dir, &mut run.failures);
@@ -3886,9 +3875,8 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
         shim_dir: build_dorc_shim(&harness.harness_bin),
     };
 
-    // The failing specimen declares a `code:` that its own drive does not fire, so `defined_code_fired`
-    // reddens it while the passing one folds (an errored plan no longer fails a gate under
-    // `30Xa:rul-gates-attach-to-what-a-block-produced` — its transcript is its assertion).
+    // The failing specimen declares a `code:` its drive never fires, so `defined_code_fired` reddens
+    // it while the passing one folds (an errored plan no longer fails a gate, `30Xa:Checkpoint D1`).
     for (tag, code, want_written) in [
         ("fold-pass-failing", "cli-no-book-given", false),
         ("fold-pass-passing", "", true),
