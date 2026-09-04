@@ -328,6 +328,19 @@ Built: `RoundTripInputs` (shape B) with a `from_session` filler (flags and `--ar
 | `dev-eleven-not-twelve` (`xfail` joins with its lens and cases in the conversion) · `dev-binder-assert-deleted-not-swapped` · `dev-from-session-lands-in-deliverable-2` | fine. | — |
 | deliverable 3 unstarted at ~660k | ACCEPT; D2a′ from the map, a fresh builder. | — |
 
+### Checkpoint D2a′ (`c7aeffca`, `DORC_KNOWN_BROKEN`; the conversion executed and blessed; 105 of 109 green; the dir path still present; gates unrun)
+
+Built: all 109 dir-cases converted in place to single-file looms by a throwaway converter (both-streams transcripts via a filtered `bless:case` over 108; check (i) as an ordered non-blank stdout subsequence — sound — held for 102 of 102 non-XFAIL cases; check (ii) landed every one of 26 needle patterns; the stderr churn is exactly the diagnostics the drives already produced); the `apply-exit` key restored with its `exec_check` assertion (`door1-and-form`); the XFAIL/XPASS lens moved onto the loom path; four dedicated pins registered and Live; THIRTEEN keys in `FRONTMATTER_KEYS`; the three case anchors the deletion would strand (`dorc_flags_selftest`, `dorc_sh_smoke`, `run_closed_loop`) re-homed through `materialize_anchor`. Proof census over the converted set: both 58 · shell-only 7 (`$` expansion) · in-process-only 0 · refused 0.
+
+| item | ruling | the conductor's own mistake, named |
+|---|---|---|
+| `tc-loop30-xfail-has-no-loom-structural-expression` — a TARGET-TENSE golden, tolerated only because the dir lens skipped the content diff; every loom structural gate passes (XPASS) | RULED: a transcript is what the user saw, so a wished-for output has no loom home; `loop30` is an ordinary descriptive case (no `xfail:`); `p-x-loop-cell-disjoint-siblings-replace` stays registered RESERVED (no call site) with its horizon and a `Deferred.why` naming the target-tense golden, discharged when the engine lands the replacement and the case re-blesses. No new Rust test. D2a″. | the brief's premise "the four fail structural gates" was true of three. |
+| `tc-load30-subshell-transcript-carries-a-machine-path` — `helper-declaration-contested` prints the absolute materialization path on stderr | RULED: the third seat this arc caught (after B1's why-lens and B2a's sibling advisory); it renders through the ONE relativizing seat (`why::relativize_for_display`) like the other two — a display change of the ruled class, listed; never a normalizer. D2b, with its fidelity items. | — |
+| `tc-load30-script-relative-two-driver-disagreement` | the same `artifact-form-fallback` in-process gap D2b owns; same fix. | — |
+| `tc-floor30-both-streams-transcript-vs-never-remeasure` — `bless:case` refuses floor cases; only `bless:floor` writes, and it re-measures | RULED: run `mise run bless:floor -- floor30-inline-dot-boundary` on the WSL leg; the re-measure is the design (`emitted-is-measure-once-ground-truth` names it the ONE write path, byte-stable over a correct case); the manifest must come back byte-identical, asserted in the report. D2a″. | the brief's "never re-measured" was over-cautious. |
+| `open-checki-is-subsequence-not-byte` · `open-load30-empty-ran-normalized` (the bless's own fixpoint, one byte) · `open-dedicated-xfail-pins` (env30 at `r31` mirrors the existing `30S` attention-calls, not a roadmap row) · `open-two-dorc-exit-cases-skip-structural-gates` (their `expected.ran` sections are dead if unread — delete, reported) | ACCEPT all. | — |
+| `open-pin-registry-drift` — `plans/30P` names two pins not in `PINS` | a plan-doc drift for the close batch (rewrite `30P`'s what-landed paragraph in place). | — |
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
