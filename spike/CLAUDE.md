@@ -41,7 +41,7 @@ prompt you write:
 - Executable test-fixtures use non-functional stubs (`hork`, `wombat`, inert
   mocks under `PATH=mocks-only`) — never real mutators. Real-command strawmen
   in the repo are frozen evidence; they must never be executed. The only
-  sanctioned executor of fixture material is the central e2e runner,
+  sanctioned executor of fixture material is the ONE central runner,
   `mise run test:e2e` (syntax-checks, and execs only under
   inert mocks, in a scrubbed environment with a throwaway-sandbox cwd). It
   rides `mise run test`, so the ordinary suite IS the executor —
@@ -443,14 +443,20 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   license-to-plan witness (`plan::PlanAuthority`, minted only from a non-refused admission
   or an intakeless run); debug/explain/aid are the only bypass. Never route refusal through
   the certifier trip (its floor is a guard-only PLAN).
-- **rul-fixture-identity-never-production** — fixed identifiers, fixed nonces, and
-  FNV-style digests are deterministic spike drift-detectors and satisfy fixture and
-  harness surfaces ONLY. They must be structurally unable to reach a production
-  boundary — remote transport, concurrency or retry, saved approval, multi-host
-  caching, default persistence, or anything published. Keep ONE named substitution
-  point rather than copies scattered per crate. Likewise headerless/legacy-tolerant
-  parsing stays behind compile-time test exposure; environment presence alone never
-  grants parser authority. Comments are not a fence — absence of a constructor is.
+- **rul-fixture-identity-never-production** (sharpened by
+  `30X:inv-fixture-state-never-typeable-into-main`) — seeded identifiers, nonces, clocks, and
+  FNV-style digests are deterministic drift-detectors for the harness ONLY, and "anything
+  published" means PUBLIC INTERFACES: no durable-file feature or state a production user must
+  never see may be producible by any code path typeable into `cli/src/bin/dorc.rs` — not "must
+  not exist", which would rule out deterministic testing. Hence the shipped `dorc` reads NO
+  harness-shaped environment: every former fixture pin is a column of the ONE `Seams` bundle,
+  constructed by `Seams::os()` for the shipped binary and by `HarnessSeams::from_env` — which has
+  NO arm for `RealSsh` or `Os` roots (unrepresentable, not merely rejected) — for the sibling
+  `dorc-harness` build; production variants are unconstructible from loom session
+  configuration. Keep ONE named substitution point rather than copies scattered per crate.
+  Likewise headerless/legacy-tolerant parsing stays behind compile-time test exposure;
+  environment presence alone never grants parser authority. Comments are not a fence —
+  absence of a constructor is.
 - **rul-host-evidence-is-not-the-narrative-plane** — two unrelated planes both reach
   for the word "evidence", and merging them would be a genuine correctness loss. The
   DESCRIBE plane's collapse records are our OWN decision-inert narration of why the
@@ -833,25 +839,23 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   beside the variable satisfies it, which is why deleting a neighbouring clause does not
   cascade into the variable next to it.
 - **flat-test-tree-and-loom-placement** (`288` §3, `rul-flat-test-tree` +
-  `rul-slug-decides-loom-placement`) — every case is a peer in a flat
-  `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom`
-  (single-file loom) · `X/X.loom` (multi-file loom) · `X/cmd` (a `dorc lint` case) ·
-  `X/book.sh` + `expected.out` (a round-trip case) · `X/book.sh` alone (a real-tools
-  fixture) · anything else is an `.rs` test's fixture space. A loom whose frontmatter carries
-  `run: round-trip|lint` is a WHOLE-PRODUCT case: both runners see it — the e2e runner
-  materializes and EXECUTES it through the unchanged gate battery, the looms runner parses and
-  hygiene-checks it and defers the transcript proof (`fixpoint: executed`) to that execution
-  (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). Placement is MECHANICAL:
-  a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
-  `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on
-  every loom edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning
-  UNREGISTERED behaviour stays in its causative crate's `tests/`. Two central runners
-  (`crates/cli/tests/{e2e,looms}.rs`, `harness = false`, targets declared explicitly
-  under `autotests = false`) walk every `crates/*/tests/` and mint one named,
-  filterable trial per case — so case DATA and `.rs` tests coexist in one flat dir.
-  Each runner carries a DISCOVERY FLOOR: walking the wrong roots finds zero cases, and
-  a suite of zero trials would otherwise exit GREEN. Never pin a case COUNT
-  (`count-drifts`); non-empty is the floor.
+  `rul-slug-decides-loom-placement`; shapes re-cut at `30X`) — every case is a peer in a flat
+  `crates/<c>/tests/` dir, classified by SHAPE, never by a marker file: `X.loom` (a case — the
+  ONLY corpus shape; whole-product cases included, as shell sessions carrying `mocks/` and
+  `expected.ran` as sections) · `X/book.sh` alone (a real-tools fixture, driven only under
+  `DORC_E2E_REAL_TOOLS`) · anything else is an `.rs` battery's own fixture space. The dir
+  round-trip case with its `NAME=value` marker grammar, the `X/cmd` lint case, and the
+  multi-file `X/X.loom` shape are GONE (`[TYPED 2026-09-02: "no legacy e2e"]`). Placement is
+  MECHANICAL: a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
+  `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on every loom
+  edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning UNREGISTERED
+  behaviour stays in its causative crate's `tests/`. ONE central runner
+  (`crates/cli/tests/e2e.rs`, `harness = false`, targets declared explicitly under
+  `autotests = false`) walks every `crates/*/tests/` and mints one named, filterable trial per
+  case — so case DATA and `.rs` tests coexist in one flat dir; which driver proves a session is
+  DERIVED and reported (`crates/cli/CLAUDE.md`). The runner carries a DISCOVERY FLOOR over both
+  populations: walking the wrong roots finds zero cases, and a suite of zero trials would
+  otherwise exit GREEN. Never pin a case COUNT (`count-drifts`); non-empty is the floor.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
   defining-case structure with EXPLICITLY-EMPTY prose blocks (rendering greppably as
   unwritten); prose is a conductor/human act issued from the builder's when/why/how
@@ -922,7 +926,11 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   `loom_minted_registers_are_case_owned` (+ its arrangement twin) keyed to
   `is_case_owned(slug)`, the two fixpoint gates, and a commit-msg hook that refuses
   an AI-labelled commit growing the human census. Builders author ZERO user-facing
-  strings, ever; prose is a conductor/human act (`27V:rul-error-authorship-tier`),
+  strings, ever; prose is a conductor/human act (`27V:rul-error-authorship-tier`;
+  human-typed 2026-09-04: a conductor MAY mint `Slop`-tier words on its own remit when the
+  row is SHORT — a few English words around nested values, ids, numbers — or when words are
+  needed to debug a complex nested display; the union is "just write it". An unwritten row
+  drops its values, on purpose: pressure toward getting it written),
   authored at the transcript surface (looking at the rendered case) or, still
   sanctioned, by direct catalog edit from the structured metadata — promote-v2
   carries it behind the fixpoint gate, orchestrator-only. Prose burn-down is
@@ -946,11 +954,9 @@ mise run preflight <p>    # bounds-check disk + RAM before spending them (gate|b
 mise run doctor           # READ-ONLY inventory: worktrees, target dirs, lane caches
 mise run doctor:unused    # READ-ONLY hygiene report: what is sitting around unused (sizeless)
 mise run build            # cargo build --workspace
-mise run test             # unit + the e2e corpus + the loom corpus
-mise run test:e2e         # the e2e corpus alone: dash -n gate + exec-under-mocks
-mise run test:looms       # the loom corpus alone: parse + hygiene + render fixpoint WHERE OWNED
-                          #   (a `run:` loom's transcript proof belongs to test:e2e —
-                          #    one-fixpoint-authority-per-case; the hk step is `loom-hygiene`)
+mise run test             # unit + the case corpus
+mise run test:e2e         # the case corpus alone: every loom as a shell session (both drivers
+                          #   where both can run; `gate-two-drivers-agree`) + the Rust batteries
 mise run clippy           # workspace clippy, -D warnings
 mise run check            # all four lint gates, check-only
 mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
@@ -966,7 +972,6 @@ mise run bless:case -- X  # the SCOPED re-bless of one case (`bless` verifies th
 mise run loom -- ARGS     # the loom CLI on this workspace's toolchain (a bare `cargo run -p
                           #   dorc-loom` resolves the wrong rustc)
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
-mise run yardstick        # INSTRUMENT: strawman24 elision-frequency table
 mise run lint:docids      # docID dangling-reference lint (rides check)
 mise run slugs            # regenerate root SLUGS.md, the generated slug index (the hook runs `slugs --check`)
 mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
@@ -978,18 +983,18 @@ mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (on
 mise run verify:kani-check # compile the detached harness without invoking Kani
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
-mise run test:e2e-quiet   # the e2e corpus, agent spelling: terse per-case on success,
-mise run test:looms-quiet #   failures unabridged; same selection the bare halves take
+mise run test:e2e-quiet   # the case corpus, agent spelling: terse per-case on success,
+                          #   failures unabridged; same selection the bare task takes
 ```
 
 `mise tasks` lists them with the full caveat text; trailing args after `--` append
 to the task's last command. Reach for raw `mise exec -- cargo …` only for something
 no task covers, and consider adding the task instead.
 
-- Both corpora are `harness = false` runners minting ONE named trial per case, so
-  `mise run test -- <substring>` filters by case name and a failure names the
-  case. `sh e2e/run.sh` is RETIRED (`288:phase-flat-tree-move`); its gates moved into
-  `crates/cli/tests/e2e.rs` unchanged.
+- The ONE runner (`crates/cli/tests/e2e.rs`, `harness = false`) mints ONE named trial per
+  case, so `mise run test -- <substring>` filters by case name; a failure names the case,
+  its proving driver, and the run seed (`DORC_SEED=<n>` replays the run; `$ export
+  DORC_SEED=<n>` in the session pins the case).
 - **task-bodies-are-shell-free** — mise pipes an inline task `run` through `sh -c` on
   *nix but `cmd /c` on Windows, and this project is developed on both. A task body
   therefore carries NO shell syntax: `dir` instead of `cd`, `[tasks.x.env]` instead of
@@ -997,14 +1002,16 @@ no task covers, and consider adding the task instead.
   differing `dir`s. There is NO `sh <script>` exception — git ships `sh` on Windows but
   does not put it on PATH, so such a task dies from PowerShell/cmd. Work that wanted a
   script goes in `crates/internal-tooling` (repo plumbing, NOT product code; the
-  cargo-xtask pattern) as `cargo run -q -p internal-tooling -- <task>`. Residual debt:
-  `yardstick` alone still spells `sh`, and still needs git-bash or WSL — it is
-  KNOWN-BROKEN for an unrelated reason anyway.
-- **one-shell-answer** — `internal_tooling::Posix::find()` is the ONLY place that answers
+  cargo-xtask pattern — it has NO dependents: the suite's shared seats live in the
+  dependency-free `crates/testbed` below `cli`) as `cargo run -q -p internal-tooling -- <task>`.
+- **one-shell-answer** — `dorc_transport::Posix::find()` is the ONLY place that answers
   "where is a POSIX shell": git's own userland on Windows (derived from `git --exec-path`,
-  never hardcoded, never PATH-searched), plain PATH lookup elsewhere. The e2e runner and
-  the plan crate's `dash -n` net both consume it; a third copy is how the second one
-  silently rotted. Never resolve an interpreter by PATH order on Windows — `bash` there is
+  never hardcoded, never PATH-searched), plain PATH lookup elsewhere. The runner's sessions
+  and gates, `plan`'s test-side `dash -n` net, the xtask binary, and the shipped `dorc-sh`
+  (its shell is an edge VALUE resolved in `main`; no shell ⇒ `dorc-sh-no-shell`, exit 127)
+  all consume it; a second copy is how the previous one silently rotted. It is PRODUCT code,
+  homed in the transport crate because a shipped binary consumes it — never in the test
+  substrate. Never resolve an interpreter by PATH order on Windows — `bash` there is
   `%SystemRoot%\System32\bash.exe`, the WSL launcher, which runs Linux binaries against
   Linux paths without a word.
 - **windows-green-was-always-git-bash** (found 2026-07-26) — before this date every
@@ -1164,8 +1171,8 @@ no task covers, and consider adding the task instead.
   overlap. `dorc-loom publish CASE...` publishes the two generated locks
   (`crates/aid/src/{catalog,arrangement}_lock.rs`) plus the affected cases under
   `crates/aid/tests/` — in-process renders, no binary, no execution. `BLESS=1 … --test e2e`
-  regenerates everything under `crates/cli/tests/` (`expected.out`, `expected.ran`, and
-  whole-product loom transcripts) by RUNNING the built binary. ORDER matters when both are due:
+  regenerates everything under `crates/cli/tests/` (whole-product loom transcripts and their
+  `expected.ran` sections) by RUNNING the built binary. ORDER matters when both are due:
   publish first, then rebuild, then the e2e bless — a publish rewrites Rust prose the binary
   prints, so an e2e bless run before the rebuild goldens the pre-publish wording.
 - **bless-honours-the-trial-filter** — the "ALL cases" above is the UNFILTERED run.
@@ -1293,7 +1300,7 @@ no task covers, and consider adding the task instead.
   so a floor case must agree on BOTH platform legs — the Windows half-floor included — and
   no manifest cell may observe a platform-bound value (the rail's `$0` spelling is one).
   Disagreement BETWEEN the binaries is itself the verdict: the construct is outside the base
-  dialect. Resolution goes through `internal_tooling::Posix::floor` — `one-shell-answer`'s seat —
+  dialect. Resolution goes through `dorc_transport::Posix::floor` — `one-shell-answer`'s seat —
   which REFUSES rather than substituting, because a differential answered by the wrong shell is
   worse than one not run. Windows has no `posh` in git's userland, so there the lane measures a HALF
   floor (dash alone) and the WSL leg is where the real `posh ∩ dash` answer comes from.
@@ -1346,7 +1353,8 @@ no task covers, and consider adding the task instead.
   unit coverage; each test carries a reasoned argument for the invariant it pins;
   repetition in tests is fine. Honor anti-masking-tests (above).
 - **xfail-pins-ride-one-seat** (`30A` d3; r30) — target behavior the engine does not
-  yet implement is pinned through `internal_tooling::xfail::xfail_until`, registered
+  yet implement is pinned through `dorc_testbed::xfail::xfail_until` (a loom pins the same
+  registry through its `xfail: <pin-slug>` key — `crates/cli/CLAUDE.md`), registered
   in its `PINS` with a semantic trigger and a ROUND-MARKER horizon (never a date —
   unrepresentable by type); `CURRENT_ROUND` there is bumped by a conductor at
   round-open, and an expired horizon reddens `xfail_census` until the pin greens or

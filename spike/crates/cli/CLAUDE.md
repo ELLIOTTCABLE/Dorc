@@ -7,24 +7,31 @@ discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law
 
-- **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`; widened at the W4
-   drifted-driver fold, `28H`; the loom-final arc moved SIX regions across it — `28L`) — the lib
-   target is the INTERNAL invocation-and-render surface: usage text, `Args`/`LintArgs`/`Mode`, the
-   parsers, `humane_read_error`, the drifted-why seat, and `engine.rs`: the ONE parser-independent
-   semantic pipeline, with ordered live output events and typed injected edges. Production `main.rs`
-   acquires sources and implements clock/transport/disk/terminal edges, then calls that engine;
-   `WhyWorld` is retained from the same engine result rather than re-analyzing. The other extracted modules are `why.rs`
-  (`WhyReport` + `why_report_parts`) · `world.rs` (`WhyWorld::analyze`/`analyze_measured` +
-  the shared ship-body helpers) · `kinds.rs` (resolver/reaches) · `survival.rs` (footprints/
-  wrapped-analysis/carry) · `results.rs` (the intake segment: scope types, `parse_admitted_results`,
-  `admit_controller_records` vs the fenced `admit_fixture_records`) · `fixpoint.rs` (validity
-  rounds + cascade attribution) · `bundle.rs` (the pure occurrence-keyed bundle/storage
-  projection). One implementation — `main.rs` keeps call sites and every I/O
-  edge (clock readers, git, terminal width). It exists so `dorc-loom` can drive REAL invocations
-  in-process; it is NEVER a public API — `publish = false`, nothing outside `dorc-loom` and the
-  two bins may depend on it. VALUES cross the seam, QUERIES do not. If something in the lib
-  starts wanting a clock, a file, or an env read, it is on the wrong side of the seam.
-  (`RunClock::Absent` on every loom path — a committed transcript must be a fixpoint.)
+- **lib-target-is-a-loom-seam** (`289:rul-worldless-route-honest-trigger`; widened at `28H`/`28L`;
+  re-cut at `30X`) — the lib target is the INTERNAL invocation-and-render surface: usage text,
+  `Args`/`LintArgs`/`Mode`, the parsers, `humane_read_error`, the drifted-why seat, `engine.rs` (the
+  ONE parser-independent semantic pipeline, with ordered live output events and typed injected
+  edges), and `compose.rs` — the COMPOSITION ROOT `compose::run(&Seams)`, which acquires sources and
+  implements the clock/entropy/transport/disk/terminal edges as selected by the `Seams` bundle
+  (`30X:model-seams-are-one-bundle`; `seam.rs`: `Seams::os()` is the ONLY constructor of the
+  production variants; `HarnessSeams` is the constructor-side subtype with NO arm for `RealSsh` or
+  `Os` roots and a total `From`; `HarnessSeams::from_env` is the ONE parser of the `DORC_SEED` /
+  `DORC_SEAM_*` variables). The three bins are edge VALUES plus one call
+  (`30X:inv-division-at-the-narrowest-edge`, whose above-the-seam remit is bounded and must never
+  grow): `bin/dorc.rs` = `compose::run(Seams::os())`; `bin/dorc-harness.rs` = `from_env` over the real
+  environment, refusing loudly when no seam is set; `bin/dorc-sh.rs` = `dorc_transport::Posix::find()`
+  (the resolved shell is an edge VALUE — `one-shell-answer`, never a bare PATH lookup) plus
+  `compose::shim_strip_and_run`. The shipped `dorc` reads NO harness-shaped environment
+  (`rul-fixture-identity-never-production`, public-interfaces reading; its six former env pins are
+  seam columns). The other extracted modules: `why.rs` (`WhyReport` + `why_report_parts`) ·
+  `world.rs` (`WhyWorld::analyze`/`analyze_measured` + the shared ship-body helpers; `WhyWorld` is
+  retained from the same engine result rather than re-analyzing) · `kinds.rs` · `survival.rs` ·
+  `results.rs` (the intake segment; `admit_controller_records` vs the fenced `admit_fixture_records`)
+  · `fixpoint.rs` · `bundle.rs` · `source_comparison.rs`. It exists so `dorc-loom` can drive REAL
+  invocations in-process; it is NEVER a public API — `publish = false`, nothing outside `dorc-loom`
+  and the three bins may depend on it. VALUES cross the seam, QUERIES do not: the edge IMPLEMENTATIONS
+  live in `compose.rs` parameterized by the bundle; if something elsewhere in the lib starts wanting
+  a clock, a file, or an env READ, it is on the wrong side of the seam.
 - **invocation-errors-are-registry-codes** (`288` §6) — the parsers return typed `Diag`s, never
   strings. The `dorc: ` / `dorc: lint: ` / `dorc-sh: ` prefixes and the usage synopsis are print-seat
   CHROME the three report seats own, never catalog prose. Exit codes are unchanged and never read
@@ -34,10 +41,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (`dorc_cli::help_text` / `usage_text`), not consts; their words are edited through
   `crates/aid/tests/cli-help-page.loom`, never in source. A new user-facing chrome string mints a
   registry entry, not a `const`.
-- **io-at-edges-only** — keep I/O in `run()`/`main`; the pipeline
-  (`parse → cfg → classify → compile_probe/build_plan`) stays a total
-  `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak
-  inward "to help".
+- **io-at-edges-only** — keep I/O in the composition module's edge implementations and the
+  bins; the pipeline (`parse → cfg → classify → compile_probe/build_plan`) stays a total
+  `Carrier<T>` function of its inputs; never let a clock/RNG/env-read leak inward "to help".
 - **stdout-contract** — plan-producing modes emit EXACTLY probe-then-apply (split on
   shebangs); `bundle` emits only its deterministic inert archive. Diagnostics go to
   stderr in every mode. A new stdout species must be mode-owned rather than interleaved
@@ -173,7 +179,9 @@ discipline: one rule per bullet, slugged; append to the matching section.
   receipt-provided path triggers an implicit read only for a LOCALLY-AUTHENTICATED receipt;
   imported/self-asserted material compares only against a file the user named. Future
   comparison features extend THIS seat — never a new receipt exit, never a scattered raw
-  path read.
+  path read. The seat takes an injectable current-source reader for the in-process world (the
+  shipped binary passes `None`; the read, its bounds, non-following, and the authentication
+  asymmetry are unchanged) — the sanctioned in-place extension, review-eligible.
 - **inv-receipt-collection-never-expands-observation** (née inv-whylog-collection-never-expands-observation) — receipt writing persists only data the
   invocation already holds; it performs no additional host call, environment sweep, unrelated
   controller read, or debug probe. Later pull is a separate invocation about the later world
@@ -294,137 +302,196 @@ discipline: one rule per bullet, slugged; append to the matching section.
   pinned definition reaches it: loading both sources already rebound the name for every caller. A
   per-definition report would be a correlated cascade pointing N-1 authors at somebody else's file
   (`28O:dec-one-diagnostic-per-file-not-per-item`).
+- **display-paths-relativize-at-one-seat** (`30Xa` lanes B1/B2a/D2b; human-acked 2026-09-04) — a
+  controller path shown to the user renders RELATIVE to the load cwd when it lies under it, at ONE
+  seat (`why::relativize_for_display` over `Cwd::relativize`): the why-lens's `.`-sourced dependency
+  paths (as `--pre-source` oracle paths already rendered) and the contested-helper diagnostic's
+  locus. Canonical keys stay ABSOLUTE (`need-controller-paths-never-cross-hosts` governs placement,
+  not display). Never a post-hoc normalizer: both-streams transcripts are what made the absolute
+  paths visible, and determinism is made at the source or not at all.
+- **apply-outcome-unwritten-is-a-sibling-code** (`30Xa:rul-post-dispatch-durable-failure-is-a-sibling-code`;
+  human-acked 2026-09-04) — an apply that DISPATCHED (intent published; the machine perhaps changed)
+  but could not record its outcome fires `apply-outcome-unwritten`, a SIBLING of the plan-time
+  `durable-receipt-unwritten`, never a reason arm of it (`AID-NEEDS:law-codes-vary-by-world-not-grammar`:
+  the worlds and the repairs differ — re-plan, versus check the host and keep the intent id); WHICH
+  write step failed is a typed reason within the one code, and `ApplyWriteStep::word()` in `aid` is
+  the ONE home of the write-step words (the pre-dispatch surface converts `receipt::DurableFailure`
+  → `ApplyWriteStep`). The exit code stays the apply's: the record failed, the apply happened. The
+  identities chrome line (`cli-apply-identities-line`) renders whenever BOTH documents were recorded,
+  transport status regardless. ONE apply implementation, `compose::dispatch_and_report_apply` over
+  `&mut dyn LocalIo`, serves production (`NativeIo` + disk) and the loom (the session store + a
+  scripted `hosts/<name>/apply-outcome` section).
 - **speculate-and-intercept** — the probe model resolves probe-gated branches by
   running the read-only check for real (oracles intercept; not Ansible
   check-mode blindness).
 
-## The acceptance harness (`tests/e2e.rs` + `tests/looms.rs`; this contract is law)
+## The acceptance harness (`tests/e2e.rs`, the ONE runner; this contract is law — `notes/30X`)
 
-- **an-artifact-set-runs-from-its-own-generation** (`30Nf` §4) — a case declaring `ARTIFACT_SET`
-  gives its round-trip drive an `--artifact-dir`, and the exec gates run the PUBLISHED
-  `<generation>/plan.sh` from inside that generation — the cwd the multipart execution
-  contract gives an artifact (`30I`, the artifact-forms step). Exactly one generation is
-  required; none means the run took a form that materializes nothing, and every exec gate
-  below would then have measured the plan alone in an empty sandbox and passed. The
-  published plan is asserted byte-equal to the apply block on stdout. Copying a case's own
-  AUTHORED sources into the sandbox is the refused alternative: it would green a case
-  against controller-side files the target never receives. The general law this encodes: a
-  case minted to DEMONSTRATE a capability must OBSERVE that capability — an assertion that
-  cannot distinguish feature-on from feature-off is not a demonstration
-  (`30Nf:fnd-multipart-never-placed-anything-in-production` is the burn). A published
+- **one-runner-one-walk** (`30X:loom-one-runner`) — `tests/e2e.rs` is the ONE `harness = false`
+  runner: one walk of every `crates/*/tests`, one named, filterable trial per case, over BOTH
+  populations — looms, and the Rust batteries' fixture dirs beside them (`autotests = false` +
+  explicit `[[test]]` targets is what lets case DATA share the dir). The discovery floor guards both
+  populations (zero trials exits RED); **count-drifts**: never pin a count. Corpus walks skip
+  `*.sync-conflict-*`.
+- **a-case-is-a-shell-session** (`30X` §5) — a loom's replay is a POSIX shell session: its `$` lines
+  run in ONE persistent `sh` (`dorc_transport::Posix::find`, `one-shell-answer`) in the materialized
+  dir, `dorc` on a shim PATH resolving to `dorc-harness` (**loom-shim-is-a-hard-link**: one link per
+  runner process, unix symlink then copy as cross-volume fallbacks — a copy per process is how the
+  2026-09-03 disk-full happened), sentinel-framed, BOTH streams captured in the order the user saw
+  them, each block compared to its committed block under `strip_trailing_newlines` and nothing else.
+  `export`, `cd`, `<`, `> <literal file>` + `cat`, `echo $?` are native shell; the artifact-execution
+  rail (`PATH=<mocks>` only, `env -i`, a throwaway cwd, `umask 022`) stays a separate runner-owned
+  process. The session starts SCRUBBED (`30X:loom-syntax-grants-no-production-authority`): no
+  inherited credential variables, runner-owned roots — `DORC_SEAM_ROOTS=pinned:<absolute literal>`
+  (**rul-roots-pinned-is-a-literal**: never resolved through `APPDATA`/`HOME`/`XDG_*`; absent ⇒ the
+  harness refuses) — while the runner's own process keeps reading its opt-in lane variables.
+- **rul-runner-varies-only-what-it-set** — the runner's per-block injection yields to any authored
+  assignment: an authored `$ export DORC_SEAM_CLOCK=…` / `DORC_SEED=…` wins for the rest of the
+  session. The runner-owned defaults are ONE seat, `dorc_loom::runner_seams` (`RUN_SEED`,
+  `SESSION_ROOT`, `session_seams(ordinal)`, `DORC_SEAM_TRANSPORT=local:<shell>;<interp>`), consumed by
+  the shell driver (exported into the session) and the in-process driver (fed to
+  `HarnessSeams::from_env` over the MODELLED environment) — never a second copy. The clock ticks one
+  day per INVOCATION block (`fold_clock_seed(seed, ordinal)`; exports, `cd`, `echo $?`, `cat` do not
+  tick; the shell's shadow line preserves `$?` across the injection).
+- **session-stdin-is-the-framed-stream** — a `--results -` block reads FRAMED records from the
+  session's fd 0. The runner frames RAW fixture records into the controller wire format at ONE seat
+  both drivers consume (`dorc_loom::records_framing`; a `dorc-records/`-headed fixture passes verbatim
+  on both — **rul-framing-is-one-rule-both-drivers**; a fixture that then fails in the shell path is
+  rot, fixed as a fixture), admits them through the CONTROLLER intake with the seam's attempt nonce
+  (**rul-in-process-sessions-take-the-controller-intake**, for EVERY session line), and restores them
+  raw for gate-1. The fixture-intake seat (`Framing::spike`) is KEPT for its one non-session user,
+  behind the `fixture_intake_is_unreachable_from_production` fence.
+- **rul-gates-attach-to-what-a-block-produced** (`30X:loom-gates-attach-by-kind`) — the runner hands
+  each `$ dorc …` line to the product's own arg parser (**block-argv-classifier-is-read-only**:
+  classification never drives). The artifact battery — dash `-n` on BOTH artifacts (the load-bearing
+  runnability gate; the historical trap was a text-only golden shipping a non-runnable empty
+  `then`-clause green, twice), the redirect scan, guard-shape, argv-echo, dual-rail (derived from the
+  book's own multiline argv), the artifact-set generation rule — runs iff the block's `Mode` emits an
+  executable artifact AND its stdout is one (non-empty, shebang-led, the probe/apply pair split):
+  **rul-errored-plan-has-no-artifact-gate**; the crash guard is "an artifact-producing mode exited 0
+  with empty stdout"; exec-under-mocks iff the case carries `mocks/` (sorted run-set asserted against
+  the `expected.ran` section, which MUST exist; a mocks case the shell declines is a loud authoring
+  refusal); the exec rail's expected exit is the `apply-exit` key. A loom's diagnostic assertion IS
+  the session compare plus `defined_code_fired`
+  (**rul-loom-diagnostic-assertion-is-the-session-compare**; `transcript_slugs_are_catalog`
+  validates every `error[<slug>]` header in a transcript against the catalog — the honest form of the
+  retired needle keys). Gates re-drive their subject block with split streams for parsing; a re-drive
+  that would publish roots in a THROWAWAY store, never the session's own
+  (**inspection-redrives-carry-no-durable** — the same for `dorc-loom publish`/`vars`/`sections`).
+- **an-artifact-set-runs-from-its-own-generation** (`30Nf` §4) — an artifact-producing block carrying
+  `--artifact-dir` has its exec gates run the PUBLISHED `<generation>/plan.sh` from inside that
+  generation — the cwd the multipart execution contract gives an artifact. Exactly one generation is
+  required; the published plan is asserted byte-equal to the apply block on stdout; a published
   plan's own LITERAL relative imports must resolve inside the generation
-  (`unresolved_generated_imports`), which is what makes the import rewrite observable
-  end-to-end rather than a stdout-only claim. The COUNTERFACTUAL rails are the one carve
-  and they are a different question: gate-5 and gate-6 compare an artifact against the
-  BOOK, and since the bundling those two resolve their imports in different places, so
-  they run in the generation laid over a copy of the case's authored top-level files.
-  `exec_check` is untouched and still runs the published plan from the generation ALONE —
-  that is where self-containment is asked, and nothing here relaxes it. The harness
-  injects the stdout posture (`DORC_STDOUT_POSTURE=interactive` on every drive, beside
-  the fixture clock): the round-trip battery READS a render while driving the artifact
-  set to a directory, which is the terminal cell; the kept-stream cell's two behaviours
-  are both pre-network refusals with empty stdout, which the battery cannot express —
-  they are pinned natively, and an expected-empty-stdout lane is the named harness gap.
-
-- **runners-live-here-cases-are-peers** (`288:phase-flat-tree-move`) — this crate owns the
-  two central `harness = false` runners and the round-trip / lint case collections that sit
-  beside them in `tests/`. `sh e2e/run.sh` is RETIRED; every gate below moved into
-  `tests/e2e.rs` unchanged, and `cargo test --workspace` now runs the corpus. `autotests =
-  false` + explicit `[[test]]` targets is what lets case DATA share the dir with the
-  runners; the shape rules that classify a dir are `spike/CLAUDE.md`'s
-  flat-test-tree-and-loom-placement.
-- **per-case gates** — `dash -n` on BOTH rendered artifacts (the load-bearing
-  runnability gate; the historical trap was a text-only golden diff shipping a
-  non-runnable empty `then`-clause green, twice) · exec-under-mocks for cases
-  with a `mocks/` dir (sorted run-set asserted against `expected.ran`, which
-  MUST exist — missing ⇒ loud fail, never empty-want) · crash/empty guard
-  (dorc rc≠0 or empty output hard-fails before the xfail lens and before
-  bless) · the content golden-diff as a secondary check (catches wrong-elision
-  CONTENT, to which `-n` is blind) · XFAIL/XPASS pin machinery (XFAIL is
-  golden-text-BLIND by design — structural gates only; a surprise pass is a
-  loud XPASS-to-promote).
-- **bless-never-first** — `BLESS=1` regenerates goldens; gates run before bless,
-  but bless cannot prove an elision RIGHT: fresh verified binary,
-  orchestrator-only, diff inspected case-by-case (BLESS exclusivity —
-  `spike/CLAUDE.md`).
-- **bless-writes-renders-not-measurements** (r30; `spike/CLAUDE.md`
-  emitted-is-measure-once-ground-truth) — bless has authority over what the ENGINE produced
-  (`expected.out`, `expected.ran`, transcripts) and none at all over what the floor BINARIES
-  produced. A case carrying `expected.emitted` is therefore REFUSED by `BLESS=1` — in
-  `run_loom` before materialization and in `run_round_trip` for the dir form, both through the
-  one pure `floor_bless_refusal` seat — and is writable only under the `BLESS_FLOOR=1` +
-  `DORC_E2E_FLOOR_SHELLS` mint, where gate-9 re-measures and `bless_loom` folds the manifest in
-  the same write that commits the transcript. Never widen `bless_loom` to fold a section no gate
-  just re-derived: the discarded-measurement shape this closes looked green for three lanes.
-- **bless-folds-only-on-pass** (r30) — `bless_loom` runs only when the case's own gates PASSED.
-  Safe because nothing depends on partial folding: every gate comparing against a bless-WRITTEN
-  golden is bless-aware and cannot fail on staleness (the content diff and the extra-replay
-  compare are `!bless`-guarded; `exec_check`, `run_lint`, and gate-9 write-and-return before
-  theirs), so what stays reachable under bless is structural, authored-fixture, or environmental
-  — unhealable by a write, which gate-1 already says in its own words. Ungated, `exec_check`'s
-  early `expected.ran` write folded into cases a LATER gate had just failed, leaving a fresh
-  run-set beside a stale transcript. XFAIL is unaffected (its lens returns `Ok`, keeping its
-  deliberate golden-text-blindness); XPASS now folds nothing, which is right — a case still
-  wearing its marker has no asserted transcript to commit. Pinned falsifiably by
-  `bless_folds_only_on_pass_selftest` (verified red with the gate removed).
-- **empty-ran-has-two-stable-spellings** (r30 landmine) — an empty `expected.ran` section exists
-  in the corpus as ONE blank line (content `""`) and as TWO (content `"\n"`), and both are
-  fixpoints, so neither is drift. The fork is `exec_check`: it writes `format!("{got_ran}\n")`
-  — `"\n"` for an empty run-set — but ONLY for a case carrying `mocks/`; a case without mocks
-  never reaches it and folds the materialized empty file straight back. That is exactly why the
-  floor mint is byte-stable across all eleven floor cases despite the asymmetry. Making that
-  write unconditional, or "normalizing" either spelling, churns six goldens for nothing — the
-  gate compares under `strip_trailing_newlines` and cannot tell them apart.
-- **loom-form-is-the-same-battery** (`288:phase-e2e-loom-conversion`) — a whole-product case may be
-  a single-file `.loom`: frontmatter instead of `NAME=value` markers, txtar sections instead of a
-  fixture dir (`mocks/` included, dotfiles included, `expected.ran` as a byte section), and the
-  committed transcript instead of `expected.out`. It is NOT a second harness — `run_loom`
-  MATERIALIZES the case into exactly the dir shape and runs the unchanged gate battery over it, so
-  a conversion cannot quietly drop a check. ONE closed key vocabulary exists and an unread key is
-  refused against it in both runners: `dorc_loom::FRONTMATTER_KEYS` (the full ~22-key set, every
-  row naming the gate that reads it), of which the e2e runner's run-lane set is a PROJECTION
-  (`run_lane_key_names`, the `run_lane` flag) rather than a second list — the two had to stay
-  subset-related by hand, nothing checked it, and a key one runner accepted and the other refused
-  would redden the same file from the far side. `owns` is in the run-lane set although no e2e gate
-  reads it, because ownership is corpus-wide and refusing the key there left a component with no
-  authoring home. `dorc-loom keys` PRINTS the set (with the `code:` vs `arrangement:` split), so an
-  author finds it without first provoking a refusal. A new key joins the vocabulary in the same
-  commit that mints it, or its cases go red. The replay COMMAND is compared against the invocation the runner actually
-  drives, so a transcript can never show one command while the gates run another. Corpus walks
-  skip `*.sync-conflict-*` (sync residue is never a case).
-- **one-fixpoint-authority-per-case** — `crates/cli/tests/looms.rs` render-fixpoints every committed
-  loom through the in-process consumer; a whole-product loom declares `fixpoint: executed` instead,
-  because its transcript is proven by running the REAL binary here (the stricter proof, and the only
-  one the sanctioned-executor law allows for a case that materializes mocks). `fixpoint: executed`
-  without a `run:` key is refused in the looms runner — otherwise the transcript is proven by
-  nothing. The old 4-case `DIRECT_PLAN_CASES` gate in `dorc-loom` is GONE
-  (`289:rider-fixpoint-gate-rationalize`); do not re-mint a second render-fixpoint authority.
-- **tolerate-is-a-closed-vocabulary** (`288:prop-normalizer-closed-vocabulary`) — a case DECLARES the
-  named nondeterminism class it tolerates (`tolerate=<class>` marker / `tolerate:` frontmatter) from
-  an engine-owned vocabulary, and the named normalizer is applied to the CAPTURE at bless AND at
-  check, so the committed bytes are the canonical form. Never a free regex; never a check-only
-  relaxation (the retired `RAN_ORDER=lax` shape blessed raw bytes and compared sorted ones, so the
-  committed file recorded an interleaving nothing asserted). Current vocabulary: `pipe-stage-order`.
-- **needles-are-structural** (`288:prop-structural-needles-only`) — `expected-diagnostics` /
-  `expect-diagnostic:` is a list of code SLUGS; the `error[<slug>]` needle is DERIVED and every slug
-  is validated against the generated catalog, so a dead slug is REFUSED and a declaration is an
-  ASSERTION (a declared-but-unfired code is red). The why/hint/why-chain needles stay free text —
-  legal, rare, and carrying real semantic content rather than catalog prose.
-- **count-drifts** — the case-count drifts; count the dirs, never trust a
-  literal. The runners pin only a NON-EMPTY discovery floor (a zero-trial suite would
-  exit green — the one failure their own path constants can cause and not report).
-  RESIDUAL, unchanged from the sh harness: deleting ONE case dir shrinks the suite
-  silently. That deletion is visible in the diff; a broken root is not, which is why the
-  floor guards the root and nothing guards the count.
-- **floor-cases-see-a-modelled-dollar-zero** (r30) — a floor case's manifest is a top-level
-  file (the rail has no subdirectory fixtures: `30P:gap-no-subdirectory-fixtures`), and no
+  (`unresolved_generated_imports`). Copying a case's AUTHORED sources into the sandbox is the refused
+  alternative (a case minted to DEMONSTRATE a capability must OBSERVE it —
+  `30Nf:fnd-multipart-never-placed-anything-in-production` is the burn). The counterfactual rails
+  (gate-5/gate-6) compare an artifact against the BOOK and run in the generation laid over a copy of
+  the case's top-level files; `exec_check` runs the published plan from the generation ALONE. The
+  runner's posture seam is `pinned:interactive` (the round-trip battery READS a render while
+  driving the artifact set to a directory — the terminal cell); the kept-stream cell's pre-network
+  refusals render on stderr and are ordinary session transcripts now.
+- **rul-drivers-decline-symmetrically** (`30X:loom-driver-is-derived-and-reported`) — which driver
+  proves a session is DERIVED from its content and REPORTED in the trial (`[proven by: shell+in-process]`
+  / `[…; in-process declined: <reason>]` / `[…; shell declined: <reason>]`), never declared. Each driver
+  owns a typed decline set, ONE vocabulary the runner reads (**rul-decline-sets-are-one-vocabulary**):
+  in-process `dorc_loom::LoomDecline` (RemoteApply · ApplyWithPlan · OracleDirs · ExplicitReceiptFile ·
+  ReceiptsOverride · ShellOrExternal · Unexpressible · a non-root `cd`), shell `ShellDecline` (an
+  `edge-fault` section, a `dorc-loom` block, a `dorc-sh` block — the shim provides only `dorc`). A
+  session is proven by every driver that does not decline it; BOTH ⇒ they must agree byte for byte
+  (**gate-two-drivers-agree**; the shell proof is authoritative where it runs); NEITHER ⇒ the runner
+  refuses (`PROVEN_NEITHER`). A disagreement is a FIDELITY finding, fixed in `dorc-loom` or the shared
+  cli seats so both agree — never by changing a product crate's semantics (a STOP), never a normalizer,
+  never a golden edit. The in-process expressible set only SHRINKS its declines and may never regress
+  below what errorloom's outer grammar admits (`30X` §9); no roster or meta-test polices it.
+- **the-in-process-world-is-the-production-edge-over-models** (`dorc-replay-is-production-semantics`)
+  — the in-process driver composes the REAL edges over deterministic models, one session = one world:
+  the real `LocalReceiptEdgeV1` over a platform-shaped `ModelIo` store (born empty, dies with the
+  session — never a cache), reached through `dorc_cli::durable`'s re-exports (`dorc-loom` never names
+  `dorc_receipt_local`; both human-ack rosters untouched — route B); ONE receipt-edge implementation
+  in `compose.rs` (`publish_rooted_receipt` / `read_rooted_receipt` / `dispatch_and_report_apply` over
+  `&mut dyn LocalIo`) that `ProductionEdges` calls with `NativeIo` and the loom edges with the
+  session's store; the `$` lines read through `dorc_syntax` (`dorc_loom::session_grammar`, cross-checked
+  against errorloom's outer gate — a disagreement declines); a CONCRETE dash environment
+  (`session_env`; its exported subset is what `HarnessSeams::from_env` reads — the kernel's own
+  environment is three kernel-arc changes away, `30X:front-dogfood-ceiling`); the kernel's own `Cwd`;
+  the stdout posture from the SEAM, never a block's `> /dev/null`
+  (**in-process-posture-reads-the-seam**); the dependency walk as the edge's own BFS parameterized by
+  byte source — disk for the binary, sections in-process (**in-process-snapshot-mirrors-source-acquisition**;
+  `$0`-relative `.` operands through the binary's own `ScriptSpellings` — **book-reached-resolves-dollar-zero-loads**);
+  the source-comparison seat's injectable current-source reader (the binary passes `None`). A store the
+  session cannot reach is a DECLARED `edge-fault` (**rul-rootless-worlds-are-declared-faults**;
+  `EdgeFault::ReceiptRead`), never a history flag. The transport seam's `Scripted` column is
+  constructible ONLY through `HarnessSeams::with_scripted_transport`
+  (**rul-scripted-column-is-a-fenced-seam-variant**; the case section `hosts/<name>/apply-outcome`,
+  strawman), driving the DST `SimDriver` through the same marker scan the real drivers use.
+- **thirteen-keys-by-criterion** (`30X:loom-frontmatter-is-registry-metadata-only`;
+  **rul-survivors-are-the-criterion-not-the-count**) — `dorc_loom::FRONTMATTER_KEYS` is ONE list of
+  thirteen: `code` · `arrangement` · `when-fires` · `when-used` · `why` · `owns` · `todo` · `envelope` ·
+  `tests-critical-law` · `probe-results` (`authored` only — the gate-1 opt-out for hand-authored
+  records) · `tolerate` (**tolerate-is-a-closed-vocabulary**: a declared nondeterminism class from an
+  engine-owned vocabulary, normalized in the RUN LOG at bless and at check; current: `pipe-stage-order`;
+  a runner-read `export` would be sidecar config in an sh costume — `KNOBS:kOOB`) · `apply-exit`
+  (default 0) · `xfail: <pin-slug>` (**rul-xfail-is-a-registry-keyed-key**: names a pin in
+  `dorc_testbed::xfail::PINS`; structural gates tolerated and reported, the transcript ENFORCED, XPASS
+  loud; a target-tense golden has no loom home — **xfail-in-loom-needs-a-structural-failure**). A key
+  survives iff it is about the case as an AUTHORING HOME or is a case-level declaration no honest
+  session line can carry; run knobs live in the session (**loom-run-knobs-live-in-the-session**: flags
+  and `--artifact-dir` on the `$ dorc` line, exits as `$ echo $?`, records as `<`). `dorc-loom keys`
+  prints the set; a new key joins in the same commit that mints it — after stopping at a conductor
+  (`30X:rul-loom-escape-stops-at-the-conductor`).
+- **seeds-vary-and-pins-are-sh** (`30X` §6) — every run draws a fresh seed (`dorc_testbed::run_seed`:
+  `DORC_SEED` from the runner's environment, else one OS draw per process, memoized), printed once at
+  start and on every FAIL line with the replay and pin spellings; a case pins with
+  `$ export DORC_SEED=<n>` (seed 0 is the fold's identity for dates; one spelling across every tier).
+  The e2e bless and `dorc-loom publish` REFUSE a candidate that does not reproduce under a derived
+  second seed, naming the first differing block and the pin remedy.
+- **bless-never-first** — `BLESS=1` regenerates transcripts; gates run before bless, but bless cannot
+  prove an elision RIGHT: fresh verified binary, orchestrator-only, diff inspected case-by-case (BLESS
+  exclusivity — `spike/CLAUDE.md`).
+- **bless-writes-renders-not-measurements** (`spike/CLAUDE.md` emitted-is-measure-once-ground-truth) —
+  bless has authority over what the ENGINE produced (transcripts, `expected.ran` sections) and none
+  over what the floor BINARIES produced: a case carrying `expected.emitted` is REFUSED by `BLESS=1`
+  through the one pure `floor_bless_refusal` seat, and is writable only under the `BLESS_FLOOR=1` +
+  `DORC_E2E_FLOOR_SHELLS` mint, where gate-9 re-measures and the manifest folds in the same write
+  that commits the transcript. Never widen the fold to a section no gate just re-derived.
+- **bless-folds-only-on-pass** — a case's transcript folds only when its own gates PASSED; every gate
+  comparing against a bless-written section is bless-aware, so what stays reachable under bless is
+  structural, authored-fixture, or environmental. XFAIL folds nothing (its lens tolerates structure and
+  enforces the transcript). Pinned by `bless_folds_only_on_pass_selftest`.
+- **empty-ran-has-two-stable-spellings** — an empty `expected.ran` exists as ONE blank line (`""`) and
+  as TWO (`"\n"`), both fixpoints, neither drift: `exec_check` writes `format!("{got_ran}\n")` for a
+  case carrying `mocks/`, and a case without mocks never reaches it. Normalizing either spelling churns
+  goldens for nothing — the gate compares under `strip_trailing_newlines`.
+- **floor-cases-see-a-modelled-dollar-zero** — a floor case's manifest is a top-level file, and no
   manifest cell may observe `$0`: the rail's `$0` SPELLING is platform-bound
-  (`30P:gap-dollar-zero-shape-is-platform-bound`), which is exactly why the engine never reads
-  a shell's `$0` — it models both live spellings from the authored book path
-  (`30P:model-symbolic-dollar-zero`, `ScriptSpellings`) and invokes what it ships in a spelling
-  it modelled as live (`30P:rul-dorc-invokes-in-a-modelled-live-spelling`). A case that
-  wants the resolution observed does it through a diagnostic or a ship, never through the
-  shell's own `$0` bytes.
+  (`30P:gap-dollar-zero-shape-is-platform-bound`), which is why the engine models both live spellings
+  from the authored book path (`ScriptSpellings`) and invokes what it ships in a spelling it modelled
+  as live. A case that wants the resolution observed does it through a diagnostic or a ship.
+- **receipt-state-is-the-one-state-only-home** (`30X` §3 shape (c), §3a) — `tests/receipt_state.rs`
+  is the ONE Rust battery asserting STATE, EXITS, STRUCTURE and RELATIONS over the receipt store —
+  never a render golden (goldens are looms; typed internal decisions stay pipeline-tier). It spawns the
+  seeded harness and keeps the shipped-binary liveness witness
+  (`the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams` —
+  `30X:inv-division-at-the-narrowest-edge`'s bounded remit). A durable failure no shell can reproduce
+  is witnessed in-process over `ModelIo` + a `FailureSchedule`
+  (**rul-unshell-reproducible-failures-are-in-process-only**), the failing write step DISCOVERED by a
+  throwaway intact drive, never an op-count constant
+  (**rul-outcome-fault-occurrence-is-discovered-not-constant**).
+- **runner-reap-at-exit-not-drop** — `libtest_mimic::run(...).exit()` and preflight's `process::exit`
+  skip `Drop`, so every temp the runner mints (the shim dir, the profile parent) is reaped by an
+  idempotent `Harness::reap()` called at every exit path, `Drop` included; net-zero temp entries across
+  the whole suite on both legs is the measured floor.
+- **lint-looms-are-ordinary-sessions** — `$ dorc lint …` blocks drive through the harness like every
+  other block (`run_lint`, `E2eKind::Lint`, and the `X/cmd` shape are gone); the binary's operational
+  lint error renders through the same staged-parts seat as every invocation error and carries
+  `error[<slug>]`. The two `lint-real-*` dirs are the real-tools test's own fixture space
+  (**real-tools-owns-its-fixtures**), not corpus cases.
+- **the-census-tier-reads-the-loom-corpus** (`30X:tier-census`) — the "for every case …" batteries
+  (`region_artifacts.rs`, `definition_frames.rs`, `sh_parity`'s munge-witness census) stay Rust and read
+  their inputs from the loom corpus through errorloom's `Case::parse` (the apply artifact from the
+  transcript, the book from its section); the munge-witness roster keys case STEMS. A per-case golden
+  cannot say "for all cases".
 
 ## Direction
 

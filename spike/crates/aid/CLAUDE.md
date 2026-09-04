@@ -237,8 +237,8 @@ crate's charter) · `notes/287` (errorloom as-built).
   collection: every canonical case for a registered aid-slug, flat, beside this crate's
   `.rs` tests. That siting is deliberate — it makes THIS file the registry that fires on
   every loom edit (`288:rul-claudemd-fires-per-directory`). Cargo compiles only `tests/*.rs`,
-  so the data files are inert here; the runners that drive them are
-  `crates/cli/tests/{e2e,looms}.rs`.
+  so the data files are inert here; the ONE runner that drives them is
+  `crates/cli/tests/e2e.rs` (`crates/cli/CLAUDE.md`, the acceptance harness).
 - **ownership-is-declaration-union** (`28L` loom-final; supersedes the old
   filename-match reading) — a case's owned prose-components are its FILENAME's implicit
   entry (when the stem matches a registered slug) UNION its `owns:` frontmatter list
@@ -262,13 +262,14 @@ crate's charter) · `notes/287` (errorloom as-built).
   world. A crate move is a one-line change there. One direction still fails
   silent: an empty corpus read makes the corpus-wide gates pass VACUOUSLY. `fixpoint.rs`'s
   surviving lock gate therefore asserts a NON-EMPTY corpus before it generates — never soften
-  that back into a silent empty vec. (Its render-fixpoint half is gone: the ONE render-fixpoint
-  authority is `crates/cli/tests/looms.rs`, per committed loom.)
+  that back into a silent empty vec. (Its render-fixpoint half is gone: the ONE runner,
+  `crates/cli/tests/e2e.rs`, proves every committed loom — in-process, in a shell, or both,
+  `gate-two-drivers-agree`.)
 
 - **authoring-a-replay-block-is-blind** — nothing fills a NEW replay block in place: you append
   `$ <command>` with no output, and the case is then red twice over (the same-slug hygiene gate
   first, since empty output surfaces no slug; the render fixpoint second). The supported loop is
-  `DORC_LOOM_DUMP=<dir> mise run test:looms -- <case>`, which writes the CANDIDATE
+  `DORC_LOOM_DUMP=<dir> mise run test:e2e -- <case>`, which writes the CANDIDATE
   transcript — commands re-driven, outputs filled — to `<dir>/<case>.loom` on either failure; copy
   it over the case and re-run. BOTH failures NAME that loop unconditionally
   (`dorc_loom::dump_rescue_hint`, one mint, indented into the runner's failure block): armed or
@@ -278,9 +279,10 @@ crate's charter) · `notes/287` (errorloom as-built).
   class of change it found (frontmatter · replay command · file section · unnamed residue) and the
   one way out of each, `dump_rescue_hint` included.
 - **seam-tolerated-nondeterminism-stops-at-the-run-log** — the declared `tolerate:` vocabulary
-  (`crates/cli/CLAUDE.md` tolerate-is-a-closed-vocabulary) normalizes the RUN LOG only
-  (`expected.ran`, `head-expected.ran`); no normalizer is applied to `expected.out` or to a loom's
-  replay-output bytes. So a rendered surface that ever acquires an honest nondeterminism has NO
+  (`crates/cli/CLAUDE.md` thirteen-keys-by-criterion) normalizes the RUN LOG only (the
+  `expected.ran` section — the exec rail's real concurrent pipeline stages race their log
+  lines, and no seam can own kernel scheduling); no normalizer is applied to a transcript's
+  bytes, either stream. So a rendered surface that ever acquires an honest nondeterminism has NO
   declared-class escape hatch and can only be made deterministic at the source. Named, not built:
   extending the vocabulary to rendered output is a design question (what a normalizer may touch in
   bytes a human authors prose into), not a mechanism to add on the way past.
