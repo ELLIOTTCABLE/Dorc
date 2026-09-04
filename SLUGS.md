@@ -90,6 +90,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26M:ack-authored-host-sameness-parallel
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:38 — — hostname sameness/resolution wants
+- cited: 26Ob (1)
 
 ## 26M:ack-carrier-form-neutrality
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:24 — — adjacent-book dispatch (`ssh h <web.sh`) and
@@ -451,7 +452,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## arc-r26-revival
 - defined: —
-- cited: 26O 26Ob ROADMAP Research/README (4)
+- cited: 26O ROADMAP Research/README (3)
 
 ## oracle/CLAUDE:argparse-is-the-vouch-typechecker
 - defined: spike/crates/oracle/CLAUDE.md:18 — — the oracle author's own argparse is the
@@ -926,6 +927,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
+- cited: 26Ob (1)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -3129,7 +3131,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## FORFEITS:forfeit-no-host-merging
 - defined: FORFEITS.md:109 — — RULE (`28Q` §3): host identity never merges at v0
-- cited: 26Lb 26M 310 (3)
+- cited: 26Lb 26M 26Ob 310 (4)
 
 ## FORFEITS:forfeit-plain-sh-inclusion-analysis
 - defined: FORFEITS.md:53 — — RULE (`30P:principle-book-code-source-is-inclusion`,
@@ -3829,6 +3831,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 310:lane-tracers-and-records
 - defined: Research/plans/310-round31-arc-remit.md:48 — — `oracle/` (the predict and verdict tracers, the reaches
+- cited: 26Ob (1)
 
 ## 28F:lane-w1-voice
 - defined: Research/notes/28F-why-implementation-conduct-ledger.md:40 — (`ai/r28-w1-voice`, off `0355484b`) — 28G Phase W1 whole: the
@@ -4692,7 +4695,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pin-ssh-entry-shape
 - defined: —
-- cited: 26N 26O 26Ob 28Q 310 ROADMAP (11)
+- cited: 26N 26O 26Ob 28Q 310 ROADMAP (12)
 
 ## 262:pin-terminal-determinism
 - defined: Research/plans/262-round26-build-spine.md:98 — — per host, arrival-incremental final plan == single-shot plan
@@ -4926,7 +4929,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## q-entry-economics
 - defined: —
-- cited: 26M 26Ob TODO-ADDTL (4)
+- cited: 26M 26Ob TODO-ADDTL (3)
 
 ## q-payload-declaration-speech-act
 - defined: —
@@ -5883,7 +5886,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dimension-owned-compose-ops
 - defined: —
-- cited: 26O 26Ob 27C 27D (5)
+- cited: 26O 27C 27D (4)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6132,7 +6135,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-frames-are-written-at-minting
 - defined: —
-- cited: 26O 26Ob (2)
+- cited: 26O 26Ob (3)
 
 ## rul-freshness-stamp-flag-gated
 - defined: —
@@ -6249,7 +6252,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-integrity-failure-withholds-mutation
 - defined: spike/CLAUDE.md:411 — — this does NOT contradict
-- cited: 26N 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (10)
+- cited: 26N 26Ob 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (11)
 
 ## rul-interactivity-is-local-books
 - defined: —
@@ -7548,7 +7551,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 27Xf 28M 28Q 300 300e 30Kb 30T (7)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T (8)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -8429,17 +8432,25 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/1A8-oracle-seeds-core.md:198 — (password-by-value un-probeable) — the salt-randomization argument is a
 - cited: 1AA (1)
 
+## unit-context-slot-audit
+- defined: —
+- cited: 26Ob 310 (3)
+
 ## unit-context-slot-product
 - defined: —
 - cited: 26N 26Ob 310 ROADMAP (9)
 
 ## unit-delivery-shape
 - defined: —
-- cited: 26K 26Ob 310 ROADMAP (7)
+- cited: 26K 26Ob 310 ROADMAP (6)
 
 ## unit-host-index-and-entry
 - defined: —
-- cited: 26N 26Ob 310 (8)
+- cited: 26N 26Ob 310 (7)
+
+## unit-measured-index-kinds-and-witness
+- defined: —
+- cited: 26Ob 310 (3)
 
 ## plan/CLAUDE:universal-meet-here
 - defined: spike/crates/plan/CLAUDE.md:191 — — sparing over backing-SETS quantifies universally:
