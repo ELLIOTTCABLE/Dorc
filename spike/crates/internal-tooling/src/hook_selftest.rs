@@ -10,7 +10,7 @@
 
 use std::process::{Command, Stdio};
 
-use internal_tooling::Posix;
+use dorc_transport::Posix;
 
 /// One message put to the hook, and the verdict it must draw.
 struct Case {

@@ -10,7 +10,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-use internal_tooling::Posix;
+use dorc_transport::Posix;
 
 /// One run of the hook: what the environment says, and what git must be told.
 struct Shim {
@@ -274,7 +274,7 @@ pub(crate) fn run() -> u8 {
             return 2;
         }
     };
-    let Some(hk) = internal_tooling::which("hk") else {
+    let Some(hk) = dorc_transport::which("hk") else {
         eprintln!("precommit-gate: hk is not on PATH — the pinned one comes from mise.toml");
         return 2;
     };

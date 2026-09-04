@@ -36,11 +36,13 @@
 pub mod child;
 pub mod local;
 pub mod marker;
+pub mod posix;
 pub mod sim;
 pub mod ssh;
 
 pub use local::LocalDriver;
 pub use marker::{MarkerRejected, SessionMarker};
+pub use posix::{Posix, which};
 pub use sim::{SimDriver, SimScript};
 pub use ssh::{SshDriver, SshOptions};
 

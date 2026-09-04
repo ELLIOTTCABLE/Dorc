@@ -217,10 +217,10 @@ fn assert_runnable(rendered: &str) {
 /// Try `dash -n`, then `sh -n`, feeding `rendered` on stdin. Returns the shell name + its output, or
 /// `None` when neither shell can be spawned.
 fn run_syntax_check(rendered: &str) -> Option<(&'static str, std::process::Output)> {
-    // Resolved by `internal-tooling`, not searched for on PATH: native Windows has no
-    // POSIX shell there, so this net silently could never run — the failure it produced
+    // Resolved by `dorc-transport` (`one-shell-answer`), not searched for on PATH: native Windows
+    // has no POSIX shell there, so this net silently could never run — the failure it produced
     // was invisible behind the e2e runner refusing earlier in the same suite.
-    let posix = internal_tooling::Posix::find().ok()?;
+    let posix = dorc_transport::Posix::find().ok()?;
     let mut child = Command::new(&posix.shell)
         .arg("-n")
         .stdin(Stdio::piped())

@@ -341,7 +341,7 @@ const DESTINATION: &str = "web9.example.net";
 /// Debug-only in the binary, and it announces itself on stderr — a run must never quietly say
 /// "host" and mean "here" (`271:rul-sin-ordering` puts mis-attribution at the top).
 fn through_a_local_shell(command: &mut Command, scratch: &Scratch) {
-    let posix = internal_tooling::Posix::find().expect("this corpus needs a POSIX shell");
+    let posix = dorc_transport::Posix::find().expect("this corpus needs a POSIX shell");
     let interpreter = if cfg!(windows) {
         format!("/usr/bin/{}", posix.name)
     } else {

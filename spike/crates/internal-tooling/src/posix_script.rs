@@ -5,7 +5,7 @@
 //! answer to "where is a shell" has to be asked in Rust. Everything the scripts actually do lives
 //! in the scripts.
 
-use internal_tooling::Posix;
+use dorc_transport::Posix;
 use std::ffi::OsString;
 use std::process::{Command, ExitCode};
 

@@ -35,7 +35,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     if floor {
         let absent: Vec<String> = FLOOR_SHELLS
             .iter()
-            .filter(|name| internal_tooling::Posix::floor(name).is_err())
+            .filter(|name| dorc_transport::Posix::floor(name).is_err())
             .map(|name| (*name).to_owned())
             .collect();
         if !absent.is_empty() {

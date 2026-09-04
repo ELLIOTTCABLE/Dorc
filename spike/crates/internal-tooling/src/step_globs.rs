@@ -105,7 +105,7 @@ fn step_sees(hk: &Path, step: &str, path: &str) -> Result<bool, String> {
 }
 
 pub(crate) fn run() -> u8 {
-    let Some(hk) = internal_tooling::which("hk") else {
+    let Some(hk) = dorc_transport::which("hk") else {
         eprintln!("step-globs: hk is not on PATH — the pinned one comes from mise.toml");
         return 2;
     };

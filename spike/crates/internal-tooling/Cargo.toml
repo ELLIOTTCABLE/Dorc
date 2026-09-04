@@ -22,12 +22,13 @@ path = "src/main.rs"
 name = "internal_tooling"
 path = "src/lib.rs"
 
-# The shared test substrate — std-only, dependency-free — carries the xfail-pin seat and
-# `repo_root` (this crate's plumbing consumes the leaf; the leaf never consumes this crate).
-# A workspace path crate with no external deps of its own, so it neither re-imports a platform
-# assumption nor costs real disk — the dependency bar above is met.
+# Two std-only, dependency-free workspace path crates — neither re-imports a platform assumption
+# nor costs real disk, so the dependency bar above is met. `dorc-testbed` carries the xfail-pin
+# seat and `repo_root`; `dorc-transport` carries the POSIX-shell seat (`one-shell-answer`,
+# `Posix`/`which`). This crate's plumbing consumes both leaves; neither ever consumes it.
 [dependencies]
 dorc-testbed = { path = "../testbed", version = "0.0.0" }
+dorc-transport = { path = "../transport", version = "0.0.0" }
 
 [lints]
 workspace = true

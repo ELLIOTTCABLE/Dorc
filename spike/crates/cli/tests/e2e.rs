@@ -143,10 +143,10 @@ fn sort_lines(value: &str) -> String {
     lines.join("\n")
 }
 
-/// PATH lookup and POSIX-shell discovery live in `internal-tooling`, the repo's
-/// cross-platform tooling crate, so this runner and the mise tasks answer "where is a
-/// shell" identically. Native Windows has none on PATH; that crate derives one from git.
-use internal_tooling::{Posix, which};
+/// PATH lookup and POSIX-shell discovery live in `dorc-transport` (`one-shell-answer`), the ONE
+/// seat, so this runner and the mise tasks answer "where is a shell" identically. Native Windows
+/// has none on PATH; that seat derives one from git.
+use dorc_transport::{Posix, which};
 
 // ---------------------------------------------------------------------------
 // the harness's shared, immutable context (the seam seat is `dorc_loom::runner_seams`)

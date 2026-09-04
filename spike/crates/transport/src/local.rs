@@ -6,7 +6,7 @@
 //! 2). A green hermetic run is therefore evidence about the shipping path.
 //!
 //! The shell is supplied by the caller rather than resolved here, because this repo has exactly
-//! one answer to "where is a POSIX shell" (`one-shell-answer`, `internal_tooling::Posix::find`)
+//! one answer to "where is a POSIX shell" (`one-shell-answer`, [`crate::Posix::find`])
 //! and a second resolver is how the first one silently rots.
 
 use crate::{SessionDriver, SessionOutcome, SessionRequest};

@@ -34,13 +34,12 @@ dorc-sparing-reference = { path = "../sparing-reference", version = "0.1.0" }
 # lets the last kernel stage depend on it without moving `inv-determinism`.
 dorc-receipt = { path = "../receipt", version = "0.0.0" }
 
-# TEST-ONLY, and deliberately so: the kernel gains no dependency. `render_corpus`'s
-# `dash -n` net needs a POSIX shell, and `internal-tooling` (std-only repo plumbing, not
-# product code) is the one place that answers where one is — shared with the e2e runner so
-# the two cannot drift into disagreeing about it, as they silently had.
+# TEST-ONLY, and deliberately so: the kernel gains no dependency. `render_corpus`'s `dash -n` net
+# needs a POSIX shell, and `dorc-transport` (`one-shell-answer`) is the one seat that answers where
+# one is — shared with the e2e runner so the two cannot drift into disagreeing about it, as they
+# silently had. `dorc-transport` is std-only, so the kernel graph stays clean.
 [dev-dependencies]
-# Also the workspace's one `xfail_until` seat and its census (`30A` §1 d3) — test-only, NOT product.
-internal-tooling = { path = "../internal-tooling", version = "0.0.0" }
+dorc-transport = { path = "../transport", version = "0.0.0" }
 # The run-seed seat (`30X:seed-declared-is-regression`): the sparing differential offsets its trial
 # base from this run's seed, so exploration varies run to run and a failing trial replays through
 # `DORC_SEED=<seed>`. Test-only, dependency-free plumbing; no lib-graph edge.

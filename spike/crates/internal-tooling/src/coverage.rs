@@ -7,7 +7,7 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 
-use internal_tooling::which;
+use dorc_transport::which;
 
 /// `internal-tooling coverage [--full] [<book.sh> <oracle.sh>...]`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
