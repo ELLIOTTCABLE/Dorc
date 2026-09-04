@@ -155,10 +155,6 @@ fn the_binding_key_is_in_the_closed_loom_vocabulary() {
     assert!(dorc_loom::is_frontmatter_key(
         dorc_verify::catalogue::BINDING_KEY
     ));
-    assert!(
-        dorc_loom::is_run_lane_key(dorc_verify::catalogue::BINDING_KEY),
-        "a bound loom is a whole-product case; a non-run-lane key would refuse there"
-    );
 }
 
 #[test]

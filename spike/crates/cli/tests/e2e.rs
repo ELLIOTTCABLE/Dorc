@@ -1089,6 +1089,60 @@ fn canonicalize(log: &str, tolerated: &[Normalizer]) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// the round-trip battery's typed inputs (`30X:loom-frontmatter-is-registry-metadata-only`, shape B)
+
+/// The per-case run knobs the artifact battery reads, as ONE value so the DIR path can fill it from
+/// its `NAME=value` markers and the LOOM path from its session's artifact-producing block. Threading
+/// one struct is what lets the two fillers diverge without the gates learning which drove them; the
+/// marker filler ([`RoundTripInputs::from_markers`]) dies with the dir form (D2a deliverable 3).
+struct RoundTripInputs {
+    /// Extra flags the plan/apply drive carries beyond the glob-sorted `--pre-source` oracles.
+    flags: Vec<String>,
+    /// The plan (or lint) invocation's expected exit — DIR only; a loom reads exit-0/shebang.
+    dorc_exit: i32,
+    /// The apply invocation's expected exit (`exec_check`).
+    apply_exit: i32,
+    /// The run publishes an artifact SET to a directory of its own, and the exec gates run from the
+    /// published generation.
+    artifact_set: bool,
+    /// The probe records are hand-authored, opting gate-1's (b)/(c)/(d) compare out.
+    probe_results_authored: bool,
+    /// The dual-rail check is opted out of (an inlined or multiline-argv artifact whose second rail
+    /// buys nothing). D2a derives this from the artifact's own bytes instead.
+    dual_rail_suppressed: bool,
+    /// The declared tolerated-nondeterminism normalizers.
+    tolerances: Vec<Normalizer>,
+}
+
+impl RoundTripInputs {
+    /// Fill from a dir-case's `NAME=value` markers — the DIR filler D2a's dir-case conversion deletes.
+    fn from_markers(dir: &Path) -> Result<Self, String> {
+        let dorc_exit = match marker(dir, "DORC_EXIT")? {
+            Some(value) => value
+                .parse()
+                .map_err(|_| format!("DORC_EXIT: `{value}` is not an integer"))?,
+            None => 0,
+        };
+        let apply_exit = match marker(dir, "EXIT_RC")? {
+            Some(value) => value
+                .parse()
+                .map_err(|_| format!("EXIT_RC: `{value}` is not a non-negative integer"))?,
+            None => 0,
+        };
+        Ok(Self {
+            flags: marker(dir, "DORC_FLAGS")?.into_iter().collect(),
+            dorc_exit,
+            apply_exit,
+            artifact_set: has_marker(dir, "ARTIFACT_SET"),
+            probe_results_authored: has_marker(dir, "PROBE_RESULTS=authored"),
+            dual_rail_suppressed: has_marker(dir, "DUAL_RAIL=inlined")
+                || has_marker(dir, "DUAL_RAIL=multiline-argv"),
+            tolerances: tolerances(dir)?,
+        })
+    }
+}
+
+// ---------------------------------------------------------------------------
 // loom-form cases (`288` §7 — the whole-product transcript)
 
 /// What a loom-form case's `run:` frontmatter selects.
@@ -1310,7 +1364,8 @@ fn run_closed_loop(harness: &Harness, dir: &Path, mocks: &Path) -> Result<(), Fa
     let sandbox = scratch.path.join("sand");
     std::fs::create_dir_all(&sandbox).expect("create sandbox");
 
-    let args = shared_args(dir).map_err(Failed::from)?;
+    let inputs = RoundTripInputs::from_markers(dir).map_err(Failed::from)?;
+    let args = shared_args(dir, &inputs.flags);
     let shim_dir = scratch.path.join("shims");
     std::fs::create_dir_all(&shim_dir).expect("create shim dir");
     let probe_path = std::env::join_paths([mocks, shim_dir.as_path()]).expect("join probe PATH");
@@ -1651,8 +1706,9 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     }
     // The framed record stream feeds the session (stdin and, where a block redirects,
     // `probe-results.txt`); the raw fixture is restored below for gate-1's mocked-probe compare.
-    let args = shared_args(&dir)
+    let inputs = RoundTripInputs::from_markers(&dir)
         .map_err(|message| Failed::from(format!("FAIL  {}  [session: {message}]", spec.name)))?;
+    let args = shared_args(&dir, &inputs.flags);
     let framed = framed_results(harness, &dir, &args);
     let probe_results = dir.join("probe-results.txt");
     let raw_probe_results = probe_results
@@ -1713,7 +1769,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
             dir: dir.clone(),
             kind: E2eKind::RoundTrip,
         };
-        if let Err(failed) = run_round_trip(harness, &case, &mut String::new(), true) {
+        if let Err(failed) = run_round_trip(harness, &case, &inputs, &mut String::new(), true) {
             failures.push(failed.message().unwrap_or_default().to_owned());
         }
     }
@@ -2127,10 +2183,10 @@ struct CaseRun {
 }
 
 /// The shared argv every dorc invocation of a case reads: `-o <oracle>` (glob-sorted) plus the
-/// optional `DORC_FLAGS` marker. Single-source threading makes a flag MISMATCH between gates
-/// structurally impossible — load-bearing for gate-6's attribution, and for the extra replay
-/// blocks, whose framed stdin must be the one the battery itself consumed.
-fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
+/// case's own `flags` (from [`RoundTripInputs`]). Single-source threading makes a flag MISMATCH
+/// between gates structurally impossible — load-bearing for gate-6's attribution, and for the extra
+/// replay blocks, whose framed stdin must be the one the battery itself consumed.
+fn shared_args(dir: &Path, flags: &[String]) -> Vec<String> {
     let mut args: Vec<String> = Vec::new();
     let mut oracles: Vec<PathBuf> = std::fs::read_dir(dir)
         .expect("read case dir")
@@ -2146,10 +2202,8 @@ fn shared_args(dir: &Path) -> Result<Vec<String>, String> {
         args.push("--pre-source".to_owned());
         args.push(oracle.display().to_string());
     }
-    if let Some(flags) = marker(dir, "DORC_FLAGS")? {
-        args.push(flags);
-    }
-    Ok(args)
+    args.extend(flags.iter().cloned());
+    args
 }
 
 /// The shared argv PLUS the stdin claim, for a drive that really feeds framed records on stdin
@@ -2175,6 +2229,7 @@ fn args_reading_stdin_records(args: &[String]) -> Vec<String> {
 fn run_round_trip(
     harness: &Harness,
     case: &E2eCase,
+    inputs: &RoundTripInputs,
     drive_stderr: &mut String,
     loom: bool,
 ) -> Result<(), Failed> {
@@ -2197,17 +2252,8 @@ fn run_round_trip(
         head_ran_drifted: false,
     };
 
-    let args = shared_args(dir)
-        .map_err(|message| Failed::from(format!("FAIL  {name}  [DORC_FLAGS: {message}]")))?;
-    let expected_dorc_exit: i32 = match marker(dir, "DORC_EXIT") {
-        Ok(Some(value)) => value.parse().map_err(|_| {
-            Failed::from(format!(
-                "FAIL  {name}  [DORC_EXIT: `{value}` is not an integer]"
-            ))
-        })?,
-        Ok(None) => 0,
-        Err(message) => return Err(format!("FAIL  {name}  [DORC_EXIT: {message}]").into()),
-    };
+    let args = shared_args(dir, &inputs.flags);
+    let expected_dorc_exit = inputs.dorc_exit;
 
     let scratch = Scratch::new("case");
     let framed_path = scratch.path.join("framed.txt");
@@ -2218,7 +2264,7 @@ fn run_round_trip(
     // The artifact STREAM this case's product goes to. Absent, the artifact is stdout and the run
     // sits in the single-stream cell every case has always sat in; present, the run may materialize
     // a directory, and the artifact SET rather than the plan alone is what the exec gates measure.
-    let artifact_root = has_marker(dir, "ARTIFACT_SET").then(|| {
+    let artifact_root = inputs.artifact_set.then(|| {
         let root = scratch.path.join("artifacts");
         std::fs::create_dir_all(&root).expect("create artifact root");
         root
@@ -2337,6 +2383,7 @@ fn run_round_trip(
             &mocks,
             &apply_art,
             run_root,
+            inputs,
             &mut run.failures,
         );
         probe_exec_check(
@@ -2346,6 +2393,7 @@ fn run_round_trip(
             &mocks,
             &shim_dir,
             &probe_art,
+            inputs.probe_results_authored,
             &mut run.failures,
         );
         if !harness.bless {
@@ -2361,10 +2409,7 @@ fn run_round_trip(
                 counterfactual_run_root,
                 &mut run.failures,
             );
-            if !has_marker(dir, "PROBE_RESULTS=authored")
-                && !has_marker(dir, "DUAL_RAIL=inlined")
-                && !has_marker(dir, "DUAL_RAIL=multiline-argv")
-            {
+            if !inputs.probe_results_authored && !inputs.dual_rail_suppressed {
                 dual_rail_check(
                     harness,
                     name,
@@ -2529,6 +2574,7 @@ fn exec_check(
     mocks: &Path,
     artifact: &str,
     run_root: Option<&Path>,
+    inputs: &RoundTripInputs,
     failures: &mut Vec<String>,
 ) {
     let unsafe_lines = scan_redirects(artifact);
@@ -2539,24 +2585,7 @@ fn exec_check(
         ));
         return;
     }
-    let expected_rc: i32 = match marker(dir, "EXIT_RC") {
-        Ok(Some(value)) => {
-            let Ok(rc) = value.parse() else {
-                failures.push(format!(
-                    "FAIL  {name}  [ap-2-exec: EXIT_RC marker value '{value}' is not a non-negative integer]"
-                ));
-                return;
-            };
-            rc
-        }
-        Ok(None) => 0,
-        Err(_) => {
-            failures.push(format!(
-                "FAIL  {name}  [ap-2-exec: multiple EXIT_RC=<n> markers — exactly one expected-exit is permitted]"
-            ));
-            return;
-        }
-    };
+    let expected_rc = inputs.apply_exit;
 
     let scratch = Scratch::new("exec");
     let log = scratch.path.join("dorc.log");
@@ -2588,16 +2617,12 @@ fn exec_check(
         return;
     }
 
-    let tolerated = match tolerances(dir) {
-        Ok(tolerated) => tolerated,
-        Err(message) => {
-            failures.push(format!("FAIL  {name}  [tolerate: {message}]"));
-            return;
-        }
-    };
     // The declared normalizers run on the CAPTURE, on both paths — so what bless commits is
     // already the canonical form, and the check compares canonical to canonical.
-    let got_ran = canonicalize(&strip_trailing_newlines(&read_or_empty(&log)), &tolerated);
+    let got_ran = canonicalize(
+        &strip_trailing_newlines(&read_or_empty(&log)),
+        &inputs.tolerances,
+    );
     if harness.bless {
         std::fs::write(dir.join("expected.ran"), format!("{got_ran}\n"))
             .expect("bless expected.ran");
@@ -2630,6 +2655,7 @@ fn probe_exec_check(
     mocks: &Path,
     shim_dir: &Path,
     artifact: &str,
+    probe_results_authored: bool,
     failures: &mut Vec<String>,
 ) {
     let unsafe_lines = scan_redirects(artifact);
@@ -2700,7 +2726,7 @@ fn probe_exec_check(
         ));
         return;
     }
-    if has_marker(dir, "PROBE_RESULTS=authored") {
+    if probe_results_authored {
         return;
     }
 
@@ -4423,7 +4449,9 @@ fn main() {
         let harness = Arc::clone(&harness);
         match case.kind {
             E2eKind::RoundTrip => push_trial(&mut trials, seed, case.name.clone(), move || {
-                run_round_trip(&harness, &case, &mut String::new(), false)
+                let inputs = RoundTripInputs::from_markers(&case.dir)
+                    .map_err(|message| Failed::from(format!("FAIL  {}  [{message}]", case.name)))?;
+                run_round_trip(&harness, &case, &inputs, &mut String::new(), false)
             }),
             E2eKind::Lint => push_trial(&mut trials, seed, case.name.clone(), move || {
                 run_lint(&harness, &case)
