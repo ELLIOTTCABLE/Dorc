@@ -71,6 +71,11 @@ inline continued
 
 -- replay --
 $ dorc --book=book.sh --results - < probe-results.txt
+loading: warning[load-carriage-withheld-under-unknown-cwd]: [unwritten:
+load-carriage-withheld-under-unknown-cwd]
+      [ book.sh:41:1
+   41 | . ./failing.sh || printf 'dot caught\n'
+      | \____________/
 #!/bin/sh
 # dorc probe (read-only): checks per-SITE convergence, mutates nothing.
 # When run, emits one results-record per site on stdout (the return channel):
@@ -92,6 +97,16 @@ printf 'dorc-records/1 nonce=dorc attempt=1 host=localhost book=a53c122e8be2172a
 # site:11 unresolvable-no-probe
 # site:12 unresolvable-no-probe
 printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
+probe: note[site-unresolvable]: sm 3 sites run unprobed (no read-only check
+could be shipped): `. ./child.sh`, `sm_child_say`, `. ./failing.sh` -- run `dorc
+why` for the per-site detail (the apply runs each anyway, to stay safe)
+      [ book.sh:28:1
+   28 | . ./child.sh
+      | \__________/
+
+   = help:  sm site runs `. ./child.sh`
+hint: '.' (line 28) is unmodeled: it is the first wall -- an oracle vouching its convergence would elide it when converged; 2 more unmodeled walls -- dorc why
+dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to query a source line
 #!/bin/sh
 # dorc apply: the book, with already-converged/dead lines elided (value-preserving stand-in).
 
@@ -141,3 +156,6 @@ printf 'dot continued\n'
 sm_fail_mark=one
 false || printf 'inline caught\n'
 printf 'inline continued\n'
+emission: note[artifact-form-fallback]: [unwritten: artifact-form-fallback]
+dorc: plan-summary sites=13 elide=0 omit=0 guard=0 run=13 may-alias=0
+dorc: decision-digest c33f85568551719e32ad96038e801dc2a7c0632e9ab796b23896d4f2f00d70a4
