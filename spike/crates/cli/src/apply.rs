@@ -525,23 +525,27 @@ const fn terminal_of(shipped: Option<&SessionOutcome>) -> RecordedTerminalState 
     }
 }
 
-/// The closed word for a publication that placed no document — which STEP of writing did not
-/// close, because that is what separates the repairs (a grammar refusal is ours, a sink refusal is
-/// the operator's).
-///
-/// Replaces a rounding to `intent-not-published`, which named the step everyone could see and
-/// dropped the one thing a reader acts on (`30Rs:fix-apply-durable-reporting`). The words are sited
-/// here rather than on [`DurableFailure`]: the receipt crate owns the typed state, this one owns
-/// what a user is shown of it (`receipt/CLAUDE.md inv-report-is-the-public-read-boundary`).
-#[must_use]
-pub const fn publication_refusal_word(refusal: &PublicationRefusal) -> &'static str {
-    match durable_failure_of(refusal) {
-        DurableFailure::Projection => "receipt-not-projectable",
-        DurableFailure::Grammar => "receipt-out-of-grammar",
-        DurableFailure::Seal => "receipt-not-sealed",
-        DurableFailure::Signature => "receipt-not-signed",
-        DurableFailure::Sink => "receipt-not-placed",
+/// The aid write-step a receipt durable failure maps to — the ONE cli edge from the receipt type
+/// to the aid one, a total `match` a new receipt variant breaks. The WORDS live once, on
+/// `aid::ApplyWriteStep::word` (`30Xa:tc-apply-write-step-word-duplication`); this only names which
+/// step did not close.
+pub(crate) const fn apply_write_step_of(failure: DurableFailure) -> dorc_aid::diag::ApplyWriteStep {
+    use dorc_aid::diag::ApplyWriteStep;
+    match failure {
+        DurableFailure::Projection => ApplyWriteStep::Projection,
+        DurableFailure::Grammar => ApplyWriteStep::Grammar,
+        DurableFailure::Seal => ApplyWriteStep::Seal,
+        DurableFailure::Signature => ApplyWriteStep::Signature,
+        DurableFailure::Sink => ApplyWriteStep::Sink,
     }
+}
+
+/// The write step a publication that placed no document did not close — the pre-dispatch surface's
+/// converter, `receipt::DurableFailure → ApplyWriteStep`, so its `word()` is the one spelling.
+pub(crate) const fn publication_write_step(
+    refusal: &PublicationRefusal,
+) -> dorc_aid::diag::ApplyWriteStep {
+    apply_write_step_of(durable_failure_of(refusal))
 }
 
 /// Which durable failure a publication refusal is.

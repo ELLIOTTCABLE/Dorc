@@ -2850,15 +2850,7 @@ fn apply_outcome_unwritten(
     intent: dorc_receipt::ids::ApplyIntentId,
     failure: dorc_receipt::dispatch::DurableFailure,
 ) -> Diag {
-    use dorc_aid::diag::ApplyWriteStep;
-    use dorc_receipt::dispatch::DurableFailure;
-    let step = match failure {
-        DurableFailure::Projection => ApplyWriteStep::Projection,
-        DurableFailure::Grammar => ApplyWriteStep::Grammar,
-        DurableFailure::Seal => ApplyWriteStep::Seal,
-        DurableFailure::Signature => ApplyWriteStep::Signature,
-        DurableFailure::Sink => ApplyWriteStep::Sink,
-    };
+    let step = crate::apply::apply_write_step_of(failure);
     Diag::new_spanless_site(DiagCode::ApplyOutcomeUnwritten(
         dorc_aid::diag::ApplyOutcomeUnwritten {
             intent: intent.hex(),
@@ -2941,7 +2933,7 @@ fn apply_refused(refusal: &crate::apply::ConsentedApplyRefusal, store: &str) -> 
         ConsentedApplyRefusal::Image(_) => "image-not-recordable",
         ConsentedApplyRefusal::Preparation(_) => "session-not-preparable",
         ConsentedApplyRefusal::Publication(publication) => {
-            crate::apply::publication_refusal_word(publication)
+            crate::apply::publication_write_step(publication).word()
         }
     };
     Diag::new_spanless_site(DiagCode::ApplyPlanNotDispatchable(
