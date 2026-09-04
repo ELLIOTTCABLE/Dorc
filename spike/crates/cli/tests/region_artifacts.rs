@@ -1,11 +1,14 @@
 //! What a shared-region edit may put in a shipped artifact (`plans/30L` §8, §11).
 //!
-//! An ordinary-harness `.rs` test, like `definition_frames`: it READS the committed round-trip
-//! goldens and asserts STRUCTURE over them. That is deliberate. The pins here are about what the
-//! artifact may contain — a cloned helper, a renamed one, a generated dispatch, a per-call
-//! specialization — and only the emitted bytes can answer that. Wording churns freely and gets
-//! re-blessed (`render-form-unwelded`); the shapes below must survive every such churn, so nothing
-//! here compares whole bytes.
+//! An ordinary-harness `.rs` test, like `definition_frames`: it READS the committed loom
+//! transcripts and asserts STRUCTURE over them. That is deliberate. The pins here are about what
+//! the artifact may contain — a cloned helper, a renamed one, a generated dispatch, a per-call
+//! specialization — and only the emitted bytes can answer that. The census tier stays Rust
+//! (`30X:tier-census`) and only its INPUTS moved to the loom corpus (`30Xa` `Checkpoint D2a″`):
+//! each `region30-*` case is now a single-file loom, so a case's apply artifact is read from its
+//! committed transcript and its book from its `book.sh` section, both through `errorloom::Case`.
+//! Wording churns freely and gets re-blessed (`render-form-unwelded`); the shapes below must
+//! survive every such churn, so nothing here compares whole bytes.
 
 #![expect(
     clippy::expect_used,
@@ -15,15 +18,58 @@
 
 use std::path::{Path, PathBuf};
 
-/// Every region case's committed apply artifact, by case name.
+use errorloom::Case;
+
+/// The `crates/cli/tests` dir this battery's cases live in.
+fn tests_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests")
+}
+
+/// Parse the committed loom at `path`; a case this battery reads must parse.
+fn parse_loom(path: &Path) -> (String, Case) {
+    let text =
+        std::fs::read_to_string(path).unwrap_or_else(|_| panic!("{} is readable", path.display()));
+    let case = Case::parse(&text)
+        .unwrap_or_else(|err| panic!("{} parses as a loom: {err}", path.display()));
+    (text, case)
+}
+
+/// A named section's verbatim content.
+fn section_of<'a>(case: &'a Case, name: &str) -> &'a str {
+    case.sections()
+        .iter()
+        .find(|section| section.name() == name)
+        .unwrap_or_else(|| panic!("the case carries a `{name}` section"))
+        .content()
+}
+
+/// The case's committed transcript: its single replay block's output (the both-streams bytes the
+/// binary proved).
+fn transcript_of(case: &Case) -> String {
+    case.replay()
+        .blocks()
+        .iter()
+        .map(errorloom::ReplayBlock::output)
+        .collect::<Vec<_>>()
+        .join("")
+}
+
+/// The apply artifact inside a transcript — from its last `#!/bin/sh` (the book's own shebang,
+/// re-emitted at the head of the apply body) to the end, exactly as the old `expected.out` slice did.
+fn apply_of(transcript: &str) -> String {
+    transcript
+        .rfind("#!/bin/sh")
+        .map_or_else(String::new, |at| transcript[at..].to_owned())
+}
+
+/// Every region case's committed apply artifact, by case name (its loom stem).
 fn region_artifacts() -> Vec<(String, String)> {
-    let tests = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
-    let mut cases: Vec<PathBuf> = std::fs::read_dir(&tests)
+    let mut cases: Vec<PathBuf> = std::fs::read_dir(tests_dir())
         .expect("the case collection is readable")
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| {
-            path.is_dir()
+            path.extension().is_some_and(|ext| ext == "loom")
                 && path
                     .file_name()
                     .is_some_and(|name| name.to_string_lossy().starts_with("region30-"))
@@ -36,18 +82,14 @@ fn region_artifacts() -> Vec<(String, String)> {
     );
     cases
         .into_iter()
-        .map(|dir| {
-            let name = dir
-                .file_name()
-                .expect("a case dir has a name")
+        .map(|path| {
+            let name = path
+                .file_stem()
+                .expect("a loom has a stem")
                 .to_string_lossy()
                 .into_owned();
-            let out = std::fs::read_to_string(dir.join("expected.out"))
-                .unwrap_or_else(|_| panic!("{name} has a committed transcript"));
-            let apply = out
-                .rfind("#!/bin/sh")
-                .map_or_else(String::new, |at| out[at..].to_owned());
-            (name, apply)
+            let (_, case) = parse_loom(&path);
+            (name, apply_of(&transcript_of(&case)))
         })
         .collect()
 }
@@ -134,17 +176,14 @@ fn a_shared_guard_carries_the_source_level_argv_not_a_resolved_operand() {
 #[test]
 fn a_why_report_walks_from_a_region_to_its_invocations_and_back()
 -> Result<(), Box<dyn std::error::Error>> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("region30-twin-calls-share-one-region");
-    let read = |name: &str| std::fs::read_to_string(dir.join(name)).expect("a case fixture");
+    let (_, case) = parse_loom(&tests_dir().join("region30-twin-calls-share-one-region.loom"));
     let mut oracle_paths = Vec::new();
     let mut oracle_srcs = Vec::new();
     for oracle in ["pkgindex-predict.oracle.sh", "pkgindex-verdict.oracle.sh"] {
         oracle_paths.push(oracle.to_owned());
-        oracle_srcs.push(read(oracle));
+        oracle_srcs.push(section_of(&case, oracle).to_owned());
     }
-    let book = read("book.sh");
+    let book = section_of(&case, "book.sh").to_owned();
     let snapshot = dorc_cli::snapshot::StaticLoadSnapshot::over(
         dorc_core::loadpath::Cwd::default(),
         oracle_paths.clone(),
@@ -198,11 +237,9 @@ fn a_why_report_walks_from_a_region_to_its_invocations_and_back()
 /// together.
 #[test]
 fn a_wholly_elided_helpers_body_ships_verbatim() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("region30-whole-helper-stays-authored-text");
-    let book = std::fs::read_to_string(dir.join("book.sh")).expect("the case's book");
-    let apply = std::fs::read_to_string(dir.join("expected.out")).expect("the case's transcript");
+    let (_, case) = parse_loom(&tests_dir().join("region30-whole-helper-stays-authored-text.loom"));
+    let book = section_of(&case, "book.sh");
+    let apply = transcript_of(&case);
     let body: Vec<&str> = book
         .lines()
         .skip_while(|line| !line.starts_with("main() {"))

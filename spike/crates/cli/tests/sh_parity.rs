@@ -1093,7 +1093,8 @@ fn a_within_file_plural_role_answers_per_definition() {
 // `p-zero-munge-happy-corpus` — the output-quality RATCHET (`30A` §1 `d5-quality-is-a-ratchet`).
 
 /// The cases whose committed artifacts are SUPPOSED to carry munged names, because each exists to
-/// witness a defensive or collision world.
+/// witness a defensive or collision world. Keyed by case STEM (`30Xa` `Checkpoint D2a″`): the
+/// former dir cases became single-file looms, so the roster names the slug, not a filename.
 ///
 /// Growing this list is a REVIEWED ACT, and the test says so in its own failure message: a new entry
 /// means one more book whose output went defensive-ugly, and
@@ -1103,8 +1104,8 @@ fn a_within_file_plural_role_answers_per_definition() {
 /// witnessing what it was listed for.
 const MUNGE_WITNESS_CASES: &[&str] = &[
     "emit30-book-squats-the-munged-name",
-    "emit30-definition-vector-munges-everything.loom",
-    "emit30-two-live-verdicts-under-one-name.loom",
+    "emit30-definition-vector-munges-everything",
+    "emit30-two-live-verdicts-under-one-name",
 ];
 
 /// Every munged emitted name in `text`, using the engine's OWN role vocabulary to decide.
@@ -1140,41 +1141,26 @@ fn munged_names(text: &str) -> BTreeSet<String> {
     out
 }
 
-/// Every committed artifact text in the corpus: the dir cases' `expected.out` and the loom cases'
-/// whole text (their transcripts live inside them).
+/// Every committed artifact text in the corpus: each loom case's TRANSCRIPT — its replay blocks'
+/// committed output, the both-streams bytes the binary proved. Read through `errorloom::Case` so
+/// the scan sees emitted artifacts only, never a book or oracle section (`30Xa` `Checkpoint D2a″`:
+/// the census tier stays Rust and its INPUTS moved to the loom corpus).
 fn committed_artifacts() -> Vec<(String, String)> {
     let mut out = Vec::new();
-    for root in support::case_roots() {
-        let Ok(entries) = std::fs::read_dir(&root) else {
+    for case in support::discover_looms(&support::case_roots()) {
+        let Ok(text) = std::fs::read_to_string(&case.path) else {
             continue;
         };
-        let mut paths: Vec<_> = entries.flatten().map(|entry| entry.path()).collect();
-        paths.sort();
-        for path in paths {
-            let name = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default();
-            if name.contains(".sync-conflict-") {
-                continue; // sync residue is never a case
-            }
-            if path.is_dir() {
-                let golden = path.join("expected.out");
-                if let Ok(text) = std::fs::read_to_string(&golden) {
-                    out.push((name.clone(), text));
-                }
-                let inner = path.join(format!("{name}.loom"));
-                if let Ok(text) = std::fs::read_to_string(&inner) {
-                    out.push((format!("{name}.loom"), text));
-                }
-            } else if std::path::Path::new(&name)
-                .extension()
-                .is_some_and(|ext| ext == "loom")
-                && let Ok(text) = std::fs::read_to_string(&path)
-            {
-                out.push((name, text));
-            }
-        }
+        let Ok(parsed) = errorloom::Case::parse(&text) else {
+            continue;
+        };
+        let transcript: String = parsed
+            .replay()
+            .blocks()
+            .iter()
+            .map(errorloom::ReplayBlock::output)
+            .collect();
+        out.push((case.name, transcript));
     }
     out.sort();
     out
