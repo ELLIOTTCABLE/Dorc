@@ -1,10 +1,5 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
 probe-results: authored
-expect-diagnostic:
-  - footprint-incoherent
 ---
 -- book.sh --
 # pin28-reach-arm-death-walls-total — the B half of the reach lane's atomicity pair

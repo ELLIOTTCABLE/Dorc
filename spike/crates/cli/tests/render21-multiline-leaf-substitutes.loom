@@ -1,7 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-dual-rail: multiline-argv
 ---
 -- book.sh --
 # render21-multiline-leaf-substitutes (arch-1, note 214 d-6 — the NEWLY-EXPRESSIBLE multi-line

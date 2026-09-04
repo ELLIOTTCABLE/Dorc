@@ -1,7 +1,4 @@
 ---
-run: lint
-fixpoint: executed
-exit: 1
 ---
 -- book.sh --
 eval "apt-get install -y nginx"
@@ -24,3 +21,5 @@ book.sh:
   1:1 info [unmodeled-inventory:unmodeled-wall-inventory] this book carries 1 unmodeled wall -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~1 command site(s) after it fall back to runtime guards instead of full elision.
 
 dorc lint: 2 errors, 0 warnings, 1 info across 1 file.
+$ echo $?
+1

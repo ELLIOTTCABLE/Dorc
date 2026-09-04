@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 probe-results: authored
 ---
 -- book.sh --

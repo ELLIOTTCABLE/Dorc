@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - oracle-matched-zero-sites
 ---
 -- book.sh --
 #!/bin/sh

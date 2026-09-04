@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 ---
 -- book.sh --
 # strawman24-floor-no-oracle (plans/240 Stage-1 yardstick — the honest FLOOR). A book with

@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-exit: 11
-expect-diagnostic:
-  - wrapper-entry-incoherent
 ---
 -- book.sh --
 #!/bin/sh
@@ -116,3 +111,5 @@ dorc: run `dorc why` for the per-site cause-chains, or `dorc why book.sh:N` to q
 hork setup
 dorc: plan-summary sites=1 elide=0 omit=0 guard=0 run=1 may-alias=0
 dorc: decision-digest ed861953d56b2544b46b1157dd9d78513d85ae56d3f6cea8fb63f4fd03a51ea0
+$ echo $?
+11

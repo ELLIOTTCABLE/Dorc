@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - helper-declaration-contested
-  - vouched-composition-not-present
 ---
 -- book.sh --
 #!/bin/sh

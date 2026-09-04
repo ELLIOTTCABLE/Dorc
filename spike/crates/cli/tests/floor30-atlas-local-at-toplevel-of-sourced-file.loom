@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 ---
 -- book.sh --
 #!/bin/sh

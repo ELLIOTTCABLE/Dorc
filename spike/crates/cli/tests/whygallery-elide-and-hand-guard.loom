@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-why-addr: 8
-expect-why-chain:
-  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh

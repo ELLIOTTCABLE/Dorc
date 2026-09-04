@@ -1,16 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
-why-addr: 14
-expect-why:
-  - site 5 survives+elides past wall site 4 && apt-get touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Firewall:443/tcp disjoint
-  - site 7 guard [sm.dorc.Service] && service.oracle.sh:
-  - author declines [unsound] && sysctl.oracle.sh:
-expect-hint:
-  - 'hork' (line 14) && is unmodeled && first wall && un-wall 1 downstream site
-expect-why-chain:
-  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh

@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - role-defined-below-its-sites
 ---
 -- book.sh --
 #!/bin/sh

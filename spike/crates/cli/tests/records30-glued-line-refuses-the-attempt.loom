@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-exit: 12
-expect-diagnostic:
-  - records-glued-line
 ---
 -- book.sh --
 #!/bin/sh
@@ -37,3 +32,5 @@ printf 'dorc-records-end/1 nonce=dorc @@dorc@@\n'
 records: warning[records-glued-line]: sm a records line carried bytes after its
 terminal token (two writes glued) -- the whole read unit is refused, the host
 runs (kFAIL-perform)
+$ echo $?
+12

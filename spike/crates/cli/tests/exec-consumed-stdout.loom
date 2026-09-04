@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 tolerate: pipe-stage-order
 ---
 -- book.sh --

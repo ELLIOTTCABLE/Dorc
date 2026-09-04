@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - render-heredoc-refused
 ---
 -- book.sh --
 # omitsafe21-heredoc-guard-keeps-body (round-21 f1 — omit-safety x render-refusal): a

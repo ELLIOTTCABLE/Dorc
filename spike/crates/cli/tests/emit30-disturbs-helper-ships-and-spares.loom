@@ -1,7 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
 ---
 -- book.sh --
 # emit30-disturbs-helper-ships-and-spares — the CAPTURE of

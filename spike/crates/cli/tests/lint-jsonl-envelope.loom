@@ -1,7 +1,4 @@
 ---
-run: lint
-fixpoint: executed
-exit: 1
 ---
 -- book.sh --
 eval "apt-get install -y nginx"
@@ -13,3 +10,5 @@ $ dorc lint --format=jsonl --source=analysis-diagnostics --source=unmodeled-inve
 {"path":"book.sh","line":1,"col":1,"severity":"error","source":"analysis-diagnostics","code":"cfg-top-node","message":"unsupported construct (unknown): un-probeable and un-skippable","remap":"exact"}
 {"path":"book.sh","line":1,"col":1,"severity":"error","source":"analysis-diagnostics","code":"syntax-unsupported","message":"`eval` executes constructed code (un-analyzable)","remap":"exact"}
 {"path":"book.sh","line":1,"col":1,"severity":"info","source":"unmodeled-inventory","code":"unmodeled-wall-inventory","message":"this book carries 1 unmodeled wall -- constructs Dorc cannot analyze, past which no probe result can be trusted; the first is here, and the ~1 command site(s) after it fall back to runtime guards instead of full elision.","remap":"exact"}
+$ echo $?
+1

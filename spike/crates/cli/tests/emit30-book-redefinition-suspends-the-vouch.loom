@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - vouched-composition-not-present
 ---
 -- book.sh --
 #!/bin/sh

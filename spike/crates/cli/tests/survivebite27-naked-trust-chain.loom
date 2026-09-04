@@ -1,18 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
-why-addr: 12
-expect-why:
-  - site 1 survives+elides && certsync && sm.dorc.Service:nginx disjoint
-  - vouched at && service.oracle.sh:
-expect-why-chain:
-  - # The full `dorc why 12` chain render (aid-why-license-chain; 27V §4 acceptance). Scanned by the
-  - # paired why-chain gate against BOTH `dorc why 12` (live) and `dorc why 12 --last` (replay) — the
-  - # chain is identical through the same kernel. Needles pin CONTENT + STRUCTURE (the six tier-worded
-  - # links in order, the two loci, the naked-trust epilogue + both recovery moves); the byte-render
-  - # re-blesses freely (27V:rul-output-form-unwelded). Anti-masking: the machinery PRODUCES every line.
-  - === OUTCOME ===
 ---
 -- book.sh --
 # survivebite27-naked-trust-chain (27V §4 flagship): the "bought unsoundness" survival-bite, made

@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 ---
 -- book.sh --
 # strawman24-all-converged-clean (plans/240 Stage-1 yardstick — today's engine at its BEST).

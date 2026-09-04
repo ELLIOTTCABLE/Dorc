@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic:
-  - role-family-contested
 ---
 -- book.sh --
 #!/bin/sh

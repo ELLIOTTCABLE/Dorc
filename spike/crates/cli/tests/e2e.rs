@@ -1115,6 +1115,47 @@ struct RoundTripInputs {
 }
 
 impl RoundTripInputs {
+    /// Fill from a loom's session (`30X:loom-frontmatter-is-registry-metadata-only`): the flags and
+    /// `--artifact-dir` from the artifact-producing block's argv, the surviving `probe-results` and
+    /// `tolerate` from frontmatter, and dual-rail suppression derived from the book's own multiline
+    /// argv rather than a declared key. The exit is the session's `$ echo $?` block (a loom reads
+    /// exit-0/shebang, so `dorc_exit` is unused) and the apply's exec rc has no session block.
+    fn from_session(case: &errorloom::Case) -> Result<Self, String> {
+        let argv = case
+            .replay()
+            .blocks()
+            .iter()
+            .find(|block| block_produces_artifacts(block.command()))
+            .map(|block| block_argv(block.command()))
+            .unwrap_or_default();
+        let book = case
+            .materialized_files()
+            .into_iter()
+            .find(|(rel, _)| rel == "book.sh")
+            .map(|(_, content)| content)
+            .unwrap_or_default();
+        let tolerances = match case.frontmatter().scalar("tolerate") {
+            Some(declared) => declared
+                .split(',')
+                .map(str::trim)
+                .filter(|name| !name.is_empty())
+                .map(Normalizer::parse)
+                .collect::<Result<_, _>>()?,
+            None => Vec::new(),
+        };
+        Ok(Self {
+            flags: extra_flags(&argv),
+            dorc_exit: 0,
+            apply_exit: 0,
+            artifact_set: argv
+                .iter()
+                .any(|arg| arg == "--artifact-dir" || arg.starts_with("--artifact-dir=")),
+            probe_results_authored: case.frontmatter().scalar("probe-results") == Some("authored"),
+            dual_rail_suppressed: book_has_multiline_argv(&book),
+            tolerances,
+        })
+    }
+
     /// Fill from a dir-case's `NAME=value` markers — the DIR filler D2a's dir-case conversion deletes.
     fn from_markers(dir: &Path) -> Result<Self, String> {
         let dorc_exit = match marker(dir, "DORC_EXIT")? {
@@ -1140,6 +1181,55 @@ impl RoundTripInputs {
             tolerances: tolerances(dir)?,
         })
     }
+}
+
+/// The plan/apply flags a session's `$ dorc` line carries beyond the head, the book, the glob-sorted
+/// `--pre-source` oracles, the results stream, and `--artifact-dir` — everything [`shared_args`] adds
+/// for itself, so a flag here is one the case genuinely declared (`--risk-faultless-skips` and its
+/// kind).
+fn extra_flags(argv: &[String]) -> Vec<String> {
+    let mut flags = Vec::new();
+    let mut idx = 1; // skip the `dorc` head
+    // A bare word right after `dorc` is the MODE (`plan`/`apply`), which the round-trip drive
+    // supplies for itself — never a flag.
+    if argv.get(idx).is_some_and(|word| !word.starts_with('-')) {
+        idx += 1;
+    }
+    while idx < argv.len() {
+        let arg = &argv[idx];
+        if arg == "--pre-source" || arg == "--results" || arg == "--artifact-dir" {
+            idx += 2;
+            continue;
+        }
+        if arg == "-"
+            || arg.starts_with("--book=")
+            || arg.starts_with("--results=")
+            || arg.starts_with("--artifact-dir=")
+        {
+            idx += 1;
+            continue;
+        }
+        flags.push(arg.clone());
+        idx += 1;
+    }
+    flags
+}
+
+/// Whether the book carries a quoted string that opens on one line and closes on a later one — a
+/// multiline argv the line-based dual-rail comparison (`dual_rail_judge`) cannot align, which the
+/// dir form declared as `DUAL_RAIL=multiline-argv` and the loom form derives from the bytes.
+fn book_has_multiline_argv(book: &str) -> bool {
+    let mut in_single = false;
+    let mut in_double = false;
+    for ch in book.chars() {
+        match ch {
+            '\'' if !in_double => in_single = !in_single,
+            '"' if !in_single => in_double = !in_double,
+            '\n' if in_single || in_double => return true,
+            _ => {}
+        }
+    }
+    false
 }
 
 // ---------------------------------------------------------------------------
@@ -1175,15 +1265,6 @@ struct LoomCaseSpec {
     case: errorloom::Case,
     /// Which driver owns it.
     run: LoomRun,
-}
-
-/// Scalar-or-list frontmatter items (an absent key is the empty list).
-fn loom_items(case: &errorloom::Case, key: &str) -> Vec<String> {
-    match case.frontmatter().get(key) {
-        Some(errorloom::FrontmatterValue::Scalar(one)) => vec![one.clone()],
-        Some(errorloom::FrontmatterValue::List(items)) => items.clone(),
-        _ => Vec::new(),
-    }
 }
 
 /// Classify one `.loom` for the SHELL driver, or `Ok(None)` when the shell declines it
@@ -1239,54 +1320,12 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
     let write = |name: &str, body: String| -> Result<(), String> {
         std::fs::write(into.join(name), body).map_err(|error| format!("{error}"))
     };
-    let scalar = |key: &str| spec.case.frontmatter().scalar(key).map(str::to_owned);
-    if let Some(flags) = scalar("flags") {
-        write(&format!("DORC_FLAGS={flags}"), String::new())?;
-    }
-    if let Some(value) = scalar("tolerate") {
-        write(&format!("tolerate={value}"), String::new())?;
-    }
-    if let Some(value) = scalar("artifact-set") {
-        match ArtifactSetDeclaration::parse(&value)? {
-            ArtifactSetDeclaration::Published => write("ARTIFACT_SET", String::new())?,
-        }
-    }
-    if let Some(value) = scalar("probe-results") {
-        write(&format!("PROBE_RESULTS={value}"), String::new())?;
-    }
-    if let Some(value) = scalar("dual-rail") {
-        write(&format!("DUAL_RAIL={value}"), String::new())?;
-    }
-    if let Some(value) = scalar("why-addr") {
-        write(&format!("WHY_ADDR={value}"), String::new())?;
-    }
-    if let Some(value) = scalar("apply-exit") {
-        write(&format!("EXIT_RC={value}"), String::new())?;
-    }
-    match spec.run {
-        LoomRun::RoundTrip => {
-            if let Some(value) = scalar("exit") {
-                write(&format!("DORC_EXIT={value}"), String::new())?;
-            }
-        }
-        LoomRun::Lint => {
-            write(
-                "expected-rc",
-                format!("{}\n", scalar("exit").unwrap_or_default()),
-            )?;
-            write("cmd", format!("{}\n", lint_flags(spec)?))?;
-        }
-    }
-    for (key, file) in [
-        ("expect-diagnostic", "expected-diagnostics"),
-        ("expect-why", "expected-why"),
-        ("expect-hint", "expected-hint"),
-        ("expect-why-chain", "expected-why-chain"),
-    ] {
-        let items = loom_items(&spec.case, key);
-        if !items.is_empty() {
-            write(file, format!("{}\n", items.join("\n")))?;
-        }
+    if spec.run == LoomRun::Lint {
+        // A lint case stays single-invocation until D2b's fold: `run_lint` reads the flags from `cmd`
+        // and the expected exit from the session's own `$ echo $?` block (the exit respell —
+        // `30X:loom-frontmatter-is-registry-metadata-only`).
+        write("cmd", format!("{}\n", lint_flags(spec)?))?;
+        write("expected-rc", format!("{}\n", echoed_exit(&spec.case)))?;
     }
     let transcript = spec
         .case
@@ -1296,6 +1335,18 @@ fn materialize_loom(spec: &LoomCaseSpec, into: &Path) -> Result<(), String> {
         .ok_or_else(|| String::from("no replay block"))?;
     write("expected.out", transcript.output().to_owned())?;
     Ok(())
+}
+
+/// The exit a session's `$ echo $?` block declares (its committed output), or `0` when it has none.
+/// The exit respell turns an `exit:` key into that block, so a case's exit lives where the session
+/// shows it rather than in frontmatter (`30X:loom-frontmatter-is-registry-metadata-only`).
+fn echoed_exit(case: &errorloom::Case) -> String {
+    case.replay()
+        .blocks()
+        .iter()
+        .find(|block| block.command().trim() == "echo $?")
+        .map(|block| strip_trailing_newlines(block.output()))
+        .unwrap_or_else(|| String::from("0"))
 }
 
 /// Give a materialized mock the execute bit `PATH` resolution needs on unix (txtar carries no
@@ -1706,7 +1757,7 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
     }
     // The framed record stream feeds the session (stdin and, where a block redirects,
     // `probe-results.txt`); the raw fixture is restored below for gate-1's mocked-probe compare.
-    let inputs = RoundTripInputs::from_markers(&dir)
+    let inputs = RoundTripInputs::from_session(&spec.case)
         .map_err(|message| Failed::from(format!("FAIL  {}  [session: {message}]", spec.name)))?;
     let args = shared_args(&dir, &inputs.flags);
     let framed = framed_results(harness, &dir, &args);
@@ -1859,6 +1910,7 @@ fn run_loom_case(harness: &Harness, loom: &LoomCase) -> Result<(), Failed> {
     if let Err(failed) = run_case_hygiene(&loom.name, &parsed, shell.is_none()) {
         failures.push(failed.message().unwrap_or_default().to_owned());
     }
+    failures.extend(transcript_slugs_are_catalog(&loom.name, &parsed));
 
     // IN-PROCESS arm: the second witness of every session, and the sole proof of a case the shell
     // declines. A `Declined` session defers wholly; a `Rendered` one must equal the transcript.
@@ -2033,6 +2085,26 @@ fn candidate_rescue(name: &str, rendered: Option<&str>) -> String {
         };
     out.push_str(&written);
     out
+}
+
+/// Every diagnostic HEADER slug the committed transcript names that the generated catalog does not
+/// carry (`needles-are-structural` in its honest form — the retired `expect-diagnostic` key's
+/// catalog validation moved onto the transcript itself, which is the assertion now). A dead slug is
+/// an author's hand-edit the engine could never render.
+fn transcript_slugs_are_catalog(name: &str, case: &errorloom::Case) -> Vec<String> {
+    let mut dead = Vec::new();
+    for block in case.replay().blocks() {
+        for line in block.output().lines() {
+            if let Some((_, slug)) = diagnostic_header(line)
+                && !catalog_has_slug(slug)
+            {
+                dead.push(format!(
+                    "FAIL  {name}  [transcript names diagnostic `{slug}`, which is not a code in the generated catalog — a dead slug the engine could not have rendered]"
+                ));
+            }
+        }
+    }
+    dead
 }
 
 /// The `(severity, slug)` a line names, if the line is a real diagnostic HEADER.
@@ -2384,6 +2456,7 @@ fn run_round_trip(
             &apply_art,
             run_root,
             inputs,
+            loom,
             &mut run.failures,
         );
         probe_exec_check(
@@ -2575,6 +2648,7 @@ fn exec_check(
     artifact: &str,
     run_root: Option<&Path>,
     inputs: &RoundTripInputs,
+    loom: bool,
     failures: &mut Vec<String>,
 ) {
     let unsafe_lines = scan_redirects(artifact);
@@ -2585,7 +2659,6 @@ fn exec_check(
         ));
         return;
     }
-    let expected_rc = inputs.apply_exit;
 
     let scratch = Scratch::new("exec");
     let log = scratch.path.join("dorc.log");
@@ -2608,10 +2681,14 @@ fn exec_check(
         piped
     };
     let out = capture(command.stdout(Stdio::piped()).stderr(Stdio::piped()));
-    if out.code != expected_rc {
+    // A dir case pins the apply's exec rc through its `EXIT_RC` marker; a loom has no session block
+    // that runs the apply under its mocks, so the run-set below is its assertion and the committed
+    // apply bytes imply the rc (`d2a:tc-apply-exit-has-no-session-spelling`).
+    if !loom && out.code != inputs.apply_exit {
         failures.push(format!(
-            "FAIL  {name}  [ap-2-exec: rendered apply exited rc={}, expected {expected_rc}]\n      {}",
+            "FAIL  {name}  [ap-2-exec: rendered apply exited rc={}, expected {}]\n      {}",
             out.code,
+            inputs.apply_exit,
             out.stderr.trim_end()
         ));
         return;

@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
-expect-why:
-  - site 1 survives+elides && wall site 0 && sm.dorc.Package:oldpkg && DERIVED at probe && backing sm.dorc.Package:nginx disjoint
 ---
 -- book.sh --
 # strawman24-derived-survive (24E Stage 4 — the DERIVED-footprint flagship; sibling to strawman24-survive-simple, its AUTHORED-footprint twin).

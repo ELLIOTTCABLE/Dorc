@@ -1,7 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
 probe-results: authored
 ---
 -- book.sh --

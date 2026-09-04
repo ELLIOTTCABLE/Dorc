@@ -1,11 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-why-addr: 9
-expect-why:
-  - author declines [unsound] && sysctl.oracle.sh:
-expect-why-chain:
-  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh

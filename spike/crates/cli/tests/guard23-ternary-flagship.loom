@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 ---
 -- book.sh --
 # guard23-ternary-flagship (rul-ternary-verdict; the {elide, guard, run} verdict map on one

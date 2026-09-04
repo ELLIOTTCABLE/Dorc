@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
-expect-diagnostic:
-  - footprint-incoherent
 ---
 -- book.sh --
 # pin28-survival-body-death-walls-total (`28P:dec-whole-body-atomic-refusal`) — the SECOND

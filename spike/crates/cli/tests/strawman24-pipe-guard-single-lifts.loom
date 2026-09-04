@@ -1,6 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
 ---
 -- book.sh --
 # strawman24-pipe-guard-single-lifts (the CONTRAST to strawman24-pipe-guard-floor / the

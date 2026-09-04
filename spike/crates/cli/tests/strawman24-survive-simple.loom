@@ -1,9 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-flags: --risk-faultless-skips
-expect-why:
-  - site 1 survives+elides && wall site 0 && apt-get touches {sm.dorc.Package:oldpkg} && backing sm.dorc.Package:nginx disjoint
 ---
 -- book.sh --
 # strawman24-survive-simple (plans/240 Stage 2 — the golden hill flagship; INVERTS

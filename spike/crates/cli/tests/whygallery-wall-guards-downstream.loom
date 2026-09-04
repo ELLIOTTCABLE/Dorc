@@ -1,13 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-why-addr: 9
-expect-why:
-  - guard [sm.dorc.Service] && service.oracle.sh:
-expect-hint:
-  - 'hork' (line 8) && is unmodeled && first wall && un-wall 1 downstream site
-expect-why-chain:
-  - === OUTCOME ===
 ---
 -- book.sh --
 #!/bin/sh

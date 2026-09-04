@@ -1,7 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-diagnostic: artifact-form-fallback
 ---
 -- book.sh --
 #!/bin/sh

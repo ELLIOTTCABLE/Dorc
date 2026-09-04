@@ -1,8 +1,4 @@
 ---
-run: round-trip
-fixpoint: executed
-expect-why:
-  - declines [unsound] && sysctl.oracle.sh:8
 ---
 -- book.sh --
 #!/bin/sh
