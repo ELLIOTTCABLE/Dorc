@@ -341,6 +341,20 @@ Built: all 109 dir-cases converted in place to single-file looms by a throwaway 
 | `open-checki-is-subsequence-not-byte` · `open-load30-empty-ran-normalized` (the bless's own fixpoint, one byte) · `open-dedicated-xfail-pins` (env30 at `r31` mirrors the existing `30S` attention-calls, not a roadmap row) · `open-two-dorc-exit-cases-skip-structural-gates` (their `expected.ran` sections are dead if unread — delete, reported) | ACCEPT all. | — |
 | `open-pin-registry-drift` — `plans/30P` names two pins not in `PINS` | a plan-doc drift for the close batch (rewrite `30P`'s what-landed paragraph in place). | — |
 
+### Checkpoint D2a″ (`31448ca3`; the conversion COMPLETE; the dir path deleted; nine `DORC_KNOWN_BROKEN` reds handed to D2b, all named)
+
+Built: `loop30` descriptive (its pin Reserved; census coherent, 25 live · 3 reserved); `floor30` minted through the floor mint's exact write command on WSL, its `expected.emitted` manifest byte-identical (asserted), its transcript carrying both streams and reproducing on the Windows leg; the two errored-plan cases' unread `expected.ran` sections dropped; the dir round-trip driving path DELETED (`marker`/`has_marker`, the dir `tolerances`, `from_markers`, the four `scan_*` needle gates, `head_ran_drifted`, `run_round_trip`'s `loom=false` arm with its dir XFAIL lens and `expected.out` diff, `Harness::dorc_shared`, `OWN_PROFILE_DIR`, `E2eKind::RoundTrip` and its discovery); `crates/cli/tests` is looms, `.rs`, and the two `lint-real-*` dirs; 427 trials held.
+
+| item | ruling | the conductor's own mistake, named |
+|---|---|---|
+| the red accounting — four e2e reds, all D2b's (`load30-subshell-errexit-fallback` · `load30-script-relative-lints` · `lint-no-lintable-files` · `script-relative-load-dies-slashless`, all `cli/tests` looms), plus FIVE census `.rs` reds the D2a′ conversion left unrun: `region_artifacts.rs` ×4 (walks `region30-*` DIRS and reads `expected.out`) and `sh_parity::the_happy_path_corpus_emits_no_munged_names` (the munge-witness roster keys the retired shape; `emit30-book-squats-the-munged-name` is a loom now) | RULED: the census tier stays Rust (`30Xa` §4, `30X:tier-census`) and its INPUTS move to the loom corpus — each census walks looms and reads their sections through errorloom's `Case::parse`; the roster keys case STEMS. Assertions unchanged. D2b. | the D2a″ brief mislabeled the reds ("two old aid looms"); the D2a′ checkpoint banked a `DORC_KNOWN_BROKEN` tip with gates unrun and nobody censused the `.rs` batteries' inputs. |
+| `dev-floor-mint-via-underlying-command` (the `bless_pass` command, not the `bless:floor` wrapper whose post-verify was doomed on the known reds) | ACCEPT for the KNOWN_BROKEN state; D2b ends with zero reds and runs the unfiltered `bless:dry`. | — |
+| `tc-loop30-deferred-was-equals-now` | RULED: a pin that never slipped carries a plain horizon (`end-of-r31`) and its `why` where a Reserved pin carries its reason; never a `Deferred` whose `was == now`. D2b. | the ruling said "Deferred.why" loosely. |
+| `tc-loop30-book-comment-target-tense-vs-current-ran` | RULED: the fixture's comment is reworded descriptive (what runs today; the widening that would change it) and the case re-blesses — a fixture correction, not prose. D2b. | — |
+| `dev-deleted-dead-code-beyond-list` · `dev-missing-expected-out-message-and-docs-reworded` · `dev-commit-granularity-recovery` | fine. | — |
+
+Steering pointers for close (banked): `cli/CLAUDE.md` `runners-live-here-cases-are-peers`, `bless-writes-renders-not-measurements`, `count-drifts`, `loom-form-is-the-same-battery`, `one-fixpoint-authority-per-case`, `needles-are-structural`, `tolerate-is-a-closed-vocabulary`, `an-artifact-set-runs-from-its-own-generation`, `per-case gates`; `spike/CLAUDE.md flat-test-tree-and-loom-placement`'s shape table (the dir round-trip row and `X/X.loom` go; the surviving shapes are `X.loom`, `X/book.sh` alone as a real-tools fixture space, and `.rs` batteries with their own fixture dirs).
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
