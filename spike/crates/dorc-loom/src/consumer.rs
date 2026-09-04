@@ -2408,9 +2408,8 @@ pub fn shell_decline(case: &Case) -> Option<ShellDecline> {
     if case.sections().iter().any(|s| s.name() == "edge-fault") {
         return Some(ShellDecline::EdgeFault);
     }
-    // A block naming a binary the session's shim does not provide is in-process authority by content:
-    // `dorc-loom` (the authoring tool) and `dorc-sh` (the runtime object) both resolve outside the
-    // one-shimmed-`dorc` rail.
+    // A block naming a binary the shim does not provide (only `dorc` is shimmed) is in-process
+    // authority by content: `dorc-loom` (authoring tool) and `dorc-sh` (runtime object) both.
     case.replay()
         .blocks()
         .iter()
