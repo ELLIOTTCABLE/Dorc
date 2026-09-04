@@ -1501,6 +1501,19 @@ fn drive_session(
         command.env(name, value);
     }
     command.env(RUNNER_CLOCK_SHADOW, &invocation0_clock);
+    // A runner-owned default transport, so a `$ dorc apply --host` block runs the LOCAL fixture
+    // interpreter in the shell exactly as `receipt_state.rs`'s apply tests drive it
+    // (`30Xa:Checkpoint C3b`, rider f; `rul-runner-varies-only-what-it-set` — an author's own
+    // `export DORC_SEAM_TRANSPORT` wins). The `local:<shell>;<interp>` spelling matches `run_closed_loop`.
+    let interpreter = if cfg!(windows) {
+        format!("/usr/bin/{}", harness.checker_name)
+    } else {
+        harness.checker.display().to_string()
+    };
+    command.env(
+        dorc_testbed::seam_vars::TRANSPORT_ENV,
+        format!("local:{};{interpreter}", harness.checker.display()),
+    );
     // A throwaway `$ARTIFACT_DIR` a `--artifact-dir=$ARTIFACT_DIR` block publishes into (disposable;
     // the artifact-set gate is `run_round_trip`'s own re-drive).
     let artifact_dir = scratch.path.join("artifacts");
@@ -1997,10 +2010,27 @@ fn diagnostic_header(line: &str) -> Option<(&str, &str)> {
 }
 
 /// Did any drive emit `slug` as a diagnostic? Severity is registry data a case does not restate.
+///
+/// Two structured shapes carry a code, neither forgeable from book bytes: the report seat's
+/// diagnostic HEADER, and a lint FINDING (`<line>:<col> <severity> [<check>:<slug>] …`), the lint
+/// render's own positioned form (`dorc lint` names its codes there, not as headers).
 fn stderr_fired(stderr: &str, slug: &str) -> bool {
-    stderr
-        .lines()
-        .any(|line| diagnostic_header(line).is_some_and(|(_, found)| found == slug))
+    stderr.lines().any(|line| {
+        diagnostic_header(line).is_some_and(|(_, found)| found == slug)
+            || lint_finding_fired(line, slug)
+    })
+}
+
+/// A lint FINDING names its code as `[<check>:<slug>]` after a `<line>:<col> <severity>` position —
+/// a structured shape the harness's own render emits, which a book's bytes cannot forge into place.
+fn lint_finding_fired(line: &str, slug: &str) -> bool {
+    let Some((position, rest)) = line.trim_start().split_once(' ') else {
+        return false;
+    };
+    let positioned = position.split_once(':').is_some_and(|(l, c)| {
+        !l.is_empty() && l.bytes().chain(c.bytes()).all(|b| b.is_ascii_digit())
+    });
+    positioned && rest.contains(&format!(":{slug}]"))
 }
 
 /// A whole-product case's `code:` is an ASSERTION that one of its own drives emitted that code.
@@ -2231,7 +2261,10 @@ fn run_round_trip(
     // artifact-producing mode that exited 0 with EMPTY stdout. (A dir-case keeps its `DORC_EXIT`
     // contract until D2 converts it.)
     if loom {
-        if !got.trim_start().starts_with("#!") {
+        // Only a CLEAN plan (exit 0, shebang-led stdout) has an artifact the gates judge; an errored
+        // one ships the book's own bytes verbatim (`two-surfaces`) and its transcript is its
+        // assertion. The dead engine is exit 0 with empty stdout.
+        if out.code != 0 || !got.trim_start().starts_with("#!") {
             if out.code == 0 && got.is_empty() {
                 return Err(format!(
                     "FAIL  {name}  [dorc exited 0 with EMPTY stdout — an artifact-producing mode that emits nothing is a dead engine]\n{}",
@@ -2360,10 +2393,16 @@ fn run_round_trip(
 
     floor_differential(harness, name, dir, &mocks, &mut run.failures);
 
-    scan_diagnostics(name, &out.stderr, dir, &mut run.failures);
-    scan_why(name, &out.stderr, dir, &mut run.failures);
-    scan_hint(name, &out.stderr, dir, &mut run.failures);
-    scan_why_chain(harness, name, dir, &args, &framed_path, &mut run.failures);
+    // The diagnostic and needle gates are the DIR-case surface; for a loom the SESSION transcript
+    // compare (every byte both drivers saw) and `defined_code_fired` are its diagnostic assertion,
+    // so re-scanning the artifact re-drive's stderr is redundant and reads a world the case's `code:`
+    // already declares (`30Xa:rul-gates-attach-to-what-a-block-produced`; `loom-transcript-is-what-the-user-saw`).
+    if !loom {
+        scan_diagnostics(name, &out.stderr, dir, &mut run.failures);
+        scan_why(name, &out.stderr, dir, &mut run.failures);
+        scan_hint(name, &out.stderr, dir, &mut run.failures);
+        scan_why_chain(harness, name, dir, &args, &framed_path, &mut run.failures);
+    }
 
     let guard_violations = guard_shape_violations(&apply_art, &read_or_empty(&book));
     if !guard_violations.is_empty() {
@@ -3856,15 +3895,21 @@ fn bless_folds_only_on_pass_selftest(harness: &Harness) -> Vec<String> {
         shim_dir: build_dorc_shim(&harness.harness_bin),
     };
 
-    // `if true` with no `fi` is a parse error, so dorc exits non-zero and the crash/empty guard
-    // fails the case before any golden is consulted.
-    for (tag, book, want_written) in [
-        ("fold-pass-failing", "#!/bin/sh\nif true", false),
-        ("fold-pass-passing", "#!/bin/sh\nhork tune", true),
+    // The failing specimen declares a `code:` that its own drive does not fire, so `defined_code_fired`
+    // reddens it while the passing one folds (an errored plan no longer fails a gate under
+    // `30Xa:rul-gates-attach-to-what-a-block-produced` — its transcript is its assertion).
+    for (tag, code, want_written) in [
+        ("fold-pass-failing", "cli-no-book-given", false),
+        ("fold-pass-passing", "", true),
     ] {
         let path = scratch.path.join(format!("{tag}.loom"));
+        let front = if code.is_empty() {
+            String::from("run: round-trip\nfixpoint: executed")
+        } else {
+            format!("code: {code}\nrun: round-trip\nfixpoint: executed")
+        };
         let source = format!(
-            "---\nrun: round-trip\nfixpoint: executed\n---\n-- book.sh --\n{book}\n-- expected.ran --\n-- replay --\n$ dorc --book=book.sh --results -\nplaceholder\n"
+            "---\n{front}\n---\n-- book.sh --\n#!/bin/sh\nhork tune\n-- expected.ran --\n-- replay --\n$ dorc --book=book.sh --results -\nplaceholder\n"
         );
         std::fs::write(&path, &source).expect("write specimen loom");
         let spec = LoomCaseSpec {
