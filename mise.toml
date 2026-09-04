@@ -288,7 +288,7 @@ run = [
 ]
 
 [tasks."test:e2e"]
-description = "The e2e corpus alone: dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
+description = "The WHOLE case corpus (one runner since 30X:loom-one-runner): every loom's parse + same-slug hygiene + render fixpoint (and, for a whole-product loom, the two-driver gate), plus the shell gate battery — dash -n on both rendered artifacts, exec-under-inert-mocks, crash/empty guard, golden diff, XFAIL/XPASS pins. This runner is the ONLY sanctioned executor of fixture material — never hand-run a book or a rendered artifact. Trailing args: ONE bare substring, or any number of case PATHS."
 dir = "spike"
 # libtest writes its per-case diagnostics to STDOUT, which an exported `timed` discards
 # wholesale — a red run reported `error: test failed` and nothing else. See the
@@ -300,23 +300,14 @@ raw = true
 # the pre-commit hook scopes a run — so the ceiling was cargo's, not ours.
 run = "cargo test -p dorc-cli --test e2e --"
 
-[tasks."test:looms"]
-description = "The loom corpus alone: parse + same-slug hygiene + per-case render fixpoint. Trailing args: ONE bare substring, or any number of case PATHS — the same selection test:e2e takes."
-dir = "spike"
-# Same stdout diagnostics as test:e2e, same swallowed reds, same one lever.
-raw = true
-# The trailing `--` is load-bearing for the same reason it is on test:e2e: cargo's own `[TESTNAME]`
-# takes exactly one positional and refuses a second before the runner sees it.
-run = "cargo test -p dorc-cli --test looms --"
-
-# The agent halves of the two corpus tasks. Measured green, both raw: 166 lines for `test:e2e`
-# and 276 for `test:looms` unabridged, 9 apiece under `DORC_E2E_QUIET=1` — which selects
-# libtest's terse per-case format and leaves every FAILURE printed in full, so the saving is
-# passing-case names and nothing else. The bare halves above stay unabridged for a human reading
-# a terminal, exactly as the gate matrix's two remits require.
+# The agent half of the corpus task. Measured green, raw: 166 lines for `test:e2e` unabridged,
+# 9 under `DORC_E2E_QUIET=1` — which selects libtest's terse per-case format and leaves every
+# FAILURE printed in full, so the saving is passing-case names and nothing else. The bare half
+# above stays unabridged for a human reading a terminal, exactly as the gate matrix's two remits
+# require.
 
 [tasks."test:e2e-quiet"]
-description = "The e2e corpus alone, agent-facing: terse per-case format on success, failures unabridged. Takes the same selection test:e2e does."
+description = "The whole case corpus, agent-facing: terse per-case format on success, failures unabridged. Takes the same selection test:e2e does."
 dir = "spike"
 env = { DORC_E2E_QUIET = "1" }
 raw = true
@@ -324,13 +315,6 @@ raw = true
 # path selectors, and mise appends trailing args only to a `run` array's LAST command — which once
 # left a two-step publish running over the whole corpus while its git diff was scoped.
 run = "cargo test -p dorc-cli --test e2e --"
-
-[tasks."test:looms-quiet"]
-description = "The loom corpus alone, agent-facing: terse per-case format on success, failures unabridged. Takes the same selection test:looms does."
-dir = "spike"
-env = { DORC_E2E_QUIET = "1" }
-raw = true
-run = "cargo test -p dorc-cli --test looms --"
 
 [tasks."test:real-tools"]
 description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. Off in every default gate. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."
