@@ -101,7 +101,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-connection-dance-oracles-core
 - defined: —
-- cited: 26K 26O 28Q 28Ra Research/notes/r26-glue-strawmen/pivot-vps-standup.note (5)
+- cited: 26K 26O 26Ob 28Q 28Ra Research/notes/r26-glue-strawmen/pivot-vps-standup.note (6)
 
 ## 26M:ack-cross-host-facts-scoping
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:19 — — the gate-never-license lean is SCOPED to
@@ -7240,6 +7240,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 24C:rul24-totalistic-munge
 - defined: Research/notes/24C-stage-landings-and-residue.md:708 — (prior message, same date; human suspicion + conductor analysis,
 - cited: 24P 271 274 278 27D 27E KNOBS (9)
+
+## rule-dissolve-closed-axis-and-substrate-vocabularies
+- defined: —
+- cited: 26Ob 30W (3)
 
 ## rule-incarnation-continuity-semantics
 - defined: —

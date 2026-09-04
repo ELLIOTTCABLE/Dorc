@@ -166,6 +166,56 @@ human's table, sized and dated, is `6-tier-two-work-units`.
   explicit user act; warn/lint yes, deny maybe not; the human wants to think it through.
   Shelf thought (conductor, not pushed): withhold by default on witness mismatch, with a
   typed consent that proceeds by demoting every elision to its guard.
+- `ack-guards-reach-elisions-witness` [TYPED, hard, 2026-09-04] — "Dorc guards anything
+  it can reach but only elides what it can witness" is ground truth; the direction of
+  travel is to EXPAND what identities Dorc can witness, never to soften the rule.
+- `ack-no-hopeful-transfer-binds-the-probe` [TYPED, restated 2026-09-04] — a full
+  Must-grade analysis with no holes is necessary for any admin-authored byte (site argv
+  included, through the author's argparse) to reach anywhere, the probe phase included.
+  Squared with "even the machine being talked to may be unknown", lightly-modelled
+  worlds may lose probing for half a book. The human's tentative read: that set
+  probably overlaps the set an efficient analysis would decline to probe anyway ("can't
+  tell anything, it will guard"); each rule stands on its own. Conductor's read: the
+  overlap is total for the LICENSE consumer (an unknown-world site cannot key its facts,
+  so it could only ever guard) and partial for the AID plane (those sites lose the
+  plan-time drift display and render "runs: world unknown" rather than "diverged").
+- `ack-batching-is-derived-tentative` [TYPED, tentative, 2026-09-04] — `10a`'s derived
+  batching key (spelling × unwalled resolution × entry chain) tentatively acked; the
+  human could not yet hold the whole of it at once.
+- `ack-two-contracts-outside-versus-unanalyzable` [TYPED 2026-09-04] — outside-of-Dorc
+  changes (a DHCP lease renegotiated mid-deploy by the world) are a FUNDAMENTALLY
+  DIFFERENT problem from within-Dorc-but-unanalyzable changes (the book told DHCP to
+  change, Dorc gave the admin oracles and footprints to say so, and they failed). The
+  first is a horizon, declared carefully, never walked past silently; the second is a
+  contract with attributable repair. Both are UX- and contract-sensitive; neither is
+  ignored. "We don't handle all of this" is not what was ruled; "we decide granularly what
+  we contract" is.
+- `ack-identity-is-defensive-never-intent` [TYPED 2026-09-04] — host identity is never
+  used to guess user intent ("did they mean a new machine between these lines?"); it is
+  used to be helpfully defensive about the wild ops world WITHIN a Must-grade, full,
+  static picture of intent built against the contract on how intent is inferred from
+  the user's work.
+- `ack-entered-kind-is-declared-never-host` [TYPED 2026-09-04] — "whatever the Host
+  kind's owner can measure" forks immediately: different kinds of entered thing have
+  different identity capabilities and DISJOINT identity namespaces. Host must not be
+  special-cased any more: the entered kind is whatever the entry form declares to have
+  been entered, user-minted, disjoint by name (`my.org.SerialWidget` keys identity one
+  way, `sm.dorc.LinuxHost` another, `org.docker.Container` another). The human expects
+  this to align with the machinery naturally; conductor's read: it is `30W` item 7
+  (verb surfaces accepting kind coordinates, `: lends org.docker.Container`) plus
+  `30W:rule-dissolve-closed-axis-and-substrate-vocabularies`, and it removes the
+  transport-side REASON for blessing Host at all (`30W` §1 blessed Host because
+  "transport forces it to know destinations address hosts"; under this sitting transport
+  is an oracle). File stays blessed (sh semantics force it). ~SUSPECT Host un-blesses;
+  `q8`.
+- `lean-cohort-defaults-posture` [LEAN, human, not ruled] — the sitting is walling off
+  oceans of day-one value, correctly; this will badly want a one-time posture setting
+  (`--hardened` versus a homelab-nice bundle, the security-posture setting `26O` names
+  as NYI) behind which sit "sane but technically unsound" assumptions about hosts and
+  networks — "assume IP addresses are sane", and kin. Not `--risk-faultless-skips`
+  material. Conductor's shape, `q9`: each assumption is a named, disclosed FALLBACK
+  identity generator at a lower trust tier (spelling-equality standing in for a declined
+  identity read), consented once, attributed to the posture in every why-chain.
 
 ## 3-proposals-awaiting-the-humans-word
 
@@ -302,6 +352,21 @@ gates · the conductor's lean · size of the ruling.
   refused, is "the target" that world or the whole plan? For a one-line synthetic head
   they coincide; for a pivot book they do not. Kernel: intake/settle. Lean: none offered;
   security-adjacent. Routed to the opaque review (W-E). Size: medium.
+- **`q8-entered-kind-forking`** — the entered kind is declared by the entry form
+  (`ack-entered-kind-is-declared-never-host`): `lend_map` lends a user-minted kind
+  coordinate, each kind owns its identity read and its resolution-backing declaration,
+  namespaces disjoint by name. Kernel: YES — `30W` item 7 (kind coordinates on `lends`),
+  `30W:rule-dissolve-closed-axis-and-substrate-vocabularies`, and whether `30W` §1's Host
+  blessing dissolves (File alone stays blessed). Also the vantage dimension
+  (`res-resolution-is-vantage-keyed`): whether vantage is an index-kind like the rest or
+  an engine-owned dimension. Lean: kinds all the way; Host un-blesses; vantage is a kind.
+  Size: medium; rides W-2.
+- **`q9-cohort-defaults-posture`** — the one-time posture setting behind which
+  "sane but unsound" host/network assumptions sit (`lean-cohort-defaults-posture`).
+  Kernel: no (a fallback identity generator at a lower trust tier, consented once,
+  attributed) but it touches the compare chokepoint's generator list. Lean: the shape
+  above; which assumptions are in the bundle is a user-story question (W-C). Size:
+  small ruling, medium design. Rides W-B/W-C.
 
 ## 6-tier-two-work-units
 
@@ -453,19 +518,41 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   script; it must PROVE it, and the proof must involve oracles, contracted claims about
   the Host kind, and a horizon. Conceded; the draft's "batching by spelling is
   refag-clean" was a hole, and is replaced below.
-- `res-the-destination-denotes-a-resolution-cell` [PROPOSED] — a destination string is a
-  NAME; what it denotes at a line is the value of a controller-world cell — the Host
-  kind's resolution of that name (STRAWMAN coordinate `sm.dorc.Host:host1.widget.tld@resolution`)
-  — and that cell has a BACKING the Host kind's owner declares in sh, exactly as any
-  other kind's stores are declared (`kind__state_stored_in`): the ssh client's
-  configuration files, the hosts file, the resolver and name-service switch
-  configuration, and the relevant environment. Silence declares nothing, so the backing is
-  ⊤ and EVERY running mutator between two transit sites walls the resolution — the safe
-  default. A modelled mutator with a footprint disjoint from the declared backing spares
-  it only under the survival flag, as every other spared cell (`kSURVIVAL-trusted`;
+- `res-the-destination-denotes-a-resolution-cell` [PROPOSED; "calling-world" per the
+  human's nit, 2026-09-04] — a destination string is a NAME; what it denotes at a line is
+  the value of a CALLING-WORLD cell — the entered kind's resolution of that name, keyed by
+  the VANTAGE the call is made from (STRAWMAN coordinate
+  `sm.dorc.LinuxHost:host1.widget.tld@resolution`, context = the calling world's vantage)
+  — and that cell has a BACKING the kind's owner declares in sh, exactly as any other
+  kind's stores are declared (`kind__state_stored_in`): the ssh client's configuration
+  files, the hosts file, the resolver and name-service switch configuration, and the
+  relevant environment. Silence declares nothing, so the backing is ⊤ and EVERY running
+  mutator between two transit sites walls the resolution — the safe default. A modelled
+  mutator with a footprint disjoint from the declared backing spares it only under the
+  survival flag, as every other spared cell (`kSURVIVAL-trusted`;
   `rul-flag-is-razor-residue`). An opaque mutator is a total wall as everywhere. A
   converged day has no running mutator between the transits, so the resolution is
   unwalled by construction (an elided command casts no wall — the stage-3 story).
+- `res-resolution-is-vantage-keyed` [PROPOSED; falsehoods 1, 2, 12, 13, 63] — a name is
+  meaningful only from a vantage: a bastion-only name does not resolve from the
+  controller at all; a split-horizon name resolves differently from inside and outside;
+  an RFC1918 literal (`10.0.0.5`) names different machines behind different NATs. So the
+  resolution cell is keyed by the calling world's network vantage, and a jump-class link
+  (`-o ProxyJump=bastion`, where the far sshd resolves the next hop's name inside its own
+  network) MOVES the vantage without entering a shell context: the ssh oracle's `lend_map`
+  must lend a vantage for that shape, and the jumped name's resolution cell is keyed at
+  the bastion's vantage, itself a name resolved at the calling vantage — a chain, nesting-
+  blind. `30W` §5 already keys edge facts (reachability, endpoint state) by vantage and far
+  end; this extends the same key to resolution. An IP literal is a name like any other
+  (the ssh client's `Host` stanzas can remap it; NAT re-uses it), never self-resolving.
+- `res-resolution-is-set-valued-and-landing-is-measured` [PROPOSED; falsehoods 5, 6,
+  14, 54–56] — a name may resolve to SEVERAL addresses (dual-stack, round-robin, a load
+  balancer) and which one a connection lands on is chosen by the client per attempt. The
+  resolution cell's value is therefore a set, and the machine actually reached is a
+  per-attempt MEASUREMENT (the identity read, `10c`), never a fact the cell licenses. One
+  probe standup lands on one member and measures it; the apply's witness re-measures; a
+  different member with a different identity is an integrity withhold. Batching within one
+  session is what makes the probe's members consistent.
 
   ```sh
   sm_dorc_Host__state_stored_in() {                        # STRAWMAN; the stdlib Host owner
@@ -697,3 +784,52 @@ nothing edited in `ROADMAP` or `310` yet.
 - `ROADMAP` rows whose r31 siting reads optimistic now: the argv-form `ssh` fidelity carve
   "rides Host entry" (moves with it) · `28Q:pin-ssh-entry-shape` as an r31 gate (becomes
   the transport round's first ruling).
+
+## 12-falsehoods-we-nearly-reinvented
+
+`Research/falsehoods-networks.md` read against this ledger at the human's direction
+(2026-09-04), topology, reach, and naming only (security items deferred with the review).
+Each row: the falsehood's number(s) · the refag-shaped version of it this sitting was
+about to assume · where it now lands.
+
+- `false-a-name-resolves-the-same-everywhere` (1, 2, 12, 13, 63) — assumed: a
+  destination string denotes one thing wherever it is spelled. Landing:
+  `res-resolution-is-vantage-keyed` — resolution is a calling-world cell keyed by vantage;
+  jump links move the vantage; bastion-only and split-horizon names are unevaluable at the
+  wrong vantage, honestly; an RFC1918 literal is not globally unique.
+- `false-a-name-resolves-to-one-machine` (5, 6, 11, 14) — assumed: one name, one
+  machine. Landing: `res-resolution-is-set-valued-and-landing-is-measured` — dual-stack
+  and round-robin make the value a set; the landing is measured per attempt; the witness
+  catches a different member at apply.
+- `false-the-machine-behind-an-address-stays-put` (8, 14, 54, 55, 56) — assumed: what
+  we probed is what we apply to. Landing: the identity read and its witness (`10c`),
+  under `ack-two-contracts-outside-versus-unanalyzable` — outside churn is a declared
+  horizon with the witness as defence; within-Dorc churn is the resolution cell's
+  declared backing and the ordinary walls.
+- `false-an-ip-literal-needs-no-resolution` (2, 37) — assumed: `10.0.0.5` and
+  `127.0.0.1` are self-evident. Landing: an IP literal is a name (client config can remap
+  it; NAT re-uses it; `127.0.0.1` is not the only loopback and "localhost is me" is a
+  measured identity like any other, or a cohort-default assumption, `q9`).
+- `false-reachability-is-vantage-free` (15, 16, 17, 18, 49, 50) — assumed: if the
+  controller can reach it, the bastion can, and vice versa; if it does not answer it does
+  not exist. Landing: reach facts keyed by (vantage, far end), `30W` §5, already; the
+  `until ssh … true` connection dance is the ssh oracle's own fact at its vantage
+  (`26K:ack-connection-dance-oracles-core`), reachable ≠ provisioned; failure to reach is
+  can't-say, never absence.
+- `false-a-hardware-identifier-identifies-a-machine` (28–33) — assumed, briefly, in
+  the first draft of `10c`: DMI identifiers, addresses, or MACs as identity. Landing: no
+  engine notion of identity; the kind owner's read, partial by construction, horizon in
+  one sentence; clones and non-unique hardware identifiers are that horizon.
+- `false-the-path-is-stable-during-a-run` (19, 25, 27, 46, 47) — assumed by any
+  sync-point protocol that waits with a tunnel open (`10d`): latency bounded,
+  keepalives free, stream boundaries meaningful. Landing: injected timeouts and the
+  wedged/severed cells (`260` s3-4/s3-6) are the model; framing is line-terminated with
+  the terminal token (`262` §2); the M:N protocol, when designed, inherits both and
+  promises no liveness.
+- `false-the-fleet-is-known` (60) — assumed by any invocation-plane host list. Landing:
+  `lean-fleet-is-a-book` and `an-inventory-input`'s consume-never-author; a fleet is
+  whatever the book says, and only that.
+- Not reinvented, worth saying: nothing in this sitting assumed IPv4, a DHCP server, a
+  default gateway, the internet, or a DNS server exists (7, 9, 10, 13, 17, 18): the
+  design never resolves anything itself, so those live entirely in the transport
+  oracle's world and the admin's book.
