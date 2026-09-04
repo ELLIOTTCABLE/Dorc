@@ -8,9 +8,8 @@
 //! | `<case>.loom`            | single-file loom                                  |
 //! | `<case>/<case>.loom`     | multi-file loom                                   |
 //! | `<case>/cmd`             | a `dorc lint` case                                |
-//! | `<case>/book.sh` + `expected.out` | a round-trip case                        |
 //! | `<case>/book.sh` alone   | a real-tools lint fixture (opt-in lane)           |
-//! | `<case>/book.sh` + more  | a round-trip case missing `expected.out` — RED    |
+//! | `<case>/book.sh` + more  | not a recognized case (make it a loom) — RED      |
 //! | anything else            | an `.rs` test's fixture space — not a case         |
 //!
 //! `paths-are-manifest-relative` (`crates/aid/CLAUDE.md`): [`case_roots`] is resolved from
@@ -162,19 +161,17 @@ pub(crate) fn report_path_selection(
 /// What a discovered dir-form case is driven as.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum E2eKind {
-    /// The whole-pipeline round-trip: book + oracles → probe → results → eliding apply.
-    RoundTrip,
     /// A `dorc lint` case: `cmd` carries the flags, `expected.out` the hand-authored render.
     Lint,
     /// A real-external-linter fixture, driven only under `DORC_E2E_REAL_TOOLS`.
     LintReal,
-    /// A dir that carries round-trip material but no `expected.out` — an authoring error, minted
-    /// as a RED trial (`30Qa:fnd-missing-expected-out-hides-a-case`).
+    /// A dir carrying `book.sh` plus more than `book.sh` alone — an authoring error, minted as a
+    /// RED trial (`30Qa:fnd-missing-expected-out-hides-a-case`).
     ///
     /// The shape table above admits a real-tools fixture as `book.sh` ALONE, so anything beside it
-    /// means the author meant a round-trip case. Before this, such a dir classified `LintReal` and
-    /// its name matched no `lint-real-<tool>` lookup, so the whole case vanished from the suite
-    /// with nothing said — the failure mode the discovery floor exists to make impossible.
+    /// is not a recognized case (the author meant a loom). Before this, such a dir classified
+    /// `LintReal` and its name matched no `lint-real-<tool>` lookup, so the whole case vanished from
+    /// the suite with nothing said — the failure mode the discovery floor exists to make impossible.
     MissingExpectedOut,
 }
 
@@ -249,8 +246,6 @@ pub(crate) fn discover_e2e(roots: &[PathBuf]) -> Vec<E2eCase> {
                 E2eKind::Lint
             } else if !path.join("book.sh").is_file() {
                 continue;
-            } else if path.join("expected.out").is_file() {
-                E2eKind::RoundTrip
             } else if round_trip_residue(&path).is_empty() {
                 E2eKind::LintReal
             } else {

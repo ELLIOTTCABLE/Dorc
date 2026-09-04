@@ -154,12 +154,6 @@ use internal_tooling::{Posix, which};
 // ---------------------------------------------------------------------------
 // the harness's shared, immutable context (the seam seat is `dorc_loom::runner_seams`)
 
-/// Where a case that owns its own per-user profile keeps it, inside its materialization.
-///
-/// A marker directory rather than a flag threaded through four drive seats: which profile a run
-/// resolves is a property of the world the case was materialized into.
-const OWN_PROFILE_DIR: &str = ".dorc-own-profile";
-
 /// A suite-owned scratch root holding one throwaway profile PER CASE (keyed by case name), removed
 /// wholesale on `Harness` drop. It lives OUTSIDE any case dir so a dir-form case's SOURCE tree is
 /// never touched; a per-case store is what keeps the deterministic ids the seeded entropy mints from
@@ -356,8 +350,8 @@ impl Harness {
     /// case's own. Seeded entropy and the per-block clock make a receipt deterministic, so a gate
     /// that re-drives a run byte-identically (`loom-gates-attach-by-kind`) would otherwise publish
     /// the SAME name into the case's store and refuse (`name-taken`). A gate's re-drive is for
-    /// PARSING, not the record — so its receipt is disposable, and this is where every gate drive
-    /// goes unless it is one of the few REAL runs ([`Self::dorc_shared`]).
+    /// PARSING, not the record — so its receipt is disposable, and every dorc-binary drive is one:
+    /// a loom's REAL run is the SESSION (`drive_session`), driven through the shell.
     fn dorc(&self, at: &Path) -> Command {
         use std::sync::atomic::{AtomicU64, Ordering};
         static SEQ: AtomicU64 = AtomicU64::new(0);
@@ -366,24 +360,8 @@ impl Harness {
         self.harness_command(at, &throwaway)
     }
 
-    /// A REAL run: it shares the case's OWN store across every drive of that case, so a later
-    /// replay reads what an earlier one published. Keyed by the case's dir name (unique across the
-    /// corpus) and rooted in the suite's scratch — never in the case's own dir, which for a dir-form
-    /// case is its SOURCE tree. A `code:`-defining case takes the profile its own materialization
-    /// laid down. Delivered through the platform variables (`30X` §11: keep the platform-variable
-    /// route); the harness roots seam is pinned to them.
-    fn dorc_shared(&self, at: &Path) -> Command {
-        let own = at.join(OWN_PROFILE_DIR);
-        let root = if own.is_dir() {
-            own
-        } else {
-            self.profile_parent.join(at.file_name().unwrap_or_default())
-        };
-        self.harness_command(at, &root)
-    }
-
-    /// The shared body of [`Self::dorc`] and [`Self::dorc_shared`]: the harness binary, a
-    /// profile-rooted store, the analysis cwd, and the seam bundle spelled in the environment.
+    /// The body of [`Self::dorc`]: the harness binary, a profile-rooted store, the analysis cwd,
+    /// and the seam bundle spelled in the environment.
     fn harness_command(&self, at: &Path, profile_root: &Path) -> Command {
         let mut command = Command::new(&self.harness_bin);
         for role in ["config", "state"] {
@@ -890,35 +868,6 @@ fn framed_results(harness: &Harness, dir: &Path, args: &[String]) -> String {
     dorc_loom::records_framing::frame_records(&probe, &raw)
 }
 
-// ---------------------------------------------------------------------------
-// per-case markers
-
-/// Resolve a `NAME=<value>` marker file, refusing more than one (an ambiguous marker is
-/// an authoring error, never a silently-picked one).
-fn marker(dir: &Path, prefix: &str) -> Result<Option<String>, String> {
-    let mut found: Vec<String> = Vec::new();
-    let Ok(entries) = std::fs::read_dir(dir) else {
-        return Ok(None);
-    };
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        if let Some(value) = name.strip_prefix(&format!("{prefix}=")) {
-            found.push(value.to_owned());
-        }
-    }
-    found.sort();
-    match found.len() {
-        0 => Ok(None),
-        1 => Ok(found.into_iter().next()),
-        _ => Err(format!("multiple {prefix}=<value> markers")),
-    }
-}
-
-/// Is a bare presence-marker file (`XFAIL`, `PROBE_RESULTS=authored`, …) present?
-fn has_marker(dir: &Path, name: &str) -> bool {
-    dir.join(name).exists()
-}
-
 /// The one generation an `ARTIFACT_SET` case's run published under `root`.
 ///
 /// EXACTLY one, and the exactness is the assertion: only the round-trip's own drive is given the
@@ -1068,19 +1017,6 @@ impl ArtifactSetDeclaration {
     }
 }
 
-/// The normalizers a case declares, from its `tolerate=<comma-list>` marker.
-fn tolerances(dir: &Path) -> Result<Vec<Normalizer>, String> {
-    let declared = marker(dir, "tolerate")?;
-    declared
-        .as_deref()
-        .unwrap_or_default()
-        .split(',')
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .map(Normalizer::parse)
-        .collect()
-}
-
 /// Apply every declared normalizer, in vocabulary order.
 fn canonicalize(log: &str, tolerated: &[Normalizer]) -> String {
     tolerated
@@ -1091,15 +1027,12 @@ fn canonicalize(log: &str, tolerated: &[Normalizer]) -> String {
 // ---------------------------------------------------------------------------
 // the round-trip battery's typed inputs (`30X:loom-frontmatter-is-registry-metadata-only`, shape B)
 
-/// The per-case run knobs the artifact battery reads, as ONE value so the DIR path can fill it from
-/// its `NAME=value` markers and the LOOM path from its session's artifact-producing block. Threading
-/// one struct is what lets the two fillers diverge without the gates learning which drove them; the
-/// marker filler ([`RoundTripInputs::from_markers`]) dies with the dir form (D2a deliverable 3).
+/// The per-case run knobs the artifact battery reads, filled from a loom's session — its
+/// artifact-producing block's argv and the surviving frontmatter. Threading one struct is what lets
+/// the gates read the knobs without learning how the session spelled them.
 struct RoundTripInputs {
     /// Extra flags the plan/apply drive carries beyond the glob-sorted `--pre-source` oracles.
     flags: Vec<String>,
-    /// The plan (or lint) invocation's expected exit — DIR only; a loom reads exit-0/shebang.
-    dorc_exit: i32,
     /// The apply invocation's expected exit (`exec_check`).
     apply_exit: i32,
     /// The run publishes an artifact SET to a directory of its own, and the exec gates run from the
@@ -1118,9 +1051,8 @@ impl RoundTripInputs {
     /// Fill from a loom's session (`30X:loom-frontmatter-is-registry-metadata-only`): the flags and
     /// `--artifact-dir` from the artifact-producing block's argv, the surviving `probe-results` and
     /// `tolerate` and `apply-exit` from frontmatter, and dual-rail suppression derived from the
-    /// book's own multiline argv rather than a declared key. The plan exit is the session's
-    /// `$ echo $?` block (a loom reads exit-0/shebang, so `dorc_exit` is unused); the apply's exec
-    /// rc is `apply-exit` (default 0), the exec rail's own execution no session line spells.
+    /// book's own multiline argv rather than a declared key. The apply's exec rc is `apply-exit`
+    /// (default 0), the exec rail's own execution no session line spells.
     fn from_session(case: &errorloom::Case) -> Result<Self, String> {
         let argv = case
             .replay()
@@ -1152,7 +1084,6 @@ impl RoundTripInputs {
         };
         Ok(Self {
             flags: extra_flags(&argv),
-            dorc_exit: 0,
             apply_exit,
             artifact_set: argv
                 .iter()
@@ -1160,32 +1091,6 @@ impl RoundTripInputs {
             probe_results_authored: case.frontmatter().scalar("probe-results") == Some("authored"),
             dual_rail_suppressed: book_has_multiline_argv(book),
             tolerances,
-        })
-    }
-
-    /// Fill from a dir-case's `NAME=value` markers — the DIR filler D2a's dir-case conversion deletes.
-    fn from_markers(dir: &Path) -> Result<Self, String> {
-        let dorc_exit = match marker(dir, "DORC_EXIT")? {
-            Some(value) => value
-                .parse()
-                .map_err(|_| format!("DORC_EXIT: `{value}` is not an integer"))?,
-            None => 0,
-        };
-        let apply_exit = match marker(dir, "EXIT_RC")? {
-            Some(value) => value
-                .parse()
-                .map_err(|_| format!("EXIT_RC: `{value}` is not a non-negative integer"))?,
-            None => 0,
-        };
-        Ok(Self {
-            flags: marker(dir, "DORC_FLAGS")?.into_iter().collect(),
-            dorc_exit,
-            apply_exit,
-            artifact_set: has_marker(dir, "ARTIFACT_SET"),
-            probe_results_authored: has_marker(dir, "PROBE_RESULTS=authored"),
-            dual_rail_suppressed: has_marker(dir, "DUAL_RAIL=inlined")
-                || has_marker(dir, "DUAL_RAIL=multiline-argv"),
-            tolerances: tolerances(dir)?,
         })
     }
 }
@@ -1850,12 +1755,8 @@ fn run_loom(harness: &Harness, spec: &LoomCaseSpec) -> Result<(), Failed> {
         .iter()
         .any(|command| block_produces_artifacts(command))
     {
-        let case = E2eCase {
-            name: spec.name.clone(),
-            dir: dir.clone(),
-            kind: E2eKind::RoundTrip,
-        };
-        if let Err(failed) = run_round_trip(harness, &case, &inputs, &mut String::new(), true) {
+        if let Err(failed) = run_round_trip(harness, &spec.name, &dir, &inputs, &mut String::new())
+        {
             structural.push(failed.message().unwrap_or_default().to_owned());
         }
     }
@@ -2309,10 +2210,6 @@ fn bless_loom(
 struct CaseRun {
     /// Failure lines, in gate order (the sh harness prints each and keeps going).
     failures: Vec<String>,
-    /// A malformed guard artifact — RED even under XFAIL.
-    guard_shape_bad: bool,
-    /// An XFAIL case's run-set drifted from its pinned HEAD signature.
-    head_ran_drifted: bool,
 }
 
 /// The shared argv every dorc invocation of a case reads: `-o <oracle>` (glob-sorted) plus the
@@ -2353,40 +2250,24 @@ fn args_reading_stdin_records(args: &[String]) -> Vec<String> {
     out
 }
 
-/// Drive one round-trip case through every gate, then apply the XFAIL/BLESS lens.
+/// Drive one round-trip loom's block-0 artifact battery through every structural gate.
 ///
-/// `loom` is set when this is the artifact-gate battery over a loom's block 0 rather than a
-/// standalone dir-case (`rul-one-battery-two-orchestrations-until-d`): the drive is then an
-/// inspection re-drive into a throwaway store, and the content diff + `expected.out` bless are
-/// suppressed because the session layer owns transcript compare and bless.
+/// This is the artifact-gate battery over a loom's artifact-producing block: an inspection re-drive
+/// into a throwaway store (`inspection-redrives-carry-no-durable`). The session layer owns the
+/// transcript compare and bless; this drive owns the structural gates the block's own artifact must
+/// pass (`dash -n`, exec-under-mocks, gate-1, gate-5, gate-6, gate-9, the guard-shape floor).
 fn run_round_trip(
     harness: &Harness,
-    case: &E2eCase,
+    name: &str,
+    dir: &Path,
     inputs: &RoundTripInputs,
     drive_stderr: &mut String,
-    loom: bool,
 ) -> Result<(), Failed> {
-    let dir = &case.dir;
-    let name = &case.name;
-    // The dir-form seat of the same refusal `run_loom` makes on sections. Loom cases never reach
-    // it (they are refused before materializing); a dir-form case carrying the manifest as a FILE
-    // would otherwise walk straight into the discard this whole lane exists to close.
-    if let Some(line) = floor_bless_refusal(
-        harness.bless,
-        harness.bless_floor,
-        dir.join("expected.emitted").is_file(),
-        name,
-    ) {
-        return Err(line.into());
-    }
     let mut run = CaseRun {
         failures: Vec::new(),
-        guard_shape_bad: false,
-        head_ran_drifted: false,
     };
 
     let args = shared_args(dir, &inputs.flags);
-    let expected_dorc_exit = inputs.dorc_exit;
 
     let scratch = Scratch::new("case");
     let framed_path = scratch.path.join("framed.txt");
@@ -2404,13 +2285,9 @@ fn run_round_trip(
     });
 
     let book = dir.join("book.sh");
-    // A dir-case publishes into its shared store; a loom's block-0 battery is an inspection re-drive
-    // into a throwaway (the SESSION is the loom's real run — `inspection-redrives-carry-no-durable`).
-    let mut command = if loom {
-        harness.dorc(dir)
-    } else {
-        harness.dorc_shared(dir)
-    };
+    // A loom's block-0 battery is an inspection re-drive into a throwaway (the SESSION is the loom's
+    // real run — `inspection-redrives-carry-no-durable`).
+    let mut command = harness.dorc(dir);
     command
         .arg(format!("--shim-dir={}", shim_dir.display()))
         .arg(format!("--book={}", book.display()));
@@ -2430,31 +2307,19 @@ fn run_round_trip(
     let got = strip_trailing_newlines(&strip_cr(&out.stdout));
     // `30Xa:rul-gates-attach-to-what-a-block-produced`: the artifact battery judges only a CLEAN
     // plan's artifact (exit 0, shebang-led); an errored plan ships the book's own bytes verbatim
-    // (`two-surfaces`) and its transcript is its assertion. The dir-case keeps `DORC_EXIT` until D2.
-    if loom {
-        if out.code != 0 || !got.trim_start().starts_with("#!") {
-            if out.code == 0 && got.is_empty() {
-                return Err(format!(
-                    "FAIL  {name}  [dorc exited 0 with EMPTY stdout — an artifact-producing mode that emits nothing is a dead engine]\n{}",
-                    out.stderr
-                )
-                .into());
-            }
-            return Ok(());
+    // (`two-surfaces`) and its transcript is its assertion.
+    if out.code != 0 || !got.trim_start().starts_with("#!") {
+        if out.code == 0 && got.is_empty() {
+            return Err(format!(
+                "FAIL  {name}  [dorc exited 0 with EMPTY stdout — an artifact-producing mode that emits nothing is a dead engine]\n{}",
+                out.stderr
+            )
+            .into());
         }
-    } else if out.code != expected_dorc_exit || got.is_empty() {
-        return Err(format!(
-            "FAIL  {name}  [dorc exited rc={} (expected {expected_dorc_exit}) / produced no output — a dead engine, or a wrong exit-code contract, is never green]\n{}",
-            out.code, out.stderr
-        )
-        .into());
+        return Ok(());
     }
 
     let (probe_art, apply_art) = split_artifacts(&got);
-    let xfail_reason = std::fs::read_to_string(dir.join("XFAIL"))
-        .ok()
-        .map(|text| text.lines().next().unwrap_or_default().to_owned());
-    let xfail_active = xfail_reason.is_some();
 
     // Opt-in implies require: a case that declares an artifact SET and did not get one has measured
     // the flattened world under a multipart name, which is exactly the false green this marker
@@ -2560,76 +2425,16 @@ fn run_round_trip(
 
     floor_differential(harness, name, dir, &mocks, &mut run.failures);
 
-    // A loom's diagnostic assertion is the SESSION transcript compare + `defined_code_fired`; the
-    // re-drive's diagnostic/needle scans are the DIR-case surface (`loom-transcript-is-what-the-user-saw`).
-    if !loom {
-        scan_diagnostics(name, &out.stderr, dir, &mut run.failures);
-        scan_why(name, &out.stderr, dir, &mut run.failures);
-        scan_hint(name, &out.stderr, dir, &mut run.failures);
-        scan_why_chain(harness, name, dir, &args, &framed_path, &mut run.failures);
-    }
-
     let guard_violations = guard_shape_violations(&apply_art, &read_or_empty(&book));
     if !guard_violations.is_empty() {
-        run.guard_shape_bad = true;
         run.failures.push(format!(
             "FAIL  {name}  [guard-shape: a guarded line violates rul-ternary-verdict's artifact-shape law (never-1 / bytes-verbatim); the shape floor screams even under XFAIL — 23C-fd4]\n{}",
             indent(&guard_violations)
         ));
     }
 
-    if xfail_active && head_ran_drifted(harness, dir, &mocks, &apply_art, run_root) {
-        run.head_ran_drifted = true;
-    }
-
-    // A loom's block-0 battery ends here (`rul-one-battery-two-orchestrations-until-d`): the session
-    // owns the content diff + `expected.out` bless below, and a loom is never XFAIL.
-    if loom {
-        return if run.failures.is_empty() {
-            Ok(())
-        } else {
-            Err(run.failures.join("\n").into())
-        };
-    }
-
-    if run.failures.is_empty() && !harness.bless && !xfail_active {
-        let want = strip_trailing_newlines(&strip_cr(&read_or_empty(&dir.join("expected.out"))));
-        if got != want {
-            run.failures.push(format!(
-                "FAIL  {name}  [content diff]\n{}",
-                divergence(&want, &got)
-            ));
-        }
-    }
-
-    // The XFAIL / BLESS / ok lens.
-    if let Some(reason) = xfail_reason {
-        if run.failures.is_empty() {
-            return Err(format!(
-                "XPASS {name}  [known defect appears FIXED — promote this case: {reason}]"
-            )
-            .into());
-        }
-        if run.guard_shape_bad {
-            return Err(run.failures.join("\n").into());
-        }
-        if run.head_ran_drifted {
-            return Err(format!(
-                "FAIL  {name}  [head-expected.ran: current run-set drifted from the pinned HEAD signature while still XFAIL — a disaster-shaped behaviour change is hiding as an ordinary xfail (two-sided pin, 23B-fd1/23C-fd4)]"
-            )
-            .into());
-        }
-        return Ok(()); // `xfail <name> [<reason>]`
-    }
-    if harness.bless {
-        if run.failures.is_empty() {
-            std::fs::write(dir.join("expected.out"), format!("{got}\n"))
-                .expect("bless expected.out");
-            return Ok(());
-        }
-        run.failures
-            .push(format!("FAIL  {name}  [gate failed; not blessed]"));
-    }
+    // The session owns the transcript compare, the XFAIL lens, and bless; this battery's verdict is
+    // its structural gates alone (`rul-one-battery-two-orchestrations-until-d`).
     if run.failures.is_empty() {
         Ok(())
     } else {
@@ -3228,214 +3033,6 @@ fn dual_rail_check(
     }
 }
 
-/// gate-3: an undeclared error-severity diagnostic on dorc's stderr fails the case.
-///
-/// `expected-diagnostics` is a list of code SLUGS, one per line
-/// (`288:prop-structural-needles-only`): the needle `<severity>[<slug>]` is DERIVED, and every slug
-/// is validated against the generated catalog. That kills the two ways the old free-text form
-/// rotted — a needle carrying migrated `sm ` prose stops matching the moment phase 8 rewrites
-/// that prose, and a needle naming a deleted code silently declares nothing forever
-/// (`288:nit-needles-rot`). A dead slug is now REFUSED, so the file cleans itself.
-fn scan_diagnostics(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
-    let decl = dir.join("expected-diagnostics");
-    let slugs: Vec<String> = if nonempty_file(&decl) {
-        read_or_empty(&decl)
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty() && !line.starts_with('#'))
-            .map(str::to_owned)
-            .collect()
-    } else {
-        Vec::new()
-    };
-    let dead: Vec<String> = slugs
-        .iter()
-        .filter(|slug| !catalog_has_slug(slug))
-        .map(|slug| format!("`{slug}` is not a code in the generated catalog"))
-        .collect();
-    if !dead.is_empty() {
-        failures.push(format!(
-            "FAIL  {name}  [gate-3: expected-diagnostics names a code that does not exist — declare the live slug, or drop the line]\n{}",
-            indent(&dead)
-        ));
-        return;
-    }
-
-    let errors: Vec<&str> = stderr
-        .lines()
-        .filter(|line| {
-            line.split_once(": error[").is_some_and(|(stage, _)| {
-                !stage.is_empty() && stage.chars().all(|c| c.is_ascii_lowercase())
-            })
-        })
-        .collect();
-    // Declared-must-fire reads the SLUG at any severity (only the undeclared-noise half below
-    // stays error-keyed): severity is registry data a case does not restate.
-    let unfired: Vec<String> = slugs
-        .iter()
-        .filter(|slug| !stderr_fired(stderr, slug))
-        .map(|slug| format!("declared but never emitted: [{slug}]"))
-        .collect();
-    if !unfired.is_empty() {
-        failures.push(format!(
-            "FAIL  {name}  [gate-3: a declared diagnostic did not fire — the declaration is an assertion, not a mute]\n{}",
-            indent(&unfired)
-        ));
-    }
-    if errors.is_empty() {
-        return;
-    }
-    let undeclared: Vec<String> = errors
-        .iter()
-        .filter(|line| {
-            !slugs
-                .iter()
-                .any(|slug| line.contains(&format!("error[{slug}]")))
-        })
-        .map(|line| (*line).to_owned())
-        .collect();
-    if !undeclared.is_empty() {
-        failures.push(format!(
-            "FAIL  {name}  [gate-3: undeclared error-severity diagnostic on stderr — fix the cause, or declare it in an expected-diagnostics file]\n{}",
-            indent(&undeclared)
-        ));
-    }
-}
-
-/// gate-7: opt-in `expected-why` substring (and ` && `-conjoined) assertions over the
-/// `why:` stderr lines. Unlike the other needle gates, `#` lines are NOT comments here —
-/// the sh original reads every non-empty line as a pattern.
-fn scan_why(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
-    let decl = dir.join("expected-why");
-    if !nonempty_file(&decl) {
-        return;
-    }
-    let whys: Vec<&str> = stderr
-        .lines()
-        .filter(|line| line.starts_with("why: "))
-        .collect();
-    let missing: Vec<String> = read_or_empty(&decl)
-        .lines()
-        .filter(|pattern| !pattern.is_empty())
-        .filter(|pattern| !needle_lands(&whys, pattern))
-        .map(str::to_owned)
-        .collect();
-    if !missing.is_empty() {
-        failures.push(format!(
-            "FAIL  {name}  [gate-7: expected why-lens line(s) not emitted on stderr — fix the cause, or update expected-why]\n{}",
-            missing
-                .iter()
-                .map(|pattern| format!("      missing: {pattern}"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        ));
-    }
-}
-
-/// gate-hint: opt-in `expected-hint` assertions over the `hint:` stderr lines.
-fn scan_hint(name: &str, stderr: &str, dir: &Path, failures: &mut Vec<String>) {
-    let decl = dir.join("expected-hint");
-    if !nonempty_file(&decl) {
-        return;
-    }
-    let hints = stderr
-        .lines()
-        .filter(|line| line.starts_with("hint: "))
-        .collect::<Vec<_>>()
-        .join("\n");
-    let missing = needles_missing(&hints, &decl);
-    if !missing.is_empty() {
-        failures.push(format!(
-            "FAIL  {name}  [gate-hint: expected first-wall hint line(s) not emitted on stderr — fix the cause, or update expected-hint]\n{}",
-            missing
-                .iter()
-                .map(|pattern| format!("      missing: {pattern}"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        ));
-    }
-}
-
-/// gate-8: `dorc why <n>` must land the declared needles.
-///
-/// The REPLAY half is gone with the durable it replayed: it drove the retired durable's own reader,
-/// and a receipt-rooted `why` is a separate gate. What survives here is the live assertion,
-/// unchanged.
-fn scan_why_chain(
-    harness: &Harness,
-    name: &str,
-    dir: &Path,
-    args: &[String],
-    framed: &Path,
-    failures: &mut Vec<String>,
-) {
-    let decl = dir.join("expected-why-chain");
-    if !nonempty_file(&decl) {
-        return;
-    }
-    let Ok(Some(addr)) = marker(dir, "WHY_ADDR") else {
-        failures.push(format!(
-            "FAIL  {name}  [gate-8: expected-why-chain present but no WHY_ADDR=<n> marker]"
-        ));
-        return;
-    };
-    let book = format!("--book={}", dir.join("book.sh").display());
-    let live = capture(
-        harness
-            .dorc(dir)
-            .arg("why")
-            .arg(&addr)
-            .arg(&book)
-            .arg(format!("--results={}", framed.display()))
-            .args(args)
-            .stdin(Stdio::null())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null()),
-    )
-    .stdout;
-
-    let missing_live = needles_missing(&strip_trailing_newlines(&live), &decl);
-    if missing_live.is_empty() {
-        return;
-    }
-    let mut detail = String::new();
-    for pattern in &missing_live {
-        let _ = writeln!(detail, "      missing: {pattern}");
-    }
-    failures.push(format!(
-        "FAIL  {name}  [gate-8: why-chain needle(s) missing — fix the walker, or update expected-why-chain]\n{}",
-        detail.trim_end()
-    ));
-}
-
-/// The two-sided XFAIL pin: has an XFAIL case's current apply run-set drifted from the
-/// `head-expected.ran` signature captured when the pin was authored?
-fn head_ran_drifted(
-    harness: &Harness,
-    dir: &Path,
-    mocks: &Path,
-    apply: &str,
-    run_root: Option<&Path>,
-) -> bool {
-    let pin = dir.join("head-expected.ran");
-    if !pin.is_file() || !mocks.is_dir() {
-        return false;
-    }
-    let tolerated = tolerances(dir).unwrap_or_default();
-    let got = canonicalize(
-        &harness.capture_run(Payload::Text(apply), mocks, run_root),
-        &tolerated,
-    );
-    let want = strip_trailing_newlines(
-        &read_or_empty(&pin)
-            .lines()
-            .map(|line| line.strip_prefix("ran: ").unwrap_or(line))
-            .collect::<Vec<_>>()
-            .join("\n"),
-    );
-    got != want
-}
-
 // ---------------------------------------------------------------------------
 // the lint case drivers
 
@@ -3875,19 +3472,19 @@ fn artifact_set_selftest() -> Vec<String> {
     fails
 }
 
-/// Drive the case-shape classifier over the three `book.sh` dirs it must tell apart
+/// Drive the case-shape classifier over the two `book.sh` dirs it must tell apart
 /// (`30Qa:fnd-missing-expected-out-hides-a-case`).
 ///
-/// The middle answer is why this exists: a dir carrying `mocks/` and `probe-results.txt` but no
-/// `expected.out` used to classify as a real-tools fixture, and a real-tools fixture is only ever
-/// looked up by the name `lint-real-<tool>` — so the case left the suite silently, which is the
-/// one thing a discovery floor may not do (`count-drifts`' residual, made loud for this shape).
+/// The distinction is silent when wrong: a dir carrying `book.sh` plus anything else (once the
+/// round-trip form is gone, a stray `probe-results.txt`, `expected.out`, or fixture) used to
+/// classify as a real-tools fixture, and a real-tools fixture is only ever looked up by the name
+/// `lint-real-<tool>` — so the case left the suite silently, which is the one thing a discovery
+/// floor may not do (`count-drifts`' residual, made loud for this shape).
 fn case_shape_selftest() -> Vec<String> {
     let mut fails = Vec::new();
     let scratch = Scratch::new("caseshape");
     let root = scratch.path.join("cases");
     for (name, extra) in [
-        ("shape-round-trip", vec!["expected.out"]),
         ("shape-missing-out", vec!["probe-results.txt"]),
         ("shape-real-tools", vec![]),
     ] {
@@ -3903,7 +3500,6 @@ fn case_shape_selftest() -> Vec<String> {
         .map(|case| (case.name, case.kind))
         .collect();
     for (name, want) in [
-        ("shape-round-trip", E2eKind::RoundTrip),
         ("shape-missing-out", E2eKind::MissingExpectedOut),
         ("shape-real-tools", E2eKind::LintReal),
     ] {
@@ -4577,11 +4173,6 @@ fn main() {
     for case in discovered {
         let harness = Arc::clone(&harness);
         match case.kind {
-            E2eKind::RoundTrip => push_trial(&mut trials, seed, case.name.clone(), move || {
-                let inputs = RoundTripInputs::from_markers(&case.dir)
-                    .map_err(|message| Failed::from(format!("FAIL  {}  [{message}]", case.name)))?;
-                run_round_trip(&harness, &case, &inputs, &mut String::new(), false)
-            }),
             E2eKind::Lint => push_trial(&mut trials, seed, case.name.clone(), move || {
                 run_lint(&harness, &case)
             }),
@@ -4593,10 +4184,9 @@ fn main() {
                 push_trial(&mut trials, seed, name.clone(), move || {
                     let residue = support::round_trip_residue(&case.dir).join(", ");
                     Err(format!(
-                        "FAIL  {name}  [a round-trip case needs `expected.out`; \
-                         this dir also carries: {residue}. Mint it (an empty file is enough — \
-                         `BLESS=1` fills it) or reduce the dir to `book.sh` alone for the \
-                         real-tools lane.]"
+                        "FAIL  {name}  [a `book.sh` dir carrying more than `book.sh` alone is not a \
+                         recognized case: this dir also carries: {residue}. Make it a loom, or \
+                         reduce the dir to `book.sh` alone for the real-tools lane.]"
                     )
                     .into())
                 });
