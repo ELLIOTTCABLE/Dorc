@@ -250,8 +250,13 @@ description = "The WHOLE suite, HUMAN-facing: unit tier + the e2e corpus + the l
 raw = true
 dir = "spike"
 # REMIT: this task optimizes for a human reading a terminal — legibility and context, never
-# brevity. Never add quiet flags here to save an agent tokens; that is the `-quiet` half's job,
-# and the two exist so neither has to compromise.
+# brevity. Never add quiet flags to the NEXTEST half to save an agent tokens; that is the
+# `-quiet` half's job, and the two exist so neither has to compromise. The `-q` on the DOC
+# half is the one carve: nextest has no doctest support, so cargo runs the doctests per-crate
+# and each prints a `running N tests` / `test result` boilerplate block whether or not it has
+# any. `-q` drops that per-test chatter (a compile-fail failure still prints in full and stops
+# the run); the load-bearing `aid/src/narrative.rs` doctest keeps running. No per-crate
+# `doctest = false` roster — that is a lexical fence the type system does not need.
 #
 # The filter is a `usage` arg rather than mise's trailing-args passthrough, because that only
 # reaches the LAST command — so `mise run test -- <name>` filtered nextest while every doctest
@@ -260,7 +265,7 @@ dir = "spike"
 # `mise run test` fail with "Missing required arg".
 usage = 'arg "[filter]" var=#true help="substring(s) selecting trials; bare runs everything"'
 run = [
-  "cargo test --workspace --doc {{ usage.filter | join(sep=' ') }}",
+  "cargo test --workspace --doc -q {{ usage.filter | join(sep=' ') }}",
   "cargo nextest run --workspace --no-fail-fast {{ usage.filter | join(sep=' ') }}",
 ]
 
@@ -555,12 +560,6 @@ run = "cargo run -q -p internal-tooling -- coverage"
 # (`framed_results` in crates/cli/tests/e2e.rs). Every case is refused at intake with
 # host-evidence-admission-refused, so the family reads 0.00. Fixing it means porting
 # that framing — or, better, moving the measurement into the runner that already has it.
-[tasks.yardstick]
-description = "INSTRUMENT, never a gate: the strawman24 elision-frequency table. KNOWN-BROKEN — reports NO-SUMMARY for every case (its invocation drifted from the records-lane framing); the failure is loud, not yours. A number here is meaningless unless test:e2e is green anyway."
-raw = true
-dir = "spike"
-run = "sh e2e/yardstick.sh"
-
 # ── verify (the minispec law corpus and its binder) ──────────────────────────────────────────
 # `verify:check` is CHEAP and rides the ordinary gate on both platform legs with zero external
 # toolchains — a box with no Lean and no aeneas gates green, because those are opt-in lanes that
