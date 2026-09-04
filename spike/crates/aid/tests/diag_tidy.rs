@@ -273,6 +273,7 @@ const MIGRATED_SLUGS: &[&str] = &[
     "cli-flag-requires-mode",
     "apply-receipt-not-optional",
     "apply-plan-not-dispatchable",
+    "apply-outcome-unwritten",
     "cli-file-not-found",
     "cli-file-permission-denied",
     "cli-file-unreadable",
