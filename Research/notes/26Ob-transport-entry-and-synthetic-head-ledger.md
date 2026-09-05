@@ -1507,6 +1507,50 @@ informs build sizing only, never the design.
   pretending to pay attention to all of it, and that Dorc's visible stability outweighs
   the inevitable blaming-of-Dorc for failures inherent to ops. Consequence: the engine
   never defines residue; the author models or documents; Dorc attributes.
+- `ans-batching-key-syntactic-is-the-full-answer` [conductor, to the human's "half-measure?"]
+  — not a half-measure: a second probe standup for the lower of two same-spelled transits
+  would measure the world BEFORE the mutator between them ran, so it is stale with respect
+  to the very thing that separated them; re-keying at settle loses nothing. r26's reactive
+  kernel adds EXCHANGES (re-probe the lower site after the mutator runs), never key
+  structure; it composes on the syntactic key unchanged. Stays PROPOSED for the transport
+  round's design-of-record; no ruling needed.
+- `nit-entered-arm-holds-a-value-object` [builder nit; the human: "a string would be
+  silly", and stop asking for acks on objectively-richer representations] — the Entered
+  index-value holds a value-plane object. Carried to whichever conductor briefs
+  `unit-context-slot-product`.
+- `ret-token-carriage-dissolves-into-the-head` [RETRACTED as a ruling-needing item; the
+  human: "isn't the token inherently visible in the plan, in sh?"] — yes: when the witness
+  is a synthetic head line, the token is a literal in the plan's comparison, reviewed and
+  shipped as the same bytes; no carriage question exists and the receipt never enters.
+  Residue for W-A: a machine identity is confidential-ish, so the head may carry a digest.
+  The kernel binds a placeholder to an opaque token; the head renders the comparison.
+- `fnd-witness-three-orthogonal-axes` [the human's decomposition, 2026-09-05] — (a) whether
+  to ENTER a world solely to witness it (expensive; posture-gated, plausibly the
+  metaorchestration consent); (b) whether to CHECK where Dorc is already entered (nearly
+  free; always); (c) what to DO on a mismatch (the failure policy). Independent; only (b)
+  is uncontroversial. `fnd-two-witnesses-at-artifact-boundaries` conflated (a) and (c) and
+  is DEMOTED to a sketch; `30W` §4 is NOT rewritten now (what it already rules — the
+  witness is integrity-plane; the standup one exists — is all r31 needs); the rest parks
+  post-r31 under these axes, no kernel machinery.
+- `fnd-transport-boundaries-have-no-dorc-posture` [PROPOSED; the human's "isn't that just
+  errexit?"] — under sh parity a transport boundary is a line and a witness at one is a
+  line (rendered bare in the head), so the admin's own `set -e`, `||`, and `trap` decide
+  what happens on mismatch, per region, exactly as for every other line (the
+  `|| [ "$?" -eq 255 ]` sever idiom is that policy already). Dorc has no failure posture of
+  its own at boundaries; "no fail-fast after walk-away" dissolves into the admin's book.
+  Dorc's only owned posture is the pre-mutation standup for what cannot be a line (no
+  writable fs; wrong interpreter; artifact checksum), where refusal is free. Rule of thumb:
+  if it can be a line, it is a line, and errexit governs. Leans `30W` §4 toward: a head
+  line where Dorc emits a head; a free check wherever already entered; prospective entry
+  posture-gated; nothing mid-book that is Dorc's to decide.
+- `prop-failure-posture-prior-art-round` [PROPOSED, scout-sized; the human named it owed]
+  — H0: battle-tested orchestrators' mid-work failure vocabularies map onto sh's four
+  idioms: `set -e` (Ansible default, Chef abort) · `||` (`ignore_errors`, `failed_when`,
+  `block/rescue`) · `trap` (`always`) · `until … sleep` (`retries`); fleet-level
+  (`any_errors_fatal`, `max_fail_percentage`) onto a counter loop under fleet-is-a-book;
+  Terraform's partial state inapplicable (Dorc keeps none). The round's one job: find any
+  mid-work failure mode a serious tool learned the hard way that sh cannot spell. If none
+  turns up in a scout pass, close in an afternoon and rule "it's errexit".
 
 ## 15-state-of-play-at-close
 
@@ -1544,12 +1588,13 @@ informs build sizing only, never the design.
   ledger never touches `310` or `ROADMAP`.
 - NACKED 2026-09-05: the residue reading (`nack-residue-is-not-engine-defined`); no `27C`
   edit.
-- DURABLE only after a typed ack: `ack-two-boundary-witness` — `30W` §4 rewritten in
-  place (standup asserts and may withhold; final-verify re-reads for the receipt only; no
-  assertion after a fired disturbance). Also awaiting a typed line, each explained in chat
-  2026-09-05: `fnd-batching-key-is-syntactic-wall-is-rekeying` ·
-  `fnd-entered-arm-holds-a-value-plane-object` · `fnd-token-carriage-is-orthogonal-to-the-slot`.
-  The entry-form rule supersession waits for the transport round.
+- RESOLVED without a ruling (2026-09-05, second pass): the two-boundary witness is
+  DEMOTED to a sketch and `30W` §4 is not rewritten (`fnd-witness-three-orthogonal-axes`;
+  the errexit lean `fnd-transport-boundaries-have-no-dorc-posture`); batching stays the
+  syntactic key (`ans-batching-key-syntactic-is-the-full-answer`); the Entered arm is a
+  builder nit; token carriage dissolves into the head. NOTHING in this ledger now awaits a
+  typed ack from the human; the entry-form rule supersession waits for the transport round;
+  `prop-failure-posture-prior-art-round` is the one new proposal, scout-sized.
 - `list-must-sits-before-kernel-work` [consolidated; the human asked where it was] —
   (W-2) the `30W` §10 sitting widened by `q3`/`q8`/`q10`/`q11`, whose retrofit-hostile
   outputs are exactly three shape rulings: the slot keyed by `KindId` (index-kinds are

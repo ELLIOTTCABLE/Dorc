@@ -8459,7 +8459,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## unit-context-slot-product
 - defined: —
-- cited: 26N 26Ob 310 ROADMAP (9)
+- cited: 26N 26Ob 310 ROADMAP (10)
 
 ## unit-delivery-shape
 - defined: —
