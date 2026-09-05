@@ -143,3 +143,41 @@
 ## Final outcome
 
 NACK
+
+---
+
+## Human disposition after review
+
+The human ACKS `30C:accept-dangerous-developer-harness` and adjudicates this NACK as follows.
+
+The report's routing and representation findings stand, but they do not justify extending the
+ordinary harness into a cross-process root-capability or host-containment system. Loom sessions are
+already intentionally unrestricted developer shell sessions. Code running there has the developer's
+ambient ability to execute programs and manipulate local state; preventing only the harness from
+accepting a path would not establish a meaningful boundary against hostile or compromised test code.
+Truthfully preserving runner ownership across arbitrary shell reconfiguration and child processes
+would require materially more machinery—an OS-enforced sandbox or genuine cross-process
+capabilities—than this product and test architecture warrant. Path checks, marker files, environment
+tokens, directory conventions, and warnings would add indirection without supplying that boundary.
+
+The harness is therefore accepted as deliberately dangerous, repository-internal developer tooling.
+Its root and receipt path selections may be pointed at harmful or existing developer state, including
+state otherwise used by production invocations. The architecture MUST NOT claim that a session- or
+argument-supplied path witnesses runner ownership, MUST NOT add durable fixture provenance merely to
+repair that claim, and MUST NOT narrow the unrestricted shell-session model. Accidental contamination
+is treated as developer safety and test hygiene rather than as a containment guarantee.
+
+The boundaries that remain required are the ones that reach the product's users without pretending
+to contain the developer shell: the shipped `dorc` constructs only the production row and reads no
+harness selectors; the ordinary harness retains no `RealSsh` variant; real-host and privileged
+exercises remain explicit livetests; normal runner execution continues to supply fresh throwaway
+roots, scrub inherited credentials, and use the separate inert artifact-execution rail; and
+`dorc-harness` MUST be excluded from shipped and public artifacts by an objective artifact-selection
+check. The safe runner setup is a default, not an ownership proof after arbitrary session
+reconfiguration.
+
+No harness daemon, cross-process ownership token, root marker protocol, durable-format provenance,
+or general developer-host sandbox is licensed by this disposition. The engineering repair is to
+make the visible contracts truthful, preserve the simple safe defaults, and enforce the narrow
+artifact boundary. The original NACK remains historical; this disposition supplies the human-owned
+policy choice it requested and unblocks an engineering close-out on those bounds.
