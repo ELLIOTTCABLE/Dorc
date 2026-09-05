@@ -5888,7 +5888,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-descent-implies-manipulation
 - defined: —
-- cited: 26Ob KNOBS (4)
+- cited: 26Ob KNOBS (5)
 
 ## 28L:rul-diagnostic-surface-renders-through-weft
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:167 — (conductor, 2026-07-29, after
@@ -7492,7 +7492,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## seam-payload-forms
 - defined: —
-- cited: 26N 26O 26Ob 310 ANALYZER-NEEDS ROADMAP (9)
+- cited: 26N 26O 26Ob 310 ANALYZER-NEEDS ROADMAP (10)
 
 ## seam-per-host-partition
 - defined: —

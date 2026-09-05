@@ -1510,10 +1510,10 @@ informs build sizing only, never the design.
 - `ans-batching-key-syntactic-is-the-full-answer` [conductor, to the human's "half-measure?"]
   — not a half-measure: a second probe standup for the lower of two same-spelled transits
   would measure the world BEFORE the mutator between them ran, so it is stale with respect
-  to the very thing that separated them; re-keying at settle loses nothing. r26's reactive
-  kernel adds EXCHANGES (re-probe the lower site after the mutator runs), never key
-  structure; it composes on the syntactic key unchanged. Stays PROPOSED for the transport
-  round's design-of-record; no ruling needed.
+  to the very thing that separated them; re-keying at settle loses nothing. Reactive
+  probing (see `cor-reactive-probing-is-gradual-disclosure`) binds value-plane objects
+  during the probe phase and never touches key structure; it composes on the syntactic key
+  unchanged. Stays PROPOSED for the transport round's design-of-record; no ruling needed.
 - `nit-entered-arm-holds-a-value-object` [builder nit; the human: "a string would be
   silly", and stop asking for acks on objectively-richer representations] — the Entered
   index-value holds a value-plane object. Carried to whichever conductor briefs
@@ -1551,6 +1551,34 @@ informs build sizing only, never the design.
   Terraform's partial state inapplicable (Dorc keeps none). The round's one job: find any
   mid-work failure mode a serious tool learned the hard way that sh cannot spell. If none
   turns up in a scout pass, close in an afternoon and rule "it's errexit".
+- `cor-reactive-probing-is-gradual-disclosure` [TYPED correction 2026-09-05] — reactive
+  probing is NOT post-mutator re-probing. It is gradual disclosure INSIDE the probe phase:
+  analysis passes in which prior passes' predicts actually run and feed values back into
+  recomputation; one "probe phase" to the user, but multiple passes and potentially
+  continuous communication with the host, dispatching new work-units or cancelling owed
+  checks as re-analysis surfaces host-needed data or proves checks dead. Nothing ever
+  elides once mutation has started; the plan/apply split stays singular and sacrosanct;
+  what was signed off is exactly what Dorc does its best to run. The conductor's earlier
+  "re-probe after the mutator runs" is struck wherever it appeared.
+- `note-review-surface-may-need-reminimizing` [human tune, 2026-09-05] — the check is
+  ASSUMED spelled in sh; all of it needs strawmanning, implementation, and testing. There
+  is a chance this round muddied the plan-as-review-surface (targets as fused synthetic
+  plan lines; pre-source; a visible functional identity check); a later refactor may
+  re-minimize it. It owes the same kernel machinery regardless.
+- `rul-cfg-error-handling-governs` [TYPED 2026-09-05; DEPRECATES
+  `lean-no-fail-fast-after-walk-away`] — reframed from "errexit governs": the admin exposes
+  their error-handling and fail-fast intent spelled as `set -e`, `trap`, disabling errexit
+  for a region, `|| true`, and kin; Dorc maintains ONE principled mapping from a few such
+  spellings to how it handles an error it observes ("the admin's line ended in `|| true`,
+  overriding ambient errexit, so they did not want a failure here to bring the book down
+  for some atomicity reason; mirror that"), granular per line, and sticks to that exact
+  mapping at all times so it is predictable. Dissolves the half-deployed-book anxiety: the
+  admin's job, because Dorc cannot know. Open design item, W-A's: the mapping for lines
+  DORC inserted (a head, a witness, a guard) failing in a way the admin's native line would
+  not, mid-book — guards already answer (an `||`-left, errexit-exempt, falling through to
+  run); heads and witnesses take the adjacent admin line's spelling as policy.
+  `prop-failure-posture-prior-art-round`'s H0 reframes accordingly: the CFG spellings
+  suffice as the intent surface.
 
 ## 15-state-of-play-at-close
 
@@ -1595,6 +1623,11 @@ informs build sizing only, never the design.
   builder nit; token carriage dissolves into the head. NOTHING in this ledger now awaits a
   typed ack from the human; the entry-form rule supersession waits for the transport round;
   `prop-failure-posture-prior-art-round` is the one new proposal, scout-sized.
+- UNRULED AND BLOCKING, the whole list (2026-09-05, close): (W-2) the `30W` §10 shape
+  sitting below; (W-3) wrapper-as-landing, one sentence, foldable. Nothing else in this
+  ledger blocks r31. For the sibling: `rul-descent-implies-manipulation` means
+  `310:seam-payload-forms` lands its analysis and manipulation halves together; it stays
+  held; the pivot goal does not need it.
 - `list-must-sits-before-kernel-work` [consolidated; the human asked where it was] —
   (W-2) the `30W` §10 sitting widened by `q3`/`q8`/`q10`/`q11`, whose retrofit-hostile
   outputs are exactly three shape rulings: the slot keyed by `KindId` (index-kinds are
