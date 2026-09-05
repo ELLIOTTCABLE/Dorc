@@ -6650,6 +6650,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 275 30D 30P spike/CLAUDE (4)
 
+## rul-predict-feeds-plan
+- defined: —
+- cited: 311a (1)
+
 ## 28M:rul-predict-feeds-plan-never-apply
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:318 — [TYPED] — `cmd__predict()` pipes
 - cited: 19A 28Q (3)
@@ -7046,7 +7050,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-ternary-verdict
 - defined: Research/notes/23O-round-23-closeout.md:221 — — `{elide, guard, run}`; guard = the oracle's own stripped body inserted
 - defined: spike/CLAUDE.md:112 — — the per-site verdict set is {elide, guard, run}. A guard
-- cited: 239 23A 23B 23C 23F 23Ia 23L 24A 24D 26Lb 28K 28U 30L 30Pd 30Qb (24)
+- cited: 239 23A 23B 23C 23F 23Ia 23L 24A 24D 26Lb 28K 28U 30L 30Pd 30Qb 311a (25)
 
 ## 30Qb:rul-the-planner-answers-questions-it-does-not-schedule
 - defined: Research/notes/30Qb-emission-planner-lane-report.md:67

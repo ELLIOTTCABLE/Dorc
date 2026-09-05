@@ -276,6 +276,8 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   read are owed the sentinel like every emission member; and the existing cross-stream
   `disturbs nothing-else` (entities on stdout, record on the sink) is sound only under
   scaffold-declared errexit or a same-stream layout — a dependency to write down (§8).
+  [REFINED §9: under scaffold-declared errexit, regime-3 bodies need NO compiled sentinel —
+  rc 0 is itself the completion witness; the `only`-class totality records stay authored.]
 - `srv-knife-consents-without-a-sentinel` [FOUND] — static marks (`undivided-by-transit-across`,
   referent-transparency, static `disturbs` arms) need none; emission members have or gain one
   (`disturbs nothing-else`, `stored nothing-else`, `lends nothing-else`, the `overlaps` record);
@@ -294,9 +296,14 @@ rho-claim-ladder, the compare-consumer-map bullet; `27C:rul-dimension-owned-comp
 pointer) · `ORACLE_PROVIDES` (trust/degrade lines for `resolve`/`overlaps`/identity; the entry
 and fidelity shapes 26Ob owed) · `ANALYZER-NEEDS` (`an-kind-resolver`, `an-compare-chokepoint`,
 `an-store-topology`, a row for `overlaps`, the rc-regime note on `an-verdict-3val`) ·
-`KNOBS:kCONTRACT-RUNGS` (pointer) · `USER_STORY` stage 6 strawman (human's; suggest `|| return 2`)
-· `notes/26Ob` §10a/§10c strawmen (superseded notes for the `: fs` marks and the identity read's
-sentinel) · `notes/272` §2/§3 (superseded notes: substrate tokens; the carried-by table).
+`KNOBS:kCONTRACT-RUNGS` (pointer) · `USER_STORY` (human-acked refresh OWED, never edited in
+passing: the stage-6 resolver strawman's `|| printf '%s\n' "$1"` fallthrough is the split knife
+— the human's lean is to make the correction a STEP in the story, narrowing it, rather than a
+silent fix; also the enhancement-curve stages §5 notes) · `notes/26Ob` §10a/§10c strawmen
+(superseded notes for the `: fs` marks and the identity read's sentinel) · `notes/272` §2/§3
+(superseded notes: substrate tokens; the carried-by table) · `notes/30D` (the predict compile
+and the signal-status rule, §9) · `plans/27C` §5 (the probe artifact's private-mechanics
+license now carries the predict compile).
 
 ## §8 — the `__predict` turn and the oracle shell-state principle
 
@@ -357,22 +364,114 @@ sentinel) · `notes/272` §2/§3 (superseded notes: substrate tokens; the carrie
   are measured AS world, not as shell state. Residue: shell state Dorc cannot model reads ⊤ and a
   body may not depend on it or must decline — the hermeticity precondition, one plane over.
 
-## §9 — state at close (2026-09-05, first fixpoint; the human rewinds after this)
+## §9 — the predict compile turn (2026-09-05, later)
+
+- `nack-attribute-to-the-tool` [TYPED 2026-09-05] — §8's static attribution "to the family's
+  tool" is NACKED: the whole point of `__predict` is authorial license to build a good-enough
+  mock to the author's own ops taste; a predict may reasonably never invoke the parent tool, and
+  an explicit-return burden on every non-tool arm is complex and hard to keep in mind. The hope:
+  predicts sit low on the enhancement curve, often one or two lines plus glob-declines. The
+  human does NOT accept incorrectness as a price; correctness must be recovered another way.
+- `lean-compile-in-completion-sentinels` [LEAN 2026-09-05, generalised by the human] — since
+  Dorc controls oracle bodies tightly and there is no speech act for completion, compile the
+  sentinel in: anything whose completion is not `only`-class (a totality claim, which IS
+  authorial speech and stays authored) may have its completion witness inserted by Dorc; the
+  author's explicit way out is declining on an arm. Conditional: only where errexit alone does
+  not handle the realistic failure classes. Conductor ack with one refinement below.
+- `fnd-predict-is-two-sided` [FOUND] — unlike the verdict, whose only dangerous status is 0,
+  a predicted status of EITHER polarity can omit another line: a spurious non-zero kills the
+  `&&`-right and the `if` body; a spurious zero kills the `||`-right. So no single rc is safe
+  for predicts, and errexit alone cannot help: an errexit abort mid-body returns the failing
+  step's status, indistinguishable from an intended non-zero answer.
+- `fnd-regime-three-needs-no-compiled-sentinel` [FOUND; the refinement] — for emission and
+  single-answer members (`disturbs`, `reaches`, `state_stored_in`, `lend_map`, `resolve`, the
+  identity read, `overlaps`, the fs binder) the answer is in the LINES, so rc is free to mean
+  completion: scaffold-declared errexit ON plus "0 = ran to the end" IS the witness (an abort
+  or a failed `printf` on a short write lands non-zero; `rul-oracles-always-return-zero`). No
+  inserted sentinel; the `nothing-else` records remain the authored totality acts. Per-body
+  capture (never a shared stream) and byte-level "exactly one line" remain scaffold duties.
+  Retracts §6's "owed the sentinel" for `resolve`/identity.
+- **`prop-predict-compile`** [PROPOSED; answers the human's "treat each expected-last-command
+  as the expected-return and track it at runtime"] — static and runtime halves, coherent:
+  1. STATIC (the tracer, which already walks completing paths for `predicts` records): find
+     every COMPLETION POINT and its ANSWER STATEMENT — the last statement of a path, or the
+     statement before a bare `return`/`return $?`; an explicit `return N` is itself the answer.
+     Compounds (`case`, `if`) recurse into arms; a helper call as the answer recurses into the
+     helper's body (custody permits); a loop as the answer predicts ⊤ unless followed by an
+     explicit `return`. The answer statement must be STATUS-MEANINGFUL: world-dependent (an
+     external command, a `test` on world state or on a variable, a command substitution) or an
+     explicit `return`; a status-flat tail (`printf … >&2`, `:`, `true`, an assignment) makes
+     that arm predict ⊤ with a loud pre-network hint naming the line — never a refusal, the
+     book still runs. This is attribution to "the author's intended answer", NOT to the tool.
+  2. COMPILE (probe artifact only; predicts never run at apply, `28M:rul-predict-feeds-plan-
+     never-apply`): scaffold-declared `set -e` for the body; each simple-command answer wrapped
+     `set +e; <answer>; __dorc_rc=$?; set -e` (the toggle is what lets a non-zero answer be
+     captured under errexit without aborting); then the completion record
+     `printf '<nonce> predict-end <arm-id> %s\n' "$__dorc_rc" >>"${DORC_SINK}"; return "$__dorc_rc"`.
+     A helper answer writes its own record at its completion points before returning, so the
+     caller aborting on the helper's non-zero return afterward is harmless (the record is
+     already written). Everything else in the body runs under errexit: an unguarded failing
+     step aborts before any record.
+  3. RUNTIME (the scaffold): a predicted status is TRUSTED only if the arm's completion record
+     arrived, its rc equals the shell's exit status for that body (a compile-bug tripwire), and
+     rc < 128 (signal deaths, 141 included, are the flap class, never predictions). Otherwise
+     the site's status is ⊤: no fold, both branches live, the site runs, hint attached.
+  Failure classes covered: errexit abort mid-body (no record ⇒ ⊤) · nounset trips (same) ·
+  status-flat trailing statement (static ⇒ ⊤) · pipeline tails (pipefail pinned; per-host
+  handshake) · signals/timeouts (⊤) · command-not-found from the answer itself (a faithful
+  prediction under the shell-state principle's identical PATH; aid note). Residue, attributed
+  not silent: a world-dependent trailing statement the author did not mean as the answer, and
+  every wrong mock — both are authorial judgments the record's arm-id names by line.
+- `acct-gradual-enhancement` — `dpkg__predict() { dpkg "$@"; }` compiles and folds with zero
+  ceremony; a `case` with glob-declines likewise (a decline arm's record still witnesses
+  completion; its status is unread); a trailing debug print costs that arm its fold and earns
+  a hint; helper steps that fail cost the fold at probe with a hint. Nobody writes sentinels or
+  `return 3`; the only authored records are the existing `predicts …` ones.
+- `acct-kbackflips` — the compile lives inside the probe artifact, the surface `27C` §5
+  already licenses for private mechanics; the author's file and `dorc strip` are untouched, so
+  off-ramp value is whole; the transform is status-preserving on completing paths and only
+  ADDS aborts where the author's sh would have continued after a failure; the record is
+  Dorc-owned scaffolding, not speech (nonce-minted, unforgeable by authored text, closed
+  grammar distinct from `predicts`); the rc cross-check bounds compile bugs; hostsim can inject
+  an abort at every statement. Not free (the human: backflips never are), but the danger it can
+  introduce is bounded to "a measurement refused", never a wrong measurement trusted.
+- `nack-xtrace-as-witness` [conductor] — `set -x` with a nonce `PS4` would witness the last
+  executed statement without editing bodies, but xtrace is pinned to fd 2 and inseparable from
+  the tool's own stderr in POSIX sh (violates `law-control-never-shares-a-lane-with-freeform`
+  as a hard rule), its format varies by shell, and it prints expanded argv (secret taint).
+  Set aside.
+- `prop-verdicts-run-errexit-off-in-both-lanes` [PROPOSED; the coherent v0] — the guard at
+  apply is `( check ) || original`, an errexit-ignored context; an inner `set -e` is ignored
+  there by bash's documented behaviour and ~SUSPECT by dash; the compiled form cannot enter the
+  reviewed plan (`rul-ternary-verdict`'s strip-only; the attention floor). So for identical
+  construction verdict bodies run with errexit declared OFF in probe and apply alike, and the
+  A1 class (a failed `cd`, then the check in the wrong world) stays the quality bar's
+  (`aid-lint-verdict-body-mechanicals`). Door to ON: the floor measurement — does `dash`
+  honour an explicit `set -e` inside a subshell in an AND-OR list? If yes and bash-as-sh hosts
+  are accepted as outside the floor, revisit.
+- `rul-authored-set-in-bodies-is-out-of-dialect` [PROPOSED, follows §8's principle] — an
+  author's `set`/`trap`/`exit`/`&` inside a role body is a dialect refusal: Dorc declares the
+  options; a body that wants fail-fast on a step spells `|| return`/`|| { decline; }`.
+
+## §10 — state at close (2026-09-05, second fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
   return-zero` · `rul-three-rc-regimes` (acked as holding) · `nack-predict-off-rc` ·
-  `ack-names-are-literal-narratives` · the oracle shell-state principle (substance) · the
-  cleanup-pass-later directive · the Host-unblessing lean.
+  `nack-attribute-to-the-tool` · `ack-names-are-literal-narratives` · the oracle shell-state
+  principle (substance) · the cleanup-pass-later directive · the USER_STORY-as-a-story-step
+  lean · the Host-unblessing lean · `lean-compile-in-completion-sentinels` (conditional).
 - PROPOSED, each awaiting one typed line: the three shapes as written in §2 (S1 near-typed;
   S2 the placeholder species; S3 the filtered meet) · `rule-inherit-or-top-with-sentinel` (and
   the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
-  `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` · the sentinel
-  for `resolve` and the identity read · `prop-status-attribution-by-static-shape` and its
-  escape record · ruling 3's transport/sparing split · the tenure-not-in-the-value exclusion.
+  `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` ·
+  `fnd-regime-three-needs-no-compiled-sentinel` (retracting the resolve/identity sentinel) ·
+  `prop-predict-compile` (supersedes §8's `prop-status-attribution-by-static-shape`) ·
+  `prop-verdicts-run-errexit-off-in-both-lanes` · `rul-authored-set-in-bodies-is-out-of-dialect`
+  · ruling 3's transport/sparing split · the tenure-not-in-the-value exclusion.
 - OPEN: `open-bound-token-same-across-chains` (committee-speech turn; read 28M/28K/30J first)
   · whether r31 builds the context-slot product or reserves it (the sibling's, with the human)
-  · `check-refutes-sense-flip` and `check-predict-body-death-reads-as-tool-rc` (as-built greps)
-  · the errexit-in-exempt-contexts floor measurement · the enhancement-curve survey.
+  · `check-refutes-sense-flip` (as-built grep) · the dash inner-`set -e` floor measurement ·
+  the enhancement-curve survey · the USER_STORY refresh (human-acked, as a story step).
 - Successor: resume from this section; the transport lineage resumes from `26Ob` §15 and
-  becomes `311`; `310`/`ROADMAP` are the sibling's.
+  becomes `311`; `310`/`ROADMAP` are the sibling's; the cleanup pass is §7.
