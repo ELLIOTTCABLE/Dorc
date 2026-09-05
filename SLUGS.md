@@ -94,6 +94,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26M:ack-carrier-form-neutrality
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:24 — — adjacent-book dispatch (`ssh h <web.sh`) and
+- cited: 26Ob (1)
 
 ## 26M:ack-command-position-constant-prop-owed
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:62 — — `$SSH`/`$SUDO`-style
@@ -452,7 +453,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## arc-r26-revival
 - defined: —
-- cited: 26O ROADMAP Research/README (3)
+- cited: 26O 26Ob ANALYZER-NEEDS ROADMAP Research/README (5)
 
 ## oracle/CLAUDE:argparse-is-the-vouch-typechecker
 - defined: spike/crates/oracle/CLAUDE.md:18 — — the oracle author's own argparse is the
@@ -3184,6 +3185,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30X 30Xa 30Xd (6)
 
+## front-embedding-contracts
+- defined: —
+- cited: 26N 26Ob (2)
+
 ## fruit-emit-hygiene-paste
 - defined: —
 - cited: 30Qe (1)
@@ -4239,7 +4244,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## nack-ship-both-forms
 - defined: —
-- cited: 26N 26Ob (3)
+- cited: 26N 26Ob (4)
 
 ## core/CLAUDE:names-are-not-referents
 - defined: spike/crates/core/CLAUDE.md:59 — — a coordinate names a CELL; two coordinates may name
@@ -4545,6 +4550,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## aid/CLAUDE:ownership-is-declaration-union
 - defined: spike/crates/aid/CLAUDE.md:242 — (`28L` loom-final; supersedes the old
 - cited: 307a (1)
+
+## park-oracles-knowing-stdin-stdout
+- defined: —
+- cited: 26N 26Ob (3)
 
 ## park-re-parse-carve-explainer
 - defined: —
@@ -5043,7 +5052,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:receipts-not-a-cache
 - defined: spike/CLAUDE.md:591 — (rec-5; née probe-tape-not-a-cache) — receipts are
 - aka: probe-tape-not-a-cache
-- cited: 30Va KNOBS (2)
+- cited: 26Ob 30Va KNOBS (3)
 
 ## recommend-split-routing-from-file-ontology
 - defined: —
@@ -5517,7 +5526,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## route-conditional-tail
 - defined: —
-- cited: 26Ob 27B 27C 27J (7)
+- cited: 26Ob 27B 27C 27J (8)
 
 ## route-probe-in-context
 - defined: —
@@ -5877,6 +5886,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/verify/CLAUDE:rul-derivation-digest-is-an-alarm-not-trust
 - defined: spike/verify/CLAUDE.md:46 — — the recorded source digest detects
 
+## rul-descent-implies-manipulation
+- defined: —
+- cited: 26Ob KNOBS (4)
+
 ## 28L:rul-diagnostic-surface-renders-through-weft
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:167 — (conductor, 2026-07-29, after
 
@@ -5890,7 +5903,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dimension-owned-compose-ops
 - defined: —
-- cited: 26O 26Ob 27C 27D (5)
+- cited: 26O 26Ob 27C 27D ANALYZER-NEEDS (6)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -5899,7 +5912,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-divergence-proceed
 - defined: Research/notes/23O-round-23-closeout.md:230 — — apply-time divergence is proceed-and-flag; no abort, no strict
 - defined: spike/CLAUDE.md:73 — — apply-time divergence from plan prediction:
-- cited: 239 23A 23Ia 23Ib 26B 26C 30P 30Vb AID-NEEDS (11)
+- cited: 239 23A 23Ia 23Ib 26B 26C 26Ob 30P 30Vb AID-NEEDS (12)
 
 ## rul-dollar-zero-authority-spelling
 - defined: —
@@ -6459,7 +6472,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-no-hopeful-transfer
 - defined: spike/CLAUDE.md:420 — (human-typed 2026-09-04) — NO admin data transits any
-- cited: 26Ob (7)
+- cited: 26Ob ANALYZER-NEEDS (9)
 
 ## rul-no-mutating-guards
 - defined: Research/plans/271-block-settle-rulings-ledger.md:146 — (task 10b; 2026-07-10; TYPED, emphatic)
@@ -6614,7 +6627,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-probe-mutation-ownership-split
 - defined: spike/CLAUDE.md:118 — (WELDED, human-typed 2026-07-17;
-- cited: 26C 27C 27D 30P ORACLE_PROVIDES (7)
+- cited: 26C 26Ob 27C 27D 30P ORACLE_PROVIDES (9)
 
 ## spike/CLAUDE:rul-probe-writes-only-what-it-owns
 - defined: spike/CLAUDE.md:183 — — controller-generated probe plumbing may
@@ -7479,7 +7492,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## seam-payload-forms
 - defined: —
-- cited: 26N 26O 26Ob 310 ROADMAP (6)
+- cited: 26N 26O 26Ob 310 ANALYZER-NEEDS ROADMAP (9)
 
 ## seam-per-host-partition
 - defined: —

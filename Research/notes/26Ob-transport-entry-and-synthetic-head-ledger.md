@@ -682,6 +682,9 @@ The human's three hard things, worked. Everything here is [PROPOSED] unless mark
   disturbances are claimed by local oracles such as `useradd`, and the residue is
   same-host drift under the WONTFIX); Host is the one dimension whose "which world" is
   external, which is why `260` treated it differently already.
+  <!-- /* superseded by §14 `cor-standup-witness-licenses-bare-line-elision` (2026-09-04,
+  human-caught): the apply STANDUP may enter the elided world through the same entry form
+  and run the witness; the guard ceiling at bare lines does not hold. */ -->
 - `res-aliases-and-clones` [PROPOSED] — different spellings that measure as one machine
   do not merge at v0 (`FORFEITS:forfeit-no-host-merging`): they probe twice and share no
   facts; a why-line may say so, never a license. Cloned machines that present identical
@@ -1166,3 +1169,361 @@ here is threaded yet.
   `ack-guards-reach-elisions-witness` as a standing invariant once typed into a plan; the
   `writes-only-what-it-owns` run-scoping reading; the two-contracts framing as a
   horizon-declaration rule.
+
+## 14-the-r31-prep-continuation-sitting
+
+2026-09-04, later the same day; Fable design-duck, the human present. Grades as above.
+Conduct typed this sitting: design documents may be read freely; code only through a
+scout, never hunted; early-r26 documents are SUSPECT on current direction; as-built
+informs build sizing only, never the design.
+
+- `cor-standup-witness-licenses-bare-line-elision` [CORRECTION, human-caught] —
+  `fnd-elision-needs-a-witness-a-guard-does-not` and
+  `res-two-identity-tiers-map-onto-two-dispositions` over-claimed. The apply STANDUP may
+  enter every world the plan elided in, through the same entry form and the same consent
+  the probe used (`27C` apply-lane entry; `30W` §4's witness at apply standup; `26M`'s
+  marker-free witness half), run the identity read once per placeholder, and compare
+  tokens; a mismatch is integrity (stop / re-plan), never a verdict input. So a bare
+  `ssh h cmd` site elides on the probe's facts under one placeholder, witnessed at
+  standup. The guard ceiling holds only where apply entry is impossible, which is exactly
+  where probing was impossible, so nothing was elided there. Not TOCTOU creep: one read,
+  one boundary, integrity-consumed; creep would be a re-witness per elided site or a
+  freshness window. Residue after the witness with no in-book cause is the same horizon
+  as same-host drift.
+- `ack-stdlib-walls-are-value` [TYPED] — narrow stdlib dependencies falling out as walls
+  is a good thing (authority lands with the knowledgeable); the minimal Host/Boot reads may
+  be dumb-as-rocks, enough to validate the machinery on synthetic hosts.
+- `ack-less-elision-from-kernel-work-is-positive` [TYPED] — kernel work that stops
+  things eliding is usually product improvement; the value is bought back by very-deferred
+  work (stdlib authorship, narrow opt-ins, hints and lints).
+- `lean-metaorchestration-consent-flag` [LEAN; explicitly unruled; post-r31] — the
+  survival flag's old semantic is likely dead as named; a spiritual successor is probably
+  owed ("yes, I intend Dorc as a metaorchestrator: write code I did not author that steps
+  into my ssh remotes and re-uses my sudo authority"); without it, more walls, and the
+  product is a linter plus one-hop ssh plus straight-line elision. Options, defaults, and
+  consents punted past r31.
+- `ack-pools-are-the-admins` [TYPED] — set-valued resolution is the admin's; Dorc plays
+  no guessing games about how they address one machine.
+- `ack-cross-world-wall-is-the-floor` [TYPED] — a fired transit on `web1` walling
+  `web2`'s facts (names never separate) is intentional under safe defaults; a posture
+  option follows later (literal-hostname comparison, or trust-IPs with
+  expect-route-from-controller and DNS resolution).
+- `nit-batching-key-carries-entry-definition-identity` [human nit; conductor read] — E
+  must key on the funcenv identity (`28Q` P1's DefinitionId) of the entry form; two
+  implementations of `ssh__enter` never share an E. Conductor: the entry-chain half is
+  funcenv's for free; the VALUE namespace (what `web1` denotes) is the lent kind's, by
+  name, answered by that kind's owner. Both hold. A ⊤ vantage under a silent definition
+  identifies with nothing across definitions and is safe within one.
+- `fnd-batching-key-is-syntactic-wall-is-rekeying` [PROPOSED; simplifies
+  `res-batching-is-derived-not-assumed`] — drop conjunct (ii): batch by (peeled spelling ×
+  vantage × entry chain with DefinitionId). The resolution cell is the Host index-value
+  cell's backing (⊤ until a Host owner declares stores); a running mutator between two
+  same-spelled transits re-keys the lower one to a fresh unmeasured placeholder by
+  `30W` §4's one rule. Monotone with the settle loop; answers `hard-thing-one` without any
+  probe-time proof.
+- `fnd-entered-arm-holds-a-value-plane-object` [PROPOSED; shape-critical for the r31
+  slot] — the Entered index-value holds a value-plane object, never a string: captures
+  (`ip=$(…)`; `ssh "admin@$ip"`) will flow into destinations, and sharing a placeholder is
+  value-flow equality.
+- `fnd-token-carriage-is-orthogonal-to-the-slot` [PROPOSED] — the slot binds a
+  placeholder to an opaque token; where the token travels from the probe invocation to the
+  apply invocation (the plan head; the transport's own memory, e.g. known_hosts) is
+  transport or plan-IR, never a receipt (`receipts-not-a-cache`).
+- `fnd-below-a-fired-transit-three-rungs` [PROPOSED; walked on the patch-day book] —
+  honest mode: everything below the transit guards (coarse in position; invariance lines
+  unconsulted). Under the survival flag: boot-invariant cells survive on claims through the
+  filtered meet (`30W` §7's render), boot-keyed cells guard, no net. Fusion: a re-witness
+  after the transit adds the net, never the license. Across worlds, honest mode walls other
+  names too; only differing referent-transparent tokens under the flag spare them.
+- `fnd-dorc-owned-admin-transit-hits-three-typed-rules` [PROPOSED] — every route to a
+  Dorc-owned transit at an ADMIN line meets a typed rule: `dorc:ssh` in a book
+  (`ack-prefix-door-scoped-to-off-ramp-surfaces` closes the door for books; `274` §7);
+  fusing bare `ssh` lines under a posture flag (`KNOBS:kBACKFLIPS`: login-shell fidelity is
+  not identity relocation); a parallel witness session synced by synthetic plan lines
+  (`27C:route-conditional-tail`'s NACK, unless the head's line-budget exception covers
+  it). What such a transit buys is the net, pool landing, fewer logins, and per-leg sever
+  handling, never the license. `res-apply-side-is-the-fork` therefore leans (iii),
+  probe-only, with the CLI head the one Dorc-emitted transit; the third route is the one to
+  watch.
+- `open-monotonicity-under-placeholder-merge` [builder-tier check, not a sitting] —
+  whether the settle loop's grow-only proof survives placeholders that merge when a wall
+  between them elides; the `26C` §7 quiet-welding audit is the instrument.
+- `lean-witness-is-a-budgeted-backstop` [LEAN, human; near-typed] — the witness does not
+  try to close TOCTOU; it is one carefully-budgeted backstop against two catastrophic
+  modes: a plan re-run a week later against a newly-provisioned instance by accident; and
+  outside-Dorc churn Dorc was not taught to know about (the Primary Orchestrator moving
+  boxes, identities, transports, routings between plan and apply — the dorc-as-child cell;
+  no specific shape in mind). NOT a per-elision identity re-check at every point a plan
+  might have elided.
+- `lean-no-fail-fast-after-walk-away` [LEAN, human, explicitly unsure] — once the first
+  mutation is dispatched, proceed-and-flag: nothing can rank a half-complete step against a
+  finished run resting on wrong assumptions halfway through, so the leavings are
+  performance and annoyance ("if critical, the admin is watching and can stop it; if not,
+  stopping 30 minutes of work after 5 with half the infrastructure down over an ephemeral
+  wrong rc is worse"). Probably wants an admin option someday.
+- `cor-no-per-elision-rewitness-was-proposed` [clarification of the conductor's own
+  words] — nothing above proposes re-checking identity at elided sites; the only mid-book
+  re-witness anywhere in the corpus is `30W` §4's "after every fired index disturbance",
+  which on bare lines cannot run and which the conductor described only as fusion's
+  value-add. Per-elision re-checks and freshness windows are the TOCTOU creep the
+  correction above fences.
+- `fnd-two-witnesses-at-artifact-boundaries` [PROPOSED; amends `30W` §4 in the rewrite] —
+  exactly two witnesses, both at artifact boundaries, both marker-free: the STANDUP witness,
+  before the first mutation, which may ACT (stop, re-plan — the fail-fast window is open
+  and stopping costs nothing); and the FINAL-VERIFY witness, after the apply, which may only
+  NARRATE (receipt and `dorc why`: "the target changed identity during the apply; the
+  survivals below line 6 rested on <author>'s claim"). No mid-book witness that acts:
+  under `nack-ship-both-forms` an elided line cannot be un-elided at runtime, so a
+  mid-book mismatch has only stop (fail-fast after walk-away) or proceed-knowingly-wrong,
+  and `rul-divergence-proceed`'s "no second-guess layer above guards" already forbids the
+  acting form. Drop "after every fired index disturbance" from the acting witness; keep it
+  as narration. The "admin option" is the existing honest-versus-flag choice; the flag's
+  plan-time disclosure gains one line: "survivals below a transit that fires rest on
+  <author>'s claim with no runtime check".
+- `hor-outside-churn-during-apply` — outside-Dorc churn WHILE the apply runs is the
+  declared horizon; the standup witness bounds it to "before the apply began". Where a
+  Primary Orchestrator promises quiescence to a chunk it embeds is
+  `26N:front-embedding-contracts`, still needing investigation; no shape is asserted here.
+- `lean-transports-are-dot-tier` [LEAN, human; "don't change anything yet"] — treat
+  commands with an entry form as the orchestrator's domain, excluded from `kBACKFLIPS` on
+  the `.` model: reserve the right to munge what the line CARRIES under a sh-semantics
+  promise, never a promise of untouched bytes. Conductor: this is required, and typed
+  already in substance — `ack-carrier-form-neutrality` × `kHALVES` means the inline
+  payload form must take guards, which are byte edits inside a quoted string (`26M`'s
+  buys-list, "guard-parity at dispatch sites"; its v1 whole-or-nothing render punted it).
+  Lives at `310:seam-payload-forms`. It does NOT entail fusion: the rewritten payload still
+  rides the admin's own `ssh`.
+- `fnd-no-correctness-requirement-for-fusion` [PROPOSED; the hunt for the half-remembered
+  forcing function] — candidates checked and each found to be a value-add or a cost, never
+  a requirement: mid-book re-witness (withdrawn above); pools (the admin's); per-leg sever
+  versus remote 255 (the admin's recognised idiom); day-zero sites below a creator
+  (availability; guards enter after it ran); live first contact (the admin's `-t`);
+  identity-by-construction in one session (the standup witness replaces it). ~SUSPECT the
+  remembered shape is the pivot strawman's own heredoc form, where one tunnel is the
+  ADMIN's spelling and Dorc's job is the interior rewrite. The tunnel count is the admin's
+  spelling; converting the argv form into one session is `kBACKFLIPS-compile-to-fit` and
+  `26M`'s nack two. Lean: decline fusion; `res-apply-side-is-the-fork` stays (iii).
+- `fnd-scaffold-at-standup-makes-remote-guards-cheap` [PROPOSED; dissolves the "ugly"
+  objection] — the naive remote guard is a per-guard full standup (the check body cannot
+  ride argv or a scaffold heredoc, so it streams from a controller scratch file), which
+  pushes every argv-form pivot book into the multipart form. Instead, the apply-standup
+  entry Dorc already makes for the witness lays that world's scaffold once (every guard
+  body the plan needs there, materialised and cksum-verified under the owned scratch);
+  each guard is then one plain entry with a path argument
+  (`( ssh__enter web1 sh /dorc/<nonce>/guard-8.sh … ) || <the line>`), failing safe to the
+  admin's line when stripped; final-verify removes it by manifest and narrates; a sever
+  leaves disclosed residue. Nothing resident past the run, no process, no mediated admin
+  line, one-line guards, logins multiplexed by the admin's own ssh configuration. Fusion's
+  remaining buys are one login instead of N, a real per-leg rc, and landing once for pools.
+  DEMOTED same day to a fallback (large bodies; wrapped guards): the primary shape is the
+  next entry.
+- `fnd-dot-tier-puts-guards-inside-the-carrier` [PROPOSED; the attention product's own
+  argument for `lean-transports-are-dot-tier`] — under the lean a remote guard rides INSIDE
+  what the admin's transit already carries, never a second tunnel: in the heredoc form the
+  payload is a book fragment in the remote world and the guard is an ordinary in-sequence
+  guard there (a front-lifted preamble at the payload's top defines the bodies); in the
+  argv form the remainder is a one-line payload and the ssh oracle's fidelity claim
+  (`dorc:sh -c "$*"`) licenses rewriting the join to `sh -c '( check ) || <join>'` —
+  payload text through the declared fidelity function, the licensed side of `26M`'s
+  inflection line, using only the edit classes `30P` enumerates for local plans. A transit
+  whose whole payload elides elides whole (pure apart from the entry's vouched residue).
+  Walked on a realistic book (heredoc to `web1`; local `scp`; heredoc back; `curl`): day-N
+  default render shows the wall, the second tunnel with one interior guard, and the curl;
+  the first tunnel vanishes; Dorc-owned apply connections = the standup witness, once.
+  The two-tunnel guard render exists only WITHOUT the lean. Wrapped guards inside payloads
+  inherit the existing snapshot-blob ugliness (not a transport cost).
+- `ans-nonce-path-is-guaranteed-by-refuse` — the scaffold root is a controller literal,
+  the nonce minted at plan time, the path carried in the plan's text; apply standup
+  exclusive-creates exactly it or refuses pre-mutation; final-verify removes by manifest;
+  stripped, a missing path fails the check and falls through. Guaranteed by the refuse,
+  not the nonce.
+- `ans-prompt-count-under-the-lean` — Dorc adds one login per world at probe (the
+  standup) and one or two at apply (witness; final-verify when there is something to
+  remove or narrate); guards add none; every elided transit REMOVES one of the admin's own
+  logins. `260`'s `ControlMaster=no` pin still rides an existing master from the admin's
+  config, so under `ControlMaster auto` Dorc's entries cost zero extra prompts; the
+  ssh-ident / no-agent cohort pays the small constant. [human: an ick, not a nack.]
+- `ack-transits-carry-guards-never-take-them` [human-stated 2026-09-05, "mostly
+  convinced"; conductor-confirmed] — a transit is never the subject of a guard, only the
+  carrier of guards; its own outcomes are run (as carrier), elide whole (everything it
+  carries elided ⇒ pure apart from the entry's vouched residue), or wall (opaque
+  remainder). The outer-guard form is DOMINATED on tunnel count (1 versus 1 converged,
+  2 versus 1 diverged) and never chosen. Edges: TRANSFER verbs (`scp`/`rsync`) have no
+  interior, so a guard is a tunnel per site — but authored inside the oracle's body on its
+  vouch and declinable, never engine-minted; today they wall.
+- `fnd-dorc-tunnel-count-is-o-worlds` — Dorc's own tunnels are O(distinct worlds): one
+  standup per world at probe, one witness (plus optional final-verify) per world at apply;
+  never O(transit sites). Bounded by twice the admin's own distinct-destination footprint.
+  Bastion `MaxStartups` throttles the parallel standups onto the bounded retry
+  (`drop-bastion-pacing`); a `MaxSessions 1` bastion is the contention cell, a link
+  capability (`26O` §2's sibling-session column).
+- `fnd-wrapper-self-effects-three-classes` [refag deliberately broken at the human's
+  direction, 2026-09-05; from training data] — a middleman's own effects sort into:
+  (1) RESIDUE no book line consumes (auth log, journal, `wtmp`/`lastlog`/`utmp`, history,
+  sudo iolog, `doas` persist, a `ControlPersist` master, `will-cite`, `nohup.out`,
+  `script`'s typescript); (2) STATE a later line consumes (`ssh` populating `known_hosts`
+  under `accept-new`; `sudo -n` refreshing the credential timestamp; `pam_mkhomedir`;
+  `pam_systemd`'s session scope; `ip netns exec`'s `/etc/netns` bind-mounts;
+  `arch-chroot`'s mounts; `systemd-run --unit` transient units; `ssh -R` listeners);
+  (3) PROVISIONING on first use (`gcloud compute ssh` keypair + metadata push; `az ssh`
+  certificate; `mise exec` auto-install; `nix shell` build; `docker run` pull; `salt-ssh`
+  thin dir; `mosh` server; `tsh` renewal). SHARPENING: `27C:rul-probe-mutation-ownership-split`'s
+  "entry self-effects are the author's vouched residue" reads NARROWLY as class (1) only;
+  classes (2) and (3) are the wrapper's OWN establishes, modeled in the wrapper's oracle
+  (`is_converged` / `disturbs` on the wrapper family) or whole-line elision is unsound
+  (the `ssh web1 true` connection dance elided ⇒ the later `scp` fails on first contact).
+  Probe entries stay clean of (2)/(3) by construction (`sudo -n`; strict host-key checking
+  is the default; `accept-new` is the admin's consent).
+- `rul-transit-guard-is-dominated-by-construction` [PROPOSED restatement of
+  `ack-transits-carry-guards-never-take-them`, obviously-true form] — a guard is a runtime
+  elision; for wrapper W over payload P, skipping the whole line skips W's entry and all of
+  P. P's runtime elision is available INSIDE the carrier at no extra connection, landing by
+  the admin's own flags (no entry-siting vouch needed). W's entry, for any W that may have
+  an entry form, reconciles its own class-(2)/(3) state on the way in, so running the line
+  as carrier already performs W's reconciliation; skipping it saves one entry's residue
+  while the outer check spends one entry. Never cheaper, never sounder, +1 tunnel diverged
+  ⇒ never emitted. W's own convergence gates ONE plan-time decision, whole-line elision,
+  where its establishes are ordinary facts walled by up-book mutators. Entry-less
+  dispatchers (`at`, `sbatch`, `tmux new`, `nohup &`) are never entered; an authored
+  line-level verdict there is a LOCAL check on the dispatcher's own state, no tunnel.
+- `ex-transports-that-fall-from-elide-to-carrier` [the human's exercise] — real
+  transports an admin wants elided that must fall back on an up-book happening, each
+  falling to run-as-carrier-with-interior-guards, never an outer guard: `gcloud compute
+  ssh` below a `project-info add-metadata ssh-keys=` rewrite; `docker run` below
+  `docker system prune`; `mise exec` below `mise uninstall`; `ssh` itself below
+  `ssh-keygen -R` or below a reimage that rotates the host key (the `known_hosts` fact
+  keyed by the remote identity; the witness's territory in a local file's clothes).
+- `aid-entry-residue-disclosure` [candidate aid row] — the plan header's authority
+  disclosure states how many entries Dorc makes and that they appear as logins; Dorc's
+  `sudo -n` probes extending the admin's sudo window gets its own sentence. Aid-plane,
+  never a guard.
+- `ack-shape-of-the-minimal-transport-model` [TYPED 2026-09-05, "I'm convinced, this is
+  a good shape"] — the human acks the preceding three exchanges: the standup witness
+  licensing bare-line elision; no fusion; transports carry guards and never take them; the
+  three self-effect classes and the residue narrowing; the by-construction restatement.
+- `rul-descent-implies-manipulation` [TYPED 2026-09-05, the human's words, near-verbatim]
+  — "we need to manipulate anything we can recognize as sh, as sh; it is meaningless to
+  analyze anything we can't modify; therefore the prior decision that we could ANALYZE
+  inside descent-authorized argv/stdin bodies must also become a contracted ability to
+  MANIPULATE them." A principled but big step: the same manipulation as the outer script,
+  the same mental model for users; pitfalls are parsing/construction nits and cross-shell
+  specifics; "worth it". Slightly owed from prior sittings, reached by a different path.
+- `fnd-oracles-consume-stdin-they-never-introspect-it` [PROPOSED; answers
+  `26N:park-oracles-knowing-stdin-stdout` YES] — oracles get no stdin/stdout introspection
+  (sh cannot say heredoc-versus-pipe portably; the engine already knows); the engine runs
+  the predict body UNDER the site's geometry and the body's own reads, redirects, and
+  delegations ARE the claims (`cat` reads; `"$@"` inherits; `"$@" </dev/null` severs;
+  `env dorc:sh -s "$@"` declares stdin-as-code). Engine obligations, exactly: (1) a
+  per-site STDIN VALUE (heredoc bytes with expansions sited; a file name whose contents are
+  world-state; the producer's PREDICTED stdout in a pipeline; ⊤); (2) stdin/stdout as a
+  DIMENSION in the peel fold like ρ (inherited / severed / replaced-by-value / ⊤; innermost
+  wins), crossing links on `26O`'s byte-clean-stdin capability; (3) checks fed by predicts,
+  never by real producers (a pipeline guard duplicates only predicts; the whole pipeline
+  runs on fall-through).
+- `srv-stdin-stdout-idioms-four-patterns` [the survey] — (A) stdin-as-code: heredoc-to-ssh
+  descends as a Host-world fragment; `curl | sh` is the canonical blind act (⊤ producer);
+  foreign dialects (`psql -f -`, `nft -f -`) delegate; one `case` arm per reader.
+  (B) stdin-as-data into a mutator (`| sudo tee`, `cat >f <<EOF`, `crontab -`,
+  `uci batch`, `chpasswd`, `tar -xf -`): the verdict body reads stdin as the tool does and
+  compares against a read; heredoc-WRITE sites elide-or-run, never guard (the guard would
+  print the config twice; the emitter's heredoc refuse-home stands for that reason);
+  declining is often right while the footprint is still the value (`tar -xf - -C /dst`
+  disturbs the subtree; `chpasswd` declines forever). (C) stdout-out: existing law (status
+  trichotomy; capture ⊤ until r26; redirect routing + binder; `predicts stdout`); `xargs`
+  duplicates the guest ⇒ not an entry form; a member loop under a predicted producer, Open
+  under ⊤; decline at v0. (D) wrapper stdin policy (`sudo` inherits; `ssh -n` severs;
+  `docker exec` severs unless `-i`; `systemd-run` severs unless `--pipe`): the wrapper's
+  predict spells it as the redirect on its guest, one per arm — turns the
+  `docker exec c sh <<EOF` silent-EOF bug into a plan-time hint for free; the pty (`-t`) is
+  the one non-sh-native piece and stays `26O`'s lend.
+- Riders held for the human, not builders: heredoc/file values reach the probe lane under
+  the argv-value rule (`rul-no-hopeful-transfer`: Must-identified world, the body
+  Must-reads); secrets inside heredocs = the quarantined topic, flagged only; herestrings
+  and process substitution = bash books; expansion siting is the hard parser work and
+  stays at `310:seam-payload-forms`. Pitfall list for the quality bar: `$(cat)` strips
+  trailing newlines; `sudo -S` partial-consumes; `use_pty` puts a pty on stdin's path;
+  `<<-` tab stripping; CRLF.
+- `ack-stdin-survey` [TYPED 2026-09-05] — the human acks the survey turn whole, with the
+  four observations below.
+- `ans-stdin-as-code-license-chain` [confirmed understanding] — three conditions: the
+  innermost READER's matched arm delegates to `dorc:sh` in a stdin-reading shape (`-s`, or
+  bare); every wrapper between the value and the reader INHERITS stdin on its matched arm
+  (no `cat`/`read` before the guest, no `</dev/null`, no pipe into the guest) and the
+  link's byte-clean-stdin capability holds (`-t` ⇒ ⊤); the descent lands in the reader's
+  world (the peel's lends). `sh -c '…' <<EOF` is argv-code whose interior reads stdin as
+  DATA. Descent = manipulation under `rul-descent-implies-manipulation`.
+- `fnd-elide-not-guard-is-placement-not-safety` [PROPOSED; answers the human's ask] — no
+  check found that is correct at probe yet unsafe in sequence; a guard is never less safe
+  than elision, and a non-idempotent command WANTS the guard; the heredoc-write refusal
+  was attention (duplication), not safety. The real class is check-tax/placement ("answer
+  once in parallel at probe; never in-line forever"), which the matrix cannot say today
+  (`kCONTRACT-RUNGS`: unmarked = guard-and-elide; opt-down reserved, none minted). Cheapest
+  spelling, on the `test -t` precedent: a controller-decided lane fact the body tests
+  (`[ "${DORC_LANE-}" = probe ] || return 2`, NAME STRAWMAN), folded statically so the
+  engine emits RUN at guard sites, never a dead guard; engine-supplied value on the
+  `DREP_V1` precedent; off-Dorc unset ⇒ decline. The first opt-DOWN spelling; loses value,
+  never safety. Human-reserved: whether a variable at all.
+- `prop-single-shot-capture-into-r31` [PROPOSED; the human: "feels backwards"; conductor
+  agrees, +SURE better than yesterday's cut] — capture's single-shot half IS the
+  placeholder species for one value: `x=$(producer)` binds at probe by running the
+  producer's predict (a pure read with a `30D` stdout claim, lane 1), flows into Entered
+  index-values as a value-plane object, is walled by any mutator between binding and use
+  (`275`'s patrol), and is re-evaluated at apply standup so the witness can enter a
+  destination named mid-book. The capture line itself always runs (eliding it unbinds the
+  variable). None of `26B`'s concurrency holes apply to one binding at one probe. Pull it
+  into r31 as the kernel lane's tail after lane 1's stdout claims; it is the Measured
+  arm's first real consumer (retires `risk-measured-arm-built-blind`) and makes `26Oa`'s
+  first line stop being ⊤. The REACTIVE half (re-probing as values arrive) stays r26; the
+  `26C` §7 audit runs once, before the arm. `ROADMAP:arc-r26-revival`'s "capture starves
+  until 30D" line re-reads accordingly.
+- `park-xargs-as-stdin-member-loop` [parked exercise, not a sitting] — `xargs` is a
+  member loop whose member list is a value (the producer's predicted lines) rather than a
+  literal; it asks whether `30L`'s iteration axis can take a value-plane object, the same
+  question capture asks of the Entered arm. Common; worth minor attention later.
+- `nack-lane-decline-as-a-plan` [TYPED 2026-09-05; the human changed their mind three
+  times while typing] — NACK on encoding `fnd-elide-not-guard-is-placement-not-safety`'s
+  lane-decline spelling as a plan; it must not get built without thought. Lean recorded:
+  an AUTHOR cannot reasonably say "don't pay this check at apply" — that decides, for the
+  admin, a risk-class specific to their TOCTOU, timing, and architecture, uncomfortably
+  close to an engineer declaring some mutation "residue" for everyone; the contract should
+  stay LOW-RESOLUTION about timing with the admin; oracles are read-only, handle-or-decline
+  the world as it stands, expect no particular state handed to them, and are maximally
+  defensive; no case seen where ahead-of-time specialization is good for everyone else.
+  The check-tax returns to `KNOBS:kPROBING` (engine/admin economics), never an authored
+  surface.
+
+## 15-state-of-play-at-close
+
+2026-09-05, the sitting's fixpoint. Pointers only; content lives above.
+
+- TYPED this sitting: `lean-witness-is-a-budgeted-backstop` · `lean-no-fail-fast-after-walk-away`
+  · `ack-stdlib-walls-are-value` · `ack-less-elision-from-kernel-work-is-positive` ·
+  `ack-pools-are-the-admins` · `ack-cross-world-wall-is-the-floor` ·
+  `ack-shape-of-the-minimal-transport-model` (the standup witness licenses bare-line
+  elision; no fusion; transits carry guards, never take them; the three self-effect classes
+  with `27C`'s residue narrowed to class one) · `rul-descent-implies-manipulation` ·
+  `ack-stdin-survey` · `nack-lane-decline-as-a-plan` · `lean-metaorchestration-consent-flag`
+  (post-r31) · `lean-transports-are-dot-tier` (absorbed by the ruling).
+- PROPOSED, shaped, each awaiting one typed line: `fnd-two-witnesses-at-artifact-boundaries`
+  (amends `30W` §4) · `prop-single-shot-capture-into-r31` · `fnd-batching-key-is-syntactic-wall-is-rekeying`
+  · `fnd-entered-arm-holds-a-value-plane-object` · `fnd-token-carriage-is-orthogonal-to-the-slot`
+  · `fnd-scaffold-at-standup-makes-remote-guards-cheap` (fallback only) · the punt
+  (`lean-punt-transport-to-its-own-round`) with the r31 re-cut it implies: Host entry and
+  the measured-index witness move to the transport round; the `sudo`-case sink to lane 2;
+  `$*`/IFS to lane 1; capture to lane 3's tail; the "elide when converged" acceptance line
+  leaves with Host entry.
+- OPEN or parked: the `30W` §10 sitting widened by `q3`/`q8`/`q10`/`q11` (W-2, still the
+  one sitting before the re-key) · the argv-landing tracer model (W-3) · tenure's name ·
+  the security review (W-E) · fleet-is-a-book (W-C) · the cohort posture (`q9`) · the
+  sinkless record policy · live mode · the capability census (W-D) · `xargs` · `27C`'s
+  entry-form rule text against `ack-entry-verbatim-cannot-hold`.
+- DURABLE at close without further ack: this ledger; a scope pointer under
+  `KNOBS:kBACKFLIPS`; the superseded pointer on `26N:park-oracles-knowing-stdin-stdout`;
+  three `ANALYZER-NEEDS` rows (`an-stdin-value-per-site`, `an-stdin-stdout-peel-dimension`,
+  `an-single-shot-capture` at O).
+- DURABLE only after a typed ack, each: (1) `ack-punt-and-recut` — the transport round as
+  a ROADMAP row seeded by this ledger unpromoted, `310` rewritten per the re-cut, `28Q`
+  item 11 and the r31 gate text re-pointed; (2) `ack-two-boundary-witness` — `30W` §4
+  rewritten in place; (3) `ack-residue-reading` — one sentence beside
+  `27C:rul-probe-mutation-ownership-split`. The entry-form rule supersession waits for
+  the transport round.
