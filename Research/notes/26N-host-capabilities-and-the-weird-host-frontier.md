@@ -639,6 +639,9 @@ covers.
 - `park-oracles-knowing-stdin-stdout` — unruled: whether a predict body may speak for its
   tool's stdin consumption (the `uci batch` class) under refag; the census can derive stdin
   consumption only for `read` and for modelled commands whose predict body reads stdin.
+  <!-- /* superseded by 26Ob §14 `fnd-oracles-consume-stdin-they-never-introspect-it`
+  (2026-09-05): yes, by consuming it — the body runs under the site's geometry and its own
+  reads, redirects, and delegations are the claims; no introspection surface exists. */ -->
 - `park-re-parse-carve-explainer` — what `28Q:pin-ssh-entry-shape` carves and why the round's
   Q16 evidence grounds it.
 - `front-embedding-contracts` — NEEDS INVESTIGATION (human-ack; possibly a successor with
