@@ -1,0 +1,378 @@
+# 311a — Kernel-shape sitting: index-kinds (W-2), the rc law, and the oracle authoring surface
+
+> AI-authored LEDGER (Fable, design-rubber-duck sitting with the human, 2026-09-05; the
+> r31-prep session). Notes-tier. Grades: **[TYPED]** the human typed the substance ·
+> **[ACKED]** put and acked as read · **[LEAN]** the human's stated lean · **[PROPOSED]**
+> conductor synthesis awaiting the human's word · **[FOUND]** a finding, not a ruling.
+> Nothing is ruled unless TYPED or ACKED. Authority: root docs, `spike/CLAUDE.md`, the welds,
+> `plans/30W`, `plans/30T`, `plans/30U`, `plans/27C`, `notes/26Ob` outrank this. Scope: the
+> kernel-shape material of the pre-r31 sittings — the `26Ob:list-must-sits-before-kernel-work`
+> W-2 dig, the exit-status finding it surfaced, and the oracle authoring-surface law that fell
+> out. NOT transport: the `26N`/`26O`/`26Ob` lineage returns in its own round (probably `311`).
+> Kept deliberately shorter than `26Ob`; each section is one sitting-turn; append new turns as
+> new sections, keep §-last as the state at close. Where this ledger and `26Ob` overlap, `26Ob`
+> §15 carries the earlier state and this file the later.
+>
+> **A cleanup pass is OWED and not started** (human-directed 2026-09-05: ledger now, apply to
+> the existing docs later, in one pass): see §7 for the list. Nothing outside this file, the
+> two `26N` superseded notes, and the README map entry was edited this sitting. `plans/310` and
+> `ROADMAP.md` are the sibling conductor's and were left alone by direction.
+
+## §0 — one screen
+
+W-2 (the `30W` §10 sitting widened by 26Ob's q3/q8/q10/q11) reduces to three shape rulings,
+most of whose substance the human had already typed: the context slot is a map over
+index-kinds with no engine axis list (S1); index-values are value-plane objects carrying
+provenance, with a per-entry-chain placeholder as the new object (S2); worlds relate only
+through the compare chokepoint, never key equality (S3). The S1 exploration found that no
+compose operator is needed anywhere — the key is the entry chain, and every step toward `same`
+or `disjoint` is authored — and that two 27C rules (fs-view path concatenation; enumerate-every-
+dimension) should retire. `kind__overlaps` was ruled IN as a kernel generator (§4). Under it the
+sitting found a real hazard: `30W`'s `overlaps` put its knife on rc 1, the status errexit and
+every false test produce; the human then typed the rc law (§6): oracles always return 0,
+non-zero means erroneous and speaks nothing, knife-tier acts are records with a completion
+sentinel, convergence and predict stay rc-bearing because they have off-ramp value. §7 works
+`__predict`'s fail-safe; §8 records the human's oracle shell-state principle.
+
+## §1 — register touch-ups done this sitting, and one nit
+
+- `notes/26N` §7 and §10 carry superseded notes: the engine-side "simple words are identity"
+  carve is WITHDRAWN (`26Ob:ack-charset-is-tool-knowledge`); `park-re-parse-carve-explainer`
+  points at `26Ob` §1. `Research/README.md` maps `notes/26Ob` with a grep-first caveat.
+- `nit-no-sugar-over-stdlib-kinds` [TYPED 2026-09-05] — if index-kinds are kinds, they get
+  `sm.dorc.*` names in every spelling; no `user`/`fs`/`net-kernel` sugar for now. `30W` §1's
+  "short tokens remain as sugar" and item 7's "sugar preserved" read under this.
+- `note-transit-mechanics-are-open` [TYPED 2026-09-05] — the actual mechanics of transit are
+  fairly open (whatever is most idiomatic first; likely responsive to configuration and target
+  limitations; a which-comes-first question); the sh semantics and user attention matter, and
+  errexit and `$0` have repeatedly been painful to honor without stomping intent. So `26N` §2's
+  in-memory `eval` spelling versus plan.md's `sh -c "$(cat …)"` is not a question; leave both.
+- Host blessing [LEAN 2026-09-05] — the human leans that Host need not be engine-blessed if
+  transport routes through userspace (the stdlib ssh oracle); File stays blessed (sh semantics).
+
+## §2 — W-2 restated: the three shapes, where each stands
+
+- **S1 `shape-slot-is-a-map-over-kinds`** — the slot is a finite map from index-kinds to
+  index-values; an absent kind inherits the caller's value; the empty map is the ambient world;
+  there is no engine list of axes. Substance TYPED by `26Ob:ack-entered-kind-is-declared-never-host`
+  and §1's Host lean. Absorbs `30W` ruling 1 (`271:rul-axis-vocabulary-v1`'s reserved `host` has
+  nothing to be reserved in) and ruling 4 (dissolve the closed vocabularies). Vantage, if ever
+  needed, is one more kind; nothing to rule. The ρ component (env, cwd, options) rides beside the
+  map as an engine-owned builtin, not a kind (§8).
+- **S2 `shape-index-values-carry-provenance`** — Entered (a value-plane object that flowed
+  through a `lend_map`; never a string — `26Ob:nit-entered-arm-holds-a-value-object`) · Measured
+  (a placeholder `sk(E, K)`, "the value of kind K under entry chain E", until the standup binds it
+  to an opaque token) · Fresh (⊤). E = peeled spelling × vantage × the entry form's
+  `DefinitionId` (`26Ob:nit-batching-key-carries-entry-definition-identity`). PROPOSED, acked
+  in direction. The placeholder's binding state is a license input (an elision on an unbound
+  placeholder is guard-ceiling unless the standup binds it — `26Ob:ack-guards-reach-elisions-witness`).
+- **S3 `shape-worlds-compare-through-the-chokepoint`** — key inequality is `unknown`, never
+  `disjoint`; equal maps are the cheap `same` pre-filter. Substance TYPED (`26Ob` §10b
+  `hard-thing-two`; `ack-cross-world-wall-is-the-floor`). The filtered meet (per index-kind,
+  consult the cell's owner's store trichotomy invariant/keyed/⊤; skip invariant, compare keyed,
+  ⊤ ⇒ unknown; meet) is PROPOSED and additive. `30W` ruling 2 is the referent-transparent row of
+  the relation table; ruling 6 its authoring contract.
+- `30W` ruling 3 (`rule-incarnation-invariance-passes-the-razor`) — the sitting's reading
+  [PROPOSED, confirms `30W` §8]: an invariance line against a tenure/Boot kind is vouch-tier for
+  TRANSPORT (the cell is one cell across the index — a closed claim about the owner's own store,
+  like user-invariance) and flag-tier for SPARING past a reboot that actually fires
+  (`26Ob:fnd-below-a-fired-transit-three-rungs`). Two roles where the user line has one.
+- `30W` ruling 5 (`_only` decomposes) — the human's own 26M nit, adopted, never typed as a
+  ruling; shape-neutral; may wait for the stdlib arc.
+- Tenure versus Boot [PROPOSED lean] — exclude folding the tenure token INTO the entered kind's
+  value (structure inside the coordinate, the shape `271:rul-coordinate-shape-flat-three-place`
+  declined); whether Boot is a separate stdlib kind the entered kind's owner entails
+  (containment via `reaches`, `30W` §4) is stdlib content, not a kernel shape. The word itself
+  (`tenure`/`incarnation`) is renamable pre-publication and blocks nothing.
+- W-3 (`26Ob:lean-replace-wrapper-detection-with-argv-landing`) — one sentence, unchanged,
+  foldable: wrapper-ness is where the site's argv lands through the predict body's modelled
+  transformations, not a category detected by `"$@"` in command position.
+- Builder rider, not a ruling: with Host entry punted, the empty map means "the CLI target"
+  in r31 and flips to "the controller" when the synthetic head lands; nothing persists, one
+  seat; the context-slot audit brief should say so.
+- Minimal W-2, under the less-work goal: type S1–S3; let `30S` build on the two-variant slot
+  (`310` §4b); everything else above waits for the transport round.
+
+## §3 — the S1 exploration: no compose operator; the key is the chain
+
+The question put: is innermost-wins a sufficient compose op for the context slot, or is
+composition userspace-defined? Answer [FOUND; conductor-argued, human-read]: innermost-wins is
+right for what a link SETS and unsound as the KEY; no compose op exists; what userspace defines
+is stores and identity. Four rules:
+
+- `rule-set-innermost-wins` — a link's `lend_map` names the kinds it sets; innermost wins.
+- `rule-inherit-or-top-with-sentinel` [PROPOSED] — kinds a link does not name are ⊤ (27C's
+  posture, kept) until the wrapper author finishes the claim with a `lends nothing-else`
+  sentinel, after which unnamed kinds inherit the caller's value. A second, `env -i`-shaped
+  sentinel says "reset unnamed kinds to the new world's ambient" (the ssh shape). Both are the
+  author's claims. This REPLACES `27C` §3's enumerate-every-dimension law, which cannot survive
+  user-minted kinds (a `nice` oracle cannot enumerate `org.docker.Container`); it mirrors
+  `271:rul-env-claim-inversion`'s ladder and 30U's at-most pattern.
+- `rule-derive-only-toward-unknown` [FOUND; already law in two halves] — derivation may make
+  a cell unknown or fresh (30W §4 transit re-keying: a disturbed index-value cell freshens
+  keyed cells downstream), never `same` or `disjoint` (`272:never-derive-separation`;
+  `271:rul-invariance-speech-act`). Corollary, correcting the sitting's own first cut: "entering
+  a new Host resets Container to the new ambient" is a derived `same` with that ambient and is
+  NOT license-free; it is the ssh author's reset sentinel, or nothing.
+- `rule-same-is-generated` — across differently-keyed contexts, `same` needs a measured
+  identity token (the owner's read) or a declared invariance of the name's resolution across
+  the differing kinds; `disjoint` needs referent-transparent tokens that differ, under the flag;
+  else unknown. Names are never arithmetic.
+
+Corrections to `27C` this implies (cleanup pass): retire `rul-dimension-owned-compose-ops`'
+fs-view caller-relative path concatenation (engine-held path semantics, forbidden by
+`30T:rul-engine-holds-no-world-facts`, and wrong under a symlink inside the chroot); identity
+across `chroot /mnt chroot /t` and `chroot /mnt/t` is measured by the fs-view owner (device and
+inode of `/` inside), never concatenated. Retire enumerate-every-dimension per the sentinel
+rule. `rul-top-absorbs-absolute-maps` survives as "⊤ at any link for kind K is ⊤ for the chain".
+
+Examples that decided it (compressed; `26Ob`-style, all STRAWMAN): absolute kinds (`sudo -u`)
+work under map-overwrite by luck · relative kinds break it (`chroot /mnt chroot /t` versus
+`chroot /other chroot /t` both key to `/t` under overwrite — a wrong-world elision) · a
+world-replacing link (`docker exec c ssh web1`) is the author's reset sentinel · a tunnelling
+link (`ssh -A`) is an explicit inherit lend outranking any derivation · partial passthrough
+(`docker run -v host:ctr`) is `overlaps`/measured identity, never a lend · a compose-file
+container name is a MEASURED lend (why S2's Measured arm exists for lends) · fake identity
+(`unshare -r` versus `sudo -u root`) is safe by the relation table's "one map has a kind the other
+lacks ⇒ unknown" row even when the User owner declared nothing · `nsenter` sets two kinds from one
+operand, nothing special · `ssh -J bastion` needs no vantage kind if Entered names key with the
+calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
+
+- `lean-no-absoluteness-declaration` [PROPOSED] — an owner-declared "my names are absolute"
+  would recover pre-network transport for absolute kinds; the chain key costs one extra standup
+  per distinct chain before tokens bind; not worth an authored surface now.
+
+## §4 — stores, `overlaps`, and the ordering hazard
+
+- The recast reading [FOUND, agrees with the human's recollection]: `state_stored_in` emits
+  locators "stored in a kind" — under `30W` §1/item 7 and §1's no-sugar nit,
+  `printf '/var/lib/dpkg\n' : stored-in sm.dorc.File`. No document had that spelling written;
+  `30W` §3's and `26Ob` §10a's strawmen still use `: fs`/`: process`. The old token did two
+  jobs: which index-kind KEYS the store (now by transitivity — File's own store declaration says
+  File names live in `sm.dorc.MountNamespace`'s address space) and which cell kind the region IS
+  (the File coordinate itself, for collisions).
+- The subtree relation is `kind__overlaps` (`30W` §2/§3); the consumer is `30U` §7's
+  store-collide rule. Absent `overlaps`, "inside" can only be exact-name equality.
+- `hazard-file-finished-definition-leans-on-overlaps` [FOUND] — `30U` §7 lets File finish its
+  definition BECAUSE other kinds' residency in files is those kinds' store speech; that honesty
+  needs the store-collide consumer to find subtree containment. File's `disturbs nothing-else`
+  is therefore unsafe to author until `overlaps` and the collide consumer exist. Not recorded
+  anywhere the conductor read; the human did not recall it ruled.
+- **`rul-overlaps-is-a-kernel-generator`** [TYPED 2026-09-05, conditional on the conductor
+  finding no mechanism hole; none found] — `kind__overlaps` comes forward into the kernel
+  organization: a generator of the compare chokepoint for same-kind region pairs and for the
+  store-collide consumer's containment predicate; absent or declining reads unknown; consulted
+  only within one context after the world relation; dynamic pairs collide at v0 (30T §9). Body-
+  quality items for the stdlib bar, not blockers: `realpath` prefix checks answer disjoint for a
+  hardlinked file whose other name sits inside the store (`-ef` or a link-count check belongs in
+  the body); perishability is moot under the v0 entry-mutating-verb wall. The sibling re-homes
+  it out of the identity tier.
+- `rul-store-containment-is-may-inside` [PROPOSED, the carriage rule] — `30U` §7's "adds
+  collisions against footprint cells landing inside it" must read as a MAY-inside predicate:
+  unknown adds the collision; only the owner's deliberate disjoint answer removes it. Without
+  `stored nothing-else` an unlisted store is open-world and collides with every footprint of that
+  kind (`30W` §3), so truncation of a store list lands safe — which supersedes `30U` §5's
+  "absent by design for store declarations" (it predates the sentinel).
+
+## §5 — the universal safe default, and its two deliberate exceptions
+
+- Every generator's absent or lazy answer lands on unknown, and unknown (and `unrelated`) is
+  safe for both consumers: `resolve` absent ⇒ may-alias · `overlaps` absent ⇒ collide ·
+  referent-transparency undeclared ⇒ names are names · identity read absent ⇒ placeholder never
+  binds · invariance absent ⇒ keyed or ⊤ ⇒ no transport · store declaration absent ⇒ ⊤ ⇒ the
+  filtered meet answers unknown · "one map has a kind the other lacks" ⇒ unknown · a wrapper
+  silent on a kind ⇒ ⊤.
+- Deliberate non-unknown defaults, both authored or ordinary law: (1) two sites under one
+  syntactic entry chain share a placeholder pre-measurement — the ordinary reach rule applied to
+  the name's resolution cell (⊤ backing unless the owner declares stores ⇒ any running mutator
+  between them re-keys the lower; `26Ob:fnd-batching-key-is-syntactic-wall-is-rekeying`); the
+  residue is outside churn, a declared horizon with the standup witness as backstop; (2) the
+  wrapper's inherit/reset sentinel (§3).
+- `note-transport-single-consented-sparing-double` [FOUND] — transport's `same` is vouch-tier,
+  unflagged (an invariance line, a `resolve`, a bound token; bites the author's own consumers);
+  sparing's `disjoint` is author plus flag. The razor by design; the 24S headline feature.
+- `open-bound-token-same-across-chains` [OPEN; the human: committee-speech-adjacent, owed an
+  entire turn with a very critical eye] — when `same` comes from two placeholders binding to
+  equal tokens across DIFFERENT entry chains, is it a closed claim (vouch-tier, unflagged) or
+  survival-grade? `26M`'s un-acked rider argued survival-grade for hosts;
+  `FORFEITS:forfeit-no-host-merging` makes it moot at v0 for Host only; live for Container or
+  User the moment a read exists. The turn must read `plans/28M`, `28K`, `30J` (not in this
+  sitting's window; the law as steering states it — one closure's dialect, custody as one
+  newtype, `rul-vouch-reaches-own-custody-only`, 30T §3.3 input separation — was). First read
+  only: one speaker's read compared with itself, but the transport it licenses crosses custody
+  (author X's fact in world A reaching X's site in world B on owner Y's read and entries Z1/Z2).
+- `ack-names-are-literal-narratives` [TYPED 2026-09-05] — "every step toward same or disjoint
+  has an author's name on it" is literal: each generator mints a Narrative at build time
+  (`AID-NEEDS:law-collapse-mints-narrative`, `trust-tier-is-syntax`) and the name reaches the
+  angry user at `why`-time.
+- `note-enhancement-curve-survey-wanted` [human, 2026-09-05] — with `overlaps`, finished
+  definitions, store sentinels, identity reads, and lends sentinels all ahead of cross-kind
+  elision, USER_STORY has gained several oracle-author stages before anything elides; not
+  necessarily bad (correctness is never traded for value without extreme motivation), but a
+  full survey of the gradual-enhancement curve is wanted at some point. Not scheduled.
+
+## §6 — the exit-status finding and the rc law
+
+- `fnd-errexit-returns-the-failing-status` [FOUND] — errexit exits "as if by `exit` with no
+  arguments", i.e. with the failing command's status: rc 1 for a false `[ … ]`, `grep` no-match,
+  `cmp` differ, `findmnt` nothing; 2 for `test`/tool usage errors; 127 not-found; nounset trips
+  are shell-dependent (dash 2). A body that falls off its end after a false test returns 1 with no
+  errexit at all. Under a `set -eu` book, a guard's `( check )` subshell inherits errexit.
+- `hole-overlaps-rc-one-is-the-knife` [FOUND] — `30W` §2's spelling (rc 0 overlaps, rc 1
+  provably disjoint) puts the dangerous arm on the status accidents produce; the naive
+  `[ "$1" = "$2" ]` body claims disjoint for a subtree pair.
+- `fnd-zero-is-the-only-errexit-unreachable-status` [FOUND; human-acked with the caveat that
+  0 is also what humans reach for as "true, do it"] — a dangerous claim carried in an exit
+  status is errexit-safe only at rc 0 (the verdict family's convention; every accident is
+  non-zero and runs); any non-zero placement is unsafe by construction and no value is exempt.
+- `fnd-no-small-integer-is-clean` [FOUND, training-data] — rc 3: `systemctl is-active` and
+  the LSB status convention (not running), Nagios/Icinga UNKNOWN, `pg_isready` no-attempt,
+  `curl` malformed URL, `wget` I/O, `rsync` selection errors, `restic` partial read. rc 2:
+  `test`/`grep`/`diff`/`cmp` trouble, `terraform plan -detailed-exitcode` changes-pending. 4:
+  `systemctl` no-such-unit. 124 `timeout`; 125–127 exec failures; 128+ signals (141 = the
+  sigpipe-flap class); 255 ssh. The human's option 1 (a rarely-used knife rc) has no candidate.
+- **`rul-oracles-always-return-zero`** [TYPED 2026-09-05, the human's phrasing] — in most
+  entry-points ALL non-zero rcs are reserved for ERRONEOUS classes: not explicit declines, never
+  authorization or license, implying no authorial speech; reserved for errexit-internal-step-
+  failure. Every path an author wants to turn into a meaningful decline must be caught, handled,
+  and PRINTED (the report lane). Convergence (`__is_converged`) and `__predict` stay the
+  exceptions for now. The principled line is OFF-RAMP VALUE: functions one might copy off GitHub
+  without Dorc should use meaningful, rich rc because that is easier to consume outside Dorc;
+  everything else speaks in records.
+- `rul-three-rc-regimes` [ACKED 2026-09-05, "holds afaict"] — (1) `__predict`: rc is the
+  tool's predicted rc, every value, no Dorc meaning (`30D`); `__enter` passes the guest's rc
+  through, ≥2 before entry is siting decline. (2) `__is_converged`: 0 holds / 1 complement /
+  ≥2 can't-say; rc-borne because its danger is self-scoped (own tool's line) and 0 is
+  errexit-unreachable; the admin's lifted hand-guard has no emission to give. (3) every other
+  member (`disturbs`, `disturbance_reaches`, `state_stored_in`, `lend_map`, `resolve`, the
+  identity read, `overlaps`, the fs binder): rc is COMPLETION only — 0 ran to the end and its
+  lines are read; non-zero died, everything withheld, collisions retained
+  (`inv-30U-collide-on-integrity-failure-keeps-collisions`). No license rides a non-zero rc
+  anywhere; knife-tier acts are tail-position records. rc 1 and rc 3 have no Dorc meaning
+  outside regime 2; the rich decline taxonomy is `27W`'s `decline <class>` records.
+- `fix-overlaps-disjoint-is-a-record` [PROPOSED; lean] — `overlaps` keeps rc as aid-grade
+  (0 says overlaps; anything else can't-say; both collide) and the dangerous claim becomes a
+  tail-position report-lane record (`printf 'overlaps nothing\n' >>"${DREP_V1:-/dev/null}"`-
+  shaped, STRAWMAN verb): arrival witnesses completion, errexit death yields no record, the
+  naive body emits nothing and is safe. The rename alternative (`kind__disjoint`, 0 = disjoint)
+  is errexit-safe but the naive `[ "$1" != "$2" ]` is the knife; rejected.
+- `srv-where-else-the-hole-lives` [FOUND] — `check-refutes-sense-flip`: if any seat reads rc 1
+  as "holds" under `:!` (refutes) or the declared-dual glue's sense-flip, same hole; as-built
+  grep. `check-predict-body-death-reads-as-tool-rc`: §7. `hole-resolve-fallthrough-idiom`:
+  USER_STORY stage 6's `dpkg-query … || printf '%s\n' "$1"` masks can't-answer as "canonical is
+  itself", two aliases stay distinct, the split knife; safe spelling `|| return 2` (decline ⇒
+  may-alias); human-authored doc, suggested edit only. `exception-enter-is-structural`: the
+  entry form's danger is the act of entering, priced by 27C's siting vouch, nothing to sentinel.
+- `fnd-one-line-plus-rc-zero-is-not-enough` [FOUND; the human asked for pedantry] — a
+  single-line answer (`resolve`, the identity read) under rc 0 is NOT a completion witness: an
+  answer's content is OPEN (any prefix of a name is a valid name — `nginx-full` truncated to
+  `nginx`), so a partial write followed by an explicit `return 0` under errexit-off yields a
+  valid-looking wrong answer; a shared batch stdout interleaves writers above PIPE_BUF; `$( )`
+  capture strips newlines; an orphaned `&` child can write late. What suffices: a closed-
+  grammar tail sentinel (a truncated sentinel is not-a-sentinel), per-body capture never a
+  shared stream, byte-level "exactly one `\n`-terminated line" counting, and either the
+  sentinel on the SAME stream as what it witnesses or scaffold-declared errexit (a failed write
+  makes `printf` return non-zero and abort before the sentinel). So `resolve` and the identity
+  read are owed the sentinel like every emission member; and the existing cross-stream
+  `disturbs nothing-else` (entities on stdout, record on the sink) is sound only under
+  scaffold-declared errexit or a same-stream layout — a dependency to write down (§8).
+- `srv-knife-consents-without-a-sentinel` [FOUND] — static marks (`undivided-by-transit-across`,
+  referent-transparency, static `disturbs` arms) need none; emission members have or gain one
+  (`disturbs nothing-else`, `stored nothing-else`, `lends nothing-else`, the `overlaps` record);
+  `resolve` and the identity read gain one per the previous item. The fs binder inherits the
+  record rule by riding the `disturbs` rails.
+
+## §7 — the cleanup pass OWED (do not start piecemeal; one pass, human-directed)
+
+Docs the rulings above touch, none edited yet: `plans/30W` §1 (Host blessing; sugar), §2/§3
+(`overlaps` spelling; `stored-in` kind coordinates), §8/§10 (rulings 1–6 status) · `plans/27C`
+§3 (compose ops; enumerate-every-dimension; the `"$@"`-verbatim entry rule already superseded
+by `26Ob:ack-entry-verbatim-cannot-hold`, held by the human's "no 27C edit") · `plans/30U` §5
+(store sentinel supersedes "absent by design"), §7 (may-inside) · `plans/30T` §6 (the name-bias
+law gains the errexit clause) · `spike/CLAUDE.md` (rul-rc-partition, rc-naming-discipline,
+rho-claim-ladder, the compare-consumer-map bullet; `27C:rul-dimension-owned-compose-ops`
+pointer) · `ORACLE_PROVIDES` (trust/degrade lines for `resolve`/`overlaps`/identity; the entry
+and fidelity shapes 26Ob owed) · `ANALYZER-NEEDS` (`an-kind-resolver`, `an-compare-chokepoint`,
+`an-store-topology`, a row for `overlaps`, the rc-regime note on `an-verdict-3val`) ·
+`KNOBS:kCONTRACT-RUNGS` (pointer) · `USER_STORY` stage 6 strawman (human's; suggest `|| return 2`)
+· `notes/26Ob` §10a/§10c strawmen (superseded notes for the `: fs` marks and the identity read's
+sentinel) · `notes/272` §2/§3 (superseded notes: substrate tokens; the carried-by table).
+
+## §8 — the `__predict` turn and the oracle shell-state principle
+
+- `hazard-predict-body-death-reads-as-tool-rc` [FOUND] — a probe runs `dpkg__predict -s nginx`
+  and records its rc as the site's rc; `|| apt-get` and `&& systemctl restart` fold on it. A
+  multi-statement predict body that dies via errexit on an unguarded step (a failed `cd`)
+  returns a plausible tool rc, and the fold omits SOMEONE ELSE'S line. The trailing-succeeding-
+  command shape (`dpkg "$@"; printf x >&2` ⇒ 0 always) is the same hazard at rc 0.
+- `nack-predict-off-rc` [TYPED 2026-09-05] — moving `__predict` off rc as a control channel
+  is unnatural and loses a ton of off-ramp value; not taken, despite the danger.
+- **`prop-status-attribution-by-static-shape`** [PROPOSED; the primary out] — the predict
+  tracer, which already walks completing paths for `predicts` records, attributes each path's
+  exit status: it is a MEASUREMENT of the tool only where the status-producing statement is the
+  family's tool invocation (or a `case $? in` remap over it, or an explicit `return N`, both
+  authored speech) AND every preceding statement on the path is errexit-exempt-guarded or on an
+  infallible safe-list (default-disqualify, the `an-read-set-closure` posture). Otherwise the
+  path's rc is ⊤-provenance: no fold, both branches live, the site runs. Zero ceremony for
+  delegation bodies (the whole low curve); engineers guard; off-ramp untouched; fails safe in
+  both phases INDEPENDENT of runtime errexit; also kills the fall-off-the-end hazard for
+  predicts. Self-scoped versus travels is the principled split: for `__is_converged` the same
+  check stays a lint (`aid-lint-verdict-body-mechanicals`); for `__predict` it gates trust of the
+  measurement, because a wrong predicted rc omits another line.
+- `prop-predict-end-record-as-escape` [PROPOSED] — a closed tail record (`predict-end`-
+  shaped, STRAWMAN) for bodies too clever for the tracer: opt-in ceremony, inert off-Dorc,
+  restores trust of non-zero statuses on paths the static check declined.
+- `nack-path-shim-rc-capture` [conductor] — capturing the tool's own rc through the per-run
+  PATH shim is refag-leaky (the engine names "the tool") and bypassable (absolute paths,
+  builtins, `sudo`, `command`); set aside.
+- `hazard-errexit-ignored-in-exempt-contexts` [FOUND; ~SUSPECT; floor measurement owed] — a
+  guard's check sits in an AND-OR list (`( check ) || original`) and any conditional consumption
+  position is an errexit-IGNORED context by POSIX; bash documents that an explicit `set -e`
+  inside such a compound command is still ignored; dash's behaviour is unmeasured. So "inject
+  errexit at apply so bodies run identically" may not be a `set -e` inside the paren; a fresh
+  shell process (`sh -e`-shaped, or `dorc-sh`) or a discipline that does not lean on runtime
+  errexit may be needed. This is why the static attribution above is the robust primary and
+  scaffold-declared errexit is defense in depth where achievable. Another day's question by
+  the human's word; recorded so the floor lane knows what to measure.
+- `30D` interaction: `return 2` predicts 2 (unchanged); a declining path emits `predicts none`
+  and its status is unread; under the attribution rule a `|| return N` pre-step guard in a
+  predict CLAIMS the tool would return N — the taught shape for the low curve is pure delegation.
+- **`rul-oracle-shell-state-is-dorc-constructed`** [TYPED substance 2026-09-05; conductor
+  wording] — oracle bodies receive their shell state (errexit and every other `set` option,
+  IFS, PATH resolution, cwd, umask, locale class, the fd table) declared and constructed by
+  Dorc's scaffolding plus the chain of world-declaring oracles above them in the CFG; never by
+  the admin's book. Bodies must not behave differently under admin `set` values — all of them.
+  The state is fully constructed at probe time and again at apply time the same way but without
+  the `__predict`s; identical in construction, not in value (catching value divergence is the
+  point). Oracle authors understand the tool and the measurable world; ensuring their probing
+  state is correct is Dorc's job, and therefore their apply state. Generalizes `30S`'s
+  pin-or-sever from env to all shell state; sits with `an-shell-options` (pipefail pinned on,
+  per-host handshake) and `probe-composition-walls` (no book traps).
+- `fnd-no-observable-world-to-shell-influence` [FOUND; the human's question, answered
+  provisionally] — no case found where world state influencing shell state must be observable
+  to a body for it to model a tool: who-am-I values are supplied from the modelled context
+  (`272` r2 mapping; `27C:idiom-honest-read` is keyed by Dorc), PATH/umask/locale at the site
+  are the book's own state Dorc models and replays (`30S`), `[ -t 0 ]` is a controller fact
+  (`26O:rul-tty-test-is-a-controller-fact`), and genuine world facts (files, processes, ulimits)
+  are measured AS world, not as shell state. Residue: shell state Dorc cannot model reads ⊤ and a
+  body may not depend on it or must decline — the hermeticity precondition, one plane over.
+
+## §9 — state at close (2026-09-05, first fixpoint; the human rewinds after this)
+
+- TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
+  `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
+  return-zero` · `rul-three-rc-regimes` (acked as holding) · `nack-predict-off-rc` ·
+  `ack-names-are-literal-narratives` · the oracle shell-state principle (substance) · the
+  cleanup-pass-later directive · the Host-unblessing lean.
+- PROPOSED, each awaiting one typed line: the three shapes as written in §2 (S1 near-typed;
+  S2 the placeholder species; S3 the filtered meet) · `rule-inherit-or-top-with-sentinel` (and
+  the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
+  `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` · the sentinel
+  for `resolve` and the identity read · `prop-status-attribution-by-static-shape` and its
+  escape record · ruling 3's transport/sparing split · the tenure-not-in-the-value exclusion.
+- OPEN: `open-bound-token-same-across-chains` (committee-speech turn; read 28M/28K/30J first)
+  · whether r31 builds the context-slot product or reserves it (the sibling's, with the human)
+  · `check-refutes-sense-flip` and `check-predict-body-death-reads-as-tool-rc` (as-built greps)
+  · the errexit-in-exempt-contexts floor measurement · the enhancement-curve survey.
+- Successor: resume from this section; the transport lineage resumes from `26Ob` §15 and
+  becomes `311`; `310`/`ROADMAP` are the sibling's.
