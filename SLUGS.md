@@ -3428,7 +3428,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## idiom-dependency-guard
 - defined: —
-- cited: 27C (1)
+- cited: 27C 311a (2)
 
 ## idiom-honest-read
 - defined: —
@@ -3935,6 +3935,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:184 — — the anti-gaming law, verbatim in the skill: no
 - cited: 300a (1)
 
+## law-no-multiplex-into-a-stream-we-do-not-control
+- defined: —
+- cited: 26O 311a (2)
+
 ## law-no-unsoundness-below-a-blind-act
 - defined: —
 - cited: 26N 30O 30P 30Pd 30Q 30Qf 30T 30W 310 ORACLE_PROVIDES Research/LIVING_STATUS analysis/CLAUDE cli/CLAUDE (19)
@@ -4229,6 +4233,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## analysis/CLAUDE:member-population-has-one-enumerating-seat
 - defined: spike/crates/analysis/CLAUDE.md:58 — (`30L` §7; built `30Qa`) —
 - cited: 30Qa (1)
+
+## mode-apply-cursor-via-xtrace
+- defined: —
+- cited: 26O 311a (2)
 
 ## 30S:model-dead-store-export-elision
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:97 — — an env assignment may elide exactly as
@@ -5804,6 +5812,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 302:rul-certifier-value-is-stupidity
 - defined: Research/plans/302-solve-certifier-spec.md:32 — [TYPED substance] — the instrument is admissible
 
+## rul-cfg-error-handling-governs
+- defined: —
+- cited: 26Ob 311a (2)
+
 ## spike/CLAUDE:rul-chain-is-pull-only
 - defined: spike/CLAUDE.md:932 — (`27U` d4a) — the full numbered why-chain renders only
 - cited: 27U 289 28E 28Va 302 (5)
@@ -6302,6 +6314,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-idiomatic-plus-offramp
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:93 — [human-typed 2026-08-24] — `env -i` hygiene is
+- cited: 311a (1)
 
 ## 28L:rul-in-file-loop-hint-minted
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:107 — (resolves tc-in-file-loop-hint-is-frontmatter) — mint the

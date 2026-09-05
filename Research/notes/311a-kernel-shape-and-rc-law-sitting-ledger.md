@@ -453,7 +453,68 @@ license now carries the predict compile).
   author's `set`/`trap`/`exit`/`&` inside a role body is a dialect refusal: Dorc declares the
   options; a body that wants fail-fast on a step spells `|| return`/`|| { decline; }`.
 
-## §10 — state at close (2026-09-05, second fixpoint; the human rewinds after this)
+## §9b — xtrace as the predict witness, evaluated; the static-only alternative
+
+- `ctx-xtrace-is-already-per-host` [human, 2026-09-05] — apply reporting already depends on
+  xtrace (`26O:mode-apply-cursor-via-xtrace`), so xtrace shell-compatibility is measured per
+  host regardless; proposal put: both witness mechanisms long-run, the simpler xtrace form on
+  targets probed as compatible, trace lines filtered out of stderr on the way through.
+- `eval-xtrace-as-license-witness` [FOUND] — mechanics: `set -x` with a nonce `PS4` carrying
+  `$LINENO` and `$?`; the last traced statement before the body exits is the completion
+  witness (an abort's last line is the failing step, never the answer statement); the rc rides
+  the scaffold's next traced line; no body edit, no errexit toggle needed. Axes: (a) LANE LAW —
+  POSIX pins xtrace to fd 2, inseparable from the tool's own stderr; nonce-filtering a
+  Dorc-captured per-body stderr file is mechanically sound (accidental collision impossible;
+  continuation lines of a multi-line argv lack the prefix and fall to raw-err) but is control
+  multiplexed INTO a stream whose content Dorc does not control, exactly
+  `26O:law-no-multiplex-into-a-stream-we-do-not-control` [TYPED]; the cursor was admitted as
+  AID-grade, never license (`26O` §6), and a witness that gates trust of a measurement is
+  license-plane. Clean only where a dedicated trace fd exists (bash `BASH_XTRACEFD`); dash,
+  posh, busybox ash, mksh have none, so the FLOOR cannot use it. (b) SHELL VARIANCE — bash
+  repeats `PS4`'s first character per depth and quotes words `$'…'`; dash does neither;
+  `$?`/`LINENO` inside `PS4` under the floor shells is the measurement the cursor already owes,
+  so that cost is shared. (c) SECRET TAINT — expanded argv of every body command; mitigable by
+  a host-side head-only framer keeping `<nonce> <lineno> <rc>` and dropping the rest before the
+  link. (d) HOST REACH — a compiled record reaches fd-only hosts through an fd framer; the
+  trace cannot leave fd 2 there. (e) TWO MECHANISMS — the compile would stay mandatory on the
+  floor, so xtrace saves body-editing only on superset hosts, adds a differential obligation,
+  and lets one predict body be trusted on host A and refused on host B. Verdict [conductor,
+  for the human's word]: keep xtrace for the aid-grade cursor; not a license witness; do not
+  re-open the lane law for it.
+- **`prop-predict-static-only-errexit-off`** [PROPOSED; the exploration's yield, now
+  preferred over `prop-predict-compile`] — run predict bodies with errexit OFF (nounset off,
+  pipefail on per the host handshake), the same declared option state verdicts must have at
+  apply (§9), so a body ALWAYS completes and its exit status is exactly its answer statement's
+  (or an explicit `return`) on every path. The whole burden is then static and pre-network:
+  (1) the answer statement is status-meaningful (§9 rule 1, unchanged); (2) every statement
+  before it on the path is either provably infallible (a literal assignment, `local`, a `shift`
+  the site's arity covers, a decidable-set builtin) or GUARDED (`|| return N`, an authored
+  predicted status; or `|| { predicts none …; return 0; }`, a decline). An unguarded fallible
+  step (an external command, `cd`, `$(…)`, `read`, a helper not proven infallible) makes that
+  arm predict ⊤ with a precise pre-network hint ("line N can fail and the answer would then be
+  measured in the wrong world; guard it or the arm predicts nothing"). Default fallible,
+  safe-list infallible, the `an-read-set-closure` posture. `exit`/`set`/`trap`/`&` stay out of
+  dialect in bodies; statuses ≥128 read ⊤. No runtime witness, no body edit, no compile, no
+  trace. The plan's shape is a function of the text, never of which step happened to fail this
+  run. Onramp: zero cost for one- and two-line predicts; the guard is the defensive-sh habit
+  the dialect already preaches (`30S:rul-idiomatic-plus-offramp`, `27C:idiom-dependency-guard`).
+  Off-ramp: untouched. kBACKFLIPS: nothing touched. Trade against the compile: a sloppy body
+  with an unguarded step loses its fold ALWAYS instead of only when the step fails at probe —
+  less value for sloppy bodies, deterministic plan shape, the hint at authoring time rather
+  than after a round-trip. `prop-predict-compile` (§9) is demoted to a LATER, layered upgrade
+  (private-probe machinery, no author-facing change) if field evidence shows sloppy-but-
+  valuable predicts are common.
+- `csq-one-authoring-surface` — under this, predict and verdict bodies share one declared
+  option state (errexit off, pipefail on, nounset off) and one discipline (guard fallible steps;
+  end on a status-meaningful statement or an explicit return): the consistent surface §8
+  demands. The question "does errexit handle all realistic failure classes" resolves as:
+  errexit is not the instrument for role bodies at all — static fallibility is — and errexit
+  stays the BOOK's, the admin's intent surface (`26Ob:rul-cfg-error-handling-governs`).
+  Regime-3 bodies (§9's refinement) keep errexit ON, where rc 0 is their completion witness
+  and no answer rides the status; that asymmetry is deliberate: emission bodies carry no
+  answer in rc, so abort-on-failure costs nothing and buys the witness for free.
+
+## §10 — state at close (2026-09-05, third fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
@@ -466,12 +527,16 @@ license now carries the predict compile).
   the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
   `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` ·
   `fnd-regime-three-needs-no-compiled-sentinel` (retracting the resolve/identity sentinel) ·
-  `prop-predict-compile` (supersedes §8's `prop-status-attribution-by-static-shape`) ·
-  `prop-verdicts-run-errexit-off-in-both-lanes` · `rul-authored-set-in-bodies-is-out-of-dialect`
-  · ruling 3's transport/sparing split · the tenure-not-in-the-value exclusion.
+  `prop-predict-static-only-errexit-off` (§9b; the lean — supersedes §8's
+  `prop-status-attribution-by-static-shape`; demotes §9's `prop-predict-compile` to a layered
+  someday) · `prop-verdicts-run-errexit-off-in-both-lanes` (generalised by §9b to all
+  answer-bearing bodies) · `rul-authored-set-in-bodies-is-out-of-dialect` · xtrace stays
+  aid-grade, never a license witness (§9b) · ruling 3's transport/sparing split · the
+  tenure-not-in-the-value exclusion.
 - OPEN: `open-bound-token-same-across-chains` (committee-speech turn; read 28M/28K/30J first)
   · whether r31 builds the context-slot product or reserves it (the sibling's, with the human)
-  · `check-refutes-sense-flip` (as-built grep) · the dash inner-`set -e` floor measurement ·
-  the enhancement-curve survey · the USER_STORY refresh (human-acked, as a story step).
+  · `check-refutes-sense-flip` (as-built grep) · the `$?`/`LINENO`-in-`PS4` and dash
+  inner-`set -e` floor measurements (now the cursor's, not a witness's) · the enhancement-curve
+  survey · the USER_STORY refresh (human-acked, as a story step).
 - Successor: resume from this section; the transport lineage resumes from `26Ob` §15 and
   becomes `311`; `310`/`ROADMAP` are the sibling's; the cleanup pass is §7.
