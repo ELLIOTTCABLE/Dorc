@@ -6627,7 +6627,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-probe-mutation-ownership-split
 - defined: spike/CLAUDE.md:118 — (WELDED, human-typed 2026-07-17;
-- cited: 26C 26Ob 27C 27D 30P ORACLE_PROVIDES (9)
+- cited: 26C 27C 27D 30P ORACLE_PROVIDES (7)
 
 ## spike/CLAUDE:rul-probe-writes-only-what-it-owns
 - defined: spike/CLAUDE.md:183 — — controller-generated probe plumbing may

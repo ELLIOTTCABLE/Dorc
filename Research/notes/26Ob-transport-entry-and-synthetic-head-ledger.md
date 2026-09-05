@@ -1367,13 +1367,14 @@ informs build sizing only, never the design.
   `arch-chroot`'s mounts; `systemd-run --unit` transient units; `ssh -R` listeners);
   (3) PROVISIONING on first use (`gcloud compute ssh` keypair + metadata push; `az ssh`
   certificate; `mise exec` auto-install; `nix shell` build; `docker run` pull; `salt-ssh`
-  thin dir; `mosh` server; `tsh` renewal). SHARPENING: `27C:rul-probe-mutation-ownership-split`'s
-  "entry self-effects are the author's vouched residue" reads NARROWLY as class (1) only;
-  classes (2) and (3) are the wrapper's OWN establishes, modeled in the wrapper's oracle
-  (`is_converged` / `disturbs` on the wrapper family) or whole-line elision is unsound
-  (the `ssh web1 true` connection dance elided ⇒ the later `scp` fails on first contact).
-  Probe entries stay clean of (2)/(3) by construction (`sudo -n`; strict host-key checking
-  is the default; `accept-new` is the admin's consent).
+  thin dir; `mosh` server; `tsh` renewal). The taxonomy stands as AUTHORING GUIDANCE; the
+  conductor's sharpening that the engine defines residue as class (1) is NACKED
+  (`nack-residue-is-not-engine-defined`). Classes (2) and (3) are effects the AUTHOR
+  chooses either to model (`is_converged` / `disturbs` on the wrapper family) or to
+  document as residue for consuming admins; either is legal; the `ssh web1 true`
+  connection dance elided above a first-contact `scp` is the shape that breaks once and
+  gets attributed. Probe entries stay clean of (2)/(3) by construction (`sudo -n`; strict
+  host-key checking is the default; `accept-new` is the admin's consent).
 - `rul-transit-guard-is-dominated-by-construction` [PROPOSED restatement of
   `ack-transits-carry-guards-never-take-them`, obviously-true form] — a guard is a runtime
   elision; for wrapper W over payload P, skipping the whole line skips W's entry and all of
@@ -1491,6 +1492,21 @@ informs build sizing only, never the design.
   defensive; no case seen where ahead-of-time specialization is good for everyone else.
   The check-tax returns to `KNOBS:kPROBING` (engine/admin economics), never an authored
   surface.
+- `nack-residue-is-not-engine-defined` [TYPED 2026-09-05] — NACK on the sharpening
+  "residue = effects no book line consumes". Residue is an ORACLE-PRESENTED contract: not
+  the oracle's contract to Dorc, but what an author must document for a consuming admin.
+  The only control over residue in the ops world is mutual agreement: the engineer,
+  elbow-deep in the tool and its weirdnesses, makes judgement calls and decides how, where,
+  and when to surface them; the admin, who has not read how ssh handles world-writable
+  tmpdirs mounted across two hosts, maybe reads that and decides whether the residue
+  matters to them, or, far more likely and borderline the whole point of Dorc, IT BREAKS,
+  because nobody could realistically have known. What Dorc adds is that it breaks ONCE, at
+  minimal cost, with the tools to see which statement about the world was untrue or a poor
+  assumption. Not a fully principled stance (plenty of dangers are invisible to Dorc); the
+  consolation is that the set of dangers under Dorc is strictly SMALLER than under
+  pretending to pay attention to all of it, and that Dorc's visible stability outweighs
+  the inevitable blaming-of-Dorc for failures inherent to ops. Consequence: the engine
+  never defines residue; the author models or documents; Dorc attributes.
 
 ## 15-state-of-play-at-close
 
@@ -1521,9 +1537,26 @@ informs build sizing only, never the design.
   `KNOBS:kBACKFLIPS`; the superseded pointer on `26N:park-oracles-knowing-stdin-stdout`;
   three `ANALYZER-NEEDS` rows (`an-stdin-value-per-site`, `an-stdin-stdout-peel-dimension`,
   `an-single-shot-capture` at O).
-- DURABLE only after a typed ack, each: (1) `ack-punt-and-recut` — the transport round as
-  a ROADMAP row seeded by this ledger unpromoted, `310` rewritten per the re-cut, `28Q`
-  item 11 and the r31 gate text re-pointed; (2) `ack-two-boundary-witness` — `30W` §4
-  rewritten in place; (3) `ack-residue-reading` — one sentence beside
-  `27C:rul-probe-mutation-ownership-split`. The entry-form rule supersession waits for
-  the transport round.
+- ACKED IN DIRECTION 2026-09-05, sized by the sibling conductor who owns `310` and
+  `ROADMAP`: the punt (`lean-punt-transport-to-its-own-round`) and some amount of
+  single-shot capture into r31 (`prop-single-shot-capture-into-r31`). The human carries the
+  re-cut to the sibling once no major design item blocks definitely-r31 material; this
+  ledger never touches `310` or `ROADMAP`.
+- NACKED 2026-09-05: the residue reading (`nack-residue-is-not-engine-defined`); no `27C`
+  edit.
+- DURABLE only after a typed ack: `ack-two-boundary-witness` — `30W` §4 rewritten in
+  place (standup asserts and may withhold; final-verify re-reads for the receipt only; no
+  assertion after a fired disturbance). Also awaiting a typed line, each explained in chat
+  2026-09-05: `fnd-batching-key-is-syntactic-wall-is-rekeying` ·
+  `fnd-entered-arm-holds-a-value-plane-object` · `fnd-token-carriage-is-orthogonal-to-the-slot`.
+  The entry-form rule supersession waits for the transport round.
+- `list-must-sits-before-kernel-work` [consolidated; the human asked where it was] —
+  (W-2) the `30W` §10 sitting widened by `q3`/`q8`/`q10`/`q11`, whose retrofit-hostile
+  outputs are exactly three shape rulings: the slot keyed by `KindId` (index-kinds are
+  kinds; Host unblesses; vantage is a kind); index-values carrying provenance (Entered /
+  Measured-placeholder / Fresh); worlds compared only through the chokepoint, never key
+  equality. The six `30W` §10 rulings fall out of those. (W-3, short, foldable into W-2)
+  whether wrapper-ness is a landing rather than a category, before lane 1's tracer work
+  touches wrappers. Capture adds NO sitting (it rides W-2's placeholder species; the
+  `26C` §7 audit is builder-tier). Everything else in `6-tier-two-work-units` is the
+  transport round's and blocks nothing in r31.
