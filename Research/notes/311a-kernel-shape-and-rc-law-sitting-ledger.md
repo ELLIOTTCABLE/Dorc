@@ -514,7 +514,71 @@ license now carries the predict compile).
   and no answer rides the status; that asymmetry is deliberate: emission bodies carry no
   answer in rc, so abort-on-failure costs nothing and buys the witness for free.
 
-## §10 — state at close (2026-09-05, third fixpoint; the human rewinds after this)
+## §9c — the backward walk from the off-ramp: a staged mix
+
+- `eval-within-probe-fd-redirect` [FOUND; the human's last devil's advocate] — a temporary
+  redirect inside the probe cannot give xtrace and the body's stderr separate channels in
+  POSIX sh: the shell writes the trace to ITS fd 2 and hands that same fd 2 to every child it
+  forks, and a redirect on the function call (`f "$@" 2>err`) moves BOTH. Only a per-command
+  `2>&3` (the compile again) or a dedicated trace fd (bash only) separates them. Noted beside
+  it: a nonce framer over the mixed capture is fail-SAFE for the witness (a glued or missed
+  last line demotes to ⊤; forging needs the nonce, and a forger already owns the status), so
+  the standing objection is the typed lane law's posture, shell variance, and two mechanisms —
+  the human acked those. xtrace's legitimate remaining use here is AID: naming the line an
+  aborted body died on, for the hint.
+- `nack-static-only-as-the-whole-answer` [TYPED 2026-09-05, "not a hard nack, close"] —
+  static is nearly always better mechanically; the problem is authorship burden. An
+  experienced admin writing for non-Dorc reaches for EITHER guard-each-statement OR errexit,
+  depending on which is noisier (many failures to stop on, or many to proceed through); both
+  are meaningful speech. A rule that forces guards makes bodies unnatural and puts the pain on
+  the user.
+- `fnd-static-rule-is-option-independent` [FOUND] — "an unguarded fallible step before the
+  answer ⇒ the arm predicts ⊤" is correct whatever the option state: under errexit-off the
+  step's failure makes the answer wrong-world; under errexit-on it makes the status an abort
+  misread as an answer. And "unguarded" is exactly POSIX's errexit-FIRING position (a fallible
+  simple command not consumed by `if`/`while`/`&&`/`||`/`case $?`/a test's substitution) — so
+  the static rule reads as "your body must be errexit-clean", the very discipline both
+  philosophies already encode, one by guards and one by `set -e`.
+- `fnd-subshell-body-is-the-native-trigger` [FOUND] — `f() ( set -e; … )` is legal POSIX
+  (a function body may be any compound command, a subshell included), contains the option to
+  the function, and is the natural standalone spelling of "this function is a fail-fast unit";
+  `f() { set -e; … }` leaks errexit into the caller's shell off-Dorc and earns a lint. The
+  subshell shape is therefore a zero-cost, already-meaningful user-control trigger between
+  "I handle failures" (brace body: guards are my speech) and "failures abort me" (subshell
+  `set -e`: the abort is my speech). No new syllable; Dorc reads the shape.
+- **`prop-predict-staged-mix`** [PROPOSED; the lean, replacing §9b's static-only] —
+  v0: the option-independent static rule for every predict body; brace bodies run with Dorc-
+  declared errexit off, subshell `set -e` bodies run as written (contained); both get the same
+  verdict: guarded ⇒ trusted, unguarded fallible step ⇒ ⊤ with a hint; `exit`/`trap`/`&`/`set
+  -x` out of dialect in bodies; a `case` with no `*)` arm predicts ⊤ on the fall-through path
+  (never the shell's 0) with a hint. v1, layered, engine-cost only, no author-facing change:
+  the `prop-predict-compile` machinery (§9) applied ONLY to subshell `set -e` bodies — the
+  toggle around the answer and the completion record — so their unguarded steps become
+  runtime-witnessed (abort ⇒ no record ⇒ ⊤ only when it fires) and the guard requirement is
+  refunded for exactly the authors who chose errexit. Brace bodies never need it: their guards
+  are already speech. Onramp: each author writes what they would write standalone. Off-ramp:
+  the authored file is untouched by either stage. kBACKFLIPS: v0 touches nothing; v1 edits
+  only the private probe artifact, status-preserving, bounded by the rc cross-check.
+- `acct-backward-walk` [the human's exercise; STRAWMAN body, a certs tool with a
+  `sync-certs` mock, a `status` delegation, and a catch-all] — ABSOLUTE costs (Dorc-imposed
+  changes to a standalone body): exactly one, at the lowest rung — the catch-all decline.
+  `30D` reads `*) return 2 ;;` as "the tool returns 2 for unmodelled verbs" (every value
+  predicted; no reserved decline), so a newcomer's natural catch-all is a WRONG prediction that
+  omits other people's `&&`-rights; the taught catch-all is the one inert record line
+  `*) printf 'predicts none\n' >>"${DREP_V1:-/dev/null}" ;;`, and a lint flags `*) return N`.
+  Plus the rare bans (`exit`, `trap`, `&`, `set -x`). Nothing else: no sentinels, no return on
+  every line, no toggles in the file. GRADUAL-ENHANCEMENT costs (a defensive author would do
+  it; a risk-tolerant one may not): guard fallible steps or write the `set -e` subshell body;
+  add a `*)` arm. Under v0 the errexit philosophy pays the guard cost too; v1 refunds it.
+  Safety in every version: guarded bodies trusted; abort-capable bodies ⊤ (statically at v0,
+  at runtime under v1); sloppy bodies ⊤ with hints and a book that still runs. No wrong trust
+  anywhere; downstream elisions never rest on an unwitnessed predict status.
+- `note-missing-catch-all-predicts-zero` [FOUND] — a `case` with no `*)` completes with the
+  shell's status 0 on an unmatched verb; read as a prediction that would omit every `||`
+  fallback below an unmodelled verb. The static rule's "no answer statement on this path ⇒ ⊤"
+  covers it; recorded because it is the most natural newcomer shape of all.
+
+## §10 — state at close (2026-09-05, fourth fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
@@ -527,10 +591,13 @@ license now carries the predict compile).
   the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
   `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` ·
   `fnd-regime-three-needs-no-compiled-sentinel` (retracting the resolve/identity sentinel) ·
-  `prop-predict-static-only-errexit-off` (§9b; the lean — supersedes §8's
-  `prop-status-attribution-by-static-shape`; demotes §9's `prop-predict-compile` to a layered
-  someday) · `prop-verdicts-run-errexit-off-in-both-lanes` (generalised by §9b to all
-  answer-bearing bodies) · `rul-authored-set-in-bodies-is-out-of-dialect` · xtrace stays
+  `prop-predict-staged-mix` (§9c; the lean — v0 the option-independent static rule for all
+  predict bodies, v1 the §9 compile for subshell `set -e` bodies only; supersedes §9b's
+  static-only and §8's tool-attribution) · `prop-verdicts-run-errexit-off-in-both-lanes`
+  (brace bodies; a subshell `set -e` body is contained and allowed) · `rul-authored-set-in-
+  bodies-is-out-of-dialect` (narrowed by §9c: `set -e` as the first statement of a SUBSHELL
+  body is the sanctioned fail-fast spelling; brace-body `set -e` lints; `set -x`/`exit`/`trap`/
+  `&` stay out) · the taught catch-all decline record and its lint (§9c) · xtrace stays
   aid-grade, never a license witness (§9b) · ruling 3's transport/sparing split · the
   tenure-not-in-the-value exclusion.
 - OPEN: `open-bound-token-same-across-chains` (committee-speech turn; read 28M/28K/30J first)
