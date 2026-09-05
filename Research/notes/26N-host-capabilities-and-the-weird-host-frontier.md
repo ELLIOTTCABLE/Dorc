@@ -535,7 +535,14 @@ controller is the act, not what the host does with it.
 Nothing found forces the CORE language. The one channel-forced analyzer carve already exists
 (`310`'s "simple words are identity across the remote re-parse; else decline" — the ssh argv
 re-parse, `28Q` §3; the round's Q16 evidence is its substrate proof, and simple words survive
-every login shell found). An unwritable host forcing single-stream is a value-loss the
+every login shell found).
+<!-- /* superseded by 26Ob (2026-09-04): the engine-side carve is WITHDRAWN
+(`26Ob:ack-charset-is-tool-knowledge`, TYPED) — no engine parsing or charset over sh arguments
+for transport; the remote re-parse is the ssh oracle's own predict body (`dorc:sh -c "$*"`),
+consumed through the eval'er descent (`26Ob:res-fidelity-is-a-predict-claim`, PROPOSED). Q16
+stays the substrate evidence that simple words survive login shells, now informing an author's
+fidelity claim rather than an engine rule. */ -->
+An unwritable host forcing single-stream is a value-loss the
 off-ramp shares (`FORFEITS:forfeit-plain-sh-inclusion-analysis` stands). The here-document
 hazard is real, narrow, and aid-plane. stdin in shipped bodies is already fenced
 (`26Lb:rul-interactivity-is-local-books`; the predict tracer treats `read` as run), and §2
@@ -644,6 +651,11 @@ covers.
   reads, redirects, and delegations are the claims; no introspection surface exists. */ -->
 - `park-re-parse-carve-explainer` — what `28Q:pin-ssh-entry-shape` carves and why the round's
   Q16 evidence grounds it.
+  <!-- /* superseded by 26Ob §1 (2026-09-04): there is no carve to explain — the engine-side
+  charset was withdrawn (`26Ob:ack-charset-is-tool-knowledge`, TYPED); the pin's resolution is
+  `26Ob:res-guest-is-engine-scaffolding` + `26Ob:res-fidelity-is-a-predict-claim`, both PROPOSED,
+  and it moves with Host entry to the transport round under
+  `26Ob:lean-punt-transport-to-its-own-round`. */ -->
 - `front-embedding-contracts` — NEEDS INVESTIGATION (human-ack; possibly a successor with
   the human): what cloud-init `runcmd`, init containers, Ansible `script`, Packer
   provisioners, and systemd `ExecStartPre` promise a foreign sh chunk and what a Dorc-wrapped

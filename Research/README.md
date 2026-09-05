@@ -242,7 +242,13 @@ the license-contamination map. Cross-references are `docID:slug`.
   capabilities and their matrix; the per-context scaffold that dissolves the report sink's
   remote home; the per-run routing planner under `kCOMMS`; the arrangements —
   probe dark · apply quiet · streaming · the xtrace cursor · live apply; `notes/26Oa` is its
-  strawman, a live-and-daily pivot book, frozen evidence, never execute).
+  strawman, a live-and-daily pivot book, frozen evidence, never execute) · **`notes/26Ob`**
+  (the 2026-09-04/05 transport-entry LEDGER — load-bearing but LONG and winding: grep it by
+  slug, full-read only when squarely relevant, §15 is the state at close. Carries the
+  `28Q:pin-ssh-entry-shape` resolution as proposed (the guest is engine scaffolding; fidelity
+  is the ssh oracle's predict claim), `rul-no-hopeful-transfer`, the synthetic plan head, the
+  target-as-tenure pin, worlds compared through the chokepoint, the stdin survey, and the r31
+  punt with its re-homing candidates).
   (Same round-id as the tabled multi-host r26 above — branch lineage, not chronology.)
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers

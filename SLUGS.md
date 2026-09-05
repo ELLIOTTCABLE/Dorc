@@ -96,6 +96,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:24 — — adjacent-book dispatch (`ssh h <web.sh`) and
 - cited: 26Ob (1)
 
+## ack-charset-is-tool-knowledge
+- defined: —
+- cited: 26N 26Ob 311a (5)
+
 ## 26M:ack-command-position-constant-prop-owed
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:62 — — `$SSH`/`$SUDO`-style
 - cited: 26O (1)
@@ -107,6 +111,18 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 26M:ack-cross-host-facts-scoping
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:19 — — the gate-never-license lean is SCOPED to
 - cited: ROADMAP (1)
+
+## ack-entered-kind-is-declared-never-host
+- defined: —
+- cited: 26Ob 311a (3)
+
+## ack-entry-verbatim-cannot-hold
+- defined: —
+- cited: 26Ob 311a (4)
+
+## ack-guards-reach-elisions-witness
+- defined: —
+- cited: 26Ob 311a (4)
 
 ## 26M:ack-hosts-blessed-someday-fenced-now
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:32 — — hosts are expected to become the
@@ -928,7 +944,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob (1)
+- cited: 26Ob 311a (2)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -2557,6 +2573,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-axiom-census-undercounts-by-three
 - defined: Research/notes/30Ba-minispec-review-neutral.md:452 — (+SURE, verified by hand)
 
+## fnd-batching-key-is-syntactic-wall-is-rekeying
+- defined: —
+- cited: 26Ob 311a (3)
+
 ## fnd-battery-never
 - defined: —
 - cited: 307 (1)
@@ -2564,6 +2584,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-battery-never-instantiates-its-own-law
 - defined: Research/notes/30Ba-minispec-review-neutral.md:60 — (+SURE) — the sharpest structural gap
 - cited: 30B (1)
+
+## fnd-below-a-fired-transit-three-rungs
+- defined: —
+- cited: 26Ob 311a (2)
 
 ## fnd-blind-act-fixture-is-guard-at-most
 - defined: —
@@ -3136,7 +3160,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## FORFEITS:forfeit-no-host-merging
 - defined: FORFEITS.md:109 — — RULE (`28Q` §3): host identity never merges at v0
-- cited: 26Lb 26M 26Ob 310 (4)
+- cited: 26Lb 26M 26Ob 310 311a (5)
 
 ## FORFEITS:forfeit-plain-sh-inclusion-analysis
 - defined: FORFEITS.md:53 — — RULE (`30P:principle-book-code-source-is-inclusion`,
@@ -3408,7 +3432,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## idiom-honest-read
 - defined: —
-- cited: 26Ob 27C (2)
+- cited: 26Ob 27C 311a (3)
 
 ## idiom-subject-explicit
 - defined: —
@@ -3883,7 +3907,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## AID-NEEDS:law-collapse-mints-narrative
 - defined: AID-NEEDS.md:76 — (née law-collapse-mints-evidence) — every point where
 - aka: law-collapse-mints-evidence
-- cited: 289 28R 28Vb 30Kb 30M 30Mb ANALYZER-NEEDS aid/CLAUDE spike/CLAUDE (10)
+- cited: 289 28R 28Vb 30Kb 30M 30Mb 311a ANALYZER-NEEDS aid/CLAUDE spike/CLAUDE (11)
 
 ## law-defining-case-catalog
 - defined: —
@@ -4062,11 +4086,19 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28E-why-surface-design-sitting.md:90 — — the aspiration corpus reads ~7/10 prose-y; the
 - cited: 289 (1)
 
+## lean-punt-transport-to-its-own-round
+- defined: —
+- cited: 26N 26Ob (7)
+
 ## 28E:lean-reflow-and-tui-are-live
 - defined: Research/notes/28E-why-surface-design-sitting.md:108 — — a TUI is coming-soon (soft-deferred) and must
 
 ## 28E:lean-rename-explain-to-teach
 - defined: Research/notes/28E-why-surface-design-sitting.md:83 — — `plans/286`'s surface renames toward
+
+## lean-replace-wrapper-detection-with-argv-landing
+- defined: —
+- cited: 26Ob 311a (8)
 
 ## 28E:lean-start-without-mutual-awareness
 - defined: Research/notes/28E-why-surface-design-sitting.md:115 — — cross-fragment prose awareness starts
@@ -4104,6 +4136,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30R:limitations-and-open-items
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:450
+
+## list-must-sits-before-kernel-work
+- defined: —
+- cited: 26Ob 311a (2)
 
 ## locator-fence-is-not-automatic-refutation
 - defined: —
@@ -4327,7 +4363,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## never-derive-separation
 - defined: Research/notes/277-entity-algebra-design.md:470 — (`272` §4): derivation yields keying, never separation;
 - defined: spike/CLAUDE.md:205 — (`272` §4) — derivation yields *keying*, never
-- cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S Research/notes/27x-strawmen-topology/README core/CLAUDE (27)
+- cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S 311a Research/notes/27x-strawmen-topology/README core/CLAUDE (28)
 
 ## spike/CLAUDE:never-filter-a-task
 - defined: spike/CLAUDE.md:1082 — — if a task is too loud, run its `-quiet` variant; if it has
@@ -4342,6 +4378,14 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## plan/CLAUDE:never-synthesized-never-mutating
 - defined: spike/crates/plan/CLAUDE.md:103 — — never engine-synthesized sh; never
+
+## nit-batching-key-carries-entry-definition-identity
+- defined: —
+- cited: 26Ob 311a (2)
+
+## nit-entered-arm-holds-a-value-object
+- defined: —
+- cited: 26Ob 311a (2)
 
 ## 288:nit-needles-rot
 - defined: Research/plans/288-aid-loom-unification-plan.md:53 — — hand-authored must-contain assertions cargo-cult and rot; a
@@ -4557,7 +4601,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## park-re-parse-carve-explainer
 - defined: —
-- cited: 26N 26Ob (4)
+- cited: 26N 26Ob 311a (5)
 
 ## 30P:parse-never-fails-on-floor-text
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:596
@@ -4708,7 +4752,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pin-ssh-entry-shape
 - defined: —
-- cited: 26N 26O 26Ob 28Q 310 ROADMAP (12)
+- cited: 26N 26O 26Ob 28Q 310 ROADMAP Research/README (13)
 
 ## 262:pin-terminal-determinism
 - defined: Research/plans/262-round26-build-spine.md:98 — — per host, arrival-incremental final plan == single-shot plan
@@ -4801,7 +4845,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:probe-composition-walls
 - defined: spike/CLAUDE.md:159 — — probes are synthesized CFG scaffolding + oracle
-- cited: 26B 26Ob 27P (3)
+- cited: 26B 26Ob 27P 311a (4)
 
 ## cli/CLAUDE:probe-projection-second-caller
 - defined: spike/crates/cli/CLAUDE.md:436 — — the probe plan-builder is the only real
@@ -4985,7 +5029,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rc-naming-discipline
 - defined: spike/CLAUDE.md:350 — — bare "rc" is banned in design text: qualify as tool-rc /
-- cited: 28P (1)
+- cited: 28P 311a (2)
 
 ## oracle/CLAUDE:rc-partition-here
 - defined: spike/crates/oracle/CLAUDE.md:24 — — 0 = named sense; 1 = complement; ≥2 = flat sink, runs,
@@ -5259,6 +5303,14 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 28Q 28Rb 30Qc (3)
 
+## res-fidelity-is-a-predict-claim
+- defined: —
+- cited: 26N 26Ob (4)
+
+## res-guest-is-engine-scaffolding
+- defined: —
+- cited: 26N 26Ob (2)
+
 ## 28P:res-helper-bodies-ship-unstripped
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:479
 
@@ -5423,7 +5475,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rho-claim-ladder
 - defined: spike/CLAUDE.md:649 — (`271:rul-env-claim-inversion`) — bare `"$@"` claims NOTHING
-- cited: 30S (1)
+- cited: 30S 311a (2)
 
 ## rider-arrangement-home-anticipates-chains
 - defined: —
@@ -5662,7 +5714,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-axis-vocabulary-v1
 - defined: Research/plans/271-block-settle-rulings-ledger.md:103 — (task 4; 2026-07-10; typed)
-- cited: 24S 26M 270 272 30W ROADMAP (9)
+- cited: 24S 26M 270 272 30W 311a ROADMAP (10)
 
 ## spike/verify/CLAUDE:rul-badge-recompute-is-harness-scoped
 - defined: spike/verify/CLAUDE.md:37 — — `report`/`promote --with-kani` drives only
@@ -5848,7 +5900,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-coordinate-shape-flat-three-place
 - defined: —
-- cited: 271 277 278 300 ANALYZER-NEEDS ORACLE_PROVIDES core/CLAUDE spike/CLAUDE (8)
+- cited: 271 277 278 300 311a ANALYZER-NEEDS ORACLE_PROVIDES core/CLAUDE spike/CLAUDE (9)
 
 ## 288:rul-core-stays-light-custody
 - defined: Research/plans/288-aid-loom-unification-plan.md:23 — — `core` stays light; the analyzer machinery is
@@ -5903,7 +5955,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dimension-owned-compose-ops
 - defined: —
-- cited: 26O 26Ob 27C 27D ANALYZER-NEEDS (6)
+- cited: 26O 26Ob 27C 27D 311a ANALYZER-NEEDS (8)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6019,6 +6071,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:880 — (conductor; the splice ruling, remedy 1)
 - cited: aid/CLAUDE (1)
 
+## rul-engine-holds-no-world-facts
+- defined: —
+- cited: 30T 311a (2)
+
 ## 30S:rul-engine-owns-shell-resolution-vars
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:79 — [human-typed 2026-08-24] — variables with
 
@@ -6031,7 +6087,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-env-claim-inversion
 - defined: Research/plans/271-block-settle-rulings-ledger.md:439 — (2026-07-11; TYPED 2026-07-12 — blanket ack + the
-- cited: 274 278 27J 27K 30S ORACLE_PROVIDES spike/CLAUDE (9)
+- cited: 274 278 27J 27K 30S 311a ORACLE_PROVIDES spike/CLAUDE (10)
 
 ## 30S:rul-env-delta-rides-provenance
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:102 — — a fact measured under a replayed delta carries
@@ -6284,7 +6340,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W ORACLE_PROVIDES (18)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a ORACLE_PROVIDES (19)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -6472,7 +6528,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-no-hopeful-transfer
 - defined: spike/CLAUDE.md:420 — (human-typed 2026-09-04) — NO admin data transits any
-- cited: 26Ob ANALYZER-NEEDS (9)
+- cited: 26Ob ANALYZER-NEEDS Research/README (10)
 
 ## rul-no-mutating-guards
 - defined: Research/plans/271-block-settle-rulings-ledger.md:146 — (task 10b; 2026-07-10; TYPED, emphatic)
@@ -6685,7 +6741,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-rc-partition
 - defined: Research/notes/23L-interface-rulings.md:33 — (STAMPED)
 - defined: spike/CLAUDE.md:342 — + **rul-zero-one-inversion-pair** — a verdict-function's exit
-- cited: 23O 24C 24D 252 271 28P 300 ORACLE_PROVIDES plan/CLAUDE spike/docs/CLAUDE (12)
+- cited: 23O 24C 24D 252 271 28P 300 311a ORACLE_PROVIDES plan/CLAUDE spike/docs/CLAUDE (13)
 
 ## 271:rul-rc-partition-stands
 - defined: Research/plans/271-block-settle-rulings-ledger.md:114 — (task 10a; 2026-07-10; TYPED — "your analysis of the rc
@@ -6997,7 +7053,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-top-absorbs-absolute-maps
 - defined: —
-- cited: 27C 27D (3)
+- cited: 27C 27D 311a (4)
 
 ## 271:rul-touches-becomes-disturbs
 - defined: Research/plans/271-block-settle-rulings-ledger.md:298 — (2026-07-11; TYPED — "'touches -> disturbs' is a
@@ -7040,6 +7096,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-trust-spent-first-argless-why
 - defined: —
 - cited: 289 28E (2)
+
+## rul-tty-test-is-a-controller-fact
+- defined: —
+- cited: 26O 311a (2)
 
 ## rul-two-axis-escalation-consent
 - defined: —
@@ -7175,7 +7235,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## oracle/CLAUDE:rul-vouch-reaches-own-custody-only
 - defined: spike/crates/oracle/CLAUDE.md:106 — (human-ruled 2026-08-17, superseding
-- cited: 30I 30Ia 30Ib FORFEITS ORACLE_PROVIDES (6)
+- cited: 30I 30Ia 30Ib 311a FORFEITS ORACLE_PROVIDES (7)
 
 ## rul-wait-scope-is-just-shell-modeling
 - defined: —
@@ -8395,7 +8455,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28Va-aid-extraction-map.md:594 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
 - defined: spike/CLAUDE.md:753 — — the epistemic tier of every rendered link (STRAWMAN
 - defined: spike/crates/aid/CLAUDE.md:179 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
-- cited: 26N 289 28N 300 300c 306b (6)
+- cited: 26N 289 28N 300 300c 306b 311a (7)
 
 ## spike/CLAUDE:two-binary-floor
 - defined: spike/CLAUDE.md:703 — (`276:rul-spec-two-binary-floor`; `KNOBS:kWHICHSH` WELDED) —
