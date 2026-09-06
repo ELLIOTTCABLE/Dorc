@@ -600,14 +600,61 @@ license now carries the predict compile).
   tool that really returns 2. Trades the record from the common case to the rare case; the
   human's call; `30D` §7 territory.
 
-## §10 — state at close (2026-09-05, fourth fixpoint; the human rewinds after this)
+## §9e — the decline ladder across the two functions (2026-09-06)
+
+- **`rul-decline-ladder-across-verdict-and-predict`** [TYPED 2026-09-06, the human's tune on
+  the conductor's hint; closes `door-reserve-status-two-in-predicts` — 30D stands] — the
+  one pattern accepted silently in BOTH functions is the named decline,
+  `printf 'decline <class> …' >>"${DREP_V1:-/dev/null}"; return 2`: an author may use exactly
+  the same shape in `__is_converged` and `__predict` as long as they declare their declines
+  with names. A bare `return 2` decline (no record) is `__is_converged`-ONLY — an
+  early-onramp accessibility gloss, always graduable to the printed form. In a predict a
+  bare `return N` (N ≥ 2) keeps its 30D meaning (predicts N) and earns a hint that pushes up
+  the ladder ("omitting the printf stops working here; a bare return has a different
+  meaning"). The ENFORCING capacity flips between the functions: in `__is_converged` the
+  `return 2` is load-bearing and the record is aid; in `__predict` the record is load-bearing
+  (it declines the status channel, as `predicts none` does) and the status is unread. Both
+  together is maximally helpful outside Dorc. Consequence for the cleanup pass (§7): the
+  `27W`/`ORACLE_PROVIDES` wording "decline is aid-only" is RETIRED as stupid wording — the
+  record's capacity is per-function, not per-record. A "stop bugging me" tag for this
+  hint family is a later consideration, not now.
+- `expl-decline-outside-dorc` [the human's "forget Dorc, unweld everything" exploration;
+  conductor's findings] — is there any `__predict` that is helpful outside Dorc, maximally
+  shell-idiomatic, and can decline to model a call-site WITHOUT stomping exit codes?
+  Strictly no: Unix has no "I don't know" channel distinct from "I failed"; every real
+  dry-run tool (`apt-get -s`, `rsync -n`, `make -n`, `git --dry-run`) conflates the two,
+  because a dry run IS a run modulo mutation and its decline is its own error. The only
+  idiom that separates a negative answer from an inability to answer is the predicate
+  convention (`grep`/`cmp`/`test`: 0 yes, 1 no, 2 error) — which is exactly why
+  `__is_converged`, a predicate by construction, gets the 0/1/≥2 partition and `__predict`,
+  a mimic of an arbitrary tool whose status space is all of 0–255, cannot. Best available
+  approximations, each priced: (1) a human-facing message on stderr, the universal "couldn't"
+  idiom — free of status, helpful to any caller; (2) a decline status chosen by the author
+  from THEIR tool's unused range (per-tool knowledge, refag-clean, never interpreted by Dorc);
+  (3) the shell's own out-parameter idiom, a global set by the function (`getopts`/`OPTARG`,
+  `read`/`REPLY` shape) — carries a decline with no I/O and no sink, so it would work on
+  sinkless hosts, but it is a second mechanism, needs a reset at function entry (boilerplate),
+  and dies in subshell/pipeline calls; noted, not pushed; (4) passthrough of unmodelled verbs
+  to the tool's own dry-run (`*) foobar --dry-run "$@" ;;`) — the most helpful off-Dorc
+  behaviour, not a decline but modelling-by-delegation, and under Dorc exactly the
+  self-vouch question DESIGN.md names. The human's ladder is (1)+(2) already, with one
+  refinement worth a line: the record sink's OFF-Dorc default is `/dev/null`, which makes a
+  declined function silent to its human caller; `${DREP_V1:-/dev/stderr}` (a device, allowed
+  by the pinned write-only/may-be-a-device contract; `/dev/stderr` present on Linux, BSD via
+  fd 2, macOS) would make the same line print its named decline to stderr outside Dorc and
+  reach the sink inside it — the "helpful outside Dorc" half at zero cost. -GUESS worth it;
+  the human's call; a `30D`/`27W` cleanup-pass item if taken.
+
+## §10 — state at close (2026-09-06, fifth fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
   return-zero` · `rul-three-rc-regimes` (acked as holding) · `nack-predict-off-rc` ·
   `nack-attribute-to-the-tool` · `ack-names-are-literal-narratives` · the oracle shell-state
   principle (substance) · the cleanup-pass-later directive · the USER_STORY-as-a-story-step
-  lean · the Host-unblessing lean · `lean-compile-in-completion-sentinels` (conditional).
+  lean · the Host-unblessing lean · `lean-compile-in-completion-sentinels` (conditional) ·
+  `rul-decline-ladder-across-verdict-and-predict` (2026-09-06; 30D stands, the
+  reserved-status-two door closed, "decline is aid-only" wording retired).
 - PROPOSED, each awaiting one typed line: the three shapes as written in §2 (S1 near-typed;
   S2 the placeholder species; S3 the filtered meet) · `rule-inherit-or-top-with-sentinel` (and
   the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
