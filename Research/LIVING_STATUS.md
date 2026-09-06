@@ -28,21 +28,11 @@
 
 ---
 
-## IN FLIGHT (2026-09-05 — the test-architecture REBUILD: BUILT and gated; the opaque review's NACK ADJUDICATED into `30C:accept-dangerous-developer-harness`; two repairs and the fold OWED to a successor conductor)
+## IN FLIGHT — nothing (2026-09-05)
 
-The rebuild is complete on `ai/r30-30X-test-infra-decruft-conductor` (worktree
-`.tmp/trees/r30-30X-test-infra-decruft-conductor`, riding `ai/main`): the `Seams`/`HarnessSeams`
-bundle and the `dorc-harness` sibling binary; looms as shell sessions with gates by block kind; the
-in-process receipt world with `gate-two-drivers-agree`; seeds varied by default; one runner; thirteen
-frontmatter keys and every dir-case converted; `dorc-testbed`; the shell-resolution seat in
-`transport` consumed by `dorc-sh`; the sibling-oracle advisory retired; the apply identities line
-authored; steering, registers, plans, and the round map current. Design of record `notes/30X`;
-conductor ledger **`notes/30Xa`** — its §0 is the successor's complete on-ramp: the ruling's bounds,
-the finding that `mise run install` currently installs `dorc-harness` alongside `dorc` and `dorc-sh`
-(the repair and its objective check), the "runner-owned" re-cut list, the gate procedure under this
-machine's memory limits, and the fold steps. The ephemeral handoff carrying the ruling's text sits
-untracked in that worktree. No further opaque review was requested; the fold completes on the
-existing procedure once the two repairs land green.
+The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
+`Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of
+r30 is the human's close ceremony (`## Round`).
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 
@@ -98,11 +88,15 @@ every `/opaque-review` DISPATCH — design-time or end-of-arc, initial or follow
 human's TYPED ack first (human-typed 2026-09-02): loading the skill on a builder's instruction
 licenses no dispatch by itself · `rNN:` xfail horizons are never minted to mirror a roadmap
 row (human, 2026-09-02: mechanical horizons are expensive in human attention and must pass a
-high bar).
+high bar) · no TODO of any kind escapes into a `CLAUDE.md` — build it now or let it get lost
+(human-typed 2026-09-04) · no durable to-ack or owed list anywhere, in any document — lose the
+work rather than mint pending work (human-typed 2026-09-04: "I'd rather lose work than mint
+pending-work").
 
 ## Round
 
 r30 is OPEN. Its close ceremony (`30O:the-schedule`: the human-run gate → `gate:arc` → the
-`CURRENT_ROUND` bump → the prose queue → ff `ai/main`) is the human's, once the rebuild above
-folds. Closed arcs and their accounts: `Research/README.md` per-round map; r30's ledgers in
-order: `notes/300` · `307` · `30N` · `30O` · `30Va` · `30Xa` (in flight).
+`CURRENT_ROUND` bump → the prose queue → ff `ai/main`) is the human's; the test-architecture
+rebuild, r30's last conductor arc, folded 2026-09-05. Closed arcs and their accounts:
+`Research/README.md` per-round map; r30's ledgers in order: `notes/300` · `307` · `30N` · `30O`
+· `30Va` · `30Xa`.
