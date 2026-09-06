@@ -786,8 +786,17 @@ insert-only, never wrap, never move.
 - `csq-static-rule-unchanged` — the compile adds nothing for brace bodies (static rule) or
   regime-3 bodies (errexit on, rc 0 = completion); it exists solely to refund the guard
   requirement for authors who chose the fail-fast shape, and it refunds it exactly there.
+- `hold-marker-and-exit-trap-not-the-approach` [human, 2026-09-06] — the constraints are
+  too draconian, C3 above all: quick `$?`-reading is very idiomatic and the transform forbids
+  it at leaves because the marker is itself a command (any POSIX simple command, an
+  assignment included, sets `$?`; there is no errexit-safe way to set a variable while
+  preserving a non-zero `$?`). §9h stays as the record of the narrowest insert-only edit and
+  of the finding that wrapper forms are unsound (`fnd-status-capture-wrappers-perturb-nested-
+  shells`, which any successor design must still respect); the APPROACH is HELD, not taken.
+  The human will dig into the predict-witness problem more deeply in a fresh sitting. Nothing
+  in §9b/§9c changes: v0 stays the option-independent static rule; v1's mechanism is now open.
 
-## §10 — state at close (2026-09-06, eighth fixpoint; the human rewinds after this)
+## §10 — state at close (2026-09-06, ninth fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
