@@ -28,31 +28,21 @@
 
 ---
 
-## IN FLIGHT (2026-09-04 — the test-architecture REBUILD: BUILT and gated at its tip, the close batch landed; HELD at the fold on the opaque review's NACK, for the human's adjudication)
+## IN FLIGHT (2026-09-05 — the test-architecture REBUILD: BUILT and gated; the opaque review's NACK ADJUDICATED into `30C:accept-dangerous-developer-harness`; two repairs and the fold OWED to a successor conductor)
 
-The why-surface arc's PRODUCT is sound; its test architecture is rebuilt, not patched, in a
-non-concurrent suite-only arc. Design of record **`notes/30X`**; conductor ledger **`notes/30Xa`**
-(every checkpoint ruling, the lane table, the typed acks of the close sitting). Built, on
-`ai/r30-30X-test-infra-decruft-conductor` (worktree `.tmp/trees/r30-30X-test-infra-decruft-conductor`,
-riding `ai/main`): one `Seams` bundle with per-seam selection and the `dorc-harness` sibling
-binary, the shipped `dorc` reading no harness environment; looms as shell sessions with gates by
-block kind and both-streams transcripts; the in-process receipt world over the deterministic store
-with `gate-two-drivers-agree`; seeds varied by default, `$ export DORC_SEED=<n>` the one pin
-spelling, bless refusing under a second seed; one runner; thirteen frontmatter keys by criterion
-and every dir-case converted; the dependency-free `dorc-testbed` substrate (the run seed, the seam
-vocabulary, the xfail registry) leaving `internal-tooling` with zero dependents; the
-shell-resolution seat moved to `transport` as product code and consumed by `dorc-sh`
-(`dorc-sh-no-shell` minted unwritten); the unloaded-sibling-oracle advisory retired whole; the
-apply identities line authored; the steering re-cuts (`spike/CLAUDE.md`, `crates/cli/CLAUDE.md`,
-`crates/aid/CLAUDE.md`), registers, plans, and round map current. Gate at the tip: both
-builder-completion legs green, the three arc-tier verifiers green, `bless:dry` clean, `xfail:census`
-coherent. The close sitting's typed rulings are in `30Xa` §0; no to-ack or owed list survives
-anywhere durable (human, 2026-09-04: lose work rather than mint pending work; no TODOs in any
-CLAUDE.md). HELD: `/opaque-review` `30-reviewC` returned NACK —
-`Research/quarantine-DO-NOT-READ/30-reviewC-30X-testing-rebuild-opaque-report.md` on the arc
-branch, unopened by the conductor; the human adjudicates (as for `30-reviewA`). The fold (ff into
-`ai/main`, this entry's deletion with its account moving to the README round map, the worktree and
-branch reaped) waits on that; the branch re-rebases over `ai/main` docs-only before it.
+The rebuild is complete on `ai/r30-30X-test-infra-decruft-conductor` (worktree
+`.tmp/trees/r30-30X-test-infra-decruft-conductor`, riding `ai/main`): the `Seams`/`HarnessSeams`
+bundle and the `dorc-harness` sibling binary; looms as shell sessions with gates by block kind; the
+in-process receipt world with `gate-two-drivers-agree`; seeds varied by default; one runner; thirteen
+frontmatter keys and every dir-case converted; `dorc-testbed`; the shell-resolution seat in
+`transport` consumed by `dorc-sh`; the sibling-oracle advisory retired; the apply identities line
+authored; steering, registers, plans, and the round map current. Design of record `notes/30X`;
+conductor ledger **`notes/30Xa`** — its §0 is the successor's complete on-ramp: the ruling's bounds,
+the finding that `mise run install` currently installs `dorc-harness` alongside `dorc` and `dorc-sh`
+(the repair and its objective check), the "runner-owned" re-cut list, the gate procedure under this
+machine's memory limits, and the fold steps. The ephemeral handoff carrying the ruling's text sits
+untracked in that worktree. No further opaque review was requested; the fold completes on the
+existing procedure once the two repairs land green.
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 

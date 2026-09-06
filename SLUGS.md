@@ -84,6 +84,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 260:acc-unreachable-never-converged
 - defined: Research/plans/260-round26-multihost-plan.md:502 — — an unreachable host's plan contains zero elisions and
 
+## accept-dangerous-developer-harness
+- defined: —
+- cited: Research/LIVING_STATUS (1)
+
 ## 30R:accounted-and-unaccounted-output
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:273
 - cited: cli/CLAUDE (1)
