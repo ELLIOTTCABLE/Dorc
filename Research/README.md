@@ -192,7 +192,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   books; §10 rulings owed) · **`notes/30D`** (+`30Da`) (predict channel claims and OOB
   confirmation — RULED; the current-kernel rider) · **`notes/30X`** (the testing
   architecture: seams, sessions, seeds — the design-of-record for the suite; BUILT; its §10
-  carries the one legal deferral class, kernel-mutating dogfood).
+  carries the one legal deferral class, kernel-mutating dogfood; its §5 carries the harness's
+  human-acked bound, `30C:accept-dangerous-developer-harness` — developer tooling, not a sandbox).
   Ledgers and records, in order: `notes/300` (+`300a`–`e`: Kani lane, prompt-review audit,
   speech-act gapcheck, sparing-reference lane + bundle) · `301` (minispec and dorc-verify)
   · `303`/`303a` (certifier call-site census + cross-lineage review) · `304`
@@ -218,7 +219,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   review of the pre-rewrite `30T` draft) · `30V` (why-surface state-space re-exploration;
   §6 the deferred set) + `30Va` (conduct) / `30Vb`,`30Vc` (strawmen — raw, read-optional) /
   `30Vd` (lane ledger) · `30Xa` (the rebuild's conductor ledger: every checkpoint ruling, the
-  lane table, the typed acks of the close). Current state: `LIVING_STATUS.md`; what follows:
+  lane table, the typed acks of the close, the post-review repair lane). Current state:
+  `LIVING_STATUS.md`; what follows:
   `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
   against a real machine: the ssh executor (`dorc apply host <plan.sh` does its own ssh'ing),

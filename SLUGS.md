@@ -90,7 +90,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## accept-dangerous-developer-harness
 - defined: —
-- cited: 30X 30Xa _tmp-30X-developer-harness-fold-handoff cli/CLAUDE (6)
+- cited: 30X 30Xa Research/README _tmp-30X-developer-harness-fold-handoff cli/CLAUDE (7)
 
 ## 30R:accounted-and-unaccounted-output
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:273
@@ -4188,7 +4188,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## loom-syntax-grants-no-production-authority
 - defined: —
-- cited: 30X 30Xa cli/CLAUDE (5)
+- cited: 30X 30Xa cli/CLAUDE (4)
 
 ## loom-transcript-is-what-the-user-saw
 - defined: —
@@ -4279,7 +4279,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## model-seams-are-one-bundle
 - defined: —
-- cited: 30X 30Xa cli/CLAUDE (3)
+- cited: 30X cli/CLAUDE (2)
 
 ## model-symbolic-dollar-zero
 - defined: —
@@ -4400,7 +4400,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:never-filter-a-task
 - defined: spike/CLAUDE.md:1089 — — if a task is too loud, run its `-quiet` variant; if it has
-- cited: 300 30Ia (2)
+- cited: 300 30Ia 30Xa (3)
 
 ## analysis/CLAUDE:never-live-feeds-the-dialect-fold-only
 - defined: spike/crates/analysis/CLAUDE.md:168 — (`28M` §9, re-cut at `28Q` §1) — the fold reaches the
@@ -6319,7 +6319,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:rul-harness-is-developer-tooling-not-a-sandbox
 - defined: spike/crates/cli/CLAUDE.md:350 — (`30C:accept-dangerous-developer-harness`,
-- cited: 30Xa (1)
+- cited: 30Xa (2)
 
 ## 28K:rul-hash-munge-disambiguation
 - defined: Research/plans/28K-oracle-loading-and-resolution.md:235 — — when the unit's live history holds >1 distinct

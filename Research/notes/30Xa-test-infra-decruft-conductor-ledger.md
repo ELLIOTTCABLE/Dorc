@@ -6,67 +6,34 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
-## §0 — state (2026-09-05): BUILT and gated; the fold's hold on `30-reviewC` was ADJUDICATED by the human into a ruling; two repairs and the fold are OWED — a successor resumes HERE
+## §0 — state (2026-09-05): COMPLETE — built, repaired under the accepted harness ruling, gated at the code-final tip `b0425349`, folded to `ai/main` in the close of 2026-09-05
 
-Read FIRST: the ephemeral handoff `_tmp-30X-developer-harness-fold-handoff.md`, UNTRACKED at the
-root of this worktree (`.tmp/trees/r30-30X-test-infra-decruft-conductor`, branch
-`ai/r30-30X-test-infra-decruft-conductor`, riding `ai/main` as of 2026-09-05). It is the ruling's
-authoritative text; delete it only at the fold. The ruling, `30C:accept-dangerous-developer-harness`
-(human-acked after the hold; recorded on this branch by a sibling — "Record the accepted
-developer-tool boundary"): `dorc-harness` is repository-internal developer tooling that runs the
-production engine and native receipt implementation with developer-selected fixture values; a root or
-receipt path handed to it is an ordinary selected path that may name existing local state and carries
-NO claim that the runner created or owns it. Hard bounds: the shipped `dorc` stays the production
-composition (no harness-shaped environment, no fixture seams) · `dorc-harness` never enters shipped
-or public artifact sets · loom sessions stay unrestricted (no developer-machine containment subsystem,
-no durable fixture-provenance format) · the ordinary harness keeps no `RealSsh` selection. Leans:
-keep the runner's defaults (fresh throwaway roots, the scrubbed session, the env-cleared mocks rail) as
-suite defaults a session may deliberately replace; the smallest coherent re-cut of the visible
-contracts; the artifact-set check extends an existing seat, never a new runner, fixture shape, or
-release mechanism, and never a target/feature arrangement that can let the corpus vanish silently; no
-root token, marker protocol, broker, durable field, sandbox, or replacement receipt backend is owed.
-The human requested no follow-up opaque review; the fold completes on the existing procedure.
+Nothing is owed. The end-of-arc opaque review `30-reviewC` (pass `initial`, range `ai/main..` the
+gated tip) returned `NACK Research/quarantine-DO-NOT-READ/30-reviewC-30X-testing-rebuild-opaque-report.md`,
+unopened by the conductor; the human adjudicated it, as they did `30-reviewA`, into
+`30C:accept-dangerous-developer-harness` (typed ack 2026-09-05; recorded in the quarantine by a
+sibling — "Record the accepted developer-tool boundary"), whose visible text is now
+`crates/cli/CLAUDE.md rul-harness-is-developer-tooling-not-a-sandbox` and `30X` §5: `dorc-harness` is
+repository-internal developer tooling running the production engine and the native receipt
+implementation over developer-selected fixture values; a root or receipt path handed to it is an
+ordinary SELECTED path that may name existing local state and carries no claim that the runner
+created or owns it. Four bounds: the shipped `dorc` reads no harness-shaped environment and constructs
+no fixture seam · `dorc-harness` never enters a shipped or public artifact set · loom sessions stay
+unrestricted (no containment subsystem, no fixture-provenance format) · the ordinary harness keeps no
+`RealSsh` selection. The runner's fresh throwaway roots, scrubbed session, and env-cleared mocks rail
+stay as suite DEFAULTS a session may deliberately replace. The human requested no follow-up opaque
+review and none was dispatched; the ephemeral handoff that carried the ruling's text was deleted at
+the fold.
 
-OWED, in order:
-
-1. `repair-install-omits-the-harness` — FINDING (conductor, 2026-09-05): the ONE user-facing
-   collection in this repository is `mise run install` = `cargo install --path ./crates/cli --debug
-   --locked --` (`mise.toml` `[tasks.install]`), which installs EVERY bin target of the cli package —
-   `dorc`, `dorc-sh`, AND `dorc-harness` — so the bound is violated today. Repair: the task names its
-   bins (`--bin dorc --bin dorc-sh`); the objective check is a test in `internal-tooling` (repo
-   plumbing; `30X` §3a class 1, the suite's own machinery) asserting the install task's `--bin` set
-   equals the cli package's bin targets (read from `cargo metadata`) minus exactly `dorc-harness` — a
-   future bin then cannot appear without a distribution decision, and the corpus keeps building and
-   invoking `dorc-harness` through `CARGO_BIN_EXE_dorc-harness` untouched (no feature, no
-   `required-features`). One Opus lane; the test's inputs are textual config plus cargo metadata, an
-   instrument the human asked for.
-2. `recut-runner-owned-into-selected-paths` — the phrase "runner-owned roots/paths" overstates
-   ownership. Re-cut (conductor voice, once): `crates/cli/CLAUDE.md` `a-case-is-a-shell-session`
-   and `rul-runner-varies-only-what-it-set` ("the runner supplies fresh throwaway roots and a scrubbed
-   session by default; a session may replace its path configuration; the harness claims no
-   ownership"); `rul-roots-pinned-is-a-literal` STAYS (it is about never consulting the platform
-   variables, not ownership); `notes/30X` §2 `model-seams-are-one-bundle` ("a runner-owned path" →
-   "a selected path"), §4 `bin-harness-sibling-not-produced-cli` ("under runner-owned roots" → "under
-   whatever roots the session selected — the runner's throwaway defaults or a deliberately chosen
-   local path"), §5 `loom-syntax-grants-no-production-authority` (already says the harness is a
-   powerful developer subsystem; drop "runner-owned" from its roots clause and cite the ruling), §11
-   lane A's sentence; `spike/CLAUDE.md` needs no edit. Add ONE bullet beside the harness contract in
-   `crates/cli/CLAUDE.md`, `rul-harness-is-developer-tooling-not-a-sandbox`
-   (`30C:accept-dangerous-developer-harness`), restating the four bounds in two sentences.
-3. `close-gates-at-the-final-tip` — `mise run both gate:full-quiet`, `bless:dry`, `mise run
-   gate:arc`. Memory: on 2026-09-04 the harness's own watchdog killed backgrounded gates twice (the
-   human's apps held ~18 GiB and the WSL VM ~11 GiB of cache); check free RAM ≥ 10 GiB first
-   (`vmmemWSL` drains under gradual reclaim); the arc-profile steps this diff selects are exactly
-   `verify-translate-check` · `verify-lean-badges` · `verify-kani`, runnable singly via `mise run
-   gate:step -- <step>` when the whole gate cannot be hosted. Evidence already in hand at the
-   content-identical tip before the ruling: both builder-completion legs green; all three verifiers
-   green; `bless:dry` clean; `xfail:census` 25 live · 3 reserved.
-4. The fold: docs-only rebase over `ai/main` if it moved (the sibling design sessions land often;
-   slug-index conflicts resolve to upstream, then `mise run slugs`), `git -C <root> merge --ff-only`,
-   delete the `LIVING_STATUS` IN FLIGHT entry (its account is in the README round map) and add two
-   conduct fences there (no TODOs in any CLAUDE.md, ever; no durable to-ack/owed lists — lose work
-   rather than mint pending work), commit on `ai/main` by pathspec, prove containment, `git worktree
-   remove` + `git branch -d`, delete the untracked handoff.
+The close, in order: the steering re-cut `589fc66d` ("runner-owned roots/paths" → selected paths in
+`crates/cli/CLAUDE.md` and `30X` §2/§4/§5/§11, with the new bullet; `rul-roots-pinned-is-a-literal`
+stands — it is about never consulting the platform variables, not ownership); the repair lane
+(`Checkpoint R` under §2a — the install task names its bins, `internal-tooling`'s test holds the set,
+the `seam.rs`/`consumer.rs` doc comments re-cut); the gates at the code-final tip `b0425349`; this
+ledger and the README round map; the fold on the existing procedure (rebase over `ai/main`,
+`merge --ff-only`, the `LIVING_STATUS` entry deleted with two conduct fences added — no TODOs in any
+CLAUDE.md, ever; no durable to-ack/owed lists, lose work rather than mint pending work — containment
+proved, the worktree and branch reaped, the handoff deleted).
 
 ### The arc as built (the account that moves to the README round map at the fold)
 
@@ -86,16 +53,15 @@ minted unwritten (lane D2b′); `tolerate:` stays as built — a harness-instrum
 own, and the product owns xtrace. No to-ack or owed list survives anywhere durable: what was not
 built is not built. Lane briefs were never committed (human ruling) and died with the conductor
 sessions that held them. The steering re-cuts, the registers, and the round map landed in the
-close batch; git carries them. Fold: `gate:arc` from this branch, the opaque review
-(authorized), rebase over `ai/main`'s human commit, `merge --ff-only`, the `LIVING_STATUS` entry
-deleted, the worktree and branch reaped after `merge-base --is-ancestor` proves containment.
-HELD at the fold: the end-of-arc opaque review `30-reviewC` (pass `initial`, range `ai/main..` the
-gated tip) returned `NACK Research/quarantine-DO-NOT-READ/30-reviewC-30X-testing-rebuild-opaque-report.md`,
-committed on this branch and unopened by the conductor; the human adjudicates, as they did
-`30-reviewA`. Gate evidence at that tip: both builder-completion legs green; the three arc-tier
-verifiers green (`verify-translate-check` · `verify-lean-badges` · `verify-kani`); `bless:dry` clean;
-the Windows leg re-green after the last docs-only rebase (the WSL leg at that exact tip could not be
-hosted by the machine's memory; its content-identical run stands).
+close batch; git carries them. The end-of-arc opaque review `30-reviewC` returned NACK and was
+adjudicated by the human into `30C:accept-dangerous-developer-harness` (§0); its two repairs are
+`Checkpoint R`. Gate evidence at the code-final tip `b0425349` (the docs commits after it change no
+gate input): both `gate:full-quiet` legs green (the repair lane's own foreground runs, Windows then
+WSL); `bless:dry` clean; `xfail:census` 25 live · 3 reserved, none expired; the three arc-tier
+verifiers this diff selects, run singly through
+`mise run gate:step` because the whole `gate:arc` cannot be hosted beside the human's apps —
+`verify-translate-check` PASS · `verify-lean-badges` recomputed (0 proof holes, 13 fenced axioms) ·
+`verify-kani` 107 green of 107 harnesses, 0 over budget.
 
 ### How the design got here (the sitting's review trail)
 
@@ -154,7 +120,7 @@ this sitting that this branch rebases over before any fold.
 | the reviewer-driven tightening (`8ab53489`) + the conductor's five clarity repairs + `rul-seam-columns-are-conductor-ruled` | ACKED 2026-09-02 ("Ack; proceed with your cleaning. I believe we're ready to deploy") |
 | `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; stood uncorrected through the close |
 | the close sitting's veto items (both lane-B product rulings · the route-B re-export · `rul-post-dispatch-durable-failure-is-a-sibling-code` · the source-comparison seat's reader · the unwritten identities line · exit 0 on an unrecorded outcome · the lint slug · the three relativizations · the thirteen keys) | ACKED 2026-09-04 as §0 records; the advisory the second lane-B ruling served was then RETIRED at the human's word |
-| `30-reviewC` NACK → `30C:accept-dangerous-developer-harness` | ACKED by the human 2026-09-05 (the handoff named in §0); two repairs owed before the fold |
+| `30-reviewC` NACK → `30C:accept-dangerous-developer-harness` | ACKED by the human 2026-09-05 (via a sibling's handoff); both repairs LANDED in the close (`589fc66d`; `Checkpoint R`) |
 | the five fence re-targets (`main.rs` → `compose.rs`; §2a last row) | ACKED 2026-09-04 ("if there's fences they need to scan the right file"); the fences' existence NOT acked, punted |
 | sealed review over lane A's implementation (builder-flow relay, §2a) | DECLINED by the human 2026-09-02: no opaque review within the arc; end-of-arc is their call |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
@@ -417,6 +383,27 @@ Built: the census tier's inputs moved to the loom corpus (`region_artifacts.rs`,
 
 Steering concepts banked for close: `in-process-posture-reads-the-seam` · `book-reached-resolves-dollar-zero-loads` · `loading-diagnostics-relativize-at-one-seat` · `lint-error-carries-the-slug` · `lint-looms-are-ordinary-sessions` · `real-tools-owns-its-fixtures` · `apply-write-step-words-live-in-aid` · from D1–D2a: `rul-decline-sets-are-one-vocabulary` · `rul-errored-plan-has-no-artifact-gate` · `rul-loom-diagnostic-assertion-is-the-session-compare` · `xfail-in-loom-needs-a-structural-failure` · `both-streams-transcripts-expose-path-leaks` · `render-fixpoint-dump-rescue` · `vars-spans-every-editable-block` · `loom-run-knobs-live-in-the-session`.
 
+### Checkpoint R (`b0425349`; the post-review repair lane `repair-install-omits-the-harness`, 2026-09-05; one Opus builder; both gate legs green, foreground)
+
+Built: `mise run install` = `cargo install --path ./crates/cli --bin dorc --bin dorc-sh --debug
+--locked --` (`ab07804e`); `internal-tooling/tests/install_task_excludes_the_harness.rs` —
+`the_install_task_names_the_cli_bins_minus_the_harness` reads the cli package's bin targets from
+`cargo metadata` (never the `[[bin]]` stanzas: `autobins` discovers a bin no stanza names), asserts
+`dorc-harness` IS among them (a renamed harness reddens rather than passing vacuously), and asserts
+the task's `--bin` set equals that set minus exactly the harness, as sets (`ea392204`; `serde_json`
+and `toml = "0.5"` as dev-dependencies of `internal-tooling` only, which still has no dependents);
+the `HarnessRootsSeam::Pinned` doc comments in `cli/src/seam.rs` and `dorc-loom/src/consumer.rs`
+re-cut from "a runner-owned throwaway" to "a selected directory the harness does not own"
+(`b0425349`, net-zero comment lines). Verified once, not committed: the task itself, installed into a
+scratchpad `--root`, holds exactly `dorc.exe` and `dorc-sh.exe`.
+
+| item | ruling | the conductor's own mistake, named |
+|---|---|---|
+| the parser census — `toml 0.5` locked only transitively (`find-crate` → `age`); NO JSON parser in the tree | RULED mid-lane: `serde_json` joins as a dev-dependency of `internal-tooling` only (cargo's own answer beats a twin of `autobins` discovery; a zero-dependent plumbing crate; `cargo deny` green); `toml = "0.5"` reuses the locked line — if `age`'s chain moves, the duplicate is a `deny` warn, not a fail. Veto-eligible. | the brief's census clause sent the builder toward a STOP the conductor had to pre-empt by message. |
+| `dev-throwaway-install-disturbed-shared-target` — the verification install into the shared `spike/target` left it incrementally inconsistent; the first Windows gate reddened on one case spawning a momentarily-absent `dorc-harness.exe`; a fresh `mise run build` restored it and the re-run was green | ACCEPT (no code cause). A verification install takes its own throwaway `--target-dir` next time. | the brief directed the shared target dir. |
+| `dev-read-primary-checkout-not-worktree` — read-only reads of root docs and edit targets from the primary checkout before the divergence was caught; every edit and git act targeted the worktree; its "stale `src/main.rs` bin stanza" observation is that slip (the arc's stanza names `src/bin/dorc.rs`) | no action. | — |
+| `tc-include-fifth-roots-doc-site` (the `Pinned` variant's own doc inside the enum) · `dev-piped-preflight-through-tail` (a `never-filter-a-task` slip over a six-line output, rc recovered; no gate was filtered) | ACCEPT · noted. | the brief's line list missed the fifth site. |
+
 ## §3 — tree reconciliation (2026-09-02; `ai/main` at "Tune conductor's usage of subagents and worktrees")
 
 `30X` §11's ground truth holds, with these deltas:
@@ -541,6 +528,8 @@ with rip-don't-update, the no-subagents clamp, the naming discipline, `rul-minim
 | — checkpoint C3 | RULED `rul-post-dispatch-durable-failure-is-a-sibling-code` (conductor, 2026-09-03; the human's veto stands open at close): the post-dispatch durable failure is a SIBLING code of `durable-receipt-unwritten`, never a reason arm — `AID-NEEDS:law-codes-vary-by-world-not-grammar`: the plan-time world (no durable, nothing touched, re-plan) and the post-dispatch world (the intent published, the machine perhaps changed, the outcome unrecorded — check the host, keep the intent id) differ in world and in repair, and the why-lens must never let them be confused; WHICH write step failed is a typed reason enum within the one code (`28L:rul-reason-enums-not-sibling-codes`). C3b executes it. | — |
 | D `lane-d-one-runner-and-frontmatter-collapse` | one runner; the driver derived and reported; `run:`/`fixpoint:` retired; frontmatter 24→9 (`tests-critical-law` has zero uses — drop unless `vocabulary.rs` reserves it for a reason); hk/mise/bless plumbing follows; the dir-case → loom conversion (ACKED: a one-off converter deleted after use; the round-trip runner's dir entry and its marker grammar die); `lint-real-*` re-homed as the real-tools test's fixture space; the four `run: lint` looms fold into the session driver; the doctest noise; yardstick. Dispatched as TWO serial sub-lanes: D1 (the runner merge, the derived driver, the frontmatter collapse) inheriting C1″'s `vars` over every session block and C3a's two residues (the publish authority's second-seed refusal; the run seed on every FAIL line); D2 (the dir-case conversion, the lint fold, the fixture seat's fate, `xfail` and `Posix` out of `internal-tooling` into `dorc-testbed` so it has no dependents, the doctest noise, yardstick) inheriting hostsim's sweeps under `rul-coverage-assertions-are-base-robust-or-fixed` | D1 §1 and rider (e) BUILT at `2950fc13`; D1′ BUILT the derived driver, rider (d), rider (f) part 1 at `1897d5f1` (`Checkpoint D1′`; three fidelity disagreements red as named `tc-*`); D1″ BUILT the `dorc-sh` decline, the every-block `vars`, and the apply session at `9834a071` (`Checkpoint D1″`); the collapse re-homes into D2a (the two converters: the frontmatter collapse and the dir-case conversion, one family), D2b the rest of D2 (the lint fold with its two fidelity fixes, the fixture seat, `xfail`/`Posix` out of `internal-tooling`, hostsim's sweeps, the word table, doctest noise, yardstick) — D2b BUILT (`Checkpoint D2b`); D2b′ BUILT the last tenants (`xfail` + `repo_root` into `dorc-testbed`; `Posix` into `transport` as PRODUCT code, because the shipped `dorc-sh` now consumes it — the conductor's lean over this row's earlier "into `dorc-testbed`"; hostsim's family on the run seed with its coverage sweep kept at a fixed base by argument; `oracle`'s dead edge dropped; zero dependents of `internal-tooling`) and the `dorc-sh` fix (`Command::new("sh")` → the seat; `dorc-sh-no-shell`, exit 127, minted unwritten); D2c RETIRED the unloaded-sibling-oracle advisory whole and moved `dorc-sh`'s strip-and-exec body below the seam (`compose::shim_strip_and_run`), then dropped the unfed acquisition-diagnostics channel on the conductor's reversal |
 
+| R `repair-install-omits-the-harness` (post-review, 2026-09-05) | the install task names its bins; the objective check in `internal-tooling`; the `Pinned` doc comments | BUILT `ab07804e`..`b0425349` (`Checkpoint R`); the steering re-cut `589fc66d` preceded it |
+
 ## §6 — residue accounting
 
 Empty. The one entry this section ever held — `dorc-sh` resolving `sh` by a bare
@@ -560,3 +549,8 @@ section deleted, not replaced) · `AID-NEEDS` (the advisory's row gone; the exit
 structural ruling) · `Research/README.md` (the r12 and r30 rows). The five re-pointed fences:
 `plan/src/spine.rs`'s composition scan, two self-scans in `cli/src/compose.rs`, one in
 `cli/src/engine.rs`, and `dorc-loom/src/defect.rs`'s production-names-no-loom-authority scan.
+After the ruling (2026-09-05): `crates/cli/CLAUDE.md` (`rul-harness-is-developer-tooling-not-a-sandbox`;
+`a-case-is-a-shell-session` and `rul-runner-varies-only-what-it-set` re-cut to selected paths) ·
+`notes/30X` §2/§4/§5/§11 (the same re-cut; §5 cites the ruling) · `Research/README.md` (the r30
+row's `30X`/`30Xa` clauses) · `LIVING_STATUS` (the entry deleted at the fold; two conduct fences
+added).
