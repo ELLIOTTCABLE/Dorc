@@ -195,7 +195,7 @@ run = [
 description = "Install the production binaries to your cargo bin."
 dir = "spike"
 run = [
-   "cargo install --path ./crates/cli --debug --locked --"
+   "cargo install --path ./crates/cli --bin dorc --bin dorc-sh --debug --locked --"
 ]
 
 # The ONE place a WSL leg is spelled. `run_windows` is mise's own platform switch, so no
