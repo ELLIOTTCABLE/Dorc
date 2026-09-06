@@ -798,6 +798,9 @@ insert-only, never wrap, never move.
 
 ## §10 — state at close (2026-09-06, ninth fixpoint; the human rewinds after this)
 
+> Historical close. The successor scrutiny and human responses are in §11; §12 is now the
+> resumption point. In particular, the staged mix is not an adopted implementation plan.
+
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
   return-zero` · `rul-three-rc-regimes` (acked as holding) · `nack-predict-off-rc` ·
@@ -827,3 +830,288 @@ insert-only, never wrap, never move.
   survey · the USER_STORY refresh (human-acked, as a story step).
 - Successor: resume from this section; the transport lineage resumes from `26Ob` §15 and
   becomes `311`; `310`/`ROADMAP` are the sibling's; the cleanup pass is §7.
+
+## §11 — independent scrutiny, UX horizon, and the human's response (2026-09-06)
+
+Successor design-duck sitting, reasoning in the primary context without subagents. Read the
+whole ledger, `notes/30D`, then `ROADMAP`, `plans/310`, and `plans/30U` for the build consequences.
+The human requested wide criticism first, then a UX-first backward walk, then this durable
+synthesis. Only the explicitly graded human responses below are rulings. Proposed contract and
+r31 consequences are recommendations, NOT scheduled work or edits to the designs of record.
+
+### §11a — findings from the independent challenge
+
+- **`fnd-answer-intent-is-not-syntax`** [FOUND, reasoning] — the status-meaningfulness test
+  conflicts with `30D:rul-predict-status-is-function-aggregate`: `f() { :; }` or a final
+  `printf` can be an intentional faithful model; an accidental final `[ -n "$DEBUG" ]`
+  satisfies the proposed variable-dependent test. Missing-case fallthrough can likewise be
+  deliberate success. The syntax does not distinguish the two intentions. Three different
+  questions must stay separate: what status the model produced; whether execution suffered
+  a mechanically identifiable interruption; whether the result correctly models the tool.
+- **`fnd-answer-entry-is-not-completion`** [FOUND, reasoning; not floor-measured] — §9h's
+  pre-leaf marker can be set before an answer's `${REQUIRED:?missing}` or input redirect
+  fails, although the command never starts. An answer like
+  `[ "$(cd "$ROOT"; read_state)" != ready ]` can consume an interrupted substitution's
+  empty output and itself complete successfully. A marker plus matching final status does
+  not distinguish these from an intended answer. A helper's leaf must also answer the
+  current dynamic call chain, not merely be an answer at some other call site.
+- **`fnd-rc-agreement-is-not-equivalence`** [FOUND, reasoning] — the completion record's rc
+  agreeing with the transformed body's rc checks reporting consistency, not equivalence
+  with the original. A transformation changing a substitution's bytes can change the
+  predicate's result while both readings agree perfectly. The earlier claim that the rc
+  cross-check bounds transformation bugs to lost optimization is unproved.
+- **`fnd-marker-expansion-preserves-incoming-status`** [FOUND, narrow experiment] — a marker
+  need not be a separate command. With fresh `anchor=x` and `arm=0`, the generated fragment
+  `return ${anchor#[$((arm = 7))x]} "$?"` updates `arm` through arithmetic expansion,
+  removes the known anchor with pattern `[7x]`, and contributes no argument. Local dash and
+  Bash both preserved an incoming status 1, returned 1, and exposed arm 7 to the EXIT trap.
+  NOT a pinned-floor proof (posh untested), NOT a selected design. A simpler empty-anchor
+  variant assigned in dash but not Bash; that failed first experiment is evidence against
+  treating the trick as portable by inspection. It challenges §9h's command-only
+  impossibility premise, but does not repair entry-versus-completion or nested execution.
+- **`fnd-wrapping-hazard-is-not-universal`** [FOUND, reasoning] — a generic answer wrapper
+  is unsafe, but a direct external command with safe expansions differs from a shell helper
+  or substitution. `set +e` disables an option; an AND-OR context can ignore attempts to
+  enable it; these are not identical. A freshly executed interpreter does not inherit its
+  parent's syntactic exemption as though it were a shell function. Narrow transformations
+  by shell semantic operation remain a candidate, not an established compiler design.
+- **`alt-interpreter-instrumentation-is-unpriced`** [PROPOSED alternative, not selected] —
+  a narrow instrumentation patch to an existing oracle interpreter could expose returns,
+  expansion failures, and errexit events on a dedicated channel without source insertions.
+  Delivery, supported targets, maintenance, licensing, and equivalence obligations are real;
+  the question is their cost relative to source-to-source compilation. No new interpreter,
+  patch, or binary-delivery work was authorized.
+- **`fnd-zero-is-not-semantic-completeness`** [FOUND, reasoning] — errexit plus zero means
+  no abort escaped the admitted error-handling structure, not that every necessary operation
+  succeeded. `producer || :`, tested failures, and early `return 0` can mask incomplete
+  work. Similarly, rc >=128 is not proof of signal death (an explicit `return 200` is legal),
+  and a nested signal can disappear behind a lower final status. Known execution events
+  and numeric results are separate inputs.
+- **`fnd-static-first-is-not-forced`** [FOUND, reasoning] — some static analysis being
+  necessary does not imply shipping the static-only guard-every-fallible-step policy first.
+  That policy has its own authoring costs and does not follow from the need to map runtime
+  events to source. The staged mix's ordering is a product/engineering choice, not a proof.
+
+### §11b — UX findings and the human's adjudication
+
+- **`rul-expectations-vary-with-experience`** [ACKED] — idiomaticness and least-surprise
+  vary continuously with the user's experience. Shell expertise is not Dorc expertise;
+  greater expertise can increase the desire for exact control rather than protection through
+  intent inference. The first-row rendering the human could not see: for someone writing
+  deployment commands and occasional guards, idiomatic = `check || do_it` and a small check
+  function; least-surprising = a failed check does not hide necessary work.
+- **`rul-preserve-authored-error-policy`** [ACKED] — preserve the author's error policy
+  under a stated, reproducible invocation contract. An unchanged body invoked in a new
+  conditional context can still have changed semantics; if Dorc suppresses an authored
+  errexit policy through its caller, that is Dorc's seam, not an ordinary author mistake.
+  This does not promise equivalence under every possible off-Dorc caller.
+- **`ack-role-distinction-remains-a-tension`** [ACKED reasoning, human qualification] —
+  predicates and observable models have different responsibilities; the distinction must
+  remain legible, but cannot collapse to a neat universal rule. Their meaning is inherently
+  in tension with gradual enhancement. A cheap-to-author prediction can still carry a
+  stronger contract than a convergence predicate; this is not an excuse for a new cliff.
+- **`rul-decline-never-licenses-success`** [TYPED, hard ack] — accept either/both decline
+  spellings toward decline and fail-fast on their conflict. A recognized named decline must
+  never become affirmative knowledge merely because its `printf` returned zero. This repairs
+  §9e's verdict-side record-as-aid-only posture. The human considers the wider DREP-is-aid-only
+  premise ancient and already substantially negated; no general aid-plane redesign follows.
+  **[PROPOSED precision]** The record's own successful write is not independent affirmative
+  speech, or record-only decline would be impossible. Proven opposing speech on the same path
+  (for example a named verdict decline followed by an explicit affirmative `return 0`) is a
+  contract contradiction. An unresolved status source cannot restore a declined answer.
+  A decline record still does NOT return from the shell function; `return 2` remains the
+  defensive, reusable way to end the declined branch. In predicts, that conventional
+  accompanying 2 remains unread as a prediction, not a contradiction.
+- **`nack-special-case-implicit-status`** [TYPED] — reject the proposed rule that silently
+  withholds implicit Status merely because its producer is a DREP write. Off-ramp must hold;
+  Dorc should foster defensive, correct POSIX sh reusable by non-Dorc users, not make bad
+  status preservation work only under Dorc. Ordinary final status remains ordinary final
+  status; no compiler or default-policy magic repairs it.
+- **`open-stream-witness-versus-status-witness`** [TYPED question, not a decision] — the
+  human is gently interested in moving stdout coverage speech before its producer, but asks
+  whether authored completion witnesses remain valuable for stdout in a way that the attempted
+  generic rc witness does not. The same question applies to `disturbs nothing-else`'s
+  combined totality claim and completion witness. §11c recommends retaining them.
+- **`alt-explicit-record-overrides-status`** [human proposal, not acked as design] — perhaps
+  ordinary rc OR an explicit DREP rc value could supply the prediction, explicit speech
+  winning (strawman `predicts rc=$?,stdout`). The human names the off-ramp, idiomaticness,
+  and teaching costs. §11c recommends against a differing-value override, rather than
+  reserving its grammar or scheduling it.
+- **`ack-known-execution-failures-remain-ours`** [ACKED] — obvious failures of Dorc's own
+  invocation/capture/transport machinery remain its responsibility. The question is narrower:
+  responsibility whose available remedies also harm users through risky compilation,
+  authoring burden, or surprise. This is not permission to abdicate arbitrary failures.
+- **`rul-aid-cannot-rescue-bad-design`** [TYPED] — lint/hint discussion is gently punted;
+  it cannot justify an unidiomatic design merely because that design is easy for Dorc.
+  The recommendation and build consequences below therefore contain only mechanics and
+  correctness, not a warning-based substitute for either.
+- **`rul-restrictions-priced-by-ecosystem-cost`** [TYPED, correcting the duck's lean] —
+  oracle restrictions remain strong, legitimate leverage. The counterweight is primarily
+  off-ramp and idiomaticness, not avoiding all author stress or surprise. Small disciplined
+  backflips can be justified if they produce a sane, stable product; requirements yielding
+  shell nobody wants to reuse cannot. Being patronizing for the author's good is acceptable;
+  being lazy is not. No new restriction was selected in this turn.
+- **`ack-status-and-stream-are-separate-rungs`** [ACKED with addition] — the enhancement
+  curve must distinguish writing an rc prediction from writing a stdout prediction; they
+  differ substantially in generalization difficulty and risk to consumers.
+
+### §11c — one recommended product contract (PROPOSED, not yet acked)
+
+**`rec-literal-model-authored-stream-seal`** — keep `__predict` a literal, read-only shell
+model under a declared, reproducible invocation environment. Its real aggregate rc models
+Status by default, every shell value available, unless explicit channel speech declines it.
+Stdout/Stderr remain default-declined and require an authored post-production positive claim.
+Dorc does not infer an intended answer, synthesize completion points, suppress a reporting
+command's ordinary status, or certify arbitrary internal error handling. Author responsibility
+is the model's adequacy and its internal shell failure policy; Dorc responsibility is faithful
+invocation, confirmed speech, complete capture, correct scope, and interpretation under the
+role's contract. This replaces the proposed staged mix as this duck's recommendation, NOT as
+an adopted ruling or change to `30D`.
+
+- **`rec-retain-authored-stream-completion`** — a stream can have an arbitrarily convincing
+  proper prefix; its ending does not announce why production stopped. A record deliberately
+  placed AFTER production supplies an extra authored checkpoint, without changing how the
+  producer executes. Require the relevant claim's confirmed reach, intact payload capture,
+  the invocation's independently known integrity, and the static scope/order of the record.
+  The asymmetry is contractual and economic, not a theorem that stdout is certifiable and
+  rc is not: an author could explicitly seal either. Stream prediction already requires
+  positive speech, so its post-production placement buys a checkpoint without a second
+  authored act or hidden source transform. The cheap status-only rung intentionally does not
+  buy that extra act. A predicted nonzero rc does not by itself invalidate a positively
+  claimed stream: a model may intentionally describe the output of a failed tool invocation.
+- **`rec-checkpoint-does-not-prove-success`** [PROPOSED clarification] — the checkpoint proves reached
+  speech, not successful completion of every predecessor. For example `producer || :` can
+  reach the seal after losing data; the author then made a wrong completeness claim. A
+  missing seal protects against exits before it; a reached seal cannot prove semantic
+  coverage, successful swallowed writes, or fidelity to the real tool. Dorc's own capture
+  failures remain independently disqualifying. Across stdout and DREP, temporal arrival of
+  the record is NOT proof that the other channel has drained; acceptance waits for its own
+  close/integrity conditions. No total ordering across separate streams is assumed.
+- **`rec-keep-at-most-speech-distinct`** — retain `disturbs nothing-else`: its content is
+  indispensable authorial totality speech and its reached position additionally witnesses
+  that checkpoint. Runtime arrival never proves the author enumerated the universe correctly.
+  Require the existing completion-only role's zero status AND the required record AND intact
+  capture; zero alone is not a replacement for the record. A dying body loses sparing
+  authority and retains known collisions (`30U:inv-30U-collide-on-integrity-failure-keeps-collisions`).
+  This recommendation does not invent another generic sentinel for every other role.
+- **`rec-return-the-status-in-shell`** — preserve independently meaningful status in sh;
+  do not add a DREP override whose predicted rc differs from what an off-Dorc caller gets.
+  For a direct external producer, the ordinary authored idiom is:
+  ```sh
+  thing__predict() {
+      if thing_status "$@"; then rc=0; else rc=$?; fi
+      printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"
+      return "$rc"
+  }
+  ```
+  This is a strawman illustration, not a library implementation or generic rewrite for
+  helpers: the author chose the tested context. Dorc neither inserts that context nor claims
+  it is equivalent for every helper/substitution. The final return restores actual shell
+  behavior both on and off Dorc. The positive record is after payload production, not
+  necessarily the last status-affecting statement: a restoring return must be admitted.
+  A saved-status record could someday corroborate the real rc, but a differing-value override
+  is not recommended and no slot or syntax is reserved for it.
+- **`rec-keep-refusal-and-integrity-separate`** — apply the newly ruled decline protection
+  without changing shell execution. A recognized refusal withdraws its scoped answer;
+  provable contradictory speech fails fast. A capture/invocation failure is not a modeled
+  status or an ordinary authored decline. If the affected scope cannot be bounded, withhold
+  the whole prediction; never reveal channel defaults after failed required confirmation.
+
+### §11d — consequences for r31, conditional on adopting §11c
+
+These are deltas to keep in mind, NOT edits to `310`, not a new build schedule. `310` and
+`ROADMAP` still describe the prior cut and must not be treated as already incorporating this
+sitting. Unrelated transport/index proposals elsewhere in this ledger are not re-ruled here.
+
+- **`build-role-specific-status-interpretation`** — in `310:unit-predict-channel-records`
+  and `310:unit-taught-decline-idiom`, keep raw model Status separate from verdict judgment
+  and completion-only role status. Preserve all model values, including 2 and explicit
+  high statuses; known timeout/signal/dispatch events are separate integrity inputs, never
+  inferred merely from a numeric range. No status-meaningfulness gate or guard-every-step
+  v0 is needed under this recommendation. The static evaluator and runtime reader must use
+  the same role interpretation.
+- **`build-decline-as-scoped-control`** — the tracer recognizes named declines in both
+  roles, attributes their reach, and checks provable conflicts before contact where possible;
+  runtime validates the admitted speech for its exact invocation. Missing/failed required
+  confirmation never restores an answer. Record-only decline, rc-only verdict decline,
+  combined decline, and explicit contradiction need distinct acceptance cases. The
+  record-only-versus-positive-rc precision in §11b must be settled before that conflict
+  detector builds; it is not left to a builder to guess.
+- **`build-stream-seals-with-status-restoration`** — `310:unit-predict-channel-records`
+  must admit the post-producer record followed by `return "$rc"`, including the ordinary
+  `$?` save and branch merge. Recognize completion relative to the payload-producing region,
+  not the literal last statement. Do not permit an unaccounted later write to the claimed
+  channel to sneak past that boundary. Retain per-channel authored default/claimed/declined
+  states, runtime confirmation, and separate execution/capture integrity. Feed existing
+  value/backing/settlement consumers only admitted channel results; no raw-rc shortcut around
+  the claim and integrity gates.
+- **`build-at-most-seals-as-conjunctions`** — retain `310:unit-nothing-else-record-recognition`
+  and `310:unit-unrelated-and-settle-gate`: correctly scoped, exactly-one required record;
+  body-status integrity; complete capture; then the existing finished-definition consumer.
+  No record alone licenses sparing, and failure never deletes already-known collisions.
+  Static arms discharge reach through the admitted trace rather than inventing runtime
+  evidence. The existing binder, if built, consumes these same gates, not another policy.
+- **`build-faithful-invocation-at-existing-seams`** — the existing emitter/driver and
+  `310:unit-env-identity` must not collect rc by silently altering the body's authored
+  error policy, helper resolution, or modeled command inputs. Exercise the same contract
+  through local/remote execution and probe/guard placement where used. This is not a demand
+  to pull the entire deferred capability/routing system into r31: unsupported contexts
+  withhold the affected optimization, rather than claim faithful invocation. Compiler work
+  here remains boundary scaffolding and permitted erasure/placement, not in-body witnesses.
+- **`build-acceptance-for-the-contract-boundaries`** — correctness cases, not lint cases:
+  exact 0/1/2/high model statuses; ordinary debug-tail status left unchanged; named decline
+  never licensing convergence; declined prediction never folding a book branch; missing seal
+  and failed capture never admitting a stream; nonzero Status with a deliberately sealed
+  stream; real return restored after the record; at-most record plus dying body not sparing;
+  record arrival preceding payload drain not causing early admission; invocation context
+  preserving authored option behavior. All use the existing hermetic seam/loom architecture.
+
+**`defer-no-witness-machinery-is-owed`** — general completion instrumentation (expansion
+markers, source transforms, xtrace-as-license, or an instrumented interpreter), arbitrary rc
+record overrides, and general internal-failure provenance are not prerequisites and are not
+promised future work. They can be reconsidered only for a specifically bounded useful
+contract. Richer payload forms, captures, and target capabilities remain in their existing
+arcs; r31 must keep their already-required channel/integrity seams correct, not build them
+prospectively. No lint/hint work is being substituted for these mechanics.
+
+## §12 — state at close after the UX horizon sitting (2026-09-06)
+
+> Historical close. §13 resolves the record-only question and is the latest resumption point.
+
+The new HUMAN decisions are §11b: preserve authored error policy; keep expectations
+experience-sensitive and the role distinction in tension with enhancement; named decline
+cannot license success and conflicting spellings fail fast; reject implicit-status special
+handling; price restrictions by ecosystem/off-ramp value; distinguish rc and stdout prediction
+rungs. Aid is not a rescue for a bad contract. The record-only conflict precision is still a
+PROPOSED interpretation of the human's combined requirements, not a hidden ruling.
+
+The duck's singular recommendation is §11c: literal model rc, authored post-production stream
+seals, faithful invocation, and explicit integrity gates; no general in-body failure witness
+and no differing-value DREP rc override. The stdout-versus-rc reasoning and the at-most
+comparison are proposals responding to the human's question, not accepted changes. §11d maps
+that recommendation to the r31 remit without scheduling it. Earlier compiler proposals remain
+historical exploration, not an implementation prerequisite. The broader cleanup remains the
+human-directed single pass in §7; this turn changes the ledger, not the designs of record.
+
+## §13 — mandatory shell semantics and promotion direction (2026-09-06)
+
+- **`rul-shell-semantic-output-is-mandatory`** [TYPED] — the human retracts any proposal
+  allowing record-only decline to work in Dorc while returning success to plain shell.
+  Where a role accepts DREP and shell-semantic control output, they must agree; the
+  off-ramp-friendly shell output is never optional. If one spelling may be omitted, it is
+  exclusively DREP. This supersedes §11b's proposed record-only precision and that portion
+  of §11d's acceptance list; no success-of-printf exception survives.
+- **`rul-predict-decline-requires-both-outputs`** [TYPED, restated and acked] — a predict
+  decline requires BOTH the DREP decline and `return 2`. Bare `return 2` still predicts
+  tool status 2. Thus rc 2 has a narrow dual use, distinguished by DREP; it is not reserved
+  away from modeled tool outcomes. An off-Dorc consumer cannot distinguish those meanings
+  from rc alone and must consume DREP to reproduce the modeling protocol fully. This
+  limitation is accepted as inescapable. A record declaring decline alongside a successful
+  shell result is a conflict, not a permissive override.
+- **`dir-promote-prediction-contract-to-plan`** [TYPED] — promote and rewrite `30D` under
+  `plans/`, retaining its docID, as the compact, ahistorical design of record for this
+  corner: contract, semantics, and constraints first; only a brief alternatives trailer
+  pointing back here. First commit this ledger. Reconcile a narrow set of adjacent
+  designs/registers; historical notes get only adjacent supersession notices for seriously
+  misleading claims. Leave `310` and `ROADMAP` untouched: build phasing is a separate
+  sitting, potentially with a sibling. The human authorizes direct work on `ai/main`.

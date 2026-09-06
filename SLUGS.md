@@ -6720,6 +6720,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 307 30D (2)
 
+## rul-predict-status-is-function-aggregate
+- defined: —
+- cited: 30D 311a (3)
+
 ## rul-predict-status-keeps-every-value
 - defined: —
 - cited: 30D 30P spike/CLAUDE (3)
@@ -8605,6 +8609,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26K 26Ob 310 ROADMAP (6)
 
+## unit-env-identity
+- defined: —
+- cited: 26Ob 310 311a (7)
+
 ## unit-host-index-and-entry
 - defined: —
 - cited: 26N 26Ob 310 (7)
@@ -8612,6 +8620,22 @@ row's `near:` line refreshes only when that row's other lines change.
 ## unit-measured-index-kinds-and-witness
 - defined: —
 - cited: 26Ob 310 (3)
+
+## unit-nothing-else-record-recognition
+- defined: —
+- cited: 310 311a (3)
+
+## unit-predict-channel-records
+- defined: —
+- cited: 310 311a (4)
+
+## unit-taught-decline-idiom
+- defined: —
+- cited: 310 311a (2)
+
+## unit-unrelated-and-settle-gate
+- defined: —
+- cited: 26Ob 310 311a (6)
 
 ## plan/CLAUDE:universal-meet-here
 - defined: spike/crates/plan/CLAUDE.md:191 — — sparing over backing-SETS quantifies universally:
