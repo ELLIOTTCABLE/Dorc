@@ -90,7 +90,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## accept-dangerous-developer-harness
 - defined: —
-- cited: 30X 30Xa Research/README _tmp-30X-developer-harness-fold-handoff cli/CLAUDE (7)
+- cited: 30X 30Xa Research/LIVING_STATUS Research/README _tmp-30X-developer-harness-fold-handoff cli/CLAUDE (8)
 
 ## 30R:accounted-and-unaccounted-output
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:273
