@@ -577,6 +577,28 @@ license now carries the predict compile).
   shell's status 0 on an unmatched verb; read as a prediction that would omit every `||`
   fallback below an unmodelled verb. The static rule's "no answer statement on this path ⇒ ⊤"
   covers it; recorded because it is the most natural newcomer shape of all.
+- `assess-staged-mix` [conductor, 2026-09-06; the human asked "best we've discussed?"] — yes,
+  because the ordering is forced, not chosen: the static rule is the ONLY thing that catches
+  the debug-tail and missing-`*)` shapes, so it is required under every alternative, and the
+  compile is additive refinement over it; static-first is therefore the minimum, and xtrace
+  never reaches license-grade. Downsides, named: (1) the fallibility safe-list is a new
+  decidable-set-adjacent component whose every widening is winner-shifting (license-review
+  tier forever, like funcenv precision); (2) the errexit philosophy pays guards until v1 — v0
+  alone IS the static-only posture the human called painful; (3) at v0 the two body shapes
+  behave identically under Dorc, so `set -e` "does nothing" until v1 changes its VALUE (never
+  safety) — a small story wrinkle; (4) v1 is the first Dorc edit inside authored bytes beyond
+  strip, in the probe lane; fence it predict-only, probe-only, or every lane will want it;
+  (5) hint precision is load-bearing ("arm X predicts nothing because line N can fail"), and
+  "which line aborted" at v1 wants xtrace-as-aid or per-statement records; (6) how often real
+  predicts carry unguarded steps is unmeasured, which is what decides whether v1 is soon.
+- `door-reserve-status-two-in-predicts` [the human's nit, 2026-09-06: `return 2` never
+  shipped, no compat or lints owed if it changes] — `30D`'s "every value predicted" was chosen
+  so tools that genuinely return 2 (`grep` error, `diff`, `terraform plan -detailed-exitcode`)
+  stay predictable. Reserving rc 2 as the predict DECLINE instead would remove the one
+  absolute cost at the lowest rung (the catch-all becomes `*) return 2 ;;` again, meaning what
+  every newcomer thinks it means) at the price of a `predicts status 2` record for the rare
+  tool that really returns 2. Trades the record from the common case to the rare case; the
+  human's call; `30D` §7 territory.
 
 ## §10 — state at close (2026-09-05, fourth fixpoint; the human rewinds after this)
 
