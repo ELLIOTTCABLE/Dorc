@@ -340,14 +340,29 @@ discipline: one rule per bullet, slugged; append to the matching section.
   2026-09-03 disk-full happened), sentinel-framed, BOTH streams captured in the order the user saw
   them, each block compared to its committed block under `strip_trailing_newlines` and nothing else.
   `export`, `cd`, `<`, `> <literal file>` + `cat`, `echo $?` are native shell; the artifact-execution
-  rail (`PATH=<mocks>` only, `env -i`, a throwaway cwd, `umask 022`) stays a separate runner-owned
-  process. The session starts SCRUBBED (`30X:loom-syntax-grants-no-production-authority`): no
-  inherited credential variables, runner-owned roots — `DORC_SEAM_ROOTS=pinned:<absolute literal>`
+  rail (`PATH=<mocks>` only, `env -i`, a throwaway cwd, `umask 022`) stays a separate process the
+  runner spawns. The session starts SCRUBBED (`30X:loom-syntax-grants-no-production-authority`): no
+  inherited credential variables, fresh throwaway roots — `DORC_SEAM_ROOTS=pinned:<absolute literal>`
   (**rul-roots-pinned-is-a-literal**: never resolved through `APPDATA`/`HOME`/`XDG_*`; absent ⇒ the
-  harness refuses) — while the runner's own process keeps reading its opt-in lane variables.
+  harness refuses) — while the runner's own process keeps reading its opt-in lane variables. Those
+  are DEFAULTS a session may replace by exporting its own seams; the harness claims no ownership of
+  any path it is handed (next bullet).
+- **rul-harness-is-developer-tooling-not-a-sandbox** (`30C:accept-dangerous-developer-harness`,
+  human-acked 2026-09-05) — `dorc-harness` is repository-internal developer tooling that runs the
+  production engine and the native receipt implementation over developer-selected fixture values: a
+  root or receipt path handed to it is an ordinary SELECTED path, which may name existing local state
+  and carries no claim that the runner created or owns it. Four hard bounds, nothing more: the shipped
+  `dorc` reads no harness-shaped environment and constructs no fixture seam · `dorc-harness` never
+  enters a shipped or public artifact set (`mise run install` names its bins, and `internal-tooling`'s
+  test holds that set equal to the cli package's bin targets minus exactly the harness — read from
+  `cargo metadata`, because `autobins` discovers a bin no `Cargo.toml` stanza names) · loom sessions
+  stay unrestricted — no developer-machine containment subsystem, no durable fixture-provenance
+  format · the ordinary harness keeps no `RealSsh` selection (real-host and privileged exercise is
+  livetest's). No root token, marker protocol, broker, durable field, sandbox, or replacement receipt
+  backend is owed.
 - **rul-runner-varies-only-what-it-set** — the runner's per-block injection yields to any authored
   assignment: an authored `$ export DORC_SEAM_CLOCK=…` / `DORC_SEED=…` wins for the rest of the
-  session. The runner-owned defaults are ONE seat, `dorc_loom::runner_seams` (`RUN_SEED`,
+  session. The runner's defaults are ONE seat, `dorc_loom::runner_seams` (`RUN_SEED`,
   `SESSION_ROOT`, `session_seams(ordinal)`, `DORC_SEAM_TRANSPORT=local:<shell>;<interp>`), consumed by
   the shell driver (exported into the session) and the in-process driver (fed to
   `HarnessSeams::from_env` over the MODELLED environment) — never a second copy. The clock ticks one

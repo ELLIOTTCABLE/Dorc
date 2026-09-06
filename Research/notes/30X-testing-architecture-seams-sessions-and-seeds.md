@@ -42,7 +42,7 @@
   posture · roots/environment · transport · and future columns (a process supervisor, netns, a
   sudo prompt, …). Each seam has its OWN implementation set, selected independently: the
   value-shaped seams (clock, the entropies, posture, source-match) offer `Seeded(seed)` ·
-  `Pinned(value)` · `Os`; roots offer `Pinned(a runner-owned path)` · `Os` (the platform
+  `Pinned(value)` · `Os`; roots offer `Pinned(a selected path)` · `Os` (the platform
   resolution); transport offers `Scripted(case sections)` · `Hostsim` · the local fixture
   interpreter the retired `DORC_TRANSPORT` selected — transport has NO `Os`. `RealSsh` and `Os`
   roots are the PRODUCTION variants: they exist in `Seams`, are constructed only by `Seams::os()`
@@ -164,8 +164,9 @@
   roots (unrepresentable, not merely rejected — the type has no such variant) and a total
   `From<HarnessSeams> for Seams`; `Seams::os()` is the ONLY constructor of the production variants
   and is called from `bin/dorc.rs` and the livetest composition, nowhere else. Persistence is NOT a
-  production variant: under runner-owned roots the harness drives the real native receipt store
-  (or, in-process, the deterministic `ModelIo`) — what is excluded is the production ROOT (the
+  production variant: under whatever roots the session selected — the runner's throwaway defaults or
+  a deliberately chosen local path — the harness drives the real native receipt store (or,
+  in-process, the deterministic `ModelIo`); what is excluded is the production ROOT (the
   platform-resolved config/state dirs), never native I/O as such. Arg parsing, source acquisition,
   root resolution, the receipt edge, the engine — all BELOW the seam, shared byte for byte.
 - **`inv-division-at-the-narrowest-edge`** `[TYPED]` — the shipped `main.rs` is edge VALUES plus
@@ -204,16 +205,20 @@
   persistent, sentinel-delimited session (the records lane's own framing trick) and capture per
   line. `export`, `cd`, pipes, `cat`, `echo $?`, redirects — everything the shell does is
   native, and the artifact-execution rail (`PATH=<mocks>` only, `env -i`, a throwaway cwd,
-  `umask 022`) stays a separate, runner-owned process exactly as today.
+  `umask 022`) stays a separate process the runner spawns, exactly as today.
 - **`loom-syntax-grants-no-production-authority`** `[TYPED after 30-reviewA]` — unrestricted shell
   GRAMMAR stays the point; it does not imply inherited production authority. The ordinary runner
-  starts the SESSION from a scrubbed environment with runner-owned cwd/profile roots and no
-  inherited credential variables (the scrub binds the environment the harness sees, not the
+  starts the SESSION from a scrubbed environment with fresh throwaway cwd/profile roots by default
+  and no inherited credential variables (the scrub binds the environment the harness sees, not the
   runner's own process, which keeps reading its opt-in lane variables — `DORC_E2E_REAL_TOOLS`,
   `DORC_E2E_FLOOR_SHELLS`, `BLESS`), and its harness composition cannot select `RealSsh` or
-  production roots (§4: persistence under runner-owned roots is not a production variant).
-  This is deliberately NOT a claim that arbitrary shell is contained from the developer machine;
-  the harness remains a powerful developer subsystem. A test that intentionally needs real-host,
+  production roots (§4: persistence under a session-selected root is not a production variant).
+  This is deliberately NOT a claim that arbitrary shell is contained from the developer machine:
+  the harness is developer tooling, not a sandbox (`30C:accept-dangerous-developer-harness`,
+  human-acked 2026-09-05) — a root or receipt path handed to it is an ordinary selected path that
+  may name existing local state and carries no claim that the runner created or owns it, and no
+  containment subsystem or fixture-provenance format is owed to stop a developer aiming it at local
+  state. A test that intentionally needs real-host,
   privileged, `chroot`, or other ambient capability uses the explicit livetest composition without
   narrowing the loom language. This is the complete tightening accepted in response to
   `Research/quarantine-DO-NOT-READ/30-reviewA-opaque-report.md`; do not rebuild the retired closed
@@ -415,7 +420,7 @@
    harness clock (per-block base offset from the block ordinal, non-zero step); the shipped `dorc`
    loses all six env pins; the ordinary `HarnessSeams` type has no arm for `RealSsh` or `Os`
    roots (§4; persistence under the runner's throwaway roots stays the native store, as today);
-   the e2e runner gives the session a credential-free scrubbed environment and runner-owned
+   the e2e runner gives the session a credential-free scrubbed environment and fresh throwaway
    roots, then spawns the harness through a `dorc` shim on PATH. Goldens must stay
    byte-identical (`bless:dry` clean — nothing in the current corpus renders an id). CHECKPOINT after
    A: the extraction is the risky refactor and the invariants `inv-division-at-the-narrowest-edge`
