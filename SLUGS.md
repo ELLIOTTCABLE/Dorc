@@ -414,7 +414,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-atmost-completion-signal
 - defined: —
-- cited: 28P 28Q 28Ra 30D 30Q 30T 30U 310 ANALYZER-NEEDS ORACLE_PROVIDES plan/CLAUDE spike/CLAUDE (13)
+- cited: 28P 28Q 28Ra 30Q 30T 30U 310 ANALYZER-NEEDS ORACLE_PROVIDES plan/CLAUDE spike/CLAUDE (12)
 
 ## an-backing-selfframing
 - defined: —
@@ -6046,7 +6046,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-drep-is-general-oracle-oob
 - defined: —
-- cited: 26Lb 30D (2)
+- cited: 26Lb (1)
 
 ## 28F:rul-drift-replay-d1
 - defined: Research/notes/28F-why-implementation-conduct-ledger.md:76 — (conductor, on the builder's correct STOP): the
@@ -6070,7 +6070,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-durable-contents-reviewed-before-design
 - defined: spike/CLAUDE.md:476 — — Surface: what the receipt durable
-- cited: 26Lb 26N 307 307b 309 30D 30E 30Ib 30K 30Mg 30N 30Na 30Ne 30O 30Q 30Qb 30Qd 30V 30Vb 30Xa ROADMAP (26)
+- cited: 26Lb 26N 307 307b 309 30E 30Ib 30K 30Mg 30N 30Na 30Ne 30O 30Q 30Qb 30Qd 30V 30Vb 30Xa ROADMAP (25)
 
 ## rul-e2e-stays-in-workspace-suite
 - defined: —
@@ -6375,7 +6375,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-integrity-failure-withholds-mutation
 - defined: spike/CLAUDE.md:411 — — this does NOT contradict
-- cited: 26N 26Ob 28Q 28Rb 302 306b 30D 30P cli/CLAUDE (11)
+- cited: 26N 26Ob 28Q 28Rb 302 306b 30P cli/CLAUDE (10)
 
 ## rul-interactivity-is-local-books
 - defined: —
@@ -6698,7 +6698,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-predict-absorbs-wrapper-modeling
 - defined: Research/plans/271-block-settle-rulings-ledger.md:354 — (task 5; 2026-07-11; TYPED — "Merge
-- cited: 24S 270 273 278 30D ORACLE_PROVIDES (8)
+- cited: 24S 270 273 278 ORACLE_PROVIDES (7)
 
 ## rul-predict-channel-defaults
 - defined: —
@@ -6718,11 +6718,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-predict-reserved-prefix-is-fail-fast
 - defined: —
-- cited: 307 30D (2)
+- cited: 307 (1)
 
 ## rul-predict-status-is-function-aggregate
 - defined: —
-- cited: 30D 311a (3)
+- cited: 30D 311a (2)
 
 ## rul-predict-status-keeps-every-value
 - defined: —
@@ -6919,7 +6919,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 23L:rul-role-split
 - defined: Research/notes/23L-interface-rulings.md:8 — (STAMPED)
-- cited: 23H 23O 24A 24C 24D 30D (9)
+- cited: 23H 23O 24A 24C 24D (8)
 
 ## 30Qd:rul-row-boundaries-moved-under-the-sealing
 - defined: Research/notes/30Qd-influence-carriage-lane-report.md:710 — — the one thing to rule on
