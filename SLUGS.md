@@ -7002,6 +7002,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 28A (2)
 
+## rul-sink-form-is-a-context-capability
+- defined: —
+- cited: 26O 311a (2)
+
 ## rul-sinkless-context-record-policy
 - defined: —
 - cited: 26N 26O ROADMAP (3)

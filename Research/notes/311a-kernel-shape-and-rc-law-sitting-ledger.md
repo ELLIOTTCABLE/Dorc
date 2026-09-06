@@ -645,7 +645,49 @@ license now carries the predict compile).
   reach the sink inside it — the "helpful outside Dorc" half at zero cost. -GUESS worth it;
   the human's call; a `30D`/`27W` cleanup-pass item if taken.
 
-## §10 — state at close (2026-09-06, fifth fixpoint; the human rewinds after this)
+## §9f — two more decline carriers, compared against the ladder (2026-09-06)
+
+- `alt-env-var-out` [the human's; conductor evaluation] — the body sets a variable
+  immediately before returning (`DORC_DECLINE='unmodeled verb'`; on a completion path a
+  reached-marker); the scaffold reads it after the call. FOUND: (1) `export` is the wrong
+  verb — it leaks into every child the body runs and pollutes the constructed environment
+  (§8); a bare assignment suffices. (2) It does NOT require in-process calls: the scaffold's
+  per-body subshell can read the variable after the call and forward it on the scaffold's own
+  fd by NUMBER (`( f "$@"; printf '%s %s\n' "$?" "$DORC_DECLINE" >&3 )`), so no sink file, no
+  `/dev/fd` path, no fs-write — it reaches the sinkless cell (hardened containers, failed
+  hosts, FreeBSD without `fdescfs`) that the record cannot, and a variable cannot be
+  truncated, which retires the partial-write pedantry for the witness. (3) Statically it is
+  identical to the record: an assignment on the arm, per-arm inventory, the reason in the
+  value. (4) Off-Dorc it is the `getopts`/`OPTARG`, `read`/`REPLY` out-parameter idiom:
+  programmatic, silent to a human caller, dies under `$(…)` and pipelines, needs a reset
+  against staleness (the scaffold's fresh subshell per call gives that for free; an off-Dorc
+  caller does not get it). (5) It is a second CARRIER for the same speech the sink already
+  carries (`decline`, `predicts`, `nothing-else` — all flag-shaped), so either it replaces the
+  sink for records (a re-cut of 27W/30D/30U's transport) or it is two spellings for one act
+  (`inv-30U-one-spelling` forbids). Verdict: the authored surface stays the ladder; env-out is
+  a door for the TRANSPORT round — records carried by scaffold-read variables instead of an
+  author-written sink — whose one real prize is the sinkless cell; not taken now.
+- `alt-env-var-in` [the human's; conductor evaluation] — Dorc invokes the body twice under
+  different environments: once asking "handled?" (a predicate, 0/1/≥2, errexit-safe at 0
+  since the dangerous claim is "handled"), once for the real status. FOUND: the caching
+  variant ("first call caches the real rc, second returns it") needs a same-shell cache and
+  is `alt-env-var-out` with an extra call. The recompute variant needs the author to switch
+  on the mode in EVERY arm (ceremony on the lowest rung) or to duplicate the argparse in a
+  handled-branch — and two `case`s over one argv drift, the dual-peel chimera class
+  (`wrapper-law`; `28Q` §1's pope-sin), so "handled: yes" can pair with a body that falls
+  through to the catch-all and predicts the fallthrough status: the footgun returns by the
+  back door. Off-Dorc a mode switch inside the function is a Dorc protocol a normal caller
+  cannot use (`kOOB`-adjacent). Statically it adds nothing: reach of a modelled arm is already
+  the tracer's answer without a second call. Verdict: dominated by the ladder on onramp and
+  off-ramp, equal on safety, and its one advantage (sink-independence) is `alt-env-var-out`'s
+  for less.
+- `note-what-the-winner-is` — the ladder of §9e remains the AUTHORED surface (the record ON
+  the arm it declines: locality is what keeps handled-ness and the body from drifting apart);
+  the open question these two surfaced is only the carrier on sinkless hosts, and that is
+  `26O:rul-sink-form-is-a-context-capability`'s to answer with the scaffold-read variable as a
+  third sink form beside file and fd.
+
+## §10 — state at close (2026-09-06, sixth fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
