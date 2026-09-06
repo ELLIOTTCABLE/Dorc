@@ -687,7 +687,37 @@ license now carries the predict compile).
   `26O:rul-sink-form-is-a-context-capability`'s to answer with the scaffold-read variable as a
   third sink form beside file and fd.
 
-## §10 — state at close (2026-09-06, sixth fixpoint; the human rewinds after this)
+## §9g — env-var-in, refined: a second call only for the statically-ambiguous class
+
+- `refine-env-in-as-escalation` [the human, 2026-09-06] — not always two calls: only as a
+  supplement where static analysis finds the errexit/error-flow ambiguous — idiomatic
+  forms Dorc wants to accept (not `eval`-class) whose abort-versus-answer status cannot be
+  decided from natural errexit or non-errexit code without an author's printf.
+- `fnd-second-call-reveals-nothing-without-cooperation` [FOUND] — a second invocation can
+  only add information if the environment change alters the body's behaviour along the
+  ambiguity, or the author branches on it. The only environment knob tied to the ambiguity
+  is errexit itself, so the cooperation-free form is the −e/+e DIFFERENTIAL: run once
+  continuing, once aborting; agreement means no step failed OR the abort status coincided
+  with the continued answer. Coincidence is common (1 is everyone's failure: bash `cd`, false
+  tests, `grep` no-match), so agreement is evidence, never proof — not a trust instrument.
+  It IS a good AID for exactly the ambiguous class: disagreement says "an internal step is
+  failing" with evidence, which is the hint precision §9c named as load-bearing. One sound
+  corner exists — when the answer statement's status set and every unguarded step's abort
+  set are provably disjoint, one −e run disambiguates alone — but abort sets are shell- and
+  tool-variant (dash `cd` 2, bash 1), so it is fragile and not taken.
+- `fnd-cooperating-env-in-is-the-record-with-worse-locality` [FOUND] — with cooperation
+  (`[ "${DORC_ASK-}" = handled ]` branches) it is authorial speech: per-arm it is the
+  record's locality with more ceremony and no off-Dorc meaning; top-level it duplicates the
+  argparse and drifts (the dual-peel chimera). Dominated by the record on the arm.
+- `fnd-the-instinct-is-v1s-trigger` [FOUND] — the sound content of the refinement is its
+  SHAPE: escalate to a runtime instrument only for the ambiguous class. That is exactly the
+  staged mix's v1 trigger (§9c), and the only runtime instrument that tells abort from answer
+  when the author has not spoken is the inserted witness (the compile), because no
+  environment can make an unmodified body report where it exited. Env-in tries to obtain the
+  compile's effect without the compile; sh does not permit it. The differential survives as
+  the hint's evidence source for that class, and possibly as a cheap pre-v1 aid.
+
+## §10 — state at close (2026-09-06, seventh fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
