@@ -36,6 +36,12 @@ r30 is the human's close ceremony (`## Round`).
 
 ## Standing truths a successor must not re-derive (ruled; homes cited)
 
+`plans/30D` is the prediction-contract design of record (promoted from notes): literal
+model status, mandatory shell/DREP decline agreement, authored stream checkpoints, and
+separate execution integrity. It is not an as-built assertion. The reasoning is `notes/311a`
+§§11–13; `310` and `ROADMAP` remain deliberately unreconciled pending the human's phasing
+sitting. No prediction implementation is in flight.
+
 xfail horizons are ATTENTION-CALLS, not completion dates — never re-horizon them as if "r31"
 were a plan; end-of-r30 is kernel quiescence and unscheduled means unscheduled
 (`30O:the-measuring-stick`). `KNOBS:kBACKFLIPS` is welded: verbatim relocation or refuse; the

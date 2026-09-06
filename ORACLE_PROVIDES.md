@@ -89,13 +89,16 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 
 ### provides-behavior — "here is what running it would DO" (three sub-shapes; code cites them by number)
 1. **predicted observables** (`cmd__predict`), per channel: Status is the function's ordinary aggregate exit
-   status, every value claimed (`return 2` predicts 2; no reserved decline); Stdout/Stderr default DECLINED,
-   claimed only by an authored, statically-recognized, executed record trailing the bytes:
-   `printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"` (comma-set `rc,stdout,no-stderr`; `none` declines
-   all = the whole-shape refusal). A peeling body (`"$@"` in command position) IS the wrapper declaration.
-   DESIGN: `notes/30D` (+`30Da`) · `271:rul-predict-absorbs-wrapper-modeling` · `273`. STATUS: `ruled,
-   unbuilt` (the channel algebra; sequenced with the stdlib revival by `30J` §10); built: status-only
-   predicts, per-channel coverage blocking, peel detection.
+   status, every value available (bare `return 2` predicts 2). Whole decline requires BOTH DREP
+   (`decline <class>` or `predicts none`) AND actual rc 2; neither can replace the other. Stdout/Stderr
+   default DECLINED, claimed by an authored, statically recognized, confirmed record after production:
+   `printf 'predicts stdout\n' >>"${DREP_V1:-/dev/null}"`, followed by ordinary status restoration where
+   needed. A record's reach is a checkpoint, not proof of successful production; capture integrity is
+   separate. No differing-value rc override or in-body completion compiler. A peeling body (`"$@"` in
+   command position) IS the wrapper declaration.
+   DESIGN: `plans/30D` · `271:rul-predict-absorbs-wrapper-modeling` · `273`. STATUS: `ruled, unbuilt`
+   (channel algebra and decline agreement); built: status-only predicts, per-channel coverage blocking,
+   peel detection.
 2. **at-least effects** — establish/kill topology DERIVED from predict bodies' marks (never a declared
    marker). DESIGN: `ANALYZER-NEEDS:an-effect-class`. STATUS: built.
 3. **at-most footprint** (`cmd__disturbs`, né touches) — per MATCHED shape, entities on stdout typed
@@ -107,15 +110,19 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
    `plan::survival`); `ruled, unbuilt` (the completion record).
 - CONSUMED BY: 1 → composed probes, lifted hand-guards, branch folds; 2 → kills, walls; 3 → survival past
   running walls under `--risk-faultless-skips`.
-- TRUST: 1 self-checking (coverage blocks; parity gates); 2 description; 3 the traveled completeness claim —
+- TRUST: 1 author-owned model adequacy/internal failure handling; Dorc owns invocation/capture/contract
+  integrity (a wrong modeled status can wrongly omit another line); 2 description; 3 the traveled completeness claim —
   a wrong footprint silently under-executes SOMEONE ELSE'S line (cardinal-sin, flag-consented, attributed).
 - DEGRADES: each sub-shape independently optional (`24A:rul24-threefunc-monotonic`). Monotone.
 
 ### provides-convergence — "for this invocation, taken whole: is the desired state true?"
 - WHAT: `cmd__is_converged()`: 0 = the named sense holds; 1 = complement; ≥2 = cannot say (flat forever;
-  runs). Declining is control-flow (`*) return 2 ;;`). The markless verdict-only oracle is the typeless floor.
+  runs). Declining is control-flow (`*) return 2 ;;`); DREP is optional, but a named decline must agree
+  with a >=2 shell result. Record-only success is a contract conflict, not convergence. The markless
+  verdict-only oracle is the typeless floor.
 - DESIGN: `plans/239` · `23O` §2 · `spike/CLAUDE.md` rul-rc-partition · rul-vouch-is-verdict-authoring ·
-  `plans/24L`. STATUS: built. CONSUMED BY (license-free): drift display, hints; (licensed): see next.
+  `plans/24L` · `plans/30D` §3. STATUS: built (predicate); `ruled, unbuilt` (DREP agreement).
+  CONSUMED BY (license-free): drift display, hints; (licensed): see next.
 - TRUST: an ANSWER carrying the adequacy gap (converged ≠ no-op; `an-adequacy-bite`): a wrong yes
   under-executes the author's OWN tool's line (attributed cardinal-sin).
 - DEGRADES: absent ⇒ no verdict (facts may still display); each arm buys its verdicts. Monotone.
@@ -133,16 +140,18 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 ### provides-report-lane-records — "here is my out-of-band speech" (née provides-margins)
 - WHAT: verb-led records, `printf '<verb> …\n' >>"${DREP_V1:-/dev/null}"` (total off-Dorc; the sink VALUE
   is engine-supplied, the NAME carries the format version). Verbs: `decline <class> <tail>` (classes
-  `unsound`/`unmodeled`/`interactive`/`hazard`; aid-only) · `predicts <channel-set>` / `predicts none …`
+  `unsound`/`unmodeled`/`interactive`/`hazard`; decline is control, class/tail are aid) ·
+  `predicts <channel-set>` / `predicts none …`
   (load-bearing, sub-shape 1) · `disturbs nothing-else` (load-bearing: at-most completion witness and
   finished-definition act). Heads are closed grammar; tails are free and decision-inert.
-- DESIGN: `27W` · `notes/30D` §3/§7 · `plans/30U` §4 · `spike/CLAUDE.md` decline-class-emission (LOAD-BEARING
-  by design, 2026-08-23). STATUS: built (`decline`; live per-attempt capture); `ruled, unbuilt` (`predicts`,
-  `nothing-else`).
+- DESIGN: `27W` · `plans/30D` §§2–5 · `plans/30U` §4 · `spike/CLAUDE.md` decline-class-emission.
+  STATUS: built (decline narration; live per-attempt capture); `ruled, unbuilt` (decline control/agreement,
+  `predicts`, `nothing-else`).
 - TRUST: a misclass misdirects attention only (mild-sin); the load-bearing verbs carry their shapes' knives.
   Only the literal fixed form mints authority; `echo`, a composed format, or an aliased sink stay feedback.
-- DEGRADES: silence is legal everywhere; classing is enhancement; a missing load-bearing record withholds
-  authority and never widens it. Monotone.
+- DEGRADES: silence retains only the role's unmarked floor, never substitutes for required speech.
+  Predicate decline may omit DREP; whole-prediction decline may not. Missing required confirmation
+  withholds authority without revealing defaults. The shell result remains mandatory.
 
 ### provides-context-vouch — "this body stays read-only when executed shifted along DIM"
 - WHAT: the standalone mark `: safe-across user` (`{user,fs-view}`), per function, path-scoped — read-only
@@ -185,8 +194,9 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 
 ### provides-finished-definition — "…and nothing else, in any vocabulary"
 - WHAT: rung 2: `printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"` in tail position on a reached
-  path of `disturbance_reaches`; content = the completeness claim, arrival = the execution witness; exactly
-  one per completing path (zero = rung 1; two = refuse the footprint). The ONLY licensor of cross-kind sparing.
+  path of `disturbance_reaches`; content = the completeness claim, arrival = its reached checkpoint;
+  acceptance additionally requires zero body status and intact capture. Exactly one per completing path
+  (zero = rung 1; two = refuse the footprint). The ONLY licensor of cross-kind sparing.
 - DESIGN: `plans/30U` §1/§4 (`rul-cross-kind-sparing-needs-a-finished-definition`; `inv-30U-unary-never-pairwise`).
   STATUS: `ruled, unbuilt` (`30U` §10 pending a successor rewrite; USER_STORY stage 7 carries the FIXME).
 - TRUST: the one dangerous sentence in a kind-owner's file — written early, it under-executes someone else's
@@ -274,5 +284,5 @@ Tombstones (each replaced, none dropped): `provides-margins` → provides-report
 refusal idiom → `decline <class>` (`27W`) · the `~` vouch-mark → verdict authoring IS the vouch (`24A` §1c) ·
 `is_diverged` → the `:!` sense · `touches()` → `disturbs()`; `reaches()` → `disturbance_reaches()` (`271`;
 `30U`) · the `#` selector → `@` (`plans/281` §R4) · `.prop` cells → `@selector` · `return 2` as a predict
-decline → `predicts none` (`30D`) · the reserved grounding-bridges seat → provides-finished-definition +
+decline → DREP decline plus actual rc 2 (`30D`) · the reserved grounding-bridges seat → provides-finished-definition +
 provides-identity-tier · vetos → PARKED (`23M`), unpark-bar unchanged.

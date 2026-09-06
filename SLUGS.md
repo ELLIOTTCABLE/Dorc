@@ -1397,7 +1397,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:decline-class-emission
 - defined: spike/CLAUDE.md:874 — (`27W`) — an oracle classes a deliberate decline by a
-- cited: 28Va 30Q AID-NEEDS ORACLE_PROVIDES (5)
+- cited: 28Va 30Q ORACLE_PROVIDES (3)
 
 ## 111:deepen-domain-1
 - defined: Research/plans/111-error-provenance-reporting-synthesis.md:151 — (tree-sitter/Lezer/SwiftSyntax exhaustive placeholders) — lowest value. [TaskList #5]
@@ -3895,7 +3895,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:19 — — the latch is an out-param through `classify_round` and
 
 ## AID-NEEDS:law-aid-adds-no-consent-moments
-- defined: AID-NEEDS.md:130 — (`26B:rul-one-attention-moment`) — aid never adds
+- defined: AID-NEEDS.md:133 — (`26B:rul-one-attention-moment`) — aid never adds
 
 ## law-codes-vary-by-world-not
 - defined: —
@@ -3910,7 +3910,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 27V 289 28E 28Va AID-NEEDS aid/CLAUDE (11)
 
 ## AID-NEEDS:law-collapse-mints-narrative
-- defined: AID-NEEDS.md:76 — (née law-collapse-mints-evidence) — every point where
+- defined: AID-NEEDS.md:79 — (née law-collapse-mints-evidence) — every point where
 - aka: law-collapse-mints-evidence
 - cited: 289 28R 28Vb 30Kb 30M 30Mb 311a ANALYZER-NEEDS aid/CLAUDE spike/CLAUDE (11)
 
@@ -3933,7 +3933,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:190 — — agent-authored code checked by agent-authored tests shares
 
 ## AID-NEEDS:law-lineno-identity
-- defined: AID-NEEDS.md:136 — (`24H` ack-2ii) — one line-number space, the source file's,
+- defined: AID-NEEDS.md:139 — (`24H` ack-2ii) — one line-number space, the source file's,
 - cited: 26M 26O 28K 28O 28Q 28U 30Ia 30Ib 30Vb (10)
 
 ## 28T:law-never-weaken-the-question
@@ -3960,23 +3960,23 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 27C 27J (5)
 
 ## AID-NEEDS:law-plain-language-surfaces
-- defined: AID-NEEDS.md:138 — (`24H` ack-4) — no jargon on user-facing surfaces (no
+- defined: AID-NEEDS.md:141 — (`24H` ack-4) — no jargon on user-facing surfaces (no
 - cited: 30Vb (1)
 
 ## AID-NEEDS:law-pull-runs-wide-open
-- defined: AID-NEEDS.md:95 — — on pull surfaces the user asked: DERIVABILITY runs
+- defined: AID-NEEDS.md:98 — — on pull surfaces the user asked: DERIVABILITY runs
 - cited: 286 28D 28H 30Vb (6)
 
 ## AID-NEEDS:law-receipts-are-sensitive
-- defined: AID-NEEDS.md:140 — (née law-whylog-is-sensitive) — receipt contents are sensitive without promising secret
+- defined: AID-NEEDS.md:143 — (née law-whylog-is-sensitive) — receipt contents are sensitive without promising secret
 - aka: law-whylog-is-sensitive
 - cited: 30Va TODO-ADDTL (2)
 
 ## AID-NEEDS:law-render-overlay-never-artifact
-- defined: AID-NEEDS.md:133 — (rec-1, welded) — aid lives on render surfaces,
+- defined: AID-NEEDS.md:136 — (rec-1, welded) — aid lives on render surfaces,
 
 ## AID-NEEDS:law-report-surfaces-speak-sh
-- defined: AID-NEEDS.md:145 — (`27W:rul-report-surface-massaging`) — report/why
+- defined: AID-NEEDS.md:148 — (`27W:rul-report-surface-massaging`) — report/why
 
 ## AID-NEEDS:law-rows-are-classes
 - defined: AID-NEEDS.md:60 — — rows are aid-*classes* (order ~10²), never error codes.
@@ -3986,7 +3986,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 260 26D 26Ob (3)
 
 ## AID-NEEDS:law-selection-is-goal-derived
-- defined: AID-NEEDS.md:105 — (human-typed 2026-07-26; banked `28H`) — there
+- defined: AID-NEEDS.md:108 — (human-typed 2026-07-26; banked `28H`) — there
 - cited: 28E 28H 30Vb aid/CLAUDE (6)
 
 ## 301:law-spec-leads-the-build
@@ -4009,7 +4009,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 309 30K 30Qd (3)
 
 ## AID-NEEDS:law-trust-tier-is-syntax
-- defined: AID-NEEDS.md:88 — — the epistemic tier of every rendered link (strawman
+- defined: AID-NEEDS.md:91 — — the epistemic tier of every rendered link (strawman
 - cited: 27V 28F 28Va 28Vb 30V 30Vb 30Vd aid/CLAUDE (10)
 
 ## AID-NEEDS:law-two-planes-opposite-fail
@@ -4967,45 +4967,45 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:296
 
 ## ORACLE_PROVIDES:provides-context-entry
-- defined: ORACLE_PROVIDES.md:163 — — "here is how to get INTO the context my wrapper denotes"
+- defined: ORACLE_PROVIDES.md:172 — — "here is how to get INTO the context my wrapper denotes"
 - cited: 26Ob (1)
 
 ## ORACLE_PROVIDES:provides-context-vouch
-- defined: ORACLE_PROVIDES.md:147 — — "this body stays read-only when executed shifted along DIM"
+- defined: ORACLE_PROVIDES.md:156 — — "this body stays read-only when executed shifted along DIM"
 
 ## ORACLE_PROVIDES:provides-environment-witness
 - defined: ORACLE_PROVIDES.md:61 — — "the book-environment variables my body consumes, or shuts out"
 
 ## ORACLE_PROVIDES:provides-filesystem-binding
-- defined: ORACLE_PROVIDES.md:212 — — "this shell-routed write disturbs at most this file"
+- defined: ORACLE_PROVIDES.md:222 — — "this shell-routed write disturbs at most this file"
 
 ## ORACLE_PROVIDES:provides-finished-definition
-- defined: ORACLE_PROVIDES.md:186 — — "…and nothing else, in any vocabulary"
+- defined: ORACLE_PROVIDES.md:195 — — "…and nothing else, in any vocabulary"
 
 ## ORACLE_PROVIDES:provides-identity-tier
-- defined: ORACLE_PROVIDES.md:223 — — "same means THIS relation per selector; these regions overlap or not"
+- defined: ORACLE_PROVIDES.md:233 — — "same means THIS relation per selector; these regions overlap or not"
 
 ## ORACLE_PROVIDES:provides-kind-entailment
-- defined: ORACLE_PROVIDES.md:176 — — "disturbing an entity of my kind drags these other cells along"
+- defined: ORACLE_PROVIDES.md:185 — — "disturbing an entity of my kind drags these other cells along"
 
 ## ORACLE_PROVIDES:provides-kind-resolution
-- defined: ORACLE_PROVIDES.md:170 — — "these two names are one entity of my kind"
+- defined: ORACLE_PROVIDES.md:179 — — "these two names are one entity of my kind"
 
 ## ORACLE_PROVIDES:provides-package-loading
-- defined: ORACLE_PROVIDES.md:235 — — "my package's dependencies, custody, and load hygiene"
+- defined: ORACLE_PROVIDES.md:245 — — "my package's dependencies, custody, and load hygiene"
 
 ## ORACLE_PROVIDES:provides-payload-declaration
-- defined: ORACLE_PROVIDES.md:252 — — "this input of mine is sh, running <somewhere>, with <properties>"
+- defined: ORACLE_PROVIDES.md:262 — — "this input of mine is sh, running <somewhere>, with <properties>"
 - cited: 26Ob (1)
 
 ## ORACLE_PROVIDES:provides-report-lane-records
-- defined: ORACLE_PROVIDES.md:133 — — "here is my out-of-band speech" (née provides-margins)
+- defined: ORACLE_PROVIDES.md:140 — — "here is my out-of-band speech" (née provides-margins)
 
 ## ORACLE_PROVIDES:provides-store-topology
-- defined: ORACLE_PROVIDES.md:197 — — "where my kind's state lives, and which context axes cannot divide it"
+- defined: ORACLE_PROVIDES.md:207 — — "where my kind's state lives, and which context axes cannot divide it"
 
 ## ORACLE_PROVIDES:provides-wrapper-map
-- defined: ORACLE_PROVIDES.md:154 — — "here is what my wrapper does to each context dimension"
+- defined: ORACLE_PROVIDES.md:163 — — "here is what my wrapper does to each context dimension"
 
 ## 30R:publication-and-dispatch-boundary
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:355
@@ -5844,6 +5844,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:rul-chain-is-pull-only
 - defined: spike/CLAUDE.md:940 — (`27U` d4a) — the full numbered why-chain renders only
 - cited: 27U 289 28E 28Va 302 (5)
+
+## rul-checkpoint-does-not-prove-success
+- defined: —
+- cited: 30D 30U (2)
 
 ## 271:rul-class-prefixed-role-names
 - defined: Research/plans/271-block-settle-rulings-ledger.md:304 — (2026-07-11; TYPED)

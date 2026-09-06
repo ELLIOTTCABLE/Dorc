@@ -126,7 +126,7 @@ the license-contamination map. Cross-references are `docID:slug`.
   `notes/26B` (reactive plan-construction direction + capture-fold deferral bank; minted
   out-of-order 2026-07-17) · `notes/26C` (fixpoint semantics made precise; the quiet-welding
   audit vs the r27 tip; the R0–R4 revival ladder). Read `26B`/`26C` and `notes/275` under
-  **`notes/30D`**: stdout/stderr are now default-DECLINED, claimed only by authored DREP
+  **`plans/30D`**: stdout/stderr are now default-DECLINED, claimed only by authored DREP
   `predicts` speech — the cluster predates that algebra.
 - **r27 the consolidation round** (CLOSED 2026-07-18) — rest-of-round-24 + the wrapper/payload
   work, authored-once discipline. → **`plans/270` (charter: block arc · adjudication ledger ·
@@ -189,8 +189,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   rewritten 2026-08-29; §10 its components) · **`plans/30U`** (finished definitions:
   `disturbance_reaches` and the `disturbs nothing-else` record, 2026-08-29; §10 pending a
   successor rewrite) · **`plans/30W`** (index-kinds and owner-answered referents — pivot
-  books; §10 rulings owed) · **`notes/30D`** (+`30Da`) (predict channel claims and OOB
-  confirmation — RULED; the current-kernel rider) · **`notes/30X`** (the testing
+  books; §10 rulings owed) · **`plans/30D`** (promoted from notes; THE prediction-channel
+  contract: literal aggregate status, mandatory shell/DREP decline agreement, authored
+  stream checkpoints, and execution integrity; `notes/30Da` is the historical kernel rider) ·
+  **`notes/30X`** (the testing
   architecture: seams, sessions, seeds — the design-of-record for the suite; BUILT; its §10
   carries the one legal deferral class, kernel-mutating dogfood; its §5 carries the harness's
   human-acked bound, `30C:accept-dangerous-developer-harness` — developer tooling, not a sandbox).
@@ -254,6 +256,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   target-as-tenure pin, worlds compared through the chokepoint, the stdin survey, and the r31
   punt with its re-homing candidates).
   (Same round-id as the tabled multi-host r26 above — branch lineage, not chronology.)
+- **r31 preparation** — **`notes/311a`** (the kernel-shape/rc-law sitting and successor
+  critique; §§11–13 record the UX horizon and mandatory shell-output ruling; historical
+  alternatives, not a build plan). Its prediction contract is promoted into **`plans/30D`**;
+  index/transport proposals remain separately graded in the ledger.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.

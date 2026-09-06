@@ -83,6 +83,11 @@ covered — the middle state is new information.
   warning, attributed frame, capped severity, deduped per book, detail behind pull.
   Class-only in v1 (the author's words reach the admin via show-the-code, §4).
 
+<!-- Superseded in scope by plans/30D §§2–3, 2026-09-06: the CLASS and explanation
+remain aid-only, but recognized decline speech is control. Shell-semantic output is
+mandatory and must agree: verdict >=2 (DREP optional); predict decline requires DREP
+AND actual status 2. Bare predicted 2 is a tool result. The flat sink below is not a
+predict-status rule. -->
 Routing is aid-plane behaviour only: the rc-partition weld is untouched (≥2 stays a
 flat sink in every decision table); the license plane never reads a class. A wrong
 class steers ATTENTION (a wrong `unsound` silences deserved enhancement pressure) —
@@ -111,6 +116,11 @@ vm.drop_caches|vm.compact_memory)
   one spelling serve three consumers: the static analyzer value-threads the literal
   format (tiers 1–2); the probe emits it when dynamically reached (tier 3); an
   off-ramp consumer captures it by setting the sink.
+<!-- Superseded for control records by plans/30D §§2/5, 2026-09-06: reserved authority
+grammar is strict and source-correlated; malformed or lost required confirmation never
+falls back to a default answer. Noise-tolerant feedback does not become control merely
+because it resembles a decline. Dynamic authority fields do not acquire authority by
+being emitted at runtime; the static-first reporting inventory below is a separate use. -->
 - Report-lane plumbing constraints inherited from the transport design: one record per
   line, short records, PIPE_BUF-atomic (an-marker-atomicity); the free tail is author
   text — sanitized and size-capped at ingestion (an-output-sanitization is the owed

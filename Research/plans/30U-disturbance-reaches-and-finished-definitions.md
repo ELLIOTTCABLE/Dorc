@@ -32,7 +32,9 @@
   `printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}"`. Its *content* is the
   kind-owner's completeness claim ("for shapes reaching this path, disturbing this kind
   entails at most the emitted cells — and nothing else, in any vocabulary"); its *arrival* is
-  the execution witness (everything above it ran). One line, both jobs (rung 2).
+  a reached checkpoint after the covered emissions, not proof that every preceding operation
+  succeeded. Required body-status and capture-integrity checks remain separate (§4). One
+  line, both jobs (rung 2).
 - **`rul-witness-where-licensure-rides-runtime`** [TYPED 2026-08-29] — the general law the
   record instantiates: a runtime emission carries license-authority only if witnessed
   complete, and the witness is this same record; bodies whose emissions license nothing need
@@ -112,7 +114,7 @@ sm_dorc_Package__disturbance_reaches() {           # invoked per Package footpri
    case "$1" in                                    #   $1 = that cell's entity, e.g. 'nginx'
    *:*) ;;                                         # multi-arch spellings: rung 1 at most
    *)   printf '%s\n' "$1" : disturbs sm.dorc.Service   # static arm — traced, ships nothing
-        dpkg -L -- "$1"    : disturbs sm.dorc.File      # host arm — ships, read-only, probe
+        dpkg -L -- "$1"    : disturbs sm.dorc.File || return 2
         printf 'disturbs nothing-else\n' >>"${DREP_V1:-/dev/null}" ;;
    esac                                            # ↑ rung 2: the finished-definition act
 }                                                  #   AND the completion witness, one record
@@ -131,16 +133,26 @@ sm_dorc_Package__disturbance_reaches() {           # invoked per Package footpri
   authored report-lane speech at completion points statically (`30D`'s own
   expected-confirmation mechanics). A trailing-mark `: disturbs nothing-else` is
   unrecognized — there is no second spelling.
-- **Tail position, exactly-one** — the record sits after everything it vouches for; sh's
-  sequential execution makes its arrival imply every emission above it ran. A path with
-  zero records is rung 1; an execution producing more than one (a loop-placed record, two
-  reached branches) refuses the whole footprint, per the standing at-most rules. Pushing
-  the record into branches is the author's burden, as everywhere in the family.
-- **Fail-safe by spelling** — errexit trips, a dying host arm, even the `printf` failing on
-  a full disk all yield the same outcome: no record, no finished definition for that
-  invocation, footprint walls total. No engine special case exists or is needed.
-- **Off-Dorc** — `${DREP_V1:-/dev/null}` makes the line inert everywhere else; the off-ramp
-  reads the body as an ordinary instrumented script.
+- **Tail position, exactly-one** — the record sits after everything it vouches for, with
+  no unaccounted later emission. Its arrival witnesses that authored checkpoint, not successful
+  execution of every predecessor. A normal path with zero records is rung 1; an execution
+  producing more than one (a loop-placed record, two reached branches) refuses the whole
+  footprint, per the standing at-most rules. Pushing the record into branches is the author's
+  burden, as everywhere in the family.
+- **Completion and integrity** — these emission roles return zero on successful completion;
+  nonzero withdraws licensing authority. Acceptance requires the correctly scoped record,
+  zero body status, and intact, closed capture. An abort before the record cannot finish the
+  definition; a record followed by body death cannot finish it either. DREP arrival does not
+  imply stdout has drained. Missing or failed required confirmation never becomes a finished
+  definition; retained emissions still collide. See `30D:rul-checkpoint-does-not-prove-success`.
+- **Author-owned completeness** — a swallowed producer failure can reach the record and
+  return zero. The checkpoint cannot detect that false totality claim; internal error
+  handling and the definition's adequacy remain the author's contract. The example explicitly
+  guards its host query so failure prevents the record, on and off Dorc. No in-body compiler
+  silently supplies that guard.
+- **Off-Dorc** — `${DREP_V1:-/dev/null}` discards the report outside Dorc, but the `printf`
+  remains an ordinary status-affecting shell command. The body retains its ordinary shell
+  behavior; the record does not repair or override an incompatible result.
 - **As a generator** — a finished definition is a generator of cross-kind
   *provably-disjoint* verdicts (the claim's widened set excludes the backing), joining the
   generator registry like every authored surface; the record never re-enters the relation

@@ -1,5 +1,10 @@
 # 311a — Kernel-shape sitting: index-kinds (W-2), the rc law, and the oracle authoring surface
 
+<!-- Superseded as prediction design by plans/30D, promoted 2026-09-06. Sections 8–12
+preserve exploration, including withdrawn compiler and record-only-decline proposals;
+section 13 records the final human agreement rule. Implement the plan, not an intermediate
+proposal in this ledger. Index/transport discussions retain their individual grades. -->
+
 > AI-authored LEDGER (Fable, design-rubber-duck sitting with the human, 2026-09-05; the
 > r31-prep session). Notes-tier. Grades: **[TYPED]** the human typed the substance ·
 > **[ACKED]** put and acked as read · **[LEAN]** the human's stated lean · **[PROPOSED]**

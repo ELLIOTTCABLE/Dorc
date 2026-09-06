@@ -73,6 +73,9 @@ Law — what a row-minter and row-consumer must know (cite as `AID-NEEDS:law-…
   decision-inert at the type level: no path from any row's machinery into any
   license-plane input.
   Lint-clean licenses nothing; silence-licenses-nothing runs in both directions.
+  DREP is a shared physical lane, not an aid-only channel: recognized decline/channel
+  control is consumed under `plans/30D`, separately from its decision-inert class and
+  explanation. No general feedback becomes control by passing through narration.
 - **law-collapse-mints-narrative** (née law-collapse-mints-evidence) — every point where
   the engine narrows for safety (meet-to-⊤, refuse, decline, wall, demote, cancel) mints a
   decision-inert *narrative* record (`aid::CollapseNarrative`) carrying the collapse's
@@ -214,7 +217,7 @@ compact split is a named SELECTION POLICY (`289:rul-lint-render-split-is-policy`
 | aid-lint-carrier-payload-bar | carrier/payload quality: which-arg-is-code gates, reconstruction differential, dorcism-in-payload | text+orcl | olo▶ ci▶ | d | `24T:P-A4` | S |
 | aid-lint-kind-adjudicability-bar | kind-topology clauses machine-readable; binding smells; differential discharge — REQUIRED before kinds go community-shared | text+orcl | olo▶ ci▶ | d | `24S:A4`; unowned | S |
 | aid-lint-oracle-solo-mode | oracle files linted with no book present | orcl | olo▶ | d | `dorc_oracle::validate` factored book-free (`27U` d4b); + the decline-inventory source | B |
-| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` all three tiers live (`27U`: sink recognition, per-arm inventory, per-site classing, runtime drain + pairing); the drain runs on a controller-owned per-attempt scratch directory and degrades to an inert sink if that cannot be created (`spike/CLAUDE.md` decline-class-emission). No e2e case renders a drained probe yet — gate-2's redirect scan refuses the sink spelling | B |
+| aid-authored-decline-classes | which shapes an oracle deliberately declines, and why (closed class set: unsound/unmodeled/interactive/hazard); routes the enhancement-nags honestly | text+orcl (facts± at tier-3) | olo▶ blo▶ rev▶ post◀ ci▶ | c | `27W` all three tiers live (`27U`: sink recognition, per-arm inventory, per-site classing, runtime drain + pairing); the drain runs on a controller-owned per-attempt scratch directory. The built inert-sink fallback is not authority-safe where required control could be lost; `30D` requires withholding the affected prediction there. Decline control/agreement is specified, unbuilt; this row covers the class's narration. No e2e case renders a drained probe yet — gate-2's redirect scan refuses the sink spelling | B (narration) |
 | aid-coverage-instrument | analyzer-coverage dashboard over a corpus (instrument, never a gate) | text+orcl | ci▶ | d | `dorc-coverage` | B |
 
 ### Error/report classes
@@ -224,7 +227,7 @@ compact split is a named SELECTION POLICY (`289:rul-lint-render-split-is-policy`
 | aid-error-catalog-explainers | per-code colocated triple render: machine line, terse line, full prose registers (terse/deep/first-encounter) | — | all | — | defining-case-transcript-authored prose + fixpoint-protected committed catalog (`27V` §3; `282` generation flip) | S |
 | aid-error-exit-code-family | semantic fast-fail exit codes (10+ range); `--exit-code` divergence-of-world contract for cron | invoc | ci▶ | d | `24H` ack-1 (B); `--exit-code` (S; never sink-landings — `279f`); RULED 2026-09-04 (human): exit codes are STRUCTURAL — an exhaustive in-code list of named, consumed-and-never-reused exit STATES, so every collapse of several states onto one code is visible in code, plus ONE home for any user-configurable mapping of those states onto the constrained user-visible code space; unbuilt (applied-but-unrecorded, `apply-outcome-unwritten`, exits as the apply did today) | O |
 | aid-apply-divergence-report | apply-time divergence from prediction: proceed-and-flag report items, never questions | apply | post◀ rev▶ | m | rul-divergence-proceed; ApplyOutcome receipt feeds | S |
-| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT end-to-end (`27U`: recognition + noise-tolerant ingestion; the runtime drain on a controller-owned scratch directory, degrading to an inert sink when it cannot be created — `spike/CLAUDE.md` decline-class-emission) | B |
+| aid-refusal-breadcrumbs | an oracle's loud refusals surfaced with the site that ran anyway | facts | rev▶ olo▶ | c | the versioned report lane BUILT end-to-end (`27U`: recognition + noise-tolerant ingestion; the runtime drain on a controller-owned scratch directory); required-control capture failure must withhold authority under `30D`, never fall back to silence-as-default | B (narration; control agreement unbuilt) |
 
 
 Unowned (rows above whose mechanism no round owns; watch, don't lose)
