@@ -717,7 +717,77 @@ license now carries the predict compile).
   compile's effect without the compile; sh does not permit it. The differential survives as
   the hint's evidence source for that class, and possibly as a cheap pre-v1 aid.
 
-## §10 — state at close (2026-09-06, seventh fixpoint; the human rewinds after this)
+## §9h — the completion-witness compile: contract and narrowest edit (2026-09-06)
+
+The human's remit: design the transformation's contract for `f() ( set -e; … )` predict
+bodies (the §9c v1 compile) with least oracle-engineer effort and the narrowest surgical edit
+that provably perturbs no other body behaviour; account for every modelable shell semantic;
+do NOT lean on the existing oracle contract — every constraint the transform needs stands
+alone, imposed for this reason. Prior body edits in the corpus are all erasures or renames at
+load/emit (strip, the `dorc:` prefix, the shebang runner, the munged-name preamble); this
+would be the first INSERTION into a body's control flow, so the edit is designed as
+insert-only, never wrap, never move.
+
+- `fnd-status-capture-wrappers-perturb-nested-shells` [FOUND; kills §9's toggle form] —
+  both `set +e; S; r=$?; set -e` and `S || r=$?` put the answer statement S in an errexit-
+  IGNORED context, and that context propagates INTO every nested shell S runs: a helper
+  called as S, a command substitution inside S, a pipeline element of S. Under the original,
+  `[ "$(cd /x; cat f)" = y ]` aborts the substitution at the failed `cd` and tests the empty
+  string; under the wrapped copy the substitution continues, reads a different `f`, and the
+  copy TRUSTS a wrong-world answer the original never produced. Any wrapper around S is
+  therefore unsound; the edit must leave S in exactly its original errexit context.
+- **`prop-marker-and-exit-trap-witness`** [PROPOSED; the narrowest edit found] — insert
+  three things and nothing else: (1) at the top of the subshell body, after the author's
+  `set -e`, one line `trap 'printf "%s predict-end %s %s\n" "<nonce>" "$__dorc_arm"
+  "$?" >>"<sink>"' EXIT` plus `__dorc_arm=` (names fresh per run; STRAWMAN spellings);
+  (2) immediately before each LEAF answer statement, the assignment `__dorc_arm=<leaf-id>`,
+  in the same command list (where the leaf is a list operand — `cmd || return 2` — the
+  operand becomes `{ __dorc_arm=<id>; return 2; }`, a brace group, no subshell, no redirect);
+  (3) nothing wraps, reorders, redirects, or re-parents any authored statement. Leaves are the
+  §9 completion points: the last statement of a path, the statement before a bare `return`,
+  an explicit `return N`; compounds recurse into arms; a helper call in answer position is NOT
+  a leaf — the helper is compiled by the same protocol and its own leaves are. Why it is
+  sound: every authored statement runs in its original errexit state, cwd, options, fds, and
+  expansion; the EXIT trap fires on every exit of the subshell (errexit abort, `return`,
+  `exit`, falling off the end) with `$?` equal to the status the subshell was already exiting
+  with, and does not alter it; nested subshells and substitutions RESET traps on entry (POSIX),
+  so a `$(…)` inside a leaf never fires it; an abort at a non-answer statement exits before any
+  leaf marker is set (or with an enclosing NON-leaf marker, when the abort is inside a helper
+  before that helper's leaf), and the scaffold trusts a status only when the marker names a
+  leaf. The unmatched-`case` fall-through exits 0 with no marker ⇒ ⊤, matching the static rule.
+- `acct-shell-semantics` — rc: S's own status is untouched; the only `$?` the edit clobbers
+  is the one visible AT leaf entry (the marker assignment yields 0) ⇒ constraint C3 · pipes: a
+  pipeline leaf runs under the declared pipefail; SIGPIPE lands ≥128 ⇒ ⊤ · env/cwd/options:
+  untouched (the trap changes none; the body is a subshell so nothing leaks either way) ·
+  stdout: untouched · stderr: untouched except `printf: write error` on sink failure at exit
+  (disclosed; stderr is default-declined) · control flow: loops are not leaves (⊤ unless
+  followed by an explicit `return`, which is one); `&&`/`||` lists as leaves are fine (errexit
+  already ignores their non-last operands; the marker precedes the list) · nested shells: a
+  helper INSIDE a pipeline element or a substitution aborts only that element, so its abort
+  status reads as the leaf's answer ⇒ constraint C4 · traps: the edit needs the EXIT slot ⇒
+  C2 · errexit state: the witness's "no marker ⇒ ⊤" needs errexit ON throughout ⇒ C1.
+- `constraints-imposed-for-the-witness` [standalone; each is what the transform needs, not
+  the oracle contract] — C1 the body is a subshell compound whose first statement is `set -e`
+  and contains no other `set`; C2 no `trap` in the body; C3 a leaf answer statement does not
+  read `$?` (spell remaps as `if cmd; then …; else case $? in …) return N;; esac; fi`, whose
+  leaves are the returns); C4 an author-defined function appears in an answer position only as
+  a bare simple command, never inside a pipeline or list of a leaf; C5 helpers reached from a
+  leaf are in custody and compiled by the same protocol; C6 the two inserted names are unused
+  in the body and its helpers (per-run freshness makes this vacuous; the tracer checks anyway).
+  A violation of C1/C2 means the body is not compilable and takes the brace-body static rule;
+  C3–C6 violations make that arm predict ⊤ with a hint; never a refusal.
+- `trust-rule` — the scaffold trusts N iff the record arrived, its marker is a leaf id whose
+  static answer statement is status-meaningful, N < 128, and N equals the subshell's exit
+  status (the cross-check that bounds compile bugs).
+- `floor-measurements-owed` — `return` inside `f() ( … )` exits the subshell with N; an EXIT
+  trap in a subshell fires on subshell exit with `$?` = that status and leaves it unchanged;
+  nested subshells/substitutions reset EXIT on entry; `trap` inside a function body binds the
+  current subshell. All four are POSIX text; none is measured on the floor yet.
+- `csq-static-rule-unchanged` — the compile adds nothing for brace bodies (static rule) or
+  regime-3 bodies (errexit on, rc 0 = completion); it exists solely to refund the guard
+  requirement for authors who chose the fail-fast shape, and it refunds it exactly there.
+
+## §10 — state at close (2026-09-06, eighth fixpoint; the human rewinds after this)
 
 - TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
