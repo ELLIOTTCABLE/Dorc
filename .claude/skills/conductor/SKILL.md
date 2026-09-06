@@ -18,7 +18,7 @@ memetic hazards.
 
 Read the model-specific supplement now:
 - `fable.md` if you are `claude-fable*`
-- `sol.md` if you are `openai/*-sol`.
+- `openai.md` if you are `openai/*` (Sol or Astra).
 
 # General conductor instructions
 

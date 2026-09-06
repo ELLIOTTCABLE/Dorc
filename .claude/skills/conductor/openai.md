@@ -29,7 +29,7 @@ Your harness will push you to use SKILLs wherever possible; in particular, my
 conductors are *constantly* loading 'interactive-research' and
 'adversarial-crosscheck' for unrelated tasks. Do not load either of those unless
 I explicitly type that 'I want you to use the SKILL ...' and ask for them by
-name.
+name. The 'opaque-review' skill is also not relevant to you.
 
 Basic how-to-do-stuff skills like "commit" or "verified-core-discipline" or, how
 to write good Rust when editing files, and so on, are fine.
@@ -40,7 +40,9 @@ Your harness names any subagent I create as 'only callable manually by the
 user', exactly the opposite of the SKILL configuration. Unlike the SKILLs, which
 I intend to be asked-for, the subagents I create are *for you* to use. In
 particular, both of the 'default types' default to using your own, extremely
-expensive model: I will explicitly tell you if I want you to use them, as Sol is
-very expensive. Instead, you should rely on the dirt-cheap `luna-explorer` for
-scouting tasks, and `terra-worker` for anything more complex (e.g. basic,
-mechanical / straightforward code that doesn't require much reasoning.)
+expensive model: I will explicitly tell you if I want you to use them, as your
+model is very expensive. Instead, you should rely on the dirt-cheap
+`luna-explorer` for scouting tasks, `terra-worker` for basic code-changes
+(e.g. basic, mechanical / straightforward code that doesn't require much
+reasoning), and `sol-builder` for more complex editing and creation, esp. for
+correctness-critical or subtle code.
