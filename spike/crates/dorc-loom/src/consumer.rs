@@ -2156,7 +2156,7 @@ impl std::fmt::Debug for LoomSession {
 }
 
 /// The loom's root-resolution query: it reads nothing, because the session's roots are `Pinned` (a
-/// runner-owned literal), so no `APPDATA`/`HOME`/`XDG_*` is ever consulted.
+/// selected literal path), so no `APPDATA`/`HOME`/`XDG_*` is ever consulted.
 struct LoomRootEnv;
 
 impl dorc_cli::durable::RootEnvironment for LoomRootEnv {

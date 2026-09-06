@@ -373,14 +373,14 @@ impl TransportSeam {
 }
 
 /// The receipt-roots member. `Os` (the platform resolution behind [`RootEnvironment`]) is
-/// production-only (`Seams::os`); `Pinned` carries a runner-owned throwaway directory — there is NO
-/// `Os` variant in the harness subtype (`30X:bin-harness-sibling-not-produced-cli`; persistence
-/// under runner-owned roots is not a production variant).
+/// production-only (`Seams::os`); `Pinned` is an ordinary selected absolute path the harness
+/// claims no ownership of — there is NO `Os` variant in the harness subtype
+/// (`30X:bin-harness-sibling-not-produced-cli`; a pinned path is not a production variant).
 #[derive(Debug, Clone)]
 pub enum RootsSeam {
     /// The platform-resolved per-user config/state roots — mintable only by [`Seams::os`].
     Os(ProductionWitness),
-    /// A runner-owned throwaway directory the config/state roots derive UNDER, carried as a literal
+    /// A selected absolute directory the config/state roots derive UNDER, carried as a literal
     /// (`30Xa:rul-roots-pinned-is-a-literal`): it consults no platform variable, so a scrubbed
     /// session with no `APPDATA`/`HOME`/`XDG_*` still resolves.
     Pinned(PathBuf),
@@ -401,10 +401,10 @@ impl RootsSeam {
     }
 }
 
-/// Derive the config/state roots UNDER a runner-owned directory, consulting no platform variable
+/// Derive the config/state roots UNDER a selected directory, consulting no platform variable
 /// (`30Xa:rul-roots-pinned-is-a-literal`). The two roles stay separate subdirectories, exactly as
-/// every platform keeps them and as the runner creates them, so a pinned run writes precisely where
-/// the platform route would under a runner-owned sandbox.
+/// every platform keeps them, so a pinned run writes precisely where the platform route would
+/// under the selected directory.
 fn pinned_roots(
     directory: &Path,
 ) -> Result<dorc_receipt_local::RootInputs, dorc_receipt_local::RootRefusal> {
@@ -521,12 +521,12 @@ pub enum HarnessTransportSeam {
     Scripted(SimScript),
 }
 
-/// The roots subtype the ordinary harness parses: a runner-owned pinned directory, never `Os`
-/// (`30X:bin-harness-sibling-not-produced-cli`). It carries the throwaway directory as a literal
+/// The roots subtype the ordinary harness parses: a selected pinned directory, never `Os`
+/// (`30X:bin-harness-sibling-not-produced-cli`). It carries the selected directory as a literal
 /// (`30Xa:rul-roots-pinned-is-a-literal`).
 #[derive(Debug, Clone)]
 pub enum HarnessRootsSeam {
-    /// The runner's throwaway directory, the config/state roots derive under it.
+    /// A selected directory, the config/state roots derive under it.
     Pinned(PathBuf),
 }
 
@@ -786,7 +786,7 @@ fn parse_transport(environment: &dyn SeamEnv) -> Result<HarnessTransportSeam, Di
 }
 
 /// Parse the roots seam. `pinned:<absolute dir>` is the ONLY spelling — the harness cannot name
-/// `Os` roots (`30X:bin-harness-sibling-not-produced-cli`), and a runner-owned directory has no
+/// `Os` roots (`30X:bin-harness-sibling-not-produced-cli`), and a selected directory has no
 /// sensible default, so an absent or path-less `pinned` is a typed refusal
 /// (`30Xa:rul-roots-pinned-is-a-literal`), never a silent fallback (`30X:loom-seams-are-sh-lines`).
 fn parse_roots(environment: &dyn SeamEnv) -> Result<HarnessRootsSeam, Diag> {
