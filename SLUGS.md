@@ -15,6 +15,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:a-case-is-a-shell-session
 - defined: spike/crates/cli/CLAUDE.md:336 — (`30X` §5) — a loom's replay is a POSIX shell session: its `$` lines
+- cited: 30Xa (1)
 
 ## aid/CLAUDE:a-chrome-line-is-one-section
 - defined: spike/crates/aid/CLAUDE.md:120 — (né a-chrome-line-is-one-span; amended at the W4 span fold per
@@ -89,7 +90,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## accept-dangerous-developer-harness
 - defined: —
-- cited: _tmp-30X-developer-harness-fold-handoff (1)
+- cited: 30Xa _tmp-30X-developer-harness-fold-handoff (4)
 
 ## 30R:accounted-and-unaccounted-output
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:273
@@ -4187,7 +4188,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## loom-syntax-grants-no-production-authority
 - defined: —
-- cited: 30X 30Xa cli/CLAUDE (4)
+- cited: 30X 30Xa cli/CLAUDE (5)
 
 ## loom-transcript-is-what-the-user-saw
 - defined: —
@@ -4278,7 +4279,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## model-seams-are-one-bundle
 - defined: —
-- cited: 30X cli/CLAUDE (2)
+- cited: 30X 30Xa cli/CLAUDE (3)
 
 ## model-symbolic-dollar-zero
 - defined: —
@@ -6921,7 +6922,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:rul-runner-varies-only-what-it-set
 - defined: spike/crates/cli/CLAUDE.md:348 — — the runner's per-block injection yields to any authored
-- cited: 30Xa (2)
+- cited: 30Xa (3)
 
 ## 28K:rul-runtime-resolution-never-load-bearing
 - defined: Research/plans/28K-oracle-loading-and-resolution.md:219 — — a misalignment between our binding

@@ -6,7 +6,69 @@
 > since 30X, the tree-reconciliation deltas, the lane state, and the residue accounting.
 > Authority: `30X` and everything it cites outrank this file.
 
-## §0 — state: CLOSED 2026-09-04 (the fourth sitting) — every lane BUILT and green on both legs; the close batch landed; the arc folds to `ai/main`
+## §0 — state (2026-09-05): BUILT and gated; the fold's hold on `30-reviewC` was ADJUDICATED by the human into a ruling; two repairs and the fold are OWED — a successor resumes HERE
+
+Read FIRST: the ephemeral handoff `_tmp-30X-developer-harness-fold-handoff.md`, UNTRACKED at the
+root of this worktree (`.tmp/trees/r30-30X-test-infra-decruft-conductor`, branch
+`ai/r30-30X-test-infra-decruft-conductor`, riding `ai/main` as of 2026-09-05). It is the ruling's
+authoritative text; delete it only at the fold. The ruling, `30C:accept-dangerous-developer-harness`
+(human-acked after the hold; recorded on this branch by a sibling — "Record the accepted
+developer-tool boundary"): `dorc-harness` is repository-internal developer tooling that runs the
+production engine and native receipt implementation with developer-selected fixture values; a root or
+receipt path handed to it is an ordinary selected path that may name existing local state and carries
+NO claim that the runner created or owns it. Hard bounds: the shipped `dorc` stays the production
+composition (no harness-shaped environment, no fixture seams) · `dorc-harness` never enters shipped
+or public artifact sets · loom sessions stay unrestricted (no developer-machine containment subsystem,
+no durable fixture-provenance format) · the ordinary harness keeps no `RealSsh` selection. Leans:
+keep the runner's defaults (fresh throwaway roots, the scrubbed session, the env-cleared mocks rail) as
+suite defaults a session may deliberately replace; the smallest coherent re-cut of the visible
+contracts; the artifact-set check extends an existing seat, never a new runner, fixture shape, or
+release mechanism, and never a target/feature arrangement that can let the corpus vanish silently; no
+root token, marker protocol, broker, durable field, sandbox, or replacement receipt backend is owed.
+The human requested no follow-up opaque review; the fold completes on the existing procedure.
+
+OWED, in order:
+
+1. `repair-install-omits-the-harness` — FINDING (conductor, 2026-09-05): the ONE user-facing
+   collection in this repository is `mise run install` = `cargo install --path ./crates/cli --debug
+   --locked --` (`mise.toml` `[tasks.install]`), which installs EVERY bin target of the cli package —
+   `dorc`, `dorc-sh`, AND `dorc-harness` — so the bound is violated today. Repair: the task names its
+   bins (`--bin dorc --bin dorc-sh`); the objective check is a test in `internal-tooling` (repo
+   plumbing; `30X` §3a class 1, the suite's own machinery) asserting the install task's `--bin` set
+   equals the cli package's bin targets (read from `cargo metadata`) minus exactly `dorc-harness` — a
+   future bin then cannot appear without a distribution decision, and the corpus keeps building and
+   invoking `dorc-harness` through `CARGO_BIN_EXE_dorc-harness` untouched (no feature, no
+   `required-features`). One Opus lane; the test's inputs are textual config plus cargo metadata, an
+   instrument the human asked for.
+2. `recut-runner-owned-into-selected-paths` — the phrase "runner-owned roots/paths" overstates
+   ownership. Re-cut (conductor voice, once): `crates/cli/CLAUDE.md` `a-case-is-a-shell-session`
+   and `rul-runner-varies-only-what-it-set` ("the runner supplies fresh throwaway roots and a scrubbed
+   session by default; a session may replace its path configuration; the harness claims no
+   ownership"); `rul-roots-pinned-is-a-literal` STAYS (it is about never consulting the platform
+   variables, not ownership); `notes/30X` §2 `model-seams-are-one-bundle` ("a runner-owned path" →
+   "a selected path"), §4 `bin-harness-sibling-not-produced-cli` ("under runner-owned roots" → "under
+   whatever roots the session selected — the runner's throwaway defaults or a deliberately chosen
+   local path"), §5 `loom-syntax-grants-no-production-authority` (already says the harness is a
+   powerful developer subsystem; drop "runner-owned" from its roots clause and cite the ruling), §11
+   lane A's sentence; `spike/CLAUDE.md` needs no edit. Add ONE bullet beside the harness contract in
+   `crates/cli/CLAUDE.md`, `rul-harness-is-developer-tooling-not-a-sandbox`
+   (`30C:accept-dangerous-developer-harness`), restating the four bounds in two sentences.
+3. `close-gates-at-the-final-tip` — `mise run both gate:full-quiet`, `bless:dry`, `mise run
+   gate:arc`. Memory: on 2026-09-04 the harness's own watchdog killed backgrounded gates twice (the
+   human's apps held ~18 GiB and the WSL VM ~11 GiB of cache); check free RAM ≥ 10 GiB first
+   (`vmmemWSL` drains under gradual reclaim); the arc-profile steps this diff selects are exactly
+   `verify-translate-check` · `verify-lean-badges` · `verify-kani`, runnable singly via `mise run
+   gate:step -- <step>` when the whole gate cannot be hosted. Evidence already in hand at the
+   content-identical tip before the ruling: both builder-completion legs green; all three verifiers
+   green; `bless:dry` clean; `xfail:census` 25 live · 3 reserved.
+4. The fold: docs-only rebase over `ai/main` if it moved (the sibling design sessions land often;
+   slug-index conflicts resolve to upstream, then `mise run slugs`), `git -C <root> merge --ff-only`,
+   delete the `LIVING_STATUS` IN FLIGHT entry (its account is in the README round map) and add two
+   conduct fences there (no TODOs in any CLAUDE.md, ever; no durable to-ack/owed lists — lose work
+   rather than mint pending work), commit on `ai/main` by pathspec, prove containment, `git worktree
+   remove` + `git branch -d`, delete the untracked handoff.
+
+### The arc as built (the account that moves to the README round map at the fold)
 
 The rebuild is complete at the branch tip: lanes A–D2c (D ran as D1 · D1′ · D1″ · D2a · D2a′ ·
 D2a″ · D2b · D2b′ · D2c) all built and green on `mise run both gate:full-quiet`; `bless:dry`
@@ -92,6 +154,7 @@ this sitting that this branch rebases over before any fold.
 | the reviewer-driven tightening (`8ab53489`) + the conductor's five clarity repairs + `rul-seam-columns-are-conductor-ruled` | ACKED 2026-09-02 ("Ack; proceed with your cleaning. I believe we're ready to deploy") |
 | `ambiguity-persistence-means-what` — applied as "the production ROOT is excluded, never native I/O under a runner-owned root" (the only reading lane B survives) | applied under that ack; stood uncorrected through the close |
 | the close sitting's veto items (both lane-B product rulings · the route-B re-export · `rul-post-dispatch-durable-failure-is-a-sibling-code` · the source-comparison seat's reader · the unwritten identities line · exit 0 on an unrecorded outcome · the lint slug · the three relativizations · the thirteen keys) | ACKED 2026-09-04 as §0 records; the advisory the second lane-B ruling served was then RETIRED at the human's word |
+| `30-reviewC` NACK → `30C:accept-dangerous-developer-harness` | ACKED by the human 2026-09-05 (the handoff named in §0); two repairs owed before the fold |
 | the five fence re-targets (`main.rs` → `compose.rs`; §2a last row) | ACKED 2026-09-04 ("if there's fences they need to scan the right file"); the fences' existence NOT acked, punted |
 | sealed review over lane A's implementation (builder-flow relay, §2a) | DECLINED by the human 2026-09-02: no opaque review within the arc; end-of-arc is their call |
 | `exceed-silence-doctest-noise` | acked with the plan 2026-09-02 |
