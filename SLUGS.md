@@ -4984,6 +4984,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311b:proposal-addresses-are-qualified-not-globally-interned
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:585
 
+## 311b:proposal-alternative-proofs-do-not-replace-dependencies
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:748
+
 ## 311b:proposal-comparison-uses-only-licensed-implications
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:622
 
@@ -4992,6 +4995,15 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311b:proposal-incarnation-and-narration-ride-existing-rails
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:663
+
+## 311b:proposal-local-key-comparisons-remain-owner-answered
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:774
+
+## 311b:proposal-prototype-scope-and-honest-limits
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:784
+
+## 311b:proposal-retire-the-member-retain-weaker-speech
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:728
 
 ## 311b:proposal-storage-dependence-does-not-become-equality
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:607

@@ -709,3 +709,94 @@ the UUID owner responsible for another tool's cloning, aliasing, or identity-reu
 The main unresolved cost is authoring the positive qualified-address statement without
 unnecessary ceremony. The example shows why SOME statement about naming is needed;
 it does not prove a fresh syntax token or changed resolver signature is necessary.
+
+## §14 — One authored description and alternative identity routes
+
+- **`rul-context-dimensions-are-ordinary-types` [TYPED]** — treat the generalization as
+  ruled: User, NetNS, and the other context dimensions are ordinary stdlib types, not
+  engine-special types or built-in world semantics. No continued qualification of that
+  direction is needed.
+- **`lean-enrich-one-description-retire-duplicate-authorship` [human LEAN]** — the
+  human doubts a separate state-stored member is necessary; prefer one authored item
+  capable of serving both identity and collision through the entity graph. Argue for
+  any retained semantic distinction, not for preserving the old member by inertia.
+- **`question-optional-identifiers-add-alternative-routes` [TYPED exploration request]** —
+  describe how normal namespace-based comparison and a platform/provider-specific UUID
+  route coexist. The anticipated benefit is a shorter proof where the optional answer
+  exists; the human requests holes in that assumption and complete exploratory functions.
+
+### `proposal-retire-the-member-retain-weaker-speech`
+
+[Assistant proposal] Retire separate `__state_stored_in` authorship in favor of an
+expanded single `__resolve` description. Preserve collision-only dependency as a weak
+statement within that description: an author may know an entity's state is affected by
+several locations without possessing a canonical address or a separating comparison.
+Exact constituent addressing can project BOTH a qualified identity and collision
+containment from one line, avoiding duplication for the common case. Naming through a
+namespace is weaker than saying all of the entity's state is a constituent of that
+namespace; pointer-like namespace bindings and split storage require the weaker forms.
+No old weak statement silently gains stronger authority in the migration.
+
+The chat spelling deliberately distinguishes provisional forms rather than claiming
+this many final keywords are required: `part-in` (canonical local name plus constituent
+state dependence), `name-in` (canonical scoped name and resolution dependence only),
+`backed-by` (collision-only), `key-by` (an additional typed comparison key, under the
+subject kind owner's warrant), and `value-name` (the kind's canonical value representation,
+context-independent by the kind owner's speech). These are prototype vocabulary only.
+A UUID value is one ordinary value-kind example; engine code recognizes no UUID format.
+
+### `proposal-alternative-proofs-do-not-replace-dependencies`
+
+Every returned identity route is an additional claim about the SAME subject; choosing a
+cheaper successful proof never drops storage dependencies, origin-siting obligations,
+measurement backings, or another required input. Distinguish alternative witnesses from
+conjunctive dependencies: identity may have several proofs, while sparing must discharge
+all applicable disturbance/backing obligations. A UUID shortcut is not an exception to
+that universal meet.
+
+A local scoped route being unknown is not a refutation of another complete equality or
+separation proof. Mere shared coarse storage is not equality of children. Conversely,
+actual same and actual disjoint claims about the same subject pair, aspect, and live
+world conflict: never choose the shorter or higher-priority provider. Withhold the
+contradicted authority and retain the named competing claims for why. No arbitrary
+provider precedence, new function-shadow fallback, or automatic cross-author merging
+is introduced. One selected kind member composes provider helpers explicitly under
+ordinary source custody and control flow.
+
+An additional `key-by` clause conveys identity/disjointness only where its declared
+contract applies to the SUBJECT kind; it does not equate that subject with a UUID VALUE
+or merge different subject kinds carrying the same bytes. Unsupported optional keys
+leave the ordinary route intact. A provider identifier that denotes only a logical
+object across independently diverging replicas cannot by itself warrant equal physical
+state. The final convergence/prediction comparison retains its real state backings and
+contextual conditions; an identity-key clause must not bypass them.
+
+### `proposal-local-key-comparisons-remain-owner-answered`
+
+In the prototype, a same-parent canonical local-name match can establish sameness under
+the resolved address contract. Unequal names consult that child kind's `__disjoint`,
+under the proved shared parent; they are not engine-inferred separation. Different
+parents alone do not separate children: two distinct mountpoints can name the same
+filesystem. An explicit typed comparison-key claim can supply an independent proof.
+The normal `__disjoint` rc contract remains 0 disjoint / 1 overlap / other unknown;
+an overlap answer never becomes equality.
+
+### `proposal-prototype-scope-and-honest-limits`
+
+Complete illustrative functions are presented in chat, not saved as a durable oracle
+library. New annotated binds construct a scope-qualified value; resolver arguments carry
+its local name and ordered parent names with their type/provenance attachments (the
+proposed ABI, not today's). Read-only `acct_query`, `fs_facts`, and `os_facts` in those
+functions stand for ordinary author-owned tool adapters, never engine facilities.
+They expose paths, local keys, or explicitly supported identifier values, not an engine
+world-fact table. Their cross-platform implementation and validation are not supplied by
+this sitting.
+
+The filesystem example describes actual filesystem objects, not the identity of path
+entries or subtree regions; those are separate subjects under `30T`'s per-aspect law.
+A mountpoint is a route to its filesystem, not a globally disjoint container; mount
+changes invalidate that route through existing scoped incarnation/reach. The same
+calculus describes namespace-local kernel Users, deliberately distinguished from the
+application's Account records. UUID-backed shortcut examples require an adapter that
+only supplies keys suitable for the declared subject identity contract; ordinary cloned
+filesystem UUIDs are not automatically such keys.
