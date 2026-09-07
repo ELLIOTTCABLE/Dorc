@@ -430,3 +430,39 @@ human response can resolve whether the conceptual distinction matches their mean
   collisions, not equality; `271`'s positive invariance line separately supplies a
   transport-related claim. The new counterexample tests the cross-chain identity
   promotion, not those guarded consumers.
+
+## §10 — One kind namespace; coarse speech versus naming authority
+
+- **`rul-no-automatic-sameness-from-repetition` [TYPED clarification]** — “immediate
+  repetition” was the human's gloss, not a license. Under dangerous-by-default disturbance
+  assumptions it usually establishes no sameness. Resolution uses the full function
+  environment and value-flow-sensitive equality, never source-text equality. Expect most
+  identity descriptions to do nothing without substantial contributions from several
+  humans; no cheap implicit baseline is owed.
+- **`rul-explanations-are-part-of-the-proof-product` [TYPED]** — the engine must construct
+  a self-consistent chain from authored claims and mint Narration. This is user-exposed
+  product behavior, not merely an internal invariant: each nontrivial semantic inference
+  must explain its causative line or narrow collaborating set of speakers/lines.
+  An unexplained semantic leap lacks both authority and the typed explanation `dorc why`
+  exists to deliver. Engine derivations compose the claims; they do not invent tool facts.
+- **`hypothesis-one-namespace-with-intermediate-entities` [human, tentative]** — perhaps
+  the tenant counterexample's store declaration is wrong for the intended contract:
+  there are two logical data/name stores, both clobbered by the database File. The
+  example may support one common kind/entity semantics rather than a separate naming
+  system. The human requests an attack on that hypothesis, not a new ruling.
+- **`assessment-common-objects-distinct-relations` [assistant, unratified]** — the
+  intermediate namespaces can indeed be ordinary entities of ordinary kinds; no second
+  universe of names has been justified. The engine may not infer tenants from SQL or
+  distinctness from their different coordinate spellings. Authors must supply those
+  relationships. A shared File can invalidate both without identifying either with it
+  or with each other.
+- **`assessment-coarse-storage-is-not-yet-a-contract-breach` [assistant, unratified]** —
+  current backing text permits coarse storage locations: `272` §5 explicitly allows
+  approximate addresses for its dependence consumer, while `30U` §7 adds collisions.
+  Therefore saying both tenants' persistent state lives in this File is not, by itself,
+  a false claim under that existing meaning. Requiring the intermediate namespace for
+  naming value is coherent; retroactively calling an otherwise true coarse storage
+  declaration invalid would change the contract and pressure authors beyond gradual
+  enhancement. Coarse speech can retain collision value while leaving identity unknown.
+  What remains to establish is whether one existing edge contract can carry both
+  descriptions without its naming consumer promoting coarse containment into equality.
