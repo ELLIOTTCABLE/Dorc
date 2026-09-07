@@ -25,7 +25,7 @@
 
 ## Scheduled
 
-### `round-r31-language-and-kernel` — announced 2026-09-02; cut 2026-09-02; opens after `notes/30X` folds
+### `round-r31-language-and-kernel` — announced 2026-09-02; cut 2026-09-02; test-rebuild prerequisite satisfied (`notes/30Xa` §0)
 
 The second language/kernel round: the r30 designs-of-record built, chosen so a pivot book
 (one file: stand the machine up from the controller, then converge it over `ssh`) analyzes
@@ -34,13 +34,16 @@ merge points, the two cut-seams — is **`plans/310`**; this row carries only di
 design sitting that produced the pivot algebra is banked in `notes/26M`; its design-of-record
 is `plans/30W`.
 
+> This is still the old build cut. `notes/26Ob` §15 directionally acks transport out and
+> some single-shot capture in; re-cutting this row and `310` waits for design stabilization.
+
 In, by lane (`310` §1):
 
 - **tracers and records** — the taught decline idiom (`USER_STORY` stage 3's shape, a tracer
-  bug) · `local` off the `26J` deny-list (the dialect is POSIX + `local`) · `notes/30D`'s
-  predict channel records (`return 2` predicts 2; `predicts <set>`/`predicts none` on the
-  report lane) · `plans/30U`'s `disturbs nothing-else` recognition and the
-  `disturbance_reaches` respell · `30T:comp-backing-detector`. This lane is the gate before
+  bug) · `local` off the `26J` deny-list (the dialect is POSIX + `local`) · `plans/30D`'s
+  prediction contract (RULED, unbuilt: literal model rc; whole decline requires DREP plus
+  actual rc 2; authored stream checkpoints and separate integrity) · `plans/30U`'s
+  `disturbs nothing-else` recognition and the `disturbance_reaches` respell · `30T:comp-backing-detector`. This lane is the gate before
   any real oracle is hand-authored (`notes/27Q` §2).
 - **edge: local-exec and the load plane** — local-exec as a supported mode (no host means
   the controller; `TODO.md`'s cli-refresh note is the spelling authority; the `LocalDriver`
@@ -51,14 +54,15 @@ In, by lane (`310` §1):
   product over index-kinds — retrofit-hostile, audited first) · items 2–4 with Host minimal
   (an entered index; no merging; the re-keying rule and expected-sever; the Boot/Machine
   witness on `30S` rails) · `plans/30U`'s `unrelated` answer and settle gate · the
-  invariance line accepting an index-kind target. The argv-form `ssh` fidelity carve
-  (simple words are identity across the remote re-parse; else decline) rides Host entry.
+  invariance line accepting an index-kind target. The engine-side `ssh` charset carve is
+  WITHDRAWN (`26Ob:ack-charset-is-tool-knowledge`); wrapper-as-landing remains unruled.
 - **file semantics** — `plans/30T` §10's chain: `comp-routing-locator` → `comp-fs-binder-member`
   → `comp-claim-consumption`. The second seam: the round is coherent without it.
 
 Held at seams (`310` §3): **`seam-payload-forms`** — the heredoc form and the sibling-file
 form both reduce to the payload-declaration speech-act (`notes/26M`); nothing builds before
-its carrier survey (below); the human's barely-a-lean is heredoc in, sibling-file punted.
+its carrier survey (now ACKED, `26Ob:ack-stdin-survey`); the seam remains held
+(`notes/26Ob` §15), with analysis and manipulation landing together.
 **`seam-survival-last-mile`** — the file-semantics lane; cut here if the arc must shorten.
 Survival as a mechanism stays IN (the human's `26M` core argument: purpose-ordered pivot
 books lock their value behind it; the `26Lb` cohort lean covers deep vendor-described
@@ -69,19 +73,23 @@ Rulings that gate lanes (the human's; each blocks the lane it names and nothing 
 - the six `plans/30W` §10 rulings — gate the kernel lane below `30S`;
   `rule-unreserve-host-as-entered-index` collides with `271:rul-axis-vocabulary-v1`, and
   `rule-incarnation-invariance-passes-the-razor` decides whether boot-invariance is
-  vouch-tier or survival-tier.
-- `28Q:pin-ssh-entry-shape` — gates Host entry (the `"$@"`-verbatim rule versus the remote
-  re-parse).
+  vouch-tier or survival-tier. **Partly superseded:** current shape questions and remaining
+  proposals are `notes/311a` §§2–5; these are not six untouched rulings.
+- `28Q:pin-ssh-entry-shape` — the verbatim-only premise is RETIRED
+  (`26Ob:ack-entry-verbatim-cannot-hold`); wrapper-as-landing is still unruled.
+  Host entry moves out under the directionally acked re-cut (`notes/26Ob` §15).
 - the delivery-mechanics pair from `26M`'s seam map, gating Host entry AND local-exec's use
   for pivot books: `26K:sit-stdin-copy-exec-amendment` is RULED
   (`26N:rul-delivery-shape-file-backed-default`; its build is lane 2's `unit-delivery-shape`,
   which lands before Host entry) · the report sink's remote home is DISSOLVED by
   `plans/26O` (every context Dorc stands up carries its own sink and scaffold,
   `26O:rul-every-context-carries-its-own-scaffold`; records never cross a link as records);
-  what still gates Host entry there is `28Q:pin-ssh-entry-shape` alone, and the one ruling
-  owed is the sinkless-context record policy (`26N` §4.5, the human's lean;
+  the former remaining Host-entry gate was `28Q:pin-ssh-entry-shape` (updated above).
+  Still unruled: the sinkless-context record policy (`26N` §4.5, the human's lean;
   `26O:rul-sinkless-context-record-policy`), whose conservative reading builds without
-  waiting.
+  waiting. **Scope correction:** sinkless policy is transport-round work, not an r31
+  launch gate under `notes/26Ob` §15; required prediction-confirmation loss already
+  withholds under `plans/30D` §5.
 - the load-model trio — `tc-dollar-zero-is-script-anchored` is RULED yes
   (`26N:rul-dollar-zero-authority-spelling`; the flagship red
   `load30-point-havoc-and-script-relative` targets guard-at-most,
@@ -91,9 +99,9 @@ Rulings that gate lanes (the human's; each blocks the lane it names and nothing 
   small builds only.
 - the acquired-source weld — `30R`'s ordered role-carrying source vector against `30I`'s
   occurrence account; a small ruling, gates one small unit.
-- `26M:q-payload-declaration-speech-act` — the carrier-geometry survey before any
-  spelling; gates `seam-payload-forms` entirely. Holes cardinal if missed: payload identity
-  joining the `26C` Question identity; expansion-siting across the boundary; entry recipes
+- `26M:q-payload-declaration-speech-act` — survey prerequisite SATISFIED
+  (`26Ob:ack-stdin-survey`); `seam-payload-forms` remains held, not a launch gate.
+  Holes cardinal if missed: payload identity joining the `26C` Question identity; expansion-siting across the boundary; entry recipes
   carrying transport flags or declining.
 - the filesystem binder member's NAME (unminted; `30T` §3.2) — a provisional mint suffices
   under `rul-strawman-formats-no-compat`, before the brief.
@@ -125,9 +133,9 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
   inside it: `30J` §6.5 cross-family registration (the human's).
 - **`arc-payload-declaration`** — the heredoc and sibling-file remote forms; the one
   engine core is `notes/26M`'s speech-act (carrier geometry · dialect and fidelity as an
-  authored pre-applied normalizer · execution world · custody). Gated on the carrier survey
-  (above). The sibling-file form pulls `FORFEITS:forfeit-plain-sh-inclusion-analysis` in
-  with it (the splice and paste tiers) and `30I`/`30P`'s bundling; the heredoc form forces
+  authored pre-applied normalizer · execution world · custody). Carrier survey ACKED
+  (`26Ob:ack-stdin-survey`); the seam stays held (`notes/26Ob` §15). The sibling-file form
+  pulls `FORFEITS:forfeit-plain-sh-inclusion-analysis` in with it (the splice and paste tiers) and `30I`/`30P`'s bundling; the heredoc form forces
   the first source-to-source questions inside argv/heredoc bytes — `26M`'s v1 posture is
   whole-or-nothing render for inline payloads.
 - **`arc-host-capabilities`** — the capability SYSTEM of `notes/26N` §4: measured,
@@ -139,8 +147,9 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
   (`310:unit-context-slot-product`). Recording measured supply in the receipt clears
   `rul-durable-contents-reviewed-before-design` first.
 - **`arc-identity-tier`** — `30T:comp-identity-tier` (per-aspect relations, perishable
-  answers) · `30W` item 5 (`kind__overlaps`) · the referent-transparent declaration · `30W`
-  item 6 (store-member decomposition, gated on `rule-only-decomposes-everywhere`) ·
+  answers; `kind__overlaps` was brought forward into the kernel by
+  `311a:rul-overlaps-is-a-kernel-generator`, its exact speech still unsettled) · the
+  referent-transparent declaration · `30W` item 6 (store-member decomposition, gated on `rule-only-decomposes-everywhere`) ·
   `30T:comp-channel-relative-speech` · `30T:comp-content-establishment` (the write-if-changed
   idiom's own elision; the FORFEITS captures). None is ruled beyond `proposal`; shares
   plumbing with `30P:mech-two-standups`.

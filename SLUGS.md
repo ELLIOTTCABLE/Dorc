@@ -106,7 +106,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-charset-is-tool-knowledge
 - defined: —
-- cited: 26N 26Ob 311a (5)
+- cited: 26N 26Ob 311a ROADMAP (6)
 
 ## 26M:ack-command-position-constant-prop-owed
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:62 — — `$SSH`/`$SUDO`-style
@@ -126,7 +126,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-entry-verbatim-cannot-hold
 - defined: —
-- cited: 26Ob 311a (4)
+- cited: 26Ob 311a ROADMAP (5)
 
 ## ack-guards-reach-elisions-witness
 - defined: —
@@ -140,6 +140,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:ack-shared-bytes-transitive-permission
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:557 — [ACKED, "if we opt not to lift, this
+
+## ack-stdin-survey
+- defined: —
+- cited: 26Ob ROADMAP (5)
 
 ## 26M:ack-terminology-no-locus
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:50 — — the 'locus' mint is withdrawn (near-content):
@@ -5607,7 +5611,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ta (1)
 
 ## ROADMAP:round-r31-language-and-kernel
-- defined: ROADMAP.md:28 — — announced 2026-09-02; cut 2026-09-02; opens after `notes/30X` folds
+- defined: ROADMAP.md:28 — — announced 2026-09-02; cut 2026-09-02; test-rebuild prerequisite satisfied (`notes/30Xa` §0)
 
 ## route-conditional-tail
 - defined: —
@@ -6625,6 +6629,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-output-form-unwelded
 - defined: —
 - cited: 27V 27W 289 28E 28G 28H 28Va 28Vb AID-NEEDS KNOBS aid/CLAUDE spike/CLAUDE (18)
+
+## rul-overlaps-is-a-kernel-generator
+- defined: —
+- cited: 311a ROADMAP (3)
 
 ## rul-own-crate-own-tests
 - defined: —
