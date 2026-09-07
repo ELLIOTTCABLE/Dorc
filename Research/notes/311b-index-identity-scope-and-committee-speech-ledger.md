@@ -392,3 +392,41 @@ This points toward an existing kind/entity/index shape, not another ontology or 
 partition. No new syntax or recursive comparison algorithm is selected here. The next
 human response can resolve whether the conceptual distinction matches their meaning of
 “store” before scope-composition laws are developed.
+
+## §9 — Testing whether storage can supply naming scope
+
+- **`ack-scope-is-an-entity` [TYPED]** — the human confirms the entity-not-kind
+  distinction; their earlier phrasing was shorthand, not a different model.
+- **`question-storage-versus-naming-needs-a-counterexample` [TYPED]** — do not adopt a
+  separate naming relationship merely because it sounds different. Exhibit a specific
+  description that is correct and useful for an existing consumer but fails if used
+  for naming. Reconcile the store member's older keying role, explicit invariance, and
+  later collide-only relationships. The human recalls filesystem/proc cross-kind
+  relationships chiefly as collision propagation and asks for scrutiny in the opposite
+  direction, not an assumption that dangerous cross-kind identity already exists.
+- **`reading-syntactic-siting-is-not-physical-repeatability` [assistant assessment]** —
+  the proposed same-chain baseline includes resolved arguments, shell/context state,
+  entry-definition identity, and unperturbed step-address resolution. Immediate repetition
+  alone proves none of a tool's world semantics: a pool-selecting entry can choose a
+  different target on each invocation without a book mutation. The qualified baseline
+  remains subject to the existing authored resolution/identity contract and horizon;
+  this caveat does not mandate per-site re-witnessing or new refresh machinery.
+- **`example-shared-database-separate-tenant-namespaces` [assistant counterexample]** —
+  consider a quiescent single-file account database whose complete model is rows keyed
+  by `(tenant, local_id)`. Red's account 7 is enabled; Blue's account 7 is disabled.
+  Both account namespaces truthfully declare the same database File as their store.
+  A write to that File correctly collides with both namespaces' account facts under
+  `30U` §7. Even a complete storage declaration does not say Red and Blue are the same
+  namespace: reusing Red's positive account-7 result for Blue would wrongly elide Blue's
+  enable operation. Every authored storage statement can be true while the proposed
+  promotion from shared storage to shared naming is false. The identical filesystem
+  object and local number are insufficient; tenant selection is the missing distinction.
+- **`reading-counterexample-is-consumer-specific` [assistant limit]** — this is NOT an
+  as-built bug or proof that new syntax is needed. Retaining the full qualified entity
+  names/context remains safe. Existing kinds could potentially describe a finer chain
+  through the database's logical tenant namespaces; what cannot happen silently is
+  treating an existing broad File store as that finer namespace. `272` §5 already
+  identified shared package storage as coarser than entity identity; `30U` §7 adds
+  collisions, not equality; `271`'s positive invariance line separately supplies a
+  transport-related claim. The new counterexample tests the cross-chain identity
+  promotion, not those guarded consumers.
