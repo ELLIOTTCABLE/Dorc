@@ -262,6 +262,9 @@ the license-contamination map. Cross-references are `docID:slug`.
   index/transport proposals remain separately graded in the ledger. **`notes/311b`**
   continues the index-world sitting: scoped identity versus explicit cross-entry identity,
   the committee/custody precedent, attribution, and unratified authoring alternatives.
+  **`notes/311c`** is the regrounding digest for the identity-composition sitting (the reading
+  map and its footguns, the human's framing, the current relation/generator/store system as
+  designed and as taught); a digest, not a ledger — it rules nothing.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.
