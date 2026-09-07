@@ -541,3 +541,171 @@ example circularly. The context-slot/comparison design must admit an authored,
 cell-relevant cross-context bridge without requiring a globally false “File is invariant
 across Host” claim. It must not infer that bridge from shared storage alone either.
 This is the concrete form of the original index-world question, not yet its resolution.
+
+## §12 — Human direction for synthesis
+
+The next `_tmp-response.md` response is banked here without retaining the temporary file
+as a dependency.
+
+- **`rul-ground-identity-in-final-outcomes` [TYPED]** — use small named end-of-chain
+  cases distinguishing catastrophic wrong sameness from catastrophic wrong disjointness.
+  Explain carrying measured convergence as sufficient to remove an apply, or feeding a
+  predicted value into the book's observing consumer; abstract “value reuse” is not the
+  product. Identity is the entity-plane subject, not a hidden extra user value.
+- **`rul-study-useful-directional-exceptions` [TYPED]** — take availability of unknown
+  as read. Seek specific links or acts with a justified universally safer direction;
+  these are opportunities for simpler authoring. Do not repeat unknown as a substitute
+  for finding which consumer makes a direction safe.
+- **`rul-stores-may-be-ordinary-kind-entities` [TYPED]** — assume generalized storage
+  in arbitrary abstract kinds, transitively reaching File or network/Host-shaped kinds
+  where appropriate. File-only is insufficient. Prior basis confirmed: `30W` §1 makes
+  indices ordinary kinds; `311a` §4 explicitly reads `stored-in KIND` as a coordinate
+  of that kind, with its own index dependence transitively described. The precise
+  naming-edge extension below remains unratified despite this generalization.
+- **`question-authority-is-another-context-dimension` [potential nack]** — User/sudo
+  should not become a separate abstract epistemic mechanism from Mount/File/chroot.
+  Their differences are described through the same transit machinery. The assistant's
+  permission-sensitive example must not imply a new parallel authority subsystem.
+- **`rul-do-not-read-host-partition-as-an-override` [TYPED interpretive direction]** —
+  `30W`'s host-partition summary should not override prior cross-dimension work or the
+  project's known NFS/netns cases. Host identity is one contributing dimension, not a
+  universal proof of state independence. The human's detailed interpretation remains
+  tentative; the compatibility requirement stands.
+- **`request-one-coherent-user-facing-strawman` [TYPED]** — synthesize an internally
+  coherent architecture/contract centered on knowability and engine decisions. Derive
+  what can be proved; ask authors only for irreducible tool knowledge. Nearby ruled
+  mechanisms may be questioned explicitly if necessary. Present the final answer as
+  the narrow user-facing type, benefit, timing, and dangers, not a machinery dump.
+
+## §13 — Proposed synthesis: qualified resolution in one entity graph
+
+EVERY design choice in this section is **[PROPOSED]**, not a consequence already ruled by
+§12. This is a coherent candidate for discussion, not a build brief or final spelling.
+
+### `proposal-addresses-are-qualified-not-globally-interned`
+
+Keep one kind/entity/cell vocabulary and the existing context qualification. Add no
+second identity ontology and no automatic host partition. An unresolved address retains
+its full origin context, current value-flow and definition identities, and validity
+conditions. Merely repeating it mints no new world assertion.
+
+The proposed minimal authored extension is to the existing kind-owner `__resolve`:
+instead of only a bare canonical token, it may return a canonical local name qualified
+by another ordinary entity. The parent is a full context-qualified entity, not a raw
+string or merely a kind name. One result asserts an equality for this reached case:
+“the supplied entity is this local name within this particular namespace.” The name's
+interpretation belongs to the child kind's owner. There is no new blanket “all contexts
+are irrelevant” promise and no need for a new `__identity` family merely to carry it.
+
+Example meaning, NOT surface syntax: account 7 within Red within the selected database
+File. The account author describes the account/directory/database address structure;
+the filesystem author may resolve that File through a shared-volume entity; the volume
+owner describes its own names. Every introduced object stays qualified until another
+explicit relation justifies comparing it across contexts. The engine does not inspect
+SQL, mount paths, SSH options, UUID formats, or directory keys for world semantics.
+
+### `proposal-storage-dependence-does-not-become-equality`
+
+`__state_stored_in` continues emitting ordinary kind/entity coordinates, with its
+existing collision and explicit invariance consumers. A broad File store can remain a
+useful, correct coarse description. The qualified-resolve result supplies what that
+coarse statement cannot: the owner's rule that a particular local name in a particular
+parent identifies the child. Two children sharing a parent or storage ancestor are not
+therefore identical. This reuses objects and role families without conflating different
+relations over them.
+
+It may prove possible to express the same qualified-resolution statement using existing
+bind/index syntax instead of extending the member's return form. That would be a surface
+simplification of this proposal, not permission to infer the statement from storage.
+No exact marker token, return calling convention, or wire representation is selected.
+
+### `proposal-comparison-uses-only-licensed-implications`
+
+A qualified resolution is an identity equality, scoped to the reached author and live
+question. The engine may compose valid equality edges: equivalent parent namespaces and
+matching canonical local names under the same applicable kind contract establish the
+same child. Equality closure does not traverse storage or disturbance edges as if they
+were identity edges. Cross-kind identification requires explicit typed permission; a
+storage link is never that permission.
+
+Unequal canonical strings, unequal parent keys, or different host contexts do not
+automatically establish child disjointness. The kind-owner's `__disjoint` and other
+already-authorized generators retain their exact consumer meanings. A distinctness
+witness is not transitively composable like equality. In particular, `__disjoint`'s
+non-disjoint/overlap answer is NOT an equality answer: overlapping regions need not be
+one region. Store expansions remain universal for sparing; a single convenient route
+cannot erase another relevant collision.
+
+Consequential conclusions need well-founded derivations: an unresolved recursion is no
+proof, and an equality assumption cannot justify its own premises. Questions are bounded
+by the existing analysis/transport budgets; a query whose inputs only emerge after a
+probe cannot trigger an unsanctioned extra exchange. Missing answers withhold the
+corresponding optimization without changing the authored book's commands.
+
+### `proposal-context-dimensions-share-one-calculus`
+
+Host, User, mount view, and future authored indices all participate in the same
+context/relationship machinery. There is no separate permission-exception algebra.
+The final convergence or prediction claim retains whatever contextual conditions its
+existing body/carry contract requires. Identifying an account or File does not erase
+those conditions, just as identifying a Host does not erase its mount distinctions.
+This does not silently lift `27C` §4's existing user-axis restriction on the pure-predicate
+carry route; altering that consumer would require an explicit ruling, not merely adding
+an identity generator.
+
+The kernel compares cell-relevant authored chains, never globally settles world equality
+first. Thus different machines may resolve to one shared File while different User
+contexts still block an unsupported inference about a check's status. An author is not
+asked to enumerate all unknown future dimensions: unexplained incoming transitions
+remain in the qualification; a concrete qualified-resolution claim only bridges what
+its reached statement and premises actually identify.
+
+### `proposal-incarnation-and-narration-ride-existing-rails`
+
+Resolution observations and authored-address derivations retain their dependency and
+validity information. A path retarget, namespace reset, or modelled identity-cycling act
+invalidates the affected links through existing effective-world reach/incarnation
+machinery. No successor identity needs to be invented, and no new TTL, special boot-ID
+scheme, or per-site witness protocol is introduced.
+
+Each authored generator and consequential composition produces its associated Narration.
+The correctness derivation and the decision-inert narration remain separate typed
+objects: user-demanded explainability must not create a route from aid back into license
+inputs. A source-to-conclusion explanation preserves the narrow collaborating set of
+statements, not only the last resolver or a guessed culprit.
+
+### `proposal-two-named-catastrophic-outcomes`
+
+- **`goal-blue-account-must-be-enabled`** — Red/7 is converged, Blue/7 is not. A false
+  same conclusion carries Red's convergence into Blue's decision and removes the
+  necessary Blue enable. Naming/account scope is the sharp link; same database alone
+  must never supply it.
+- **`goal-shared-account-must-be-reenabled`** — Alpha/Red/7 probes enabled; an earlier
+  apply command through Beta disables that same shared account; a later Alpha enable
+  must not remain elided. A false disjoint conclusion lets the old convergence survive
+  the mutation. Host separation must never supply the spare by itself.
+
+A direct unchanged, adequately described cross-route case can omit redundant checks or
+carry convergence to a supported later site; that is an attention/performance benefit,
+not permission to rewrite live book arguments or replay predicted bytes during apply.
+The analogous prediction consumer remains under `30D` and the existing value-plane
+contract, not a second identity-specific substitution mechanism.
+
+### `proposal-useful-safe-directions-and-shortcuts`
+
+Positive storage/reach information that ONLY adds collisions has a justified safe
+direction for the sparing consumer: a false extra overlap costs an elision, never grants
+one. It must not gain a second, equality-generating interpretation. The identity bridge
+and disjointness grant do not enjoy that free direction.
+
+A context-independent value kind, such as a stdlib-described UUID value, can terminate
+a recursive naming question through ordinary authored comparison/invariance rules. It
+identifies UUID VALUES, not physical objects by magic. Mapping a volume/account/other
+object onto that value is the particular owner's claim; whether unequal such values
+prove object disjointness is separately warranted, never inferred solely because the
+strings are unequal. This keeps the common shortcut inside the machinery without making
+the UUID owner responsible for another tool's cloning, aliasing, or identity-reuse policy.
+
+The main unresolved cost is authoring the positive qualified-address statement without
+unnecessary ceremony. The example shows why SOME statement about naming is needed;
+it does not prove a fresh syntax token or changed resolver signature is necessary.

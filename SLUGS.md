@@ -4981,6 +4981,27 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28E-why-surface-design-sitting.md:144 — — an unrendered narrative class renders a
 - cited: 28G (1)
 
+## 311b:proposal-addresses-are-qualified-not-globally-interned
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:585
+
+## 311b:proposal-comparison-uses-only-licensed-implications
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:622
+
+## 311b:proposal-context-dimensions-share-one-calculus
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:645
+
+## 311b:proposal-incarnation-and-narration-ride-existing-rails
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:663
+
+## 311b:proposal-storage-dependence-does-not-become-equality
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:607
+
+## 311b:proposal-two-named-catastrophic-outcomes
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:677
+
+## 311b:proposal-useful-safe-directions-and-shortcuts
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:694
+
 ## proposed-steering-and-register-edits
 - defined: Research/notes/30Qc-load-plane-lane-report.md:720 — (conductor applies; builders edit no `CLAUDE.md`)
 - defined: Research/notes/30Qc-load-plane-lane-report.md:919 — (conductor applies)
@@ -7806,7 +7827,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:silence-licenses-nothing
 - defined: spike/CLAUDE.md:202 — — an unmodeled command / wrapper / dimension / kind is
-- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS _tmp-response (19)
+- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS (18)
 
 ## sit-redirect-routing
 - defined: —
