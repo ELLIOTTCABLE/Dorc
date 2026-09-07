@@ -631,6 +631,12 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Qa:ask-witness-order-execution-or-census
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:133 — (FLAG)
 
+## 311b:assessment-entry-changes-and-namespace-lifetimes
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:521
+
+## 311b:assessment-relations-compose-but-do-not-change-meaning
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:491
+
 ## 311b:assessment-repairs-follow-specific-promises
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:232
 
@@ -647,6 +653,12 @@ row's `near:` line refreshes only when that row's other lines change.
 ## assessment-spine-is-not-yet-a-safe-input
 - defined: —
 - cited: 30Mc (1)
+
+## 311b:assessment-three-consumers-different-obligations
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:508
+
+## 311b:assessment-world-comparison-cannot-short-circuit-shared-state
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:533
 
 ## plan/CLAUDE:attention-honesty-here
 - defined: spike/crates/plan/CLAUDE.md:278 — — the render is the whole book, original order; a
@@ -1927,6 +1939,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28T:ev-lean-spike
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:228 — — the sparing algebra formalized in Lean 4 on the first attempt: five
+
+## 311b:example-shared-volume-two-account-directories
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:477
 
 ## syntax/CLAUDE:executable-off-ramp-test
 - defined: spike/crates/syntax/CLAUDE.md:85 — — stripped output parses and runs identically

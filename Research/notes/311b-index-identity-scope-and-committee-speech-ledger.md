@@ -466,3 +466,78 @@ human response can resolve whether the conceptual distinction matches their mean
   enhancement. Coarse speech can retain collision value while leaving identity unknown.
   What remains to establish is whether one existing edge contract can carry both
   descriptions without its naming consumer promoting coarse containment into equality.
+
+## §11 — Shared-volume accounts through two transport entries
+
+[Assistant analysis, not human-ratified.] The human requests the top-of-curve case:
+careful authors contributing maximally within their own knowledge, with filesystem and
+transport wrinkles exposing composition seams. “Maximum effort” does not mean any
+participant knows every other tool or may close an unknown dimension by silence.
+
+### `example-shared-volume-two-account-directories`
+
+Alpha's `/srv/people/accounts.db` and Beta's `/mnt/team/people.db` designate the SAME
+shared filesystem object. A third installation may hold a byte-identical private copy.
+The small file-backed tool explicitly selects `(database, directory, account-number)`;
+Red's account 7 is enabled, Blue's account 7 disabled. No hidden replica protocol or
+background writer is needed for the example. These are stipulated world facts for
+reasoning, not facts the engine may recognize unauthored.
+
+Three book lines motivate the distinct consumers (the `acct` interface is illustrative):
+`ssh alpha acct --db /srv/people/accounts.db --directory red enable 7`;
+`ssh beta acct --db /mnt/team/people.db --directory red enable 7`;
+`ssh beta acct --db /mnt/team/people.db --directory blue enable 7`.
+
+### `assessment-relations-compose-but-do-not-change-meaning`
+
+The candidate authored account rule is scoped and concrete: same authoritative database
+object, same directory key, same account number identifies the same account for this
+file-backed tool. A filesystem owner supplies the database-object relationship; transport
+and entry owners supply correct siting. The account author need not know NFS or ssh;
+filesystem and transport authors need not know account schemas. Conversely a coarse
+“state stored in this File” edge supplies collision dependence, not this addressing rule.
+All objects may remain ordinary kinds/entities; the unresolved question is whether the
+existing authored edge semantics express the rule or need enriching.
+
+The composed narration must retain each contributing source line. If all these local
+contracts hold, the candidate equality follows without a shared custody closure across
+all authors. If the account author's binding claim is absent, broad storage alone cannot
+complete that derivation. This is an application of the committee-speech test, not a
+claim that the current language already expresses every step.
+
+### `assessment-three-consumers-different-obligations`
+
+1. Fact reuse between Alpha/Red and Beta/Red needs account identity PLUS compatible
+   measurement/judgment, complete relevant backing handling, and freshness. Same object
+   is insufficient to reuse a permission-sensitive rc or an observation from another
+   cache/view. The applicable `27C` carry, `30S` environment, and custody laws remain.
+2. A running mutation through Beta/Red must invalidate relevant Alpha/Red facts on the
+   shared object. Known-distinct hosts do not spare them. Scoped at-most claims,
+   reaches/store collision, and the risk-gated sparing consumer retain their own roles.
+3. Blue must not borrow Red's answer merely because both directories live in the same
+   database. Coarse writes can collide with both; fine identity needs the directory key.
+   A private copy with identical bytes is another reason content equality is not identity.
+
+### `assessment-entry-changes-and-namespace-lifetimes`
+
+Distinct questions have distinct competent authors: ssh's name resolution and entry
+siting; the account tool's path/directory selection; filesystem object identity under the
+entered mount view; the lifetime of each relationship. Host-local `st_dev`/inode pairs,
+mount labels, or equal path text are not automatically cross-host object identifiers.
+A remount can change a later path's referent without changing the old database. A
+namespace-recreating command can invalidate old handles without requiring the engine to
+compute the new handles. Reuse existing scoped incarnation/re-keying and effective reach;
+add no parallel TTL or per-site re-witness protocol. Book versus oracle execution geometry,
+control-lane integrity, and source-definition identity remain independent entry obligations.
+
+### `assessment-world-comparison-cannot-short-circuit-shared-state`
+
+Candidate design seam, not an as-built bug: `30W` §5 promises shared-volume referents
+across distinct hosts, but also summarizes host identity as a world partition. Its latter
+wording cannot be applied literally to every cell: different hosts may reach this very
+same database. Likewise a comparison procedure that requires ambient worlds to match
+BEFORE permitting any owner relation to establish shared-store identity would block this
+example circularly. The context-slot/comparison design must admit an authored,
+cell-relevant cross-context bridge without requiring a globally false “File is invariant
+across Host” claim. It must not infer that bridge from shared storage alone either.
+This is the concrete form of the original index-world question, not yet its resolution.
