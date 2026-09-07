@@ -259,7 +259,9 @@ the license-contamination map. Cross-references are `docID:slug`.
 - **r31 preparation** — **`notes/311a`** (the kernel-shape/rc-law sitting and successor
   critique; §§11–13 record the UX horizon and mandatory shell-output ruling; historical
   alternatives, not a build plan). Its prediction contract is promoted into **`plans/30D`**;
-  index/transport proposals remain separately graded in the ledger.
+  index/transport proposals remain separately graded in the ledger. **`notes/311b`**
+  continues the index-world sitting: scoped identity versus explicit cross-entry identity,
+  the committee/custody precedent, attribution, and unratified authoring alternatives.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.

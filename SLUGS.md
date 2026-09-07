@@ -631,6 +631,15 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Qa:ask-witness-order-execution-or-census
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:133 — (FLAG)
 
+## 311b:assessment-repairs-follow-specific-promises
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:230
+
+## 311b:assessment-safety-and-product-crosschecks
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:249
+
+## 311b:assessment-semantic-scope-before-speaker-detection
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:217
+
 ## assessment-settlement-is-stronger-than-loading-edge
 - defined: —
 - cited: 30Mc (1)
@@ -4571,6 +4580,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/analysis/CLAUDE.md:40 — — `Opaque ⇒ Reach::Top` poisons all downstream
 - cited: 28P 28Rf 30Na 30Nf 30Qf (7)
 
+## open-bound-token-same-across-chains
+- defined: —
+- cited: 311a 311b (3)
+
 ## open-cell-granted-acquire-ux
 - defined: —
 - cited: 27C (3)
@@ -4608,6 +4621,15 @@ row's `near:` line refreshes only when that row's other lines change.
 ## opt-justified-fact-gc
 - defined: —
 - cited: 26C (1)
+
+## 311b:option-author-cross-context-identity
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:170
+
+## 311b:option-explicitly-scoped-strong-identifiers
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:196
+
+## 311b:option-retain-contextual-names
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:142
 
 ## spike/CLAUDE:oracles-may-lie
 - defined: spike/CLAUDE.md:91 — — judgments, not facts: the system has coherence checks,
@@ -5083,6 +5105,15 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/27N-lane-integration-landing.md:196 — (next): the capture fold on the landed wire + recipe machinery. Do NOT touch
 - defined: Research/plans/270-round27-charter.md:183 — — the `$(hostname)` capture fold, first slice only
 - cited: 261 277 27D 27H ANALYZER-NEEDS (9)
+
+## 311b:reading-custody-is-assumed-responsibility
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:66
+
+## 311b:reading-invariance-must-be-positive
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:88
+
+## 311b:reading-keys-are-not-partitions
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:103
 
 ## spike/CLAUDE:real-tools-lane-opt-in
 - defined: spike/CLAUDE.md:1278 — (human-authorized 2026-07-18) — the ONE sanctioned
@@ -5996,7 +6027,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-dialect-is-the-live-speakers-at-the-backing-frame
 - defined: —
-- cited: 28M 28Q 30J 30Q (4)
+- cited: 28M 28Q 30J 30Q 311b (5)
 
 ## rul-dimension-owned-compose-ops
 - defined: —
@@ -6004,7 +6035,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-disjoint-is-an-rc-predicate
 - defined: —
-- cited: 30T 30W 311a ROADMAP (5)
+- cited: 30T 30W 311a 311b ROADMAP (6)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6225,7 +6256,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W (17)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b (18)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -6402,7 +6433,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a ORACLE_PROVIDES (19)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b ORACLE_PROVIDES (20)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -6715,6 +6746,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 271:rul-predict-absorbs-wrapper-modeling
 - defined: Research/plans/271-block-settle-rulings-ledger.md:354 — (task 5; 2026-07-11; TYPED — "Merge
 - cited: 24S 270 273 278 ORACLE_PROVIDES (7)
+
+## rul-predict-authorship-qualifies-family-vocabulary
+- defined: —
+- cited: 28Q 30J 311b (4)
 
 ## rul-predict-channel-defaults
 - defined: —
