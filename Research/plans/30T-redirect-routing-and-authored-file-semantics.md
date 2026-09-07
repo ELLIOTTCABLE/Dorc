@@ -278,9 +278,11 @@ standing — the referent answer is exactly wrong for the existence cell). Opene
 are a third subject (`exec 3>p` holds a description that later `p` mutations do not touch).
 The identity tier therefore carries an authored per-aspect relation mapping —
 which relation each selector's comparisons consult — declared by the kind's owner like every
-other vocabulary act, with the name-bias law applied (`an-name-as-contract`: spell members so
-the lazy answer errs safe — a `same()` whose 0 means *same* over-collides when incomplete;
-"provably distinct", the dangerous claim, must be the deliberate arm).
+other vocabulary act. Naming follows the consumer's failure direction: `same` licenses
+transport and can be dangerous when wrong, while disjointness licenses survival sparing.
+The region predicate's name and result contract are ruled at
+`30W:rul-disjoint-is-an-rc-predicate`: `kind__disjoint`, zero for disjointness, one for
+overlap, ≥2 unknown; ordinary shell footguns remain author residue, not DREP obligations.
 
 **Measured, including resolvable unborn referents.** Living questions subsume the platform
 taxonomy: `-ef`-class checks answer hardlinks, symlinks, bind mounts, and case-folding

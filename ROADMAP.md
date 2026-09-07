@@ -147,8 +147,9 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
   (`310:unit-context-slot-product`). Recording measured supply in the receipt clears
   `rul-durable-contents-reviewed-before-design` first.
 - **`arc-identity-tier`** — `30T:comp-identity-tier` (per-aspect relations, perishable
-  answers; `kind__overlaps` was brought forward into the kernel by
-  `311a:rul-overlaps-is-a-kernel-generator`, its exact speech still unsettled) · the
+  answers; the region predicate was brought forward into the kernel by
+  `311a:rul-overlaps-is-a-kernel-generator`; its name and rc contract are now RULED as
+  `kind__disjoint` by `30W:rul-disjoint-is-an-rc-predicate`) · the
   referent-transparent declaration · `30W` item 6 (store-member decomposition, gated on `rule-only-decomposes-everywhere`) ·
   `30T:comp-channel-relative-speech` · `30T:comp-content-establishment` (the write-if-changed
   idiom's own elision; the FORFEITS captures). None is ruled beyond `proposal`; shares

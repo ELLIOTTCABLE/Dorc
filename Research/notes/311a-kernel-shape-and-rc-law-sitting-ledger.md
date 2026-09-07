@@ -5,6 +5,14 @@ preserve exploration, including withdrawn compiler and record-only-decline propo
 section 13 records the final human agreement rule. Implement the plan, not an intermediate
 proposal in this ledger. Index/transport discussions retain their individual grades. -->
 
+<!-- Superseded for the region predicate by 30W:rul-disjoint-is-an-rc-predicate
+(human ruling): the member is kind__disjoint, rc 0 disjoint / 1 overlap / >=2 unknown,
+with no DREP result requirement. The proposed record-backed answer in §6 and this
+ledger's blanket completion-only classification do not govern this member. Incidental
+shell success remains author residue; the higher kind-owner rung and cross-author
+survival danger do not override the predicate's idiomatic/off-ramp value. The kernel
+placement ruling in §4 stands. Other index-world questions remain at their stated grades. -->
+
 > AI-authored LEDGER (Fable, design-rubber-duck sitting with the human, 2026-09-05; the
 > r31-prep session). Notes-tier. Grades: **[TYPED]** the human typed the substance ·
 > **[ACKED]** put and acked as read · **[LEAN]** the human's stated lean · **[PROPOSED]**

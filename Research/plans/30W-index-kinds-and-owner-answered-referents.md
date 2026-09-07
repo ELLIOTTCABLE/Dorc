@@ -67,7 +67,7 @@ multi-host partition, subtree containment — each fall out of the composition (
 |---|---|---|---|
 | canonicalization | `kind__resolve()` | same (within kind, within context) | transport; vouch-tier |
 | per-aspect identity | the owner's per-selector relation mapping (`30T` §6) | same / disjoint per aspect | both; measured, perishable |
-| **overlap** | `kind__overlaps()` — region × region or region × entity | overlaps (⇒ collide) / disjoint / unknown | sparing; the disjoint arm under the flag |
+| **region separation** | `kind__disjoint()` — region × region or region × entity | rc 0 disjoint / rc 1 overlaps (⇒ collide) / rc ≥2 unknown | sparing; the disjoint arm under the flag |
 | invariance line | `undivided-by-transit-across <index-kind>` in the store member | same across that index | transport; vouch-tier |
 | lend entries | `cmd__lend_map()` | boundary identity (full) / re-keying (mapped) | transport; vouch-tier |
 | keying | derived from stores × index dependence | blocks transport only; never disjoint | license-free |
@@ -75,13 +75,27 @@ multi-host partition, subtree containment — each fall out of the composition (
 | contradiction | typed claims vs derivation (`272` §3 as checker) | refuse-both | fail-fast |
 
 **The two-consumer law.** *Same* licenses transport and endangers it when wrong; *disjoint*
-licenses sparing and endangers it when wrong; *unknown* is safe for both. Therefore every
-authored member's lazy answer must land on unknown (decline, `return 2`); each positive
-arm is a deliberate, pointable line; and each is gated by the consumer it endangers —
-attribution and vouch-tier for transport (`271:rul-invariance-speech-act`,
-`rul-flag-is-razor-residue`), the admin's `--risk-faultless-skips` plus the footprint
-kind's finished definition (`30U`) for sparing. Member spellings follow: `overlaps`
-names the safe arm (rc 0 = collide); the disjoint arm is written on purpose.
+licenses sparing and endangers it when wrong; *unknown* is safe for both. Positive answers
+are gated by the consumer they endanger — attribution and vouch-tier for transport
+(`271:rul-invariance-speech-act`, `rul-flag-is-razor-residue`), the admin's
+`--risk-faultless-skips` plus the footprint kind's finished definition (`30U`) for sparing.
+
+**`rul-disjoint-is-an-rc-predicate` [TYPED]** — the region predicate is
+`kind__disjoint()`: 0 establishes disjointness, 1 establishes overlap, ≥2 means unknown.
+Absent or unadmitted answers are unknown; known execution or capture failures withhold
+separation regardless of an apparent rc. No DREP result or completion record is required.
+The inverted name puts permission at shell success, so ordinary nonzero aborts grant
+nothing; it does not make accidental success impossible.
+
+This is a deliberate predicate-shaped exception, not a universal nonzero-is-failure law.
+The kind-owner rung and cross-author survival danger warrant scrutiny, but the function
+still asks an ordinary reusable shell question, often answered by an existing helper.
+Preserving that idiom and off-ramp outweighs requiring a Dorc-only result adapter. Wrong
+answers, swallowed failures, pipeline statuses, and incidental success (including a later
+`printf`) remain the author's ordinary shell residue. Dorc does not compile the body to
+repair them. Possible future hints or narrowly justified static withholding are not a
+new admission rule here. Description/completeness members retain their distinct record
+contracts; this ruling does not move them to rc.
 
 ## §3 — the claim family, per-arm and incremental
 
@@ -110,16 +124,17 @@ sentinel that asserts totality and is the sole licensor of disjointness in that 
   }
   ```
 
-- `kind__overlaps()` — measured in the denoted context; rc 0 overlaps, 1 provably
-  disjoint, ≥2 unknown; mount-crossing and other view-aliasing shapes decline:
+The region predicate is separate from those emission families:
+
+- `kind__disjoint()` — measured in the denoted context under §2's rc contract.
+  Its answer is perishable and must account for aliasing, containment, and the relevant
+  filesystem semantics or decline. A `realpath` prefix test alone does not establish
+  separation (hardlinks are a counterexample). Delegation to an ordinary helper preserves
+  its status without a Dorc-specific adapter:
 
   ```sh
-  sm_dorc_File__overlaps() {                            # STRAWMAN
-     a=$(realpath -m -- "$1") && b=$(realpath -m -- "$2") || return 2
-     case "$a" in "$b"|"$b"/*) return 0 ;; esac
-     case "$b" in "$a"/*)      return 0 ;; esac
-     [ "$(findmnt -no TARGET -T "$a")" = "$(findmnt -no TARGET -T "$b")" ] || return 2
-     return 1
+  sm_dorc_File__disjoint() {                            # STRAWMAN helper, same rc contract
+     file_regions_disjoint "$1" "$2"
   }
   ```
 
@@ -210,7 +225,7 @@ engine compares no names of its own accord.
   failure to the gap between them.
 - **A multi-host conductor book**: each entry measures its machine identity; worlds
   partition by identity; a mutation dispatched to one world walls only that world.
-- **Subtree containment**: an owner's `overlaps` answering *disjoint* for a footprint
+- **Subtree containment**: an owner's `disjoint` answering zero for a footprint
   region and a fact's store region spares the fact under the flag, with cross-mount and
   aliasing shapes declining to unknown.
 
@@ -222,7 +237,7 @@ a deliberate arm, consumed only under the admin's flag.** The curve for a kind-o
 1. silence — total walls;
 2. `state_stored_in` arms — keying/invariance transport across contexts; same-kind
    footprints still collide;
-3. `overlaps` with only the overlaps/unknown arms — safety-neutral (adds walls at most);
+3. `disjoint` with only the overlap/unknown answers — grants no separation;
 4. the disjoint arm, and the `stored nothing-else` sentinel — the deliberate acts; their
    sparing consequences consumed only with `--risk-faultless-skips`, cross-kind only
    with the footprint kind's finished definition.
@@ -265,8 +280,8 @@ Rulings owed (none of §1–§9 is welded; items marked TYPED are ruled, the res
 - `rule-only-decomposes-everywhere` — `state_stored_only_in` → `state_stored_in` +
   `stored nothing-else`, mirroring the reach family; the `only` quantifier leaves the
   lexicon.
-- `rule-two-consumer-name-bias` — §2's law refines `30T`'s name-bias law: lazy ⇒
-  unknown; both positive arms deliberate.
+- `rule-two-consumer-name-bias` — region-predicate name and result contract RULED:
+  `rul-disjoint-is-an-rc-predicate` (§2). Broader generator conventions remain separate.
 
 Build items, by dependency:
 
@@ -277,13 +292,15 @@ Build items, by dependency:
    binder and `resolve`; the referent-transparent declaration.
 3. **The re-keying rule** and expected-sever derivation at the settle/wall seat.
 4. **The witness** on the `30S` envelope rails; integrity-plane consumption only.
-5. **`overlaps`** as the identity tier's second relation on `30T`'s
-   `comp-identity-tier` (shared plumbing with the loader standups).
+5. **`disjoint`** as a kernel comparison generator (`311a:rul-overlaps-is-a-kernel-generator`,
+   brought forward from the identity tier); the rc contract is ruled in §2. Shared plumbing
+   with the loader standups.
 6. **Store-member decomposition** — per-arm emissions, the completion sentinel, the
    invariance lines' new index targets; the contradiction-checker's mount-tier map.
 7. **Verb surfaces accepting kind coordinates** (`lends`, `stored-in`,
    `undivided-by-transit-across`), with sugar preserved.
 
 Sequencing: items 1–4 serve the pivot arc directly and precede any multi-host revival;
-5–6 ride the identity tier and the stdlib arc; nothing here re-opens the survival gate,
+5 is brought forward into the kernel; 6 rides the identity tier and the stdlib arc;
+nothing here re-opens the survival gate,
 and the license-consuming half remains additionally deferred on economics.

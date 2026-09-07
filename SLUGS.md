@@ -948,7 +948,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## comp-identity-tier
 - defined: —
-- cited: 26M 30T 30W 310 ORACLE_PROVIDES ROADMAP (7)
+- cited: 26M 30T 310 ORACLE_PROVIDES ROADMAP (6)
 
 ## comp-routing-locator
 - defined: —
@@ -6002,6 +6002,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26O 26Ob 27C 27D 311a ANALYZER-NEEDS (8)
 
+## rul-disjoint-is-an-rc-predicate
+- defined: —
+- cited: 30T 30W 311a ROADMAP (5)
+
 ## rul-ditch-is-diverged
 - defined: —
 - cited: 24U 270 271 (3)
@@ -6632,7 +6636,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-overlaps-is-a-kernel-generator
 - defined: —
-- cited: 311a ROADMAP (3)
+- cited: 30W 311a ROADMAP (4)
 
 ## rul-own-crate-own-tests
 - defined: —
