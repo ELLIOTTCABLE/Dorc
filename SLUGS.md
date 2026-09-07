@@ -632,13 +632,13 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:133 — (FLAG)
 
 ## 311b:assessment-repairs-follow-specific-promises
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:230
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:232
 
 ## 311b:assessment-safety-and-product-crosschecks
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:249
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:251
 
 ## 311b:assessment-semantic-scope-before-speaker-detection
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:217
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:219
 
 ## assessment-settlement-is-stronger-than-loading-edge
 - defined: —
@@ -4623,13 +4623,13 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 26C (1)
 
 ## 311b:option-author-cross-context-identity
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:170
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:172
 
 ## 311b:option-explicitly-scoped-strong-identifiers
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:196
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:198
 
 ## 311b:option-retain-contextual-names
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:142
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:144
 
 ## spike/CLAUDE:oracles-may-lie
 - defined: spike/CLAUDE.md:91 — — judgments, not facts: the system has coherence checks,
@@ -5107,13 +5107,13 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 261 277 27D 27H ANALYZER-NEEDS (9)
 
 ## 311b:reading-custody-is-assumed-responsibility
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:66
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:68
 
 ## 311b:reading-invariance-must-be-positive
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:88
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:90
 
 ## 311b:reading-keys-are-not-partitions
-- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:103
+- defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:105
 
 ## spike/CLAUDE:real-tools-lane-opt-in
 - defined: spike/CLAUDE.md:1278 — (human-authorized 2026-07-18) — the ONE sanctioned
@@ -7791,7 +7791,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:silence-licenses-nothing
 - defined: spike/CLAUDE.md:202 — — an unmodeled command / wrapper / dimension / kind is
-- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS (18)
+- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS _tmp-response (19)
 
 ## sit-redirect-routing
 - defined: —

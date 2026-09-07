@@ -7,12 +7,13 @@
 > prior decisions; **[PROPOSED]** is an unratified alternative or recommendation;
 > **[CORRECTION]** retracts an assistant framing; **[EXPLORATORY]** is a question or
 > conjecture, not a finding established by measurement. The human has not endorsed the
-> alternatives or recommendation below. Root documents and topic designs of record
+> alternatives as a whole; §7 records the subsequent selective acks and objections.
+> Root documents and topic designs of record
 > govern; older backing documents retain their own supersession qualifications.
 >
 > No code exploration, implementation, research dispatch, or new schedule accompanies
-> this ledger. The next human response is still being written. The user authorized banking
-> this conversation directly on `ai/main`; no sibling work is active. Disposable shell
+> this ledger. Section 6 records the first pause; section 7 banks the human's response.
+> The user authorized banking this conversation directly on `ai/main`; no sibling work is active. Disposable shell
 > examples and invented annotations were used in chat to explore meanings, not to settle
 > language features; only short motivating examples and semantic descriptions are retained.
 
@@ -24,12 +25,13 @@ read bind separately keyed placeholders to tokens and use matching answers to es
 sameness across different entry chains. What authored speech grants that bridge, and how
 broad is it?
 
-The assistant's present lean [PROPOSED]: preserve contextual naming by default; first
-try to express comparison scope through existing kind/store/invariance relationships;
-introduce stronger identity speech only if a genuinely useful relationship remains
-inexpressible. Use existing kind-owner and custody machinery, not a blanket requirement
-that all participating wrapper, identity, and fact authors become one speaker. This is
-reasoning to examine, not an agreed direction.
+Current direction [TYPED, provisional exploration premise; §7]: assume identity within
+an authored scope, with each link assigned to the human competent to describe it. Pursue
+composition through existing kind/index machinery; the human strongly disfavors a blanket
+cross-context identity promise and expects useful stronger cases to fit that machinery.
+Default scope retains the full entry chain and its identity comparisons. This is NOT an
+ack of a complete design; the immediate question is whether a scope is an instance of an
+existing kind and how that relates to the overloaded term “store.”
 
 ## §1 — Human input and corrections to the discussion
 
@@ -275,7 +277,7 @@ as a shorter broad promise; shortest-chain is not the objective.
   of the provider's identity promise remains contracted; clone/recreation differentials
   calibrate that promise, never establish it universally. No test or code was run here.
 
-## §6 — State at pause
+## §6 — First pause, before the human response
 
 The human has asked to bank the discussion before sending their substantive response.
 The assistant's alternatives and recommendation remain unratified. No new identity role,
@@ -285,3 +287,108 @@ The present discussion hinge: can existing language express “this account iden
 meaningful within this directory, and these entries reach the same directory” without
 circularity or an implicit sufficiency claim? If it can, complete or clarify that machinery;
 if it cannot, identify the missing authored sentence before choosing a mechanism.
+
+## §7 — Human response: linked namespaces, repairable responsibility
+
+The human supplied a written response through `_tmp-response.md`. Substance is banked
+here so the temporary file is not a durable dependency. These are graded separately;
+no blanket endorsement of the preceding assistant design was given.
+
+- **`rul-justify-each-safety-direction` [TYPED]** — sameness is not a correctness freebie.
+  Some consumers are endangered by wrong sameness, others by wrong distinctness. Before
+  claiming a fail-safe direction, establish why it is safer: consumer semantics,
+  blast-radius, author competence, or the enhancement rung may supply the asymmetry.
+  Users and recognizable execution failures must be able to express unknown rather than
+  being forced into a binary answer.
+- **`lean-reject-blanket-cross-context-promises` [strong LEAN, not formal blanket nack]** —
+  Option B assigns the kind-owner responsibility for the whole conceptual hole, including
+  stores and axes they may never have heard of. Merely naming a responsible author does
+  not make the failure repairably attributable. Responsibility belongs at the nearest
+  competent edge: the person equipped to investigate and repair that link. Conservative
+  unknown/guard can be more principled than asking one owner to cover every context.
+- **`lean-shortcuts-belong-inside-the-machinery` [LEAN]** — a stdlib-owned UUID kind,
+  invariant across context changes, could supply a simpler distinguishing property
+  without an engine special case. This is a candidate, not a ruled UUID guarantee.
+  General target: complicated nested/shared contexts may admit a simpler shared property
+  establishing disjointness. The design should support such shortcuts ordinarily;
+  counterexamples remain welcome. Equal versus unequal IDs and the subject of the
+  comparison still need separate contracts.
+- **`caution-tool-answers-need-careful-ops-authorship` [human observation, neither ack nor nack]** —
+  “the provider knows” cannot justify trusting its raw interface by itself. Much of Dorc's
+  purpose is knowledgeable ops authors compensating for tools' poor idempotence,
+  namespace awareness, privilege handling, and configuration behavior. Delegation can
+  be mechanically convenient without being semantically sufficient.
+- **`ack-concrete-namespaces-change-the-problem` [ACKED]** — this differs from the old
+  vocabulary/frame-problem committee corner: here a concrete external shared namespace
+  exists, and different humans describe how namespaces ground in other namespaces.
+  The problem is expressible composition of those descriptions, not inventing common
+  meaning for unrelated words. Where no shared grounding is described, names gain no
+  bridge beyond the appropriately qualified identical-entry-path case.
+- **`rul-identity-is-only-an-input` [hard ACK]** — identity means exclusively identity.
+  It supplies an input to other actions; those consumers determine what it permits.
+  No additional behavior or fact-transport authority attaches to identity implicitly.
+- **`rul-links-must-admit-unknown` [hard ACK on answer spectrum; strong suspicion on every-link scope]** —
+  same/disjoint/unknown must be available. The human strongly expects the whole spectrum
+  at each link so partial authorship can remain fully correct; no half-implemented link
+  should be forced into a dangerous definitive answer.
+- **`rul-reuse-incarnation-invalidation` [TYPED; nack of separate refresh-specific identity machinery]** —
+  namespace identity cycling belongs in the existing incarnation model: the responsible
+  mutator top-pushes the affected sub-namespace without disturbing unrelated state.
+  Push that model into the new composition rather than add boot-specific IDs or a
+  parallel refresh mechanism. Dorc need not compute the successor identity/state to
+  remain safe; withholding reuse of the old state suffices. This does not settle the
+  precise composition or implementation of the invalidation.
+- **`rul-no-unknown-axis-totality-burden` [hard ACK]** — avoid new “and nothing else,
+  including things I have never heard of” enumerations. Future user-minted dimensions
+  cannot be silently excluded by a partial author's knowledge.
+- **`lean-offramp-is-secondary-for-type-relations` [gentle/potential nack]** — the
+  scoped identity chain may inherently be Dorc type-level information, not useful
+  standalone output. Preserve useful ordinary output where natural, but do not contort
+  this type-level design to manufacture off-Dorc value. Returning a useful UUID is fine;
+  embedding every scope into a string is not an obligation.
+- **`ack-default-scope-retains-the-entry-chain` [qualified ACK]** — silence licenses
+  nothing; the full chain of entry steps and their identity comparisons supplies the
+  default scope. More authorship is required to gain authority. The human flags that
+  even this may need worst-case scrutiny later; the immediate exploration is the happy
+  case under referential agnosticism, not a final proof of the default.
+- **`direction-assign-each-link-to-its-expert` [TYPED exploration direction]** — the
+  identifier's meaning-within belongs to its describer; what that enclosing namespace
+  itself means-within may belong to another person. Seek direct composition rules that
+  assign each link structurally to its competent author. Uneven knowledge and gradual
+  enhancement are primary: correct additional work buys value or nothing, never harm.
+- **`direction-filesystems-and-networks-are-the-tests` [TYPED]** — exercise nesting,
+  mounts, aliases, multiple targets selected by routes, and `/proc` early. These domains
+  are the principal stress cases, not engine ontologies. The path through which a boot
+  ID is read is a useful example of several different descriptions and kinds of
+  relationship; harder non-filesystem/network counterexamples can follow later.
+- **`premise-assume-identity-within-scope` [TYPED, explicitly provisional]** — proceed
+  with identity-within-some-scope, not the entire proposed design. The human's first
+  question: should that scope be an existing kind, and is it the relationship previously
+  called a “store,” where one kind contains entities of another? The human dislikes the
+  store name. Recommendation items 1/2/3/~5/6 were effectively endorsed; ~4 was resisted
+  because stronger cases should fit the existing machinery, not a separate broad promise.
+- **`rul-explore-deeply-explain-in-turns` [TYPED conversation preference]** — the prior
+  answer was too long. Think broadly, summarize unexpanded directions, and explain one
+  angle per turn when the topic opens into substantial depth. Favor interactive design
+  over exhaustive single-message presentation.
+
+## §8 — Immediate synthesis: kinds versus scope instances versus storage
+
+[PROPOSED assistant answer, not yet human-reviewed] Reuse kinds as the vocabulary and
+owner boundary, but an actual scope is an entity/instance of a kind, qualified by its own
+context. “AccountDirectory” is the category; this directory versus that directory is the
+scope distinction. An account number is meaningful inside a particular directory, not
+merely because both declarations mention the AccountDirectory kind.
+
+Keep two relationships distinguishable until shown equivalent: **naming scope** (where an
+identifier has meaning) and **state storage** (where the facts about that thing live).
+A file path used to read a boot ID does not, by itself, make the filesystem its identity
+scope. A network route used to reach a directory is likewise not automatically the
+account-naming authority. Existing store machinery has carried several jobs; the design
+can reuse its kinds/relations without treating access location, naming scope, and physical
+storage as one unqualified containment relation.
+
+This points toward an existing kind/entity/index shape, not another ontology or inferred
+partition. No new syntax or recursive comparison algorithm is selected here. The next
+human response can resolve whether the conceptual distinction matches their meaning of
+“store” before scope-composition laws are developed.
