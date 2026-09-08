@@ -264,7 +264,12 @@ the license-contamination map. Cross-references are `docID:slug`.
   the committee/custody precedent, attribution, and unratified authoring alternatives.
   **`notes/311c`** is the regrounding digest for the identity-composition sitting (the reading
   map and its footguns, the human's framing, the current relation/generator/store system as
-  designed and as taught); a digest, not a ledger — it rules nothing.
+  designed and as taught); a digest, not a ledger — it rules nothing. Comparative identity
+  exercise: **`notes/311d`** (System A, store-pointer refinement) → **`311e`** (local review);
+  **`notes/311f`** (System B, whole-cloth referent/route/store model) → **`311g`** (local review);
+  **`notes/311h`** (the author's comparison synthesis) → **`311i`** (reviewer synthesis of
+  the epistemic and composition gaps). These are exploratory proposals and reviews, not
+  adopted direction.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.

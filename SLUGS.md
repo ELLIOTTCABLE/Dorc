@@ -173,7 +173,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 277:addresses-are-not-coordinates
 - defined: Research/notes/277-entity-algebra-design.md:476 — (`272` §5): store-member locators feed exactly
-- cited: 26M 271 272 30Ta 311c (5)
+- cited: 26M 271 272 30Ta 311c 311d 311h (7)
 
 ## 270:adj-adjudicability-list
 - defined: Research/plans/270-round27-charter.md:281 — (né `24S:A4`) — the machine-read topology clauses +
@@ -1094,6 +1094,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:cor-render-must-not-upsell-marks
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:546 — [TYPED substance] — "authors will mark for
+
+## cor-standup-witness-licenses-bare-line-elision
+- defined: —
+- cited: 26Ob 311c 311d (4)
 
 ## 28M:cor-trust-sentence-at-least-not-measurements
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:539 — [TYPED] — "nothing in Dorc is
@@ -3420,7 +3424,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-resolve-fallthrough-idiom
 - defined: —
-- cited: 311a 311c (2)
+- cited: 311a 311c 311h (3)
 
 ## hole-static-identity
 - defined: —
@@ -5999,7 +6003,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:rul-composite-meets-toward-guard-run
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:283 — [ACKED hard — the product rule restated
-- cited: 28K 28P 311c (5)
+- cited: 28K 28P 311c 311d (6)
 
 ## 28M:rul-conflict-between-totals-is-falsification
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:313 — [ACKED] — judgment-tier
@@ -6498,7 +6502,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b 311c ORACLE_PROVIDES (21)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b 311c 311h ORACLE_PROVIDES (22)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -6942,7 +6946,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-reference-entity-name-floor
 - defined: —
-- cited: 300 300c 311c (6)
+- cited: 300 300c 311c 311d (7)
 
 ## rul-reflow-fix-in-phase-four
 - defined: —
