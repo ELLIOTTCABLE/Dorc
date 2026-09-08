@@ -18,3 +18,7 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 14. a-store-is-not-one-inode: "An SQLite database becomes three files once its WAL and shm sidecars exist."
 15. an-omitted-store-breaks-invariance: "pipx keeps per-user state under `~/.local` beside its system install."
 16. nonzero-status-is-not-speech: "errexit exits with the failing command's status, and a false `[ ]` is 1."
+17. composite-identity-is-structure-not-a-bag: "`cfg --base A --overlay B` and `cfg --base B --overlay A` read the same two files and answer differently."
+18. the-subject-includes-the-observer: "`sudo -u alice test -w F` and `sudo -u root test -w F` disagree about one file."
+19. correspondence-is-known-only-to-the-transition-owner: "PID 1 inside a container is PID 4821 on the host."
+20. identity-tokens-perish-on-write-not-only-on-rename: "overlayfs copy-up gives a file a new inode on its first write."
