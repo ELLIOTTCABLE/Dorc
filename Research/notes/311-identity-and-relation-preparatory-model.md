@@ -179,8 +179,8 @@ and the selector dialect (`277` §3, `30J`) have no counterpart in this model.
 ### § 1.9-vantage-route-placeholder-witness
 
 A vantage is the ADDRESS a probe reached a referent from: the entry chain, expressed as a
-finite map from namespace kinds to the instances that wrappers lent (§3.4), plus the network
-vantage. It is not part of any entity's identity. It has three jobs: it says where a read
+finite map from namespace kinds to the instances that wrappers lent (§3.4).
+It is not part of any entity's identity. It has three jobs: it says where a read
 executes; it supplies the ambient namespace instance for keys whose kind is named-in a lent
 namespace; and, for a kind with neither read nor namespace, it is the ROUTE, the last-resort
 scope under which two same-spelled keys in one unwalled span are one placeholder and anything
@@ -191,13 +191,13 @@ is integrity, never a verdict input (`26Ob:cor-standup-witness-licenses-bare-lin
 
 ### § 1.10-site-and-claim-species
 
-A site is a book line with an argv, an entry chain, and a program point. Speech at or about a
-site, each with one author:
+A site is within a book line, with an argv, an entry chain, and a program point.
+Speech at or about a site, each with one author:
 
 - a VERDICT FACT: a cell's measured value, backed by the marked read set
-  (`30T:req-verdict-marks-every-read-cell`), vouched by the tool author;
+  (`30T:req-verdict-marks-every-read-cell`), vouched by the tool-oracle author;
 - a FOOTPRINT CLAIM: an at-most write set per matched shape, with its completion witness
-  (`30U`), by the tool author or the filesystem binder;
+  (`30U`), by the tool-oracle author or the filesystem binder;
 - an EFFECT ENTAILMENT: what disturbing an entity of a kind drags along, with the finished
   definition (`30U`), by the kind owner;
 - a CORRESPONDENCE: key X in namespace instance A is key Y in namespace instance B, by the
