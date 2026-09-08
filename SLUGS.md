@@ -5363,7 +5363,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## req-verdict-marks-every-read-cell
 - defined: —
-- cited: 30T 311c ORACLE_PROVIDES (4)
+- cited: 30T 311 311c ORACLE_PROVIDES (5)
 
 ## req-wall-narrative-gains-region
 - defined: —
