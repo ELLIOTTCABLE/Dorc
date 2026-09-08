@@ -1,5 +1,7 @@
 A narrow, brief list of 'design forcing-functions': the real-world ops examples that kill simple designs. (See sibling `faleshoods-*.md` for longer, non-Dorc-specific domain-knowledge.)
 
+Suggest new entries only when a particular case-under-study has repeated caused significant rework or damage; esp. when one has been *forgotten* during a later design-round and materially damaged the design. (Use numbers *only* to reference inside ephemera/chat; durables should reference by slug, as the item will be frequently reordered/trimmed.)
+
 1. a-path-is-not-a-referent: "A remount mid-apply changes which inode a path denotes."
 2. a-host-is-not-a-partition: "Two hosts mount one NFS export at two different paths."
 3. same-name-different-referent-per-viewpoint: "`sudo crontab -l` reads root's crontab, not the caller's."
