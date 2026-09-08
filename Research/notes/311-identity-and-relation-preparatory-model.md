@@ -42,7 +42,8 @@ recursively, a FULLY-QUALIFIED KEY, until a ROOT, a declared global namespace, o
 the last resort. State has PLACEMENTS, many-valued, which feed collisions only. Two things
 compare by walking their fully-qualified keys to the first divergence inside a shared scope
 and asking that scope's naming what inequality licenses; never diverging is sameness;
-different roots are unrelated. Every positive answer rests on an explicitly typed,
+different roots are unspoken (no generator applies to the pair). Every positive answer rests
+on an explicitly typed,
 long-named, absent-by-default warrant owned by one author; silence is unknown. Transitions
 are of three species, each perishing a different fact. The context slot survives as a
 VANTAGE, an address and a witness key, never as an identity input.
@@ -122,19 +123,22 @@ never decoded (`inv-referent-agnostic`). A token is always scoped (§1.4). Any n
 natural or primary, has two independent properties, and each is a separately declared,
 absent-by-default warrant:
 
-- ONE-NAME-ONE-REFERENT: within one scope instance, equal keys reach one referent. Licenses
-  SAME from equality. Fails for round-robin resolution (`resolution-is-set-valued`) and for
-  cloned identifiers presented as roots (`identity-tokens-have-clone-horizons`).
-- ONE-REFERENT-ONE-NAME: within one scope instance, one referent has one key. Licenses
+- GUARANTEES-UNIQUE-REFERENT: within one scope instance, equal keys reach one referent; the
+  lookup is a function. Licenses SAME from equality. Fails for round-robin resolution
+  (`resolution-is-set-valued`), for recycled keys (`recycled-keys-outrun-the-unwalled-span`),
+  and for cloned identifiers presented as roots (`identity-tokens-have-clone-horizons`).
+- GUARANTEES-UNIQUE-NAME: within one scope instance, one referent has one key. Licenses
   DISJOINT from inequality. Fails for symlinks and hardlinks, package `provides`
   (`distinct-names-alias-within-a-kind`), route-qualified handles.
 
-The one non-unknown default in the model, flagged for the human's eye: for a NATURAL key,
-equal keys inside ONE scope instance across an UNWALLED span are taken to reach one
-referent, because that is what a namespace is (a lookup), and `26Ob` §5 already accepted the
-same default as placeholder sharing under one entry chain. A namespace whose lookup is not a
-function opts out by declaring set-valued lookup. Everywhere else, including every primary
-key compared across scope instances and every root, both warrants are absent until typed.
+Both are properties of the naming RELATION between K's keys and referents inside any one
+namespace instance, not of a single key and not of the instance: declared once per kind by
+the owner of the keys, holding for every instance of that namespace kind. Neither holds by
+default anywhere: not for natural keys, not for primary keys, not for roots. The one lookup
+the engine vouches for itself is the transit-free local route (§1.9). Every other claim that a
+lookup is a function is the owner's opt-in (the dpkg database's owner makes it; a resolver's
+owner and a pid table's owner never do), and across a transit it is never claimed, only
+measured and witnessed.
 
 ### § 1.6-resolution-and-traversal
 
@@ -153,8 +157,9 @@ object can change without its key changing.
 
 A fully-qualified key is the recursive identity of an entity: its primary key, scoped in its
 identifying scope, whose identity is itself a fully-qualified key, terminating at a root, at
-a route (§1.9), or at unknown. A fully-qualified key is one DERIVATION of identity. A topic
-may carry several derivations with different generators: its fully-qualified key, a
+a route (§1.9), or at unknown. A fully-qualified key is one DERIVATION of identity. A TOPIC, what a
+claim is about (a cell, together with the observer instance when the cell's kind is
+observer-dependent, §2.6), may carry several derivations with different generators: its fully-qualified key, a
 provider-supplied identifier, a correspondence asserted by a transition owner (§2.5).
 Derivations combine by coherence (§3.2), never by priority. Equality composes transitively
 across derivations; separation is decided at one divergence and is never chained. ("Witness"
@@ -173,7 +178,7 @@ declaration about reboots by anyone. Three independent findings forced this fold
 identifying scope per identity-bearing thing, per-aspect placement, per-aspect
 observer-dependence. The whole-entity claim (`disturbs Service:nginx`) reaches its
 aspect-kinds by the owner's effect entailment (§2.4), and absent that entailment collides
-with them as unrelated, which is the safe bottom. The selector position in the coordinate
+with them as unspoken, which is the safe bottom. The selector position in the coordinate
 and the selector dialect (`277` §3, `30J`) have no counterpart in this model.
 
 ### § 1.9-vantage-route-placeholder-witness
@@ -183,11 +188,15 @@ finite map from namespace kinds to the instances that wrappers lent (§3.4).
 It is not part of any entity's identity. It has three jobs: it says where a read
 executes; it supplies the ambient namespace instance for keys whose kind is named-in a lent
 namespace; and, for a kind with neither read nor namespace, it is the ROUTE, the last-resort
-scope under which two same-spelled keys in one unwalled span are one placeholder and anything
-across vantages is unknown. Fully-qualified keys whose tokens are not yet measured are
+scope. For transit-free local execution the engine itself vouches the route: two same-spelled
+keys in one unwalled span are one placeholder, because one shell process resolves one
+cwd-qualified key in one mount table. Across a transit the route is never vouched, only
+measured and witnessed; across vantages it is unknown. Fully-qualified keys whose tokens are not yet measured are
 placeholders keyed by (key, ambient instances, entry chain); the probe standup binds them;
 the apply standup re-reads them through the same entry and compares (the WITNESS); mismatch
 is integrity, never a verdict input (`26Ob:cor-standup-witness-licenses-bare-line-elision`).
+The witness compares tokens at one instant and cannot see a recycled key (a reissued pid or
+inode); that stays on the outside-churn horizon (`recycled-keys-outrun-the-unwalled-span`).
 
 ### § 1.10-site-and-claim-species
 
@@ -220,9 +229,9 @@ per kind. The INSTANCE is supplied one of three ways, and the supply mode is par
 declaration: FIXED (K's owner names it: the dpkg status file), SITE (the tool author's bind
 fills it from argv: `--db`), AMBIENT (the entry chain's lent instance for N: the current
 mount table for paths). Consumer: resolution (§1.6). Default: absent means K's keys have no
-namespace, so they resolve only under the route (§1.9). Warrants: the two of §1.5, with
-one-name-one-referent definitional within one instance and unwalled span, one-referent-one-
-name absent. This relation never licenses disjointness across instances by itself:
+namespace, so they resolve only under the route (§1.9). Warrants: the two of §1.5, both
+absent until the owner of the keys declares them; guarantees-unique-referent is that owner's
+claim that lookup in N is a function. This relation never licenses disjointness across instances by itself:
 namespace-disjointness is not referent-disjointness (`a-host-is-not-a-partition`,
 `address-inequality-is-not-referent-inequality`, `containment-by-path-prefix-lies`).
 
@@ -241,7 +250,7 @@ key is the natural key. Consumer: identity (§3.1). Defaults: no read means iden
 the natural key under its own defaults. Warrants, all absent by default and all declared by
 K's owner about the primary key:
 
-- one-name-one-referent and one-referent-one-name (§1.5), governing what token equality and
+- guarantees-unique-referent and guarantees-unique-name (§1.5), governing what token equality and
   inequality license at K's level of a fully-qualified key;
 - SOLE-ROUTE: K's referents are reachable only through their identifying scope, so disjoint
   scopes imply disjoint K-referents. Required for a divergence at the identifying-scope level
@@ -249,12 +258,12 @@ K's owner about the primary key:
   directories (a hardlink), for a record whose current state spans several files
   (`a-store-is-not-one-inode`);
 - ROOTNESS: K declares no M, and thereby claims its primary keys are globally comparable.
-  Equivalent to declaring one-name-one-referent over the whole world; fails for cloned
+  Equivalent to declaring guarantees-unique-referent over the whole world; fails for cloned
   identifiers (`identity-tokens-have-clone-horizons`). A token that can be duplicated across
   instances of its would-be scope must be scoped in something smaller or left un-warranted.
 
 A grade governs every consumer of the answer it grades, corroboration and contradiction
-included: a read without one-referent-one-name cannot contradict anything by returning two
+included: a read without guarantees-unique-name cannot contradict anything by returning two
 different tokens.
 
 ### § 2.3-lives-in ("placement", i.e. read footprint in separation logic)
@@ -279,7 +288,7 @@ mode).
 
 Unchanged from `plans/30U`: disturbing an entity of K entails disturbing these entities of
 other kinds; arm-incremental, collide-adding; the reached completion record finishes the
-definition and is the sole licensor of sparing across UNRELATED keys (§3.2). Declared by
+definition and is the sole licensor of sparing across UNSPOKEN keys (§3.2). Declared by
 K's owner. This relation is about effects, not identity, and it is what carries a package's
 postinst enabling its unit, a restart killing a main process, and every other cross-kind
 consequence that no fully-qualified key expresses.
@@ -320,14 +329,17 @@ Aspect-kind A borrows kind K's natural-key naming: A's entities are addressed by
 K's namespace, and A has its own read, identifying scope, placements, and
 observer-dependence. Declared by A's owner, who is normally K's owner. Consumer: resolution
 of A's keys via K's §2.1. The whole-entity relationship between K:x and A:x is carried by
-K's `reaches` (§2.4); without it they are unrelated and collide, which is safe.
+K's `reaches` (§2.4); without it they are unspoken and collide, which is safe.
 
 ### § 2.8-hierarchical-namespace (versus flat; traversal structure)
 
 A namespace kind is HIERARCHICAL when its keys decompose into an ordered chain of its own
 entities, each a routing entity the lookup crosses: a path into directory entries, a hostname
 into resolver steps from a vantage, a dotted unit name into its instance table. Otherwise it
-is FLAT. The engine derives the decomposition from key SYNTAX, which is language, plus this
+is FLAT. A hierarchical namespace may also contain INDEXICAL components whose resolution
+depends on the observing process (`/proc/self`); only the namespace owner can say which, and
+an undeclared indexical component reads unknown. The engine derives the decomposition from
+key SYNTAX, which is language, plus this
 declaration (`30T` §5's syntax-versus-semantics line, unchanged). Consumer: resolution
 backings (§1.6) and therefore perishing (§3.3). Default: flat, so the traversal is the
 namespace instance as a whole, and any touch on the instance perishes every resolution
@@ -350,10 +362,10 @@ composite is the union of its parts' placements.
 
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
-| named-in | one per kind, instance per key | kind owner (instance: fixed / site / ambient) | no namespace ⇒ route only | resolution | one-referent-one-name (disjoint from inequality) |
-| identified-in (the read) | one per kind | kind owner | none ⇒ primary key = natural key | identity | one-name-one-referent · one-referent-one-name · sole-route · rootness |
+| named-in | one per kind, instance per key | kind owner (instance: fixed / site / ambient) | no namespace ⇒ route only | resolution | guarantees-unique-referent (same from equality) · guarantees-unique-name (disjoint from inequality) |
+| identified-in (the read) | one per kind | kind owner | none ⇒ primary key = natural key | identity | guarantees-unique-referent · guarantees-unique-name · sole-route · rootness |
 | lives-in | many per kind, sentinel | kind owner | ⊤ ⇒ collides with everything of the kind | collision | none positive; omission is the silent channel |
-| reaches + finished | many, per arm | kind owner | unrelated ⇒ collide | cross-root sparing | the premature finished record |
+| reaches + finished | many, per arm | kind owner | unspoken ⇒ collide | cross-root sparing | the premature finished record |
 | corresponds | per transition pair | transition owner | unknown | SAME derivation | a wrong correspondence |
 | observer-independence | per (kind, O) | kind owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | named-like | one per aspect-kind | aspect owner | none | resolution reuse | none |
@@ -376,23 +388,25 @@ and which ambient instances to bind.
 ### § 3.2-compare (one chokepoint, four answers)
 
 > Alias analysis's trichotomy: `same` is must-alias, `disjoint` is must-not-alias, `unknown`
-> is may-alias, and `unrelated` is may-alias with the extra fact that no generator ever
-> spoke. `24F`'s `MayAlias` was this vocabulary before the corpus renamed it.
+> is may-alias, and `unspoken` is may-alias with the extra fact that no generator applies to
+> the pair at all (no shared scope, no correspondence, no finished definition). It becomes
+> decidable only when one arrives, and it is named for silence so that it never reads as
+> separation. `24F`'s `MayAlias` was this vocabulary before the corpus renamed it.
 
-compare(x, y) ∈ {same, disjoint, unrelated, unknown}, consumers exactly as today
+compare(x, y) ∈ {same, disjoint, unspoken, unknown}, consumers exactly as today
 (`compare-consumer-map`: same → the fact is about this cell; disjoint → sparing under
-`--risk-faultless-skips`; unknown and unrelated → the safe bottoms). For two fully-qualified
+`--risk-faultless-skips`; unknown and unspoken → the safe bottoms). For two fully-qualified
 keys:
 
 - walk from the roots. If the roots differ, or one side is a route and the other is not, the
-  answer is UNRELATED, and sparing across the pair rides only the footprint side's finished
+  answer is UNSPOKEN, and sparing across the pair rides only the footprint side's finished
   definition (§2.4), as `30U` has it.
 - at the first level where the two keys differ inside a shared scope S: DISJOINT iff S's
-  naming for that kind carries one-referent-one-name and every level above it carries
+  naming for that kind carries guarantees-unique-name and every level above it carries
   sole-route; else UNKNOWN. Deeper levels are not consulted; separation is decided once.
-- if no level differs: SAME iff every level's equality is warranted (definitional for natural
-  keys within one instance and unwalled span; one-name-one-referent for primary keys and
-  roots); else UNKNOWN.
+- if no level differs: SAME iff every level's equality is warranted (guarantees-unique-
+  referent on that level's naming, or the engine's own transit-free local-route claim of §1.9
+  at the bottom); else UNKNOWN.
 - any unknown link on either key: UNKNOWN.
 
 For derivation sets: a warranted SAME and a warranted DISJOINT on one pair is a
@@ -415,7 +429,11 @@ for one topic, reconciled by §1.7's coherence, never a second key inside one sc
   entity perishes; every fully-qualified key built on that resolution reads unknown below the
   line; dependent SAME conclusions lose authority and dependent elisions demote to guards;
   dependent DISJOINT conclusions collide. The touched object itself is untouched
-  (`a-path-is-not-a-referent`, `renaming-a-parent-moves-every-child-name`).
+  (`a-path-is-not-a-referent`, `renaming-a-parent-moves-every-child-name`). Creation,
+  deletion, and rename of an entity are routing writes to its namespace entry (its existence
+  cell), so `userdel alice; useradd alice` perishes every resolution of the old key
+  (`a-recreated-name-is-a-new-referent`); a footprint that omits the entry is the ordinary
+  at-most omission knife, now visibly covering routing entities.
 - A STATE mutation writes cells through placements: ordinary kill-reach, unchanged. A first
   write can also change a primary key
   (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation
@@ -453,7 +471,7 @@ granting composite ("these two accounts are one") is entailed jointly by the acc
 owner's identified-in declaration and the database owner's read, each speaking about their
 own kind (`28M:rul-composite-meets-toward-guard-run`). A withholding composite (a mount
 perishing an account's resolution) names nobody and needs nobody's consent. Attribution:
-every survival names the sole-route and one-referent-one-name lines it rested on; every SAME
+every survival names the sole-route and guarantees-unique-name lines it rested on; every SAME
 names the reads and correspondences; every perished conclusion names the footprint that
 perished it.
 
@@ -465,7 +483,7 @@ thing (split: store half measured, observer half §2.6); substrate tokens; `kind
 an authored region predicate (containment is traversal membership); `resolve` as a member
 distinct from the read; the selector position and the selector dialect (`277` §3, `30J`);
 the engine-side name-floor carves for File and index-kinds (they are the absent
-one-referent-one-name warrant); the disclosed-weak default name floor
+guarantees-unique-name warrant); the disclosed-weak default name floor
 (`300:rul-reference-entity-name-floor`) **[LEAN: default safe even when painful]**;
 "transport" as a lane for observer-independent cells (one cell, one fact); the store member's
 argv blindness (the site fills the instance).
@@ -508,7 +526,7 @@ line here is the model element it forces.
   transit that lends no namespace on a key leaves it untouched (§3.4).
 - `address-inequality-is-not-referent-inequality` — named-in licenses no disjointness across
   instances; sole-route is a separate, dangerous flag (§2.1, §2.2).
-- `distinct-names-alias-within-a-kind` — one-referent-one-name is absent by default; the
+- `distinct-names-alias-within-a-kind` — guarantees-unique-name is absent by default; the
   read supplies the primary key (§1.5, §2.2).
 - `containment-by-path-prefix-lies` — the File natural key's namespace is not sole-route;
   containment is traversal membership on the primary-key side (§2.2, §2.8).
@@ -518,9 +536,10 @@ line here is the model element it forces.
   traversals; perishing by traversal membership (§2.8, §3.3).
 - `a-name-resolves-from-a-vantage` — the network vantage is part of the address and of a
   hostname's traversal (§1.9, §2.8).
-- `resolution-is-set-valued` — the one definitional default has an owner opt-out; a
-  set-valued lookup yields unknown from equal keys (§1.5).
-- `identity-tokens-have-clone-horizons` — rootness is a dangerous claim; one-name-one-
+- `resolution-is-set-valued` — guarantees-unique-referent is the owner's opt-in per naming; a
+  resolver's owner never makes it, so equal hostnames yield unknown and the landing is
+  measured (§1.5, §1.9).
+- `identity-tokens-have-clone-horizons` — rootness is a dangerous claim; guarantees-unique-
   referent is absent by default on primary keys (§1.4, §2.2).
 - `a-name-is-not-a-target-over-time` — placeholders, the standup witness, integrity
   withhold; sameness of a target is continuity witnessed, never a spelling (§1.9).
@@ -538,6 +557,11 @@ line here is the model element it forces.
   generator; mapped lends are correspondences (§2.5).
 - `identity-tokens-perish-on-write-not-only-on-rename` — a state mutation on an identifying
   scope perishes the tokens scoped in it (§3.3).
+- `a-recreated-name-is-a-new-referent` — creation and deletion are routing writes to the
+  namespace entry; a stable key over a recreate is a perished resolution (§3.3).
+- `recycled-keys-outrun-the-unwalled-span` — no lookup is a function by default; a
+  namespace that reissues keys never earns guarantees-unique-referent, and the witness cannot
+  see a recycled key (§1.5, §1.9).
 
 ### § 6.2-conceptual-dead-ends-and-what-killed-each
 
@@ -590,8 +614,15 @@ Recorded as what-killed-it, so the dead end is not re-walked.
   compare at the divergence (§3.2).
 - THE DISCLOSED-WEAK NAME FLOOR (`300:rul-reference-entity-name-floor`; kept in `311d`).
   Killed by the human's default-safe lean and by its own per-kind carves. Surviving form:
-  one-referent-one-name is typed, never assumed; the reviewer's window specimen also showed
+  guarantees-unique-name is typed, never assumed; the reviewer's window specimen also showed
   the floor was applied without its locality premise.
+- A DEFINITIONAL EQUAL-KEYS DEFAULT ("equal natural keys in one instance across an unwalled
+  span reach one referent, because that is what a namespace is"). Killed by: it feeds only
+  the dangerous consumer (kill-reach already collides on unknown, so SAME buys it nothing);
+  recreation under a stable name, pid reuse, round-robin and cached lookups, and `:latest`
+  tags are ordinary ops, not exotica; and the claim's owner is different at every level.
+  Surviving form: the engine vouches only the transit-free local route; every namespace's
+  lookup-functionality is its owner's guarantees-unique-referent, opt-in (§1.5, §1.9).
 - MEASUREMENT MAKES DECLARATIONS REDUNDANT (`311h`'s framing). Killed by `311i` §0: a read
   establishes a token, not its scope, topic, warrant, applicability, or sufficiency.
   Surviving framing: measurement relocates speech to questions the owner can answer.
@@ -610,12 +641,11 @@ Recorded as what-killed-it, so the dead end is not re-walked.
 
 ## § 7-open-questions (carried into the next sitting; not rulings)
 
-- `open-definitional-equality-default` — §1.5's one non-unknown default (equal natural keys
-  in one instance across an unwalled span reach one referent) is inherited from `26Ob` §5's
-  placeholder sharing; the human has not looked at it under this model. If it falls, nothing
-  ever transports even within one vantage without a read.
+- `open-local-route-claim-residue` — the engine's own transit-free local-route claim (§1.9) is
+  believed sound modulo indexical components a namespace owner declines (`/proc/self` on
+  procfs); no further hole was found, and none was hunted adversarially.
 - `open-injectivity-derivation` — the human asked for a narrow, stable derivation of
-  one-referent-one-name that does not depend on an attentive author; none was found; the
+  guarantees-unique-name that does not depend on an attentive author; none was found; the
   typed warrant on the read is the current answer, held as a dangerous corner.
 - `open-no-transit-path-cost` — the static reconstruction of a no-transit probe path for
   observer-independent cells (§2.6) is priced at one declaration per kind; whether the
@@ -658,8 +688,10 @@ The r31-prep sittings this document synthesizes, in order:
   known wrong (§6.2); read them as specimens.
 - `notes/311e` / `311g` / `311i` — the foreign-lineage reviews of each system and their
   synthesis; mined for paths not taken, and the source of §6.2's last nine entries.
-- `Research/GOTCHAS.md` — minted 2026-09-08 from these sittings; twenty items at this
+- `Research/GOTCHAS.md` — minted 2026-09-08 from these sittings; twenty-two items at this
   writing; referenced by slug.
+- Vocabulary minted here and used ahistorically above: `unspoken` (née `unrelated`, `30U` §7
+  and `compare-consumer-map`).
 
 Human leans typed across the sittings and treated here as leans, never rulings: default safe
 even when painful; no aliases or shortcuts for subsumed members; no perf-motivated holes;
