@@ -60,8 +60,11 @@ are about.
 ### § 1.2-kind
 
 > Not the PLT kind (the type of a type). A kind here is a *sort* in the many-sorted-logic
-> sense: a named category of referents with one accountable owner. The word is kept because
-> the corpus is saturated with it; the PLT sense never arises in this domain.
+> sense: a named naming scheme over referents with one accountable owner, not a category of
+> referents. Two kinds may name one referent set (a file by path and by descriptor; a host by
+> name and by instance-id), each with exactly one natural key; their sameness is decided by a
+> shared identifying scope (§3.2). The word is kept because the corpus is saturated with it;
+> the PLT sense never arises in this domain.
 
 A vocabulary with one accountable owner (reverse-DNS naming, no registry, owner-adjudication
 as the social contract — unchanged from `24M` and `277` §6). A kind fixes, for its entities:
@@ -395,7 +398,13 @@ contradiction, refuse both and attribute both authors; otherwise the strongest w
 answer stands. SAME is transitive across derivations; DISJOINT is never chained. Universal
 meet over backing sets is unchanged (`set-lifting-universal-meet`): sparing needs every
 footprint-by-backing pair disjoint. Cross-kind comparison needs no special rule: two
-fully-qualified keys either share a scope at some level or they do not.
+fully-qualified keys either share a scope at some level or they do not. A shared identifying
+scope with equal primary keys IS the cross-kind SAME generator: two kinds whose owners
+identify into one scope name one referent set through two natural keys, one thing in two
+tables joined on a shared key, and this is the one place the corpus's "cross-kind same does
+not exist" is superseded. Genuinely different primary keys for one referent (an NFS
+filehandle and the server's inode; a machine-id and a cloud instance-id) are two derivations
+for one topic, reconciled by §1.7's coherence, never a second key inside one scope.
 
 ### § 3.3-perishing (three mutator species, three invalidated facts)
 
