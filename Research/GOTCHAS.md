@@ -22,3 +22,5 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 18. the-subject-includes-the-observer: "`sudo -u alice test -w F` and `sudo -u root test -w F` disagree about one file."
 19. correspondence-is-known-only-to-the-transition-owner: "PID 1 inside a container is PID 4821 on the host."
 20. identity-tokens-perish-on-write-not-only-on-rename: "overlayfs copy-up gives a file a new inode on its first write."
+21. a-recreated-name-is-a-new-referent: "`userdel alice && useradd alice` mints a new uid under the old name."
+22. recycled-keys-outrun-the-unwalled-span: "A pid is reissued to an unrelated process moments after the original exits."
