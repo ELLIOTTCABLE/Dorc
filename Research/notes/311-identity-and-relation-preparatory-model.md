@@ -145,8 +145,7 @@ symlink for a path; the resolver configuration and vantage for a hostname; the u
 a service name). A hierarchical namespace's structure fixes how a key decomposes into a
 traversal (§2.8). A resolution perishes under ordinary effective-world reach from any mutator
 whose footprint touches any traversal member. Its target object is NOT its backing: a key
-can stop reaching an object without the object changing (`renaming-a-parent-moves-every-
-child-name`, `a-path-is-not-a-referent`), and an object can change without its key changing.
+can stop reaching an object without the object changing (`renaming-a-parent-moves-every-child-name`, `a-path-is-not-a-referent`), and an object can change without its key changing.
 
 ### § 1.7-fully-qualified-key-and-derivations
 
@@ -193,8 +192,7 @@ is integrity, never a verdict input (`26Ob:cor-standup-witness-licenses-bare-lin
 A site is a book line with an argv, an entry chain, and a program point. Speech at or about a
 site, each with one author:
 
-- a VERDICT FACT: a cell's measured value, backed by the marked read set (`30T:req-verdict-
-  marks-every-read-cell`), vouched by the tool author;
+- a VERDICT FACT: a cell's measured value, backed by the marked read set (`30T:req-verdict-  marks-every-read-cell`), vouched by the tool author;
 - a FOOTPRINT CLAIM: an at-most write set per matched shape, with its completion witness
   (`30U`), by the tool author or the filesystem binder;
 - an EFFECT ENTAILMENT: what disturbing an entity of a kind drags along, with the finished
@@ -220,8 +218,7 @@ declaration: FIXED (K's owner names it: the dpkg status file), SITE (the tool au
 fills it from argv: `--db`), AMBIENT (the entry chain's lent instance for N: the current
 mount table for paths). Consumer: resolution (§1.6). Default: absent means K's keys have no
 namespace, so they resolve only under the route (§1.9). Warrants: the two of §1.5, with
-one-name-one-referent definitional within one instance and unwalled span, one-referent-
-one-name absent. This relation never licenses disjointness across instances by itself:
+one-name-one-referent definitional within one instance and unwalled span, one-referent-one-name absent. This relation never licenses disjointness across instances by itself:
 namespace-disjointness is not referent-disjointness (`a-host-is-not-a-partition`,
 `address-inequality-is-not-referent-inequality`, `containment-by-path-prefix-lies`).
 
@@ -265,8 +262,7 @@ different tokens.
 K's referents' state is affected by writes to these entities. Many-valued. Declared by K's
 owner, per kind, with a completion sentinel closing the set. Consumer: collision only. A
 footprint touching any placement collides with K's cells; an incomplete placement set loses
-protection for sparing (an omitted placement is a silent channel: `an-omitted-store-breaks-
-invariance`, `a-store-is-not-one-inode`) and never licenses anything positive. Placement is
+protection for sparing (an omitted placement is a silent channel: `an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and never licenses anything positive. Placement is
 distinct from the identifying scope: the identifying scope is at most one and answers
 identity; placement is many and answers interference. Two cells with different identifying
 scopes can share a placement and therefore collide without being the same
@@ -415,8 +411,7 @@ for one topic, reconciled by §1.7's coherence, never a second key inside one sc
   dependent DISJOINT conclusions collide. The touched object itself is untouched
   (`a-path-is-not-a-referent`, `renaming-a-parent-moves-every-child-name`).
 - A STATE mutation writes cells through placements: ordinary kill-reach, unchanged. A first
-  write can also change a primary key (`identity-tokens-perish-on-write-not-only-on-
-  rename`), so a state mutation whose footprint touches an identifying scope perishes the
+  write can also change a primary key (`identity-tokens-perish-on-write-not-only-on-  rename`), so a state mutation whose footprint touches an identifying scope perishes the
   tokens scoped in it.
 - A LIFECYCLE mutation (a reboot, a re-provision) disturbs a root-adjacent entity (a boot, a
   tenure); every primary key scoped in it names a new referent afterward; cells whose
@@ -518,8 +513,7 @@ line here is the model element it forces.
   hostname's traversal (§1.9, §2.8).
 - `resolution-is-set-valued` — the one definitional default has an owner opt-out; a
   set-valued lookup yields unknown from equal keys (§1.5).
-- `identity-tokens-have-clone-horizons` — rootness is a dangerous claim; one-name-one-
-  referent is absent by default on primary keys (§1.4, §2.2).
+- `identity-tokens-have-clone-horizons` — rootness is a dangerous claim; one-name-one-  referent is absent by default on primary keys (§1.4, §2.2).
 - `a-name-is-not-a-target-over-time` — placeholders, the standup witness, integrity
   withhold; sameness of a target is continuity witnessed, never a spelling (§1.9).
 - `a-store-is-not-one-inode` — placement is many-valued and distinct from the identifying
