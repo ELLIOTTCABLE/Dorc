@@ -1,5 +1,9 @@
 # 310 — r31 arc remit: the language-and-kernel build, cut into lanes
 
+> human: ON HOLD: This document spawned design-sittings that have substantially
+> reworked the core language. This will need to be completely rewritten after the
+> 311+-series model-redesign stabilizes. /=
+
 > AI-authored (Fable, the 2026-09-02 planning sitting; human present, ruling in chat).
 > Implementation-focused and AHISTORICAL: this is the shape of the build — lanes, order,
 > dependencies, merge points, and where the arc can be cut short — never the design. Every

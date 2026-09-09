@@ -1,5 +1,9 @@
 # ROADMAP — the direction: what is scheduled, and what is owed
 
+> human: ON HOLD: This document spawned design-sittings that have substantially
+> reworked the core language. This will need to be completely rewritten after the
+> 311+-series model-redesign stabilizes. /=
+
 > AI-authored, AI-maintained. The human moves rows between sections by *typing* an ack in
 > chat; nothing else does. Siblings: `TODO.md` (the human's own list, their voice) ·
 > `TODO-ADDTL.md` (the porch — what models think the human should look at, unacked, owed by
