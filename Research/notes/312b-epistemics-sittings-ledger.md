@@ -22,6 +22,11 @@ Positions (2026-09-09): known-but-deferred effects stay in scope, gently, never 
 horizon; unexpected churn (other users, host-owned cron, host-configured reactions) is
 horizon, the price of play.
 
+Conduct (2026-09-09): the sitting leans toward epistemics and the earliest shapes of UX, not
+specific holes, while the clay is wet; exercises stay light and agile, a handful of
+observations, not a page; each exercise builds in glossed STAGES like USER_STORY, usually two
+or three, so the liminal middle of the enhancement curve is explored rather than only its ends.
+
 ## § 2-exercise-takeaways
 
 From `312b-exercises/01` (placement parametric in an observer: pipx, `sudo git config
