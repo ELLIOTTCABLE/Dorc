@@ -98,7 +98,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26M:ack-authored-host-sameness-parallel
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:38 — — hostname sameness/resolution wants
-- cited: 03 26Ob 312a (3)
+- cited: 03 04 26Ob 312a (4)
 
 ## 26M:ack-carrier-form-neutrality
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:24 — — adjacent-book dispatch (`ssh h <web.sh`) and
@@ -122,7 +122,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-cross-world-wall-is-the-floor
 - defined: —
-- cited: 26Ob 311a 311c 312a (7)
+- cited: 04 26Ob 311a 311c 312a 312b (10)
 
 ## ack-entered-kind-is-declared-never-host
 - defined: —
