@@ -353,6 +353,40 @@ Findings:
   to different keys of a `:guarantees-unique-referent` store ⇒ at most one is right ⇒ withhold
   both and narrate.
 
+## § 8-counterexample-hunt-banked
+
+One sitting (2026-09-10), after the shape sitting: every constriction in the B(b) gloss
+attacked with sh. Nothing ruled.
+
+- Held: one parent per mCell (a lazy bind is saved by declaring both placements); the engine's
+  route claim under `cd`, ρ writes, `ln -sfn`, unmodeled retargets, and `&` (each by an existing
+  rule); strangers naming one store by different mKinds (unspoken, precision only); whole-to-part
+  `:reaches` against `enable --now` (a part-level footprint names what it touches).
+- `fnd-schemes-belong-to-one-kind` — the ABC case: a naming system declared under two mKinds is
+  the shadowing refusal; reuse is delegation inside a `resolve()` body (sanctioned composition,
+  custody by sourcing); two naming systems on one mKind can disagree on a mPrimaryKey and the
+  store's :guarantees-unique-name then licenses a wrong DISJOINT, attributed to both (the canary).
+- `fnd-store-type-varies-the-chain` — sshfs synthesises inode numbers per client mount, so two
+  clients hold two mPrimaryKeys for one file; the variation is by the TYPE of the store instance
+  (ext4, nfs, sshfs, overlay, loop, proc), never by the child mKind or its naming system. What
+  varies per type: how the store instance itself is identified (its own parent), its placements
+  (loop: the backing file), and whether its content addressing is unique (proc: no). Whether the
+  store is a view is DERIVABLE from its own chain reaching an unknown link, so :sole-route needs
+  no attribute. Proposal B(c): store types as first-class SUBSORTS of the store mKind
+  (order-sorted, carrier inclusion), the umbrella's `resolve()` performing the retract on the
+  host; children key into the umbrella and inherit the subsort's answers. "Index-kinds" (`30W`,
+  context axes) is a different concept; never reuse the name.
+- `fnd-parent-kinds-carry-placements` — a loop-backed filesystem's state lives in a file of the
+  outer filesystem; `dd` over the image rewrites every inner fact; every mKind in a chain may
+  declare `:lives-in`, not only leaves.
+- `fnd-schemes-take-site-parameters` — `acct --db PATH`: the index arrives in argv; a naming
+  system's index may be site-supplied (the R1-into-R1 case).
+- Nit: SAME then DISJOINT composes to DISJOINT; only DISJOINT then DISJOINT never chains.
+- Punted to its own exercise, not dropped: overlayfs (GOTCHAS
+  `identity-tokens-perish-on-write-not-only-on-rename`): a merged view over two stores; the
+  type row needs placements {lower, upper} and no warrants, else a write to the lower spares
+  wrongly through the merged path.
+
 ## § 6-state-for-a-rewound-successor
 
 Commits on `ai/main` this phase, oldest first: `9850d3cb` GOTCHAS 23–56 · `b4d80fd4` 312a ·
