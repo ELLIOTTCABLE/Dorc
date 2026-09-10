@@ -15,7 +15,7 @@ important reservation about `311h` is its explanation that declarations became
 redundant once measurement-in-context arrived. Even granting mature, working identity
 measurement machinery, this conclusion does not generally follow.
 
-A read can establish that an invocation returned a token. It cannot alone establish:
+A `resolve()` can establish that an invocation returned a token. It cannot alone establish:
 
 - the namespace within which that token identifies something;
 - which subject or aspect the token identifies;
@@ -99,7 +99,7 @@ owner of the proposed identity function:
 - the container manager knows that guest PID 1 corresponds to a particular outer PID;
 - the namespace/path describer knows which traversal inputs an object lookup used.
 
-A single kind-owner read in the denoted context cannot necessarily obtain all of those
+A single kind-owner `resolve()` in the denoted context cannot necessarily obtain all of those
 facts. Another author may be able to state a precise correspondence or dependence
 without supplying a globally comparable identifier for the leaf object.
 
@@ -190,7 +190,7 @@ general calculus rather than either erasing them or inventing a special privileg
   or enforced representational change would have to establish the claimed repair;
   folding two member names alone does not.
 - **`qualification-measurement-is-not-free-knowledge`** — even if controller cost or
-  transport overhead is acceptable, each identity read still has an authoring contract,
+  transport overhead is acceptable, each `resolve()` still has an authoring contract,
   execution prerequisites, and failure/coverage behavior. The performance doctrine
   cannot by itself establish that an invariance statement is semantically redundant.
 - **`qualification-current-code-claims-are-unverified-here`** — assertions about which

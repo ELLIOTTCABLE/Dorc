@@ -62,7 +62,7 @@ Tier A — read whole, in this order:
    `ack-entered-kind-is-declared-never-host`, `ack-target-not-machine`,
    `ack-witnesses-verify-intent-only`, `ack-cross-world-wall-is-the-floor` (§2); the resolution
    cell and vantage keying (10a); worlds as coordinates, the placeholder `sk(E, K)`, the
-   per-index relation table, the filtered meet (10b); the identity read (10c); the witness
+   per-index relation table, the filtered meet (10b); the `resolve()` (10c); the witness
    inventory by identity class (10e); the target-as-tenure pin (10f);
    `cor-standup-witness-licenses-bare-line-elision` (14).
 8. `plans/28M` §§2–4, 6, 8, 11 — committee speech: why multi-author families cannot be sound;
@@ -203,7 +203,7 @@ Forgotten angles — questions later evolutions did not take up:
   `resolve` measures the same identifier through two entries"), by `30W` §4's mount-tier map as
   contradiction-checker only, by `24S` §3b's fs-view ladder (bind-mounts as the cutpoint
   analog; DETECT-and-DEGRADE), and by `30T` §6's perishability. No design says how a
-  MountNamespace/Volume owner's identity read composes with the File owner's per-aspect
+  MountNamespace/Volume owner's `resolve()` composes with the File owner's per-aspect
   relation, how a store's identity answer feeds the filtered meet, or who owns "these two paths
   on two hosts are one file".
 - `fa-store-speech-cannot-see-argv` (+SURE) — `kind__state_stored_in` is invoked with entity
@@ -324,7 +324,7 @@ Forgotten angles — questions later evolutions did not take up:
 | region disjointness | `kind__disjoint()` (née `overlaps`): region × region or region × entity, one context, after the world relation | rc 0 disjoint / 1 overlap / ≥2 unknown | sparing under the flag; the store-containment predicate | ruled (`30W` §2), unbuilt, ~SUSPECT unscheduled | a wrong disjoint arm spares past a real write; the naive body is the knife |
 | referent-transparent inequality | the kind's declared property + measured values | disjoint when minted-unique tokens differ | sparing, structural | proposed (`30W` §1; ruling owed) | a kind wrongly declared transparent splits one referent |
 | per-aspect identity | the owner's per-selector relation mapping | same / disjoint per aspect (contents = inode; existence = directory entry) | both; measured, perishable | proposal (`30T` §6; `30W` §2) | the wrong relation for the aspect |
-| identity read | the entered kind's owner's read (strawman `kind__identity`), run in the denoted context | binds a placeholder to an opaque token; equality compared, never decoded | vouch for transport; the standup witness re-runs it | proposed (`26Ob` §10c) | a read that clones share (machine-id on cloned images) merges two targets |
+| `resolve()` | the entered kind's owner's `resolve()` (strawman `kind__identity`), run in the denoted context | binds a placeholder to an opaque token; equality compared, never decoded | vouch for transport; the standup witness re-runs it | proposed (`26Ob` §10c) | a `resolve()` that clones share (machine-id on cloned images) merges two targets |
 | invariance line | `: undivided-by-transit-across <index-kind>` in the store member | same across that index | vouch (typed line); flag-tier for sparing past a fired transit (`311a`'s reading of `30W` ruling 3) | built (user axis; the carry); index-kind targets designed | an omitted index-dependent store (the pipx-in-`~/.local` shape) transports across a real boundary |
 | lend entries | `cmd__lend_map()` | full lend = boundary identity; mapped lend = re-keying | vouch (wrapper author) | built | a wrong value mis-keys facts to the wrong world |
 | keying | derived: stores × index dependence | blocks transport; never disjoint | license-free | designed (`272` §3, `30W` §4); as-built partial | none (safe direction) |
@@ -430,7 +430,7 @@ is refused at plan time. Section 5k warns: write nothing against the identity-ti
 Designed and not yet taught: `state_stored_in` per-arm plus `stored nothing-else`; `stored-in`
 naming a KIND coordinate, no sugar; `undivided-by-transit-across` accepting an index-kind
 coordinate (`sm.dorc.Boot`); `kind__disjoint` with rc 0 = disjoint; the referent-transparent
-declaration; the per-aspect relation mapping; the entered kind's identity read; `lends` naming
+declaration; the per-aspect relation mapping; the entered kind's `resolve()`; `lends` naming
 user-minted kinds (`: lends org.docker.Container`) with an inherit/reset sentinel replacing
 enumerate-every-dimension; the selector rung (P2).
 
@@ -456,7 +456,7 @@ ssh beta  acct --db /mnt/team/people.db     --directory blue enable 7    # L4: d
   declaration is that Account's state lives in the File named by `--db`, which the store member
   cannot see (`fa-store-speech-cannot-see-argv`); and the File pair
   `/srv/people/accounts.db@alpha` versus `/mnt/team/people.db@beta` is `same` only if a
-  volume/mount owner's identity read says so through both entries — a generator that exists as
+  volume/mount owner's `resolve()` says so through both entries — a generator that exists as
   one sentence (`fa-identity-of-stores-is-one-sentence`) and whose invalidation under a later
   `mount` line is undesigned (`fa-identity-answers-under-others-transitions`). That is the
   sitting.

@@ -36,7 +36,7 @@ name to a measurable referent, and viewpoint transitions authored by yet other p
 which referent a name reaches mid-book.
 
 The model: every identity-bearing thing is an entity of a KIND. A kind's entities have a
-NATURAL KEY inside a namespace (routing), and, where the kind's owner supplies a read, a
+NATURAL KEY inside a namespace (routing), and, where the kind's owner supplies a `resolve()`, a
 PRIMARY KEY inside another namespace (identity). Identity is the primary key scoped
 recursively, a FULLY-QUALIFIED KEY, until a ROOT, a declared global namespace, or a ROUTE,
 the last resort. State has PLACEMENTS, many-valued, which feed collisions only. Two things
@@ -69,7 +69,7 @@ are about.
 
 A vocabulary with one accountable owner (reverse-DNS naming, no registry, owner-adjudication
 as the social contract — unchanged from `24M` and `277` §6). A kind fixes, for its entities:
-the natural-key naming (§2.1), the read and primary key if any (§2.2), the placements
+the natural-key naming (§2.1), the `resolve()` and primary key if any (§2.2), the placements
 (§2.3), the effect entailment (§2.4), the observer-dependence (§2.6), and whether it is a
 hierarchical namespace when it serves as one (§2.8). A kind's owner speaks only about the
 kind's own relations to its immediate neighbours; the engine composes. Kinds are the only
@@ -88,11 +88,11 @@ name is relative to a namespace instance, and a bare string means nothing. Each 
 
 - a NATURAL KEY: the strings tool authors and books use (`red/7`, `/etc/nginx.conf`,
   `nginx`, `beta`), interpreted in the kind's routing namespace (§2.1);
-- a PRIMARY KEY: the strings the kind's own identity read returns (an inode number, a
+- a PRIMARY KEY: the strings the kind's own `resolve()` returns (an inode number, a
   filesystem identifier, a canonical package name, a boot identifier), interpreted in the
   kind's identifying scope (§2.2).
 
-When a kind has no read, the primary key IS the natural key. The distinction exists because
+When a kind has no `resolve()`, the primary key IS the natural key. The distinction exists because
 the natural key is what people write and is usually ambiguous (aliases, relative names),
 while the primary key is what the store answers and is where the dangerous warrants can
 honestly be placed.
@@ -105,7 +105,7 @@ component, a mount table for paths, a filesystem for inodes, a resolver-plus-van
 hostnames, a process table for pids. "Scope" is the same object seen from the key: the scope
 of `red/7` is a particular database. A kind's natural key has one scope (its routing
 namespace) and its primary key has another (its identifying scope); they coincide when the
-kind has no read. A ROOT is a kind that declares its primary keys need no scope, which is the
+kind has no `resolve()`. A ROOT is a kind that declares its primary keys need no scope, which is the
 claim that they are globally comparable (the DNS root, whose keys are fully-qualified).
 Rootness is a dangerous, long-named claim (§2.2); nothing is a root by default.
 `GOTCHAS: identity-tokens-have-clone-horizons` is the standing witness against casual
@@ -118,7 +118,7 @@ rootness.
 > OWL's names swap direction with the property's orientation, which is why ours are spelled
 > out instead.
 
-A token is a primary-key value: bytes the kind's read returned, compared for equality only,
+A token is a primary-key value: bytes the kind's `resolve()` returned, compared for equality only,
 never decoded (`inv-referent-agnostic`). A token is always scoped (§1.4). Any naming,
 natural or primary, has two independent properties, and each is a separately declared,
 absent-by-default warrant:
@@ -170,7 +170,7 @@ is reserved throughout for the standup re-measurement of §1.9.)
 A cell is the unit that has a value: what a probe measures and a mutator writes. In this
 model a cell is simply an entity of a kind whose values are measurable. What earlier designs
 called an aspect or selector (`Service:nginx@enabled`) is an ASPECT-KIND: a kind that borrows
-another kind's natural-key naming (§2.7) but has its own read, identifying scope, placements,
+another kind's natural-key naming (§2.7) but has its own `resolve()`, identifying scope, placements,
 and observer-dependence. `enabled` and `active` are two kinds sharing the unit name; one is
 measured in a symlink's existence and the other in pid 1's memory, and their fully-qualified
 keys differ, which is exactly why one survives a reboot and the other does not, with no
@@ -185,9 +185,9 @@ and the selector dialect (`277` §3, `30J`) have no counterpart in this model.
 
 A vantage is the ADDRESS a probe reached a referent from: the entry chain, expressed as a
 finite map from namespace kinds to the instances that wrappers lent (§3.4).
-It is not part of any entity's identity. It has three jobs: it says where a read
+It is not part of any entity's identity. It has three jobs: it says where a `resolve()`
 executes; it supplies the ambient namespace instance for keys whose kind is named-in a lent
-namespace; and, for a kind with neither read nor namespace, it is the ROUTE, the last-resort
+namespace; and, for a kind with neither `resolve()` nor namespace, it is the ROUTE, the last-resort
 scope. For transit-free local execution the engine itself vouches the route: two same-spelled
 keys in one unwalled span are one placeholder, because one shell process resolves one
 cwd-qualified key in one mount table. Across a transit the route is never vouched, only
@@ -235,18 +235,18 @@ claim that lookup in N is a function. This relation never licenses disjointness 
 namespace-disjointness is not referent-disjointness (`a-host-is-not-a-partition`,
 `address-inequality-is-not-referent-inequality`, `containment-by-path-prefix-lies`).
 
-### § 2.2-identified-in (the read, the identifying scope, sole-route, rootness)
+### § 2.2-identified-in (the `resolve()`, the identifying scope, sole-route, rootness)
 
 > ER modeling's identifying relationship: a weak entity's primary key includes its
 > identifying entity's key; a strong entity has its own. Identifying is NOT containing.
 > The containing half is `sole-route` below (networking: single-homed), a separate,
 > dangerous claim; conflating the two is the hardlink and NFS mistake.
 
-K's identity read, declared and executed by K's owner in the vantage the key resolved from,
+K's `resolve()`, declared and executed by K's owner in the vantage the key resolved from,
 maps a natural key to a primary key scoped in an instance of kind M. That M-instance is K's
-IDENTIFYING SCOPE, the thing whose identity determines K's. The read returns a scoped token,
-and the scope's identity is recursive (§1.7). Where no read exists, M = N and the primary
-key is the natural key. Consumer: identity (§3.1). Defaults: no read means identity falls to
+IDENTIFYING SCOPE, the thing whose identity determines K's. The `resolve()` returns a scoped token,
+and the scope's identity is recursive (§1.7). Where no `resolve()` exists, M = N and the primary
+key is the natural key. Consumer: identity (§3.1). Defaults: no `resolve()` means identity falls to
 the natural key under its own defaults. Warrants, all absent by default and all declared by
 K's owner about the primary key:
 
@@ -263,7 +263,7 @@ K's owner about the primary key:
   instances of its would-be scope must be scoped in something smaller or left un-warranted.
 
 A grade governs every consumer of the answer it grades, corroboration and contradiction
-included: a read without guarantees-unique-name cannot contradict anything by returning two
+included: a `resolve()` without guarantees-unique-name cannot contradict anything by returning two
 different tokens.
 
 ### § 2.3-lives-in ("placement", i.e. read footprint in separation logic)
@@ -305,7 +305,7 @@ kind owner: the container manager knows guest pid 1 is host pid 4821
 (`correspondence-is-known-only-to-the-transition-owner`); `sudo -u alice` knows inner "me"
 is outer "alice", which is what a mapped lend has been asserting all along. Consumer: a
 SAME derivation (§1.7), vouch-tier, attributed to the transition author. Default: absent, so
-keys across a transition compare unknown unless a read binds tokens on both sides. Danger: a
+keys across a transition compare unknown unless a `resolve()` binds tokens on both sides. Danger: a
 wrong correspondence is a wrong SAME. This generalizes the mapped lend of `273` and is the
 model's only declared sameness generator besides token equality.
 
@@ -317,7 +317,7 @@ Default: a cell measured under a lent instance of O is assumed to depend on it, 
 is about (referent, O-instance) and never stands for the same referent under another
 O-instance. Consumer: the SAME consumer, as a qualifier on the claim's topic. This is the
 surviving half of the old invariance line (`271:rul-invariance-speech-act`): its store half
-is measured away by §2.2, its observer half cannot be measured by any identity read because
+is measured away by §2.2, its observer half cannot be measured by any `resolve()` because
 the object is the same and the answer differs (`the-subject-includes-the-observer`), and it
 must remain speech. Measurement in the denoted context (`plans/27C`) stays the default lane;
 carrying a fact across an O-shift requires this declaration, and the human's hoped-for
@@ -326,7 +326,7 @@ static no-transit path costs exactly one such line per kind in the stdlib.
 ### § 2.7-named-like (aspect-kinds)
 
 Aspect-kind A borrows kind K's natural-key naming: A's entities are addressed by K's keys in
-K's namespace, and A has its own read, identifying scope, placements, and
+K's namespace, and A has its own `resolve()`, identifying scope, placements, and
 observer-dependence. Declared by A's owner, who is normally K's owner. Consumer: resolution
 of A's keys via K's §2.1. The whole-entity relationship between K:x and A:x is carried by
 K's `reaches` (§2.4); without it they are unspoken and collide, which is safe.
@@ -363,7 +363,7 @@ composite is the union of its parts' placements.
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
 | named-in | one per kind, instance per key | kind owner (instance: fixed / site / ambient) | no namespace ⇒ route only | resolution | guarantees-unique-referent (same from equality) · guarantees-unique-name (disjoint from inequality) |
-| identified-in (the read) | one per kind | kind owner | none ⇒ primary key = natural key | identity | guarantees-unique-referent · guarantees-unique-name · sole-route · rootness |
+| identified-in (the `resolve()`) | one per kind | kind owner | none ⇒ primary key = natural key | identity | guarantees-unique-referent · guarantees-unique-name · sole-route · rootness |
 | lives-in | many per kind, sentinel | kind owner | ⊤ ⇒ collides with everything of the kind | collision | none positive; omission is the silent channel |
 | reaches + finished | many, per arm | kind owner | unspoken ⇒ collide | cross-root sparing | the premature finished record |
 | corresponds | per transition pair | transition owner | unknown | SAME derivation | a wrong correspondence |
@@ -377,12 +377,12 @@ composite is the union of its parts' placements.
 
 ### § 3.1-identity-of-an-entity
 
-identity(e of kind K) is the primary key of e (via K's read run from e's vantage, or the
-natural key if K has no read), scoped in identity(identifying-scope instance), recursively,
+identity(e of kind K) is the primary key of e (via K's `resolve()` run from e's vantage, or the
+natural key if K has no `resolve()`), scoped in identity(identifying-scope instance), recursively,
 until a root, a route, or an unknown link. Each level carries the warrants K's owner declared
 for that naming. A composite kind's identity is its owner's function of its parts'
 identities. An entity of an observer-dependent kind carries the O-instance as part of its
-topic. Nothing about identity consults the vantage map except to know where to run reads
+topic. Nothing about identity consults the vantage map except to know where to run `resolve()` calls
 and which ambient instances to bind.
 
 ### § 3.2-compare (one chokepoint, four answers)
@@ -464,15 +464,15 @@ shape (§3.6).
 
 ### § 3.5-committee-law-satisfied
 
-Every positive step is one author's line: a naming and its warrants, a read, a sole-route
+Every positive step is one author's line: a naming and its warrants, a `resolve()`, a sole-route
 flag, a placement set and its sentinel, an entailment and its finished record, a
 correspondence, an observer-independence, a lend. The engine only chains and meets. A
 granting composite ("these two accounts are one") is entailed jointly by the account
-owner's identified-in declaration and the database owner's read, each speaking about their
+owner's identified-in declaration and the database owner's `resolve()`, each speaking about their
 own kind (`28M:rul-composite-meets-toward-guard-run`). A withholding composite (a mount
 perishing an account's resolution) names nobody and needs nobody's consent. Attribution:
 every survival names the sole-route and guarantees-unique-name lines it rested on; every SAME
-names the reads and correspondences; every perished conclusion names the footprint that
+names the `resolve()` calls and correspondences; every perished conclusion names the footprint that
 perished it.
 
 ### § 3.6-dissolved-kept-relitigated
@@ -480,8 +480,8 @@ perished it.
 Dissolved (no counterpart): the context slot as an identity input and the per-index-kind
 trichotomy with its filtered meet (`plans/30W` §4, `26Ob` §10b); the invariance line as one
 thing (split: store half measured, observer half §2.6); substrate tokens; `kind__disjoint` as
-an authored region predicate (containment is traversal membership); `resolve` as a member
-distinct from the read; the selector position and the selector dialect (`277` §3, `30J`);
+an authored region predicate (containment is traversal membership); the canonicalizing `__resolve()` as a member
+distinct from the `resolve()` (they are one member); the selector position and the selector dialect (`277` §3, `30J`);
 the engine-side name-floor carves for File and index-kinds (they are the absent
 guarantees-unique-name warrant); the disclosed-weak default name floor
 (`300:rul-reference-entity-name-floor`) **[LEAN: default safe even when painful]**;
@@ -497,8 +497,8 @@ placeholder and standup witness; the integrity plane; the committee law.
 Re-litigated on the merits: `272` §5 addresses-are-not-coordinates (a placement IS a
 coordinate in another kind, and identity is a fully-qualified key so no store-level collapse
 follows); `279f` §3's refused transport chain (re-opened as fully-qualified keys of
-warranted reads, not as backing completeness); `271:rul-invariance-speech-act` (re-read:
-textual derivation never licenses; an authored read under a typed warrant does; the observer
+a warranted `resolve()`, not as backing completeness); `271:rul-invariance-speech-act` (re-read:
+textual derivation never licenses; an authored `resolve()` under a typed warrant does; the observer
 half stays speech).
 
 ## § 4-epistemics
@@ -527,7 +527,7 @@ line here is the model element it forces.
 - `address-inequality-is-not-referent-inequality` — named-in licenses no disjointness across
   instances; sole-route is a separate, dangerous flag (§2.1, §2.2).
 - `distinct-names-alias-within-a-kind` — guarantees-unique-name is absent by default; the
-  read supplies the primary key (§1.5, §2.2).
+  `resolve()` supplies the primary key (§1.5, §2.2).
 - `containment-by-path-prefix-lies` — the File natural key's namespace is not sole-route;
   containment is traversal membership on the primary-key side (§2.2, §2.8).
 - `namespace-composition-is-not-concatenation` — namespace instances are entities with
@@ -623,7 +623,7 @@ Recorded as what-killed-it, so the dead end is not re-walked.
   tags are ordinary ops, not exotica; and the claim's owner is different at every level.
   Surviving form: the engine vouches only the transit-free local route; every namespace's
   lookup-functionality is its owner's guarantees-unique-referent, opt-in (§1.5, §1.9).
-- MEASUREMENT MAKES DECLARATIONS REDUNDANT (`311h`'s framing). Killed by `311i` §0: a read
+- MEASUREMENT MAKES DECLARATIONS REDUNDANT (`311h`'s framing). Killed by `311i` §0: a `resolve()`
   establishes a token, not its scope, topic, warrant, applicability, or sufficiency.
   Surviving framing: measurement relocates speech to questions the owner can answer.
 - RENAMING RESOLVE INTO IDENTITY FIXES THE FALLTHROUGH IDIOM. Killed by the observation that
@@ -646,7 +646,7 @@ Recorded as what-killed-it, so the dead end is not re-walked.
   procfs); no further hole was found, and none was hunted adversarially.
 - `open-injectivity-derivation` — the human asked for a narrow, stable derivation of
   guarantees-unique-name that does not depend on an attentive author; none was found; the
-  typed warrant on the read is the current answer, held as a dangerous corner.
+  typed warrant on the `resolve()` is the current answer, held as a dangerous corner.
 - `open-no-transit-path-cost` — the static reconstruction of a no-transit probe path for
   observer-independent cells (§2.6) is priced at one declaration per kind; whether the
   stdlib will genuinely pay it for every kind, and what the access-refusal fallback looks
@@ -666,7 +666,7 @@ Recorded as what-killed-it, so the dead end is not re-walked.
   index-kinds; under this model the slot is a vantage (address and witness key) only, and
   the trichotomy meet must not be built; the as-built audit the human deferred decides how
   much of the existing slot is reusable.
-- `open-security-and-hostile-host` — every read here is host-produced bytes crossing the
+- `open-security-and-hostile-host` — every `resolve()` here is host-produced bytes crossing the
   intake boundary; nothing in this model widens what a host may mint (tokens are compared,
   never decoded), but the standing review gates apply before any of it becomes design.
 

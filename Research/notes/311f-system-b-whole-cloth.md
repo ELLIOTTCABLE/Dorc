@@ -39,7 +39,7 @@ under one "stored-in".
 
     identity(R) = (identity(store(R)), canonical name of R within store(R))
 
-recursively, terminating at a kind whose owner supplies a MEASURED token (an identity read run
+recursively, terminating at a kind whose owner supplies a MEASURED token (a `resolve()` run
 in the world the name was resolved in), or at Top. The namespace a name was resolved THROUGH
 is not part of the identity; it is provenance, and it is what the witness re-verifies.
 
@@ -52,7 +52,7 @@ So a Ref is a self-contained value once resolved:
                                                          #   unwalled chain, else unknown
           | Top
 
-`Route` is the honest floor for kinds that declare neither store nor read: their referents are
+`Route` is the honest floor for kinds that declare neither store nor `resolve()`: their referents are
 identified only by how the probe got to them. This is the old context slot, demoted to the
 bottom of the chain and used only when nothing better exists.
 
@@ -84,7 +84,7 @@ sparing still also needs the FOOTPRINT side widened and finished (`disturbance_r
 Note what dissolved: "transport" as a distinct mechanism. If two sites' Refs compare `same`,
 there is one cell; whichever probe read it, read it. The world a fact was measured through
 is provenance, and the witness's job is to confirm the route still reaches that referent at
-apply. `--risk-faultless-skips` still gates sparing; `same` rides the owners' reads and
+apply. `--risk-faultless-skips` still gates sparing; `same` rides the owners' `resolve()` and
 totality sentinels, vouch-tier, exactly as invariance lines did.
 
 ## B3. Who says what (the authored surface)
@@ -144,9 +144,9 @@ Positive answers rest on exactly three authored completeness acts, each one auth
   DISJOINT alike. Without the sentinel, every store-based answer is unknown.
 - `names-are-distinct` (kind owner): distinct canonical names in one store are distinct
   referents. Wrong for a path-like kind = the synonym knife (`23M`'s dangerous cell).
-- `transparent` grade on a read (kind owner): unequal tokens are different referents. Wrong
+- `transparent` grade on a `resolve()` (kind owner): unequal tokens are different referents. Wrong
   for a cloneable token (machine-id on cloned images) = wrong disjoint across clones; but
-  note the read's EQUALITY side is unaffected by that grade.
+  note the `resolve()`'s EQUALITY side is unaffected by that grade.
 
 And one on the footprint side, unchanged: `disturbs nothing-else`.
 
@@ -182,14 +182,14 @@ Silence anywhere ⇒ unknown ⇒ walls. There is no default positive answer left
   environment of routing-namespace instances, consulted at resolution, recorded as
   provenance, verified by the witness. Only `Route(E)` survives as the last-resort store.
 - The per-index-kind trichotomy and the filtered meet over index-kinds.
-- Invariance lines (`undivided-by-transit-across`). Derived from reads. (Could return as a
-  static hint that skips a read, contradiction-checked; not needed for soundness.)
+- Invariance lines (`undivided-by-transit-across`). Derived from a `resolve()`. (Could return as a
+  static hint that skips a `resolve()`, contradiction-checked; not needed for soundness.)
 - Substrate tokens. Kinds.
 - The name floor as a default. Injectivity is declared per kind; silence ⇒ unknown.
 - `resolve` as a separate member. Folded into `identity` with a grade.
 - The engine-side File / index-kind carves. Declarations.
-- The one-sentence volume identity of `30W` §5. Replaced by File's read plus the store
-  chain; a Volume/Filesystem kind's read is where NFS fsid versus local UUID is decided, and
+- The one-sentence volume identity of `30W` §5. Replaced by File's `resolve()` plus the store
+  chain; a Volume/Filesystem kind's `resolve()` is where NFS fsid versus local UUID is decided, and
   the File owner's `located_in` points at it.
 
 ## B7. What B keeps unchanged
@@ -207,8 +207,8 @@ as the naming act; the committee law (every positive link one author's).
 - Value regression for lazy kind-minters: without `names-are-distinct`, same-kind
   different-name pairs no longer spare. The stdlib declares it day one; third parties must
   opt in. This is "silence licenses nothing" applied to the one place it was not.
-- More authored reads: every store kind in a chain needs an `identity` for the chain to
-  license anything; until the stdlib has File, Filesystem, Process, Boot, Host reads,
+- More authored `resolve()`: every store kind in a chain needs an `identity` for the chain to
+  license anything; until the stdlib has File, Filesystem, Process, Boot, Host `resolve()`,
   everything above them is Route-keyed (today's behaviour).
 - A representational rewrite: facts carry Refs, not (coordinate, context). `30W` item 1's
   context-slot product is NOT built; something narrower (the ambient namespace environment)

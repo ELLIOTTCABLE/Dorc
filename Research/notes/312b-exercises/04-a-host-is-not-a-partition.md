@@ -22,7 +22,7 @@ runs. Correct, coarse. This is `26Ob:ack-cross-world-wall-is-the-floor` reproduc
 with no roots.
 
 S2, a true root arrives: the cloud kind's owner declares instance-ids a root (honestly; no
-clone horizon), Machine identifies in Instance, both probes ran every read.
+clone horizon), Machine identifies in Instance, both probes ran every `resolve()`.
 
 ```sh
 #   … → machine-beta  → i-beta   (root)
@@ -37,7 +37,7 @@ and File-in-Filesystem is false on NFS (one export, two client fsids), so an own
 it lazily yields DISJOINT and one who withheld it yields UNKNOWN. Either way alpha's guard is
 spared past beta's postinst unless the File or Filesystem owner thought of NFS.
 
-S3, partial measurement: as S2, but alpha's probe did not run the instance read.
+S3, partial measurement: as S2, but alpha's probe did not run the instance `resolve()`.
 
 ```sh
 #   … → machine-beta  → i-beta   (root)
@@ -66,12 +66,12 @@ S5, neighbours, one host and the export:
 
 ```sh
 mount --bind /srv/shared /mnt/shared   # one host: two paths, one fsid, one inode → SAME by the key walk
-ls -l /mnt/shared/docker.sock          # a socket on the export: the File read returns equal (fsid, inode)
+ls -l /mnt/shared/docker.sock          # a socket on the export: the File `resolve()` returns equal (fsid, inode)
                                        # on both hosts → SAME → yet a connect from alpha fails
 ```
 
 The bind mount is the case the key walk was built for. The socket is a File key reaching a
-kernel object; the File owner's read must decline on it, else a fact about beta's daemon
+kernel object; the File owner's `resolve()` must decline on it, else a fact about beta's daemon
 transports to alpha.
 
 S6, the admin's posture, in behaviour only: "alpha and beta share no store."
@@ -114,7 +114,7 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no store."
 - `obs-same-is-or-across-derivations` — S4: the key walk is "and" over its levels; SAME overall
   is "or" across derivations; the mount line is the correspondence generator and the admin's
   host pairing is its last link.
-- `obs-reads-decline-outside-their-ontology` — S5: the File read declining on non-regular files
+- `obs-reads-decline-outside-their-ontology` — S5: the File `resolve()` declining on non-regular files
   is the net that keeps a borrowed path from minting SAME for a kernel object.
 - `obs-attribution-tests-the-rule` — for any fix: when the case fires, the why chain must name
   a line that could be wrong (the root declaration; a missing sole-route; the admin's posture),

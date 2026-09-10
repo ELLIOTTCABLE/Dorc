@@ -10,13 +10,13 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
 - brk-cell-owner-asked-about-axes: the trichotomy asks a kind owner about index-kinds they
   cannot know. Both replace it with recursion into the store's own identity.
 - brk-store-identity-has-no-generator: cross-world store sameness is one sentence (`30W` §5).
-  Both add a general, graded `kind__identity` read run in the denoted world.
+  Both add a general, graded `kind__identity` `resolve()` run in the denoted world.
 - brk-perishing-has-no-owner: identity answers are "perishable" by nobody. Both make a
   resolution / identity binding a fact with a backing, killed by ordinary reach from the
   routing or store kind's footprints, with `kind__disjoint` deciding region containment.
 - brk-routing-and-containment-conflated: "keyed by K" is routing (names resolve differently
   per K); "stored in S" is containment (state lives in S); the design and A's `stored-in`
-  both conflate them; A is sound on File only because the identity-read base case rescues it.
+  both conflate them; A is sound on File only because the `resolve()` base case rescues it.
   B splits them. -GUESS required in any coherent design.
 - brk-two-bags-for-one-relation: sameness and disjointness come from separate generators; a
   store-level `same` (one NFS file) is what must block a cell-level `disjoint` (L3). Both
@@ -33,9 +33,9 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
   representation must be consumer-neutral: identity by measured containment, route as
   provenance. In B "keyed by Host ⇒ disjoint" cannot be written. `30W` item 1 (the slot
   product, retrofit-hostile, r31 kernel lane) builds A's representation; decide first.
-- D2 invariance lines: A keeps as static shortcut + contradiction-check; B derives from reads.
-  Fossil of the pre-measurement era (272/271 predate 27C entry and 26Ob reads). Lean retire;
-  perf-doctrine says the read is free.
+- D2 invariance lines: A keeps as static shortcut + contradiction-check; B derives from a `resolve()`.
+  Fossil of the pre-measurement era (272/271 predate 27C entry and 26Ob's `resolve()`). Lean retire;
+  perf-doctrine says the `resolve()` is free.
 - D3 name-floor default: A disclosed-weak default-injective; B `names-are-distinct` declared,
   silence ⇒ unknown. Taste/value call; B is the last "silence licenses" hole closed; costs
   third-party kinds sparing until they declare.
@@ -57,12 +57,12 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
   entry forms + `safe-across`; read-set closure; binds; selector dialect; placeholder/witness
   shape; `disjoint` as region predicate.
 - Tier 1 (must change under any coherent design): store member's seat; trichotomy as identity;
-  general identity read; perishing via footprints on routing/store kinds; routing/containment
+  general `resolve()`; perishing via footprints on routing/store kinds; routing/containment
   split; carves → declarations. Fences to re-litigate on merits: `272` §5
   addresses-are-not-coordinates (identity = (store, name), never store alone, so no collapse);
-  `279f` §3 transport refusal (re-opened under totality sentinels and measured reads);
+  `279f` §3 transport refusal (re-opened under totality sentinels and measured `resolve()` calls);
   `271:rul-invariance-speech-act` (re-read: TEXTUAL derivation never licenses; an authored
-  read's measurement does).
+  `resolve()`'s measurement does).
 - Tier 2 (contested): D1–D5 above.
 - Tier 3 (out of scope now): kind-level token registration (`28M` §11); MH2; declared
   cross-kind co-reference; `30J` rungs.
@@ -71,7 +71,7 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
 
 - Why the cruft: each of 272 (sudo/crontab), 27C (wrapped sites), 30W (patch day), 26Ob (ssh)
   solved a real case with a DECLARATION because measurement-in-world was not yet built or
-  trusted; declarations were cheap and silence-safe. Entry forms, identity reads,
+  trusted; declarations were cheap and silence-safe. Entry forms, `resolve()`,
   placeholders and the witness now exist; the declarations are redundant vocabularies for one
   question. Pattern: when a measurement mechanism lands, sweep the declarations it obsoletes.
 - Framing boundary: both systems are one lens (containment chains). Alternatives outside it:

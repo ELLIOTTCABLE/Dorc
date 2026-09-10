@@ -146,7 +146,7 @@ arrival cannot decide whose semantic completeness promise covered the union.
 
 **Assessment: concrete incorrect inference in A5.**
 
-A2 deliberately permits an IDENTIFYING read: equal tokens prove sameness, unequal
+A2 deliberately permits an IDENTIFYING `resolve()`: equal tokens prove sameness, unequal
 tokens say nothing. Such a reader can legally return different route-qualified handles
 for one shared object. For example, two mounts can provide distinct identifying handles
 for the same file; equality of either complete handle remains a valid identification
@@ -178,20 +178,20 @@ the generic File identity body, including NFS-specific knowledge. A4 makes posse
 of an identity reader the recursion's base case.
 
 The available knowledgeable speaker for an identifier's scope may be the filesystem or
-storage-provider owner, not the File owner. If a File read returns a local object key,
+storage-provider owner, not the File owner. If a File `resolve()` returns a local object key,
 there must be a way for that key to remain qualified by its owning filesystem rather
 than either becoming a terminal global token or forcing the File author to assemble
 one. “There is an identity member” is not itself evidence that its answer can replace
 all store qualification.
 
-The precedence also matters for a kind with both an identity read and useful stores:
-if the read declines, does A4 return unknown immediately, or attempt the store recursion?
+The precedence also matters for a kind with both a `resolve()` and useful stores:
+if the `resolve()` declines, does A4 return unknown immediately, or attempt the store recursion?
 The written base case appears to choose the former. That loses value the other
 information may still support. If both routes answer, reconciliation is unspecified;
 resolve-then-identity is a sequence, not a model of alternative witnesses.
 
 Cloning illustrates the distinct grades precisely: equal cloned UUIDs threaten SAME.
-Multiple different identifiers for one shared object threaten DISJOINT if the read was
+Multiple different identifiers for one shared object threaten DISJOINT if the `resolve()` was
 wrongly declared transparent. A horizon sentence must describe which promise is really
 being made; it is not a substitute for the appropriate knowledgeable contributor.
 
@@ -263,7 +263,7 @@ conclusion that may itself justify omitting redundant measurement. Nor does abse
 of a disagreement prove identity correct.
 
 The record should also not imply that a disagreement uniquely identifies the bad bind.
-A wrong identity read, mistaken siting, faulty check, or wrong binding can produce
+A wrong `resolve()`, mistaken siting, faulty check, or wrong binding can produce
 conflicting observations. The why-chain can expose the relevant collaborating lines;
 without further evidence it cannot diagnose the bind as the sole culprit.
 

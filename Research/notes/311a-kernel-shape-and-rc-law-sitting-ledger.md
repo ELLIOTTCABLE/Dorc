@@ -128,7 +128,7 @@ is stores and identity. Four rules:
   a new Host resets Container to the new ambient" is a derived `same` with that ambient and is
   NOT license-free; it is the ssh author's reset sentinel, or nothing.
 - `rule-same-is-generated` — across differently-keyed contexts, `same` needs a measured
-  identity token (the owner's read) or a declared invariance of the name's resolution across
+  identity token (the owner's `resolve()`) or a declared invariance of the name's resolution across
   the differing kinds; `disjoint` needs referent-transparent tokens that differ, under the flag;
   else unknown. Names are never arithmetic.
 
@@ -191,7 +191,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
 
 - Every generator's absent or lazy answer lands on unknown, and unknown (and `unrelated`) is
   safe for both consumers: `resolve` absent ⇒ may-alias · `overlaps` absent ⇒ collide ·
-  referent-transparency undeclared ⇒ names are names · identity read absent ⇒ placeholder never
+  referent-transparency undeclared ⇒ names are names · `resolve()` absent ⇒ placeholder never
   binds · invariance absent ⇒ keyed or ⊤ ⇒ no transport · store declaration absent ⇒ ⊤ ⇒ the
   filtered meet answers unknown · "one map has a kind the other lacks" ⇒ unknown · a wrapper
   silent on a kind ⇒ ⊤.
@@ -209,17 +209,17 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   equal tokens across DIFFERENT entry chains, is it a closed claim (vouch-tier, unflagged) or
   survival-grade? `26M`'s un-acked rider argued survival-grade for hosts;
   `FORFEITS:forfeit-no-host-merging` makes it moot at v0 for Host only; live for Container or
-  User the moment a read exists. The turn must read `plans/28M`, `28K`, `30J` (not in this
+  User the moment a `resolve()` exists. The turn must read `plans/28M`, `28K`, `30J` (not in this
   sitting's window; the law as steering states it — one closure's dialect, custody as one
   newtype, `rul-vouch-reaches-own-custody-only`, 30T §3.3 input separation — was). First read
-  only: one speaker's read compared with itself, but the transport it licenses crosses custody
-  (author X's fact in world A reaching X's site in world B on owner Y's read and entries Z1/Z2).
+  only: one speaker's `resolve()` compared with itself, but the transport it licenses crosses custody
+  (author X's fact in world A reaching X's site in world B on owner Y's `resolve()` and entries Z1/Z2).
 - `ack-names-are-literal-narratives` [TYPED 2026-09-05] — "every step toward same or disjoint
   has an author's name on it" is literal: each generator mints a Narrative at build time
   (`AID-NEEDS:law-collapse-mints-narrative`, `trust-tier-is-syntax`) and the name reaches the
   angry user at `why`-time.
 - `note-enhancement-curve-survey-wanted` [human, 2026-09-05] — with `overlaps`, finished
-  definitions, store sentinels, identity reads, and lends sentinels all ahead of cross-kind
+  definitions, store sentinels, `resolve()`, and lends sentinels all ahead of cross-kind
   elision, USER_STORY has gained several oracle-author stages before anything elides; not
   necessarily bad (correctness is never traded for value without extreme motivation), but a
   full survey of the gradual-enhancement curve is wanted at some point. Not scheduled.
@@ -257,8 +257,8 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   through, ≥2 before entry is siting decline. (2) `__is_converged`: 0 holds / 1 complement /
   ≥2 can't-say; rc-borne because its danger is self-scoped (own tool's line) and 0 is
   errexit-unreachable; the admin's lifted hand-guard has no emission to give. (3) every other
-  member (`disturbs`, `disturbance_reaches`, `state_stored_in`, `lend_map`, `resolve`, the
-  identity read, `overlaps`, the fs binder): rc is COMPLETION only — 0 ran to the end and its
+  member (`disturbs`, `disturbance_reaches`, `state_stored_in`, `lend_map`, `__resolve()`, the
+  `resolve()`, `overlaps`, the fs binder): rc is COMPLETION only — 0 ran to the end and its
   lines are read; non-zero died, everything withheld, collisions retained
   (`inv-30U-collide-on-integrity-failure-keeps-collisions`). No license rides a non-zero rc
   anywhere; knife-tier acts are tail-position records. rc 1 and rc 3 have no Dorc meaning
@@ -277,7 +277,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   may-alias); human-authored doc, suggested edit only. `exception-enter-is-structural`: the
   entry form's danger is the act of entering, priced by 27C's siting vouch, nothing to sentinel.
 - `fnd-one-line-plus-rc-zero-is-not-enough` [FOUND; the human asked for pedantry] — a
-  single-line answer (`resolve`, the identity read) under rc 0 is NOT a completion witness: an
+  single-line answer (`__resolve()`, the `resolve()`) under rc 0 is NOT a completion witness: an
   answer's content is OPEN (any prefix of a name is a valid name — `nginx-full` truncated to
   `nginx`), so a partial write followed by an explicit `return 0` under errexit-off yields a
   valid-looking wrong answer; a shared batch stdout interleaves writers above PIPE_BUF; `$( )`
@@ -285,8 +285,8 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   grammar tail sentinel (a truncated sentinel is not-a-sentinel), per-body capture never a
   shared stream, byte-level "exactly one `\n`-terminated line" counting, and either the
   sentinel on the SAME stream as what it witnesses or scaffold-declared errexit (a failed write
-  makes `printf` return non-zero and abort before the sentinel). So `resolve` and the identity
-  read are owed the sentinel like every emission member; and the existing cross-stream
+  makes `printf` return non-zero and abort before the sentinel). So `__resolve()` and the
+  `resolve()` are owed the sentinel like every emission member; and the existing cross-stream
   `disturbs nothing-else` (entities on stdout, record on the sink) is sound only under
   scaffold-declared errexit or a same-stream layout — a dependency to write down (§8).
   [REFINED §9: under scaffold-declared errexit, regime-3 bodies need NO compiled sentinel —
@@ -294,7 +294,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
 - `srv-knife-consents-without-a-sentinel` [FOUND] — static marks (`undivided-by-transit-across`,
   referent-transparency, static `disturbs` arms) need none; emission members have or gain one
   (`disturbs nothing-else`, `stored nothing-else`, `lends nothing-else`, the `overlaps` record);
-  `resolve` and the identity read gain one per the previous item. The fs binder inherits the
+  `__resolve()` and the `resolve()` gain one per the previous item. The fs binder inherits the
   record rule by riding the `disturbs` rails.
 
 ## §7 — the cleanup pass OWED (do not start piecemeal; one pass, human-directed)
@@ -313,7 +313,7 @@ and fidelity shapes 26Ob owed) · `ANALYZER-NEEDS` (`an-kind-resolver`, `an-comp
 passing: the stage-6 resolver strawman's `|| printf '%s\n' "$1"` fallthrough is the split knife
 — the human's lean is to make the correction a STEP in the story, narrowing it, rather than a
 silent fix; also the enhancement-curve stages §5 notes) · `notes/26Ob` §10a/§10c strawmen
-(superseded notes for the `: fs` marks and the identity read's sentinel) · `notes/272` §2/§3
+(superseded notes for the `: fs` marks and the `resolve()`'s sentinel) · `notes/272` §2/§3
 (superseded notes: substrate tokens; the carried-by table) · `notes/30D` (the predict compile
 and the signal-status rule, §9) · `plans/27C` §5 (the probe artifact's private-mechanics
 license now carries the predict compile).
@@ -397,8 +397,8 @@ license now carries the predict compile).
   for predicts, and errexit alone cannot help: an errexit abort mid-body returns the failing
   step's status, indistinguishable from an intended non-zero answer.
 - `fnd-regime-three-needs-no-compiled-sentinel` [FOUND; the refinement] — for emission and
-  single-answer members (`disturbs`, `reaches`, `state_stored_in`, `lend_map`, `resolve`, the
-  identity read, `overlaps`, the fs binder) the answer is in the LINES, so rc is free to mean
+  single-answer members (`disturbs`, `reaches`, `state_stored_in`, `lend_map`, `__resolve()`, the
+  `resolve()`, `overlaps`, the fs binder) the answer is in the LINES, so rc is free to mean
   completion: scaffold-declared errexit ON plus "0 = ran to the end" IS the witness (an abort
   or a failed `printf` on a short write lands non-zero; `rul-oracles-always-return-zero`). No
   inserted sentinel; the `nothing-else` records remain the authored totality acts. Per-body

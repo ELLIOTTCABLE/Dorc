@@ -46,7 +46,7 @@ the main window. The raw sweeps are ephemeral; what they yielded is below.
 Each needs a typed reversal or a re-ack; chat leans do not overturn typed rulings.
 
 - `reack-invariance-speech-act` — `271:rul-invariance-speech-act` (TYPED 2026-07-12), both
-  clauses. The ingredient-axis line becomes a measured read under the owner's
+  clauses. The ingredient-axis line becomes a measured `resolve()` under the owner's
   guarantees-unique-referent warrant, with the observer half kept as speech (`311` § 2.6); the
   substrate-invariance-is-engine-warranted clause goes with `30T:rul-engine-holds-no-world-facts`.
   The forcing cases (the crontab pair; nvm and mise) still land unknown.
@@ -63,7 +63,7 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
   behaviour (unspoken, then collide unless the owner's finished definition speaks); `30J`'s P2
   gate on strangers has no counterpart (~SUSPECT it wants a seat in assignment, not a rule).
 - `reack-name-floor-default` — `300:rul-reference-entity-name-floor` (ruled; human-corrected
-  2026-08-15), dissolved toward default-safe; a kind with no read gets no same-kind sparing.
+  2026-08-15), dissolved toward default-safe; a kind with no `resolve()` gets no same-kind sparing.
 - `reack-cross-kind-same-now-exists` — `23O:synonym-cell-scoped` and the second clause of
   `spike/CLAUDE.md:top-identifies-with-nothing`. Cross-kind SAME arrives through a shared
   identifying scope (`311` § 3.2), delivering `24M:rul24M-kind-unify-owed`; the mechanism is
@@ -75,10 +75,10 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
 Walked and preserved, no action: the sudo-crontab and dpkg-under-sudo pair; the docker default
 socket (`272` § 4); the sysctl inversion (Sysctl identified-in Boot needs no substrate word);
 policyctl's unmarked read (the read-set closure stays as the net); the nginx/nginx-full alias
-(the read supplies the primary key); the enabled/active pair (two aspect-kinds, two scopes); the
+(the `resolve()` supplies the primary key); the enabled/active pair (two aspect-kinds, two scopes); the
 store member's argv blindness (SITE-supplied instances); `272` § 5 addresses-are-not-coordinates
 (placement feeds collision only; no identity merge); the refused transport chain (`279f` § 3,
-re-opened only as warranted reads); the committee law (`28M` § 8: every positive step is one
+re-opened only as a warranted `resolve()`); the committee law (`28M` § 8: every positive step is one
 author's line); never-derive-separation.
 
 ## § 3-prior-seat-assignments-each-to-be-re-verified

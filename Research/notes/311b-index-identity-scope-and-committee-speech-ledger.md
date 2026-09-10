@@ -20,8 +20,8 @@
 ## §0 — Current position
 
 **The question is not whether equal raw strings identify one world.** Names already
-retain their entry context. The unsettled proposal would let an owner-authored identity
-read bind separately keyed placeholders to tokens and use matching answers to establish
+retain their entry context. The unsettled proposal would let an owner-authored `resolve()`
+bind separately keyed placeholders to tokens and use matching answers to establish
 sameness across different entry chains. What authored speech grants that bridge, and how
 broad is it?
 
@@ -50,7 +50,7 @@ existing kind and how that relates to the overloaded term “store.”
   prior reasoning in one particular sharp corner. Number of authors alone is not a new
   safety boundary. Whether this corner merits comparable machinery is itself in question.
 - **`cor-entry-context-was-already-preserved` [CORRECTION]** — the assistant's example
-  of two `id -u` reads returning `0` omitted the existing/proposed context qualification.
+  of two `id -u` `resolve()` calls returning `0` omitted the existing/proposed context qualification.
   The human recalls that names are keyed by entry path or adjacent machinery, and that
   escaping this qualification should require positive speech such as invariance. The
   corrected question is the authority for a NEW cross-chain bridge, not repair of an

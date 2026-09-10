@@ -31,7 +31,7 @@ disabled. Cardinal sin, and it looks reasonable from the acct author's chair.
 `311` § 2.2: a kind's identifying scope is at most one, declared by its owner. The acct author
 knows their database file; they do not know NFS. If they identify accounts in the database File
 (SITE-supplied from `--db`), the chain runs outward through kinds whose owners do know: File
-identified-in Filesystem by the File owner's read; Filesystem identified-in a local device or
+identified-in Filesystem by the File owner's `resolve()`; Filesystem identified-in a local device or
 an NFS export by the filesystem owner, per filesystem type; the export identified-in a server
 the client resolves from its own vantage. At that step the chain meets a hostname resolved from
 beta's vantage, and `resolution-is-set-valued` with `a-name-resolves-from-a-vantage` make the
@@ -63,7 +63,7 @@ The socket: a File natural key reaching a kernel object. If the docker author la
 File coordinate for the socket path, the File owner's correct warrants make it SAME across the
 shared mount, and a fact about the daemon transports to a host where the connect fails. The
 model's answer is § 2.7: the socket is a kind named-like File, identified-in the kernel. The net
-for lazy borrowing is that the File owner's read declines on referents outside File's ontology
+for lazy borrowing is that the File owner's `resolve()` declines on referents outside File's ontology
 (sockets, FIFOs, devices), exactly as `30T`'s binder already declines; then a borrowed File
 coordinate on a socket path reads unknown, not SAME.
 
@@ -79,7 +79,7 @@ ruling.
 
 Can know at all: the acct author (the store is the `--db` file); the File owner (inode in
 filesystem); the filesystem owner (per-type identity: UUID, server and export); the admin (that
-the export's server is the ssh target); the host (each read).
+the export's server is the ssh target); the host (each `resolve()`).
 
 Can reasonably know: exactly the above, one link each. The acct author must not be asked about
 NFS; the filesystem owner must not be asked about accounts.
@@ -90,7 +90,7 @@ unnatural to write and lint-able. A wrong correspondence from a mount line is a 
 attributed to the mount owner's derivation or to the admin's host-sameness line; the remedy
 forks two ways, which `30V:rul-remedies-may-fork` already allows.
 
-Verification. Every link but the last is a read. The last is the admin's word, and the standup
+Verification. Every link but the last is a `resolve()`. The last is the admin's word, and the standup
 witness can catch a changed target but not a wrong pairing.
 
 Residue if nobody speaks. Unknown at the vantage step; guard; correct for this book. Attention
@@ -104,7 +104,7 @@ cost only.
   oracle; the correspondence derives from the argv the admin wrote.
 - `lead-cross-host-same-bottoms-out-in-the-admin`: every cross-host SAME chain ends at host
   sameness, which is the admin's seat by typed ruling; the model needs that seat to exist.
-- `lead-reads-decline-outside-their-ontology`: a kind owner's read declines on referents its
+- `lead-reads-decline-outside-their-ontology`: a kind owner's `resolve()` declines on referents its
   kind does not describe; the mechanical net for lazy coordinate borrowing.
 - `lead-warrantless-tokens-are-witness-only`: endpoint witnesses (host keys, stamps) never
   license; already true, worth stating.

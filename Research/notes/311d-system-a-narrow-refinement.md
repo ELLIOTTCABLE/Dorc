@@ -11,8 +11,8 @@ Today a cell's cross-context identity is answered by its KIND's owner filling a 
 index-kinds (invariant / keyed / T). Under System A a cell's identity is answered by following its
 STORE POINTERS: each store pointer is a coordinate in another kind, declared at the site that
 mints the cell (so it can carry the site's argv), and the store's kind owner answers identity by a
-measured READ run in the site's world. Recursion bottoms out at a kind with an identity read, or
-at unknown. The index-kind slot survives as "which world the reads run in" and as the batching /
+measured `resolve()` run in the site's world. Recursion bottoms out at a kind with a `resolve()`, or
+at unknown. The index-kind slot survives as "which world the `resolve()` calls run in" and as the batching /
 placeholder key, no longer as a set of axes the cell's owner must have opinions about.
 
 ## A1. New speech act: the store pointer mark (per site, per coordinate)
@@ -41,7 +41,7 @@ Kind-level fixed stores stay where they are: `kind__state_stored_in` (per-arm, d
 `30W` item 6) emits store pointers as KIND COORDINATES (`: stored-in sm.dorc.File`, entity on
 stdout: `/var/lib/dpkg/status`). A cell's store set = kind-level pointers ∪ site-level pointers.
 Substrate tokens (`fs`, `process`, `kernel`) are gone; they were kinds all along
-(`sm.dorc.File`, `sm.dorc.Process:1`, `sm.dorc.Kernel`), each needing an identity read for the
+(`sm.dorc.File`, `sm.dorc.Process:1`, `sm.dorc.Kernel`), each needing a `resolve()` for the
 recursion to terminate (`311a` nit, taken to its end).
 
 Totality: `stored nothing-else` (the ruled decomposition's sentinel) governs whether the store
@@ -50,7 +50,7 @@ store-based comparison answers unknown (A4). This is stricter than `30W` §3's "
 unlisted store collides" and it has to be: with an undeclared shared store (a global index
 file), two cells with disjoint declared stores are not disjoint either.
 
-## A2. New kind member: the identity read, generalized
+## A2. New kind member: the `resolve()`, generalized
 
 `kind__identity()` (the `26Ob` §10c strawman for Host, generalized to every kind): invoked with
 an entity, executed in the denoted world at the latest sound phase, prints ONE line the engine
@@ -80,8 +80,8 @@ debt, flagged: the default is a silence-licenses case. Not fixed in A.
 
 Unchanged shape: a finite map index-kind → index-value (entered / measured placeholder / T);
 `ssh beta` lends Host=beta, `sudo -u alice` lends User=alice, `chroot /mnt` lends
-MountNamespace=(entered). Its jobs under A: (i) name the world a read executes in; (ii) the
-batching / placeholder key `sk(E, K)`; (iii) for kinds with NO stores and no identity read, the
+MountNamespace=(entered). Its jobs under A: (i) name the world a `resolve()` executes in; (ii) the
+batching / placeholder key `sk(E, K)`; (iii) for kinds with NO stores and no `resolve()`, the
 wall (any context difference ⇒ unknown, as today). It is NOT consulted per-kind through an
 owner's trichotomy table any more. Host need not be referent-transparent for Account's sake;
 only Account's stores' tokens must be.
@@ -103,9 +103,9 @@ only Account's stores' tokens must be.
        if s = disjoint ∧ total               ⇒ provably-disjoint
        else                                  ⇒ unknown
 
-    base case: K has an identity read ⇒ compare tokens read in c1 and c2 (equal ⇒ same;
+    base case: K has a `resolve()` ⇒ compare tokens read in c1 and c2 (equal ⇒ same;
     unequal ⇒ disjoint iff referent-transparent else unknown; unbound / declined ⇒ unknown).
-    K has neither stores nor a read ⇒ same iff c1 = c2 as maps and names same (today's
+    K has neither stores nor a `resolve()` ⇒ same iff c1 = c2 as maps and names same (today's
     within-context floor); unknown across any context difference.
     cycles in the pointer graph ⇒ unknown (depth-capped).
 
@@ -119,9 +119,9 @@ Consequence: sameness and disjointness now come out of ONE recursion. A store-le
 ## A5. Invariance lines become derivable; keep them as static shortcuts
 
 `: undivided-by-transit-across K'` for kind K says "my stores' identities are equal across
-values of K'". Under A that is what the identity reads would find. Keep the line as a static
+values of K'". Under A that is what the `resolve()` would find. Keep the line as a static
 assertion that (a) saves a measurement where the owner is sure and (b) is CONTRADICTION-CHECKED
-against reads where both exist (tokens differ ⇒ declarations-genuinely-contradict ⇒ fail-fast,
+against a `resolve()` where both exist (tokens differ ⇒ declarations-genuinely-contradict ⇒ fail-fast,
 pre-network where static, refuse-both otherwise). The trichotomy table (`30W` §4) is subsumed:
 "keyed by K'" is derived from unequal store tokens across K' (Service@active stored-in
 Process:1, whose identity is the boot token); "invariant" from equal ones (Package stored-in
@@ -153,7 +153,7 @@ those verbs' oracles emit footprints in File vocabulary; until they do, still to
 
 ## A7. The witness and the placeholder, unchanged in shape
 
-Identity reads bind placeholders at probe (`sk(E, K)` per entry chain); re-run at apply standup
+A `resolve()` binds placeholders at probe (`sk(E, K)` per entry chain); re-run at apply standup
 and after every fired transit disturbance; mismatch is integrity (withhold), never a verdict
 input (`30W` §4; `26Ob:cor-standup-witness-licenses-bare-line-elision`). Two sites under one
 entry chain share a placeholder pre-measurement as today.
@@ -161,7 +161,7 @@ entry chain share a placeholder pre-measurement as today.
 ## A8. The runbook under A
 
 - Marks: `Account:"$dir/$num"@enabled stored-in File:"$db"` in the verdict; the same store
-  pointer on the disturbs emission. File declared non-injective; File identity read returns a
+  pointer on the disturbs emission. File declared non-injective; File `resolve()` returns a
   cross-host-comparable (fsid, inode) or declines.
 - L1@alpha, L3@alpha: File:/srv/people/accounts.db → token T. L2@beta, L4@beta:
   File:/mnt/team/people.db → token T (the shared export). Account's store set is total (one
@@ -173,11 +173,11 @@ entry chain share a placeholder pre-measurement as today.
   own probe is diverged ⇒ runs. Correct. Bare-`7` binding: names same, stores same ⇒ same ⇒ L1's
   fact transports and meets L4's own contrary measurement ⇒ disagreement ⇒ unknown ⇒ run, with
   the why-chain naming the acct author's bind. Knife lands on the right author.
-- File read declines cross-host: s = unknown ⇒ L3 collides (safe), L1 does not transport (safe).
+- File `resolve()` declines cross-host: s = unknown ⇒ L3 collides (safe), L1 does not transport (safe).
 - A `mount` under /mnt/team between L1 and L2: beta's File identity perishes below it; L2's
   footprint store is unknown ⇒ compare with L3's T ⇒ unknown ⇒ collide. Safe. L4's store is
   unknown ⇒ nothing transports into it. Safe.
-- sudo/crontab (`272` §0): Cron cell stored-in File:/var/spool/cron/crontabs/$(id -un); read
+- sudo/crontab (`272` §0): Cron cell stored-in File:/var/spool/cron/crontabs/$(id -un); `resolve()`
   as alice vs root ⇒ different inodes ⇒ disjoint. dpkg: same inode ⇒ same ⇒ the alice-measured
   fact answers the root site. Zero invariance lines.
 
@@ -213,7 +213,7 @@ entry chain share a placeholder pre-measurement as today.
   the recursion to terminate at a measured token, and the token's horizon carries the aliasing.
 - Cross-host token comparability rests entirely on each store kind owner's horizon sentence;
   nothing mechanical checks that a token is host-stable.
-- The identity read runs per (pointer × world) at probe: one more authored body shipped per
+- The `resolve()` runs per (pointer × world) at probe: one more authored body shipped per
   store kind per world. Network-cheap; authorship-costly for the stdlib.
 - Still two vocabularies for "where my state is": the kind-level member and the site-level
   mark. Coherent, but two.

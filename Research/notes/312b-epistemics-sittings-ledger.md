@@ -33,7 +33,7 @@ From `312b-exercises/01` (placement parametric in an observer: pipx, `sudo git c
 --global`, nvm):
 
 - `lead-computed-namespace-instance` — a namespace instance or placement can be a function of
-  ρ and of another kind's read (`${PIPX_HOME:-$HOME/.local/pipx}`); `311` § 2.1's three supply
+  ρ and of another kind's `resolve()` (`${PIPX_HOME:-$HOME/.local/pipx}`); `311` § 2.1's three supply
   modes have no room for it. A fourth, COMPUTED, of which SITE and AMBIENT may be special
   cases; unknown inputs make the instance unknown.
 - `lead-ask-the-tool-for-its-store` — measure-in-context as the cheap rung: the tool prints
@@ -71,7 +71,7 @@ mount, the host key):
   oracle; the correspondence derives from the argv the admin wrote.
 - `lead-cross-host-same-bottoms-out-in-the-admin` — every cross-host SAME chain ends at host
   sameness, the admin's seat by typed ruling; the model needs that seat.
-- `lead-reads-decline-outside-their-ontology` — a kind owner's read declines on referents its
+- `lead-reads-decline-outside-their-ontology` — a kind owner's `resolve()` declines on referents its
   kind does not describe (File on a socket); the mechanical net for lazy coordinate borrowing.
 - `lead-warrantless-tokens-are-witness-only` — endpoint witnesses (host keys, stamps) never
   license.
@@ -107,7 +107,7 @@ with and without a declared root):
 Cross-cutting, seen in all four: the admin seat is missing and every exercise hit it
 (overrides; sudoers; host pairing; the cross-target posture). Convert-to-read recurs as the
 newbie rung. Policy dependence recurs as the shape that splits a claim between an author's
-default and an admin's deployment. Reads that decline outside their kind's ontology recur as
+default and an admin's deployment. A `resolve()` that declines outside its kind's ontology recurs as
 the mechanical net for lazy borrowing.
 
 ## § 3-time-sitting-banked

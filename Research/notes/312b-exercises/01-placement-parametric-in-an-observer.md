@@ -37,7 +37,7 @@ an sh expansion over the environment, falling back to the observer's passwd home
 unset. § 2.3's placements have the same shape. § 2.8's traversal decomposes a key into the
 namespace's own entities; here the first step of the path is not a directory entry but an
 environment or User resolution. Three strains, one cause: a namespace instance can be a
-function of ρ and of another kind's read, and the model has no supply mode for that.
+function of ρ and of another kind's `resolve()`, and the model has no supply mode for that.
 
 The nvm line is the same strain from the command-word side: `node` is a natural key in the
 engine's own PATH-search namespace (§ 1.9's transit-free local route), and a sourced file
@@ -71,7 +71,7 @@ mechanical, which makes both seats safer than their leverage suggests.
 
 Transformation menu. Declare the rule as an sh expression the engine evaluates over ρ at the
 site, unknown where ρ is unknown. Or ask the tool where its store is, in the denoted context,
-as a read owned by the tool author returning a File coordinate: costs a probe, needs the tool
+as a `resolve()` owned by the tool author returning a File coordinate: costs a probe, needs the tool
 to expose it, cannot be reasoned statically, but is the cheap rung and robust to overrides. Or,
 for the wrapper half, ask sudo's policy and decline on surprise (the same shape as asking
 apt-config for hooks).
@@ -83,7 +83,7 @@ or run. Monotone: every added half buys its sites and none removes a prior one.
 ## Leads and wants
 
 - `lead-computed-namespace-instance`: a fourth supply mode, COMPUTED, an sh expression over ρ,
-  argv, and reads of ambient instances; SITE and AMBIENT may be its special cases. Unknown
+  argv, and a `resolve()` of ambient instances; SITE and AMBIENT may be its special cases. Unknown
   inputs make the instance unknown.
 - `lead-ask-the-tool-for-its-store`: measure-in-context as a rung for namespace instances and
   placements, owned by the tool author, returning a coordinate in another kind. The newbie
@@ -97,7 +97,7 @@ or run. Monotone: every added half buys its sites and none removes a prior one.
 - `lead-policy-dependent-lends-split-two-ways`: the wrapper author declares the default lend;
   the admin's seat overrides per deployment; the wrapper's oracle may read the policy and
   decline. Same split as exercise 02's sudoers case.
-- `want-user-home-read-in-stdlib`: the passwd home of a User is a read the User kind owner
+- `want-user-home-read-in-stdlib`: the passwd home of a User is a `resolve()` the User kind owner
   supplies, so a tool author's rule can name "the observer's home" without owning it.
 
 ## Open
