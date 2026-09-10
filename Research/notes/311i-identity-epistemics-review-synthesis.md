@@ -15,22 +15,22 @@ important reservation about `311h` is its explanation that declarations became
 redundant once measurement-in-context arrived. Even granting mature, working identity
 measurement machinery, this conclusion does not generally follow.
 
-A `resolve()` can establish that an invocation returned a token. It cannot alone establish:
+A `resolve()` can establish that an invocation returned a mToken. It cannot alone establish:
 
-- the namespace within which that token identifies something;
-- which subject or aspect the token identifies;
+- the mNamespaceInstance within which that mToken identifies something;
+- which subject or aspect the mToken identifies;
 - whether equal or unequal answers warrant a particular relation;
-- whether the relationship remains applicable after a namespace change;
+- whether the relationship remains applicable after a mNamespaceInstance change;
 - whether the identified object's sameness suffices for the claim being consumed.
 
 Both proposals retain substantial authored contracts precisely because of this gap:
 identity grades, store completeness, injectivity, and horizons. Measurement can replace
 a particular speculative assumption or answer a formerly static question. It does not
 make those semantic obligations disappear. Moving the obligation from an invariance
-line to a token reader or store sentinel changes its owner, scope, and failure anatomy.
+line to a mToken reader or store sentinel changes its owner, mScope, and failure anatomy.
 That move may be valuable, but it requires its own justification.
 
-The concrete witness is System A's identifying-only grade: unequal tokens explicitly
+The concrete witness is System A's identifying-only grade: unequal mTokens explicitly
 mean no separation conclusion, yet A5 uses them to refute invariance. A better
 measurement does not supply the missing implication. The authored grade must continue
 to govern what the answer means on EVERY consumer path.
@@ -45,7 +45,7 @@ same containment-chain lens.
 The reviews support several underlying REQUIREMENTS:
 
 - invocation-dependent addressing information must be expressible by someone who has it;
-- identifiers must retain or explicitly justify their comparison scope;
+- identifiers must retain or explicitly justify their comparison mScope;
 - the full subject of the consumed claim must remain identifiable;
 - relationship validity must respond to relevant modeled mutations;
 - multi-author contributions must have a compositional contract with repairable owners.
@@ -66,20 +66,20 @@ selection proof.
 
 **`finding-world-keys-are-not-the-same-as-world-partitions` [CONCLUSION]** — D1 in `311h`
 correctly rejects using distinct hosts to spare state on a shared volume. But it
-attributes too much of that failure to retaining world qualification in a key.
+attributes too much of that failure to retaining mWorld qualification in a mKey.
 
-A qualified key can be an address of a question or unresolved belief without declaring
+A qualified mKey can be an address of a question or unresolved belief without declaring
 an independent partition of reality. The wrong inference is “different qualified
-keys therefore disjoint state.” A comparison relation can refuse that inference and
+mKeys therefore disjoint state.” A comparison relation can refuse that inference and
 establish cross-context relationships where justified.
 
-Conversely, dropping context from the final object key does not guarantee safety. The
+Conversely, dropping context from the final object mKey does not guarantee safety. The
 reviews' writable-file specimen shows why relevant contextual inputs may still be
 needed to identify the full subject of an observation. Calling these inputs provenance
 cannot make them semantically inert.
 
-**[DIRECTION]** Before choosing key-versus-route representation, state which conclusions
-can forget which qualification, under which witness. Distinguish the subject identified
+**[DIRECTION]** Before choosing mKey-versus-mRoute representation, state which conclusions
+can forget which qualification, under which `witness()`. Distinguish the subject identified
 from the addressed occurrence and from the conditions of the claim about it. This is
 not a requirement for three new authored concepts; it is the semantic obligation any
 representation must satisfy.
@@ -94,19 +94,19 @@ review findings repeatedly identify available knowledge held by the wrong prospe
 owner of the proposed identity function:
 
 - the tool author knows base-versus-overlay roles, which an unordered store set loses;
-- the filesystem/provider author knows the scope of an object key;
+- the filesystem/provider author knows the mScope of an object mKey;
 - the database implementation author knows WAL, shard, or replica placement;
 - the container manager knows that guest PID 1 corresponds to a particular outer PID;
-- the namespace/path describer knows which traversal inputs an object lookup used.
+- the mNamespaceKind/path describer knows which traversal inputs an object lookup used.
 
-A single kind-owner `resolve()` in the denoted context cannot necessarily obtain all of those
+A single mKind-owner `resolve()` in the denoted context cannot necessarily obtain all of those
 facts. Another author may be able to state a precise correspondence or dependence
 without supplying a globally comparable identifier for the leaf object.
 
 **[DIRECTION]** Ask how each such local contribution enters the model, what exactly it
 asserts, and how it combines with another contribution. Do not require the generic
-leaf-kind owner to acquire every provider's knowledge merely to produce one terminal
-token. Nor should a second author's useful contribution automatically require merging
+leaf-mKind owner to acquire every provider's knowledge merely to produce one terminal
+mToken. Nor should a second author's useful contribution automatically require merging
 their entire speaker closures.
 
 This is the promising epistemic target: structurally assigning each link to the author
@@ -120,7 +120,7 @@ on a finished store description. A sentinel can close an author's declared set, 
 to the execution and integrity contract. It does not supply the semantics of that set.
 
 System A's base/overlay specimen can enumerate all participating files accurately and
-still lose which role each file plays. Its kind-level plus site-level union also needs
+still lose which role each file plays. Its mKind-level plus mSite-level union also needs
 a speaker for the combined sufficiency promise. System B's physically stored-in relation
 does not automatically warrant exclusive containment. These are not omissions cured
 by insisting the existing list be finished more carefully.
@@ -165,13 +165,13 @@ where the authored statement already supplies enough information.
 
 **`finding-truth-and-address-validity-have-different-dependencies` [CONCLUSION]** — a
 name can cease to address an object without that object changing. An object can change
-without its name changing. Both proposals intend to use effective-world reach, which
+without its name changing. Both proposals intend to use effective-mWorld reach, which
 is appropriate, but the facts it invalidates must retain the relevant dependencies.
 
-A retained object token does not preserve the binding of a pathname through a replaced
-symlink. A namespace mutation need not mutate the old target object. Asking whether two
+A retained object mToken does not preserve the binding of a pathname through a replaced
+symlink. A mNamespaceInstance mutation need not mutate the old target object. Asking whether two
 objects are disjoint is not automatically the same question as asking whether changing
-one can invalidate resolution of a name for the other.
+one can invalidate mResolution of a name for the other.
 
 This is a semantic distinction within the existing invalidation problem, not an
 argument for a second refresh subsystem. The existing incarnation/re-keying posture
@@ -179,7 +179,7 @@ can still do the conservative job: withdraw the old conclusion without computing
 new identity. What matters is that the right conclusion loses authority.
 
 Similarly, identifying an object is not automatically enough to carry every observation
-about it. Keep any additional relevant User, namespace, or observer inputs in the same
+about it. Keep any additional relevant User, mNamespaceKind, or observer inputs in the same
 general calculus rather than either erasing them or inventing a special privilege lane.
 
 ## §7 — Smaller claims in the author's synthesis that need qualification
@@ -194,7 +194,7 @@ general calculus rather than either erasing them or inventing a special privileg
   execution prerequisites, and failure/coverage behavior. The performance doctrine
   cannot by itself establish that an invariance statement is semantically redundant.
 - **`qualification-current-code-claims-are-unverified-here`** — assertions about which
-  cross-kind paths currently fire, which measurement machinery is built, and the exact
+  cross-mKind paths currently fire, which measurement machinery is built, and the exact
   impending churn were not validated by these reviews. They should not bear the
   epistemic argument. The main conclusions above hold even assuming mature machinery.
 

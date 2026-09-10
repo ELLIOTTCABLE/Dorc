@@ -9,7 +9,7 @@ proposal in this ledger. Index/transport discussions retain their individual gra
 (human ruling): the member is kind__disjoint, rc 0 disjoint / 1 overlap / >=2 unknown,
 with no DREP result requirement. The proposed record-backed answer in §6 and this
 ledger's blanket completion-only classification do not govern this member. Incidental
-shell success remains author residue; the higher kind-owner rung and cross-author
+shell success remains author residue; the higher mKind-owner rung and cross-author
 survival danger do not override the predicate's idiomatic/off-ramp value. The kernel
 placement ruling in §4 stands. Other index-world questions remain at their stated grades. -->
 
@@ -36,9 +36,9 @@ placement ruling in §4 stands. Other index-world questions remain at their stat
 W-2 (the `30W` §10 sitting widened by 26Ob's q3/q8/q10/q11) reduces to three shape rulings,
 most of whose substance the human had already typed: the context slot is a map over
 index-kinds with no engine axis list (S1); index-values are value-plane objects carrying
-provenance, with a per-entry-chain placeholder as the new object (S2); worlds relate only
-through the compare chokepoint, never key equality (S3). The S1 exploration found that no
-compose operator is needed anywhere — the key is the entry chain, and every step toward `same`
+provenance, with a per-mEntryChain mPlaceholder as the new object (S2); mWorlds relate only
+through the `compare()` chokepoint, never mKey equality (S3). The S1 exploration found that no
+compose operator is needed anywhere — the mKey is the mEntryChain, and every step toward `same`
 or `disjoint` is authored — and that two 27C rules (fs-view path concatenation; enumerate-every-
 dimension) should retire. `kind__overlaps` was ruled IN as a kernel generator (§4). Under it the
 sitting found a real hazard: `30W`'s `overlaps` put its knife on rc 1, the status errexit and
@@ -52,7 +52,7 @@ sentinel, convergence and predict stay rc-bearing because they have off-ramp val
 - `notes/26N` §7 and §10 carry superseded notes: the engine-side "simple words are identity"
   carve is WITHDRAWN (`26Ob:ack-charset-is-tool-knowledge`); `park-re-parse-carve-explainer`
   points at `26Ob` §1. `Research/README.md` maps `notes/26Ob` with a grep-first caveat.
-- `nit-no-sugar-over-stdlib-kinds` [TYPED 2026-09-05] — if index-kinds are kinds, they get
+- `nit-no-sugar-over-stdlib-kinds` [TYPED 2026-09-05] — if index-kinds are mKinds, they get
   `sm.dorc.*` names in every spelling; no `user`/`fs`/`net-kernel` sugar for now. `30W` §1's
   "short tokens remain as sugar" and item 7's "sugar preserved" read under this.
 - `note-transit-mechanics-are-open` [TYPED 2026-09-05] — the actual mechanics of transit are
@@ -66,39 +66,39 @@ sentinel, convergence and predict stay rc-bearing because they have off-ramp val
 ## §2 — W-2 restated: the three shapes, where each stands
 
 - **S1 `shape-slot-is-a-map-over-kinds`** — the slot is a finite map from index-kinds to
-  index-values; an absent kind inherits the caller's value; the empty map is the ambient world;
+  index-values; an absent mKind inherits the caller's value; the empty map is the ambient mWorld;
   there is no engine list of axes. Substance TYPED by `26Ob:ack-entered-kind-is-declared-never-host`
   and §1's Host lean. Absorbs `30W` ruling 1 (`271:rul-axis-vocabulary-v1`'s reserved `host` has
-  nothing to be reserved in) and ruling 4 (dissolve the closed vocabularies). Vantage, if ever
-  needed, is one more kind; nothing to rule. The ρ component (env, cwd, options) rides beside the
-  map as an engine-owned builtin, not a kind (§8).
+  nothing to be reserved in) and ruling 4 (dissolve the closed vocabularies). mVantage, if ever
+  needed, is one more mKind; nothing to rule. The ρ component (env, cwd, options) rides beside the
+  map as an engine-owned builtin, not a mKind (§8).
 - **S2 `shape-index-values-carry-provenance`** — Entered (a value-plane object that flowed
   through a `lend_map`; never a string — `26Ob:nit-entered-arm-holds-a-value-object`) · Measured
-  (a placeholder `sk(E, K)`, "the value of kind K under entry chain E", until the standup binds it
-  to an opaque token) · Fresh (⊤). E = peeled spelling × vantage × the entry form's
+  (a mPlaceholder `sk(E, K)`, "the value of mKind K under mEntryChain E", until the standup binds it
+  to an opaque mToken) · Fresh (⊤). E = peeled spelling × mVantage × the entry form's
   `DefinitionId` (`26Ob:nit-batching-key-carries-entry-definition-identity`). PROPOSED, acked
-  in direction. The placeholder's binding state is a license input (an elision on an unbound
-  placeholder is guard-ceiling unless the standup binds it — `26Ob:ack-guards-reach-elisions-witness`).
-- **S3 `shape-worlds-compare-through-the-chokepoint`** — key inequality is `unknown`, never
+  in direction. The mPlaceholder's binding state is a license input (an elision on an unbound
+  mPlaceholder is guard-ceiling unless the standup binds it — `26Ob:ack-guards-reach-elisions-witness`).
+- **S3 `shape-worlds-compare-through-the-chokepoint`** — mKey inequality is `unknown`, never
   `disjoint`; equal maps are the cheap `same` pre-filter. Substance TYPED (`26Ob` §10b
   `hard-thing-two`; `ack-cross-world-wall-is-the-floor`). The filtered meet (per index-kind,
-  consult the cell's owner's store trichotomy invariant/keyed/⊤; skip invariant, compare keyed,
+  consult the mCell's owner's store trichotomy invariant/keyed/⊤; skip invariant, compare keyed,
   ⊤ ⇒ unknown; meet) is PROPOSED and additive. `30W` ruling 2 is the referent-transparent row of
   the relation table; ruling 6 its authoring contract.
 - `30W` ruling 3 (`rule-incarnation-invariance-passes-the-razor`) — the sitting's reading
-  [PROPOSED, confirms `30W` §8]: an invariance line against a tenure/Boot kind is vouch-tier for
-  TRANSPORT (the cell is one cell across the index — a closed claim about the owner's own store,
+  [PROPOSED, confirms `30W` §8]: an invariance line against a tenure/Boot mKind is vouch-tier for
+  TRANSPORT (the mCell is one mCell across the index — a closed claim about the owner's own store,
   like user-invariance) and flag-tier for SPARING past a reboot that actually fires
   (`26Ob:fnd-below-a-fired-transit-three-rungs`). Two roles where the user line has one.
 - `30W` ruling 5 (`_only` decomposes) — the human's own 26M nit, adopted, never typed as a
   ruling; shape-neutral; may wait for the stdlib arc.
-- Tenure versus Boot [PROPOSED lean] — exclude folding the tenure token INTO the entered kind's
+- Tenure versus Boot [PROPOSED lean] — exclude folding the tenure mToken INTO the entered mKind's
   value (structure inside the coordinate, the shape `271:rul-coordinate-shape-flat-three-place`
-  declined); whether Boot is a separate stdlib kind the entered kind's owner entails
-  (containment via `reaches`, `30W` §4) is stdlib content, not a kernel shape. The word itself
+  declined); whether Boot is a separate stdlib mKind the entered mKind's owner entails
+  (containment via :reaches, `30W` §4) is stdlib content, not a kernel shape. The word itself
   (`tenure`/`incarnation`) is renamable pre-publication and blocks nothing.
 - W-3 (`26Ob:lean-replace-wrapper-detection-with-argv-landing`) — one sentence, unchanged,
-  foldable: wrapper-ness is where the site's argv lands through the predict body's modelled
+  foldable: wrapper-ness is where the mSite's argv lands through the predict body's modelled
   transformations, not a category detected by `"$@"` in command position.
 - Builder rider, not a ruling: with Host entry punted, the empty map means "the CLI target"
   in r31 and flips to "the controller" when the synthetic head lands; nothing persists, one
@@ -113,23 +113,23 @@ composition userspace-defined? Answer [FOUND; conductor-argued, human-read]: inn
 right for what a link SETS and unsound as the KEY; no compose op exists; what userspace defines
 is stores and identity. Four rules:
 
-- `rule-set-innermost-wins` — a link's `lend_map` names the kinds it sets; innermost wins.
-- `rule-inherit-or-top-with-sentinel` [PROPOSED] — kinds a link does not name are ⊤ (27C's
+- `rule-set-innermost-wins` — a link's `lend_map` names the mKinds it sets; innermost wins.
+- `rule-inherit-or-top-with-sentinel` [PROPOSED] — mKinds a link does not name are ⊤ (27C's
   posture, kept) until the wrapper author finishes the claim with a `lends nothing-else`
-  sentinel, after which unnamed kinds inherit the caller's value. A second, `env -i`-shaped
-  sentinel says "reset unnamed kinds to the new world's ambient" (the ssh shape). Both are the
+  sentinel, after which unnamed mKinds inherit the caller's value. A second, `env -i`-shaped
+  sentinel says "reset unnamed mKinds to the new mWorld's ambient" (the ssh shape). Both are the
   author's claims. This REPLACES `27C` §3's enumerate-every-dimension law, which cannot survive
-  user-minted kinds (a `nice` oracle cannot enumerate `org.docker.Container`); it mirrors
+  user-minted mKinds (a `nice` oracle cannot enumerate `org.docker.Container`); it mirrors
   `271:rul-env-claim-inversion`'s ladder and 30U's at-most pattern.
 - `rule-derive-only-toward-unknown` [FOUND; already law in two halves] — derivation may make
-  a cell unknown or fresh (30W §4 transit re-keying: a disturbed index-value cell freshens
-  keyed cells downstream), never `same` or `disjoint` (`272:never-derive-separation`;
+  a mCell unknown or fresh (30W §4 transit re-keying: a disturbed index-value mCell freshens
+  keyed mCells downstream), never `same` or `disjoint` (`272:never-derive-separation`;
   `271:rul-invariance-speech-act`). Corollary, correcting the sitting's own first cut: "entering
   a new Host resets Container to the new ambient" is a derived `same` with that ambient and is
   NOT license-free; it is the ssh author's reset sentinel, or nothing.
 - `rule-same-is-generated` — across differently-keyed contexts, `same` needs a measured
-  identity token (the owner's `resolve()`) or a declared invariance of the name's resolution across
-  the differing kinds; `disjoint` needs referent-transparent tokens that differ, under the flag;
+  identity mToken (the owner's `resolve()`) or a declared invariance of the name's resolution across
+  the differing mKinds; `disjoint` needs referent-transparent mTokens that differ, under the flag;
   else unknown. Names are never arithmetic.
 
 Corrections to `27C` this implies (cleanup pass): retire `rul-dimension-owned-compose-ops`'
@@ -137,89 +137,89 @@ fs-view caller-relative path concatenation (engine-held path semantics, forbidde
 `30T:rul-engine-holds-no-world-facts`, and wrong under a symlink inside the chroot); identity
 across `chroot /mnt chroot /t` and `chroot /mnt/t` is measured by the fs-view owner (device and
 inode of `/` inside), never concatenated. Retire enumerate-every-dimension per the sentinel
-rule. `rul-top-absorbs-absolute-maps` survives as "⊤ at any link for kind K is ⊤ for the chain".
+rule. `rul-top-absorbs-absolute-maps` survives as "⊤ at any link for mKind K is ⊤ for the chain".
 
-Examples that decided it (compressed; `26Ob`-style, all STRAWMAN): absolute kinds (`sudo -u`)
-work under map-overwrite by luck · relative kinds break it (`chroot /mnt chroot /t` versus
-`chroot /other chroot /t` both key to `/t` under overwrite — a wrong-world elision) · a
-world-replacing link (`docker exec c ssh web1`) is the author's reset sentinel · a tunnelling
+Examples that decided it (compressed; `26Ob`-style, all STRAWMAN): absolute mKinds (`sudo -u`)
+work under map-overwrite by luck · relative mKinds break it (`chroot /mnt chroot /t` versus
+`chroot /other chroot /t` both key to `/t` under overwrite — a wrong-mWorld elision) · a
+mWorld-replacing link (`docker exec c ssh web1`) is the author's reset sentinel · a tunnelling
 link (`ssh -A`) is an explicit inherit lend outranking any derivation · partial passthrough
 (`docker run -v host:ctr`) is `overlaps`/measured identity, never a lend · a compose-file
 container name is a MEASURED lend (why S2's Measured arm exists for lends) · fake identity
-(`unshare -r` versus `sudo -u root`) is safe by the relation table's "one map has a kind the other
-lacks ⇒ unknown" row even when the User owner declared nothing · `nsenter` sets two kinds from one
-operand, nothing special · `ssh -J bastion` needs no vantage kind if Entered names key with the
-calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
+(`unshare -r` versus `sudo -u root`) is safe by the relation table's "one map has a mKind the other
+lacks ⇒ unknown" row even when the User owner declared nothing · `nsenter` sets two mKinds from one
+operand, nothing special · `ssh -J bastion` needs no mVantage mKind if Entered names mKey with the
+calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
 
 - `lean-no-absoluteness-declaration` [PROPOSED] — an owner-declared "my names are absolute"
-  would recover pre-network transport for absolute kinds; the chain key costs one extra standup
-  per distinct chain before tokens bind; not worth an authored surface now.
+  would recover pre-network transport for absolute mKinds; the chain mKey costs one extra standup
+  per distinct chain before mTokens bind; not worth an authored surface now.
 
 ## §4 — stores, `overlaps`, and the ordering hazard
 
 - The recast reading [FOUND, agrees with the human's recollection]: `state_stored_in` emits
-  locators "stored in a kind" — under `30W` §1/item 7 and §1's no-sugar nit,
+  locators "stored in a mKind" — under `30W` §1/item 7 and §1's no-sugar nit,
   `printf '/var/lib/dpkg\n' : stored-in sm.dorc.File`. No document had that spelling written;
   `30W` §3's and `26Ob` §10a's strawmen still use `: fs`/`: process`. The old token did two
   jobs: which index-kind KEYS the store (now by transitivity — File's own store declaration says
-  File names live in `sm.dorc.MountNamespace`'s address space) and which cell kind the region IS
+  File names live in `sm.dorc.MountNamespace`'s address space) and which mCell mKind the region IS
   (the File coordinate itself, for collisions).
 - The subtree relation is `kind__overlaps` (`30W` §2/§3); the consumer is `30U` §7's
   store-collide rule. Absent `overlaps`, "inside" can only be exact-name equality.
 - `hazard-file-finished-definition-leans-on-overlaps` [FOUND] — `30U` §7 lets File finish its
-  definition BECAUSE other kinds' residency in files is those kinds' store speech; that honesty
+  definition BECAUSE other mKinds' residency in files is those mKinds' store speech; that honesty
   needs the store-collide consumer to find subtree containment. File's `disturbs nothing-else`
   is therefore unsafe to author until `overlaps` and the collide consumer exist. Not recorded
   anywhere the conductor read; the human did not recall it ruled.
 - **`rul-overlaps-is-a-kernel-generator`** [TYPED 2026-09-05, conditional on the conductor
   finding no mechanism hole; none found] — `kind__overlaps` comes forward into the kernel
-  organization: a generator of the compare chokepoint for same-kind region pairs and for the
+  organization: a generator of the `compare()` chokepoint for same-mKind region pairs and for the
   store-collide consumer's containment predicate; absent or declining reads unknown; consulted
-  only within one context after the world relation; dynamic pairs collide at v0 (30T §9). Body-
+  only within one context after the mWorld relation; dynamic pairs collide at v0 (30T §9). Body-
   quality items for the stdlib bar, not blockers: `realpath` prefix checks answer disjoint for a
   hardlinked file whose other name sits inside the store (`-ef` or a link-count check belongs in
   the body); perishability is moot under the v0 entry-mutating-verb wall. The sibling re-homes
   it out of the identity tier.
 - `rul-store-containment-is-may-inside` [PROPOSED, the carriage rule] — `30U` §7's "adds
-  collisions against footprint cells landing inside it" must read as a MAY-inside predicate:
+  collisions against footprint mCells landing inside it" must read as a MAY-inside predicate:
   unknown adds the collision; only the owner's deliberate disjoint answer removes it. Without
   `stored nothing-else` an unlisted store is open-world and collides with every footprint of that
-  kind (`30W` §3), so truncation of a store list lands safe — which supersedes `30U` §5's
+  mKind (`30W` §3), so truncation of a store list lands safe — which supersedes `30U` §5's
   "absent by design for store declarations" (it predates the sentinel).
 
 ## §5 — the universal safe default, and its two deliberate exceptions
 
 - Every generator's absent or lazy answer lands on unknown, and unknown (and `unrelated`) is
   safe for both consumers: `resolve` absent ⇒ may-alias · `overlaps` absent ⇒ collide ·
-  referent-transparency undeclared ⇒ names are names · `resolve()` absent ⇒ placeholder never
+  referent-transparency undeclared ⇒ names are names · `resolve()` absent ⇒ mPlaceholder never
   binds · invariance absent ⇒ keyed or ⊤ ⇒ no transport · store declaration absent ⇒ ⊤ ⇒ the
-  filtered meet answers unknown · "one map has a kind the other lacks" ⇒ unknown · a wrapper
-  silent on a kind ⇒ ⊤.
-- Deliberate non-unknown defaults, both authored or ordinary law: (1) two sites under one
-  syntactic entry chain share a placeholder pre-measurement — the ordinary reach rule applied to
-  the name's resolution cell (⊤ backing unless the owner declares stores ⇒ any running mutator
+  filtered meet answers unknown · "one map has a mKind the other lacks" ⇒ unknown · a wrapper
+  silent on a mKind ⇒ ⊤.
+- Deliberate non-unknown defaults, both authored or ordinary law: (1) two mSites under one
+  syntactic mEntryChain share a mPlaceholder pre-measurement — the ordinary reach rule applied to
+  the name's mResolution mCell (⊤ backing unless the owner declares stores ⇒ any running mutator
   between them re-keys the lower; `26Ob:fnd-batching-key-is-syntactic-wall-is-rekeying`); the
-  residue is outside churn, a declared horizon with the standup witness as backstop; (2) the
+  residue is outside churn, a declared horizon with the standup `witness()` as backstop; (2) the
   wrapper's inherit/reset sentinel (§3).
 - `note-transport-single-consented-sparing-double` [FOUND] — transport's `same` is vouch-tier,
-  unflagged (an invariance line, a `resolve`, a bound token; bites the author's own consumers);
+  unflagged (an invariance line, a `resolve`, a bound mToken; bites the author's own consumers);
   sparing's `disjoint` is author plus flag. The razor by design; the 24S headline feature.
 - `open-bound-token-same-across-chains` [OPEN; the human: committee-speech-adjacent, owed an
-  entire turn with a very critical eye] — when `same` comes from two placeholders binding to
-  equal tokens across DIFFERENT entry chains, is it a closed claim (vouch-tier, unflagged) or
+  entire turn with a very critical eye] — when `same` comes from two mPlaceholders binding to
+  equal mTokens across DIFFERENT mEntryChains, is it a closed claim (vouch-tier, unflagged) or
   survival-grade? `26M`'s un-acked rider argued survival-grade for hosts;
   `FORFEITS:forfeit-no-host-merging` makes it moot at v0 for Host only; live for Container or
   User the moment a `resolve()` exists. The turn must read `plans/28M`, `28K`, `30J` (not in this
   sitting's window; the law as steering states it — one closure's dialect, custody as one
   newtype, `rul-vouch-reaches-own-custody-only`, 30T §3.3 input separation — was). First read
   only: one speaker's `resolve()` compared with itself, but the transport it licenses crosses custody
-  (author X's fact in world A reaching X's site in world B on owner Y's `resolve()` and entries Z1/Z2).
+  (author X's fact in mWorld A reaching X's mSite in mWorld B on owner Y's `resolve()` and entries Z1/Z2).
 - `ack-names-are-literal-narratives` [TYPED 2026-09-05] — "every step toward same or disjoint
   has an author's name on it" is literal: each generator mints a Narrative at build time
   (`AID-NEEDS:law-collapse-mints-narrative`, `trust-tier-is-syntax`) and the name reaches the
   angry user at `why`-time.
 - `note-enhancement-curve-survey-wanted` [human, 2026-09-05] — with `overlaps`, finished
-  definitions, store sentinels, `resolve()`, and lends sentinels all ahead of cross-kind
+  definitions, store sentinels, `resolve()`, and lends sentinels all ahead of cross-mKind
   elision, USER_STORY has gained several oracle-author stages before anything elides; not
   necessarily bad (correctness is never traded for value without extreme motivation), but a
   full survey of the gradual-enhancement curve is wanted at some point. Not scheduled.
@@ -287,7 +287,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
   sentinel on the SAME stream as what it witnesses or scaffold-declared errexit (a failed write
   makes `printf` return non-zero and abort before the sentinel). So `__resolve()` and the
   `resolve()` are owed the sentinel like every emission member; and the existing cross-stream
-  `disturbs nothing-else` (entities on stdout, record on the sink) is sound only under
+  `disturbs nothing-else` (mEntities on stdout, record on the sink) is sound only under
   scaffold-declared errexit or a same-stream layout — a dependency to write down (§8).
   [REFINED §9: under scaffold-declared errexit, regime-3 bodies need NO compiled sentinel —
   rc 0 is itself the completion witness; the `only`-class totality records stay authored.]
@@ -300,7 +300,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not kinds.
 ## §7 — the cleanup pass OWED (do not start piecemeal; one pass, human-directed)
 
 Docs the rulings above touch, none edited yet: `plans/30W` §1 (Host blessing; sugar), §2/§3
-(`overlaps` spelling; `stored-in` kind coordinates), §8/§10 (rulings 1–6 status) · `plans/27C`
+(`overlaps` spelling; `stored-in` mKind coordinates), §8/§10 (rulings 1–6 status) · `plans/27C`
 §3 (compose ops; enumerate-every-dimension; the `"$@"`-verbatim entry rule already superseded
 by `26Ob:ack-entry-verbatim-cannot-hold`, held by the human's "no 27C edit") · `plans/30U` §5
 (store sentinel supersedes "absent by design"), §7 (may-inside) · `plans/30T` §6 (the name-bias
@@ -321,7 +321,7 @@ license now carries the predict compile).
 ## §8 — the `__predict` turn and the oracle shell-state principle
 
 - `hazard-predict-body-death-reads-as-tool-rc` [FOUND] — a probe runs `dpkg__predict -s nginx`
-  and records its rc as the site's rc; `|| apt-get` and `&& systemctl restart` fold on it. A
+  and records its rc as the mSite's rc; `|| apt-get` and `&& systemctl restart` fold on it. A
   multi-statement predict body that dies via errexit on an unguarded step (a failed `cd`)
   returns a plausible tool rc, and the fold omits SOMEONE ELSE'S line. The trailing-succeeding-
   command shape (`dpkg "$@"; printf x >&2` ⇒ 0 always) is the same hazard at rc 0.
@@ -333,7 +333,7 @@ license now carries the predict compile).
   family's tool invocation (or a `case $? in` remap over it, or an explicit `return N`, both
   authored speech) AND every preceding statement on the path is errexit-exempt-guarded or on an
   infallible safe-list (default-disqualify, the `an-read-set-closure` posture). Otherwise the
-  path's rc is ⊤-provenance: no fold, both branches live, the site runs. Zero ceremony for
+  path's rc is ⊤-provenance: no fold, both branches live, the mSite runs. Zero ceremony for
   delegation bodies (the whole low curve); engineers guard; off-ramp untouched; fails safe in
   both phases INDEPENDENT of runtime errexit; also kills the fall-off-the-end hazard for
   predicts. Self-scoped versus travels is the principled split: for `__is_converged` the same
@@ -360,7 +360,7 @@ license now carries the predict compile).
 - **`rul-oracle-shell-state-is-dorc-constructed`** [TYPED substance 2026-09-05; conductor
   wording] — oracle bodies receive their shell state (errexit and every other `set` option,
   IFS, PATH resolution, cwd, umask, locale class, the fd table) declared and constructed by
-  Dorc's scaffolding plus the chain of world-declaring oracles above them in the CFG; never by
+  Dorc's scaffolding plus the chain of mWorld-declaring oracles above them in the CFG; never by
   the admin's book. Bodies must not behave differently under admin `set` values — all of them.
   The state is fully constructed at probe time and again at apply time the same way but without
   the `__predict`s; identical in construction, not in value (catching value divergence is the
@@ -371,7 +371,7 @@ license now carries the predict compile).
 - `fnd-no-observable-world-to-shell-influence` [FOUND; the human's question, answered
   provisionally] — no case found where world state influencing shell state must be observable
   to a body for it to model a tool: who-am-I values are supplied from the modelled context
-  (`272` r2 mapping; `27C:idiom-honest-read` is keyed by Dorc), PATH/umask/locale at the site
+  (`272` r2 mapping; `27C:idiom-honest-read` is keyed by Dorc), PATH/umask/locale at the mSite
   are the book's own state Dorc models and replays (`30S`), `[ -t 0 ]` is a controller fact
   (`26O:rul-tty-test-is-a-controller-fact`), and genuine world facts (files, processes, ulimits)
   are measured AS world, not as shell state. Residue: shell state Dorc cannot model reads ⊤ and a
@@ -428,7 +428,7 @@ license now carries the predict compile).
   3. RUNTIME (the scaffold): a predicted status is TRUSTED only if the arm's completion record
      arrived, its rc equals the shell's exit status for that body (a compile-bug tripwire), and
      rc < 128 (signal deaths, 141 included, are the flap class, never predictions). Otherwise
-     the site's status is ⊤: no fold, both branches live, the site runs, hint attached.
+     the mSite's status is ⊤: no fold, both branches live, the mSite runs, hint attached.
   Failure classes covered: errexit abort mid-body (no record ⇒ ⊤) · nounset trips (same) ·
   status-flat trailing statement (static ⇒ ⊤) · pipeline tails (pipefail pinned; per-host
   handshake) · signals/timeouts (⊤) · command-not-found from the answer itself (a faithful
@@ -458,7 +458,7 @@ license now carries the predict compile).
   there by bash's documented behaviour and ~SUSPECT by dash; the compiled form cannot enter the
   reviewed plan (`rul-ternary-verdict`'s strip-only; the attention floor). So for identical
   construction verdict bodies run with errexit declared OFF in probe and apply alike, and the
-  A1 class (a failed `cd`, then the check in the wrong world) stays the quality bar's
+  A1 class (a failed `cd`, then the check in the wrong mWorld) stays the quality bar's
   (`aid-lint-verdict-body-mechanicals`). Door to ON: the floor measurement — does `dash`
   honour an explicit `set -e` inside a subshell in an AND-OR list? If yes and bash-as-sh hosts
   are accepted as outside the floor, revisit.
@@ -501,11 +501,11 @@ license now carries the predict compile).
   (or an explicit `return`) on every path. The whole burden is then static and pre-network:
   (1) the answer statement is status-meaningful (§9 rule 1, unchanged); (2) every statement
   before it on the path is either provably infallible (a literal assignment, `local`, a `shift`
-  the site's arity covers, a decidable-set builtin) or GUARDED (`|| return N`, an authored
+  the mSite's arity covers, a decidable-set builtin) or GUARDED (`|| return N`, an authored
   predicted status; or `|| { predicts none …; return 0; }`, a decline). An unguarded fallible
   step (an external command, `cd`, `$(…)`, `read`, a helper not proven infallible) makes that
   arm predict ⊤ with a precise pre-network hint ("line N can fail and the answer would then be
-  measured in the wrong world; guard it or the arm predicts nothing"). Default fallible,
+  measured in the wrong mWorld; guard it or the arm predicts nothing"). Default fallible,
   safe-list infallible, the `an-read-set-closure` posture. `exit`/`set`/`trap`/`&` stay out of
   dialect in bodies; statuses ≥128 read ⊤. No runtime witness, no body edit, no compile, no
   trace. The plan's shape is a function of the text, never of which step happened to fail this
@@ -547,7 +547,7 @@ license now carries the predict compile).
   the user.
 - `fnd-static-rule-is-option-independent` [FOUND] — "an unguarded fallible step before the
   answer ⇒ the arm predicts ⊤" is correct whatever the option state: under errexit-off the
-  step's failure makes the answer wrong-world; under errexit-on it makes the status an abort
+  step's failure makes the answer wrong-mWorld; under errexit-on it makes the status an abort
   misread as an answer. And "unguarded" is exactly POSIX's errexit-FIRING position (a fallible
   simple command not consumed by `if`/`while`/`&&`/`||`/`case $?`/a test's substitution) — so
   the static rule reads as "your body must be errexit-clean", the very discipline both
@@ -747,7 +747,7 @@ insert-only, never wrap, never move.
   called as S, a command substitution inside S, a pipeline element of S. Under the original,
   `[ "$(cd /x; cat f)" = y ]` aborts the substitution at the failed `cd` and tests the empty
   string; under the wrapped copy the substitution continues, reads a different `f`, and the
-  copy TRUSTS a wrong-world answer the original never produced. Any wrapper around S is
+  copy TRUSTS a wrong-mWorld answer the original never produced. Any wrapper around S is
   therefore unsound; the edit must leave S in exactly its original errexit context.
 - **`prop-marker-and-exit-trap-witness`** [PROPOSED; the narrowest edit found] — insert
   three things and nothing else: (1) at the top of the subshell body, after the author's
@@ -823,7 +823,7 @@ insert-only, never wrap, never move.
   `rul-decline-ladder-across-verdict-and-predict` (2026-09-06; 30D stands, the
   reserved-status-two door closed, "decline is aid-only" wording retired).
 - PROPOSED, each awaiting one typed line: the three shapes as written in §2 (S1 near-typed;
-  S2 the placeholder species; S3 the filtered meet) · `rule-inherit-or-top-with-sentinel` (and
+  S2 the mPlaceholder species; S3 the filtered meet) · `rule-inherit-or-top-with-sentinel` (and
   the reset sentinel) · retiring 27C's fs-view concatenation and enumerate-every-dimension ·
   `rul-store-containment-is-may-inside` · `fix-overlaps-disjoint-is-a-record` ·
   `fnd-regime-three-needs-no-compiled-sentinel` (retracting the resolve/identity sentinel) ·

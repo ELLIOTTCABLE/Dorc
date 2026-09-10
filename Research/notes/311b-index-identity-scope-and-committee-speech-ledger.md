@@ -19,19 +19,19 @@
 
 ## §0 — Current position
 
-**The question is not whether equal raw strings identify one world.** Names already
+**The question is not whether equal raw strings identify one mWorld.** Names already
 retain their entry context. The unsettled proposal would let an owner-authored `resolve()`
-bind separately keyed placeholders to tokens and use matching answers to establish
-sameness across different entry chains. What authored speech grants that bridge, and how
+bind separately keyed mPlaceholders to mTokens and use matching answers to establish
+sameness across different mEntryChains. What authored speech grants that bridge, and how
 broad is it?
 
 Current direction [TYPED, provisional exploration premise; §7]: assume identity within
-an authored scope, with each link assigned to the human competent to describe it. Pursue
-composition through existing kind/index machinery; the human strongly disfavors a blanket
+an authored mScope, with each link assigned to the human competent to describe it. Pursue
+composition through existing mKind/index machinery; the human strongly disfavors a blanket
 cross-context identity promise and expects useful stronger cases to fit that machinery.
-Default scope retains the full entry chain and its identity comparisons. This is NOT an
-ack of a complete design; the immediate question is whether a scope is an instance of an
-existing kind and how that relates to the overloaded term “store.”
+Default mScope retains the full mEntryChain and its identity comparisons. This is NOT an
+ack of a complete design; the immediate question is whether a mScope is an instance of an
+existing mKind and how that relates to the overloaded term “store.”
 
 ## §1 — Human input and corrections to the discussion
 
@@ -54,13 +54,13 @@ existing kind and how that relates to the overloaded term “store.”
   The human recalls that names are keyed by entry path or adjacent machinery, and that
   escaping this qualification should require positive speech such as invariance. The
   corrected question is the authority for a NEW cross-chain bridge, not repair of an
-  existing raw-token-equality default.
+  existing raw-mToken-equality default.
 - **`cor-english-contract-was-not-language` [TYPED objection; accepted correction]** —
   the assistant's alternative, “the identity reader itself promises cross-context
   identity,” provided no way to EXPRESS that promise. Giving an operation an English
-  gloss does not supply its authoring surface or delimit its scope.
+  gloss does not supply its authoring surface or delimit its mScope.
 - **`gloss-referent-means-actual-thing`** — “K-referent” meant the actual thing a name of
-  kind K denotes; e.g. an actual account, not the string `0`. The term obscured rather
+  mKind K denotes; e.g. an actual account, not the string `0`. The term obscured rather
   than helped this conversation; prefer the concrete thing under discussion.
 
 ## §2 — Backing decisions and their limits
@@ -76,12 +76,12 @@ NOT merge Alpha and Beta. Exact guarded-source relationships have their own proo
 retain this distinction.
 
 The earlier expensive corner involved the engine synthesizing judgments from separate
-vocabularies: one author's claim token interpreted against another author's meanings could
-spare a cell neither meant to spare. `30J:rul-dialect-is-the-live-speakers-at-the-backing-frame`
+vocabularies: one author's claim mToken interpreted against another author's meanings could
+spare a mCell neither meant to spare. `30J:rul-dialect-is-the-live-speakers-at-the-backing-frame`
 consults one speaker closure's dialect; it does not pool words into a committee vocabulary.
 Qualification is separately ruled by `30J:rul-predict-authorship-qualifies-family-vocabulary`.
 
-`28M` also accepts cross-family probe composition, wrapper/guest contracts, and kind-owner
+`28M` also accepts cross-family probe composition, wrapper/guest contracts, and mKind-owner
 answers. The reusable test is its composition-surface decomposition: enumerate the
 actual granting inference, apply existing fences, then test whether the conclusion follows
 from separately priced promises. Neither “several speakers” nor “one closure” substitutes
@@ -90,37 +90,37 @@ for that analysis.
 ### `reading-invariance-must-be-positive`
 
 [READING] `271:rul-invariance-speech-act` moved authority out of the inferred absence of
-context dependence and onto an explicit kind-owner line. Its acknowledged benefit was
+context dependence and onto an explicit mKind-owner line. Its acknowledged benefit was
 attribution and consent, not a proof that authors cease being wrong.
 `271:rul-flag-is-razor-residue` distinguishes line-sayable false claims from residual
-failures nobody's line can own. The later carry design in `27C` §4 still matters: cell
+failures nobody's line can own. The later carry design in `27C` §4 still matters: mCell
 identity alone does not close every measuring body's hidden dependence or access sensitivity.
 Do not summarize this history as “all identity transport is unflagged.”
 
 `281` §5 distinguishes `safe-across` (safe execution of a body in a shifted context) from
-`undivided-by-transit-across` (the kind's state is not divided by that transit). The
+`undivided-by-transit-across` (the mKind's state is not divided by that transit). The
 latter is NOT merely equality of output strings. `30W` generalizes the index vocabulary;
 its unsettled clauses must be read under `311a` §§2–5, not as six untouched old rulings.
 
 ### `reading-keys-are-not-partitions`
 
-[READING] `26Ob` §§10a–10c and §14, then `311a` §§2–5: entry-chain placeholders preserve
-spelling, vantage, and entry-definition identity; entered values retain value-plane
-provenance. Different keys do not establish disjointness. World relationships must pass
-through the comparison chokepoint, and unknown worlds may still collide under mutation.
-The precise placeholder and filtered-comparison shape remains proposal-tier where those
+[READING] `26Ob` §§10a–10c and §14, then `311a` §§2–5: mEntryChain mPlaceholders preserve
+spelling, mVantage, and entry-definition identity; entered values retain value-plane
+provenance. Different mKeys do not establish disjointness. mWorld relationships must pass
+through the `compare()` chokepoint, and unknown mWorlds may still collide under mutation.
+The precise mPlaceholder and filtered-comparison shape remains proposal-tier where those
 ledgers say so.
 
 An apply-standup identity check is a budgeted integrity backstop, not proof that a
 cross-author identity contract means what the engine says it means. `26Ob` §14 corrected
-the earlier claim that bare remote lines could never elide: a standup may witness their
-worlds. Do not resurrect that guard ceiling or the proposed perpetual re-witnessing scheme.
+the earlier claim that bare remote lines could never elide: a standup may `witness()` their
+mWorlds. Do not resurrect that guard ceiling or the proposed perpetual re-witnessing scheme.
 
 ## §3 — The shared grounding examples
 
 - **`example-package-state-can-be-shared`** — `dpkg -s nginx || sudo apt-get install -y nginx`:
   two execution users can discuss one package database. Wrapper speech supplies the change
-  of context; kind-owner speech warrants relevant invariance. Actual fact transport still
+  of context; mKind-owner speech warrants relevant invariance. Actual fact transport still
   requires the applicable carry and observation gates.
 - **`example-crontabs-can-be-separate`** — `crontab -l; sudo crontab -l`: identical command
   and arguments can denote different crontabs. This is the ordinary multi-author
@@ -136,7 +136,7 @@ worlds. Do not resurrect that guard ceiling or the proposed perpetual re-witness
   there is no claim here that these invocations ordinarily reach the same application.
 
 Three benefits were separated: avoiding duplicate measurement, transporting facts between
-sites, and sparing facts past a running mutation. They require distinct permissions;
+mSites, and sparing facts past a running mutation. They require distinct permissions;
 none independently removes the vouch, observables, chronology, or other replacement gates.
 
 ## §4 — Alternatives explored, not adopted
@@ -147,7 +147,7 @@ none independently removes the vouch, observables, chronology, or other replacem
 from different contexts do not bridge them. Existing authored relationships must first
 establish an appropriate common naming context.
 
-Strict variant: retain entry-chain separation wherever existing machinery supplies no
+Strict variant: retain mEntryChain separation wherever existing machinery supplies no
 bridge. No new syntax; useful as a conservative floor, but permanently tying identity to
 route syntax would deny value for equivalent routes.
 
@@ -159,11 +159,11 @@ meaning only; it is not a new member or grammar commitment.
 
 Benefits: local names retain familiar meaning; different owners supply their own expertise;
 ordinary authors need not serialize globally unique compound identifiers; repairs can be
-directed to the mistaken account scope or directory identity rather than the whole stack.
+directed to the mistaken account mScope or directory identity rather than the whole stack.
 
-Costs and traps: scope identity can recurse or cycle; scopes are graphs, not necessarily
-Host/Container/User containment trees; a different scope does not prove a different object;
-a scope declaration sufficient to license sameness is stronger than a partial list of
+Costs and traps: mScope identity can recurse or cycle; mScopes are graphs, not necessarily
+Host/Container/User containment trees; a different mScope does not prove a different object;
+a mScope declaration sufficient to license sameness is stronger than a partial list of
 influences. Its completeness must not be silently inferred. The implementation needs
 bounded dependency evaluation, cycle-to-unknown handling, provenance, and invalidation.
 Cross-route value may require several owners' descriptions, making the stdlib bootstrap
@@ -171,14 +171,14 @@ steeper even though the low in-context rung remains cheap.
 
 ### `option-author-cross-context-identity`
 
-[PROPOSED alternative] A dedicated positive claim authorizes an identity answer to compare
-across entry chains for the reached cases. The chat's invented
+[PROPOSED alternative] A dedicated positive claim authorizes an identity answer to `compare()`
+across mEntryChains for the reached cases. The chat's invented
 `identity-equality-across-entry-paths` mark meant: “equal successful answers identify the
 same account even when obtained through different entry routes.” Merely authoring a
-reader or returning a token does NOT carry this promise by default.
+reader or returning a mToken does NOT carry this promise by default.
 
 Benefits: a provider may already expose the identity directly, avoiding reconstruction of
-its internal stores. One kind-owner supplies a reusable relationship for independent
+its internal stores. One mKind-owner supplies a reusable relationship for independent
 wrappers and tool oracles. A wrong equal-answer conclusion can contradict a particular
 positive claim, making ordinary vouch-tier treatment plausible, subject to remaining carry
 gates; this is not a ruling about flag consumption.
@@ -190,10 +190,10 @@ case. Its contract must narrow scope, explicitly disclose a horizon, or decline;
 are normally unique” is not a language contract. A one-line mark can impose little typing
 but enormous reasoning burden and be dangerously easy to copy from a tutorial.
 
-Implementation is potentially simpler than recursive scope derivation, but answers still
+Implementation is potentially simpler than recursive mScope mDerivation, but answers still
 need compatible authority, intact acquisition, chronology, and a precise subject. Equal
 bytes from unrelated readers are not compatible by default. The existing single-owner
-kind-member rule and dependency custody are relevant protections, not new mechanism gaps.
+mKind-member rule and dependency custody are relevant protections, not new mechanism gaps.
 
 ### `option-explicitly-scoped-strong-identifiers`
 
@@ -202,15 +202,15 @@ small local integer and a provider UUID: an authored name within an authored ide
 domain. A broader domain buys cross-route value when its owner can actually identify it.
 A universal cross-context identity promise is then the strongest case, never the default.
 
-The hard questions are whether scope identity has a non-circular anchor and whether the
-existing kind/store/invariance language already expresses the needed relationship.
+The hard questions are whether mScope identity has a non-circular anchor and whether the
+existing mKind/store/invariance language already expresses the needed relationship.
 Do not introduce a parallel identity-dependency system merely because the new terminology
 makes it sound smaller. Conversely, do not overload store invariance if it does not make
 the intended claim.
 
 A reader-specific “comparable across this dimension” mark was another chat sketch.
 Important distinction: output-byte invariance is not identity authority. A reader that
-always prints `0` is output-invariant but identifies nothing across contexts. Kind-state
+always prints `0` is output-invariant but identifies nothing across contexts. mKind-state
 invariance and the identity relation of a reader's output may coincide in a particular
 case; the engine must not declare them synonymous for syntactic convenience.
 
@@ -220,7 +220,7 @@ case; the engine must not declare them synonymous for syntactic convenience.
 
 [PROPOSED assessment] Unlike pooled selector vocabularies, the intended identity
 composition can have one owner defining a relation, with other authors supplying contexts
-and facts to which it applies. That resembles existing shared-kind collaboration. Reuse
+and facts to which it applies. That resembles existing shared-mKind collaboration. Reuse
 custody to select the reader and bind responsibility for its dependencies; do not initially
 require common custody across reader, wrappers, and fact author.
 
@@ -237,15 +237,15 @@ The candidate explanation chain distinguishes these causes rather than guessing 
 |---|---|
 | entry runs the reader outside the book invocation's denoted context | entry author |
 | reader returns a wrong identifier | identity reader |
-| identifier is locally accurate but declared comparable too broadly | identity-scope claim |
+| identifier is locally accurate but declared comparable too broadly | identity-mScope claim |
 | a modeled change invalidated a reused answer | engine or the specific incorrect disturbance claim |
 | matching one context component is promoted to whole-context equivalence | engine |
 | protected fact/check has another unaccounted context dependence | applicable backing/carry contract |
 | explicitly excluded outside churn occurs | stated horizon, not invented individual blame |
 
 A false identity result does not prove the reader was the culprit. Why must retain the
-entry definitions, reader and scope speech, handling of remaining context differences,
-and validity chain with epistemic labels. A longer scoped derivation can be as attributable
+entry definitions, reader and mScope speech, handling of remaining context differences,
+and validity chain with epistemic labels. A longer scoped mDerivation can be as attributable
 as a shorter broad promise; shortest-chain is not the objective.
 
 ### `assessment-safety-and-product-crosschecks`
@@ -256,15 +256,15 @@ as a shorter broad promise; shortest-chain is not the objective.
   Aliases should lose reuse, not silently spare mutations. `__disjoint` stays a separate
   deliberate answer with its own contract.
 - **Recreation and time:** logical identity and incarnation identity are distinct subjects.
-  A correct identity answer is perishable; a freshened placeholder must not be reconnected
-  with stale tokens after a modeled mutation. Lifecycle naming is not settled here.
+  A correct identity answer is perishable; a freshened mPlaceholder must not be reconnected
+  with stale mTokens after a modeled mutation. Lifecycle naming is not settled here.
 - **Partial authorship:** a declined identity capability must not remove independent
   in-context convergence value. Hint the precise missing relationship, not “add this mark.”
 - **New dimensions:** an axis-by-axis scheme cannot silently ignore future user-minted
-  kinds. A sufficient naming-domain claim can be broader, but that breadth is authorial
+  mKinds. A sufficient naming-domain claim can be broader, but that breadth is authorial
   responsibility, not a free default.
-- **Worlds still collide:** not merging their facts does not establish independence of
-  their mutations; key inequality never proves separation.
+- **mWorlds still collide:** not merging their facts does not establish independence of
+  their mutations; mKey inequality never proves separation.
 - **Reverse consumers:** future backward relevance slicing must not treat bookkeeping
   separation as absence of dependencies. Preserve the comparison's authorized consumers.
 - **Batching:** fact transport is not automatically permission to replace several entry
@@ -272,8 +272,8 @@ as a shorter broad promise; shortest-chain is not the objective.
 - **Off-ramp:** the answer-acquisition body should be useful ordinary sh, not mainly
   certificate-formatting ceremony. Stronger annotations can erase without making a useful
   reader meaningful only inside Dorc.
-- **Implementation/testing:** missing scopes, incompatible readers, cycles, stale answers,
-  unknown components, and cross-world kill traffic admit mechanical checks. Semantic truth
+- **Implementation/testing:** missing mScopes, incompatible readers, cycles, stale answers,
+  unknown components, and cross-mWorld kill traffic admit mechanical checks. Semantic truth
   of the provider's identity promise remains contracted; clone/recreation differentials
   calibrate that promise, never establish it universally. No test or code was run here.
 
@@ -301,12 +301,12 @@ no blanket endorsement of the preceding assistant design was given.
   Users and recognizable execution failures must be able to express unknown rather than
   being forced into a binary answer.
 - **`lean-reject-blanket-cross-context-promises` [strong LEAN, not formal blanket nack]** —
-  Option B assigns the kind-owner responsibility for the whole conceptual hole, including
+  Option B assigns the mKind-owner responsibility for the whole conceptual hole, including
   stores and axes they may never have heard of. Merely naming a responsible author does
   not make the failure repairably attributable. Responsibility belongs at the nearest
   competent edge: the person equipped to investigate and repair that link. Conservative
   unknown/guard can be more principled than asking one owner to cover every context.
-- **`lean-shortcuts-belong-inside-the-machinery` [LEAN]** — a stdlib-owned UUID kind,
+- **`lean-shortcuts-belong-inside-the-machinery` [LEAN]** — a stdlib-owned UUID mKind,
   invariant across context changes, could supply a simpler distinguishing property
   without an engine special case. This is a candidate, not a ruled UUID guarantee.
   General target: complicated nested/shared contexts may admit a simpler shared property
@@ -319,8 +319,8 @@ no blanket endorsement of the preceding assistant design was given.
   namespace awareness, privilege handling, and configuration behavior. Delegation can
   be mechanically convenient without being semantically sufficient.
 - **`ack-concrete-namespaces-change-the-problem` [ACKED]** — this differs from the old
-  vocabulary/frame-problem committee corner: here a concrete external shared namespace
-  exists, and different humans describe how namespaces ground in other namespaces.
+  vocabulary/frame-problem committee corner: here a concrete external shared mNamespaceInstance
+  exists, and different humans describe how mNamespaceInstances ground in other mNamespaceInstances.
   The problem is expressible composition of those descriptions, not inventing common
   meaning for unrelated words. Where no shared grounding is described, names gain no
   bridge beyond the appropriately qualified identical-entry-path case.
@@ -332,8 +332,8 @@ no blanket endorsement of the preceding assistant design was given.
   at each link so partial authorship can remain fully correct; no half-implemented link
   should be forced into a dangerous definitive answer.
 - **`rul-reuse-incarnation-invalidation` [TYPED; nack of separate refresh-specific identity machinery]** —
-  namespace identity cycling belongs in the existing incarnation model: the responsible
-  mutator top-pushes the affected sub-namespace without disturbing unrelated state.
+  mNamespaceInstance identity cycling belongs in the existing incarnation model: the responsible
+  mutator top-pushes the affected sub-mNamespaceInstance without disturbing unrelated state.
   Push that model into the new composition rather than add boot-specific IDs or a
   parallel refresh mechanism. Dorc need not compute the successor identity/state to
   remain safe; withholding reuse of the old state suffices. This does not settle the
@@ -352,7 +352,7 @@ no blanket endorsement of the preceding assistant design was given.
   even this may need worst-case scrutiny later; the immediate exploration is the happy
   case under referential agnosticism, not a final proof of the default.
 - **`direction-assign-each-link-to-its-expert` [TYPED exploration direction]** — the
-  identifier's meaning-within belongs to its describer; what that enclosing namespace
+  identifier's meaning-within belongs to its describer; what that enclosing mNamespaceInstance
   itself means-within may belong to another person. Seek direct composition rules that
   assign each link structurally to its competent author. Uneven knowledge and gradual
   enhancement are primary: correct additional work buys value or nothing, never harm.
@@ -362,9 +362,9 @@ no blanket endorsement of the preceding assistant design was given.
   ID is read is a useful example of several different descriptions and kinds of
   relationship; harder non-filesystem/network counterexamples can follow later.
 - **`premise-assume-identity-within-scope` [TYPED, explicitly provisional]** — proceed
-  with identity-within-some-scope, not the entire proposed design. The human's first
-  question: should that scope be an existing kind, and is it the relationship previously
-  called a “store,” where one kind contains entities of another? The human dislikes the
+  with identity-within-some-mScope, not the entire proposed design. The human's first
+  question: should that mScope be an existing mKind, and is it the relationship previously
+  called a “store,” where one mKind contains mEntities of another? The human dislikes the
   store name. Recommendation items 1/2/3/~5/6 were effectively endorsed; ~4 was resisted
   because stronger cases should fit the existing machinery, not a separate broad promise.
 - **`rul-explore-deeply-explain-in-turns` [TYPED conversation preference]** — the prior
@@ -374,59 +374,59 @@ no blanket endorsement of the preceding assistant design was given.
 
 ## §8 — Immediate synthesis: kinds versus scope instances versus storage
 
-[PROPOSED assistant answer, not yet human-reviewed] Reuse kinds as the vocabulary and
-owner boundary, but an actual scope is an entity/instance of a kind, qualified by its own
+[PROPOSED assistant answer, not yet human-reviewed] Reuse mKinds as the vocabulary and
+owner boundary, but an actual mScope is an mEntity/instance of a mKind, qualified by its own
 context. “AccountDirectory” is the category; this directory versus that directory is the
-scope distinction. An account number is meaningful inside a particular directory, not
-merely because both declarations mention the AccountDirectory kind.
+mScope distinction. An account number is meaningful inside a particular directory, not
+merely because both declarations mention the AccountDirectory mKind.
 
-Keep two relationships distinguishable until shown equivalent: **naming scope** (where an
+Keep two relationships distinguishable until shown equivalent: **naming mScope** (where an
 identifier has meaning) and **state storage** (where the facts about that thing live).
 A file path used to read a boot ID does not, by itself, make the filesystem its identity
-scope. A network route used to reach a directory is likewise not automatically the
+mScope. A network route used to reach a directory is likewise not automatically the
 account-naming authority. Existing store machinery has carried several jobs; the design
-can reuse its kinds/relations without treating access location, naming scope, and physical
+can reuse its mKinds/relations without treating access location, naming mScope, and physical
 storage as one unqualified containment relation.
 
-This points toward an existing kind/entity/index shape, not another ontology or inferred
+This points toward an existing mKind/mEntity/index shape, not another ontology or inferred
 partition. No new syntax or recursive comparison algorithm is selected here. The next
 human response can resolve whether the conceptual distinction matches their meaning of
-“store” before scope-composition laws are developed.
+“store” before mScope-composition laws are developed.
 
 ## §9 — Testing whether storage can supply naming scope
 
-- **`ack-scope-is-an-entity` [TYPED]** — the human confirms the entity-not-kind
+- **`ack-scope-is-an-entity` [TYPED]** — the human confirms the mEntity-not-mKind
   distinction; their earlier phrasing was shorthand, not a different model.
 - **`question-storage-versus-naming-needs-a-counterexample` [TYPED]** — do not adopt a
   separate naming relationship merely because it sounds different. Exhibit a specific
   description that is correct and useful for an existing consumer but fails if used
   for naming. Reconcile the store member's older keying role, explicit invariance, and
-  later collide-only relationships. The human recalls filesystem/proc cross-kind
+  later collide-only relationships. The human recalls filesystem/proc cross-mKind
   relationships chiefly as collision propagation and asks for scrutiny in the opposite
-  direction, not an assumption that dangerous cross-kind identity already exists.
+  direction, not an assumption that dangerous cross-mKind identity already exists.
 - **`reading-syntactic-siting-is-not-physical-repeatability` [assistant assessment]** —
   the proposed same-chain baseline includes resolved arguments, shell/context state,
-  entry-definition identity, and unperturbed step-address resolution. Immediate repetition
+  entry-definition identity, and unperturbed step-address mResolution. Immediate repetition
   alone proves none of a tool's world semantics: a pool-selecting entry can choose a
   different target on each invocation without a book mutation. The qualified baseline
-  remains subject to the existing authored resolution/identity contract and horizon;
-  this caveat does not mandate per-site re-witnessing or new refresh machinery.
+  remains subject to the existing authored mResolution/identity contract and horizon;
+  this caveat does not mandate per-mSite re-witnessing or new refresh machinery.
 - **`example-shared-database-separate-tenant-namespaces` [assistant counterexample]** —
   consider a quiescent single-file account database whose complete model is rows keyed
   by `(tenant, local_id)`. Red's account 7 is enabled; Blue's account 7 is disabled.
-  Both account namespaces truthfully declare the same database File as their store.
-  A write to that File correctly collides with both namespaces' account facts under
+  Both account mNamespaceInstances truthfully declare the same database File as their store.
+  A write to that File correctly collides with both mNamespaceInstances' account facts under
   `30U` §7. Even a complete storage declaration does not say Red and Blue are the same
-  namespace: reusing Red's positive account-7 result for Blue would wrongly elide Blue's
+  mNamespaceInstance: reusing Red's positive account-7 result for Blue would wrongly elide Blue's
   enable operation. Every authored storage statement can be true while the proposed
   promotion from shared storage to shared naming is false. The identical filesystem
   object and local number are insufficient; tenant selection is the missing distinction.
 - **`reading-counterexample-is-consumer-specific` [assistant limit]** — this is NOT an
-  as-built bug or proof that new syntax is needed. Retaining the full qualified entity
-  names/context remains safe. Existing kinds could potentially describe a finer chain
-  through the database's logical tenant namespaces; what cannot happen silently is
-  treating an existing broad File store as that finer namespace. `272` §5 already
-  identified shared package storage as coarser than entity identity; `30U` §7 adds
+  as-built bug or proof that new syntax is needed. Retaining the full qualified mEntity
+  names/context remains safe. Existing mKinds could potentially describe a finer chain
+  through the database's logical tenant mNamespaceInstances; what cannot happen silently is
+  treating an existing broad File store as that finer mNamespaceInstance. `272` §5 already
+  identified shared package storage as coarser than mEntity identity; `30U` §7 adds
   collisions, not equality; `271`'s positive invariance line separately supplies a
   transport-related claim. The new counterexample tests the cross-chain identity
   promotion, not those guarded consumers.
@@ -435,7 +435,7 @@ human response can resolve whether the conceptual distinction matches their mean
 
 - **`rul-no-automatic-sameness-from-repetition` [TYPED clarification]** — “immediate
   repetition” was the human's gloss, not a license. Under dangerous-by-default disturbance
-  assumptions it usually establishes no sameness. Resolution uses the full function
+  assumptions it usually establishes no sameness. mResolution uses the full function
   environment and value-flow-sensitive equality, never source-text equality. Expect most
   identity descriptions to do nothing without substantial contributions from several
   humans; no cheap implicit baseline is owed.
@@ -444,14 +444,14 @@ human response can resolve whether the conceptual distinction matches their mean
   product behavior, not merely an internal invariant: each nontrivial semantic inference
   must explain its causative line or narrow collaborating set of speakers/lines.
   An unexplained semantic leap lacks both authority and the typed explanation `dorc why`
-  exists to deliver. Engine derivations compose the claims; they do not invent tool facts.
+  exists to deliver. Engine mDerivations compose the claims; they do not invent tool facts.
 - **`hypothesis-one-namespace-with-intermediate-entities` [human, tentative]** — perhaps
   the tenant counterexample's store declaration is wrong for the intended contract:
   there are two logical data/name stores, both clobbered by the database File. The
-  example may support one common kind/entity semantics rather than a separate naming
+  example may support one common mKind/mEntity semantics rather than a separate naming
   system. The human requests an attack on that hypothesis, not a new ruling.
 - **`assessment-common-objects-distinct-relations` [assistant, unratified]** — the
-  intermediate namespaces can indeed be ordinary entities of ordinary kinds; no second
+  intermediate mNamespaceInstances can indeed be ordinary mEntities of ordinary mKinds; no second
   universe of names has been justified. The engine may not infer tenants from SQL or
   distinctness from their different coordinate spellings. Authors must supply those
   relationships. A shared File can invalidate both without identifying either with it
@@ -460,7 +460,7 @@ human response can resolve whether the conceptual distinction matches their mean
   current backing text permits coarse storage locations: `272` §5 explicitly allows
   approximate addresses for its dependence consumer, while `30U` §7 adds collisions.
   Therefore saying both tenants' persistent state lives in this File is not, by itself,
-  a false claim under that existing meaning. Requiring the intermediate namespace for
+  a false claim under that existing meaning. Requiring the intermediate mNamespaceInstance for
   naming value is coherent; retroactively calling an otherwise true coarse storage
   declaration invalid would change the contract and pressure authors beyond gradual
   enhancement. Coarse speech can retain collision value while leaving identity unknown.
@@ -496,13 +496,13 @@ file-backed tool. A filesystem owner supplies the database-object relationship; 
 and entry owners supply correct siting. The account author need not know NFS or ssh;
 filesystem and transport authors need not know account schemas. Conversely a coarse
 “state stored in this File” edge supplies collision dependence, not this addressing rule.
-All objects may remain ordinary kinds/entities; the unresolved question is whether the
+All objects may remain ordinary mKinds/mEntities; the unresolved question is whether the
 existing authored edge semantics express the rule or need enriching.
 
 The composed narration must retain each contributing source line. If all these local
 contracts hold, the candidate equality follows without a shared custody closure across
 all authors. If the account author's binding claim is absent, broad storage alone cannot
-complete that derivation. This is an application of the committee-speech test, not a
+complete that mDerivation. This is an application of the committee-speech test, not a
 claim that the current language already expresses every step.
 
 ### `assessment-three-consumers-different-obligations`
@@ -513,32 +513,32 @@ claim that the current language already expresses every step.
    cache/view. The applicable `27C` carry, `30S` environment, and custody laws remain.
 2. A running mutation through Beta/Red must invalidate relevant Alpha/Red facts on the
    shared object. Known-distinct hosts do not spare them. Scoped at-most claims,
-   reaches/store collision, and the risk-gated sparing consumer retain their own roles.
+   :reaches/store collision, and the risk-gated sparing consumer retain their own roles.
 3. Blue must not borrow Red's answer merely because both directories live in the same
-   database. Coarse writes can collide with both; fine identity needs the directory key.
+   database. Coarse writes can collide with both; fine identity needs the directory mKey.
    A private copy with identical bytes is another reason content equality is not identity.
 
 ### `assessment-entry-changes-and-namespace-lifetimes`
 
-Distinct questions have distinct competent authors: ssh's name resolution and entry
+Distinct questions have distinct competent authors: ssh's name mResolution and entry
 siting; the account tool's path/directory selection; filesystem object identity under the
 entered mount view; the lifetime of each relationship. Host-local `st_dev`/inode pairs,
 mount labels, or equal path text are not automatically cross-host object identifiers.
 A remount can change a later path's referent without changing the old database. A
-namespace-recreating command can invalidate old handles without requiring the engine to
+mNamespaceInstance-recreating command can invalidate old handles without requiring the engine to
 compute the new handles. Reuse existing scoped incarnation/re-keying and effective reach;
-add no parallel TTL or per-site re-witness protocol. Book versus oracle execution geometry,
+add no parallel TTL or per-mSite re-`witness()` protocol. Book versus oracle execution geometry,
 control-lane integrity, and source-definition identity remain independent entry obligations.
 
 ### `assessment-world-comparison-cannot-short-circuit-shared-state`
 
 Candidate design seam, not an as-built bug: `30W` §5 promises shared-volume referents
-across distinct hosts, but also summarizes host identity as a world partition. Its latter
-wording cannot be applied literally to every cell: different hosts may reach this very
-same database. Likewise a comparison procedure that requires ambient worlds to match
+across distinct hosts, but also summarizes host identity as a mWorld partition. Its latter
+wording cannot be applied literally to every mCell: different hosts may reach this very
+same database. Likewise a `compare()` procedure that requires ambient mWorlds to match
 BEFORE permitting any owner relation to establish shared-store identity would block this
 example circularly. The context-slot/comparison design must admit an authored,
-cell-relevant cross-context bridge without requiring a globally false “File is invariant
+mCell-relevant cross-context bridge without requiring a globally false “File is invariant
 across Host” claim. It must not infer that bridge from shared storage alone either.
 This is the concrete form of the original index-world question, not yet its resolution.
 
@@ -551,16 +551,16 @@ as a dependency.
   cases distinguishing catastrophic wrong sameness from catastrophic wrong disjointness.
   Explain carrying measured convergence as sufficient to remove an apply, or feeding a
   predicted value into the book's observing consumer; abstract “value reuse” is not the
-  product. Identity is the entity-plane subject, not a hidden extra user value.
+  product. Identity is the mEntity-plane subject, not a hidden extra user value.
 - **`rul-study-useful-directional-exceptions` [TYPED]** — take availability of unknown
   as read. Seek specific links or acts with a justified universally safer direction;
   these are opportunities for simpler authoring. Do not repeat unknown as a substitute
   for finding which consumer makes a direction safe.
 - **`rul-stores-may-be-ordinary-kind-entities` [TYPED]** — assume generalized storage
-  in arbitrary abstract kinds, transitively reaching File or network/Host-shaped kinds
+  in arbitrary abstract mKinds, transitively reaching File or network/Host-shaped mKinds
   where appropriate. File-only is insufficient. Prior basis confirmed: `30W` §1 makes
-  indices ordinary kinds; `311a` §4 explicitly reads `stored-in KIND` as a coordinate
-  of that kind, with its own index dependence transitively described. The precise
+  indices ordinary mKinds; `311a` §4 explicitly reads `stored-in KIND` as a coordinate
+  of that mKind, with its own index dependence transitively described. The precise
   naming-edge extension below remains unratified despite this generalization.
 - **`question-authority-is-another-context-dimension` [potential nack]** — User/sudo
   should not become a separate abstract epistemic mechanism from Mount/File/chroot.
@@ -584,29 +584,29 @@ EVERY design choice in this section is **[PROPOSED]**, not a consequence already
 
 ### `proposal-addresses-are-qualified-not-globally-interned`
 
-Keep one kind/entity/cell vocabulary and the existing context qualification. Add no
+Keep one mKind/mEntity/mCell vocabulary and the existing context qualification. Add no
 second identity ontology and no automatic host partition. An unresolved address retains
 its full origin context, current value-flow and definition identities, and validity
-conditions. Merely repeating it mints no new world assertion.
+conditions. Merely repeating it mints no new mWorld assertion.
 
-The proposed minimal authored extension is to the existing kind-owner `__resolve`:
-instead of only a bare canonical token, it may return a canonical local name qualified
-by another ordinary entity. The parent is a full context-qualified entity, not a raw
-string or merely a kind name. One result asserts an equality for this reached case:
-“the supplied entity is this local name within this particular namespace.” The name's
-interpretation belongs to the child kind's owner. There is no new blanket “all contexts
+The proposed minimal authored extension is to the existing mKind-owner `__resolve`:
+instead of only a bare canonical mToken, it may return a canonical local name qualified
+by another ordinary mEntity. The parent is a full context-qualified mEntity, not a raw
+string or merely a mKind name. One result asserts an equality for this reached case:
+“the supplied mEntity is this local name within this particular mNamespaceInstance.” The name's
+interpretation belongs to the child mKind's owner. There is no new blanket “all contexts
 are irrelevant” promise and no need for a new `__identity` family merely to carry it.
 
 Example meaning, NOT surface syntax: account 7 within Red within the selected database
 File. The account author describes the account/directory/database address structure;
-the filesystem author may resolve that File through a shared-volume entity; the volume
+the filesystem author may resolve that File through a shared-volume mEntity; the volume
 owner describes its own names. Every introduced object stays qualified until another
 explicit relation justifies comparing it across contexts. The engine does not inspect
-SQL, mount paths, SSH options, UUID formats, or directory keys for world semantics.
+SQL, mount paths, SSH options, UUID formats, or directory mKeys for mWorld semantics.
 
 ### `proposal-storage-dependence-does-not-become-equality`
 
-`__state_stored_in` continues emitting ordinary kind/entity coordinates, with its
+`__state_stored_in` continues emitting ordinary mKind/mEntity coordinates, with its
 existing collision and explicit invariance consumers. A broad File store can remain a
 useful, correct coarse description. The qualified-resolve result supplies what that
 coarse statement cannot: the owner's rule that a particular local name in a particular
@@ -621,22 +621,22 @@ No exact marker token, return calling convention, or wire representation is sele
 
 ### `proposal-comparison-uses-only-licensed-implications`
 
-A qualified resolution is an identity equality, scoped to the reached author and live
-question. The engine may compose valid equality edges: equivalent parent namespaces and
-matching canonical local names under the same applicable kind contract establish the
+A qualified mResolution is an identity equality, scoped to the reached author and live
+question. The engine may compose valid equality edges: equivalent parent mNamespaceInstances and
+matching canonical local names under the same applicable mKind contract establish the
 same child. Equality closure does not traverse storage or disturbance edges as if they
-were identity edges. Cross-kind identification requires explicit typed permission; a
+were identity edges. Cross-mKind identification requires explicit typed permission; a
 storage link is never that permission.
 
-Unequal canonical strings, unequal parent keys, or different host contexts do not
-automatically establish child disjointness. The kind-owner's `__disjoint` and other
+Unequal canonical strings, unequal parent mKeys, or different host contexts do not
+automatically establish child disjointness. The mKind-owner's `__disjoint` and other
 already-authorized generators retain their exact consumer meanings. A distinctness
 witness is not transitively composable like equality. In particular, `__disjoint`'s
 non-disjoint/overlap answer is NOT an equality answer: overlapping regions need not be
 one region. Store expansions remain universal for sparing; a single convenient route
 cannot erase another relevant collision.
 
-Consequential conclusions need well-founded derivations: an unresolved recursion is no
+Consequential conclusions need well-founded mDerivations: an unresolved recursion is no
 proof, and an equality assumption cannot justify its own premises. Questions are bounded
 by the existing analysis/transport budgets; a query whose inputs only emerge after a
 probe cannot trigger an unsanctioned extra exchange. Missing answers withhold the
@@ -653,7 +653,7 @@ This does not silently lift `27C` §4's existing user-axis restriction on the pu
 carry route; altering that consumer would require an explicit ruling, not merely adding
 an identity generator.
 
-The kernel compares cell-relevant authored chains, never globally settles world equality
+The kernel `compare()`s mCell-relevant authored chains, never globally settles mWorld equality
 first. Thus different machines may resolve to one shared File while different User
 contexts still block an unsupported inference about a check's status. An author is not
 asked to enumerate all unknown future dimensions: unexplained incoming transitions
@@ -662,14 +662,14 @@ its reached statement and premises actually identify.
 
 ### `proposal-incarnation-and-narration-ride-existing-rails`
 
-Resolution observations and authored-address derivations retain their dependency and
-validity information. A path retarget, namespace reset, or modelled identity-cycling act
-invalidates the affected links through existing effective-world reach/incarnation
+mResolution observations and authored-address mDerivations retain their dependency and
+validity information. A path retarget, mNamespaceInstance reset, or modelled identity-cycling act
+invalidates the affected links through existing effective-mWorld reach/incarnation
 machinery. No successor identity needs to be invented, and no new TTL, special boot-ID
-scheme, or per-site witness protocol is introduced.
+scheme, or per-mSite witness protocol is introduced.
 
 Each authored generator and consequential composition produces its associated Narration.
-The correctness derivation and the decision-inert narration remain separate typed
+The correctness mDerivation and the decision-inert narration remain separate typed
 objects: user-demanded explainability must not create a route from aid back into license
 inputs. A source-to-conclusion explanation preserves the narrow collaborating set of
 statements, not only the last resolver or a guessed culprit.
@@ -678,7 +678,7 @@ statements, not only the last resolver or a guessed culprit.
 
 - **`goal-blue-account-must-be-enabled`** — Red/7 is converged, Blue/7 is not. A false
   same conclusion carries Red's convergence into Blue's decision and removes the
-  necessary Blue enable. Naming/account scope is the sharp link; same database alone
+  necessary Blue enable. Naming/account mScope is the sharp link; same database alone
   must never supply it.
 - **`goal-shared-account-must-be-reenabled`** — Alpha/Red/7 probes enabled; an earlier
   apply command through Beta disables that same shared account; a later Alpha enable
@@ -686,7 +686,7 @@ statements, not only the last resolver or a guessed culprit.
   the mutation. Host separation must never supply the spare by itself.
 
 A direct unchanged, adequately described cross-route case can omit redundant checks or
-carry convergence to a supported later site; that is an attention/performance benefit,
+carry convergence to a supported later mSite; that is an attention/performance benefit,
 not permission to rewrite live book arguments or replay predicted bytes during apply.
 The analogous prediction consumer remains under `30D` and the existing value-plane
 contract, not a second identity-specific substitution mechanism.
@@ -698,7 +698,7 @@ direction for the sparing consumer: a false extra overlap costs an elision, neve
 one. It must not gain a second, equality-generating interpretation. The identity bridge
 and disjointness grant do not enjoy that free direction.
 
-A context-independent value kind, such as a stdlib-described UUID value, can terminate
+A context-independent value mKind, such as a stdlib-described UUID value, can terminate
 a recursive naming question through ordinary authored comparison/invariance rules. It
 identifies UUID VALUES, not physical objects by magic. Mapping a volume/account/other
 object onto that value is the particular owner's claim; whether unequal such values
@@ -714,14 +714,14 @@ it does not prove a fresh syntax token or changed resolver signature is necessar
 
 - **`rul-context-dimensions-are-ordinary-types` [TYPED]** — treat the generalization as
   ruled: User, NetNS, and the other context dimensions are ordinary stdlib types, not
-  engine-special types or built-in world semantics. No continued qualification of that
+  engine-special types or built-in mWorld semantics. No continued qualification of that
   direction is needed.
 - **`lean-enrich-one-description-retire-duplicate-authorship` [human LEAN]** — the
   human doubts a separate state-stored member is necessary; prefer one authored item
-  capable of serving both identity and collision through the entity graph. Argue for
+  capable of serving both identity and collision through the mEntity graph. Argue for
   any retained semantic distinction, not for preserving the old member by inertia.
 - **`question-optional-identifiers-add-alternative-routes` [TYPED exploration request]** —
-  describe how normal namespace-based comparison and a platform/provider-specific UUID
+  describe how normal mNamespaceKind-based comparison and a platform/provider-specific UUID
   route coexist. The anticipated benefit is a shorter proof where the optional answer
   exists; the human requests holes in that assumption and complete exploratory functions.
 
@@ -729,21 +729,21 @@ it does not prove a fresh syntax token or changed resolver signature is necessar
 
 [Assistant proposal] Retire separate `__state_stored_in` authorship in favor of an
 expanded single `__resolve` description. Preserve collision-only dependency as a weak
-statement within that description: an author may know an entity's state is affected by
+statement within that description: an author may know an mEntity's state is affected by
 several locations without possessing a canonical address or a separating comparison.
 Exact constituent addressing can project BOTH a qualified identity and collision
 containment from one line, avoiding duplication for the common case. Naming through a
-namespace is weaker than saying all of the entity's state is a constituent of that
-namespace; pointer-like namespace bindings and split storage require the weaker forms.
+mNamespaceInstance is weaker than saying all of the mEntity's state is a constituent of that
+mNamespaceInstance; pointer-like mNamespaceInstance bindings and split storage require the weaker forms.
 No old weak statement silently gains stronger authority in the migration.
 
 The chat spelling deliberately distinguishes provisional forms rather than claiming
 this many final keywords are required: `part-in` (canonical local name plus constituent
-state dependence), `name-in` (canonical scoped name and resolution dependence only),
-`backed-by` (collision-only), `key-by` (an additional typed comparison key, under the
-subject kind owner's warrant), and `value-name` (the kind's canonical value representation,
-context-independent by the kind owner's speech). These are prototype vocabulary only.
-A UUID value is one ordinary value-kind example; engine code recognizes no UUID format.
+state dependence), `name-in` (canonical scoped name and mResolution dependence only),
+`backed-by` (collision-only), `key-by` (an additional typed comparison mKey, under the
+subject mKind owner's warrant), and `value-name` (the mKind's canonical value representation,
+context-independent by the mKind owner's speech). These are prototype vocabulary only.
+A UUID value is one ordinary value-mKind example; engine code recognizes no UUID format.
 
 ### `proposal-alternative-proofs-do-not-replace-dependencies`
 
@@ -760,12 +760,12 @@ actual same and actual disjoint claims about the same subject pair, aspect, and 
 world conflict: never choose the shorter or higher-priority provider. Withhold the
 contradicted authority and retain the named competing claims for why. No arbitrary
 provider precedence, new function-shadow fallback, or automatic cross-author merging
-is introduced. One selected kind member composes provider helpers explicitly under
+is introduced. One selected mKind member composes provider helpers explicitly under
 ordinary source custody and control flow.
 
 An additional `key-by` clause conveys identity/disjointness only where its declared
-contract applies to the SUBJECT kind; it does not equate that subject with a UUID VALUE
-or merge different subject kinds carrying the same bytes. Unsupported optional keys
+contract applies to the SUBJECT mKind; it does not equate that subject with a UUID VALUE
+or merge different subject mKinds carrying the same bytes. Unsupported optional keys
 leave the ordinary route intact. A provider identifier that denotes only a logical
 object across independently diverging replicas cannot by itself warrant equal physical
 state. The final convergence/prediction comparison retains its real state backings and
@@ -774,7 +774,7 @@ contextual conditions; an identity-key clause must not bypass them.
 ### `proposal-local-key-comparisons-remain-owner-answered`
 
 In the prototype, a same-parent canonical local-name match can establish sameness under
-the resolved address contract. Unequal names consult that child kind's `__disjoint`,
+the resolved address contract. Unequal names consult that child mKind's `__disjoint`,
 under the proved shared parent; they are not engine-inferred separation. Different
 parents alone do not separate children: two distinct mountpoints can name the same
 filesystem. An explicit typed comparison-key claim can supply an independent proof.
@@ -784,7 +784,7 @@ an overlap answer never becomes equality.
 ### `proposal-prototype-scope-and-honest-limits`
 
 Complete illustrative functions are presented in chat, not saved as a durable oracle
-library. New annotated binds construct a scope-qualified value; resolver arguments carry
+library. New annotated binds construct a mScope-qualified value; resolver arguments carry
 its local name and ordered parent names with their type/provenance attachments (the
 proposed ABI, not today's). Read-only `acct_query`, `fs_facts`, and `os_facts` in those
 functions stand for ordinary author-owned tool adapters, never engine facilities.
@@ -796,7 +796,7 @@ The filesystem example describes actual filesystem objects, not the identity of 
 entries or subtree regions; those are separate subjects under `30T`'s per-aspect law.
 A mountpoint is a route to its filesystem, not a globally disjoint container; mount
 changes invalidate that route through existing scoped incarnation/reach. The same
-calculus describes namespace-local kernel Users, deliberately distinguished from the
+calculus describes mNamespaceInstance-local kernel Users, deliberately distinguished from the
 application's Account records. UUID-backed shortcut examples require an adapter that
-only supplies keys suitable for the declared subject identity contract; ordinary cloned
-filesystem UUIDs are not automatically such keys.
+only supplies mKeys suitable for the declared subject identity contract; ordinary cloned
+filesystem UUIDs are not automatically such mKeys.

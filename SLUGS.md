@@ -122,7 +122,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-cross-world-wall-is-the-floor
 - defined: —
-- cited: 04 26Ob 311a 311c 312a 312b (10)
+- cited: 04 26Ob 311a 311c 312a 312b (11)
 
 ## ack-entered-kind-is-declared-never-host
 - defined: —
@@ -6062,7 +6062,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:rul-conflict-between-totals-is-falsification
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:313 — [ACKED] — judgment-tier
-- cited: 28K (2)
+- cited: 28K 312b (3)
 
 ## rul-conflict-files-delete-this-session
 - defined: —

@@ -10,30 +10,30 @@
 
 ## §0 — Overall assessment
 
-The strongest move is site-specific store qualification: the tool oracle that actually
-parses `--db` supplies the database instance, while a different kind-owner answers the
+The strongest move is mSite-specific store qualification: the tool oracle that actually
+parses `--db` supplies the database instance, while a different mKind-owner answers the
 file's identity question. Keeping the account name alongside that pointer avoids
 collapsing every account merely because the accounts share a database. Making identity
 answers perishable is also necessary and well motivated.
 
 The unresolved core is WHAT a store pointer promises. The document moves between
-physical storage, identity-determining inputs, and the dependencies of a resolution.
+physical storage, identity-determining inputs, and the dependencies of a mResolution.
 Those are not interchangeable merely because they are represented as coordinates.
 A union of pointers does not, by itself, retain the way their meanings compose.
 
 The most concrete defects are the stated equality test for multiple stores and the
-use of unequal IDENTIFYING tokens to refute invariance. The most consequential design
+use of unequal IDENTIFYING mTokens to refute invariance. The most consequential design
 holes concern role-sensitive store composition, completion authority across authors,
-and the lifetime of name-resolution relationships rather than just their result objects.
+and the lifetime of name-mResolution relationships rather than just their result objects.
 
 ## §1 — `issue-multiple-store-equality-is-not-reflexive-as-written`
 
 **Assessment: concrete defect or consequential ambiguity in A4's rule.**
 
 A4 defines store sameness as equal cardinality and “every pointer pair same.” Under
-its literal Cartesian-product reading, a complete two-store set does not compare same
+its literal Cartesian-product reading, a complete two-store set does not `compare()` same
 with itself. Let `S = {database-file, policy-file}`, with the two files known disjoint.
-The cross pairs are disjoint, so `stores(S, S)` is not same. A cell with perfectly
+The cross pairs are disjoint, so `stores(S, S)` is not same. A mCell with perfectly
 understood multiple stores loses even reflexive identity through that branch.
 
 If “pointer pair” means some intended matching instead, that matching is not specified.
@@ -61,10 +61,10 @@ An unordered set knows that both files participate. It does not know which is th
 base and which is the override. Site-specific pointers put the correct instances into
 the set, but union removes the relationship between each instance and its role.
 
-A kind can avoid this by documenting a richer entity name, introducing role-specific
-parent kinds, or otherwise preserving the composition recipe. Those are possible
+A mKind can avoid this by documenting a richer mEntity name, introducing role-specific
+parent mKinds, or otherwise preserving the composition recipe. Those are possible
 repairs, not consequences of the current set rule. Encoding raw path spellings into
-the entity name also risks losing the cross-path identity value the pointer recursion
+the mEntity name also risks losing the cross-path identity value the pointer recursion
 was supposed to recover.
 
 If A instead defines authoring `stored-in` as explicitly promising that the UNORDERED
@@ -86,11 +86,11 @@ A2 describes injectivity WITHIN one store. A4's first positive branch concludes
 between the stores.
 
 This can be justified if every referent has a unique complete identity-bearing store
-scope: if two references denoted the same thing, their scopes would necessarily be the
+mScope: if two references denoted the same thing, their mScopes would necessarily be the
 same, and local injectivity would then forbid different canonical names. In that
 stronger model the missing explicit `s = same` check is not automatically a bug.
 
-But A does not establish that unique-scope premise. Ordinary regions or views can
+But A does not establish that unique-mScope premise. Ordinary regions or views can
 contain the same state while assigning it different local names. For example, two
 non-aliasing windows into an underlying block range can each have injective local
 block numbers, while local block 100 in one is local block 0 in the other. Different
@@ -108,27 +108,27 @@ coarse/shared storage descriptions that cannot make that stronger assertion.
 
 This concern is separate from A's openly acknowledged default-injectivity debt. Even
 an explicit TRUE local-injectivity declaration does not supply an unspecified global
-scope theorem.
+mScope theorem.
 
 ## §4 — `issue-totality-has-no-defined-author-over-the-union`
 
 **Assessment: an incomplete authority/composition contract.**
 
-A1 forms a cell's store set by unioning KIND-level pointers and SITE-level pointers,
+A1 forms a mCell's store set by unioning KIND-level pointers and SITE-level pointers,
 then uses `stored nothing-else` to authorize positive comparisons. It does not specify
 which author closes which set:
 
-- Does the kind-owner close only their own output, or the eventual union with site
+- Does the mKind-owner close only their own output, or the eventual union with mSite
   pointers authored in other files?
-- Can a tool's reached site-level sentinel close the kind-owner's output?
+- Can a tool's reached mSite-level sentinel close the mKind-owner's output?
 - If both close their own contributions, who has promised that the two contributions
   collectively contain every identity-relevant input?
-- How do verdict-side and disturbance-side descriptions of nominally the same entity
+- How do verdict-side and disturbance-side descriptions of nominally the same mEntity
   retain the same interpretation without implicitly composing their authors' judgments?
 
-None is answered by set union alone. A generic kind-owner may not know the invocation
+None is answered by set union alone. A generic mKind-owner may not know the invocation
 shape or provider-specific input; the tool oracle knows the argv but may not know the
-kind's implementation-independent semantics. Explicit delegation can make such
+mKind's implementation-independent semantics. Explicit delegation can make such
 collaboration legitimate, but its boundary is the missing contract, not something a
 completion sentinel supplies automatically.
 
@@ -146,23 +146,23 @@ arrival cannot decide whose semantic completeness promise covered the union.
 
 **Assessment: concrete incorrect inference in A5.**
 
-A2 deliberately permits an IDENTIFYING `resolve()`: equal tokens prove sameness, unequal
-tokens say nothing. Such a reader can legally return different route-qualified handles
+A2 deliberately permits an IDENTIFYING `resolve()`: equal mTokens prove sameness, unequal
+mTokens say nothing. Such a reader can legally return different route-qualified handles
 for one shared object. For example, two mounts can provide distinct identifying handles
 for the same file; equality of either complete handle remains a valid identification
 within its warranted scope.
 
-A5 nevertheless treats differing tokens as a contradiction of an invariance statement
-and derives keying from unequal store tokens. For an identifying-only reader, inequality
-is not a refutation of referent equality. A true invariance line and two unequal tokens
+A5 nevertheless treats differing mTokens as a contradiction of an invariance statement
+and derives keying from unequal store mTokens. For an identifying-only reader, inequality
+is not a refutation of referent equality. A true invariance line and two unequal mTokens
 can coexist without any author being wrong.
 
 The grade must govern the corroboration path as well as the primary comparison path.
 A contradiction requires an actual warranted separation result about the same subjects
-and circumstances, not raw token inequality. Otherwise the supposedly defensive check
+and circumstances, not raw mToken inequality. Otherwise the supposedly defensive check
 wrongly withdraws valid authority and directs the user toward a false disagreement.
 
-Separately, invariance of cell identity and identity of every physical backing store
+Separately, invariance of mCell identity and identity of every physical backing store
 are not automatically the same claim. A5 redefines the old line in terms of stores.
 That may be an intended new contract, but it needs an explicit semantic argument rather
 than assuming a measurement is simply the old declaration made empirical.
@@ -171,20 +171,20 @@ than assuming a measurement is simply the old declaration made empirical.
 
 **Assessment: acknowledged risk whose proposed allocation still needs scrutiny.**
 
-A does explicitly require cross-host-comparable tokens and allows decline. That is an
+A does explicitly require cross-host-comparable mTokens and allows decline. That is an
 important safeguard in its contract, and the review should not pretend the requirement
 is absent. However, A2's File example places filesystem identity construction inside
 the generic File identity body, including NFS-specific knowledge. A4 makes possession
 of an identity reader the recursion's base case.
 
-The available knowledgeable speaker for an identifier's scope may be the filesystem or
+The available knowledgeable speaker for an identifier's mScope may be the filesystem or
 storage-provider owner, not the File owner. If a File `resolve()` returns a local object key,
-there must be a way for that key to remain qualified by its owning filesystem rather
-than either becoming a terminal global token or forcing the File author to assemble
+there must be a way for that mKey to remain qualified by its owning filesystem rather
+than either becoming a terminal global mToken or forcing the File author to assemble
 one. “There is an identity member” is not itself evidence that its answer can replace
 all store qualification.
 
-The precedence also matters for a kind with both a `resolve()` and useful stores:
+The precedence also matters for a mKind with both a `resolve()` and useful stores:
 if the `resolve()` declines, does A4 return unknown immediately, or attempt the store recursion?
 The written base case appears to choose the former. That loses value the other
 information may still support. If both routes answer, reconciliation is unspecified;
@@ -208,12 +208,12 @@ For example, `/config/current/app.db` may resolve through a symlink to an object
 `/volumes/team`. Replacing the symlink can change what the book's next access reaches
 without mutating the previously identified database object. A correct object-separation
 answer between the symlink entry and the database does not prove that the replacement
-spares the RESOLUTION of the book's name.
+spares the mResolution of the book's name.
 
 The all-MountNamespace coarse dependency may conservatively contain this if its meaning
-covers all relevant name-resolution state and the collision path is actually consumed.
-But relaxing to region footprints needs the dependency of resolution on the affected
-region, not just region separation from the final inode. The File/namespace describer
+covers all relevant name-mResolution state and the collision path is actually consumed.
+But relaxing to region footprints needs the dependency of mResolution on the affected
+region, not just region separation from the final inode. The File/mNamespaceKind describer
 can know the traversal; the `mount` or `ln` author should not have to enumerate every
 future name elsewhere that happens to route through it.
 
@@ -222,10 +222,10 @@ is a distinct consumer contract that must be explicit. A true statement that two
 are separate cannot be reused as a claim that changing one cannot retarget a name for
 the other.
 
-A4 also says cross-kind comparison is unchanged, while A6 relies on namespace writes
+A4 also says cross-mKind comparison is unchanged, while A6 relies on mNamespaceInstance writes
 colliding with File identity dependencies. Existing store-collision machinery may
 provide that path, so this is not by itself a contradiction. The path and its transitive
-consumption must nevertheless be stated; storing a namespace pointer in a side record
+consumption must nevertheless be stated; storing a mNamespaceInstance pointer in a side record
 would not make `{P@w}` sufficient automatically.
 
 ## §8 — `issue-storage-equality-does-not-close-observation-context`
@@ -246,17 +246,17 @@ reads proves that all such inputs are represented. A1's identity-determining poi
 could be a stronger positive speech act, but then its scope and the author's competence
 to warrant it must be explained. Physical-storage completeness alone is insufficient.
 
-This is not a request for special authority machinery. User, namespace, and other
+This is not a request for special authority machinery. User, mNamespaceKind, and other
 contextual contributions can use the same algebra. The review concern is loss of
 those contributions when the per-index reasoning is replaced, and assigning all of
-them implicitly to a kind-owner who may not know the surrounding tools or policies.
+them implicitly to a mKind-owner who may not know the surrounding tools or policies.
 
 ## §9 — `issue-the-demonstration-relies-on-a-contradiction-canary`
 
 **Assessment: A8's bad-bind recovery is a property of that specimen, not validation
 of the identity rule.**
 
-A8 says a bare `7` bind is rescued because the two sites independently produce contrary
+A8 says a bare `7` bind is rescued because the two mSites independently produce contrary
 measurements, which meet to unknown. That recovery requires both independent answers
 to exist and be consumed; it cannot be the general safety argument for an identity
 conclusion that may itself justify omitting redundant measurement. Nor does absence
@@ -275,18 +275,18 @@ of a shared database.
 
 A gives useful explicit places to express:
 
-- an argv-selected database instance without forcing the kind-owner to know the book;
+- an argv-selected database instance without forcing the mKind-owner to know the book;
 - the difference between local account names within a shared store;
 - cross-host store identity without relying on host equality;
 - conservative loss of authority when identity answers expire or decline;
-- site-local provenance for an identity-determining declaration.
+- mSite-local provenance for an identity-determining declaration.
 
 The review is not a rejection of measured store-pointer recursion. Its main requirement
 is to make explicit the claims currently hidden in the set/comparison operations:
-which roles the pointers occupy, who closes their combined meaning, when a scope is
+which roles the pointers occupy, who closes their combined meaning, when a mScope is
 exclusive, and which dependencies make a measured relationship valid.
 
-The default name floor and the added per-site repetition are already acknowledged
+The default name floor and the added per-mSite repetition are already acknowledged
 costs in A10. They should be priced, but they are not the novel findings of this review.
 A7's statement about re-witnessing after every transit also needs reconciliation with
 later witness-policy decisions before implementation; that interface issue is not

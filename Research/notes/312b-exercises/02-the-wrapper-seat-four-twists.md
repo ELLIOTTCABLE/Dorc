@@ -15,7 +15,7 @@ SUDO=; [ "$(id -u)" -eq 0 ] || SUDO=sudo
 $SUDO apt-get install -y nginx
 ```
 
-Four things sudo does to a site that the crontab author, the tool author, and the book author
+Four things sudo does to a mSite that the crontab author, the tool author, and the book author
 did not write down: it changes which user's crontab a spelling reaches; it scrubs the
 environment, so two wrapper orders differ; its policy can pick a different context per guest
 command; and it is often not a word at all but a variable.
@@ -29,8 +29,8 @@ terrible floor.
 
 ## Where the model holds
 
-Twist one, the crontab pair, is the model working. Cron's natural key is named-in User with
-AMBIENT supply; sudo lends User; the two sites reach two fully-qualified keys; no correspondence
+Twist one, the crontab pair, is the model working. Cron's mNaturalKey is :named-in User with
+AMBIENT supply; sudo lends User; the two mSites reach two mFullyQualifiedKeys; no mCorrespondence
 exists; the alice-measured fact cannot license root's line. The cron author declares one thing
 they know (crontabs are per user); the sudo author declares one thing they know (sudo lends a
 user). Neither knows the other.
@@ -45,12 +45,12 @@ policy-defined key set), so `env` outside it is lost and `env` inside it survive
 
 Twist three: sudoers can match on the guest command, so the context that `sudo -n sh -c check`
 enters at probe time can differ from the one `sudo original` enters at apply time (`27Xf`).
-§ 3.4 makes a wrapper's lends a function of the wrapper's own argv, the peel. Here the lend is a
+§ 3.4 makes a wrapper's :lends a function of the wrapper's own argv, the peel. Here the lend is a
 function of the guest bytes, which the wrapper author cannot see and the admin wrote in a file
 the book never mentions. Measure-in-context silently measures a different context.
 
 Twist four: `$SUDO` is a two-valued command word. The value plane sees `$(id -u)` as a host
-read, so `SUDO` is ⊤ and the site walls (`an-name-observation-census`: a non-literal command
+read, so `SUDO` is ⊤ and the mSite walls (`an-name-observation-census`: a non-literal command
 word is a use of every name). The most common privilege idiom in real books gets the worst
 answer.
 
@@ -69,7 +69,7 @@ Four: the engine.
 
 Danger. Three: a guest-sensitive policy on a probe-relevant command is rare, but the failure is
 a confident wrong verdict in the wrong context, the worst probe object (`27C`). Leverage is every
-sudo site; countability says the default (guest-insensitive) is stdlib-owned and the exception
+sudo mSite; countability says the default (guest-insensitive) is stdlib-owned and the exception
 is the admin's. Four: none; unknown is safe. The cost is attention, since every `$SUDO` line
 stays in the plan.
 
@@ -79,9 +79,9 @@ loud can't-say. Four: the engine can show its two branches.
 
 Transformation menu. Three: declare guest-insensitivity as the wrapper author's default, let
 the admin override, and let the oracle read the policy and decline on surprise. Four: carry
-the branch set through the value plane; a site under a two-valued wrapper has a set of two
-entry chains; compare universally over the set. A fact whose key does not pass through User is
-the same in both chains and survives; one that does is unknown. The model's key shape does the
+the branch set through the value plane; a mSite under a two-valued wrapper has a set of two
+mEntryChains; `compare()` universally over the set. A fact whose mKey does not pass through User is
+the same in both chains and survives; one that does is unknown. The model's mKey shape does the
 work with no new declaration. Cheaper: the admin writes `SUDO=sudo` as a literal, which is a
 cliff, not a fix.
 
@@ -97,8 +97,8 @@ hazard is documented, not closed. Four: wall.
   tools (sudoers, APT hooks): read the policy in context, decline when it departs from the
   declared default. Converts a deployment fact the author cannot hold into a measurement the
   author can author.
-- `lead-context-sets-at-a-site`: a site may be entered under a finite set of wrapper chains;
-  compare quantifies universally over the set, as the universal meet already does over backing
+- `lead-context-sets-at-a-site`: a mSite may be entered under a finite set of wrapper chains;
+  `compare()` quantifies universally over the set, as the universal meet already does over backing
   sets.
 - `lead-narrowing-by-test-is-the-capture`: `forfeit-value-narrowing-by-test` is what turns
   `$SUDO` from ⊤ into a two-element set; its priority rises because the idiom is dominant.

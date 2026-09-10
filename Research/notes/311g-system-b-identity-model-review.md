@@ -26,9 +26,9 @@ Several apparent simplifications leave substantive questions inside “referent,
 **Assessment: a strong equality contract is missing or insufficiently distinguished
 from ordinary local canonicalization.**
 
-`311f` B2 makes equal `Measured` tokens establish sameness unconditionally. B3 permits
+`311f` B2 makes equal `Measured` mTokens establish sameness unconditionally. B3 permits
 an identity member to return answers ranging from a canonical package name to
-`fsid:inode`. Those answers do not have uniform comparison scope:
+`fsid:inode`. Those answers do not have uniform comparison mScope:
 
 - a package name is meaningful within a package database;
 - an inode number is meaningful within a filesystem;
@@ -36,21 +36,21 @@ an identity member to return answers ranging from a canonical package name to
 - some apparently global identifiers are duplicated by cloning.
 
 `Located` is the right representational ingredient for scoped answers, but B3 does not
-clearly distinguish “I obtained a local canonical name” from “I obtained a token
+clearly distinguish “I obtained a local canonical name” from “I obtained a mToken
 sufficient to terminate the chain.” B5's direct `Measured(File, fsid:inode)` is exposed
 to precisely that distinction.
 
-B4 also misidentifies the cloneable-token failure direction. Different machines with
+B4 also misidentifies the cloneable-mToken failure direction. Different machines with
 the same cloned machine-id threaten SAME. The `transparent` grade controls whether
-DIFFERENT tokens establish separation; it cannot protect the unconditional equality
-rule. Wrong separation arises when one referent can produce different tokens, not
-from equal tokens on distinct clones.
+DIFFERENT mTokens establish separation; it cannot protect the unconditional equality
+rule. Wrong separation arises when one referent can produce different mTokens, not
+from equal mTokens on distinct clones.
 
 The generic File author should not have to know the scope of every filesystem's
 identifiers. The filesystem/provider author often knows better. Preserve that
-contribution explicitly rather than hide it in a supposedly terminal token. This is
-not a claim that trustworthy terminal tokens cannot exist; it is a requirement to
-state the strength and scope of the contract admitting them.
+contribution explicitly rather than hide it in a supposedly terminal mToken. This is
+not a claim that trustworthy terminal mTokens cannot exist; it is a requirement to
+state the strength and mScope of the contract admitting them.
 
 ## §2 — `issue-storage-is-not-necessarily-exclusive`
 
@@ -86,7 +86,7 @@ unconditional interpretation of ordinary storage is.
 **Assessment: B2's dissolution of transport omits a necessary account of the full
 subject of an observation.**
 
-B2 says: “If two sites' Refs compare same, there is one cell; whichever probe read it,
+B2 says: “If two mSites' Refs `compare()` same, there is one mCell; whichever probe read it,
 read it.” Consider `sudo -u alice test -w /shared/accounts.db` versus
 `sudo -u root test -w /shared/accounts.db`. Both address the same filesystem object;
 their answers can differ.
@@ -98,13 +98,13 @@ Listing additional physical stores does not obviously supply the missing qualifi
 
 Distinguish identity of the object from identity of the complete subject of the claim
 about it. These coincide for some claims, not all. Credentials, client-local caches,
-namespace-relative visibility, and authorization mechanisms can contribute without
+mNamespaceKind-relative visibility, and authorization mechanisms can contribute without
 changing the object reached.
 
 This review does NOT propose a special privilege algebra. User-related inputs should
 use the same abstract machinery as other inputs. The concern is erasing contextual
 information before showing how all relevant inputs became part of the claim. If each
-kind owner must recover every influence through `located_in`, responsibility may land
+mKind owner must recover every influence through `located_in`, responsibility may land
 on the wrong author: a file author cannot reasonably know every mechanism affecting
 a particular caller's access.
 
@@ -113,7 +113,7 @@ a particular caller's access.
 **Assessment: conservative value hole in the stated comparison rule, not unsafe
 elision.**
 
-B2 permits cross-kind disjointness only if the total store chains share no
+B2 permits cross-mKind disjointness only if the total store chains share no
 same-or-unknown store pair. Consider:
 
 - Package nginx → package-status File → Filesystem F;
@@ -130,7 +130,7 @@ sufficiently precise level. Its region predicate might help, but B does not spec
 how that result satisfies or overrides the all-ancestor test.
 
 The terminal case also needs specification: “no further stores listed” must not
-vacuously prove two arbitrary terminal kinds disjoint. This is a question for the
+vacuously prove two arbitrary terminal mKinds disjoint. This is a question for the
 formalized rule, not a claim about an implementation that does not yet exist.
 
 ## §5 — `issue-knowledge-can-live-outside-the-kind-owner`
@@ -143,20 +143,20 @@ oracle, executing inside the container, may lack the information or privileges t
 identify the outer process. The container manager's author can know the correspondence
 from its control interface.
 
-B assigns identity production to one kind-owner member running in the denoted world,
-and wrapper authorship to lending routing namespaces. Where can the container author
+B assigns identity production to one mKind-owner member running in the denoted mWorld,
+and wrapper authorship to lending routing mNamespaceInstances. Where can the container author
 contribute the concrete correspondence between these two process names?
 
-The namespace declaration alone does not provide it. Namespace disjointness cannot
+The mNamespaceInstance declaration alone does not provide it. Namespace disjointness cannot
 separate the processes either: they are the same process seen through different PID
-namespaces. Requiring the Process owner to learn every container manager's semantics
+mNamespaceInstances. Requiring the Process owner to learn every container manager's semantics
 would put the responsibility on the wrong speaker.
 
 The model could be extended, or explicit helper composition could carry this knowledge.
 As written, that contribution has no clear primitive or contract. This is not a proof
 that the knowledge is unrepresentable under every extension. It identifies a choice
 between losing available value and centralizing implementation-specific knowledge in
-the generic kind owner—precisely the epistemic seam the review was asked to examine.
+the generic mKind owner—precisely the epistemic seam the review was asked to examine.
 
 ## §6 — `issue-alternative-identities-are-not-represented`
 
@@ -169,7 +169,7 @@ reconciling several descriptions of one subject.
 
 This matters when one provider supplies a stronger identifier and another only the
 ordinary enclosure, or both descriptions exist and corroborate or contradict one
-another. Choosing one representation loses information. Mixing untagged token schemes
+another. Choosing one representation loses information. Mixing untagged mToken schemes
 in the single identity member can be worse: two encodings of the same object could be
 mistaken for disjoint identifiers.
 
@@ -192,7 +192,7 @@ important cases naturally:
 
 The shorthand “chroot swaps the mount table” is technically imprecise: root directory,
 mount namespace, and other path-resolution inputs differ. That alone does not refute
-the abstract model; its arbitrary namespace referents could represent the corrected
+the abstract model; its arbitrary mNamespaceKind referents could represent the corrected
 inputs. The findings above concern stronger issues than such mechanical shorthand.
 
 No claim here depends on preserving the current implementation or the conversation's
