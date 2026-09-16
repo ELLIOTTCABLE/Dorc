@@ -10,11 +10,9 @@
 > to read and where the reading bites; §2 the human's framing of the problem; §3 the current
 > system as designed, its epistemics, and the author-facing contract as taught.
 >
-> Sitting conduct (human, 2026-09-07): do NOT read `notes/311b` nor the repo-root
-> `_tmp-identity-review-context.md` beyond its "Motivating runbook" (lines 116–134) — they carry
-> a sibling's opinions on the same problem, and this sitting is meant to explore it from other
-> angles. The old strawman directories are rotted; do not read them. As-built code informs
-> sizing only; product direction first.
+> Sitting conduct: `notes/311b` is readable (the 2026-09-07 fence on it is lifted, human-typed
+> 2026-09-16; do not ask again). The old strawman directories are rotted; do not read them.
+> As-built code informs sizing only; product direction first.
 
 ## §0 — one screen
 

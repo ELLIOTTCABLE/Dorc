@@ -4664,7 +4664,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## open-bound-token-same-across-chains
 - defined: —
-- cited: 311a 311b 311c (6)
+- cited: 311a 311b 311c _tmp-r31-identity-handoff (7)
 
 ## open-cell-granted-acquire-ux
 - defined: —
@@ -7310,7 +7310,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-three-rc-regimes
 - defined: —
-- cited: 311a 311c (3)
+- cited: 311a 311c _tmp-r31-identity-handoff (4)
 
 ## rul-top-absorbs-absolute-maps
 - defined: —

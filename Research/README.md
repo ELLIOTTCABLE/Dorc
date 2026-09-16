@@ -269,7 +269,16 @@ the license-contamination map. Cross-references are `docID:slug`.
   **`notes/311f`** (System B, whole-cloth referent/route/store model) → **`311g`** (local review);
   **`notes/311h`** (the author's comparison synthesis) → **`311i`** (reviewer synthesis of
   the epistemic and composition gaps). These are exploratory proposals and reviews, not
-  adopted direction.
+  adopted direction. **`notes/311`** is the preparatory identity-and-relation MODEL those
+  sittings synthesized (§1–§3 the model; §6 the forcing functions and dead ends; nothing
+  ruled). The epistemics-and-assignment phase that follows it: **`notes/312a`** (the corpus
+  import, FROZEN: which typed rulings the model modifies, the prior seat assignments to
+  re-verify, the unknowability classes, the seat gaps) · **`notes/312b`** (its LIVING
+  sittings ledger: typed conduct, exercise takeaways, the time and naming sittings, the shape
+  sitting and its unacked refinements; §-last is the state for a rewound successor) ·
+  `notes/312b-exercises/` (one record per exercise, not durable). The bare `312` is reserved
+  for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
+  was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
   only); direction and the gating rulings are `ROADMAP.md`'s scheduled row.
