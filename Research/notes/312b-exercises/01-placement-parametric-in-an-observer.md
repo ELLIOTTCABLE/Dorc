@@ -30,17 +30,17 @@ on the box and what sudo does to `HOME`. That is the wrong seat, and it is impos
 
 ## Where the model strains
 
-`311` § 2.1 supplies an index three ways: FIXED (the owner names it), SITE (the
+`311` § 2.1 supplies an mKey-CatalogStore three ways: FIXED (the owner names it), SITE (the
 tool author's bind fills it from argv), AMBIENT (the mEntryChain's lent instance for that
 mSort). The pipx store is none of these. It is computed: `${PIPX_HOME:-$HOME/.local/pipx}`,
 an sh expansion over the environment, falling back to the observer's passwd home when `HOME` is
 unset. § 2.3's mPlacements have the same shape. § 2.8's mTraversal decomposes a mKey into the
 mSort's own mKeys; here the first step of the path is not a directory entry but an
-environment or User resolution. Three strains, one cause: an index can be a
+environment or User resolution. Three strains, one cause: an mKey-CatalogStore can be a
 function of ρ and of another mSort's `resolve()`, and the model has no supply mode for that.
 
 The nvm line is the same strain from the command-word side: `node` is a mNaturalKey in the
-engine's own PATH-search index (§ 1.9's transit-free local mRoute), and a sourced file
+engine's own PATH-search mKey-CatalogStore (§ 1.9's transit-free local mRoute), and a sourced file
 rebinds `PATH`. The engine's mRoute claim must perish on a ρ write, not only on a mount-table
 write. Today the `.` line is a blind act and everything below it is havoc, which is safe and
 useless.
@@ -82,13 +82,13 @@ or run. Monotone: every added half buys its mSites and none removes a prior one.
 
 ## Leads and wants
 
-- `lead-computed-index`: a fourth supply mode, COMPUTED, an sh expression over ρ,
+- `lead-computed-catalog-store`: a fourth supply mode, COMPUTED, an sh expression over ρ,
   argv, and a `resolve()` of ambient instances; SITE and AMBIENT may be its special cases. Unknown
   inputs make the instance unknown.
-- `lead-ask-the-tool-for-its-store`: measure-in-context as a rung for indexes and
+- `lead-ask-the-tool-for-its-store`: measure-in-context as a rung for mKey-CatalogStores and
   mPlacements, owned by the tool author, returning a coordinate in another mSort. The newbie
   rung; the declared rule is the experienced rung.
-- `lead-env-is-an-index`: ρ routes command words (`PATH`), stores (`HOME`, `XDG_*`,
+- `lead-env-is-a-catalog-store`: ρ routes command words (`PATH`), stores (`HOME`, `XDG_*`,
   `PIPX_HOME`, `GIT_CONFIG_GLOBAL`), and mReferents (`AWS_PROFILE`). `30S` covers pins and
   severs for verdict bodies; the routing role is wider and belongs in 311's mSort inventory
   (`311:open-observer-sort-inventory`).

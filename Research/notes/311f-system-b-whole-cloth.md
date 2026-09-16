@@ -12,15 +12,15 @@ kernel parameter, a running process, a machine. mCells are (mReferent, aspect); 
 owner-minted selectors, unchanged.
 
 NAME — how a tool addresses an mReferent FROM SOMEWHERE. A name is always relative to a
-index: `red/7` relative to a database file; `/mnt/team/people.db` relative to a mount
+mKey-CatalogStore: `red/7` relative to a database file; `/mnt/team/people.db` relative to a mount
 table; `alice` relative to a passwd database; `beta` relative to a resolver configuration as
 seen from a mVantage. Names are strings authors wrote; the engine never decodes them.
 
 mSort (routing) — the thing a name is interpreted IN. Itself an mReferent of some kind
 (a File; a MountNamespace; a Host-as-mVantage). mSorts are what viewpoint transitions
-perturb: `chroot` swaps the mount table; `ssh` swaps every ambient index for the far
+perturb: `chroot` swaps the mount table; `ssh` swaps every ambient mKey-CatalogStore for the far
 host's; `sudo -u` swaps the identity user-relative names resolve against; `mount` and `ln -s`
-and `mv` MUTATE an index in place for everyone after the line.
+and `mv` MUTATE an mKey-CatalogStore in place for everyone after the line.
 
 STORE (containment) — the mReferent an mReferent's state physically lives in. An Account row
 lives in its db file. A File's contents live in a Filesystem (identified by fsid) at an inode;
@@ -30,7 +30,7 @@ Boot). A Package record lives in the dpkg status File.
 
 Routing and containment are DIFFERENT relations and the design must keep them apart: two
 names in two different mount tables can route to ONE inode (bind mounts, NFS), so
-index-disjointness never implies referent-disjointness; but a row cannot live in two
+mKey-CatalogStore-disjointness never implies referent-disjointness; but a row cannot live in two
 database files, so store-disjointness does imply referent-disjointness. Which of the two a
 mSort exhibits is the mSort owner's to say, and the current design (and System A) conflate them
 under one "stored-in".
@@ -40,7 +40,7 @@ under one "stored-in".
     identity(R) = (identity(store(R)), canonical name of R within store(R))
 
 recursively, terminating at an mSort whose owner supplies a MEASURED mToken (a `resolve()` run
-in the mWorld the name was resolved in), or at Top. The index a name was resolved THROUGH
+in the mWorld the name was resolved in), or at Top. The mKey-CatalogStore a name was resolved THROUGH
 is not part of the identity; it is provenance, and it is what the `witness()` re-verifies.
 
 So a Ref is a self-contained value once resolved:
@@ -100,7 +100,7 @@ mSort owner, per mSort:
   as you can tell, from here?"
 - `kind__located_in()` — per selector: `: lives-in KIND[:fixed-entity]` (the store; where a
   mSite cannot supply the instance from argv, a fixed one is named here) and `: named-in KIND`
-  (the routing index, where names are ambient-relative). One line `: located-in KIND`
+  (the routing mKey-CatalogStore, where names are ambient-relative). One line `: located-in KIND`
   when they coincide (Account: both the db File). Totality: `located nothing-else` per arm.
   Injectivity of the mSort's names within one store: `: names-are-distinct` (default absent ⇒
   unknown on name inequality; silence licenses nothing, no disclosed-weak floor).
@@ -117,19 +117,19 @@ Tool oracle, per mSite:
 - verdict marks, observe marks, `disturbs` emissions, `predicts` — unchanged.
 
 Wrapper oracle:
-- `cmd__lend_map()` lends ROUTING indexes for the mSorts it perturbs, and nothing
-  else: `sudo -u X` lends the User index; `chroot D` lends MountNamespace :=
+- `cmd__lend_map()` lends ROUTING mKey-CatalogStores for the mSorts it perturbs, and nothing
+  else: `sudo -u X` lends the User mKey-CatalogStore; `chroot D` lends MountNamespace :=
   Located(MountRoot, D, in: ambient); `ssh H` lends Host := Located(Host, H, in: mVantage) and
-  RESETS every ambient index to the far mWorld's (the reset sentinel); `nice` lends
+  RESETS every ambient mKey-CatalogStore to the far mWorld's (the reset sentinel); `nice` lends
   nothing. Absent mSorts inherit after a `lends nothing-else` sentinel, else Top. The map is an
   analysis-time ENVIRONMENT consulted when a name is resolved to its store instance; it is
   not part of any fact's mKey.
 - entry forms and `safe-across` unchanged (measure-in-context stays the default lane).
 
 Mutator oracles:
-- a routing mutator (`mount`, `ln -s`, `mv`, `useradd`, `hostname`) `disturbs` the index
+- a routing mutator (`mount`, `ln -s`, `mv`, `useradd`, `hostname`) `disturbs` the mKey-CatalogStore
   mCell (`sm.dorc.MountNamespace:"$ns"@table`, or a File region via `disjoint`). A mResolution
-  (name → store instance, made under that index) is a fact whose backing is the index
+  (name → store instance, made under that mKey-CatalogStore) is a fact whose backing is the mKey-CatalogStore
   mCell; it perishes below the mutator; every Ref built on it re-reads as Top downstream.
 - a store mutator writes mCells as today; identity untouched.
 - a lifecycle mutator (`reboot`) disturbs the Boot mReferent; stores that live in Process or
@@ -155,7 +155,7 @@ Silence anywhere ⇒ unknown ⇒ walls. There is no default positive answer left
 ## B5. Transitions, walked
 
 - `ssh beta acct --db /mnt/team/people.db ...`: ssh lends Host=beta and resets ambient
-  indexes. `--db` is bound as a File in beta's MountNamespace; File's `identity` runs on
+  mKey-CatalogStores. `--db` is bound as a File in beta's MountNamespace; File's `identity` runs on
   beta and returns fsid:inode (or declines). The Account Ref is Located(Account, red/7, in:
   Measured(File, T)). Alpha's line yields Located(Account, red/7, in: Measured(File, T)).
   Same T ⇒ one mCell. Host never enters the identity.
@@ -164,7 +164,7 @@ Silence anywhere ⇒ unknown ⇒ walls. There is no default positive answer left
   T') ⇒ Package mCells inside the chroot are different mCells from the host's. The old
   "package mSort must not claim fs-view invariance" becomes a measurement, not a rule.
 - `sudo -u alice crontab -l` vs root: Cron located-in File:/var/spool/cron/crontabs/$(id -un);
-  the who-am-I ingredient resolves under the lent User index to two names, two inodes ⇒
+  the who-am-I ingredient resolves under the lent User mKey-CatalogStore to two names, two inodes ⇒
   disjoint. `sudo dpkg -s nginx`: same inode ⇒ same mCell as the unprivileged mSite's.
 - `mount -t nfs srv:/team /mnt/team` mid-book: disturbs MountNamespace@table (coarse) or File
   region /mnt/team (fine, via File's `disjoint`); every mResolution through it perishes; Refs
@@ -179,7 +179,7 @@ Silence anywhere ⇒ unknown ⇒ walls. There is no default positive answer left
 ## B6. What B abandons, plainly
 
 - The context slot as a component of a fact's mKey. mWorlds are ROUTES: an analysis-time
-  environment of routing-indexes, consulted at mResolution, recorded as
+  environment of routing-mKey-CatalogStores, consulted at mResolution, recorded as
   provenance, verified by the `witness()`. Only `Route(E)` survives as the last-resort store.
 - The per-index-kind trichotomy and the filtered meet over index-kinds.
 - Invariance lines (`undivided-by-transit-across`). Derived from a `resolve()`. (Could return as a
@@ -211,7 +211,7 @@ as the naming act; the committee law (every positive link one author's).
   license anything; until the stdlib has File, Filesystem, Process, Boot, Host `resolve()`,
   everything above them is Route-keyed (today's behaviour).
 - A representational rewrite: facts carry Refs, not (coordinate, context). `30W` item 1's
-  context-slot product is NOT built; something narrower (the ambient index environment)
+  context-slot product is NOT built; something narrower (the ambient mKey-CatalogStore environment)
   is built at the analysis seat instead.
 - The routing/containment split is one more distinction for mSort owners to learn. It earns
   its place: conflating them is a wrong-disjoint on every path-like mSort.

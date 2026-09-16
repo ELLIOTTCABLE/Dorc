@@ -86,11 +86,11 @@ A2 describes injectivity WITHIN one store. A4's first positive branch concludes
 between the stores.
 
 This can be justified if every mReferent has a unique complete identity-bearing
-store: if two references denoted the same thing, their stores would necessarily be the
+mKey-PrimaryStore: if two references denoted the same thing, their mKey-PrimaryStores would necessarily be the
 same, and local injectivity would then forbid different canonical names. In that
 stronger model the missing explicit `s = same` check is not automatically a bug.
 
-But A does not establish that unique-store premise. Ordinary regions or views can
+But A does not establish that unique-mKey-PrimaryStore premise. Ordinary regions or views can
 contain the same state while assigning it different local names. For example, two
 non-aliasing windows into an underlying block range can each have injective local
 block numbers, while local block 100 in one is local block 0 in the other. Different
@@ -108,7 +108,7 @@ coarse/shared storage descriptions that cannot make that stronger assertion.
 
 This concern is separate from A's openly acknowledged default-injectivity debt. Even
 an explicit TRUE local-injectivity declaration does not supply an unspecified global
-store theorem.
+mKey-PrimaryStore theorem.
 
 ## §4 — `issue-totality-has-no-defined-author-over-the-union`
 
@@ -150,7 +150,7 @@ A2 deliberately permits an IDENTIFYING `resolve()`: equal mTokens prove sameness
 mTokens say nothing. Such a reader can legally return different route-qualified handles
 for one shared object. For example, two mounts can provide distinct identifying handles
 for the same file; equality of either complete handle remains a valid identification
-within its warranted store.
+within its warranted mKey-PrimaryStore.
 
 A5 nevertheless treats differing mTokens as a contradiction of an invariance statement
 and derives keying from unequal store mTokens. For an identifying-only reader, inequality
@@ -177,7 +177,7 @@ is absent. However, A2's File example places filesystem identity construction in
 the generic File identity body, including NFS-specific knowledge. A4 makes possession
 of an `resolve()` the recursion's base case.
 
-The available knowledgeable speaker for an identifier's store may be the filesystem or
+The available knowledgeable speaker for an identifier's mKey-PrimaryStore may be the filesystem or
 storage-provider owner, not the File owner. If a File `resolve()` returns a local object key,
 there must be a way for that mKey to remain qualified by its owning filesystem rather
 than either becoming a terminal global mToken or forcing the File author to assemble
@@ -222,10 +222,10 @@ is a distinct consumer contract that must be explicit. A true statement that two
 are separate cannot be reused as a claim that changing one cannot retarget a name for
 the other.
 
-A4 also says cross-mSort comparison is unchanged, while A6 relies on index writes
+A4 also says cross-mSort comparison is unchanged, while A6 relies on mKey-CatalogStore writes
 colliding with File identity dependencies. Existing store-collision machinery may
 provide that path, so this is not by itself a contradiction. The path and its transitive
-consumption must nevertheless be stated; storing an index pointer in a side record
+consumption must nevertheless be stated; storing an mKey-CatalogStore pointer in a side record
 would not make `{P@w}` sufficient automatically.
 
 ## §8 — `issue-storage-equality-does-not-close-observation-context`
@@ -243,7 +243,7 @@ A4's universal transport requirement over backing members is useful. If all rele
 inputs are represented there and compared under the appropriate semantics, this class
 can be handled. But neither matching physical stores nor a detector for some unmarked
 reads proves that all such inputs are represented. A1's identity-determining pointer
-could be a stronger positive speech act, but then its store and the author's competence
+could be a stronger positive speech act, but then its mKey-PrimaryStore and the author's competence
 to warrant it must be explained. Physical-storage completeness alone is insufficient.
 
 This is not a request for special authority machinery. User, mSort, and other
@@ -283,7 +283,7 @@ A gives useful explicit places to express:
 
 The review is not a rejection of measured store-pointer recursion. Its main requirement
 is to make explicit the claims currently hidden in the set/comparison operations:
-which roles the pointers occupy, who closes their combined meaning, when a store is
+which roles the pointers occupy, who closes their combined meaning, when a mKey-PrimaryStore is
 exclusive, and which dependencies make a measured relationship valid.
 
 The default name floor and the added per-mSite repetition are already acknowledged

@@ -66,7 +66,7 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
   2026-08-15), dissolved toward default-safe; an mSort with no `resolve()` gets no same-mSort sparing.
 - `reack-cross-sort-same-now-exists` — `23O:synonym-cell-scoped` and the second clause of
   `spike/CLAUDE.md:top-identifies-with-nothing`. Cross-mSort SAME arrives through a shared
-  store (`311` § 3.2), delivering `24M:rul24M-kind-unify-owed`; the mechanism is
+  mKey-PrimaryStore (`311` § 3.2), delivering `24M:rul24M-kind-unify-owed`; the mechanism is
   unacked.
 - `check-posture-options-lost-their-home` — `26Ob:ack-rich-internals-keyed-by-the-matrix` and
   `26Ob:ack-cross-world-wall-is-the-floor` (TYPED) reserve a later posture flag; 311 dissolves
@@ -75,7 +75,7 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
 Walked and preserved, no action: the sudo-crontab and dpkg-under-sudo pair; the docker default
 socket (`272` § 4); the sysctl inversion (Sysctl identified-in Boot needs no substrate word);
 policyctl's unmarked read (the read-set closure stays as the net); the nginx/nginx-full alias
-(the `resolve()` supplies the mPrimaryKey); the enabled/active pair (two mAspectSorts, two stores); the
+(the `resolve()` supplies the mPrimaryKey); the enabled/active pair (two mAspectSorts, two mKey-PrimaryStores); the
 store member's argv blindness (SITE-supplied instances); `272` § 5 addresses-are-not-coordinates
 (placement feeds collision only; no identity merge); the refused transport chain (`279f` § 3,
 re-opened only as a warranted `resolve()`); the committee law (`28M` § 8: every positive step is one
@@ -196,7 +196,7 @@ guest; wrapper order and env scrubbing; `$SUDO` as a variable); 03 store identit
 
 Suggested next, each naming the seat it strains: the stdlib Package owner's horizon judgment
 (postinst is arbitrary root sh; APT hooks can install; convert-to-read versus decline) ·
-per-subtree store and cross-mSort SAME (`net.*` sysctls per netns, `kernel.*` per
+per-subtree mKey-PrimaryStore and cross-mSort SAME (`net.*` sysctls per netns, `kernel.*` per
 boot; `sysctl -w` versus a write under `/proc/sys`) · the missing requirement relation and the
 run-delta residue (reload after a changed write; nginx exposes no loaded-config state) · env as
 an mSort (`AWS_PROFILE`; `psql` and `PGHOST`) · time holes (effects after return;

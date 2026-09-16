@@ -32,13 +32,13 @@ or three, so the liminal middle of the enhancement curve is explored rather than
 From `312b-exercises/01` (placement parametric in an observer: pipx, `sudo git config
 --global`, nvm):
 
-- `lead-computed-index` — an index or mPlacement can be a function of
+- `lead-computed-catalog-store` — an mKey-CatalogStore or mPlacement can be a function of
   ρ and of another mSort's `resolve()` (`${PIPX_HOME:-$HOME/.local/pipx}`); `311` § 2.1's three supply
   modes have no room for it. A fourth, COMPUTED, of which SITE and AMBIENT may be special
   cases; unknown inputs make the instance unknown.
 - `lead-ask-the-tool-for-its-store` — measure-in-context as the cheap rung: the tool prints
   its own store; the declared rule is the experienced rung.
-- `lead-env-is-an-index` — ρ routes command words, stores, and mReferents; `30S`
+- `lead-env-is-a-catalog-store` — ρ routes command words, stores, and mReferents; `30S`
   covers pins and severs for verdict bodies only.
 - `lead-local-route-perishes-on-rho-writes` — the engine's transit-free mRoute claim for
   command words is keyed by `PATH` and cwd; a `PATH` write is a routing mutation.
@@ -60,10 +60,10 @@ and env scrubbing, `$SUDO` as a variable):
 - `lead-narrowing-by-test-is-the-capture` — `FORFEITS:forfeit-value-narrowing-by-test` is what
   turns `$SUDO` from ⊤ into a two-element set; the idiom is dominant, so its priority rises.
 
-From `312b-exercises/03` (store identity across hosts: NFS on two hosts, a socket on a shared
+From `312b-exercises/03` (mKey-PrimaryStore identity across hosts: NFS on two hosts, a socket on a shared
 mount, the host key):
 
-- `lead-identify-in-the-narrowest-store` — an mSort identifies in the narrowest store
+- `lead-identify-in-the-narrowest-primary-store` — an mSort identifies in the narrowest mKey-PrimaryStore
   its state lives in, never a coarser one assumed to partition it; a file-backed mSort
   identified in Host is the highest-leverage wrong DISJOINT and a lint-able smell. The law
   routes the NFS question to the filesystem owner and the admin structurally.
@@ -97,8 +97,8 @@ with and without a declared root):
 - `lead-rootness-is-a-stdlib-only-seat` — a mRoot's blast radius is every mSort identifying into
   it, retroactively; declaring one is the highest-leverage act in the identity model and
   belongs with countability's few.
-- `lead-cross-target-disjointness-is-the-admins-sole-route` — "these targets share no store"
-  is :sole-route at the Target store, the admin's seat; it is the reserved posture option, and
+- `lead-cross-target-disjointness-is-the-admins-sole-route` — "these targets share no mKey-PrimaryStore"
+  is :sole-route at the Target mKey-PrimaryStore, the admin's seat; it is the reserved posture option, and
   no rule change replaces it.
 - `nit-same-is-or-across-derivations` — the mKey walk is "and" over levels; SAME overall is
   "or" across mDerivations (mKey walk; mCorrespondence; provider identifier); worth stating
@@ -160,7 +160,7 @@ Conventions, typed: every object the model defines is written mFixedTerm (mKey, 
 mCell), bare, plural by appending s; every relation, attribute, or warrant declared on the
 model is written :fixed-term, always preceded by a space; every abstract operation is written
 `op()` in backticks (`compare()`, `resolve()`); every concrete authored member keeps the
-`__name()` form; every participant in the model, anything with an edge to another element, is
+`__name()` form; a derived view of a species is written species-hyphen-gloss (mSort-PrimaryStore, mKey-Natural), never a declared species, which stays unhyphenated (mCompositeSort); every participant in the model, anything with an edge to another element, is
 tagged, mReferent included (an mKey points at it); value is never tagged (sh defines it; Dorc only
 mirrors it, though the lifts into Dorc are real players); no umbrella term for "things the
 engine handles" is ever minted; an in-Dorc mSort is always written with its prefix (`sm.File`,
@@ -169,7 +169,7 @@ is a flavour of attribute and is said to sit on a named edge type.
 
 Acks typed: mSort as one naming scheme with one owner, with "multiple mPrimaryKeys per mReferent
 across mSorts" as the stated consequence and the correctness of world-as-registry explicitly reserved;
-an mKey is a value plus its mSort plus the index it was looked up in (partial ack: a coordinate
+an mKey is a value plus its mSort plus the mKey-CatalogStore it was looked up in (partial ack: a coordinate
 `sm.Package:nginx` is what an author writes, not yet an mKey); one natural-key scheme per
 mSort, open as ergonomics until this sitting, now leaning forced (§ 5).
 
@@ -178,12 +178,12 @@ mSort, open as ergonomics until this sitting, now leaning forced (§ 5).
 Findings from the rabbit hole under `312b-exercises/04`, superseding in part the 04 block in
 § 2; nothing ruled; grades on the conductor's claims.
 
-- `fnd-the-store-mints-the-primary-key` (+SURE by definition) — the mPrimaryKey is the address
-  the store answers with, so the parent named by :identified-in and the placement on the
-  identifying chain are one object, the store holding the mReferent. Placement remains a set:
-  that store plus the non-identifying placements.
-- `fnd-the-identifying-parent-is-per-key` — for an mSort whose store can be local or remote
-  (`sm.File`; the netns sysctls) the parent store's mSort varies per mKey; the owner declares a
+- `fnd-the-primary-store-mints-the-primary-key` (+SURE by definition) — the mPrimaryKey is the address
+  the mKey-PrimaryStore answers with, so the parent named by :identified-in and the placement on the
+  identifying chain are one object, the mKey-PrimaryStore holding the mReferent. Placement remains a set:
+  that mKey-PrimaryStore plus the non-identifying placements.
+- `fnd-the-identifying-parent-is-per-key` — for an mSort whose mKey-PrimaryStore can be local or remote
+  (`sm.File`; the netns sysctls) the mSort-PrimaryStore varies per mKey; the owner declares a
   menu of admissible parent mSorts (`sm.LocalFilesystem`, `sm.NetworkExport`,
   `sm.ClusterFilesystem`, decline) and `resolve()` picks per mKey, returning the mPrimaryKey with
   the parent's mKey; each admissible parent carries its own :sole-route answer. 311 § 2.10's
@@ -215,52 +215,52 @@ Findings from the rabbit hole under `312b-exercises/04`, superseding in part the
   hardlink example is a :guarantees-unique-name failure on paths, handled by `resolve()`; a
   one-word fix owed.
 - `fnd-warrants-sit-on-edge-types` — :guarantees-unique-referent and :guarantees-unique-name on
-  a :named-in edge type (a sort's natural keys into an index sort), declared by the child sort's
+  a :named-in edge type (a sort's natural keys into an mSort-CatalogStore), declared by the child sort's
   owner; :sole-route on an :identified-in edge type (a sort into its parent sort). Location of
   :sole-route is contested: 311 puts it on the child; the person who knows whether the parent is
   a store or a view is the parent's owner; exercise 04 leaned parent.
-- `fnd-directionality` — :named-in runs inward from a value to a store (the lift; `resolve()`
+- `fnd-directionality` — :named-in runs inward from a value to an mKey-CatalogStore (the lift; `resolve()`
   performs it and is the only relation with a value on its left); :identified-in and :lives-in
   run outward from an mKey to other mSorts' mKeys; one `resolve()` per mSort returns the
-  mPrimaryKey with its store's mKey, and the chain is built by calling each mSort's `resolve()`
+  mPrimaryKey with its mKey-PrimaryStore, and the chain is built by calling each mSort's `resolve()`
   in turn. No separate parent-lookup operation exists.
 - `fnd-placement-is-an-edge-set` — :lives-in is an edge type from an mSort (a template the site
   or environment fills) to mKeys of other mSorts, many-valued because state is spread across
   stores; exactly one member sits on the identifying chain; the rest are non-identifying
   placements, followed for interference only.
-- `fnd-index-and-store-are-two-roles` — an mKey of another sort can play two roles for my
-  keys: the index (`:named-in`'s far end; where a natural key is looked up: mount table, dpkg
-  database, resolver from a vantage) and the store (`:identified-in`'s far end). Both are
-  ordinary mKeys, never a node type of their own. The index is implicit (ambient, from the
+- `fnd-catalog-store-and-primary-store-are-two-roles` — an mKey of another sort can play two roles for my
+  keys: the mKey-CatalogStore (`:named-in`'s far end; where a natural key is looked up: mount table, dpkg
+  database, resolver from a vantage) and the mKey-PrimaryStore (`:identified-in`'s far end). Both are
+  ordinary mKeys, never a node type of their own. The mKey-CatalogStore is implicit (ambient, from the
   vantage and entry chain) and is part of the mKey: chroot is the example (`sm.File:/etc/passwd`
-  inside and outside `chroot /mnt`, one value, two indexes, two inodes). Crontab is NOT that
+  inside and outside `chroot /mnt`, one value, two mKey-CatalogStores, two inodes). Crontab is NOT that
   example: its natural key is the ambient user, supplied by the entry chain, so under sudo the
   VALUE differs (`sm.Crontab:root` versus `sm.Crontab:alice`).
 - `fnd-a-referent-has-many-primary-keys-across-sorts` — one per mSort, one mSort per mReferent is
-  unenforceable without a registry; the model detects (store overlap collides) and equates
-  (`resolve()` into one store gives SAME); Dorc equates mKeys, never merges mSorts
+  unenforceable without a registry; the model detects (mPlacement overlap collides) and equates
+  (`resolve()` into one mKey-PrimaryStore gives SAME); Dorc equates mKeys, never merges mSorts
   (`24M:rul24M-kind-unify-owed` stays a human act). Coherence of the conceptual merged thing is
   by meet: placements union, `:reaches` union, vouches stay per author; a granting composite
   never arises. UX obligation, not a model hole: the merged thing is never presented as one.
-- `fnd-store-is-the-registry` (**[HUMAN]** naming acked, correctness reserved) — every store
+- `fnd-primary-store-is-the-registry` (**[HUMAN]** naming acked, correctness reserved) — every mKey-PrimaryStore
   is the registry for its own mReferents; what lacks a registry is which mSorts describe which
   mReferents; the contract asks each author to point at the physical minting authority via
   `resolve()` and declare placements, never to coordinate with strangers; the community
-  negotiates precision only, through the hint "two mSorts share a store".
+  negotiates precision only, through the hint "two mSorts share an mKey-PrimaryStore".
 - `fnd-shared-natural-key-class-is-a-canary` — two mSorts sharing a natural-key class cannot
   corrupt each other at the lookup (custody: an mSort's mKeys go only through its own `resolve()`);
-  they meet only in the store. Same string, same index, same mVantage, resolved by two mSorts to
-  different mKeys of a :guarantees-unique-referent store ⇒ at most one is right ⇒ withhold both
+  they meet only in the mKey-PrimaryStore. Same string, same mKey-CatalogStore, same mVantage, resolved by two mSorts to
+  different mKeys of a :guarantees-unique-referent mKey-PrimaryStore ⇒ at most one is right ⇒ withhold both
   and narrate (`28M:rul-conflict-between-totals-is-falsification`). Not named in 311.
 - `fnd-aspects-are-inhabited` — an aspect-sort (`sm.ServiceActive:nginx`) has a natural key
-  borrowed through :named-like, an mReferent, its own store, and a value; only the selector
+  borrowed through :named-like, an mReferent, its own mKey-PrimaryStore, and a value; only the selector
   position vanished. The `@` sugar (`sm.Service:"nginx"@sm.Active`) is the same graph iff the
-  aspect keeps its own store, and is a good surface-syntax candidate; it must expand to a
+  aspect keeps its own mKey-PrimaryStore, and is a good surface-syntax candidate; it must expand to a
   per-parent aspect-sort and never let one aspect name span parents (the pgbouncer case).
 - `fnd-one-natural-key-scheme-per-sort-is-forced` — a bind is the lift from a value to an mKey
   and must know which lookup to run; N schemes per mSort would put a scheme selector on every
-  bind, which is a second mSort by another name; users by name and by uid share one index and
-  are disambiguable only by two mSorts resolving into one store. Minting an mSort is the honest
+  bind, which is a second mSort by another name; users by name and by uid share one mKey-CatalogStore and
+  are disambiguable only by two mSorts resolving into one mKey-PrimaryStore. Minting an mSort is the honest
   spelling of a second naming system.
 - `fnd-layers` — mReferent (the world) · value (sh strings; lifted from the world by any read)
   · mKey (lifted from a value by a bind or a `resolve()`); mSorts are the type layer of mKeys,
@@ -279,14 +279,14 @@ The two shapes:
 
 - A (311 as written): one declared node species. An mSort is one naming scheme with one
   `resolve()`. A second way of naming the same mReferents is a second mSort; the two meet in
-  the store (`resolve()` into one store ⇒ SAME).
+  the mKey-PrimaryStore (`resolve()` into one mKey-PrimaryStore ⇒ SAME).
 - B(b): two declared node species. The referent-class node (311's mSort, kept as the
-  umbrella) and, hanging off it, one or more naming-system nodes, each carrying an index to
+  umbrella) and, hanging off it, one or more naming-system nodes, each carrying an mKey-CatalogStore to
   query (`:named-in`), a `resolve()` yielding the mSort's mPrimaryKey, and the two lookup
-  warrants. Exactly one naming system is PRIMARY (its index is the store, because its
-  mNaturalKey is the store's own address); one is DEFAULT (what a bare mSort in a bind means;
+  warrants. Exactly one naming system is PRIMARY (its mKey-CatalogStore is the mKey-PrimaryStore, because its
+  mNaturalKey is the mKey-PrimaryStore's own address); one is DEFAULT (what a bare mSort in a bind means;
   absent, the primary). The floor is the primary before anyone authors it: identity
-  `resolve()`, no warrants, index the declared store. A bind is typed by a naming system; after
+  `resolve()`, no warrants, the mKey-CatalogStore the declared mKey-PrimaryStore. A bind is typed by a naming system; after
   `resolve()` the mPrimaryKey is typed by the mSort.
 
 Findings:
@@ -296,32 +296,32 @@ Findings:
   parent menu) is written once per naming system by the same author, and the engine has no
   place to be told the copies describe one thing; two finished sentences for one mReferent class
   from one author land as withhold-and-narrate, never the fail-fast the human acked. Under B(b)
-  each is written once and a naming system resolving into any other store is a static
+  each is written once and a naming system resolving into any other mKey-PrimaryStore is a static
   contradiction, refused pre-network. This is the ergonomic argument and it is epistemic: the
-  author who knows the store says it once.
+  author who knows the mKey-PrimaryStore says it once.
 - `fnd-the-glue-seat-is-free-under-b` — a stranger publishes a naming system into an existing
   mSort (a lookup plus two warrants) and inherits its mPlacements, entailments, and aspects;
   the only thing they can get wrong is their own lookup, attributed to it. Under A they mint a
   whole mSort and either duplicate speech they do not own or leave it empty, in which case
   their mSort collides with everything.
-- `fnd-the-store-is-the-primary-lookups-index` — the mSort declares no store and has no key
-  concept of its own; `:sole-route` and `:rootness` sit on the primary naming system's index
-  relation; a secondary naming system's index may be a different object from the store
+- `fnd-the-primary-store-is-the-primary-lookups-catalog-store` — the mSort declares no mKey-PrimaryStore and has no key
+  concept of its own; `:sole-route` and `:rootness` sit on the primary naming system's `:named-in`
+  edge; a secondary naming system's mKey-CatalogStore may be a different object from the mKey-PrimaryStore
   (`sm.File` by path: the mount table, not the filesystem). The polymorphic parent
   (local / network / cluster filesystem) is decided by the PARENT mSort's own primary
   `resolve()`, one level up: `sm.File`'s path lookup returns an inode and a filesystem key and
   stops; `sm.Filesystem`'s lookup classifies. Each owner speaks one level. "View versus
-  store" needs no attribute: a client NFS mount's primary lookup resolves its index to the
+  store" needs no attribute: a client NFS mount's primary lookup resolves its mKey-CatalogStore to the
   server's export, an unresolvable link from here.
 - `fnd-one-naming-scheme-per-sort-is-forced-under-a-only` — the bind argument (a bind must
   know which lookup to run) forces DISAMBIGUATION, not mSort-minting; under B(b) the
-  disambiguator is the naming-system node named at the bind. Qualifier-as-index does not
-  generalise (users by name and by uid share the passwd index); qualifier-as-naming-system
+  disambiguator is the naming-system node named at the bind. Qualifier-as-mKey-CatalogStore does not
+  generalise (users by name and by uid share the passwd mKey-CatalogStore); qualifier-as-naming-system
   does.
-- `fnd-two-epistemic-seats-mis-sited` — the lookup warrants are the index owner's knowledge
+- `fnd-two-epistemic-seats-mis-sited` — the lookup warrants are the mKey-CatalogStore owner's knowledge
   (how the passwd database behaves under duplicate names) yet both shapes have the
-  naming-system author write them; a default warrant declared on the index's mSort,
-  inherited and only narrowable, seats it correctly. `:sole-route` is the parent mSort's
+  naming-system author write them; a default warrant declared on the mSort-CatalogStore,
+  inherited and only narrowable, seats it correctly. `:sole-route` is the mSort-PrimaryStore's
   knowledge (store or view); the parent declares once, children inherit; 311 puts it on the
   child.
 - `fnd-sort-names-the-carrier-only` (**[HUMAN]**, hard nack) — 311 § 1.2's "sort" is
@@ -337,21 +337,21 @@ Findings:
   are declared (mSorts, naming systems, relations, warrants); the declared species is not
   stratified, since an mSort mentions mKeys as content while an mKey mentions its mSort only as
   a tag. They are not types.
-- `fnd-key-is-value-sort-index` — an mKey is a value, its mSort, and the index it was looked
+- `fnd-key-is-value-sort-catalog-store` — an mKey is a value, its mSort, and the mKey-CatalogStore it was looked
   up in; a coordinate is what an author writes, not yet an mKey (partial ack). Chroot is the
   example (one path, two mount tables, two inodes); crontab is not, since its mNaturalKey is
   the ambient user and the VALUE differs under sudo.
 - `fnd-aspects-are-inhabited` — an mAspectSort borrows only the lookup (`:named-like`) and
-  has its own store, mReferent, and value. The `@` sugar (`sm.Service:"nginx"@sm.Active`) is
-  the same graph iff the aspect keeps its own store, a surface-syntax candidate; it must expand
+  has its own mKey-PrimaryStore, mReferent, and value. The `@` sugar (`sm.Service:"nginx"@sm.Active`) is
+  the same graph iff the aspect keeps its own mKey-PrimaryStore, a surface-syntax candidate; it must expand
   per parent and never let one aspect name span parents.
 - `fnd-many-primary-keys-per-referent` — unenforceable without a registry; Dorc equates
   mKeys and never merges mSorts (`24M:rul24M-kind-unify-owed` stays a human act); coherence of
   the conceptual merged thing is by meet; the merged thing is never presented as one (a UX
   obligation, not a hole). Store-as-registry: naming acked, correctness reserved.
 - `fnd-shared-natural-key-class-is-a-canary` — two mSorts sharing a natural-key class cannot
-  corrupt each other at the lookup (custody); same string, same index, same mVantage, resolved
-  to different keys of a `:guarantees-unique-referent` store ⇒ at most one is right ⇒ withhold
+  corrupt each other at the lookup (custody); same string, same mKey-CatalogStore, same mVantage, resolved
+  to different keys of a `:guarantees-unique-referent` mKey-PrimaryStore ⇒ at most one is right ⇒ withhold
   both and narrate.
 
 ## § 8-counterexample-hunt-banked
@@ -361,21 +361,21 @@ attacked with sh. Nothing ruled.
 
 - Held: one parent per mCell (a lazy bind is saved by declaring both placements); the engine's
   route claim under `cd`, ρ writes, `ln -sfn`, unmodeled retargets, and `&` (each by an existing
-  rule); strangers naming one store by different mSorts (unspoken, precision only); whole-to-part
+  rule); strangers naming one mKey-PrimaryStore by different mSorts (unspoken, precision only); whole-to-part
   `:reaches` against `enable --now` (a part-level footprint names what it touches).
 - `fnd-schemes-belong-to-one-sort` — the ABC case: a naming system declared under two mSorts is
   the shadowing refusal; reuse is delegation inside a `resolve()` body (sanctioned composition,
   custody by sourcing); two naming systems on one mSort can disagree on a mPrimaryKey and the
-  store's :guarantees-unique-name then licenses a wrong DISJOINT, attributed to both (the canary).
-- `fnd-store-type-varies-the-chain` — sshfs synthesises inode numbers per client mount, so two
-  clients hold two mPrimaryKeys for one file; the variation is by the TYPE of the store instance
+  mKey-PrimaryStore's :guarantees-unique-name then licenses a wrong DISJOINT, attributed to both (the canary).
+- `fnd-primary-store-type-varies-the-chain` — sshfs synthesises inode numbers per client mount, so two
+  clients hold two mPrimaryKeys for one file; the variation is by the TYPE of the mKey-PrimaryStore
   (ext4, nfs, sshfs, overlay, loop, proc), never by the child mSort or its naming system. What
-  varies per type: how the store instance itself is identified (its own parent), its placements
+  varies per type: how the mKey-PrimaryStore itself is identified (its own parent), its placements
   (loop: the backing file), and whether its content addressing is unique (proc: no). No new
   node species carries this: the variation lives in the ARMS of the `resolve()` of whichever
-  naming system reaches the store (a filesystem named by the device number a file's `resolve()`
-  emits), each arm returning the store's key together with the store's own parent, and a decline
-  arm for types the expert refuses to treat as stores (procfs). A subsort proposal was made and
+  naming system reaches the mKey-PrimaryStore (a filesystem named by the device number a file's `resolve()`
+  emits), each arm returning the mKey-PrimaryStore's key together with its own parent, and a decline
+  arm for types the expert refuses to treat as mKey-PrimaryStores (procfs). A subsort proposal was made and
   retracted in the same sitting. :sole-route stays a DECLARED warrant, absent by default: nested
   pid namespaces refute deriving it from chain shape (guest pid 1 and host pid 4821 are one
   mReferent and both chains resolve cleanly to one boot). "Index-kinds" (`30W`, context axes) is a
@@ -383,11 +383,11 @@ attacked with sh. Nothing ruled.
 - `fnd-parent-sorts-carry-placements` — a loop-backed filesystem's state lives in a file of the
   outer filesystem; `dd` over the image rewrites every inner fact; every mSort in a chain may
   declare `:lives-in`, not only leaves.
-- `fnd-schemes-take-site-parameters` — `acct --db PATH`: the index arrives in argv; a naming
-  system's index may be site-supplied (the R1-into-R1 case).
+- `fnd-schemes-take-site-parameters` — `acct --db PATH`: the mKey-CatalogStore arrives in argv; a naming
+  system's mKey-CatalogStore may be site-supplied (the R1-into-R1 case).
 - Nit: SAME then DISJOINT composes to DISJOINT; only DISJOINT then DISJOINT never chains.
 - Punted to its own exercise, not dropped: overlayfs (GOTCHAS
-  `identity-tokens-perish-on-write-not-only-on-rename`): a merged view over two stores; the
+  `identity-tokens-perish-on-write-not-only-on-rename`): a merged view over two mKey-PrimaryStores; the
   type row needs placements {lower, upper} and no warrants, else a write to the lower spares
   wrongly through the merged path.
 
@@ -399,7 +399,7 @@ before it could be judged, and the next sitting should start there, not here. Ca
 for anything below live only in the root `_tmp-` file, never in this ledger.
 
 - Type on the naming system, instance on the mKey: every mKey carries exactly one other mKey it
-  was resolved inside (today written "index" for a secondary naming system and "store" for the
+  was resolved inside (an mKey-CatalogStore for a secondary naming system, an mKey-PrimaryStore for the
   primary one); the naming system declares only which mSorts that mKey may belong to, derivable
   from its `resolve()`'s arms, plus the lookup warrants. Through the primary naming system the
   edge carries identity (what `compare()` walks); through a secondary one it carries routing only
@@ -419,7 +419,7 @@ for anything below live only in the root `_tmp-` file, never in this ledger.
   on a block; one colon per line, `cmd argv : tag payload other-tag payload`; special tags may
   have one-ASCII-character sugars (`:!`). Three worked strawmen (a file's chain through a
   filesystem named by device; a user with two naming systems and a cell; a package with two
-  naming systems, placements, and a stranger's mSort meeting it in the store) exist in chat only
+  naming systems, placements, and a stranger's mSort meeting it in the mKey-PrimaryStore) exist in chat only
   and were written before these conventions.
 
 ## § 6-state-for-a-rewound-successor
@@ -435,7 +435,7 @@ borderline calls, all recorded in the scratchpad report and reviewable in the di
 operation, and stay untagged: exercises/01 ~54, exercises/02 ~52 and ~65.
 
 Exercise 04 is still OPEN: its file is the ten-observation version and owes a rewrite into the
-light staged form (the no-root floor; a root arrives; the store-bound world); its § 2 block
+light staged form (the no-root floor; a root arrives; the world with declared mKey-PrimaryStores); its § 2 block
 above predates § 5 and is superseded where they differ. Owed on design-of-record documents,
 each waiting on the human's word: 311 § 2.2 (the parent menu; the hardlink example), 311 § 3.2
 (delete the route and root clauses; state :sole-route's orientation leaf-ward; state that SAME
@@ -446,4 +446,4 @@ marks sit; whether the admin's cross-target line is a book line, a lint, or a po
 Of the conductor's long naming turn (2026-09-10), the human had reached and answered: the
 stops, the retractions, and the naming conventions. Not yet reached when the rewind was
 called: directionality, placement as an edge set, the polymorphic identifying parent, where
-warrants sit, the layers check, and the store intuition; all are banked in § 5 above.
+warrants sit, the layers check, and the mKey-PrimaryStore intuition; all are banked in § 5 above.

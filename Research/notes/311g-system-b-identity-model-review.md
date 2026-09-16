@@ -21,14 +21,14 @@ knowledgeable speaker to contribute an alternative identification or corresponde
 Several apparent simplifications leave substantive questions inside “mReferent,”
 “store,” and “measured token.” These are not objections based on implementation churn.
 
-## §1 — `issue-measured-tokens-escape-their-store`
+## §1 — `issue-measured-tokens-escape-their-primary-store`
 
 **Assessment: a strong equality contract is missing or insufficiently distinguished
 from ordinary local canonicalization.**
 
 `311f` B2 makes equal `Measured` mTokens establish sameness unconditionally. B3 permits
 an identity member to return answers ranging from a canonical package name to
-`fsid:inode`. Those answers do not have uniform comparison store:
+`fsid:inode`. Those answers do not have uniform comparison mKey-PrimaryStore:
 
 - a package name is meaningful within a package database;
 - an inode number is meaningful within a filesystem;
@@ -46,11 +46,11 @@ DIFFERENT mTokens establish separation; it cannot protect the unconditional equa
 rule. Wrong separation arises when one mReferent can produce different mTokens, not
 from equal mTokens on distinct clones.
 
-The generic File author should not have to know the store of every filesystem's
+The generic File author should not have to know the mKey-PrimaryStore of every filesystem's
 identifiers. The filesystem/provider author often knows better. Preserve that
 contribution explicitly rather than hide it in a supposedly terminal mToken. This is
 not a claim that trustworthy terminal mTokens cannot exist; it is a requirement to
-state the strength and store of the contract admitting them.
+state the strength and mKey-PrimaryStore of the contract admitting them.
 
 ## §2 — `issue-storage-is-not-necessarily-exclusive`
 
@@ -144,12 +144,12 @@ identify the outer process. The container manager's author can know the correspo
 from its control interface.
 
 B assigns identity production to one mSort-owner member running in the denoted mWorld,
-and wrapper authorship to lending routing indexes. Where can the container author
+and wrapper authorship to lending routing mKey-CatalogStores. Where can the container author
 contribute the concrete correspondence between these two process names?
 
-The index declaration alone does not provide it. Namespace disjointness cannot
+The mKey-CatalogStore declaration alone does not provide it. Namespace disjointness cannot
 separate the processes either: they are the same process seen through different PID
-indexes. Requiring the Process owner to learn every container manager's semantics
+mKey-CatalogStores. Requiring the Process owner to learn every container manager's semantics
 would put the responsibility on the wrong speaker.
 
 The model could be extended, or explicit helper composition could carry this knowledge.

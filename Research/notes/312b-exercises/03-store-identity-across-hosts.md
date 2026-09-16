@@ -1,4 +1,4 @@
-# 312b-exercises/03 — Store identity across hosts
+# 312b-exercises/03 — mKey-PrimaryStore identity across hosts
 
 > Exercise record (Fable, 2026-09-08). Not durable; takeaways live in `notes/312b`. Method: hold
 > `notes/311` as the final types, push one concrete habit onto it, card only where it strains.
@@ -28,7 +28,7 @@ disabled. Cardinal sin, and it looks reasonable from the acct author's chair.
 
 ## Where the model holds, and the one law it wants
 
-`311` § 2.2: an mSort's store is at most one, declared by its owner. The acct author
+`311` § 2.2: an mSort's mSort-PrimaryStore is at most one, declared by its owner. The acct author
 knows their database file; they do not know NFS. If they identify accounts in the database File
 (SITE-supplied from `--db`), the chain runs outward through mSorts whose owners do know: File
 :identified-in Filesystem by the File owner's `resolve()`; Filesystem :identified-in a local device or
@@ -39,7 +39,7 @@ link unknown. `compare()` answers unknown; the footprint collides with the backi
 guards; the guard re-checks at apply and runs. Safe, coarse, correct.
 
 The strain is not in the model; it is in what the acct author was tempted to write. The model
-needs a law it does not yet state: identify in the narrowest store your state
+needs a law it does not yet state: identify in the narrowest mKey-PrimaryStore your state
 actually lives in, never a coarser one you assume partitions it. Identifying a file-backed mSort
 in Host is a deployment claim the tool author cannot hold, and it is the highest-leverage wrong
 DISJOINT in the design. Structurally routing the claim outward is the whole
@@ -77,7 +77,7 @@ Unknowability class: by-design for the engine (it holds no notion of host identi
 for the chain (each link has an owner); the last link, host sameness, is the admin's by typed
 ruling.
 
-Can know at all: the acct author (the store is the `--db` file); the File owner (inode in
+Can know at all: the acct author (the mKey-PrimaryStore is the `--db` file); the File owner (inode in
 filesystem); the filesystem owner (per-type identity: UUID, server and export); the admin (that
 the export's server is the ssh target); the host (each `resolve()`).
 
@@ -98,7 +98,7 @@ cost only.
 
 ## Leads and wants
 
-- `lead-identify-in-the-narrowest-store`: a naming law for stores; a file-backed
+- `lead-identify-in-the-narrowest-primary-store`: a naming law for mKey-PrimaryStores; a file-backed
   mSort identified in Host is a smell the lint names.
 - `lead-mount-lines-generate-correspondences`: the transition owner for a mount is the mount
   oracle; the mCorrespondence derives from the argv the admin wrote.
@@ -111,8 +111,8 @@ cost only.
 
 ## Open
 
-- What the filesystem owner's store for an NFS export is, concretely, and whether
+- What the filesystem owner's mKey-PrimaryStore for an NFS export is, concretely, and whether
   any server-side mToken exists that survives the mVantage problem (--WONDER; NFSv4's server
   scope in EXCHANGE_ID, unverified).
-- Whether "narrowest store" is decidable from an mSort's own declarations (mPlacement set versus
-  store) so the lint is mechanical rather than a taught rule.
+- Whether "narrowest primary-store" is decidable from an mSort's own declarations (mPlacement set versus
+  mSort-PrimaryStore) so the lint is mechanical rather than a taught rule.

@@ -74,10 +74,10 @@ The bind mount is the case the mKey walk was built for. The socket is a File mKe
 kernel object; the File owner's `resolve()` must decline on it, else a fact about beta's daemon
 transports to alpha.
 
-S6, the admin's posture, in behaviour only: "alpha and beta share no store."
+S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-PrimaryStore."
 
 ```sh
-# not a spelling: the admin asserts sole-route at the Target store for every sort whose chain
+# not a spelling: the admin asserts sole-route at the Target mKey-PrimaryStore for every sort whose chain
 # passes through a Filesystem; S2's divergence then yields DISJOINT honestly, attributed to the
 # admin's line; S1 stays unknown without it
 ```
@@ -93,10 +93,10 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no store."
   mRoute-terminated link yields at most what it yields with the link measured. `16P` DP-8's
   vacuous-bottom is the same law from the other side.
 - `obs-sole-route-runs-leaf-ward` — § 2.2 defines :sole-route as what lets a divergence at a
-  store level license disjointness beneath it; § 3.2's "every level above it", after "walk from
+  mKey-PrimaryStore level license disjointness beneath it; § 3.2's "every level above it", after "walk from
   the mRoots", reads the other way. State the orientation: every level between the divergence
   and the leaf.
-- `obs-rootness-is-retroactive` — a true mRoot anywhere up a chain converts every lazy store
+- `obs-rootness-is-retroactive` — a true mRoot anywhere up a chain converts every lazy mKey-PrimaryStore
   beneath it, fleet-wide, from unknown to decisive. The blast radius is not the mRoot's own
   mReferents; it is every mSort that identifies into it. Countability: mRoots are stdlib-only and
   few, and the first one is the trigger for every hole in this record.
@@ -107,8 +107,8 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no store."
   should never learn NFS" holds only if the Filesystem owner does: identify a network mount in its
   server (an unknown link, through the mVantage) or decline. A statfs fsid scoped in Boot is
   true and unsafe.
-- `obs-cross-target-disjointness-is-the-admins-sole-route` — S6: "these targets share no store"
-  is :sole-route at the Target store, the admin's seat under the posture option
+- `obs-cross-target-disjointness-is-the-admins-sole-route` — S6: "these targets share no mKey-PrimaryStore"
+  is :sole-route at the Target mKey-PrimaryStore, the admin's seat under the posture option
   `26Ob:ack-cross-world-wall-is-the-floor` reserved. The model needs the seat; no rule change
   replaces it.
 - `obs-same-is-or-across-derivations` — S4: the mKey walk is "and" over its levels; SAME overall

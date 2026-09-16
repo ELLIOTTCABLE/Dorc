@@ -70,7 +70,7 @@ sm_dorc_File__identity() {                     # STRAWMAN; the stdlib File owner
 `kind__resolve` stays (name → canonical name, cheap, often static). `identity` is the stronger,
 measured answer; where both exist, resolve runs first, then identity on the canonical name.
 
-Injectivity: an mSort's owner may declare its store NON-INJECTIVE (distinct canonical names
+Injectivity: an mSort's owner may declare its mSort-PrimaryStore NON-INJECTIVE (distinct canonical names
 may denote one mReferent WITHIN one store — File, Host, anything path-like). Default remains
 injective (today's disclosed-weak name floor, `300:rul-reference-entity-name-floor`); File's and
 the index-kinds' carves become stdlib declarations instead of engine special cases. Inherited
@@ -127,14 +127,14 @@ pre-network where static, refuse-both otherwise). The trichotomy table (`30W` §
 Process:1, whose identity is the boot mToken); "invariant" from equal ones (Package stored-in
 File:/var/lib/dpkg/status). Patch day (`30W` §7) falls out with zero invariance lines.
 
-## A6. Transitions perish identity through footprints on the store sort
+## A6. Transitions perish identity through footprints on the mSort-PrimaryStore
 
 An identity binding (mToken bound for store coordinate P in mWorld w) is itself a FACT with
 backing {P@w}. It dies by ordinary effective-mWorld reach: any running mutator whose footprint
 collides with P@w un-binds it (back to unknown) for everything downstream. Two granularities:
 
 - coarse floor: File mCells are stored-in `sm.dorc.MountNamespace:<entered>`; a mount oracle's
-  `disturbs sm.dorc.MountNamespace:"$ns"` collides with EVERY File identity in that index
+  `disturbs sm.dorc.MountNamespace:"$ns"` collides with EVERY File identity in that mKey-CatalogStore
   (whole-mKey ⇒ T-selector). Safe, over-broad: a mount under /mnt/team perishes /etc/passwd's
   identity too.
 - region refinement: the mount oracle emits the mountpoint as a File REGION (`printf '%s\n'

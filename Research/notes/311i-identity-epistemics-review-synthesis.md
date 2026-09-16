@@ -17,17 +17,17 @@ measurement machinery, this conclusion does not generally follow.
 
 A `resolve()` can establish that an invocation returned a mToken. It cannot alone establish:
 
-- the store within which that mToken identifies something;
+- the mKey-PrimaryStore within which that mToken identifies something;
 - which subject or aspect the mToken identifies;
 - whether equal or unequal answers warrant a particular relation;
-- whether the relationship remains applicable after a store change;
+- whether the relationship remains applicable after an mKey-PrimaryStore change;
 - whether the identified object's sameness suffices for the claim being consumed.
 
 Both proposals retain substantial authored contracts precisely because of this gap:
 identity grades, store completeness, injectivity, and horizons. Measurement can replace
 a particular speculative assumption or answer a formerly static question. It does not
 make those semantic obligations disappear. Moving the obligation from an invariance
-line to a mToken reader or store sentinel changes its owner, store, and failure anatomy.
+line to a mToken reader or store sentinel changes its owner, mKey-PrimaryStore, and failure anatomy.
 That move may be valuable, but it requires its own justification.
 
 The concrete witness is System A's identifying-only grade: unequal mTokens explicitly
@@ -45,7 +45,7 @@ same containment-chain lens.
 The reviews support several underlying REQUIREMENTS:
 
 - invocation-dependent addressing information must be expressible by someone who has it;
-- identifiers must retain or explicitly justify their comparison store;
+- identifiers must retain or explicitly justify their comparison mKey-PrimaryStore;
 - the full subject of the consumed claim must remain identifiable;
 - relationship validity must respond to relevant modeled mutations;
 - multi-author contributions must have a compositional contract with repairable owners.
@@ -94,7 +94,7 @@ review findings repeatedly identify available knowledge held by the wrong prospe
 owner of the proposed identity function:
 
 - the tool author knows base-versus-overlay roles, which an unordered store set loses;
-- the filesystem/provider author knows the store of an object mKey;
+- the filesystem/provider author knows the mKey-PrimaryStore of an object mKey;
 - the database implementation author knows WAL, shard, or replica placement;
 - the container manager knows that guest PID 1 corresponds to a particular outer PID;
 - the mSort/path describer knows which traversal inputs an object lookup used.
@@ -169,7 +169,7 @@ without its name changing. Both proposals intend to use effective-mWorld reach, 
 is appropriate, but the facts it invalidates must retain the relevant dependencies.
 
 A retained object mToken does not preserve the binding of a pathname through a replaced
-symlink. An index mutation need not mutate the old target object. Asking whether two
+symlink. An mKey-CatalogStore mutation need not mutate the old target object. Asking whether two
 objects are disjoint is not automatically the same question as asking whether changing
 one can invalidate mResolution of a name for the other.
 
