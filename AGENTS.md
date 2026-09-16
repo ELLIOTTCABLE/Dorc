@@ -73,6 +73,7 @@ Some terms have shifted throughout the planning documents; be careful of these m
   - 'replace' (as in "this allows the apply to *replace* the line" - a 'skip' is a *degenerate case* of substitution-elision, where a command can be safely substituted with a sh-`true`-command: all possible observables (rc, stdout/fds, other effects) are not-depended-upon, or are vouched-for-by-oracle.)
   - 'elide' (for that specific degenerate case, where 1. no observables are consumed, *and* 2. the world-knowledge is solid enough to genuinely skip evaluation at runtime)
   - but that term hides an *ocean* of important complexity, and has repeatedly led to depending upon that degenerate case.
+- the `Research/notes/311`-series identity model writes "sort" (`mSort`) and "key" (`mKey`) for what every earlier document, and the spike's `kind__` members, call a *kind* and an *entity*; and "index" / "store" for the key another key is looked up in / identified in. Read a pre-311 "kind" as a sort and a pre-311 "entity" as a key. 311's "index" is not `30W`'s "index-kind" (a context axis); never reuse one for the other. Do not annotate the older spellings in passing ("foo, née bar"); this bullet is the bridge.
 
 ## Conversation style
 - try to use greppable, pointable reference-slugs in documentation and conversation:

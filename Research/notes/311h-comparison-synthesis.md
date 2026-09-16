@@ -4,16 +4,16 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
 
 ## The intersection = the specific breakage (both systems had to do these)
 
-- brk-store-speech-blind-to-argv: the store member receives (mEntity, selector); per-invocation
+- brk-store-speech-blind-to-argv: the store member receives (mKey, selector); per-invocation
   stores are unspeakable. Both add a mSite-level store instance (A: a `stored-in` mark per
   coordinate-minting line; B: an `in` clause on the bind).
-- brk-cell-owner-asked-about-axes: the trichotomy asks a mKind owner about index-kinds they
+- brk-cell-owner-asked-about-axes: the trichotomy asks an mSort owner about index-kinds they
   cannot know. Both replace it with recursion into the store's own identity.
 - brk-store-identity-has-no-generator: cross-mWorld store sameness is one sentence (`30W` §5).
   Both add a general, graded `kind__identity` `resolve()` run in the denoted mWorld.
 - brk-perishing-has-no-owner: identity answers are "perishable" by nobody. Both make a
   resolution / identity binding a fact with a backing, killed by ordinary reach from the
-  routing or store mKind's footprints, with `kind__disjoint` deciding region containment.
+  routing or store mSort's footprints, with `kind__disjoint` deciding region containment.
 - brk-routing-and-containment-conflated: "keyed by K" is routing (names resolve differently
   per K); "stored in S" is containment (state lives in S); the design and A's `stored-in`
   both conflate them; A is sound on File only because the `resolve()` base case rescues it.
@@ -38,15 +38,15 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
   perf-doctrine says the `resolve()` is free.
 - D3 name-floor default: A disclosed-weak default-injective; B `names-are-distinct` declared,
   silence ⇒ unknown. Taste/value call; B is the last "silence licenses" hole closed; costs
-  third-party mKinds sparing until they declare.
+  third-party mSorts sparing until they declare.
 - D4 resolve versus identity: A both; B folded with a grade. Cosmetic-plus: folding fixes the
   taught fallthrough idiom (`311a:hole-resolve-fallthrough-idiom`) by construction.
 - D5 transport as a lane: A keeps `27C` §4; B dissolves it (one mCell, one fact); the read-set
   closure survives as the unmarked-read falsifier in both. EACCES exclusion re-check owed
   (~SUSPECT it dissolves).
-- D6 cross-mKind disjointness: A unchanged; B adds store-chain disjointness given three
-  totality acts (footprint reach finished; both store sets total). Today's cross-mKind path
-  still bottoms in File name comparison, which is unknown at v0, so cross-mKind sparing for
+- D6 cross-mSort disjointness: A unchanged; B adds store-chain disjointness given three
+  totality acts (footprint reach finished; both store sets total). Today's cross-mSort path
+  still bottoms in File name comparison, which is unknown at v0, so cross-mSort sparing for
   File-backed facts essentially never fires today; B's chain is what would make it work.
 - D7 store-instance seat: A per-line mark; B bind clause. Low stakes; B less repetitive.
 
@@ -57,15 +57,15 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
   entry forms + `safe-across`; read-set closure; binds; selector dialect; mPlaceholder/witness
   shape; `disjoint` as region predicate.
 - Tier 1 (must change under any coherent design): store member's seat; trichotomy as identity;
-  general `resolve()`; perishing via footprints on routing/store mKinds; routing/containment
+  general `resolve()`; perishing via footprints on routing/store mSorts; routing/containment
   split; carves → declarations. Fences to re-litigate on merits: `272` §5
   addresses-are-not-coordinates (identity = (store, name), never store alone, so no collapse);
   `279f` §3 transport refusal (re-opened under totality sentinels and measured `resolve()` calls);
   `271:rul-invariance-speech-act` (re-read: TEXTUAL mDerivation never licenses; an authored
   `resolve()`'s measurement does).
 - Tier 2 (contested): D1–D5 above.
-- Tier 3 (out of scope now): mKind-level mToken registration (`28M` §11); MH2; declared
-  cross-mKind co-reference; `30J` rungs.
+- Tier 3 (out of scope now): mSort-level mToken registration (`28M` §11); MH2; declared
+  cross-mSort co-reference; `30J` rungs.
 
 ## Epistemic meta
 
@@ -76,12 +76,12 @@ Scratchpad bank of the chat unroll (2026-09-08). Grades +SURE / ~SUSPECT / -GUES
   question. Pattern: when a measurement mechanism lands, sweep the declarations it obsoletes.
 - Framing boundary: both systems are one lens (containment chains). Alternatives outside it:
   honest-walls-for-mWorlds forever (`27C` §4 option; forfeits pivot-book attention); runtime
-  referent tracing (`23M` eBPF crack; empirical containment, observable state only, infra
-  cost); declared cross-mKind co-reference / mToken registration (`28M` §11; sameness by
+  mReferent tracing (`23M` eBPF crack; empirical containment, observable state only, infra
+  cost); declared cross-mSort co-reference / mToken registration (`28M` §11; sameness by
   declaration, does nothing for mWorlds). -GUESS containment is the lens that composes across
   authors with least authored knowledge; tracing is its long-run complement.
 - Least sure: mRoute as the fallback store needs the full 26Ob batching treatment; B's
-  cross-mKind soundness argued not adversarially tested; the EACCES dissolution; the value
+  cross-mSort soundness argued not adversarially tested; the EACCES dissolution; the value
   cost of dropping the name-floor default.
 - Churn argument inverts: because `30W` item 1 is unbuilt and flagged retrofit-hostile, the
   cheapest moment to choose the representation is before it is built; minimizing churn

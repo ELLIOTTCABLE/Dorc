@@ -28,9 +28,9 @@ disabled. Cardinal sin, and it looks reasonable from the acct author's chair.
 
 ## Where the model holds, and the one law it wants
 
-`311` § 2.2: a mKind's mIdentifyingScope is at most one, declared by its owner. The acct author
+`311` § 2.2: an mSort's store is at most one, declared by its owner. The acct author
 knows their database file; they do not know NFS. If they identify accounts in the database File
-(SITE-supplied from `--db`), the chain runs outward through mKinds whose owners do know: File
+(SITE-supplied from `--db`), the chain runs outward through mSorts whose owners do know: File
 :identified-in Filesystem by the File owner's `resolve()`; Filesystem :identified-in a local device or
 an NFS export by the filesystem owner, per filesystem type; the export :identified-in a server
 the client resolves from its own mVantage. At that step the chain meets a hostname resolved from
@@ -39,8 +39,8 @@ link unknown. `compare()` answers unknown; the footprint collides with the backi
 guards; the guard re-checks at apply and runs. Safe, coarse, correct.
 
 The strain is not in the model; it is in what the acct author was tempted to write. The model
-needs a law it does not yet state: identify in the narrowest mNamespaceInstance your state
-actually lives in, never a coarser one you assume partitions it. Identifying a file-backed mKind
+needs a law it does not yet state: identify in the narrowest store your state
+actually lives in, never a coarser one you assume partitions it. Identifying a file-backed mSort
 in Host is a deployment claim the tool author cannot hold, and it is the highest-leverage wrong
 DISJOINT in the design. Structurally routing the claim outward is the whole
 push-half-the-work-to-the-neighbour-who-knows move, made mechanical.
@@ -62,8 +62,8 @@ the File owner (scoping), the mount owner (mCorrespondence from argv), the admin
 The socket: a File mNaturalKey reaching a kernel object. If the docker author lazily uses a
 File coordinate for the socket path, the File owner's correct warrants make it SAME across the
 shared mount, and a fact about the daemon transports to a host where the connect fails. The
-model's answer is § 2.7: the socket is a mKind :named-like File, :identified-in the kernel. The net
-for lazy borrowing is that the File owner's `resolve()` declines on referents outside File's ontology
+model's answer is § 2.7: the socket is an mSort :named-like File, :identified-in the kernel. The net
+for lazy borrowing is that the File owner's `resolve()` declines on mReferents outside File's ontology
 (sockets, FIFOs, devices), exactly as `30T`'s binder already declines; then a borrowed File
 coordinate on a socket path reads unknown, not SAME.
 
@@ -85,7 +85,7 @@ Can reasonably know: exactly the above, one link each. The acct author must not 
 NFS; the filesystem owner must not be asked about accounts.
 
 Danger. The wrong DISJOINT (identify in Host) is cardinal, flag-gated, attributed to the acct
-author, and reaches every book naming the mKind. The narrowness law makes the wrong claim
+author, and reaches every book naming the mSort. The narrowness law makes the wrong claim
 unnatural to write and lint-able. A wrong mCorrespondence from a mount line is a wrong SAME,
 attributed to the mount owner's mDerivation or to the admin's host-sameness line; the remedy
 forks two ways, which `30V:rul-remedies-may-fork` already allows.
@@ -98,21 +98,21 @@ cost only.
 
 ## Leads and wants
 
-- `lead-identify-in-the-narrowest-store`: a naming law for mIdentifyingScopes; a file-backed
-  mKind identified in Host is a smell the lint names.
+- `lead-identify-in-the-narrowest-store`: a naming law for stores; a file-backed
+  mSort identified in Host is a smell the lint names.
 - `lead-mount-lines-generate-correspondences`: the transition owner for a mount is the mount
   oracle; the mCorrespondence derives from the argv the admin wrote.
 - `lead-cross-host-same-bottoms-out-in-the-admin`: every cross-host SAME chain ends at host
   sameness, which is the admin's seat by typed ruling; the model needs that seat to exist.
-- `lead-reads-decline-outside-their-ontology`: a mKind owner's `resolve()` declines on referents its
-  mKind does not describe; the mechanical net for lazy coordinate borrowing.
+- `lead-reads-decline-outside-their-ontology`: an mSort owner's `resolve()` declines on mReferents its
+  mSort does not describe; the mechanical net for lazy coordinate borrowing.
 - `lead-warrantless-tokens-are-witness-only`: endpoint witnesses (host keys, stamps) never
   license; already true, worth stating.
 
 ## Open
 
-- What the filesystem owner's mIdentifyingScope for an NFS export is, concretely, and whether
+- What the filesystem owner's store for an NFS export is, concretely, and whether
   any server-side mToken exists that survives the mVantage problem (--WONDER; NFSv4's server
   scope in EXCHANGE_ID, unverified).
-- Whether "narrowest store" is decidable from a mKind's own declarations (mPlacement set versus
-  mIdentifyingScope) so the lint is mechanical rather than a taught rule.
+- Whether "narrowest store" is decidable from an mSort's own declarations (mPlacement set versus
+  store) so the lint is mechanical rather than a taught rule.

@@ -655,7 +655,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Qa:ask-witness-order-execution-or-census
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:133 — (FLAG)
 
-## 311b:assessment-entry-changes-and-namespace-lifetimes
+## 311b:assessment-entry-changes-and-index-lifetimes
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:521
 
 ## 311b:assessment-relations-compose-but-do-not-change-meaning
@@ -4682,7 +4682,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 271 (1)
 
-## open-observer-namespace-inventory
+## open-observer-sort-inventory
 - defined: —
 - cited: 01 311 (2)
 

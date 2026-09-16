@@ -9,9 +9,9 @@ identity question and WHAT it is asked about. Syntax is strawman throughout.
 
 Today a mCell's cross-context identity is answered by its KIND's owner filling a table against
 index-kinds (invariant / keyed / T). Under System A a mCell's identity is answered by following its
-STORE POINTERS: each store pointer is a coordinate in another mKind, declared at the mSite that
-mints the mCell (so it can carry the mSite's argv), and the store's mKind owner answers identity by a
-measured `resolve()` run in the mSite's mWorld. Recursion bottoms out at a mKind with a `resolve()`, or
+STORE POINTERS: each store pointer is a coordinate in another mSort, declared at the mSite that
+mints the mCell (so it can carry the mSite's argv), and the store's mSort owner answers identity by a
+measured `resolve()` run in the mSite's mWorld. Recursion bottoms out at an mSort with a `resolve()`, or
 at unknown. The index-kind slot survives as "which mWorld the `resolve()` calls run in" and as the batching /
 placeholder key, no longer as a set of axes the mCell's owner must have opinions about.
 
@@ -19,14 +19,14 @@ placeholder key, no longer as a set of axes the mCell's owner must have opinions
 
 A mark verb `stored-in` usable on any coordinate-minting line (verdict lines in
 `__is_converged`; emission lines in `__disturbs`; the fs binder's claims), naming a coordinate
-in another mKind whose identity DETERMINES this mCell's identity. Multiple allowed. It is not a
+in another mSort whose identity DETERMINES this mCell's identity. Multiple allowed. It is not a
 read mark: `reads` widens staleness (kill-traffic); `stored-in` fixes identity. Normally
 `stored-in` ⊆ `reads` and the read-vs-marks detector should nudge when a store is not also read.
 
 ```sh
 acct__is_converged() {
    # argparse (verb, --db, --directory, number) ...
-   db   : sm.dorc.File = "$dbpath"                      # bind: the operand is a File entity
+   db   : sm.dorc.File = "$dbpath"                      # bind: the operand is a File key
    acct : org.acct.Account = "$dir/$num"                # bind: the owner's documented name form
    acct --db "$db" --directory "$dir" status "$num" \
       : org.acct.Account:"$acct"@enabled   stored-in sm.dorc.File:"$db"
@@ -37,10 +37,10 @@ acct__disturbs() {
 }
 ```
 
-Kind-level fixed stores stay where they are: `kind__state_stored_in` (per-arm, decomposed per
-`30W` item 6) emits store pointers as KIND COORDINATES (`: stored-in sm.dorc.File`, mEntity on
-stdout: `/var/lib/dpkg/status`). A mCell's store set = mKind-level pointers ∪ mSite-level pointers.
-Substrate tokens (`fs`, `process`, `kernel`) are gone; they were mKinds all along
+Sort-level fixed stores stay where they are: `kind__state_stored_in` (per-arm, decomposed per
+`30W` item 6) emits store pointers as KIND COORDINATES (`: stored-in sm.dorc.File`, mKey on
+stdout: `/var/lib/dpkg/status`). A mCell's store set = mSort-level pointers ∪ mSite-level pointers.
+Substrate tokens (`fs`, `process`, `kernel`) are gone; they were mSorts all along
 (`sm.dorc.File`, `sm.dorc.Process:1`, `sm.dorc.Kernel`), each needing a `resolve()` for the
 recursion to terminate (`311a` nit, taken to its end).
 
@@ -50,10 +50,10 @@ store-based comparison answers unknown (A4). This is stricter than `30W` §3's "
 unlisted store collides" and it has to be: with an undeclared shared store (a global index
 file), two mCells with disjoint declared stores are not disjoint either.
 
-## A2. New kind member: the `resolve()`, generalized
+## A2. New sort member: the `resolve()`, generalized
 
-`kind__identity()` (the `26Ob` §10c strawman for Host, generalized to every mKind): invoked with
-an mEntity, executed in the denoted mWorld at the latest sound phase, prints ONE line the engine
+`kind__identity()` (the `26Ob` §10c strawman for Host, generalized to every mSort): invoked with
+an mKey, executed in the denoted mWorld at the latest sound phase, prints ONE line the engine
 holds as an opaque mToken; rc regime three (completion only); decline ⇒ unknown. Owner declares
 alongside it whether the mToken is REFERENT-TRANSPARENT (equal ⇒ same; unequal ⇒ disjoint) or
 merely IDENTIFYING (equal ⇒ same; unequal ⇒ unknown), and states the horizon in one sentence.
@@ -70,8 +70,8 @@ sm_dorc_File__identity() {                     # STRAWMAN; the stdlib File owner
 `kind__resolve` stays (name → canonical name, cheap, often static). `identity` is the stronger,
 measured answer; where both exist, resolve runs first, then identity on the canonical name.
 
-Injectivity: a mKind's owner may declare its mNamespaceInstance NON-INJECTIVE (distinct canonical names
-may denote one referent WITHIN one store — File, Host, anything path-like). Default remains
+Injectivity: an mSort's owner may declare its store NON-INJECTIVE (distinct canonical names
+may denote one mReferent WITHIN one store — File, Host, anything path-like). Default remains
 injective (today's disclosed-weak name floor, `300:rul-reference-entity-name-floor`); File's and
 the index-kinds' carves become stdlib declarations instead of engine special cases. Inherited
 debt, flagged: the default is a silence-licenses case. Not fixed in A.
@@ -81,16 +81,16 @@ debt, flagged: the default is a silence-licenses case. Not fixed in A.
 Unchanged shape: a finite map index-kind → index-value (entered / measured placeholder / T);
 `ssh beta` lends Host=beta, `sudo -u alice` lends User=alice, `chroot /mnt` lends
 MountNamespace=(entered). Its jobs under A: (i) name the mWorld a `resolve()` executes in; (ii) the
-batching / mPlaceholder mKey `sk(E, K)`; (iii) for mKinds with NO stores and no `resolve()`, the
-wall (any context difference ⇒ unknown, as today). It is NOT consulted per-mKind through an
+batching / mPlaceholder mKey `sk(E, K)`; (iii) for mSorts with NO stores and no `resolve()`, the
+wall (any context difference ⇒ unknown, as today). It is NOT consulted per-mSort through an
 owner's trichotomy table any more. Host need not be referent-transparent for Account's sake;
 only Account's stores' mTokens must be.
 
-## A4. The relation, rewritten (same-kind branch only; cross-kind unchanged)
+## A4. The relation, rewritten (same-sort branch only; cross-sort unchanged)
 
     compare(K:e1@c1, K:e2@c2):
        n ← names(K, e1, e2)               # via resolve: same / different / unknown
-       S1, S2 ← store sets of the two cells (kind-level ∪ site-level), each member a coordinate
+       S1, S2 ← store sets of the two cells (sort-level ∪ site-level), each member a coordinate
        s ← stores(S1@c1, S2@c2)          # recursive compare per pointer, then:
                                          #   same iff |S1|=|S2| and every pointer pair same
                                          #   disjoint iff store sets share no same-or-unknown pair
@@ -118,7 +118,7 @@ Consequence: sameness and disjointness now come out of ONE recursion. A store-le
 
 ## A5. Invariance lines become derivable; keep them as static shortcuts
 
-`: undivided-by-transit-across K'` for mKind K says "my stores' identities are equal across
+`: undivided-by-transit-across K'` for mSort K says "my stores' identities are equal across
 values of K'". Under A that is what the `resolve()` would find. Keep the line as a static
 assertion that (a) saves a measurement where the owner is sure and (b) is CONTRADICTION-CHECKED
 against a `resolve()` where both exist (tokens differ ⇒ declarations-genuinely-contradict ⇒ fail-fast,
@@ -127,19 +127,19 @@ pre-network where static, refuse-both otherwise). The trichotomy table (`30W` §
 Process:1, whose identity is the boot mToken); "invariant" from equal ones (Package stored-in
 File:/var/lib/dpkg/status). Patch day (`30W` §7) falls out with zero invariance lines.
 
-## A6. Transitions perish identity through footprints on the store kind
+## A6. Transitions perish identity through footprints on the store sort
 
 An identity binding (mToken bound for store coordinate P in mWorld w) is itself a FACT with
 backing {P@w}. It dies by ordinary effective-mWorld reach: any running mutator whose footprint
 collides with P@w un-binds it (back to unknown) for everything downstream. Two granularities:
 
 - coarse floor: File mCells are stored-in `sm.dorc.MountNamespace:<entered>`; a mount oracle's
-  `disturbs sm.dorc.MountNamespace:"$ns"` collides with EVERY File identity in that mNamespaceInstance
-  (whole-mEntity ⇒ T-selector). Safe, over-broad: a mount under /mnt/team perishes /etc/passwd's
+  `disturbs sm.dorc.MountNamespace:"$ns"` collides with EVERY File identity in that index
+  (whole-mKey ⇒ T-selector). Safe, over-broad: a mount under /mnt/team perishes /etc/passwd's
   identity too.
 - region refinement: the mount oracle emits the mountpoint as a File REGION (`printf '%s\n'
   "$mp" : disturbs sm.dorc.File@subtree`, STRAWMAN selector) and the File owner's
-  `kind__disjoint` decides containment of each File identity's mEntity under that region; only
+  `kind__disjoint` decides containment of each File identity's mKey under that region; only
   contained identities perish.
 
 Neither author names the other: mount speaks File/MountNamespace vocabulary; Account speaks
@@ -185,23 +185,23 @@ mEntryChain share a mPlaceholder pre-measurement as today.
 
 - ADD: the `stored-in` mark verb on coordinate-minting lines; `kind__identity` as a general
   member with a referent-transparent / identifying declaration and a horizon sentence; a
-  per-mKind non-injective declaration.
+  per-mSort non-injective declaration.
 - KEEP: coordinate + slot; chokepoint + consumer map; flag; finished definition; universal
   meet; `resolve`; `disjoint`; `disturbance_reaches`; mPlaceholder + `witness()`; measure-in-context
   default (`27C`) with transport as the fallback lane.
 - DEMOTE: the invariance line to a static shortcut with contradiction-check; the trichotomy
   table and the per-index filtered meet (`26Ob` §10b) to a special case of store recursion
-  (they remain the semantics for mKinds whose stores are index-kinds directly).
+  (they remain the semantics for mSorts whose stores are index-kinds directly).
 - RETIRE: substrate mTokens; the engine-side File / index-kind name-floor carves (become
   declarations).
 - BREACH, deliberately: `272` §5 addresses-are-not-coordinates (store locators ARE coordinates
-  in the store's mKind; the all-Package-mCells-collapse fear does not materialize because store
+  in the store's mSort; the all-Package-mCells-collapse fear does not materialize because store
   sameness is necessary for mCell sameness, never sufficient — names still separate rows);
   `279f` §3's refused transport chain (re-litigated: this is the accepted invariance-line
   mechanism with measurement replacing declaration, under the same totality sentinel).
 - UNCHANGED knives: a wrong store list (pipx-in-~/.local) still transports a user-dependent
   fact; a wrong read horizon (device numbers compared across hosts) is a wrong-same; a wrong
-  non-injective omission on a path-like mKind is a wrong-disjoint. Each is one author's line.
+  non-injective omission on a path-like mSort is a wrong-disjoint. Each is one author's line.
 
 ## A10. Holes A does not close
 
@@ -209,11 +209,11 @@ mEntryChain share a mPlaceholder pre-measurement as today.
 - Store pointers must be repeated on every coordinate-minting line of a family (verdict AND
   disturbs); cargo-cult pressure; an engine rule "a family's disturbs mCells inherit the verdict's
   store pointers for the same argparse arm" is tempting and probably wrong (different arms).
-- mKinds whose store is an instance of themselves (symlink → target; bind mount → source) need
+- mSorts whose store is an instance of themselves (symlink → target; bind mount → source) need
   the recursion to terminate at a measured mToken, and the mToken's horizon carries the aliasing.
-- Cross-host mToken comparability rests entirely on each store mKind owner's horizon sentence;
+- Cross-host mToken comparability rests entirely on each store mSort owner's horizon sentence;
   nothing mechanical checks that a mToken is host-stable.
 - The `resolve()` runs per (pointer × mWorld) at probe: one more authored body shipped per
-  store mKind per mWorld. Network-cheap; authorship-costly for the stdlib.
-- Still two vocabularies for "where my state is": the mKind-level member and the mSite-level
+  store mSort per mWorld. Network-cheap; authorship-costly for the stdlib.
+- Still two vocabularies for "where my state is": the mSort-level member and the mSite-level
   mark. Coherent, but two.

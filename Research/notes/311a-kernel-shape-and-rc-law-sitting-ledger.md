@@ -9,7 +9,7 @@ proposal in this ledger. Index/transport discussions retain their individual gra
 (human ruling): the member is kind__disjoint, rc 0 disjoint / 1 overlap / >=2 unknown,
 with no DREP result requirement. The proposed record-backed answer in §6 and this
 ledger's blanket completion-only classification do not govern this member. Incidental
-shell success remains author residue; the higher mKind-owner rung and cross-author
+shell success remains author residue; the higher mSort-owner rung and cross-author
 survival danger do not override the predicate's idiomatic/off-ramp value. The kernel
 placement ruling in §4 stands. Other index-world questions remain at their stated grades. -->
 
@@ -52,7 +52,7 @@ sentinel, convergence and predict stay rc-bearing because they have off-ramp val
 - `notes/26N` §7 and §10 carry superseded notes: the engine-side "simple words are identity"
   carve is WITHDRAWN (`26Ob:ack-charset-is-tool-knowledge`); `park-re-parse-carve-explainer`
   points at `26Ob` §1. `Research/README.md` maps `notes/26Ob` with a grep-first caveat.
-- `nit-no-sugar-over-stdlib-kinds` [TYPED 2026-09-05] — if index-kinds are mKinds, they get
+- `nit-no-sugar-over-stdlib-sorts` [TYPED 2026-09-05] — if index-kinds are mSorts, they get
   `sm.dorc.*` names in every spelling; no `user`/`fs`/`net-kernel` sugar for now. `30W` §1's
   "short tokens remain as sugar" and item 7's "sugar preserved" read under this.
 - `note-transit-mechanics-are-open` [TYPED 2026-09-05] — the actual mechanics of transit are
@@ -65,16 +65,16 @@ sentinel, convergence and predict stay rc-bearing because they have off-ramp val
 
 ## §2 — W-2 restated: the three shapes, where each stands
 
-- **S1 `shape-slot-is-a-map-over-kinds`** — the slot is a finite map from index-kinds to
-  index-values; an absent mKind inherits the caller's value; the empty map is the ambient mWorld;
+- **S1 `shape-slot-is-a-map-over-sorts`** — the slot is a finite map from index-kinds to
+  index-values; an absent mSort inherits the caller's value; the empty map is the ambient mWorld;
   there is no engine list of axes. Substance TYPED by `26Ob:ack-entered-kind-is-declared-never-host`
   and §1's Host lean. Absorbs `30W` ruling 1 (`271:rul-axis-vocabulary-v1`'s reserved `host` has
   nothing to be reserved in) and ruling 4 (dissolve the closed vocabularies). mVantage, if ever
-  needed, is one more mKind; nothing to rule. The ρ component (env, cwd, options) rides beside the
-  map as an engine-owned builtin, not a mKind (§8).
+  needed, is one more mSort; nothing to rule. The ρ component (env, cwd, options) rides beside the
+  map as an engine-owned builtin, not an mSort (§8).
 - **S2 `shape-index-values-carry-provenance`** — Entered (a value-plane object that flowed
   through a `lend_map`; never a string — `26Ob:nit-entered-arm-holds-a-value-object`) · Measured
-  (a mPlaceholder `sk(E, K)`, "the value of mKind K under mEntryChain E", until the standup binds it
+  (a mPlaceholder `sk(E, K)`, "the value of mSort K under mEntryChain E", until the standup binds it
   to an opaque mToken) · Fresh (⊤). E = peeled spelling × mVantage × the entry form's
   `DefinitionId` (`26Ob:nit-batching-key-carries-entry-definition-identity`). PROPOSED, acked
   in direction. The mPlaceholder's binding state is a license input (an elision on an unbound
@@ -86,15 +86,15 @@ sentinel, convergence and predict stay rc-bearing because they have off-ramp val
   ⊤ ⇒ unknown; meet) is PROPOSED and additive. `30W` ruling 2 is the referent-transparent row of
   the relation table; ruling 6 its authoring contract.
 - `30W` ruling 3 (`rule-incarnation-invariance-passes-the-razor`) — the sitting's reading
-  [PROPOSED, confirms `30W` §8]: an invariance line against a tenure/Boot mKind is vouch-tier for
+  [PROPOSED, confirms `30W` §8]: an invariance line against a tenure/Boot mSort is vouch-tier for
   TRANSPORT (the mCell is one mCell across the index — a closed claim about the owner's own store,
   like user-invariance) and flag-tier for SPARING past a reboot that actually fires
   (`26Ob:fnd-below-a-fired-transit-three-rungs`). Two roles where the user line has one.
 - `30W` ruling 5 (`_only` decomposes) — the human's own 26M nit, adopted, never typed as a
   ruling; shape-neutral; may wait for the stdlib arc.
-- Tenure versus Boot [PROPOSED lean] — exclude folding the tenure mToken INTO the entered mKind's
+- Tenure versus Boot [PROPOSED lean] — exclude folding the tenure mToken INTO the entered mSort's
   value (structure inside the coordinate, the shape `271:rul-coordinate-shape-flat-three-place`
-  declined); whether Boot is a separate stdlib mKind the entered mKind's owner entails
+  declined); whether Boot is a separate stdlib mSort the entered mSort's owner entails
   (containment via :reaches, `30W` §4) is stdlib content, not a kernel shape. The word itself
   (`tenure`/`incarnation`) is renamable pre-publication and blocks nothing.
 - W-3 (`26Ob:lean-replace-wrapper-detection-with-argv-landing`) — one sentence, unchanged,
@@ -113,13 +113,13 @@ composition userspace-defined? Answer [FOUND; conductor-argued, human-read]: inn
 right for what a link SETS and unsound as the KEY; no compose op exists; what userspace defines
 is stores and identity. Four rules:
 
-- `rule-set-innermost-wins` — a link's `lend_map` names the mKinds it sets; innermost wins.
-- `rule-inherit-or-top-with-sentinel` [PROPOSED] — mKinds a link does not name are ⊤ (27C's
+- `rule-set-innermost-wins` — a link's `lend_map` names the mSorts it sets; innermost wins.
+- `rule-inherit-or-top-with-sentinel` [PROPOSED] — mSorts a link does not name are ⊤ (27C's
   posture, kept) until the wrapper author finishes the claim with a `lends nothing-else`
-  sentinel, after which unnamed mKinds inherit the caller's value. A second, `env -i`-shaped
-  sentinel says "reset unnamed mKinds to the new mWorld's ambient" (the ssh shape). Both are the
+  sentinel, after which unnamed mSorts inherit the caller's value. A second, `env -i`-shaped
+  sentinel says "reset unnamed mSorts to the new mWorld's ambient" (the ssh shape). Both are the
   author's claims. This REPLACES `27C` §3's enumerate-every-dimension law, which cannot survive
-  user-minted mKinds (a `nice` oracle cannot enumerate `org.docker.Container`); it mirrors
+  user-minted mSorts (a `nice` oracle cannot enumerate `org.docker.Container`); it mirrors
   `271:rul-env-claim-inversion`'s ladder and 30U's at-most pattern.
 - `rule-derive-only-toward-unknown` [FOUND; already law in two halves] — derivation may make
   a mCell unknown or fresh (30W §4 transit re-keying: a disturbed index-value mCell freshens
@@ -129,7 +129,7 @@ is stores and identity. Four rules:
   NOT license-free; it is the ssh author's reset sentinel, or nothing.
 - `rule-same-is-generated` — across differently-keyed contexts, `same` needs a measured
   identity mToken (the owner's `resolve()`) or a declared invariance of the name's resolution across
-  the differing mKinds; `disjoint` needs referent-transparent mTokens that differ, under the flag;
+  the differing mSorts; `disjoint` needs referent-transparent mTokens that differ, under the flag;
   else unknown. Names are never arithmetic.
 
 Corrections to `27C` this implies (cleanup pass): retire `rul-dimension-owned-compose-ops`'
@@ -137,43 +137,43 @@ fs-view caller-relative path concatenation (engine-held path semantics, forbidde
 `30T:rul-engine-holds-no-world-facts`, and wrong under a symlink inside the chroot); identity
 across `chroot /mnt chroot /t` and `chroot /mnt/t` is measured by the fs-view owner (device and
 inode of `/` inside), never concatenated. Retire enumerate-every-dimension per the sentinel
-rule. `rul-top-absorbs-absolute-maps` survives as "⊤ at any link for mKind K is ⊤ for the chain".
+rule. `rul-top-absorbs-absolute-maps` survives as "⊤ at any link for mSort K is ⊤ for the chain".
 
-Examples that decided it (compressed; `26Ob`-style, all STRAWMAN): absolute mKinds (`sudo -u`)
-work under map-overwrite by luck · relative mKinds break it (`chroot /mnt chroot /t` versus
+Examples that decided it (compressed; `26Ob`-style, all STRAWMAN): absolute mSorts (`sudo -u`)
+work under map-overwrite by luck · relative mSorts break it (`chroot /mnt chroot /t` versus
 `chroot /other chroot /t` both key to `/t` under overwrite — a wrong-mWorld elision) · a
 mWorld-replacing link (`docker exec c ssh web1`) is the author's reset sentinel · a tunnelling
 link (`ssh -A`) is an explicit inherit lend outranking any derivation · partial passthrough
 (`docker run -v host:ctr`) is `overlaps`/measured identity, never a lend · a compose-file
 container name is a MEASURED lend (why S2's Measured arm exists for lends) · fake identity
-(`unshare -r` versus `sudo -u root`) is safe by the relation table's "one map has a mKind the other
-lacks ⇒ unknown" row even when the User owner declared nothing · `nsenter` sets two mKinds from one
-operand, nothing special · `ssh -J bastion` needs no mVantage mKind if Entered names mKey with the
-calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
+(`unshare -r` versus `sudo -u root`) is safe by the relation table's "one map has an mSort the other
+lacks ⇒ unknown" row even when the User owner declared nothing · `nsenter` sets two mSorts from one
+operand, nothing special · `ssh -J bastion` needs no mVantage mSort if Entered names mKey with the
+calling context · env and cwd are ρ, engine-owned by sh parity, not mSorts.
 
 - `lean-no-absoluteness-declaration` [PROPOSED] — an owner-declared "my names are absolute"
-  would recover pre-network transport for absolute mKinds; the chain mKey costs one extra standup
+  would recover pre-network transport for absolute mSorts; the chain mKey costs one extra standup
   per distinct chain before mTokens bind; not worth an authored surface now.
 
 ## §4 — stores, `overlaps`, and the ordering hazard
 
 - The recast reading [FOUND, agrees with the human's recollection]: `state_stored_in` emits
-  locators "stored in a mKind" — under `30W` §1/item 7 and §1's no-sugar nit,
+  locators "stored in an mSort" — under `30W` §1/item 7 and §1's no-sugar nit,
   `printf '/var/lib/dpkg\n' : stored-in sm.dorc.File`. No document had that spelling written;
   `30W` §3's and `26Ob` §10a's strawmen still use `: fs`/`: process`. The old token did two
   jobs: which index-kind KEYS the store (now by transitivity — File's own store declaration says
-  File names live in `sm.dorc.MountNamespace`'s address space) and which mCell mKind the region IS
+  File names live in `sm.dorc.MountNamespace`'s address space) and which mCell mSort the region IS
   (the File coordinate itself, for collisions).
 - The subtree relation is `kind__overlaps` (`30W` §2/§3); the consumer is `30U` §7's
   store-collide rule. Absent `overlaps`, "inside" can only be exact-name equality.
 - `hazard-file-finished-definition-leans-on-overlaps` [FOUND] — `30U` §7 lets File finish its
-  definition BECAUSE other mKinds' residency in files is those mKinds' store speech; that honesty
+  definition BECAUSE other mSorts' residency in files is those mSorts' store speech; that honesty
   needs the store-collide consumer to find subtree containment. File's `disturbs nothing-else`
   is therefore unsafe to author until `overlaps` and the collide consumer exist. Not recorded
   anywhere the conductor read; the human did not recall it ruled.
 - **`rul-overlaps-is-a-kernel-generator`** [TYPED 2026-09-05, conditional on the conductor
   finding no mechanism hole; none found] — `kind__overlaps` comes forward into the kernel
-  organization: a generator of the `compare()` chokepoint for same-mKind region pairs and for the
+  organization: a generator of the `compare()` chokepoint for same-mSort region pairs and for the
   store-collide consumer's containment predicate; absent or declining reads unknown; consulted
   only within one context after the mWorld relation; dynamic pairs collide at v0 (30T §9). Body-
   quality items for the stdlib bar, not blockers: `realpath` prefix checks answer disjoint for a
@@ -184,7 +184,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
   collisions against footprint mCells landing inside it" must read as a MAY-inside predicate:
   unknown adds the collision; only the owner's deliberate disjoint answer removes it. Without
   `stored nothing-else` an unlisted store is open-world and collides with every footprint of that
-  mKind (`30W` §3), so truncation of a store list lands safe — which supersedes `30U` §5's
+  mSort (`30W` §3), so truncation of a store list lands safe — which supersedes `30U` §5's
   "absent by design for store declarations" (it predates the sentinel).
 
 ## §5 — the universal safe default, and its two deliberate exceptions
@@ -193,8 +193,8 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
   safe for both consumers: `resolve` absent ⇒ may-alias · `overlaps` absent ⇒ collide ·
   referent-transparency undeclared ⇒ names are names · `resolve()` absent ⇒ mPlaceholder never
   binds · invariance absent ⇒ keyed or ⊤ ⇒ no transport · store declaration absent ⇒ ⊤ ⇒ the
-  filtered meet answers unknown · "one map has a mKind the other lacks" ⇒ unknown · a wrapper
-  silent on a mKind ⇒ ⊤.
+  filtered meet answers unknown · "one map has an mSort the other lacks" ⇒ unknown · a wrapper
+  silent on an mSort ⇒ ⊤.
 - Deliberate non-unknown defaults, both authored or ordinary law: (1) two mSites under one
   syntactic mEntryChain share a mPlaceholder pre-measurement — the ordinary reach rule applied to
   the name's mResolution mCell (⊤ backing unless the owner declares stores ⇒ any running mutator
@@ -219,7 +219,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
   (`AID-NEEDS:law-collapse-mints-narrative`, `trust-tier-is-syntax`) and the name reaches the
   angry user at `why`-time.
 - `note-enhancement-curve-survey-wanted` [human, 2026-09-05] — with `overlaps`, finished
-  definitions, store sentinels, `resolve()`, and lends sentinels all ahead of cross-mKind
+  definitions, store sentinels, `resolve()`, and lends sentinels all ahead of cross-mSort
   elision, USER_STORY has gained several oracle-author stages before anything elides; not
   necessarily bad (correctness is never traded for value without extreme motivation), but a
   full survey of the gradual-enhancement curve is wanted at some point. Not scheduled.
@@ -287,7 +287,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
   sentinel on the SAME stream as what it witnesses or scaffold-declared errexit (a failed write
   makes `printf` return non-zero and abort before the sentinel). So `__resolve()` and the
   `resolve()` are owed the sentinel like every emission member; and the existing cross-stream
-  `disturbs nothing-else` (mEntities on stdout, record on the sink) is sound only under
+  `disturbs nothing-else` (mKeys on stdout, record on the sink) is sound only under
   scaffold-declared errexit or a same-stream layout — a dependency to write down (§8).
   [REFINED §9: under scaffold-declared errexit, regime-3 bodies need NO compiled sentinel —
   rc 0 is itself the completion witness; the `only`-class totality records stay authored.]
@@ -300,7 +300,7 @@ calling context · env and cwd are ρ, engine-owned by sh parity, not mKinds.
 ## §7 — the cleanup pass OWED (do not start piecemeal; one pass, human-directed)
 
 Docs the rulings above touch, none edited yet: `plans/30W` §1 (Host blessing; sugar), §2/§3
-(`overlaps` spelling; `stored-in` mKind coordinates), §8/§10 (rulings 1–6 status) · `plans/27C`
+(`overlaps` spelling; `stored-in` mSort coordinates), §8/§10 (rulings 1–6 status) · `plans/27C`
 §3 (compose ops; enumerate-every-dimension; the `"$@"`-verbatim entry rule already superseded
 by `26Ob:ack-entry-verbatim-cannot-hold`, held by the human's "no 27C edit") · `plans/30U` §5
 (store sentinel supersedes "absent by design"), §7 (may-inside) · `plans/30T` §6 (the name-bias
@@ -814,7 +814,7 @@ insert-only, never wrap, never move.
 > Historical close. The successor scrutiny and human responses are in §11; §12 is now the
 > resumption point. In particular, the staged mix is not an adopted implementation plan.
 
-- TYPED this sitting: `nit-no-sugar-over-stdlib-kinds` · `note-transit-mechanics-are-open` ·
+- TYPED this sitting: `nit-no-sugar-over-stdlib-sorts` · `note-transit-mechanics-are-open` ·
   `rul-overlaps-is-a-kernel-generator` (conditional; condition met) · `rul-oracles-always-
   return-zero` · `rul-three-rc-regimes` (acked as holding) · `nack-predict-off-rc` ·
   `nack-attribute-to-the-tool` · `ack-names-are-literal-narratives` · the oracle shell-state

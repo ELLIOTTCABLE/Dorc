@@ -18,17 +18,17 @@ Its weakest foundations are unscoped terminal measurements, unconditional separa
 through storage, and the suggestion that identifying an object makes observation
 context disposable. Its largest missing composition feature is a place for another
 knowledgeable speaker to contribute an alternative identification or correspondence.
-Several apparent simplifications leave substantive questions inside “referent,”
+Several apparent simplifications leave substantive questions inside “mReferent,”
 “store,” and “measured token.” These are not objections based on implementation churn.
 
-## §1 — `issue-measured-tokens-escape-their-scope`
+## §1 — `issue-measured-tokens-escape-their-store`
 
 **Assessment: a strong equality contract is missing or insufficiently distinguished
 from ordinary local canonicalization.**
 
 `311f` B2 makes equal `Measured` mTokens establish sameness unconditionally. B3 permits
 an identity member to return answers ranging from a canonical package name to
-`fsid:inode`. Those answers do not have uniform comparison mScope:
+`fsid:inode`. Those answers do not have uniform comparison store:
 
 - a package name is meaningful within a package database;
 - an inode number is meaningful within a filesystem;
@@ -43,14 +43,14 @@ to precisely that distinction.
 B4 also misidentifies the cloneable-mToken failure direction. Different machines with
 the same cloned machine-id threaten SAME. The `transparent` grade controls whether
 DIFFERENT mTokens establish separation; it cannot protect the unconditional equality
-rule. Wrong separation arises when one referent can produce different mTokens, not
+rule. Wrong separation arises when one mReferent can produce different mTokens, not
 from equal mTokens on distinct clones.
 
-The generic File author should not have to know the scope of every filesystem's
+The generic File author should not have to know the store of every filesystem's
 identifiers. The filesystem/provider author often knows better. Preserve that
 contribution explicitly rather than hide it in a supposedly terminal mToken. This is
 not a claim that trustworthy terminal mTokens cannot exist; it is a requirement to
-state the strength and mScope of the contract admitting them.
+state the strength and store of the contract admitting them.
 
 ## §2 — `issue-storage-is-not-necessarily-exclusive`
 
@@ -58,10 +58,10 @@ state the strength and mScope of the contract admitting them.
 separation needs a stronger relation than ordinary physical storage.**
 
 B0's “a row cannot live in two database files” is not a general foundation for B2's
-`stores disjoint ⇒ referents disjoint`. SQLite's current database state can span its
+`stores disjoint ⇒ mReferents disjoint`. SQLite's current database state can span its
 main file and write-ahead log. A logical record can have several replicas. Overlay
 copy-up can change physical placement while an application retains one logical name.
-These examples concern potentially different choices of referent, and the model must
+These examples concern potentially different choices of mReferent, and the model must
 say which choice it requires rather than silently identify logical objects with
 physical occurrences.
 
@@ -98,22 +98,22 @@ Listing additional physical stores does not obviously supply the missing qualifi
 
 Distinguish identity of the object from identity of the complete subject of the claim
 about it. These coincide for some claims, not all. Credentials, client-local caches,
-mNamespaceKind-relative visibility, and authorization mechanisms can contribute without
+mSort-relative visibility, and authorization mechanisms can contribute without
 changing the object reached.
 
 This review does NOT propose a special privilege algebra. User-related inputs should
 use the same abstract machinery as other inputs. The concern is erasing contextual
 information before showing how all relevant inputs became part of the claim. If each
-mKind owner must recover every influence through `located_in`, responsibility may land
+mSort owner must recover every influence through `located_in`, responsibility may land
 on the wrong author: a file author cannot reasonably know every mechanism affecting
 a particular caller's access.
 
-## §4 — `issue-common-ancestors-defeat-cross-kind-precision`
+## §4 — `issue-common-ancestors-defeat-cross-sort-precision`
 
 **Assessment: conservative value hole in the stated comparison rule, not unsafe
 elision.**
 
-B2 permits cross-mKind disjointness only if the total store chains share no
+B2 permits cross-mSort disjointness only if the total store chains share no
 same-or-unknown store pair. Consider:
 
 - Package nginx → package-status File → Filesystem F;
@@ -130,10 +130,10 @@ sufficiently precise level. Its region predicate might help, but B does not spec
 how that result satisfies or overrides the all-ancestor test.
 
 The terminal case also needs specification: “no further stores listed” must not
-vacuously prove two arbitrary terminal mKinds disjoint. This is a question for the
+vacuously prove two arbitrary terminal mSorts disjoint. This is a question for the
 formalized rule, not a claim about an implementation that does not yet exist.
 
-## §5 — `issue-knowledge-can-live-outside-the-kind-owner`
+## §5 — `issue-knowledge-can-live-outside-the-sort-owner`
 
 **Assessment: an important missing contribution surface, with a clearly better-informed
 speaker available.**
@@ -143,20 +143,20 @@ oracle, executing inside the container, may lack the information or privileges t
 identify the outer process. The container manager's author can know the correspondence
 from its control interface.
 
-B assigns identity production to one mKind-owner member running in the denoted mWorld,
-and wrapper authorship to lending routing mNamespaceInstances. Where can the container author
+B assigns identity production to one mSort-owner member running in the denoted mWorld,
+and wrapper authorship to lending routing indexes. Where can the container author
 contribute the concrete correspondence between these two process names?
 
-The mNamespaceInstance declaration alone does not provide it. Namespace disjointness cannot
+The index declaration alone does not provide it. Namespace disjointness cannot
 separate the processes either: they are the same process seen through different PID
-mNamespaceInstances. Requiring the Process owner to learn every container manager's semantics
+indexes. Requiring the Process owner to learn every container manager's semantics
 would put the responsibility on the wrong speaker.
 
 The model could be extended, or explicit helper composition could carry this knowledge.
 As written, that contribution has no clear primitive or contract. This is not a proof
 that the knowledge is unrepresentable under every extension. It identifies a choice
 between losing available value and centralizing implementation-specific knowledge in
-the generic mKind owner—precisely the epistemic seam the review was asked to examine.
+the generic mSort owner—precisely the epistemic seam the review was asked to examine.
 
 ## §6 — `issue-alternative-identities-are-not-represented`
 
@@ -192,7 +192,7 @@ important cases naturally:
 
 The shorthand “chroot swaps the mount table” is technically imprecise: root directory,
 mount namespace, and other path-resolution inputs differ. That alone does not refute
-the abstract model; its arbitrary mNamespaceKind referents could represent the corrected
+the abstract model; its arbitrary mSort mReferents could represent the corrected
 inputs. The findings above concern stronger issues than such mechanical shorthand.
 
 No claim here depends on preserving the current implementation or the conversation's

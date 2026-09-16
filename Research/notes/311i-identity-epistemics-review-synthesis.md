@@ -17,17 +17,17 @@ measurement machinery, this conclusion does not generally follow.
 
 A `resolve()` can establish that an invocation returned a mToken. It cannot alone establish:
 
-- the mNamespaceInstance within which that mToken identifies something;
+- the store within which that mToken identifies something;
 - which subject or aspect the mToken identifies;
 - whether equal or unequal answers warrant a particular relation;
-- whether the relationship remains applicable after a mNamespaceInstance change;
+- whether the relationship remains applicable after a store change;
 - whether the identified object's sameness suffices for the claim being consumed.
 
 Both proposals retain substantial authored contracts precisely because of this gap:
 identity grades, store completeness, injectivity, and horizons. Measurement can replace
 a particular speculative assumption or answer a formerly static question. It does not
 make those semantic obligations disappear. Moving the obligation from an invariance
-line to a mToken reader or store sentinel changes its owner, mScope, and failure anatomy.
+line to a mToken reader or store sentinel changes its owner, store, and failure anatomy.
 That move may be valuable, but it requires its own justification.
 
 The concrete witness is System A's identifying-only grade: unequal mTokens explicitly
@@ -45,7 +45,7 @@ same containment-chain lens.
 The reviews support several underlying REQUIREMENTS:
 
 - invocation-dependent addressing information must be expressible by someone who has it;
-- identifiers must retain or explicitly justify their comparison mScope;
+- identifiers must retain or explicitly justify their comparison store;
 - the full subject of the consumed claim must remain identifiable;
 - relationship validity must respond to relevant modeled mutations;
 - multi-author contributions must have a compositional contract with repairable owners.
@@ -94,18 +94,18 @@ review findings repeatedly identify available knowledge held by the wrong prospe
 owner of the proposed identity function:
 
 - the tool author knows base-versus-overlay roles, which an unordered store set loses;
-- the filesystem/provider author knows the mScope of an object mKey;
+- the filesystem/provider author knows the store of an object mKey;
 - the database implementation author knows WAL, shard, or replica placement;
 - the container manager knows that guest PID 1 corresponds to a particular outer PID;
-- the mNamespaceKind/path describer knows which traversal inputs an object lookup used.
+- the mSort/path describer knows which traversal inputs an object lookup used.
 
-A single mKind-owner `resolve()` in the denoted context cannot necessarily obtain all of those
+A single mSort-owner `resolve()` in the denoted context cannot necessarily obtain all of those
 facts. Another author may be able to state a precise correspondence or dependence
 without supplying a globally comparable identifier for the leaf object.
 
 **[DIRECTION]** Ask how each such local contribution enters the model, what exactly it
 asserts, and how it combines with another contribution. Do not require the generic
-leaf-mKind owner to acquire every provider's knowledge merely to produce one terminal
+leaf-mSort owner to acquire every provider's knowledge merely to produce one terminal
 mToken. Nor should a second author's useful contribution automatically require merging
 their entire speaker closures.
 
@@ -120,7 +120,7 @@ on a finished store description. A sentinel can close an author's declared set, 
 to the execution and integrity contract. It does not supply the semantics of that set.
 
 System A's base/overlay specimen can enumerate all participating files accurately and
-still lose which role each file plays. Its mKind-level plus mSite-level union also needs
+still lose which role each file plays. Its mSort-level plus mSite-level union also needs
 a speaker for the combined sufficiency promise. System B's physically stored-in relation
 does not automatically warrant exclusive containment. These are not omissions cured
 by insisting the existing list be finished more carefully.
@@ -169,7 +169,7 @@ without its name changing. Both proposals intend to use effective-mWorld reach, 
 is appropriate, but the facts it invalidates must retain the relevant dependencies.
 
 A retained object mToken does not preserve the binding of a pathname through a replaced
-symlink. A mNamespaceInstance mutation need not mutate the old target object. Asking whether two
+symlink. An index mutation need not mutate the old target object. Asking whether two
 objects are disjoint is not automatically the same question as asking whether changing
 one can invalidate mResolution of a name for the other.
 
@@ -179,7 +179,7 @@ can still do the conservative job: withdraw the old conclusion without computing
 new identity. What matters is that the right conclusion loses authority.
 
 Similarly, identifying an object is not automatically enough to carry every observation
-about it. Keep any additional relevant User, mNamespaceKind, or observer inputs in the same
+about it. Keep any additional relevant User, mSort, or observer inputs in the same
 general calculus rather than either erasing them or inventing a special privilege lane.
 
 ## §7 — Smaller claims in the author's synthesis that need qualification
@@ -194,7 +194,7 @@ general calculus rather than either erasing them or inventing a special privileg
   execution prerequisites, and failure/coverage behavior. The performance doctrine
   cannot by itself establish that an invariance statement is semantically redundant.
 - **`qualification-current-code-claims-are-unverified-here`** — assertions about which
-  cross-mKind paths currently fire, which measurement machinery is built, and the exact
+  cross-mSort paths currently fire, which measurement machinery is built, and the exact
   impending churn were not validated by these reviews. They should not bear the
   epistemic argument. The main conclusions above hold even assuming mature machinery.
 

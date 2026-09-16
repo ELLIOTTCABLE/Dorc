@@ -21,7 +21,7 @@ ssh alpha 'cmp -s ./foo.conf /mnt/shared/foo.conf || cp ./foo.conf /mnt/shared/f
 runs. Correct, coarse. This is `26Ob:ack-cross-world-wall-is-the-floor` reproduced by the model
 with no mRoots.
 
-S2, a true mRoot arrives: the cloud mKind's owner declares instance-ids a mRoot (honestly; no
+S2, a true mRoot arrives: the cloud mSort's owner declares instance-ids a mRoot (honestly; no
 clone horizon), Machine identifies in Instance, both probes ran every `resolve()`.
 
 ```sh
@@ -29,7 +29,7 @@ clone horizon), Machine identifies in Instance, both probes ran every `resolve()
 #   … → machine-alpha → i-alpha  (root)
 ```
 
-Same mRoot mKind; first divergence at the top; instance-ids carry :guarantees-unique-name. § 3.2:
+Same mRoot mSort; first divergence at the top; instance-ids carry :guarantees-unique-name. § 3.2:
 DISJOINT if "every level above it carries :sole-route." Read mRoot-ward, nothing is above:
 DISJOINT, :sole-route never consulted. Read leaf-ward, which is what § 2.2 defines :sole-route
 for: Machine-in-Instance, Boot-in-Machine, Filesystem-in-Boot, File-in-Filesystem must all hold,
@@ -77,14 +77,14 @@ transports to alpha.
 S6, the admin's posture, in behaviour only: "alpha and beta share no store."
 
 ```sh
-# not a spelling: the admin asserts sole-route at the Target scope for every kind whose chain
+# not a spelling: the admin asserts sole-route at the Target store for every sort whose chain
 # passes through a Filesystem; S2's divergence then yields DISJOINT honestly, attributed to the
 # admin's line; S1 stays unknown without it
 ```
 
 ## Observations
 
-- `obs-unspoken-is-kind-level-only` — § 3.2's route-versus-root and roots-differ clauses read
+- `obs-unspoken-is-sort-level-only` — § 3.2's route-versus-root and roots-differ clauses read
   unspoken; both must read unknown. Unspoken means two vocabularies that never met inside one
   mWorld, which is what 30U's finished definition was written to spend; a mRoute or a second mRoot
   is a second mWorld, and no finished definition speaks to it.
@@ -93,22 +93,22 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no store."
   mRoute-terminated link yields at most what it yields with the link measured. `16P` DP-8's
   vacuous-bottom is the same law from the other side.
 - `obs-sole-route-runs-leaf-ward` — § 2.2 defines :sole-route as what lets a divergence at a
-  mScope level license disjointness beneath it; § 3.2's "every level above it", after "walk from
+  store level license disjointness beneath it; § 3.2's "every level above it", after "walk from
   the mRoots", reads the other way. State the orientation: every level between the divergence
   and the leaf.
-- `obs-rootness-is-retroactive` — a true mRoot anywhere up a chain converts every lazy mScope
+- `obs-rootness-is-retroactive` — a true mRoot anywhere up a chain converts every lazy store
   beneath it, fleet-wide, from unknown to decisive. The blast radius is not the mRoot's own
-  referents; it is every mKind that identifies into it. Countability: mRoots are stdlib-only and
+  mReferents; it is every mSort that identifies into it. Countability: mRoots are stdlib-only and
   few, and the first one is the trigger for every hole in this record.
 - `obs-the-finished-definition-is-within-world` — "nothing else, in any vocabulary" is not "in
   any mWorld"; the engine must not spend it across mRoutes or mRoots; when it does, the Package
   author is the wrong name in the why chain (pope-sin).
 - `obs-the-filesystem-owner-must-know-network-filesystems` — `311` § 6.2's "the File owner
-  should never learn NFS" holds only if the Filesystem owner does: scope a network mount in its
+  should never learn NFS" holds only if the Filesystem owner does: identify a network mount in its
   server (an unknown link, through the mVantage) or decline. A statfs fsid scoped in Boot is
   true and unsafe.
 - `obs-cross-target-disjointness-is-the-admins-sole-route` — S6: "these targets share no store"
-  is :sole-route at the Target mScope, the admin's seat under the posture option
+  is :sole-route at the Target store, the admin's seat under the posture option
   `26Ob:ack-cross-world-wall-is-the-floor` reserved. The model needs the seat; no rule change
   replaces it.
 - `obs-same-is-or-across-derivations` — S4: the mKey walk is "and" over its levels; SAME overall

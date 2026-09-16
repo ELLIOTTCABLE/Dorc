@@ -22,25 +22,25 @@ sourced shell function so `node` and `npm` reach a per-user tree.
 
 ## First glance
 
-The pipx author describes a mKind for installed apps whose mNaturalKey is the app name.
+The pipx author describes an mSort for installed apps whose mNaturalKey is the app name.
 :named-in: the pipx store, a directory. mPlacement: that store and the shim directory. Both are
-File mEntities, so the author names them. `/root/.local/pipx`? `/home/alice/.local/pipx`? Every
+File mKeys, so the author names them. `/root/.local/pipx`? `/home/alice/.local/pipx`? Every
 user's? The first glance lands the whole burden on the pipx author, including which users exist
 on the box and what sudo does to `HOME`. That is the wrong seat, and it is impossible.
 
 ## Where the model strains
 
-`311` § 2.1 supplies a mNamespaceInstance three ways: FIXED (the owner names it), SITE (the
+`311` § 2.1 supplies an index three ways: FIXED (the owner names it), SITE (the
 tool author's bind fills it from argv), AMBIENT (the mEntryChain's lent instance for that
-mNamespaceKind). The pipx store is none of these. It is computed: `${PIPX_HOME:-$HOME/.local/pipx}`,
+mSort). The pipx store is none of these. It is computed: `${PIPX_HOME:-$HOME/.local/pipx}`,
 an sh expansion over the environment, falling back to the observer's passwd home when `HOME` is
 unset. § 2.3's mPlacements have the same shape. § 2.8's mTraversal decomposes a mKey into the
-mNamespaceKind's own mEntities; here the first step of the path is not a directory entry but an
-environment or User resolution. Three strains, one cause: a mNamespaceInstance can be a
-function of ρ and of another mKind's `resolve()`, and the model has no supply mode for that.
+mSort's own mKeys; here the first step of the path is not a directory entry but an
+environment or User resolution. Three strains, one cause: an index can be a
+function of ρ and of another mSort's `resolve()`, and the model has no supply mode for that.
 
 The nvm line is the same strain from the command-word side: `node` is a mNaturalKey in the
-engine's own PATH-search mNamespaceInstance (§ 1.9's transit-free local mRoute), and a sourced file
+engine's own PATH-search index (§ 1.9's transit-free local mRoute), and a sourced file
 rebinds `PATH`. The engine's mRoute claim must perish on a ρ write, not only on a mount-table
 write. Today the `.` line is a blind act and everything below it is havoc, which is safe and
 useless.
@@ -82,22 +82,22 @@ or run. Monotone: every added half buys its mSites and none removes a prior one.
 
 ## Leads and wants
 
-- `lead-computed-namespace-instance`: a fourth supply mode, COMPUTED, an sh expression over ρ,
+- `lead-computed-index`: a fourth supply mode, COMPUTED, an sh expression over ρ,
   argv, and a `resolve()` of ambient instances; SITE and AMBIENT may be its special cases. Unknown
   inputs make the instance unknown.
-- `lead-ask-the-tool-for-its-store`: measure-in-context as a rung for mNamespaceInstances and
-  mPlacements, owned by the tool author, returning a coordinate in another mKind. The newbie
+- `lead-ask-the-tool-for-its-store`: measure-in-context as a rung for indexes and
+  mPlacements, owned by the tool author, returning a coordinate in another mSort. The newbie
   rung; the declared rule is the experienced rung.
-- `lead-env-is-a-routing-namespace`: ρ routes command words (`PATH`), stores (`HOME`, `XDG_*`,
-  `PIPX_HOME`, `GIT_CONFIG_GLOBAL`), and referents (`AWS_PROFILE`). `30S` covers pins and
-  severs for verdict bodies; the routing role is wider and belongs in 311's mNamespaceKind inventory
-  (`311:open-observer-namespace-inventory`).
+- `lead-env-is-an-index`: ρ routes command words (`PATH`), stores (`HOME`, `XDG_*`,
+  `PIPX_HOME`, `GIT_CONFIG_GLOBAL`), and mReferents (`AWS_PROFILE`). `30S` covers pins and
+  severs for verdict bodies; the routing role is wider and belongs in 311's mSort inventory
+  (`311:open-observer-sort-inventory`).
 - `lead-local-route-perishes-on-rho-writes`: the engine's own mRoute claim for command words is
   keyed by `PATH` and cwd as well as the mount table; a `PATH` write is a routing mutation.
 - `lead-policy-dependent-lends-split-two-ways`: the wrapper author declares the default lend;
   the admin's seat overrides per deployment; the wrapper's oracle may read the policy and
   decline. Same split as exercise 02's sudoers case.
-- `want-user-home-read-in-stdlib`: the passwd home of a User is a `resolve()` the User mKind owner
+- `want-user-home-read-in-stdlib`: the passwd home of a User is a `resolve()` the User mSort owner
   supplies, so a tool author's rule can name "the observer's home" without owning it.
 
 ## Open
