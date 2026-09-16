@@ -370,12 +370,15 @@ attacked with sh. Nothing ruled.
   clients hold two mPrimaryKeys for one file; the variation is by the TYPE of the store instance
   (ext4, nfs, sshfs, overlay, loop, proc), never by the child mKind or its naming system. What
   varies per type: how the store instance itself is identified (its own parent), its placements
-  (loop: the backing file), and whether its content addressing is unique (proc: no). Whether the
-  store is a view is DERIVABLE from its own chain reaching an unknown link, so :sole-route needs
-  no attribute. Proposal B(c): store types as first-class SUBSORTS of the store mKind
-  (order-sorted, carrier inclusion), the umbrella's `resolve()` performing the retract on the
-  host; children key into the umbrella and inherit the subsort's answers. "Index-kinds" (`30W`,
-  context axes) is a different concept; never reuse the name.
+  (loop: the backing file), and whether its content addressing is unique (proc: no). No new
+  node species carries this: the variation lives in the ARMS of the `resolve()` of whichever
+  naming system reaches the store (a filesystem named by the device number a file's `resolve()`
+  emits), each arm returning the store's key together with the store's own parent, and a decline
+  arm for types the expert refuses to treat as stores (procfs). A subsort proposal was made and
+  retracted in the same sitting. :sole-route stays a DECLARED warrant, absent by default: nested
+  pid namespaces refute deriving it from chain shape (guest pid 1 and host pid 4821 are one
+  referent and both chains resolve cleanly to one boot). "Index-kinds" (`30W`, context axes) is a
+  different concept; never reuse the name.
 - `fnd-parent-kinds-carry-placements` — a loop-backed filesystem's state lives in a file of the
   outer filesystem; `dd` over the image rewrites every inner fact; every mKind in a chain may
   declare `:lives-in`, not only leaves.
@@ -387,12 +390,44 @@ attacked with sh. Nothing ruled.
   type row needs placements {lower, upper} and no warrants, else a write to the lower spares
   wrongly through the merged path.
 
+## § 9-shape-refinements-unacked
+
+One possible route, discussed 2026-09-10 and 2026-09-16 on top of B(b) (§ 7). Nothing here is
+acked; the human's last position was that the shape still needed rebuilding from the ground
+before it could be judged, and the next sitting should start there, not here. Candidate NAMES
+for anything below live only in the root `_tmp-` file, never in this ledger.
+
+- Type on the naming system, instance on the mKey: every mKey carries exactly one other mKey it
+  was resolved inside (today written "index" for a secondary naming system and "store" for the
+  primary one); the naming system declares only which mKinds that mKey may belong to, derivable
+  from its `resolve()`'s arms, plus the lookup warrants. Through the primary naming system the
+  edge carries identity (what `compare()` walks); through a secondary one it carries routing only
+  (which instance, and perishing).
+- The hop between mKinds: a child's `resolve()` emits a value that names its parent (a file's
+  emits an inode and a device); one naming system of the parent mKind lifts that value; the
+  classifying arms sit in that lifting `resolve()`; the child never learns the parent's types.
+- A cell is an mKind whose primary parent is the one referent it is a property of, so its own key
+  is a singleton (`sm.UnitEnablement` under `sm.UnitFile:nginx`); a container parent (a
+  filesystem holding many files) leaves the child a real own key. The `@` sugar names the
+  singleton case. No aspect species, no `:named-like`.
+- The concrete `__resolve()` member's prefix follows the naming system, not the mKind (answers
+  the `_tmp-` file's OPEN line on the `kind__` prefix). Candidate, unacked.
+- Sparing at every level by declared placements only (§ 5, provisionally acked, downgrade held);
+  cells under one parent partition by their placements, never by an owner's say-so.
+- Strawman conventions for chat (human, 2026-09-16): a trailer sits on an executable line, never
+  on a block; one colon per line, `cmd argv : tag payload other-tag payload`; special tags may
+  have one-ASCII-character sugars (`:!`). Three worked strawmen (a file's chain through a
+  filesystem named by device; a user with two naming systems and a cell; a package with two
+  naming systems, placements, and a stranger's mKind meeting it in the store) exist in chat only
+  and were written before these conventions.
+
 ## § 6-state-for-a-rewound-successor
 
 Commits on `ai/main` this phase, oldest first: `9850d3cb` GOTCHAS 23–56 · `b4d80fd4` 312a ·
 `1bb710a0` exercises 01–03 · `c0e29b54` exercise 04 + this ledger · `660aae7f` conduct ·
-`866bedbd` the `resolve()` naming across 311x/312x. The tagging pass (mTerm, :relation, `op()`)
-over the same sixteen files is landed by the commit carrying this section; its report noted
+`866bedbd` the `resolve()` naming across 311x/312x · `5318649b` the tagging pass and the shape
+sitting (§ 7) · `7d8991d2` the counterexample hunt (§ 8) · the commit carrying § 9. The tagging
+pass (mTerm, :relation, `op()`) over the same sixteen files landed in `5318649b`; its report noted
 that `perish()` has no operation-sense occurrence anywhere, that "world" as external reality
 and "witness" in its completion and evidentiary senses are never tagged, and twenty-one
 borderline calls, all recorded in the scratchpad report and reviewable in the diff. Three lines describe a host read in plain English, not the `resolve()`
