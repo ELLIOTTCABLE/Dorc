@@ -47,9 +47,7 @@ minimization (how little the tree must change to reach the design). A successor 
 
 ## § 2 — 2026-09-16: actor names (typed, **[HUMAN]**)
 
-Strawmen, epistemics, and gradual-enhancement walks name their actors with human first names,
-and the alphabet marks the difference-class: early letters for admins, middle letters for oracle
-authors, late letters for Dorc and stdlib contributors ("Alice and Bob are admins on a team;
-Michael, Nathan, and Oscar write oracles; Rachel is a Dorc contributor"). The regions are
-illustrative and are re-introduced wherever used, never a fixed table. A name doubles as a file
-stem: `nathan-ip.oracle.sh`.
+Strawmen, epistemics, and gradual-enhancement walks name their actors with human first names.
+The letters carry one dimension of authorship, chosen per example and introduced where used (a
+run of the alphabet might mark role, or vantage, or distance from the kernel); no allocation is
+fixed anywhere. A name doubles as a file stem: `nathan-ip.oracle.sh`.
