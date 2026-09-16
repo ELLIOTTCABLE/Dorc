@@ -44,3 +44,12 @@ The arc (**[HUMAN]**): proposed resolution (done) → attack and refinement (thi
 minimization (how little the tree must change to reach the design). A successor reads
 `notes/311j` whole, `Research/GOTCHAS.md`, USER_STORY stages 4–7, and `312a` § 0 with `312b`
 § 1 and § 4 for conduct and the tagging conventions.
+
+## § 2 — 2026-09-16: actor names (typed, **[HUMAN]**)
+
+Strawmen, epistemics, and gradual-enhancement walks name their actors with human first names,
+and the alphabet marks the difference-class: early letters for admins, middle letters for oracle
+authors, late letters for Dorc and stdlib contributors ("Alice and Bob are admins on a team;
+Michael, Nathan, and Oscar write oracles; Rachel is a Dorc contributor"). The regions are
+illustrative and are re-introduced wherever used, never a fixed table. A name doubles as a file
+stem: `nathan-ip.oracle.sh`.
