@@ -4,33 +4,17 @@ Exercise record; ahistorical; the 2026-09-16 round over `notes/311j`. Book lines
 Oracle lines are strawman spellings under `312c` § 1 and carry no weight; the `#` glosses are
 prose in `311j` vocabulary. Grades on the conductor's claims: +SURE / ~SUSPECT / -GUESS /
 --WONDER. Exercises `net-sysctls-are-per-namespace` and, beside it,
-`one-state-reached-through-two-kinds`.
+`one-state-reached-through-two-kinds`. A rich stdlib is assumed present.
 
-## The world, in plain words
+## The world
 
-The Linux kernel has tunable knobs: whether the machine forwards packets between its network
-interfaces (`net.ipv4.ip_forward`, 0 or 1); the largest process id it will hand out
-(`kernel.pid_max`). A knob is set two ways, and they are one knob: `sysctl -w
-net.ipv4.ip_forward=1`, or a write to the pseudo-file `/proc/sys/net/ipv4/ip_forward`. That is
-`one-state-reached-through-two-kinds`.
-
-A namespace is a private copy of one slice of the kernel's world, handed to a group of
-processes; containers are built from them. A network namespace is a private copy of the
-networking slice: its own interfaces, routes, firewall, and its own copies of every `net.*`
-knob. `ip netns add blue` creates one and labels it `blue`; the label is a file under
-`/var/run/netns/`, and a label can be attached to a namespace that already exists, so labels are
-not identity. The identity the kernel exposes is an inode number, visible as
-`net:[4026531992]` through `/proc/self/ns/net`. `ip netns exec blue CMD` runs CMD inside it. A
-process inside `blue` reads and writes `blue`'s copy of `net.ipv4.ip_forward`; a process
-outside reads the host's. `kernel.*` knobs are not copied per namespace: there is one per
-running kernel, from power-on to reboot (a boot). That is `net-sysctls-are-per-namespace`,
-both halves.
-
-Two details the strawmen lean on (+SURE): `ip netns exec` also gives the command a private
-mount table and overlays `/etc/netns/blue/*` over `/etc/*` where present, so a file inside
-`blue` may not be the file outside; and sysctl's dotted spelling is ambiguous where an
-interface name contains a dot (`eth0.100`), while the `/proc/sys` path is not, so the path is
-the honest primary mScheme and the dotted name a way of writing it.
+A kernel knob (`net.ipv4.ip_forward`, `kernel.pid_max`) is set by `sysctl -w` or by writing
+`/proc/sys/<path>`: one knob, two spellings. A network namespace is a private copy of the
+networking slice, every `net.*` knob included; `kernel.*` knobs are one per boot. `ip netns add
+blue` labels a new namespace; `ip netns exec blue CMD` runs inside it, and also unshares the
+mount table, overlaying `/etc/netns/blue/*`. A label can be re-attached to an existing
+namespace; the kernel's identity is the nsfs inode. The dotted spelling is ambiguous where an
+interface name contains a dot; the `/proc/sys` path is not (+SURE all).
 
 ## The book, the catastrophes, the truths
 
@@ -51,24 +35,24 @@ Catastrophes (`311b:rul-ground-identity-in-final-outcomes`): C1, wrong SAME acro
 line 3's converged fact stands in for line 5 and blue never forwards; C2, wrong DISJOINT across
 the two spellings, line 9's write is taken to be about something other than line 10's mCell,
 line 10's elision survives it, and the host stays dark. Truths: line 5 is a different mCell
-from line 3, and line 6 is a different mCell from line 5; line 7 is the same mCell as line 8;
-line 9 writes line 10's mCell.
+from line 3, and line 6 from line 5; line 7 is the same mCell as line 8; line 9 writes line
+10's mCell.
 
 ## The actors
 
-Here the letters mark who owns what. Alice writes the book. Michael (procps) and Nathan
-(iproute2) write tool oracles: `michael-sysctl.oracle.sh`, `nathan-ip.oracle.sh`. Rachel and
-Simon own stdlib vocabularies: `rachel-kernel-params.oracle.sh` (`sm.KernelParam`) and
-`simon-namespaces.oracle.sh` (`sm.NetNamespace`, `sm.MountNamespace`, `sm.Boot`). Nobody has met.
+Here the letters mark who owns what. Alice writes the book. Rachel and Simon own stdlib
+vocabularies, present from the start: `rachel-kernel-params.oracle.sh` (`sm.KernelParam`,
+primary mScheme `sm.ProcSysPath`) and `simon-namespaces.oracle.sh` (`sm.NetNamespace`,
+`sm.MountNamespace`, `sm.Boot`). Michael (procps) and Nathan (iproute2) are a new team's tool
+authors: `michael-sysctl.oracle.sh`, `nathan-ip.oracle.sh`. Nobody has met.
 
-## Stage 0 — nothing authored
+## The floor: two tool oracles, no yields
 
-Eight tool lines run. Alice spent nothing and got nothing.
-
-## Stage 1 — Michael's oracle
-
-Michael binds under a mScheme nobody has declared: the floor of `311j` § 1.3 (a primary
-mScheme of an unnamed mSort, identity `resolve()`, no warrants, the mRoute its only mParent).
+Michael and Nathan bind under mSchemes of their own with no `:yields`: the floor of `311j`
+§ 1.3 (a primary mScheme of an unnamed mSort, identity `resolve()`, no warrants, the mRoute its
+only mParent). Nathan's second lend line is the coarse truth about the mount table;
+`lends-a-fresh-instance` is minted here (`273` has a pass-through lend and a valued lend, and no
+spelling for an instance the wrapper created that nobody can name).
 
 ```sh
 # dorc-lang/v0.2   michael-sysctl.oracle.sh
@@ -84,33 +68,6 @@ sysctl__disturbs() {
    printf '%s\n' "${1%%=*}"   : disturbs "sm.SysctlKey"
 }
 ```
-
-Render, steady state (host and blue converged; blue exists):
-
-```
- 3  # sysctl -w net.ipv4.ip_forward=1                       # converged
- 4  ip netns add blue                                       # runs: unmodeled ('ip')
- 5  ip netns exec blue sysctl -w net.ipv4.ip_forward=1      # runs: unmodeled ('ip')
- 6  ( sysctl_check -w net.ipv4.conf.all.rp_filter=1 ) \
- 6     || sysctl -w net.ipv4.conf.all.rp_filter=1           # verify: converged, but past 'ip' (line 4)
- 7  ip netns exec blue sysctl -w kernel.pid_max=4194304     # runs: unmodeled ('ip')
- 8  ( sysctl_check -w kernel.pid_max=4194304 ) \
- 8     || sysctl -w kernel.pid_max=4194304                  # verify: converged, but past 'ip' (line 4)
- 9  printf 0 >/proc/sys/net/ipv4/ip_forward                # runs: a shell write nobody vouches; a wall
-10  ( sysctl_check -w net.ipv4.ip_forward=1 ) \
-10     || sysctl -w net.ipv4.ip_forward=1                   # verify: converged, but past line 9
-plan: 4 to run, 3 to verify (1 skipped)
-```
-
-The wrapper is unmodeled, so lines 5 and 7 are never entered; no identity question has arisen.
-
-## Stage 2 — Nathan's oracle
-
-Nathan describes `ip netns add` and the `netns exec` entry. `sm.NetnsName` is another floor
-mScheme. The lend's second line is the coarse truth about the mount table.
-`lends-a-fresh-instance` is minted in this exercise: `273` has a bare lend (the caller's
-instance passes through) and a valued lend (an instance with a key), and no spelling for an
-instance the wrapper created that nobody can name.
 
 ```sh
 # dorc-lang/v0.2   nathan-ip.oracle.sh
@@ -131,7 +88,7 @@ ip__disturbs() {
 }
 ```
 
-Render, steady state:
+Render, steady state (host and blue converged; blue exists):
 
 ```
  3  # sysctl -w net.ipv4.ip_forward=1                       # converged
@@ -146,20 +103,19 @@ Render, steady state:
 plan: 1 to run, 1 to verify (6 skipped)
 ```
 
-The steady-state shape is reached. Lines 5 and 7 are entered through the wrapper (root reused,
-never acquired, `27C`) and probed where they run. Every identity comparison reads UNKNOWN: line
-5's mKey and line 3's are one floor mScheme across a transit, two mPlaceholders, no warrant;
-likewise 7 and 8, and 6 against 5. Unknown is safe for both consumers: C1 cannot fire
-(nothing stands in for anything) and C2 cannot fire (line 9 is a total wall). On a
-blue-drifted day line 5 runs and lines 6, 7, 8, and 10 verify: the engine cannot say line 5's
-write missed any of them (`plan: 2 to run, 4 to verify (2 skipped)`).
+The steady-state shape is reached at the floor. Lines 5 and 7 are entered through the wrapper
+(root reused, never acquired, `27C`) and probed where they run. Every identity comparison
+reads UNKNOWN: line 5's mKey and line 3's are one floor mScheme across a transit, two
+mPlaceholders, no warrant; likewise 7 against 8, and 6 against 5. Unknown is safe for both
+consumers: C1 cannot fire (nothing stands in for anything) and C2 cannot fire (line 9 is a
+total wall). On a blue-drifted day line 5 runs and lines 6, 7, 8, and 10 verify: the engine
+cannot say line 5's write missed any of them (`plan: 2 to run, 4 to verify (2 skipped)`).
 
-## Stage 3 — Rachel and Simon name the parents; Michael and Nathan yield into them
+## The stdlib, and the two glue lines
 
-Rachel owns the knob vocabulary and the one fact Michael cannot hold: which shapes live in a
-namespace and which in the boot. Simon owns namespaces and the boot. Michael and Nathan each
-add one lookup that yields into a stdlib primary mScheme, the glue line `312b` § 7 promised a
-stranger.
+Rachel holds the one fact Michael cannot: which shapes live in a namespace and which in the
+boot. Simon holds namespaces and the boot. Michael and Nathan each add one lookup that yields
+into a stdlib primary mScheme, the glue line `312b` § 7 promised a stranger.
 
 ```sh
 # dorc-lang/v0.2   rachel-kernel-params.oracle.sh
@@ -232,7 +188,7 @@ The walks:
   lines 5 and 7 resolved `blue` through that entry, so their mResolutions perish and they run.
   Correct with nobody speaking.
 
-Render, steady state: as stage 2, except line 8 reads "the same cell as line 7". Render,
+Render, steady state: as the floor, except line 8 reads "the same cell as line 7". Render,
 blue-drifted day, with the flag:
 
 ```
@@ -252,9 +208,9 @@ plan: 2 to run, 3 to verify (3 skipped)
 
 ## Observations
 
-- `obs-the-sentinel-is-the-keystone` (+SURE) — every SAME and every DISJOINT in stage 3 passes
-  through the boot and the route as inherited instances, and Nathan's `lends nothing-else` is
-  what makes them inherited rather than ⊤. Without that one line stage 3 buys nothing. The
+- `obs-the-sentinel-is-the-keystone` (+SURE) — every SAME and every DISJOINT passes through
+  the boot and the route as inherited instances, and Nathan's `lends nothing-else` is what
+  makes them inherited rather than ⊤. Without that one line the glue lines buy nothing. The
   cheapest line in the set carries the most.
 - `obs-identical-instances-need-no-warrant` (~SUSPECT of § 3.2's text; +SURE it must hold) —
   an inherited mParent is one mKey on both sides, not two equal values from two lookups.
@@ -284,9 +240,9 @@ plan: 2 to run, 3 to verify (3 skipped)
   boot's). The only sound seat visible is an mSort owner's open-world claim that no mScheme of
   another mSort names their referents: the identity twin of `30U`'s finished definition,
   knife-tier, flag-gated. Not adopted here; the guard is honest.
-- `obs-stage-three-pays-on-drifted-days` (+SURE) — stage 2 already reaches the steady-state
-  shape; stage 3 buys line 6's survival on a blue-drifted day and one probe on any day.
-  USER_STORY stage 5's lesson, replayed at the identity tier.
+- `obs-the-glue-lines-pay-on-drifted-days` (+SURE) — the floor already reaches the
+  steady-state shape; the two yields buy line 6's survival on a blue-drifted day and one probe
+  on any day. USER_STORY stage 5's lesson, replayed at the identity tier.
 - `obs-cloned-boots-are-simons-line` ([HUMAN] lean, 2026-09-16) — the model expresses the
   cloned-boot horizon as a stdlib warrant with a name on it, never as a rule of its own; this
   book never consults it, since its boots are inherited.
