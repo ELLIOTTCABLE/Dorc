@@ -269,7 +269,11 @@ the license-contamination map. Cross-references are `docID:slug`.
   **`notes/311f`** (System B, whole-cloth referent/route/store model) → **`311g`** (local review);
   **`notes/311h`** (the author's comparison synthesis) → **`311i`** (reviewer synthesis of
   the epistemic and composition gaps). These are exploratory proposals and reviews, not
-  adopted direction. **`notes/311`** is the preparatory identity-and-relation MODEL those
+  adopted direction. Then the design phase proper: **`notes/312a`** (the corpus import,
+  frozen) · **`notes/312b`** (the epistemics-and-assignment sittings ledger; records in
+  `312b-exercises/`) · **`notes/311j`** (the two-species model, mSort and mScheme — the
+  CURRENT cut of 311, ahistorical, replaces 311 when stable) · **`notes/312c`** (the
+  attack-and-firming ledger over 311j; successors append at its tail). **`notes/311`** is the preparatory identity-and-relation MODEL those
   sittings synthesized (§1–§3 the model; §6 the forcing functions and dead ends; nothing
   ruled). The epistemics-and-assignment phase that follows it: **`notes/312a`** (the corpus
   import, FROZEN: which typed rulings the model modifies, the prior seat assignments to
