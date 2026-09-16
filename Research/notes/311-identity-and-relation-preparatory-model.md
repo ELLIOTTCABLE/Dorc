@@ -24,16 +24,16 @@
 
 ## § 0-one-screen
 
-Dorc removes a line only on a proof the line is unnecessary: a measurement taken before
-anything runs, plus an author's vouch. The measurement can be destroyed by an earlier line
-that really runs, so the engine must decide whether the piece of the world an earlier line
-touches is the same piece a later line's proof depends on. That is identity, and it has two
+Dorc removes a line only on connected claims that the line is unnecessary: a measurement
+claimed before anything runs, plus an author's vouch. The claim can be destroyed by an earlier
+line that really runs, so the engine must decide whether the piece of the world an earlier line
+touches is the same piece a later line's licence depends on. That is identity, and it has two
 consumers with opposite failure directions: SAME lets one fact stand for another and
-under-executes when wrong; DISJOINT lets a proof survive a write and under-executes when
-wrong. UNKNOWN is safe for both. The engine knows only syntax, authored speech, and probe
-measurements; it never decodes a name. No single author knows the whole path from a tool's
-name to a measurable mReferent, and viewpoint transitions authored by yet other people change
-which mReferent a name reaches mid-book.
+under-executes when wrong; DISJOINT lets a licence survive a write and under-executes when
+wrong. UNKNOWN is safe for both. The engine knows only syntax, authored speech, and what
+authored probes returned; it never decodes a key. No single author knows the whole path from a
+tool's name to a measurable mReferent, and viewpoint transitions authored by yet other people
+change which mReferent a key reaches mid-book.
 
 The model: every identity-bearing thing is an mKey of an mSort. An mSort's mKeys have a
 mNaturalKey inside an index (routing), and, where the mSort's owner supplies a `resolve()`, a
