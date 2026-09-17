@@ -124,20 +124,16 @@ absent-by-default warrants:
 
 - :guarantees-unique-referent — within one mParent, equal mKeys reach one mReferent; the
   lookup is a function. Licenses SAME from equality. Fails for round-robin lookups
-  (`resolution-is-set-valued`), mKeys reissued by an actor outside the book inside one
-  unwalled span (`recycled-keys-outrun-the-unwalled-span`, a horizon), and cloned
-  identifiers presented as mRoots (`identity-tokens-have-clone-horizons`).
+  (`resolution-is-set-valued`), recycled mKeys (`recycled-keys-outrun-the-unwalled-span`),
+  and cloned identifiers presented as mRoots (`identity-tokens-have-clone-horizons`).
 - :guarantees-unique-name — within one mParent, one mReferent has one mKey. Licenses DISJOINT
   from inequality. Fails for symlinks and hardlinks, package `provides`
   (`distinct-names-alias-within-a-kind`), route-qualified handles.
 
 Declared once, by the lookup's owner, holding for every mKey that takes it inside any one
-mParent for as long as that mKey's mResolution or mToken stands: a routing, state, or
-lifecycle write that perishes it (§3.3) ends what the warrant said about that mKey, so an
-owner whose mKeys the world reissues (a pid; an nsfs inode number) can still warrant them,
-and what no warrant covers is reissue by an actor outside the book inside one unwalled span.
-The one lookup the engine vouches for itself is the transit-free local mRoute
-(§1.10); across a transit nothing is claimed, only measured and witnessed.
+mParent while that mKey's mResolution or mToken stands (§3.3). The one lookup the engine
+vouches for itself is the transit-free local mRoute (§1.10); across a transit nothing is
+claimed, only measured and witnessed.
 
 ### § 1.6-parent
 
@@ -244,9 +240,9 @@ mKey of S to an mKey of T, and may supply that mKey's mParent instance (§1.6). 
 primary mScheme or a secondary mScheme that in turn yields it; the chain always terminates at
 the primary mScheme. Declared by S's owner, once per secondary mScheme. Where S's own mKeys
 are looked up — S's mParent-Catalog — is an instance supplied by one seat, as a store is
-(§1.6): the bind that minted the mKey, S's owner's own declaration, or the mEntryChain's
-instance for that mSort (§1.10), each naming it as an mKey of one of that mSort's mSchemes; where
-its bytes came from is ordinary sh, and an unknown input makes the instance unknown.
+(§1.6): the bind that minted the mKey, S's owner's declaration, or the mEntryChain's instance
+for that mSort (§1.10), each naming it as an mKey of one of that mSort's mSchemes; an unknown
+input makes the instance unknown.
 Consumer: mResolution (§1.7) and the mFullyQualifiedKey (§3.1). Default: neither `:yields`
 nor `:primary-of` is the floor of §1.3. S's lookup warrants (§1.5) govern what equality and
 inequality of S's mKeys license before the primary mScheme is reached, and never license
@@ -278,16 +274,13 @@ value matching no declared shape reads unknown from this level. A grade governs 
 included: a lookup without :guarantees-unique-name cannot contradict anything by returning
 two different mTokens.
 
-A store's own property, distinct from the warrants on the mKeys inside it: a store is
-:sole-route when what is identified in it is reachable only through it. §3.2 reads it per
-store, level by level below a shared mParent, to separate two mKeys whose chains cannot both
-reach one mReferent. It holds by constitution (a kernel for its processes; an ext4 filesystem
-for its inodes; a dpkg database for its packages; a network namespace for its `net/*` knobs)
-or by contract (ext4: concurrent mounting unsupported), and never for a view (a client NFS
-mount; an NSS view of LDAP; a chroot's view of a bind mount; a pid namespace, whose processes
-its parent namespace also reaches; an overlay's lower layer, reachable through the merged
-view). It is the knowledge of whoever describes the store, never of whoever describes its
-contents; which line carries it is not fixed here. State spanning several files
+A store is :sole-route when what is identified in it is reachable only through it: by
+constitution (a kernel for its processes; an ext4 filesystem for its inodes; a dpkg database
+for its packages; a network namespace for its `net/*` knobs) or by contract (ext4: concurrent
+mounting unsupported), and never for a view (a client NFS mount; an NSS view of LDAP; a
+chroot's view of a bind mount; a pid namespace; an overlay's lower layer). Whoever describes
+the store holds it. §3.2 reads it per store, level by level below a shared mParent, to
+separate two mKeys whose chains cannot both reach one mReferent. State spanning several files
 (`a-store-is-not-one-inode`) is a mPlacement matter (§2.4); a hardlink is a
 :guarantees-unique-name failure on the path mScheme, dissolved by the path mScheme yielding
 the inode.
@@ -333,9 +326,8 @@ finished definition is a within-mWorld sentence; it never speaks across mRoutes 
 
 ### § 2.6-corresponds (declared sameness across a transition)
 
-> A scoped `sameAs`; `23M` rejected the unscoped one. Never "corresponds to" in the loose
-> sense: a part, a view, or a correlate of a thing is not it, and only sameness of the whole
-> thing composes with DISJOINT (§3.2).
+> A scoped `sameAs`; `23M` rejected the unscoped one. Not "corresponds to" loosely: a part, a
+> view, or a correlate of a thing is not it.
 
 mKey X inside mParent A denotes the same mReferent as mKey Y inside mParent B. Declared by the
 owner of the TRANSITION between A and B, which is neither mKey's mScheme owner: the container
@@ -391,7 +383,7 @@ its parts' mPlacements.
 |---|---|---|---|---|---|
 | `:primary-of` (`:identified-in` per matched shape) | one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :rootness, per matched shape |
 | `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | one per secondary mScheme | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
-| `:sole-route` | per store | whoever describes the store (the line is not fixed here) | absent ⇒ nothing below that store separates | DISJOINT (§3.2) | a view declared :sole-route is a wrong DISJOINT |
+| `:sole-route` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | a view declared :sole-route is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
 | `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
 | `:reaches` + finished | many, per matched shape | mSort owner | unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
@@ -426,20 +418,18 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
 
 - if either mFullyQualifiedKey contains an unknown link, or one terminates at a mRoute the
   other does not share (one at the mRoute and one at a mRoot; two mRoutes across a transit):
-  UNKNOWN. A mRoot shape is a mWorld of its own, SAME on every side by its own declaration, so
-  two mKeys of one mRoot shape meet there and compare as siblings below it; mRoots of two
-  shapes are two mWorlds, a mRoute is another, and nothing speaks across mWorlds — not the
-  finished definition, whose sentence is within-mWorld (§2.5).
+  UNKNOWN. A mRoot shape is one mWorld, SAME by :rootness, where two mKeys of that shape meet
+  and compare as siblings; mRoots of two shapes are two mWorlds, a mRoute is another, and
+  nothing speaks across mWorlds — not the finished definition, whose sentence is
+  within-mWorld (§2.5).
 - otherwise walk downward from the top to the deepest level at which the two chains are SAME
   by the rule below; call it A. If either mKey is A itself, the pair reads UNKNOWN: a write to
-  a container must collide with everything inside it. Otherwise call each mKey's top the child
-  of A on its side (the mKey itself when its mParent is A), and its leg its mKeys strictly
-  below A. DISJOINT iff, first, either the two tops are mKeys of one mScheme, each carrying
-  :guarantees-unique-name, with differing values, or exactly one of the two mKeys is its own
-  top; and, second, every store strictly below A down to each leaf's mParent, on both legs, is
-  :sole-route (§2.2). Else UNKNOWN. The one-top case rests on a store never being among its
-  own contents: what is reachable only through a store strictly below A is not what sits in A
-  directly. Separation is decided once, at A.
+  a container collides with everything inside it. Otherwise call each mKey's top the child of
+  A on its side (the mKey itself when its mParent is A). DISJOINT iff (the two tops are mKeys
+  of one mScheme, each carrying :guarantees-unique-name, with differing values, or exactly one
+  mKey is its own top) and every store strictly below A down to either leaf's mParent is
+  :sole-route (§2.2); else UNKNOWN. The one-top case rests on a store never being among its
+  own contents. Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
   through a wrapper's sentinel, §3.4, or one mKey in one transit-free unwalled span, §1.10) or
   are equal values whose shape carries :guarantees-unique-referent. Two mFullyQualifiedKeys
@@ -550,8 +540,8 @@ line here is the model element it forces.
   disjointness across mParent-Catalogs; :sole-route is a separate property of a store (§2.1, §2.2).
 - `distinct-names-alias-within-a-kind` — :guarantees-unique-name is absent by default; the
   mKey-Primary comes from the `:yields` chain (§1.5, §2.1).
-- `containment-by-path-prefix-lies` — a path prefix is no store and carries no :sole-route;
-  containment is mTraversal membership (§2.2, §2.8).
+- `containment-by-path-prefix-lies` — a path prefix is no store; containment is mTraversal
+  membership (§2.2, §2.8).
 - `namespace-composition-is-not-concatenation` — mParent-Catalogs are mKeys with identities,
   never strings composed by the engine (§1.6, §3.4).
 - `renaming-a-parent-moves-every-child-name` — :hierarchical mSchemes decompose into
