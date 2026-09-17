@@ -298,47 +298,64 @@ or a path a tool prints (`thingy --config-path` answering `~/.thingy-config`). T
 then holds an opaque path with a component whose meaning depends on where the key was minted,
 and it may not know what `~` is.
 
-Under `311j` § 2.8 the path spelling is hierarchical and its owner says which components are
-indexical and what each resolves through. Tessa declares `~`, resolving through Uma's
-singleton, and `~name`, resolving through Uma's keyed spelling:
+Nothing is declared about `~` anywhere, and Tessa never hears of it. Three spellings of
+`sm.File`, three owners, composed by records:
 
 ```sh
-# tessa-file.oracle.sh
-sm_Path__declaration() {                         # spelling carries no weight
-   : : hierarchical "/" indexical "~" resolves-through "sm.HomeSelf:self"
-   : : component-form "~name" resolves-through "sm.Home:name"
-}
 # uma-users.oracle.sh
-sm_HomeSelf__resolve() {                         # the home of whoever resolves it: sh's rule, HOME else the passwd entry
+sm_HomePath__resolve() {                         # the one key "~": the home of whoever resolves it; no static value
+   [ "$1" = "~" ] || return 2
    local home="${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}"
    [ -n "$home" ] || return 2
    printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
 }
-sm_Home__resolve() {                             # the passwd home of a named user
-   local home; home=$(getent passwd "$1" | cut -d: -f6) || return 2
-   [ -n "$home" ] || return 2
-   printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
+# olivia-thingy.oracle.sh                        (thingy prints "~/…" and means the home of whoever runs it)
+sm_ThingyConfigPath__resolve() {
+   case "$1" in
+   "~/"*)  printf 'yields sm.Path:%s\n' "${1#\~/}"   >>"${DREP_V1:-/dev/null}"
+           printf 'named-in sm.HomePath:~\n'         >>"${DREP_V1:-/dev/null}" ;;
+   /*)     printf 'yields sm.Path:%s\n' "$1"         >>"${DREP_V1:-/dev/null}" ;;
+   *)      return 2 ;;
+   esac
+}
+# tessa-file.oracle.sh                           (unchanged, except that a lookup may be handed the directory a relative key is in)
+sm_Path__resolve() {
+   local in="${2:-.}"                            # the catalog the engine resolved for this key; the cwd otherwise
+   local both; both=$(stat -c '%i %d' -- "$in/$1") || return 2
+   local ino="${both%% *}" dev="${both#* }"
+   printf 'yields sm.Inode:%s\n' "$ino"                 >>"${DREP_V1:-/dev/null}"
+   printf 'identified-in sm.DeviceNumber:%s\n' "$dev"   >>"${DREP_V1:-/dev/null}"
 }
 ```
 
-Both are Uma's spellings of Tessa's `sm.File` (the glue seat: a stranger publishes a way of
-naming files). The chain for `~/.thingy-config` minted under `sudo -u alice`: the `~`
-component resolves through `sm.HomeSelf:self` inside the pivot (where `HOME` is whatever
-sudo's policy left), the remaining components walk from that directory, and Tessa's lookup
-yields an inode and a filesystem. The same opaque key minted outside the pivot is a different
-mPlaceholder (§ 1.10: keyed by entry chain, and the pivot lent `sm.User`), and the two compare
-by inode: DISJOINT when sudo reset `HOME`, SAME when it preserved it, the truth either way,
-with nobody reasoning about users. Eviction falls out of § 1.7 and § 3.3: the home resolution
-is a routing key in the path's mTraversal, so `usermod -d alice`, `export HOME=…`, or any lend
-of `sm.User` or of the register below the mint perishes or re-keys the resolution below it.
-Nothing new: a declared indexical component, the singleton spelling, and traversal
-membership.
+The walk for `sm.ThingyConfigPath:~/.thingy-config` minted under `sudo -u alice`: Olivia's arm
+yields the tail `.thingy-config`, named in `sm.HomePath:~`; the engine resolves that catalog
+through Uma's lookup in the same vantage (one placeholder per entry chain, no static value),
+gets a directory, and hands Tessa's lookup the tail and the directory; Tessa composes them in
+her own sh, since the engine never concatenates paths
+(`namespace-composition-is-not-concatenation`), and yields an inode and a filesystem. The same
+opaque key minted outside the pivot resolves `sm.HomePath:~` to another placeholder, and the
+two compare by inode: DISJOINT when sudo reset `HOME`, SAME when it preserved it, the truth
+either way, with nobody reasoning about users. Eviction falls out of § 1.7 and § 3.3 by
+construction: `sm.HomePath:~` is a routing key in the mTraversal because the engine resolved
+it, so whatever perishes Uma's resolution (`usermod -d alice`; `export HOME=…`; a lend of the
+user) perishes everything below it. The reads inside Uma's body are hers to mark; unmarked,
+her resolution's backing is ⊤ and any wall perishes it, which is safe.
 
-Whose `~` it is: a tool that writes `~` in its own output means its own convention (usually
-`$HOME`, sometimes passwd, sometimes XDG). Tessa's rule is sh's, so an owner whose tool
-differs expands before emitting (the emitting body is sh running in the denoted context), and
-that is the safe default for every emitter; a tilde in an emitted path is lint-shaped. Tessa
-may also decline tildes, leaving such keys ⊤.
+Can another speaker insert an element into Tessa's hierarchy? Not into her spelling; nobody
+edits another's. But anyone may publish a spelling of `sm.File` that yields into `sm.Path`,
+naming as its catalog a key of yet another spelling. That is the insertion, by yield, and it
+is the glue seat. `311j` § 2.8's indexical sentence is satisfied without a declaration: an
+indexical component is a key of a singleton spelling, and which spelling is the emitter's
+choice (Olivia names `sm.HomePath:~` because her tool means `$HOME`; a tool that means the
+passwd home would name Uma's keyed `sm.Home:name`). An author who would rather not learn any
+of this expands in their own body and yields an absolute path; the engine then sees the home
+dependency only through that body's reads, marked or ⊤.
+
+One ABI implication (~SUSPECT it is already implied): a lookup for a spelling with relative
+keys receives the resolved catalog beside the key (`$2` above). § 2.1's SITE and AMBIENT
+supply already mean this for a relative path in the cwd and for `acct --db`; the record is its
+per-key, emitted form, the three-seats finding applied to the catalog rather than the store.
 
 ## Cost, briefly
 

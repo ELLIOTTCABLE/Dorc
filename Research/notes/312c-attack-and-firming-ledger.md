@@ -89,7 +89,9 @@ Findings (the first four acked in chat, "almost everything", 2026-09-16; the res
   blessed string, no model rule; the lend keeps entry, inheritance, and perishing. Acked
   (**[HUMAN]**, 2026-09-16) as userspace convention with no engine or model work owed, and as
   a mild validation of the model's completeness. The same move handles `$HOME`-relative
-  stores under `sudo`, and a `~` inside an opaque key (a component the path spelling's owner
-  declares indexical, § 2.8, resolving through the singleton; eviction across a pivot by
-  traversal membership, § 1.7 and § 3.3); an emitter whose tool means a different `~` expands
-  before emitting.
+  stores under `sudo`, and a `~` inside an opaque key with nothing declared anywhere: the
+  tool's own spelling of `sm.File` yields the tail named in the singleton `sm.HomePath:~`, the
+  engine resolves that catalog in the vantage, and the path owner's lookup composes them in
+  its own sh (never the engine); eviction across a pivot is traversal membership by
+  construction (§ 1.7, § 3.3). Nobody edits another's spelling; insertion into a hierarchy is
+  by yield. Implied ABI: a lookup receives a resolved catalog beside a relative key.
