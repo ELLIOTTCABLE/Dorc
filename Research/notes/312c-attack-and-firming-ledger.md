@@ -199,3 +199,37 @@ facet-sort to carry a finished definition, so intra-owner precision costs a 30U 
 with no stranger involved, where B makes it one interference declaration per bearer. To be
 analysed from within A. If it cannot be solved clearly there, it is a dealbreaker for A and
 graduates facets back into the model as a category (cut B).
+
+## § 8 — 2026-09-17: B's strengths reproduced inside A
+
+Third round: each of cut B's advantages taken as a surface to reach from cut A's core. Most
+collapse to sugar, a render, or a relation Cut A already has: the `@` coordinate expands to a
+facet-sort key formed from the bearer's resolved primary key (aliasing inherited through
+named-by); "the same property, re-measured" is a `dorc why` sentence over two cells sharing a
+bearer key; the persisted/live pair is a stdlib table that expands to N facet-sorts; the spike's
+`(kind, entity, selector)` maps onto `(bearer sort, bearer key, facet)` unchanged; facets, being
+sorts, may withhold `:guarantees-unique-name`, which B's attribute names could not.
+
+The survivor resolves within A. With stores declared at the granularity the OS has
+(`sm.InodeAttrs:F` for mode, owner, timestamps; `sm.InodeData:F` for contents), the mode facet's
+finished definition spares a contents fact (placements attrs against data, no overlap), mode
+against ctime collides by SAME placement with no speech, and contents against mtime needs the
+owner's `:reaches`, as under B. The per-facet finished definitions are one table expanded, each
+bounded by placements as every 30U sentence is. No store exclusion and no owner-aware rule. The
+collapse rests on one reading of § 2.5 to be pinned: SAME or undeclared placements collide,
+UNSPOKEN placements do not; the same reading stage 5 needs, and the same reading where `311p`
+thread 5's `tee /proc/sys` knife lives.
+
+Two residues where B's default was safer, both the strangers case wearing a facet: a stranger's
+facet of my bearer placed in the stranger's own vocabulary is UNSPOKEN against my placements
+and my finished definition spares it (B collides cross-owner attributes by default, blunter and
+safer); and whole-bearer coverage under A rests on the facet author declaring named-by. Human
+(**[HUMAN]**): everything read acked; on strangers' facets, unconvinced the category warrants a
+model distinction and its teaching and engine-precision price, since the argument applies to any
+two sorts by different people, which is the project's whole subject; a coherent outcome would be
+"general epistemics, with an ops-frequency cliff that justifies modelling the occurrence in a
+shape mirroring ops habits", not yet reached. On coverage, the constraint "a sort declared
+named-by has no spellings of its own" gently acked as A reaching B here, needing thorough
+analysis before any ruling. Direction stated: keep species and promises few and the model small
+and general; annotate particular shapes and edges with slightly less-pure rulesets that encode
+real ops habits. Lean: cut A (human, strong; conductor, moved).
