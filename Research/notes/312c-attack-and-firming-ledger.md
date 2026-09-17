@@ -84,3 +84,11 @@ Findings (the first four acked in chat, "almost everything", 2026-09-16; the res
 - § 3.2's third bullet reads SAME off equal values; inherited instances are one key and need
   no warrant, else no same-host pair is ever SAME.
 - The glue lines pay on drifted days only; the floor already reaches the steady-state shape.
+- The read of "which instance am I standing in" is a spelling of the sort with one indexical
+  key (`sm.NetnsSelf:self`), resolved like any coordinate where the site runs; no role, no
+  blessed string, no model rule; the lend keeps entry, inheritance, and perishing. Acked
+  (**[HUMAN]**, 2026-09-16) as userspace convention with no engine or model work owed, and as
+  a mild validation of the model's completeness. The same move handles `$HOME`-relative
+  stores under `sudo` and a bare `~` (a register measured where its shell expands it);
+  `~name` is a syntax-forced lookup with no seat until the engine names the spelling that
+  resolves it, and is safely ⊤ until then.

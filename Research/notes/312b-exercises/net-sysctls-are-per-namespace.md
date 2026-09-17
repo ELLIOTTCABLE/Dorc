@@ -51,8 +51,8 @@ Here the letters mark who owns what. Alice writes the book. Rachel and Simon own
 vocabularies, present from the start: `rachel-kernel-params.oracle.sh` (`sm.KernelParam`,
 primary mScheme `sm.ProcSysPath`) and `simon-namespaces.oracle.sh` (`sm.NetNamespace`,
 `sm.MountNamespace`, `sm.Boot`). Michael (procps) and Nathan (iproute2) are a new team's tool
-authors: `michael-sysctl.oracle.sh`, `nathan-ip.oracle.sh`. Oscar (`acct`) and Tessa (files)
-appear only in the three-seats section, to show the other two seats. Nobody has met.
+authors: `michael-sysctl.oracle.sh`, `nathan-ip.oracle.sh`. Oscar (`acct`), Tessa (files), and
+Uma (users) appear only in the later sections, to show the other seats. Nobody has met.
 
 ## The floor: two tool oracles, no yields
 
@@ -128,9 +128,9 @@ cannot say line 5's write missed any of them (`plan: 2 to run, 4 to verify (2 sk
 Rachel holds the one fact Michael cannot: which shapes live in a namespace and which in the
 boot. Simon holds namespaces and the boot. Michael and Nathan each add one lookup that yields
 into a stdlib primary mScheme, the glue line `312b` § 7 promised a stranger. Each arm of a
-primary's `resolve()` records the store of the shape it matched, as one record line with the
-spelling and the instance on it; the read of "which namespace is this process in" is Simon's
-helper, called from Rachel's arm (its home is under discussion in `312c`).
+primary's `resolve()` records the store of the shape it matched as a coordinate; where the
+store is "wherever this probe stands", the coordinate is Simon's singleton spelling (next
+section), which the engine resolves where the arm ran.
 
 ```sh
 # dorc-lang/v0.2   rachel-kernel-params.oracle.sh
@@ -139,8 +139,8 @@ sm_KernelParam__declaration() {                  # sort-level speech; the member
 }
 sm_ProcSysPath__resolve() {                      # identity on the path; each arm records the store of that shape
    case "$1" in
-   net/*)          printf 'identified-in sm.NetnsInode:%s warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' "$(netns_here)" >>"${DREP_V1:-/dev/null}" ;;
-   kernel/*|vm/*)  printf 'identified-in sm.BootId:%s warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n'     "$(boot_here)"  >>"${DREP_V1:-/dev/null}" ;;
+   net/*)          printf 'identified-in sm.NetnsSelf:self warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
+   kernel/*|vm/*)  printf 'identified-in sm.BootSelf:self  warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
    *)              return 2 ;;                   # fs/*, user/*, abi/*: not surveyed; unknown from this level
    esac
 }
@@ -156,16 +156,19 @@ sm_KernelParam__lives_in() {                     # the placement set is closed a
 # dorc-lang/v0.2   simon-namespaces.oracle.sh
 sm_NetNamespace__declaration() { : : primary-scheme "sm.NetnsInode" }
 sm_NetnsInode__resolve() {                       # one shape, identified in the boot; no unique-referent: nsfs inode numbers are reissued
-   printf 'identified-in sm.BootId:%s warrants guarantees-unique-name,sole-route\n' "$(boot_here)" >>"${DREP_V1:-/dev/null}"
+   printf 'identified-in sm.BootSelf:self warrants guarantees-unique-name,sole-route\n' >>"${DREP_V1:-/dev/null}"
 }
-netns_here() {                                   # which network namespace is this process in?
-   readlink /proc/self/ns/net | sed 's/^net:\[\(.*\)\]$/\1/'
+sm_NetnsSelf__resolve() {                        # the one key "self": the namespace of whatever process resolves it
+   local ino; ino=$(readlink /proc/self/ns/net | sed 's/^net:\[\(.*\)\]$/\1/') || return 2
+   printf 'yields sm.NetnsInode:%s\n' "$ino" >>"${DREP_V1:-/dev/null}"
 }
 sm_Boot__declaration() { : : primary-scheme "sm.BootId" }
 sm_BootId__resolve() {                           # no store declared, so scoped in the route
    printf 'warrants guarantees-unique-referent\n' >>"${DREP_V1:-/dev/null}"   # a cloned boot resolving SAME is this line's fault: the stdlib owns that horizon (human lean, 2026-09-16)
 }
-boot_here() { cat /proc/sys/kernel/random/boot_id; }
+sm_BootSelf__resolve() {
+   printf 'yields sm.BootId:%s\n' "$(cat /proc/sys/kernel/random/boot_id)" >>"${DREP_V1:-/dev/null}"
+}
 ```
 
 ```sh
@@ -185,21 +188,23 @@ sm_NetnsName__resolve() {                        # the label, into the namespace
 The walks:
 
 - Line 5 against line 3 (the C1 guard). Line 5's mKey: Michael's bind, Michael's yield run
-  inside blue, Rachel's `net/*` arm, whose record names the namespace the arm ran in (the lent
-  `blue`, which Nathan's yield turns into nsfs inode B), then Simon's arm putting that
+  inside blue, Rachel's `net/*` arm recording `sm.NetnsSelf:self`, which Simon's lookup
+  resolves inside blue to nsfs inode B (and which Nathan's lend, through his yield, also
+  resolves to B: two derivations of one instance, coherent), then Simon's arm putting that
   namespace in the boot, and the boot and the route inherited from the caller through
-  Nathan's sentinel. Line 3's mKey: the same down to the namespace level, where Rachel's arm
-  ran on the host and recorded inode H. From the top: the route and the boot are the
-  identical inherited instances; at the namespace level H and B differ inside one shared
-  mParent, that shape carries `:guarantees-unique-name` (Simon), and every level from there
-  to the leaf carries `:sole-route` (Simon for the namespace in its boot, Rachel for `net/*`
-  in its namespace). DISJOINT. Line 5 gets its own probe; line 3 never stands in. Line 6
-  against line 5 walks the same way.
+  Nathan's sentinel. Line 3's mKey: the same down to the namespace level, where
+  `sm.NetnsSelf:self` resolved on the host is inode H. From the top: the route and the boot
+  are the identical inherited instances; at the namespace level H and B differ inside one
+  shared mParent, that shape carries `:guarantees-unique-name` (Simon), and every level from
+  there to the leaf carries `:sole-route` (Simon for the namespace in its boot, Rachel for
+  `net/*` in its namespace). DISJOINT. Line 5 gets its own probe; line 3 never stands in.
+  Line 6 against line 5 walks the same way.
 - Line 7 against line 8. Both yield `kernel/pid_max`; Rachel's `kernel/*` arm puts the
-  mParent in the boot. Read in every context, the two boot ids are equal bytes and SAME
-  rests on Simon's `:guarantees-unique-referent`; shared through Nathan's sentinel, they are
-  one instance and no warrant is consulted. Either way SAME, attributed. At the leaf the keys
-  are equal and the shape carries `:guarantees-unique-referent`. One probe answers both.
+  mParent at `sm.BootSelf:self`. Resolved in every context, the two boot ids are equal bytes
+  and SAME rests on Simon's `:guarantees-unique-referent`; shared through Nathan's sentinel,
+  they are one placeholder and no warrant is consulted. Either way SAME, attributed. At the
+  leaf the keys are equal and the shape carries `:guarantees-unique-referent`. One probe
+  answers both.
 - Line 9 against line 10 (the C2 guard). The shell routes bytes to
   `/proc/sys/net/ipv4/ip_forward`; the locator goes to `30T`'s File binder, which declines on
   procfs; line 9 is a total wall; line 10 guards. Safe, and the identity model is never
@@ -233,7 +238,7 @@ other, and the language already has three homes for a value with a type: on a bi
 as a coordinate, on a record line from a yield, or on a record line from the primary's own
 arm. Exactly one seat speaks per key: two that disagree refuse (a contradiction, attributed
 to both); none is unknown. Where the bytes inside the seat came from (a literal, a second
-field of the same `stat`, an environment variable, a helper that reads the world) is
+field of the same `stat`, an environment variable, a lookup that reads the world) is
 ordinary sh, graded by the value plane (`275`), never declared.
 
 ```sh
@@ -259,6 +264,90 @@ primary cannot compute its store from the key alone (files), in which case a spe
 does not also emit the store leaves its keys unknown, `dorc why` names the spelling, and the
 fix is one record from data the lookup already had.
 
+## The ambient read: a singleton spelling, not a role
+
+For a sort whose instance is picked by where the probe stands (a network namespace, a boot, a
+user, a mount table), some line must read which instance that is: the lend names only what a
+wrapper changes (a delta), never the outermost context, and a wrapper author cannot warrant
+"what I select is never the caller's" (`ip netns attach host 1`; `sudo -u "$(whoami)"`;
+`chroot /`). Without the read, line 3 against line 5 is UNKNOWN: correct, and the DISJOINT
+half of this exercise is gone. The read is necessary for that value, never for safety.
+
+Its home is a spelling of the sort with one key, whose meaning depends on who resolves it
+(`sm.NetnsSelf:self`, above; the word for such a key is *indexical*, which `311j` § 2.8 already
+uses of `/proc/self`). Nothing about `self` is engine-blessed; it is the one key Simon's
+spelling accepts, and the engine resolves the coordinate as it resolves any other, in the
+site's context (27C), once per entry chain (§ 1.10's placeholder keying), shared by every key
+stored there. Against the alternative, a helper called from the primary's arm
+(`"$(netns_here)"` inside Rachel's record): the spelling keeps Rachel's arms constant, is
+attributed to Simon's line rather than carried inside Rachel's, is resolved once per context
+rather than per key, inherits through a wrapper's sentinel without a read, and inside a lend
+gives a second derivation of the instance that coherence (§ 1.8) checks against the lend's.
+So `__here` as a member is redundant with `resolve()`; the read is not redundant with the
+lend, and it is the sort owner's: Nathan knows what his wrapper changes, Rachel never mentions
+`/proc/self`, and the engine does not know what that path is. A sort whose owner writes no
+such spelling leaves directly bound keys stored in it with an unknown store, which is safe.
+
+## The same move for `~`
+
+The shell expands a bare `~` to `$HOME` before the command runs, and `~name` to that user's
+passwd home; both are sh semantics the engine holds as syntax (`30W` § 6). Alice's book:
+
+```sh
+sudo -u alice cp ./bashrc ~/.bashrc              # A: ~ expands in the CALLER's shell, before sudo runs
+sudo -u alice sh -c 'cp /tmp/bashrc ~/.bashrc'   # B: ~ expands inside, to whatever sudo left in HOME
+cp ./motd ~bob/motd                              # C: ~bob is a passwd lookup by the caller's shell
+```
+
+Bare `~` is a register read in the shell that expands it: at A the outer shell's `HOME`; at B
+the inner one's, which is policy (`sudo` versus `sudo -i`; `env_keep`), so it is measured in
+that context. A register measured where its site runs is the singleton pattern in the value
+plane's own clothing (`275`'s register-resolved values), and needs no spelling; where the
+owner wants sh's full rule in one place, it is Uma's:
+
+```sh
+# uma-users.oracle.sh
+sm_HomeSelf__resolve() {                         # what a bare ~ expands to here: sh uses HOME, else the passwd entry
+   local home="${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}"
+   [ -n "$home" ] || return 2
+   printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
+}
+sm_Home__resolve() {                             # ~name: the passwd home of a named user
+   local home; home=$(getent passwd "$1" | cut -d: -f6) || return 2
+   [ -n "$home" ] || return 2
+   printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
+}
+```
+
+Both are Uma's spellings of Tessa's `sm.File` (the glue seat: a stranger publishes a way of
+naming files), yielding a path that Tessa's spelling turns into an inode and a filesystem. So
+A's file and B's file compare DISJOINT when `sudo` reset `HOME` (two homes, two inodes) and
+SAME when it preserved it (one home, one inode), which is the truth either way, with nobody
+reasoning about users. Perishing falls out of § 3.3: `usermod -d` touches the passwd entry
+and perishes every `sm.Home:alice` below it; an `export HOME=…` in the book is a routing write
+to the register and perishes every bare `~` below it in that shell.
+
+Surfaced, not owed: `~name` is a syntax-forced lookup with no seat until the engine names the
+spelling that resolves it, the same shape as the redirect locator handed to the File binder;
+until then `~name` is ⊤ and its line runs, which is safe. And line A is a GOTCHA-shaped fact:
+a tilde before a wrapper is the caller's home, not the guest's.
+
+## Cost, briefly
+
+The read is a property of the context, not of the fact: once per (sort, entry chain), shared
+by every key stored there; sorts a wrapper's sentinel left untouched inherit the caller's
+placeholder and read nothing; the recursion in a fully qualified key is over static
+declarations, and at runtime there are only leaves (one lookup per distinct key, one per
+distinct discovered parent, memoized within an unwalled span); the walk decides at the first
+divergence; DISJOINT is consumed only under the flag. What a lookup costs is the sort owner's
+business under kPROBING's cost classes, never the engine's to assume (a cloud machine's
+identity may be an authenticated request to a distant endpoint). Reactive probing will let a
+dead link prune a chain's other reads, and a correct identity story can spend several pivots'
+reads before finding the dead one; planner work over the same model. A creating wrapper
+(`unshare -n sh -c …`) makes only the created sort's instance fresh, says nothing about what
+is reachable through it, and in the common Dorc case the create already ran on an earlier day
+and the wrapper selects, so the read is the mechanism that matters.
+
 ## Observations
 
 - `obs-the-sentinel-is-the-keystone` (+SURE) — every SAME and every DISJOINT passes through
@@ -275,11 +364,16 @@ fix is one record from data the lookup already had.
   command line is visible at the bind by construction; an environment variable and an
   argument are both shell words; a store read from the world is a read. The sort, not the
   spelling, declares which spelling is primary.
+- `obs-the-ambient-read-is-a-singleton-spelling` (+SURE; acked in chat 2026-09-16 as userspace
+  convention, no model work) — the read of "which instance am I standing in" is a spelling of
+  the sort with one indexical key, resolved like any coordinate where the site runs; no role,
+  no blessed string, no new rule; the lend keeps entry, inheritance, and perishing, and the two
+  derivations of a lent instance are checked for coherence.
 - `obs-identical-instances-need-no-warrant` (~SUSPECT of § 3.2's text; +SURE it must hold) —
   an inherited mParent is one mKey on both sides, not two equal values from two lookups.
   § 3.2's "every level's shape carries `:guarantees-unique-referent`" applies to equal values;
   read strictly over inherited levels, no same-host pair would ever be SAME. Whether the
-  engine shares the placeholder through the wrapper's sentinel or reads twice and rests on
+  engine shares the placeholder through the wrapper's sentinel or resolves twice and rests on
   the owner's warrant is an engine choice; both are sound and attributed.
 - `obs-the-natural-key-is-the-ambiguous-one` (+SURE) — the path is the primary mScheme; the
   dotted name yields into it by a lookup that must run where the mKey was bound, because a
