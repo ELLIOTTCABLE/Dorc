@@ -128,3 +128,43 @@ exercise's drifted-day survival does not follow, and it over-demands `:sole-rout
 the mCell fold lost the per-cell store; the identifying store makes sibling cells collide;
 `:sole-route` is the parent store's knowledge. One rule deleted from § 3.5 (the two-mSchemes
 canary; refuted by both Astra passes and verified). Everything else waits on the human.
+
+## § 6 — 2026-09-17: the cell question, under comparison
+
+The one thread being developed forward is `311p` threads 2 and 3 together: what a cell is.
+Acked (**[HUMAN]**): thread 2 is an oversight, and cells must be definable flexibly; treating
+cells as ordinary sorts with unrelated spellings duplicates the bearer's aliasing into every
+cell and risks a wrong DISJOINT (`nginx` against `nginx.service`); the safe default for a cell
+with no declared store or placement is none (no transport, no sparing); any sugar or affordance
+(`sm.Service:nginx@active`; a default) is 312 material.
+
+Two cuts are on the table, to be compared, neither chosen:
+
+- Cut A, cells as sorts with their own stores: a cell is an mSort whose natural keys are
+  another mSort's primary keys (311's `:named-like`, restored) and whose store is where its
+  value lives; a cell has its own chain, so `enabled` and `active` differ by chain and a
+  reboot spares the right one; whole-bearer footprints cover the bearer's cells through the
+  named-by relation. Edits: § 1.9 (store, not bearer) and one relation.
+- Cut B, attributes as a category distinct from sorts: an attribute is a function symbol from
+  a bearer sort to values (`active : Service → Bool`); an application's identity is the
+  bearer's plus the attribute; the value has a placement, and freshness follows the placement
+  under state and lifecycle mutations (§ 3.3's lifecycle rule made placement-based for
+  values); whole-bearer footprints cover every attribute of the bearer, which is 277/281's
+  whole-entity rule; § 2.5's overlap compares placements and never the bearer. Knobs become
+  attributes of a namespace or a boot. This partly reverses `311` § 6.2's refutation of the
+  selector position: two of its three reasons hold of attributes and cost nothing, the third
+  (one store per identity-bearing thing) does not apply, because attributes are not
+  identity-bearing. `30J`'s dialect is not re-examined under it.
+
+Both cuts fix the walked cases (the reboot; sibling cells). What the comparison must decide:
+whether a cell carries an identity chain of its own (A) or borrows its bearer's (B); whether a
+knob is an individual in a store (A, as the exercise has it) or an attribute of a namespace
+(B); what the whole-bearer coverage rests on (A: the named-by relation; B: the category); and
+what each costs 311's refuted-shapes list. Grammar, for naming: an attribute is a relational
+noun ("nginx's activeness"), never a count noun; a stdlib names properties, not "-ation"s.
+
+Unacked: the coverage rule itself ("a footprint naming a bearer collides with every cell or
+attribute of that bearer"), presented as the whole-entity rule 311j dropped when it dissolved
+selectors, and as the ordinary "a whole covers its parts" that attributes' dependent existence
+forces; the model's other face of it is store destruction making contents new (§ 3.3); the
+authored `:reaches` is for effects that cross individuals.
