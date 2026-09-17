@@ -394,3 +394,26 @@ absence (an InvocationID, a `name:`, a managedFields owner). Consequences if ado
 individual has an existence cell in its store (creation and deletion are routing writes); a
 property has none; only individuals take spellings and lookup warrants, which is the alias
 fence stated positively.
+
+## § 12 — 2026-09-17: the gloss accepted; the ruler tuned; the mapping dispatched
+
+Typed (**[HUMAN]**): `notes/311` is to be left as a historical first draft, and the model with
+properties fully thought out will be minted as the first document of the 312 series, which
+holds the model from there. The property gloss is accepted, not as a limitation or an engine restriction but as a
+gradual-enhancement step with ruled, clear defaults, each behaviour an element of the model:
+an mProperty graduates into an mSort when its members become many, separate, or
+individualized, or need sub-properties, and that graduation owes a careful treatment of how it
+happens and what comes along. The ruler is closed-set against open-set, phrased as the human
+tuned it: a missing member of a closed set is UNSET (the tool has a slot for it, it can be
+enumerated, it is missed and describable as not currently configured); a missing member of an
+open set is ABSENT (nothing enumerates it, nobody misses it). Presence-or-absence as § 11
+stated it is the coarser form; unset-or-absent is the ruler.
+
+The check this ruler must pass: whether things it files as properties badly need granular
+behaviour from the model (spellings, lookup warrants, a chain of their own, reissue, hierarchy).
+If many do, a tidy property dies to a bag of heuristics hard to teach, which dies in turn to
+"only mSorts; the user applies each trait" (**[HUMAN]**: exposing pain consistently beats
+papering over it leakily). A clean-context Fable pass over about forty ops reads, given no Dorc
+vocabulary and eleven behaviour questions covering every 311j trait, clustering by behaviour
+before answering the open/closed question, writes the next 311-series note; its adjudication
+follows.
