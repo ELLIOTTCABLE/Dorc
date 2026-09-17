@@ -360,3 +360,37 @@ surface, not in the model; attribution of every link is standing implementation 
 restated per relation; nothing in the 311 era mints owed work or todos not directly requested,
 and an item is either addressed inline before "closed" or left to fester. Of `311p`'s remaining
 threads and text items, the rest were punted or declined and are not owed.
+
+## § 11 — 2026-09-17: the property/individual line, tested
+
+Chat word for the facet concept: "property" (**[HUMAN]**; not welded into any document). A
+neutral synthesis of the cuts was given in chat (one species under a constraint; attributes as a
+category; the as-built selector), with the invariants any cut must satisfy: a property has no
+store of its own; property names never license DISJOINT (they alias); freshness follows the
+placement; a bearer write covers its properties; the floor is safe; observer-dependence is per
+property; promotion is routine. The three pins that decide whether the cuts differ: the § 2.5
+overlap reading (shared with stage 5 and the `tee` knife); perishing through placements for
+every cell; whether bearer coverage and sibling separation are stated as rules for constrained
+sorts. Nothing chosen.
+
+**[HUMAN]** suspicion: "an individual iff some store hands out names for it" is unconvincing
+(an ini key, `enabled`, and `active` are all a word addressed to a tool with bytes living
+somewhere; uniqueness is altitude-relative), and no simple binary may exist. Attempted
+disproof, the strongest statement found (conductor; +SURE binary and testable per description,
+~SUSPECT true for every ops case): in a description, X is an individual of store S iff things
+of X's shape can be absent from S while S persists (a line creates or deletes one; a read has
+a "no such thing" outcome distinct from every value); otherwise X is a property of what it is
+addressed through. Stated over the shape, never the instance (`pid_max` is never absent but
+knobs are an open set). It mentions no names, bytes, or uniqueness. `active` and `enabled` are
+properties (systemd makes even "static" a value); an ini key is an individual at the file's
+grain and a property at the consumer's grain where absence resolves to a default, two sound
+descriptions composed by placement. Strains walked: docker health (an optional individual
+whose status is a property); Kubernetes fields (individuals, as server-side apply made them);
+mount options (both descriptions sound); exit status (fold absence into a value); existence
+spelled as a property (its name is data, so the shape is open). What survives of the
+suspicion: the line is per description and the author picks the grain; it is the substrate's
+convention, observed, not ours, and promotion in the wild is the substrate beginning to admit
+absence (an InvocationID, a `name:`, a managedFields owner). Consequences if adopted: an
+individual has an existence cell in its store (creation and deletion are routing writes); a
+property has none; only individuals take spellings and lookup warrants, which is the alias
+fence stated positively.
