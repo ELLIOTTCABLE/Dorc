@@ -555,3 +555,46 @@ then in the group), not the category change; and a sort with no lookup, no warra
 fence). Lean: no category, no graduation; re-parenting never in place, only a new sort beside;
 the withheld knives stay withheld by default and by the naming law; `@` at most a spelling
 convention for a key identified in another sort's key.
+
+## § 16 — 2026-09-17: the pains acked; the difference witness raised and killed; one engine clause
+
+The ten product-surface pains (chat), with the human's positions (**[HUMAN]**): 1 and 6, eternal,
+the project's core tradeoff; 2, no worse in the property corner than elsewhere (conductor's read,
+gently taken); 4, possibly understated and potentially significant, not ruled into the model; 5,
+an easy horizon; 7, the next big piece of work rather than intractable, since the model need not
+be the interface (a core model for experts; transparent or perfectly non-leaky abstractions for
+beginners that fall through to it); 8, damning if true at any point, because attribution in
+this corpus means painting the shortest route to repair so its last step lands on the correct
+human at least effort, and no solution is in hand; 9, murderous; 10, bad, perhaps responsive to
+userspace, habit, tooling, and convention. Leverage (**[HUMAN]**): these have been fought with
+the bluntest correct weapons only; rules, horizons, limitations, and unergonomic-but-monotonic
+choices remain available, with precedent in committee speech by speaker closure (high ergonomic
+and engineering cost), as a later rescue of the core; a mild punt.
+
+Pain 3 explored: separating two siblings needs their container measured the same and a promise
+from the container's describer that different addresses are different things, safe only where
+the store exposes a canonical id (inodes, canonical package names, lowercased git keys) and
+impossible where it does not (sysctl); four routes (the raw-name promise; a canonical lookup
+then the promise, library work for famous stores; an admin mode; guards). The admin mode
+(**[HUMAN]**: suspicious) dissolved into a difference witness: two keys of one spelling, in one
+container its describer calls a store, in one context, read by one non-volatile body, returning
+different values in one pass are two cells, since one referent has one value at one instant.
+Killed the same sitting: the bridge from returned bytes to the referent's value is a contract
+whose new clause, a name-blind bare-value read, is everyday-violable (`sysctl`'s default output
+echoes the key; `readlink -f`; `grep -H`) and invisible to the engine; and (**[HUMAN]**)
+`__predict` is by contract a site-to-gloss map for an admin's consumption, the static, pipeable
+form of the tool's precise output with the churn removed, so its output carries operand and
+verb by design, two spellings of one thing print two things, co-authored arms gloss one cell
+two ways, "print the bare value" is not globally contractable, and prediction is too expensive
+to sit on the identity chain. Dumped. For the record, a property case worse than ten git lines:
+a BMC LAN channel's five settings (slow, disruptive re-writes, no finer store); `ethtool -K`
+toggles (equal values, a cheap check).
+
+What survived, and is not the witness: same-value survival. Two sites through one
+value-equality verdict body in one context, one drifted wanting V, one converged asserting V:
+aliased or not, the write leaves the fact true (gen/kill with the alias question split by
+cases); no reads, no predicts, no new speech; the exposure is a failed write continued past by
+`|| true` on an alias. Acked (**[HUMAN]**) as minor and probably lattice-carried; the
+conductor's correction stands that stock may-alias kills are conservative, so it is a small
+kill-rule refinement in the engine, not the model's; carried to implementation as a clause on
+`an-kill`, no section.
