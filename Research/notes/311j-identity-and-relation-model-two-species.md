@@ -102,8 +102,8 @@ mScheme.
 An mKey is a plan-time object: a value, its mScheme, and its mParent (§1.6), modeling what a
 runtime string will denote. It is minted at a bind, or at an emission point a `resolve()`
 declares (§2.1), and before any lookup runs. The mScheme is always declared. The value is a
-literal, or a mPlaceholder for a captured value; the mParent is an instance the mVantage or
-the mSite supplies, or a mPlaceholder. Every lookup is a measurement that binds mPlaceholders
+literal, or a mPlaceholder for a captured value; the mParent is an instance one of the seats
+of §1.6 supplies, or a mPlaceholder. Every lookup is a measurement that binds mPlaceholders
 and never changes the structure of the mFullyQualifiedKey, which the mSchemes declare; the
 one thing measurement decides late is which declared shape an mKey-Primary's value matches
 (§2.2), so which mParent mSort and warrants apply is known only once bytes arrive. A value with no mScheme is nothing; an
@@ -150,11 +150,14 @@ follows the mScheme:
 
 Through the primary mScheme the mParent's mSort (`:identified-in`) and the warrants (§1.5;
 :sole-route; :rootness, §2.2) are declared by the primary mScheme's owner per matched shape of
-the mKey's value, a function of the mKey's own bytes and of nothing its emitter could supply,
-so an emitter (a secondary mScheme, possibly a stranger's) can be wrong only about its own
-lookup. The mParent instance for an mKey-Primary is supplied by the `resolve()` that yielded
-it (§2.1) or, for an mKey bound directly under a primary mScheme, by the mVantage. A shape
-with no `:identified-in` is scoped in the mRoute (§1.10). A mRoot is a shape declared
+the mKey's value, a function of the mKey's own bytes, so an emitter (a secondary mScheme,
+possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent
+instance where it is the seat that supplied it. The mParent instance is a value supplied by
+exactly one of three seats, each naming it as an mKey of one of the mParent's mSort's
+mSchemes: the bind that minted the mKey (§1.4), the lookup that yielded it (§2.1), or the
+primary mScheme's declaration for the matched shape (§2.2); two seats that disagree are a
+contradiction, refused and attributed to both. A shape with no `:identified-in` is scoped in
+the mRoute (§1.10). A mRoot is a shape declared
 :rootness: its mKeys need no mParent, which claims they are globally comparable (the DNS
 mRoot; a cloud instance-id honestly minted unique). Nothing is a mRoot by default;
 `identity-tokens-have-clone-horizons` is the standing witness.
@@ -232,8 +235,7 @@ operations rare and long-named; safe ones short) but no spellings are proposed h
 ### § 2.1-yields (a secondary mScheme, into the primary mScheme; the mParent-Catalog)
 
 mScheme S `:yields` mScheme T, both of one mSort: S's `resolve()`, run in the mVantage, maps an
-mKey of S to an mKey of T together with the value naming T's mKey's mParent, and S declares
-which mScheme of the mParent's mSort that value is read in (`:parent-key-of`). T is the
+mKey of S to an mKey of T, and may supply that mKey's mParent instance (§1.6). T is the
 primary mScheme or a secondary mScheme that in turn yields it; the chain always terminates at
 the primary mScheme. Declared by S's owner, once per secondary mScheme. Where S's own mKeys
 are looked up — S's mParent-Catalog — is declared once with a supply mode: FIXED (S's owner
@@ -261,8 +263,8 @@ the mKey. P's owner declares, per matched shape of the mKey's value, `:identifie
 - :guarantees-unique-referent and :guarantees-unique-name (§1.5), governing what mToken
   equality and inequality license at this level of a mFullyQualifiedKey;
 - :sole-route — mReferents reached by mKeys of this shape are reachable only through their
-  mParent, so disjoint mParents imply disjoint mReferents. Required at every level between a
-  divergence and the leaf for the divergence to yield DISJOINT (§3.2). Provable by
+  mParent; §3.2 spends it, level by level below a shared mParent, to separate two mKeys whose
+  chains cannot both reach one mReferent. Provable by
   constitution (a process in its kernel; an inode in its ext4 table; a package in its dpkg
   file) or by contract (ext4 in its boot: concurrent mounting unsupported); never for views (a
   client NFS mount; an NSS view of LDAP; a chroot's view of a bind mount). mParent
@@ -284,9 +286,9 @@ two different mTokens.
 
 ### § 2.3-parent
 
-One per mKey, derived from §2.1 and §2.2 (§1.6): never declared separately, never plural,
-never a species of its own; the far end is an ordinary mKey of the mSort the mScheme's declaration
-named. A mVantage supplies instances and is never an mParent.
+One per mKey (§1.6): never plural, never a species of its own. Its mSort is the primary
+mScheme's declaration for the matched shape; its instance is whichever seat supplied it; the
+far end is an ordinary mKey. A mVantage supplies instances and is never an mParent.
 
 ### § 2.4-lives-in (mPlacement; the read footprint)
 
@@ -378,7 +380,7 @@ its parts' mPlacements.
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
 | `:primary-of` (`:identified-in` per matched shape) | one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :sole-route · :rootness, per matched shape |
-| `:yields` (+ `:parent-key-of`; the mParent-Catalog and its supply mode) | one per secondary mScheme | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield is a wrong SAME, attributed to the yield |
+| `:yields` (the mParent-Catalog and its supply mode; the yielded mKey's mParent instance where the yield supplies it) | one per secondary mScheme | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
 | `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
 | `:reaches` + finished | many, per matched shape | mSort owner | unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
@@ -415,13 +417,16 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   at the mRoute and one at a mRoot; two mRoots; two mRoutes across a transit): UNKNOWN. A
   mRoute or a second mRoot is a second mWorld, and nothing speaks across mWorlds — not the
   finished definition, whose sentence is within-mWorld (§2.5).
-- otherwise compare levels downward from the top. At the first level n whose mKeys differ
-  inside a shared mParent (the level-(n+1) mKeys being SAME): DISJOINT iff the shape those mKeys
-  match carries :guarantees-unique-name and every level from n down to level 0 carries
-  :sole-route for its mKey's shape; else UNKNOWN. Deeper levels are not consulted; separation is decided once.
-- if no level differs down to the leaf: SAME iff every level's shape carries
-  :guarantees-unique-referent, the engine's transit-free local mRoute claim standing in at the
-  top (§1.10); else UNKNOWN.
+- otherwise walk downward from the top to the deepest level at which the two chains are SAME
+  by the rule below; call it A, and call each chain's mKeys strictly below A its leg. If either
+  mKey is A itself, the pair reads UNKNOWN. Otherwise DISJOINT iff every mKey of both legs
+  carries :sole-route for its shape and either one leg is empty or the two legs' tops are
+  mKeys of one mScheme, each carrying :guarantees-unique-name, with differing values; else
+  UNKNOWN. Separation is decided once, at A.
+- two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
+  through a wrapper's sentinel, §3.4, or one mKey in one transit-free unwalled span, §1.10) or
+  are equal values whose shape carries :guarantees-unique-referent. Two mFullyQualifiedKeys
+  are SAME iff they are SAME at every level down to the leaf.
 - mKeys of different mSorts share no primary mScheme (an mScheme belongs to one mSort), so
   their mFullyQualifiedKeys meet, if at all, only at a common ancestor, and that meeting is not
   a claim about the leaves (a package status file and a unit file share a filesystem). At the
@@ -496,7 +501,8 @@ the primary mScheme's shape carries :guarantees-unique-referent: at most one is 
 are withheld and narrated (`28M:rul-conflict-between-totals-is-falsification`). Attribution:
 every survival names the :sole-route and :guarantees-unique-name declarations it rested on and
 the mPlacement sets that bounded it; every SAME names the `resolve()` calls, the declarations,
-and the mCorrespondences; every perished conclusion names the footprint that perished it.
+the sentinels and route claims that made instances one, and the mCorrespondences; every
+perished conclusion names the footprint that perished it.
 
 ### § 3.6-scope (what this model leaves untouched)
 
