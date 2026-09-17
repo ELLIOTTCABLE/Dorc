@@ -1006,7 +1006,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 311j (6)
+- cited: 26Ob 311 311a 311c 311j _tmp-naming-rewrite-owed (7)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting

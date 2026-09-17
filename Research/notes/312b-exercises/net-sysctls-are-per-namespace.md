@@ -139,8 +139,8 @@ sm_KernelParam__declaration() {                  # sort-level speech; the member
 }
 sm_ProcSysPath__resolve() {                      # identity on the path; each arm records the store of that shape
    case "$1" in
-   net/*)          printf 'identified-in sm.NetnsSelf:self warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
-   kernel/*|vm/*)  printf 'identified-in sm.BootSelf:self  warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
+   net/*)          printf 'identified-in sm.NetnsSelf:self warrants guarantees-unique-referent\n' >>"${DREP_V1:-/dev/null}" ;;   # no unique-name: net/ipv4/ip_forward and net/ipv4/conf/all/forwarding are one field (devinet.c)
+   kernel/*|vm/*)  printf 'identified-in sm.BootSelf:self  warrants guarantees-unique-name,guarantees-unique-referent\n' >>"${DREP_V1:-/dev/null}" ;;
    *)              return 2 ;;                   # fs/*, user/*, abi/*: not surveyed; unknown from this level
    esac
 }
@@ -155,8 +155,8 @@ sm_KernelParam__lives_in() {                     # the placement set is closed a
 ```sh
 # dorc-lang/v0.2   simon-namespaces.oracle.sh
 sm_NetNamespace__declaration() { : : primary-scheme "sm.NetnsInode" }
-sm_NetnsInode__resolve() {                       # one shape, identified in the boot; no unique-referent: nsfs inode numbers are reissued
-   printf 'identified-in sm.BootSelf:self warrants guarantees-unique-name,sole-route\n' >>"${DREP_V1:-/dev/null}"
+sm_NetnsInode__resolve() {                       # one shape, identified in the boot; unique-referent holds within a span (an nsfs inode reissued outside the book is the horizon); sole-route: what a namespace holds is reachable only through it
+   printf 'identified-in sm.BootSelf:self warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}"
 }
 sm_NetnsSelf__resolve() {                        # the one key "self": the namespace of whatever process resolves it
    local ino; ino=$(readlink /proc/self/ns/net | sed 's/^net:\[\(.*\)\]$/\1/') || return 2
@@ -195,9 +195,8 @@ The walks:
   Nathan's sentinel. Line 3's mKey: the same down to the namespace level, where
   `sm.NetnsSelf:self` resolved on the host is inode H. From the top: the route and the boot
   are the identical inherited instances; at the namespace level H and B differ inside one
-  shared mParent, that shape carries `:guarantees-unique-name` (Simon), and every level from
-  there to the leaf carries `:sole-route` (Simon for the namespace in its boot, Rachel for
-  `net/*` in its namespace). DISJOINT. Line 5 gets its own probe; line 3 never stands in.
+  shared mParent, that shape carries `:guarantees-unique-name` (Simon), and each namespace is
+  a `:sole-route` store (Simon). DISJOINT. Line 5 gets its own probe; line 3 never stands in.
   Line 6 against line 5 walks the same way.
 - Line 7 against line 8. Both yield `kernel/pid_max`; Rachel's `kernel/*` arm puts the
   mParent at `sm.BootSelf:self`. Resolved in every context, the two boot ids are equal bytes
@@ -220,8 +219,8 @@ blue-drifted day, with the flag:
  3  # sysctl -w net.ipv4.ip_forward=1                       # converged
  4  # ip netns add blue                                     # converged: namespace blue exists
  5  ip netns exec blue sysctl -w net.ipv4.ip_forward=1      # runs: diverged (blue does not forward)
- 6  # sysctl -w net.ipv4.conf.all.rp_filter=1               # converged; survives line 5 (rachel: sole-route on net/*; simon: unique-name, sole-route on the namespace)
- 7  # ip netns exec blue sysctl -w kernel.pid_max=4194304   # converged; survives line 5 (rachel: sole-route on net/*; simon: sole-route on the namespace)
+ 6  # sysctl -w net.ipv4.conf.all.rp_filter=1               # converged; survives line 5 (simon: unique-name and sole-route on the namespace)
+ 7  # ip netns exec blue sysctl -w kernel.pid_max=4194304   # converged; survives line 5 (simon: sole-route on the namespace)
  8  # sysctl -w kernel.pid_max=4194304                      # converged; the same cell as line 7
  9  printf 0 >/proc/sys/net/ipv4/ip_forward                # runs: a wall
 10  ( sysctl_check -w net.ipv4.ip_forward=1 ) \
@@ -405,15 +404,15 @@ and the wrapper selects, so the read is the mechanism that matters.
   `/proc/sys/*` locators as `sm.ProcSysPath` keys) would let line 9 wall one mCell instead of
   everything; in this book only line 10 is below it, and it collides either way.
 - `obs-a-leg-separates-by-sole-route` (+SURE of the walk; `311j` § 3.2) — line 5's knob sits
-  one store deeper than line 8's (a namespace in the boot, against the boot itself). Rachel's
-  `:sole-route` on `net/*` says every route to line 5's knob enters its namespace; a route to
-  line 8's knob enters no store below the boot; so they are two knobs, and lines 7 and 8
-  survive line 5 on the drifted day, with no declaration beyond the two `:identified-in` and
-  two `:sole-route` lines Rachel and Simon had already written. What stays UNKNOWN, correctly:
-  two sorts' knobs both directly in the boot (the strangers of
+  one store deeper than line 8's (a namespace in the boot, against the boot itself). Simon's
+  `:sole-route` on the namespace says every route to line 5's knob enters it; a route to
+  line 8's knob enters no store below the boot, and a store is never among its own contents;
+  so they are two knobs, and lines 7 and 8 survive line 5 on the drifted day, with no
+  declaration beyond Rachel's two `:identified-in` lines and Simon's one `:sole-route`. What
+  stays UNKNOWN, correctly: two sorts' knobs both directly in the boot (the strangers of
   `one-state-reached-through-two-kinds`), two sub-stores of different sorts under one parent
-  (a knob in a network namespace against one in a UTS namespace), a leaf whose shape lacks
-  `:sole-route` (a view), and a cell against its own container.
+  (a knob in a network namespace against one in a UTS namespace), a leaf below a store that
+  is a view (no `:sole-route`), and a cell against its own container.
 - `obs-the-glue-lines-pay-on-drifted-days` (+SURE) — the floor already reaches the
   steady-state shape; the two yields buy lines 6, 7, and 8 their survival on a blue-drifted
   day and one probe on any day. USER_STORY stage 5's lesson, replayed at the identity tier.
