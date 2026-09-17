@@ -502,3 +502,56 @@ GOTCHAS gained two forcing functions each re-derived this arc: `a-whole-write-re
 `a-read-folds-absent-into-a-value` (the probe-shape class). Left out as already carried: values
 that change with no write (the never-settled regime); login snapshots and the unreadable live
 side (26, 27); re-keying by rename (9, 21); a read with a side effect (35, 41).
+
+## § 15 — 2026-09-17: two UX walks; graduation killed
+
+Two walks in chat, strawmen only, sin-classification the hunt. Walk one: a stdlib author (Uma,
+users) models a user's supplementary groups as a property `sm.User:$u@groups` (every surface
+presents it so; at the grain of the list the ruler agrees), gaining no knives to mis-type,
+bearer-write coverage, and collision with the gpasswd author's `sm.Group:$g@members` through
+the shared group-line placement, and paying sibling precision (every `usermod -aG` on one user
+keys one cell) with one dormant omission (the primary group lives in passwd, not a group line).
+The strain (sibling walls; docker wanting a membership cell to reach; `usermod -G`'s whole
+write) makes her graduate membership to an individual in the group's store. What swaps, with
+its sin: `fg-sole-route-on-a-store-with-a-second-home` (the dormant omission becomes a false
+store claim; wrong DISJOINT, attributed to her);
+`fg-graduation-changes-what-other-authors-footprints-cover` (a whole-user footprint stops
+covering memberships now under the group; other authors' true sentences under-claim with no
+edit to their text; wrong DISJOINT); `fg-books-that-named-the-property` (admins' in-book
+verdicts fall to the floor; value loss inflicted on strangers);
+`fg-green-corpus-never-tested-the-warrants` (the property-era corpus passed because properties
+never separate by name); `fg-composite-key-shape` (a floor composite with a warrant is the
+parentless-warrant knife again). Walk two: a newcomer (Nils, git config) climbs the documented
+staircase and each step's obvious move is a cliff: `cliff-widen-the-arm` (a `--global` read
+answering `--local` sites; wrong SAME), `cliff-copy-the-stdlib-prefix` (refused at load the
+day the stdlib mints the name), `cliff-the-env-variable-selects-the-store` (a literal store
+against `GIT_CONFIG_GLOBAL`; wrong SAME), `cliff-nothing-else-on-a-floor-sort` (a finished
+definition over an empty placement set spares every cross-sort pair; wrong DISJOINT; the
+half-done state worse than step c), `cliff-warrant-from-tool-knowledge` (`guarantees-unique-name`
+on case-insensitive keys; wrong DISJOINT). Cross-cutting: graduation is additive or dangerous;
+a finished definition needs a non-empty bound (refusing one over zero placements and no store
+is mechanical and removes the newcomer's one catastrophic line); warrants are store knowledge,
+not tool knowledge; the property era protects by accident (one cell, ⊤ placements, no
+warrants) and every precision step trades one protection away; `getty@tty1.service@active`
+collides with the `@` syntax and is safe only by the alias fence.
+
+Typed (**[HUMAN]**): any automatic form of graduation, and any in-model graduation mechanism, is
+an inherent footgun, killed now; the coverage swap alone is the instant killer, and the feature
+is neither valuable nor recoverable without an ocean of special cases.
+
+The human's synthesis (**[HUMAN]**): A, not segregating properties leaves painful defaults on
+the value side (many kills, few survivals); B, segregating them by hand into separate fundamental
+types forces a global rewrite full of footguns when the seam proves wrong, which it will, since
+ops follows no such seam however many tools assume one; C, any in-model gloss or graduation
+encourages directional footguns by nature, since its point is helpfully different defaults, and
+a flip lands at the opposite default exactly where neither default fits. Conductor's opinion
+(~SUSPECT): B and C accurate; A overstates, since the kills are identical with or without a
+category (siblings separate only by placement either way, and the precision §8 credited to the
+gloss was a derivation rule, closed placement table ⇒ finished definition, statable for any
+sort). The dangerous move in walk one was re-parenting (membership identified in the user,
+then in the group), not the category change; and a sort with no lookup, no warrants, and its
+`:identified-in` on its bearer already behaves as the gloss's property under 311j as written
+(the container-write UNKNOWN of § 3.2 is the coverage rule; absent warrants are the alias
+fence). Lean: no category, no graduation; re-parenting never in place, only a new sort beside;
+the withheld knives stay withheld by default and by the naming law; `@` at most a spelling
+convention for a key identified in another sort's key.
