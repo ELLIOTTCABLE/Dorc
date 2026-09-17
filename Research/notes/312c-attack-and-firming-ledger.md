@@ -233,3 +233,43 @@ named-by has no spellings of its own" gently acked as A reaching B here, needing
 analysis before any ruling. Direction stated: keep species and promises few and the model small
 and general; annotate particular shapes and edges with slightly less-pure rulesets that encode
 real ops habits. Lean: cut A (human, strong; conductor, moved).
+
+## § 9 — 2026-09-17: where the facet distinction lives in ops (mapping; acked)
+
+A mapping turn over the tool families books actually contain: systemd's verb-per-facet and
+LOAD/ACTIVE/SUB/STATE columns; dpkg's status vector (want, eflag, state, version, conffiles);
+users spread over three files with lock encoded inside the hash and membership stored on the
+other party; files with a tool per facet and fine-grained stores (inode metadata, data blocks,
+xattrs); knobs, mounts, interfaces, and firewalls each with a live form in memory and a
+persisted form on disk joined by a load edge; daemons with `SET`/`ALTER SYSTEM`-style splits and
+a reload edge; settings inside config files made addressable by lenses and modules (Augeas,
+`lineinfile`, `ini_file`), with identity minted where the substrate has none (`cron` `name:`,
+block markers); immutable artifacts whose mutable facet lives in the binding (tag, path,
+installed version); set-valued facets and relations (members, tags, rules, records); derived
+facets (serial, size, carrier). The management systems that grew over all this converged on
+one shape independently: Puppet parameters versus properties (per-property `is`/`should`),
+Chef `identity: true`, Terraform `ForceNew` and per-attribute diffs, Ansible module-per-object
+and parameter-per-facet with `state:`, Kubernetes `(kind, namespace, name)` with fields, spec
+versus status, and field-level ownership in server-side apply; SQL keys versus columns with
+column grants; LDAP DNs versus attributes with per-attribute ACLs; Group Policy resolved per
+value.
+
+Three lines coincide where the distinction is drawn: identity versus mutable state (what can
+change while it stays the same thing; the substrate's keyed record); durability boundaries (one
+parameter, several homes with different lifetimes); and multiple contributors on one record
+(the field is the unit at which authors avoid colliding, which is why every serious
+multi-contributor system grew field-level ownership). The theory: the object is the unit of
+naming and the facet the unit of writing; the facet is the gap between the two grains, and
+committee speech composes at the writing grain because two authors' claims about one object
+collide at the object and not at different facets. The enhancement curve lands there unasked:
+the first state a stage-4 author names is a facet (`@synced`).
+
+The seam that carries the distinction: the substrate's keyed-record structure, exposed through
+each tool's verb and flag vocabulary and its documentation, with the durability split as a
+second axis; consistent and global (every mature system converged on it), and cheaply spoken
+rather than read off the world, because the arms of the oracle author's argparse already
+partition writes by facet, plus one word per facet for where its value lives. What no substrate
+carries and Dorc adds is field-level ownership across authors. Acked (**[HUMAN]**) as solid
+arguments against a naive cut A; the mapping does not itself decide A against B, and says the
+`@` grain must be first-class in the authored surface and in how footprints and verdicts are
+keyed under either.
