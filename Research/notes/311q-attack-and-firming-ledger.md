@@ -417,3 +417,56 @@ papering over it leakily). A clean-context Fable pass over about forty ops reads
 vocabulary and eleven behaviour questions covering every 311j trait, clustering by behaviour
 before answering the open/closed question, writes the next 311-series note; its adjudication
 follows.
+
+## § 13 — 2026-09-17: the mapping, adjudicated
+
+The clean-context study is `notes/311r` (the per-item worksheet, forty-seven reads, a resource
+never a goal) and `notes/311s` (its synthesis: thirteen behavioural clusters, the unset/absent
+cross-tab, the least-sure claims, the mis-posed and missing items). Its own headline, that
+unset-versus-absent describes how a read renders missingness and would mislead as a grouping,
+is a verdict on per-read rendering (what it was asked) and not on the shape-level ruler of § 12;
+where it answered at shape level (global knobs against interface-keyed knobs) the ruler tracked
+the behavioural seam.
+
+Core result for the cut (+SURE on the data; ~SUSPECT on the inference): behaviour partitions by
+where a value lives and what it survives, how many forms it has and what moves them, whether
+the substrate reuses identity, and observer scope. Every one of those a property may declare
+under the landing (placement, observer-dependence, reaches). The machinery the landing withholds
+from properties (lookups, lookup warrants, a chain of its own, reissue) was needed by no
+closed-set thing in the study except one: SYNONYMS. Property names alias in the wild
+(`ip_forward` and `conf.all.forwarding`; systemd's renamed directives), so a property needs a
+static, lookup-free alias set owned by the sort's owner, else the alias lives in every tool
+oracle's argparse. The constraint reads "no lookups, no lookup warrants, no chain", with synonyms
+as schema words. The suspicion that a tidy property dies to heuristics is not supported by this
+study.
+
+Two alignments worth keeping: an interface-keyed knob is created, destroyed, and re-keyed with
+its interface, which is "a property of the interface"; and for every declared-then-activated
+object (units, containers, LVs, mounts, swaps, deployments) the activation's instance id is the
+only honest staleness key for a live measurement, which in the model is the placement of
+`active@unit` being the current activation, an individual with reissued identity, perished by
+the routing write a restart is. Not the ruler's business: two reads (`systemctl is-active`,
+`swapon --show`) conflate "declared but inactive" with "not declared", a verdict-body quality
+matter.
+
+The finding larger than the cut (+SURE it is in the data; ~SUSPECT of its weight): the
+persisted-to-live MOVE is the dominant structure of ops state, six clusters wide (daemon-loaded
+config with an unreadable live side; login-time snapshots of account records; boot-time loaders
+of kernel slots and rule lists; activations of declared objects; symlink-encoded settings with a
+second file that can disagree; and, among the missing classes, grub's generated chain, apt lists
+as a gating cache, firewalld's explicit `--permanent`). The model has placements for both forms
+and no relation for what moves one into the other: safe but blind, so every reload line stays a
+wall or a run and the engine cannot say "this write needs a reload". This is
+`312a:relation-requires-is-missing`, now shown to be the shape of the field rather than a corner;
+it belongs to the 312 draft whichever way properties go.
+
+Smaller, each on a known shelf: values that change with no write (health samples, disk usage,
+clock offset; DNS alone carries a native validity window) are the never-settled regime; whole-set
+writes that clobber members (`usermod -G` without `-a`, `nft flush`) are a bearer write covering
+its parts plus graduation for member lists; re-keying by rename is a routing write; a read with a
+side effect (`iptables -S` creating its table) is the oracle contract's. Under the tuned ruler
+knobs read as properties (of the namespace or boot, or of the interface) with synonyms, not as
+individuals with spellings as the sysctl exercise models them; both descriptions are sound.
+
+Lean (conductor, lightly): the landing survives; amend its constraint to permit synonyms; carry
+the persisted/live move edge as first-class in 312.
