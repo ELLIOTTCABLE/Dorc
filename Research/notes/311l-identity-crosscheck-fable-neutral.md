@@ -138,7 +138,7 @@ every case with an empty leg. Dead text, presumably a residue of an earlier cut.
 `312b-exercises/net-sysctls-are-per-namespace`, line 5 against line 8: A is the boot; legs
 `[nsB, net/ipv4/ip_forward]` and `[kernel/pid_max]`; the tops are an `sm.NetnsInode` and an
 `sm.ProcSysPath`, different mSchemes; the only remaining disjunct is (b)'s dead one; UNKNOWN.
-`312c` § 4 records the edit as recovering "survival across a differently-lengthed leg", and the
+`311q` § 4 records the edit as recovering "survival across a differently-lengthed leg", and the
 exercise's `obs-a-leg-separates-by-sole-route` and its drifted-day render (lines 7 and 8
 "survive line 5") rest on it. Line 6 against 5 *is* licensed (tops `H` and `B`, both
 `sm.NetnsInode`, unique-name, differing; `:sole-route` below). What the differently-lengthed
@@ -162,9 +162,9 @@ the tops. The 311→311j change here is an improvement with one residual defect.
 
 +SURE. § 2.1 still declares the mParent-Catalog "with a supply mode: FIXED … SITE … AMBIENT …
 or COMPUTED" (311 had three; 311j *added* one), and the § 2.10 `:yields` row says "its supply
-mode". `312c` § 3 lists "supply modes are not a concept" among the four findings acked in chat,
+mode". `311q` § 3 lists "supply modes are not a concept" among the four findings acked in chat,
 and the exercise's `~` section applies the three-seats reading to the catalog as well as the
-store ("the three-seats finding applied to the catalog rather than the store"). `312c` § 4's
+store ("the three-seats finding applied to the catalog rather than the store"). `311q` § 4's
 edit list touches § 2.1 only for the store seat. Either the catalog deliberately keeps modes
 (then say why the store does not) or the enum goes and the catalog instance is "supplied by a
 seat" like the store. Ahistorical edit owed either way.
@@ -186,7 +186,7 @@ case. If "two mRoots" means two root shapes, say so; if keys, the cross-machine 
 ### fnd-indexical-clause-versus-singleton-spelling
 
 ~SUSPECT, low. § 2.8 keeps "only the mScheme owner can say which [components are indexical],
-and an undeclared indexical component reads unknown"; `312c` § 3 acks the singleton-spelling
+and an undeclared indexical component reads unknown"; `311q` § 3 acks the singleton-spelling
 convention (`sm.NetnsSelf:self`, `sm.HomePath:~`) as needing "no engine or model work", and the
 exercise says § 2.8's sentence "is satisfied without a declaration". Both can stand — the
 convention covers components a yield names; the clause covers book-literal components

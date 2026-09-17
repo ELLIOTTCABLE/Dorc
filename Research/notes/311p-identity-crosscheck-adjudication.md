@@ -33,7 +33,7 @@ the leaf, so a leg is empty only when the mKey is A itself, and the preceding se
 sends that case to UNKNOWN. The disjunct is dead. Walk the exercise's line 5 against line 8: A
 is the boot; legs `[B, net/ipv4/ip_forward]` and `[kernel/pid_max]`; tops an `sm.NetnsInode`
 and an `sm.ProcSysPath`, different mSchemes; UNKNOWN. So the exercise's
-`obs-a-leg-separates-by-sole-route`, its drifted-day render, and `312c` §4's "recovers survival"
+`obs-a-leg-separates-by-sole-route`, its drifted-day render, and `311q` §4's "recovers survival"
 do not follow from the committed rule. Cause: the argument in chat used "nothing below A on G's
 chain" to mean G's strict ancestors; the text wrote "leg" to include the leaf.
 
@@ -61,7 +61,7 @@ side: DISJOINT iff either (a) the two tops are mKeys of one mScheme, each carryi
 legs, carries `:sole-route` for its shape; or (b) one mKey's mParent is A, the other's is not,
 and the other mKey's shape carries `:sole-route`. Else UNKNOWN. A store is never among its own
 contents, which (b) rests on; a key against its own container still reads UNKNOWN, since a write
-to a container must collide with everything inside it." The exercise's render and `312c` §4
+to a container must collide with everything inside it." The exercise's render and `311q` §4
 stand only once this lands, and the exercise carries a second defect that lands with it (§3,
 `forwarding-alias`).
 

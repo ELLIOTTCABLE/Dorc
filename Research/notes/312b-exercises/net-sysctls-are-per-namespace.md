@@ -6,7 +6,7 @@ vocabulary. Grades on the conductor's claims: +SURE / ~SUSPECT / -GUESS / --WOND
 `net-sysctls-are-per-namespace` and, beside it, `one-state-reached-through-two-kinds`. A rich
 stdlib is assumed present.
 
-Spelling rules in force for the strawmen (human-typed 2026-09-16, banked in `312c`): a bind is an
+Spelling rules in force for the strawmen (human-typed 2026-09-16, banked in `311q`): a bind is an
 ordinary `local x="…"` with a trailer, `local id="$4" : is "sm.AccountId"`, never an inline
 form; a runtime value with a type is one record line to the report lane with the type on the
 line (`printf 'yields sm.Inode:%s\n' "$ino" >>"${DREP_V1:-/dev/null}"`), never a `printf` of

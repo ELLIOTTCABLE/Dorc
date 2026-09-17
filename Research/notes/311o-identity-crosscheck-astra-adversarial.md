@@ -21,7 +21,7 @@ The floor’s standup witness compares the unchanged endpoint key; it has acquir
 
 This also locates the misplaced knowledge: the engine knows that the shell’s execution context is unchanged. It does **not** know that the client’s next request reaches the same server. That knowledge belongs to the connection and routing machinery; the generic tool author cannot infer it from an endpoint string either.
 
-A narrower interpretation—only the route node itself receives the engine’s sameness exemption—would avoid this failure. That restriction is missing from the written rule, and **312c §4 explicitly endorses the shared-placeholder exemption**. The predecessor’s §7 had left the local-route claim as an untested concern; the rewrite removes that qualification. [A-312c:shared-instance-closure-record](C:/Users/ec/Sync/Code/Dorc/Research/notes/312c-attack-and-firming-ledger.md:115), [A-311:unresolved-local-route-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/311-identity-and-relation-preparatory-model.md:642)
+A narrower interpretation—only the route node itself receives the engine’s sameness exemption—would avoid this failure. That restriction is missing from the written rule, and **311q §4 explicitly endorses the shared-placeholder exemption**. The predecessor’s §7 had left the local-route claim as an untested concern; the rewrite removes that qualification. [A-311q:shared-instance-closure-record](C:/Users/ec/Sync/Code/Dorc/Research/notes/311q-attack-and-firming-ledger.md:115), [A-311:unresolved-local-route-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/311-identity-and-relation-preparatory-model.md:642)
 
 ---
 
@@ -104,7 +104,7 @@ sm.NetnsInode       versus       sm.ProcSysPath
 
 The required “tops are mKeys of one mScheme” condition fails. The answer is **UNKNOWN**, so the second command needs a guard. All the stated `:sole-route` warrants can be true without satisfying that condition. [A-311j:unequal-depth-comparison-rule](C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:420)
 
-The exercise instead says the second command survives, and **312c §4 explicitly records the edit as recovering that survival**. Those statements disagree with the edited rule. [A-312b:unequal-depth-survival-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/312b-exercises/net-sysctls-are-per-namespace.md:407), [A-312c:unequal-depth-closure-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/312c-attack-and-firming-ledger.md:107)
+The exercise instead says the second command survives, and **311q §4 explicitly records the edit as recovering that survival**. Those statements disagree with the edited rule. [A-312b:unequal-depth-survival-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/312b-exercises/net-sysctls-are-per-namespace.md:407), [A-311q:unequal-depth-closure-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/311q-attack-and-firming-ledger.md:107)
 
 There is another exact defect in that clause: its empty-leg alternative is unreachable after “if either mKey is A itself, … UNKNOWN.” An empty leg is precisely that situation. The written rule therefore needs correction before this render can count as a validated exercise.
 

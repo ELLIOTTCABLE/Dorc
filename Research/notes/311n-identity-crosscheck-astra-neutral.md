@@ -68,7 +68,7 @@ I did not establish an ordinary ops situation that is wholly unrepresentable. Fi
 
    Using the exercise’s declarations, the deepest shared ancestor is the boot. The two nonempty legs begin with `sm.NetnsInode` and `sm.ProcSysPath`. They are different mSchemes, so §3.2 says UNKNOWN. The “one leg is empty” alternative does not apply; indeed, the preceding ancestor-self clause has already rejected that case.
 
-   The [exercise’s claimed survival](/C:/Users/ec/Sync/Code/Dorc/Research/notes/312b-exercises/net-sysctls-are-per-namespace.md:407) and [312c §4’s claimed recovery](/C:/Users/ec/Sync/Code/Dorc/Research/notes/312c-attack-and-firming-ledger.md) therefore do not follow from the edited rule. This finding concerns the graph and warrants, not the strawman spellings. Broadly treating different mSchemes as disjoint would not repair it: that would break the strangers case.
+   The [exercise’s claimed survival](/C:/Users/ec/Sync/Code/Dorc/Research/notes/312b-exercises/net-sysctls-are-per-namespace.md:407) and [311q §4’s claimed recovery](/C:/Users/ec/Sync/Code/Dorc/Research/notes/311q-attack-and-firming-ledger.md) therefore do not follow from the edited rule. This finding concerns the graph and warrants, not the strawman spellings. Broadly treating different mSchemes as disjoint would not repair it: that would break the strangers case.
 
 4. `identifying-placements-collapse-properties` — +SURE on the literal rule: making the identifying parent a mandatory mPlacement prevents ordinary property-level sparing.
 

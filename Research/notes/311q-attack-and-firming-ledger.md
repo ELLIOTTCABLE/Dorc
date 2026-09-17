@@ -1,4 +1,4 @@
-# 312c — The attack-and-firming ledger: sittings over `notes/311j`
+# 311q — The attack-and-firming ledger: sittings over `notes/311j`
 
 > AI-authored (Fable, the `r31-prep-design-duck` sittings, from 2026-09-16). Notes-tier LIVING
 > ledger for the phase that attacks and firms the two-species model, `notes/311j`, until the
