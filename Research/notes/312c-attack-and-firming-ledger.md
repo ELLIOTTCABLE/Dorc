@@ -117,6 +117,14 @@ Three edits, each acked in chat and made ahistorically:
   `:guarantees-unique-referent`; attribution names the sentinel or the route claim
   accordingly, and the owner's warrant only where two lookups returned equal values.
 
-The exercise record's drifted-day render and observations follow the edited model. Next on
-the list: the adversarial review of the 311→311j diff and the exercise (one outside lineage;
-a second on request), then its adjudication here.
+The exercise record's drifted-day render and observations follow the edited model.
+
+## § 5 — 2026-09-17: the crosscheck, adjudicated
+
+Four passes (`311l`–`311o`, two lineages) over 311j and the 311→311j diff; adjudication and
+synthesis in `notes/311p`. Seven threads survive, the first four with two-lineage support: § 3.2's
+DISJOINT bullet as committed is defective (its empty-leg disjunct is unreachable, so the
+exercise's drifted-day survival does not follow, and it over-demands `:sole-route` at the tops);
+the mCell fold lost the per-cell store; the identifying store makes sibling cells collide;
+`:sole-route` is the parent store's knowledge. One rule deleted from § 3.5 (the two-mSchemes
+canary; refuted by both Astra passes and verified). Everything else waits on the human.

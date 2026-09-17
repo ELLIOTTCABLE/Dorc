@@ -1697,6 +1697,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Md (1)
 
+## different-schemes-conflict-rule
+- defined: —
+- cited: 311o (1)
+
 ## syntax/CLAUDE:differential-not-proof
 - defined: spike/crates/syntax/CLAUDE.md:105 — — the trust model is differential testing against
 
@@ -1812,6 +1816,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:display-paths-relativize-at-one-seat
 - defined: spike/crates/cli/CLAUDE.md:305 — (`30Xa` lanes B1/B2a/D2b; human-acked 2026-09-04) — a
+
+## divergent-key-separation-rule
+- defined: —
+- cited: 311o (1)
 
 ## spike/CLAUDE:doctor-inventories-never-reaps
 - defined: spike/CLAUDE.md:1231 — — `mise run doctor` is the read-only answer to
@@ -2273,6 +2281,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:finding-export-never-fences
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:31 — — bare/`export` assignments are value-plane only
+- cited: 311m (1)
 
 ## 27Xn:finding-fallback-self-heals-framing-overstated
 - defined: Research/notes/27Xn-context-entry-correctness-digest.md:57 — (product-framing tier)
@@ -2687,6 +2696,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28L:fnd-class-b-is-one-hundred-components
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:851 — (x2g at the merged state, +SURE
 
+## 311l:fnd-coherence-of-instance-derivations-unstated
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:209
+
 ## 28R:fnd-coherence-underpins-elision
 - defined: Research/notes/28R-context-kernel-review.md:68 — (+SURE on the in-source mechanism; ~SUSPECT on
 
@@ -2716,6 +2728,13 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26I:fnd-crlf-trips-book-parser
 - defined: Research/notes/26I-adversarial-kernel-review.md:142 — (SEV: minor robustness/cross-platform; CONFIDENCE: demonstrated)
+
+## 311l:fnd-cross-sort-same-narrowed-by-design
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:198
+
+## 311l:fnd-cross-transit-pairs-rest-on-horizoned-roots
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:82
+- cited: 311p (1)
 
 ## fnd-current-source-is-user-named-only
 - defined: —
@@ -2762,6 +2781,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-discarded-trip-retains-elisions
 - defined: —
 - cited: 30M 30Md 30Mg 30Na plan/CLAUDE (5)
+
+## 311l:fnd-disjoint-clause-over-demands-and-under-delivers
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:107
 
 ## fnd-dot-source-remains-an-execution-frame
 - defined: —
@@ -2822,6 +2844,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28R:fnd-incarnation-correlation-shapes
 - defined: Research/notes/28R-context-kernel-review.md:80 — (mixed grades) — for the
+
+## 311l:fnd-indexical-clause-versus-singleton-spelling
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:186
 
 ## fnd-inline-call-cells-dropped-query-members
 - defined: —
@@ -2894,6 +2919,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-nonvacuity-probe-is-a-naming-convention
 - defined: Research/notes/30Ba-minispec-review-neutral.md:219 — (+SURE)
+
+## 311l:fnd-observer-sorts-must-be-enumerated
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:299
+- cited: 311p (1)
 
 ## fnd-oob-astids-reached-a-panicking-read
 - defined: —
@@ -3027,12 +3056,22 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Md (2)
 
+## 311l:fnd-sentinel-rests-on-a-privileged-read
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:285
+- cited: 311p (1)
+
+## 311l:fnd-shape-is-not-a-function-of-bytes
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:271
+
 ## 26G:fnd-shared-auto-cell-collides
 - defined: Research/notes/26G-analyzer-findings-adjudication.md:23 — — same-command sites share one synthesized cell
 - cited: 26H (1)
 
 ## 28L:fnd-shared-fixture-collision
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:509 — (reviewer, +SURE, reproduced via the full gate) —
+
+## 311l:fnd-sibling-cells-of-one-bearer-always-collide
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:28
 
 ## 26I:fnd-sibling-requery-kills-cascade
 - defined: Research/notes/26I-adversarial-kernel-review.md:130 — (SEV: precision/UX, no unsoundness; CONFIDENCE: demonstrated)
@@ -3043,6 +3082,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-smoke-book-never-reloads-nginx
 - defined: —
 - cited: 26F 312a Research/trial/r26/README Research/trial/r26/live-evidence/README (4)
+
+## 311l:fnd-sole-route-sited-on-the-child
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:221
 
 ## fnd-solver-takes-no-seed-at-all
 - defined: —
@@ -3063,6 +3105,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-store-route-lists-it-does-not-explain
 - defined: —
 - cited: 30Rk (1)
+
+## 311l:fnd-supply-modes-survive-their-own-retraction
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:161
 
 ## fnd-survival-footprint-lane-scans-forward
 - defined: —
@@ -3128,6 +3173,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:24 — (carry into stage C — load-bearing)
 - cited: 28P analysis/CLAUDE (2)
 
+## 311l:fnd-two-roots-forecloses-warranted-separation
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:172
+
 ## fnd-typos-fix-rewrites-corpus-docids
 - defined: —
 - cited: 30Nd (1)
@@ -3149,6 +3197,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-verified-boundary-overreads-its-own-census
 - defined: Research/notes/30Ba-minispec-review-neutral.md:151 — (+SURE)
+
+## 311l:fnd-warrants-claim-all-time-for-a-span
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:248
 
 ## fnd-whylog-mode-disagrees-with-its-own-fixtures
 - defined: —
@@ -3815,6 +3866,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/core/CLAUDE.md:203 — (`304`; the reshape) — in the TRANSLATED
 - cited: 300 300b analysis/CLAUDE (3)
 
+## kernel-path-uniqueness-warrant
+- defined: —
+- cited: 311o (1)
+
 ## core/CLAUDE:kind-fence-movable
 - defined: spike/crates/core/CLAUDE.md:82 — (re-cut `30U`) — cross-kind pairs short-circuit to
 - cited: 300 310 (3)
@@ -4228,6 +4283,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## list-must-sits-before-kernel-work
 - defined: —
 - cited: 26Ob 311a (2)
+
+## local-route-identity-exemption
+- defined: —
+- cited: 311o (1)
 
 ## locator-fence-is-not-automatic-refutation
 - defined: —
@@ -6062,7 +6121,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:rul-conflict-between-totals-is-falsification
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:313 — [ACKED] — judgment-tier
-- cited: 28K 311j 312b (4)
+- cited: 28K 312b (3)
 
 ## rul-conflict-files-delete-this-session
 - defined: —
@@ -6357,6 +6416,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-export-is-an-index-fence
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:57 — — an ambient exported-env mutation between sites
+- cited: 311m (1)
 
 ## 28M:rul-fail-fast-union
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:302 — [TYPED] — fail-fast is licensed in a gradually-enhanced
@@ -7183,7 +7243,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (43)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (44)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -7925,6 +7985,14 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Qc:shared-file-ledger
 - defined: Research/notes/30Qc-load-plane-lane-report.md:638
+
+## shared-instance-closure-record
+- defined: —
+- cited: 311o (1)
+
+## shared-placeholder-sameness-rule
+- defined: —
+- cited: 311o (1)
 
 ## 199:shell-execution-environment
 - defined: Research/notes/199-corpus-strain-frontier.md:71 — state (16P T9 / §B)
@@ -8812,6 +8880,18 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/1A8-oracle-seeds-core.md:198 — (password-by-value un-probeable) — the salt-randomization argument is a
 - cited: 1AA (1)
 
+## unequal-depth-closure-claim
+- defined: —
+- cited: 311o (1)
+
+## unequal-depth-comparison-rule
+- defined: —
+- cited: 311o (1)
+
+## unequal-depth-survival-claim
+- defined: —
+- cited: 311o (1)
+
 ## unit-context-slot-audit
 - defined: —
 - cited: 26Ob 310 (3)
@@ -8857,6 +8937,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hostsim/CLAUDE:unknown-is-the-kernel-fold
 - defined: spike/crates/hostsim/CLAUDE.md:19 — — an un-probed/unreachable fact must surface
+
+## unresolved-local-route-claim
+- defined: —
+- cited: 311o (1)
 
 ## spike/CLAUDE:unused-report-never-reaps
 - defined: spike/CLAUDE.md:1239 — — `mise run doctor:unused` is the SOFT hygiene gate: every
