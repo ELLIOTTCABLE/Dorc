@@ -168,3 +168,34 @@ attribute of that bearer"), presented as the whole-entity rule 311j dropped when
 selectors, and as the ordinary "a whole covers its parts" that attributes' dependent existence
 forces; the model's other face of it is store destruction making contents new (§ 3.3); the
 authored `:reaches` is for effects that cross individuals.
+
+## § 7 — 2026-09-17: the comparison, and the one question left standing
+
+The two cuts of § 6 were compared in chat, each given its best case, over the cornerstone
+(`installed` in the dpkg file, `enabled` in a wants directory, `active` in the manager) and the
+wider ops chaos: the persisted-versus-live pairs (hostname and `/etc/hostname`; live sysctl and
+`sysctl.d`; the mount table and `fstab`; live nftables and the rules file; `swapon` and `fstab`;
+an activated LV and its metadata), relations between two individuals (group membership),
+derived aggregates, existence as a catalog entry's facet, and facet names that alias
+(`ip_forward` and `conf.all.forwarding`, one kernel field). Both cuts are exact on the
+cornerstone; a reboot kills `active` and spares `enabled` in both (A by chain, B by placement).
+Shaved as belonging to neither, to be handwritten patterns: relations between two individuals
+(owned by whoever owns the store they live in); derived aggregates (diffuse placement, never
+spared); occurrences with duration (events, which the model does not carry).
+
+Lean (**[HUMAN]**, strong, convincible): cut A, the coherent and simple core model, with sugar,
+conveniences, and defaults to address its imperfections. B's structural advantages (coverage
+that cannot be opted out of; aliasing inherited by construction; the natural `@` syntax; the
+compact persisted/live pair) read as reproducible by surface-level means, a different flavour
+of cruft, and one a grumpier user sees through to the coherent core; reproducing A's uniformity
+inside B would instead need engine special cases and a model in which similar concepts are
+expressed twice at two altitudes under different correctness rules, which fails toward unsafe
+when conflated and pulls back toward A piecemeal.
+
+The one thing that survives the lean as not reproducible by sugar, and the next sitting's
+question: under A, sparing between two facets of one bearer (`chmod` past a contents fact;
+`systemctl enable` past an `is-active` fact, both in every book) needs the footprint's
+facet-sort to carry a finished definition, so intra-owner precision costs a 30U knife per facet
+with no stranger involved, where B makes it one interference declaration per bearer. To be
+analysed from within A. If it cannot be solved clearly there, it is a dealbreaker for A and
+graduates facets back into the model as a category (cut B).
