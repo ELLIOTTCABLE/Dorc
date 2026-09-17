@@ -89,6 +89,7 @@ Findings (the first four acked in chat, "almost everything", 2026-09-16; the res
   blessed string, no model rule; the lend keeps entry, inheritance, and perishing. Acked
   (**[HUMAN]**, 2026-09-16) as userspace convention with no engine or model work owed, and as
   a mild validation of the model's completeness. The same move handles `$HOME`-relative
-  stores under `sudo` and a bare `~` (a register measured where its shell expands it);
-  `~name` is a syntax-forced lookup with no seat until the engine names the spelling that
-  resolves it, and is safely ⊤ until then.
+  stores under `sudo`, and a `~` inside an opaque key (a component the path spelling's owner
+  declares indexical, § 2.8, resolving through the singleton; eviction across a pivot by
+  traversal membership, § 1.7 and § 3.3); an emitter whose tool means a different `~` expands
+  before emitting.

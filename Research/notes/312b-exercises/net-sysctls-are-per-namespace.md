@@ -288,31 +288,33 @@ lend, and it is the sort owner's: Nathan knows what his wrapper changes, Rachel 
 `/proc/self`, and the engine does not know what that path is. A sort whose owner writes no
 such spelling leaves directly bound keys stored in it with an unknown store, which is safe.
 
-## The same move for `~`
+## `~` inside an opaque key
 
-The shell expands a bare `~` to `$HOME` before the command runs, and `~name` to that user's
-passwd home; both are sh semantics the engine holds as syntax (`30W` § 6). Alice's book:
+A literal `~` in a book line is the host shell's business: the engine's sh model expands it
+where that shell would (`sudo -u alice cp x ~/y` expands in the caller's shell, before sudo
+runs; `sudo -u alice sh -c 'cp x ~/y'` inside). The case that needs the model is a tilde
+inside a key the shell never sees: a store an owner declares as `sm.Path:~/.thingy-config`,
+or a path a tool prints (`thingy --config-path` answering `~/.thingy-config`). The engine
+then holds an opaque path with a component whose meaning depends on where the key was minted,
+and it may not know what `~` is.
 
-```sh
-sudo -u alice cp ./bashrc ~/.bashrc              # A: ~ expands in the CALLER's shell, before sudo runs
-sudo -u alice sh -c 'cp /tmp/bashrc ~/.bashrc'   # B: ~ expands inside, to whatever sudo left in HOME
-cp ./motd ~bob/motd                              # C: ~bob is a passwd lookup by the caller's shell
-```
-
-Bare `~` is a register read in the shell that expands it: at A the outer shell's `HOME`; at B
-the inner one's, which is policy (`sudo` versus `sudo -i`; `env_keep`), so it is measured in
-that context. A register measured where its site runs is the singleton pattern in the value
-plane's own clothing (`275`'s register-resolved values), and needs no spelling; where the
-owner wants sh's full rule in one place, it is Uma's:
+Under `311j` § 2.8 the path spelling is hierarchical and its owner says which components are
+indexical and what each resolves through. Tessa declares `~`, resolving through Uma's
+singleton, and `~name`, resolving through Uma's keyed spelling:
 
 ```sh
+# tessa-file.oracle.sh
+sm_Path__declaration() {                         # spelling carries no weight
+   : : hierarchical "/" indexical "~" resolves-through "sm.HomeSelf:self"
+   : : component-form "~name" resolves-through "sm.Home:name"
+}
 # uma-users.oracle.sh
-sm_HomeSelf__resolve() {                         # what a bare ~ expands to here: sh uses HOME, else the passwd entry
+sm_HomeSelf__resolve() {                         # the home of whoever resolves it: sh's rule, HOME else the passwd entry
    local home="${HOME:-$(getent passwd "$(id -u)" | cut -d: -f6)}"
    [ -n "$home" ] || return 2
    printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
 }
-sm_Home__resolve() {                             # ~name: the passwd home of a named user
+sm_Home__resolve() {                             # the passwd home of a named user
    local home; home=$(getent passwd "$1" | cut -d: -f6) || return 2
    [ -n "$home" ] || return 2
    printf 'yields sm.Path:%s\n' "$home" >>"${DREP_V1:-/dev/null}"
@@ -320,17 +322,23 @@ sm_Home__resolve() {                             # ~name: the passwd home of a n
 ```
 
 Both are Uma's spellings of Tessa's `sm.File` (the glue seat: a stranger publishes a way of
-naming files), yielding a path that Tessa's spelling turns into an inode and a filesystem. So
-A's file and B's file compare DISJOINT when `sudo` reset `HOME` (two homes, two inodes) and
-SAME when it preserved it (one home, one inode), which is the truth either way, with nobody
-reasoning about users. Perishing falls out of § 3.3: `usermod -d` touches the passwd entry
-and perishes every `sm.Home:alice` below it; an `export HOME=…` in the book is a routing write
-to the register and perishes every bare `~` below it in that shell.
+naming files). The chain for `~/.thingy-config` minted under `sudo -u alice`: the `~`
+component resolves through `sm.HomeSelf:self` inside the pivot (where `HOME` is whatever
+sudo's policy left), the remaining components walk from that directory, and Tessa's lookup
+yields an inode and a filesystem. The same opaque key minted outside the pivot is a different
+mPlaceholder (§ 1.10: keyed by entry chain, and the pivot lent `sm.User`), and the two compare
+by inode: DISJOINT when sudo reset `HOME`, SAME when it preserved it, the truth either way,
+with nobody reasoning about users. Eviction falls out of § 1.7 and § 3.3: the home resolution
+is a routing key in the path's mTraversal, so `usermod -d alice`, `export HOME=…`, or any lend
+of `sm.User` or of the register below the mint perishes or re-keys the resolution below it.
+Nothing new: a declared indexical component, the singleton spelling, and traversal
+membership.
 
-Surfaced, not owed: `~name` is a syntax-forced lookup with no seat until the engine names the
-spelling that resolves it, the same shape as the redirect locator handed to the File binder;
-until then `~name` is ⊤ and its line runs, which is safe. And line A is a GOTCHA-shaped fact:
-a tilde before a wrapper is the caller's home, not the guest's.
+Whose `~` it is: a tool that writes `~` in its own output means its own convention (usually
+`$HOME`, sometimes passwd, sometimes XDG). Tessa's rule is sh's, so an owner whose tool
+differs expands before emitting (the emitting body is sh running in the denoted context), and
+that is the safe default for every emitter; a tilde in an emitted path is lint-shaped. Tessa
+may also decline tildes, leaving such keys ⊤.
 
 ## Cost, briefly
 
