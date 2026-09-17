@@ -51,3 +51,36 @@ Strawmen, epistemics, and gradual-enhancement walks name their actors with human
 The letters carry one dimension of authorship, chosen per example and introduced where used (a
 run of the alphabet might mark role, or vantage, or distance from the kernel); no allocation is
 fixed anywhere. A name doubles as a file stem: `nathan-ip.oracle.sh`.
+
+## § 3 — 2026-09-16: the two-namespaces sysctl exercise
+
+Record: `312b-exercises/net-sysctls-are-per-namespace.md` (GOTCHAS 29 and 30; a rich stdlib
+assumed; the floor and the glue lines; the three seats). Nothing ruled; the model unedited.
+
+Typed this sitting (**[HUMAN]**), spelling rules for strawmen: a bind is an ordinary `local`
+with a trailer (`local id="$4" : is "sm.AccountId" identified-in "sm.Path:$db"`), never inline;
+a runtime value with a type is one record line to the report lane with the type on the line,
+never a `printf` of several bare values, and a payload-bearing `: attribute` on a `printf` is
+suspect; a trailer's `$name` refers to a `local` declared earlier in the body and is never
+shell. Cloned boots are horizoned for design work; the model expresses the horizon as a stdlib
+warrant with a name on it (**[HUMAN]** lean).
+
+Findings (the first four acked in chat, "almost everything", 2026-09-16; the rest unacked):
+
+- The store of a primary key is a value supplied by exactly one of three seats — the bind's
+  trailer, the yield's record, or the primary's own arm — and `311j` § 1.6 wrongly fixes the
+  seat by the kind of key, which put the stdlib owner's knowledge on the tool author's line.
+  § 2.1's `:parent-key-of` is subsumed by the record naming the spelling. Supply modes are not
+  a concept: a literal store is a fixed name resolved in context; a command-line store is
+  visible at the bind; environment and argv are both shell words; a read is a read.
+- The sort, not the spelling, declares which spelling is primary.
+- The wrapper's `lends nothing-else` sentinel is the keystone: every SAME and DISJOINT in the
+  case passes through inherited instances, and without the sentinel the glue lines buy nothing.
+- GOTCHA 30's safety comes from the File binder declining procfs, not from identity.
+- Same-sort keys whose chains diverge into different sorts under one ancestor read UNKNOWN;
+  § 3.2 is silent and the generous reading is refuted by GOTCHA 30. Candidate seat, unacked: a
+  third lookup warrant, distinct keys never reach one referent whatever their parents (the pid
+  spelling refutes a lazy declaration).
+- § 3.2's third bullet reads SAME off equal values; inherited instances are one key and need
+  no warrant, else no same-host pair is ever SAME.
+- The glue lines pay on drifted days only; the floor already reaches the steady-state shape.
