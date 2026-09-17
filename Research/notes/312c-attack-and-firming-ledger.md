@@ -273,3 +273,63 @@ carries and Dorc adds is field-level ownership across authors. Acked (**[HUMAN]*
 arguments against a naive cut A; the mapping does not itself decide A against B, and says the
 `@` grain must be first-class in the authored surface and in how footprints and verdicts are
 keyed under either.
+
+The reasoning round that followed, banked here for the successor:
+
+- The formalisms all separate the same two things: ER's entities and attributes (with the
+  promotion rule: an attribute with attributes or relationships of its own becomes an entity);
+  the relational model's keys and columns, with functional dependency (key determines column)
+  as the law; OWL's individuals and data properties; separation logic's heap cell
+  `object.field ↦ value`, where the field is the atomic unit of state and of ownership and the
+  object only the shared prefix; and hidden algebra's hidden sorts with *observers*, where a
+  method is a state transition and the frame is which observers a method leaves alone. The last
+  fits tightest: it supplies the trio verdicts (observations), footprints (methods), and finished
+  definitions and `:reaches` (the frame), and its identity is behavioural (same iff every
+  observation agrees), which is SAME-for-transport. The ops "keyed record" is the relational and
+  separation-logic picture: state is a map from (key, field) to value.
+- The criterion that falls out, checkable per case in a minute: a unit of state is an
+  *individual* iff some store hands out names for it; otherwise it is a facet of the individual
+  through which it is addressed. It cuts the base where ops cuts it: a knob is an individual
+  (procfs hands out its path) with a `value` facet; a mount is one (mount ids); a certificate is
+  one (a serial); `active`, `mode`, `installed`, membership are facets. systemd's `InvocationID`
+  shows promotion in the wild: an *activation* has an id and is an individual, `active` does not
+  and is its facet. Unstable names (ufw's shifting rule numbers) make individuals with weak
+  warrants, not facets.
+- The audit of 311j's apparatus at facet grain. Inert or hazardous there, with no
+  non-contrived case found: spellings and `:yields` (a facet's name is bearer-key plus a declared
+  word; the `ip_forward`/`conf.all.forwarding` alias is the criterion saying knobs are
+  individuals); an identity chain of its own (equivalent to bearer plus placement in every case
+  walked; the chain belongs to the placement); all four warrants (unique-name and
+  unique-referent trivially true of a declared name and noise to write; `:sole-route` only ever
+  meant a relation, shaved; `:rootness` never; and a warrant *offered* to a facet author is
+  `311m`'s parentless-warrant knife); `:corresponds` (follows from the bearer's); `:lends`; the
+  transit-free route claim. Meaningful there and shared with individuals: placements (usually
+  one home; sometimes roles, the effective-configuration merge of layers in precedence, which is
+  § 2.9 in facet clothes); `:reaches` and the finished definition (the interference table, the
+  facet-grain core); observer-dependence (essentially facet-grain: `test -w` is per observer,
+  `mode` is not; declared per facet, never per bearer); `:hierarchical` (document-shaped
+  bearers where settings are paths and a section write covers everything beneath; ER's
+  composite attributes); perishing through the bearer's routing and the placement's store;
+  existence as the catalog entry's facet; multi-valued facets (hard, separate). Roughly half the
+  apparatus is inert or hazardous at facet grain and the two inert features are also the two
+  facet-author knives this round found: the threshold for "contorting mSort/mScheme" is met.
+- Against a hard category split, an enhancement-curve argument: promotion is routine in ops (an
+  activation gains an id; a cron line gains a minted `name:`; a knob space gains aliases) and
+  under two categories it is a cliff (every coordinate re-keyed; declarations move between rule
+  sets), where under one species it is adding declarations to a sort. `KNOBS:kBURDEN`'s
+  no-cliff principle. And the meaningful half being shared means a facet *is* a sort with the
+  individual-only features switched off.
+- The landing (conductor; human leaning close): take both gains of dropping capability,
+  teaching and safety, without minting a primitive: a facet is a named-by sort under a
+  constraint (no spellings of its own, no lookup warrants, no chain; identity the bearer's plus
+  its name; placements, `:reaches`, observer-dependence, `:hierarchical` as any sort), taught as
+  one concept with the `@` coordinate as its syntax, promotion being the lifting of the
+  constraint. One species, one walk, one correctness story; the concept story is the one ops
+  already lives by. Watch-item (~SUSPECT): if the constraint has to grow exceptions (a facet
+  that genuinely needs one spelling or one warrant), it is a second rule set by accretion and
+  the category split was right; the audit found no such case.
+- Naming (**[HUMAN]**): individual, sort, and scheme-for-naming-a-sort read well; "observer"
+  does not carry to the target market unless one English sentence can say how nginx's active
+  status is one (hidden algebra's sense is "an observation you can make of the thing", not a
+  person), so the word for the facet concept is open; candidates for the successor: property,
+  reading, facet, attribute. Details resume after the rewind.
