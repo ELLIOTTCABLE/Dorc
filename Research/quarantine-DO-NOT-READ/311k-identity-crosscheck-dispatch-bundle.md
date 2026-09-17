@@ -16,7 +16,7 @@ Read, in this order, before anything else: `Research/notes/311j-identity-and-rel
 whole (the model; its vocabulary is defined there); `Research/GOTCHAS.md` (the ops facts that
 kill simple designs); `Research/notes/312b-exercises/net-sysctls-are-per-namespace.md` (the
 experiment that drove the latest edits; its sh is strawman and its spellings carry no weight);
-`Research/notes/312c-attack-and-firming-ledger.md` (what was decided and why). Then, with no
+`Research/notes/311q-attack-and-firming-ledger.md` (what was decided and why). Then, with no
 tools and no delegation, write down your own report structure and initial judgement before
 you look at anything else. After that: `Research/notes/311-identity-and-relation-preparatory-model.md`
 is the predecessor, and the diff between it and 311j is in scope; `Research/notes/312a-corpus-import-synthesis.md`
@@ -72,7 +72,7 @@ DISJOINT. Bring me those.
 Read the model whole first, then `Research/GOTCHAS.md`, then
 `Research/notes/312b-exercises/net-sysctls-are-per-namespace.md` (the experiment they are so
 proud of; its sh is strawman, do not argue spelling) and
-`Research/notes/312c-attack-and-firming-ledger.md` (what they decided). Then put the tools
+`Research/notes/311q-attack-and-firming-ledger.md` (what they decided). Then put the tools
 down and write your own plan of attack and first judgement before reading anything else;
 I am paying for your reasoning, not a summary of theirs. After that the corpus is yours
 (`Research/notes/312a` §0, `312b` §7–§9, root `README.md`, `DESIGN.md`, `USER_STORY.md`
@@ -114,7 +114,7 @@ ran). Both under-execute when wrong; UNKNOWN is safe for both.
 Read first: `Research/notes/311j-identity-and-relation-model-two-species.md` whole (the model
 defines its own vocabulary); `Research/GOTCHAS.md`; `Research/notes/312b-exercises/net-sysctls-are-per-namespace.md`
 (the experiment behind the latest edits; its sh is strawman, its spellings carry no weight);
-`Research/notes/312c-attack-and-firming-ledger.md`. The predecessor
+`Research/notes/311q-attack-and-firming-ledger.md`. The predecessor
 `Research/notes/311-identity-and-relation-preparatory-model.md` is in scope through its diff
 against 311j. `Research/notes/312a-corpus-import-synthesis.md` §0, `Research/notes/312b-epistemics-sittings-ledger.md`
 §7–§9, and root `README.md`, `DESIGN.md`, `USER_STORY.md` stages 4–7 give the framing. The
@@ -164,7 +164,7 @@ DISJOINT. Bring me those.
 Read the model whole, then `Research/GOTCHAS.md`, then
 `Research/notes/312b-exercises/net-sysctls-are-per-namespace.md` (the experiment they are so
 proud of; its sh is strawman, do not argue spelling), then
-`Research/notes/312c-attack-and-firming-ledger.md` (what they decided). Framing, if you need
+`Research/notes/311q-attack-and-firming-ledger.md` (what they decided). Framing, if you need
 it: `Research/notes/312a-corpus-import-synthesis.md` §0, `Research/notes/312b-epistemics-sittings-ledger.md`
 §7–§9, root `README.md`, `DESIGN.md`, `USER_STORY.md` stages 4–7. The rest of `Research/` is
 open but is older design this model re-litigates; I want attacks, not archaeology, so keep
