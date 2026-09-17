@@ -5412,6 +5412,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30D 30P (2)
 
+## relation-requires-is-missing
+- defined: —
+- cited: 311q 312a (2)
+
 ## core/CLAUDE:relational-compare-chokepoint
 - defined: spike/crates/core/CLAUDE.md:66 — — ALL whole-coordinate comparison sits behind
 - cited: 301 310 (2)
