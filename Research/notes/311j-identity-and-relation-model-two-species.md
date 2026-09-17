@@ -495,10 +495,7 @@ mCorrespondence; a :observer-independence; a :lends. The engine only chains and 
 granting composite ("these two accounts are one") is entailed jointly by one mScheme's
 `:yields` and the primary mScheme's declaration for that shape, each author speaking about their own lookup
 (`28M:rul-composite-meets-toward-guard-run`); a withholding composite (a mount perishing an
-account's mResolution) names nobody and needs nobody's consent. Two mSchemes of one mSort that
-resolve one string, in one mParent, from one mVantage, to two different mKey-Primaries, where
-the primary mScheme's shape carries :guarantees-unique-referent: at most one is right, so both
-are withheld and narrated (`28M:rul-conflict-between-totals-is-falsification`). Attribution:
+account's mResolution) names nobody and needs nobody's consent. Attribution:
 every survival names the :sole-route and :guarantees-unique-name declarations it rested on and
 the mPlacement sets that bounded it; every SAME names the `resolve()` calls, the declarations,
 the sentinels and route claims that made instances one, and the mCorrespondences; every
