@@ -470,3 +470,35 @@ individuals with spellings as the sysctl exercise models them; both descriptions
 
 Lean (conductor, lightly): the landing survives; amend its constraint to permit synonyms; carry
 the persisted/live move edge as first-class in 312.
+
+## § 14 — 2026-09-17: the mapping read back; acks and leans
+
+"The landing" (§ 9, § 13) is retired as a word; the shape it named is the accepted gloss of § 12.
+The study's "Q1 misleads" (`311s` § C) is a verdict on per-read rendering, not on the shape-level
+ruler: the ruler gives one answer per grain whatever read is held, and, like the wild's keys-
+against-columns partition, it partitions addressing machinery, never behaviour, which a property
+declares anyway. What the study confirms of the suspicion: the ruler cannot be applied until a
+grain is picked, and several things sit on the line only per description.
+
+Typed (**[HUMAN]**): a genuine boolean whose absence is a default and undifferentiable is
+inevitable in real tools and no indictment of the model unless it fails to carry what the finest
+available read distinguishes (the probe-shape bar). Alias handling in a tool oracle's argparse
+(`a|b)`) may be fine; punted as minor, with the one consideration that decides it: whether a
+second owner can compose an alias without duplicating the branch or calling its ancestor. The
+persisted-to-live move (§ 13) is a solid observation and, strongly suspected, not the identity
+sitting's: sugar, stdlib, and convention, and a fit target for an abstraction-and-sharing round
+(Dorc has no higher-kinded sharing today: two users can collaborate on two tools, but not on a
+shape of tool that thousands copy without forking; liveness as a promotable concept without
+engine support). Not owed.
+
+The § 13 "consequence" restated: under the ruler a knob reads as a property of its namespace,
+boot, or interface, with the dotted and slashed forms as synonyms and no warrants, where the
+sysctl exercise models it as an individual with spellings and warrants; the exercise's four
+comparisons land the same under either (the namespaces' unique-name and sole-route separate),
+and both descriptions stand.
+
+GOTCHAS gained two forcing functions each re-derived this arc: `a-whole-write-replaces-every-part`
+(the coverage rule dropped with selectors and re-found in § 6) and
+`a-read-folds-absent-into-a-value` (the probe-shape class). Left out as already carried: values
+that change with no write (the never-settled regime); login snapshots and the unreadable live
+side (26, 27); re-keying by rename (9, 21); a read with a side effect (35, 41).
