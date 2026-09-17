@@ -333,3 +333,30 @@ The reasoning round that followed, banked here for the successor:
   status is one (hidden algebra's sense is "an observation you can make of the thing", not a
   person), so the word for the facet concept is open; candidates for the successor: property,
   reading, facet, attribute. Details resume after the rewind.
+
+## § 10 — 2026-09-17: the crosscheck's easy items, acked and edited
+
+Twelve items offered as ack-or-nack; acked ones edited ahistorically into `311j` and the sysctl
+exercise record the same sitting. Edited: the § 2.1 supply modes deleted (the catalog instance
+is supplied by one seat, as the store is); § 1.5's warrants hold while an mKey's mResolution or
+mToken stands, reissue by an actor outside the book inside one span being the horizon
+(**[HUMAN]** gentle ack); § 3.2's first bullet reads a mRoot shape as a mWorld of its own, so
+two mKeys of one mRoot shape compare as siblings and mRoots of two shapes stay UNKNOWN
+(**[HUMAN]** gentlest ack, left to the conductor's judgement after analysis; ~SUSPECT sound);
+§ 3.2's DISJOINT bullet rewritten: the dead empty-leg case gone, siblings under one mParent
+separated by `:guarantees-unique-name` alone, unequal depth separated when the deeper mKey's
+stores are `:sole-route` and a store is never among its own contents (**[HUMAN]** all three
+acked); `:sole-route` re-described as a store's own property, what is identified in me is
+reachable only through me, sited in § 2.2 with which line carries it left unfixed
+(**[HUMAN]**: the seat is a surface question, not the model's); § 2.6's false-friend line names
+loose correspondence. The § 3.5 canary deletion acked. The exercise record follows: Rachel's
+`:sole-route` lines gone, Simon's namespace carries it, Rachel withholds
+`:guarantees-unique-name` on `net/*` (the forwarding alias, `311o`), Simon warrants nsfs inodes
+within a span; its drifted-day render is now licensed by the text.
+
+Typed (**[HUMAN]**): a correspondence weaker than sameness of the whole thing (a part, a view, a
+correlate) does not compose with DISJOINT, so the word `:corresponds` is a hazard at the
+surface, not in the model; attribution of every link is standing implementation law and is not
+restated per relation; nothing in the 311 era mints owed work or todos not directly requested,
+and an item is either addressed inline before "closed" or left to fester. Of `311p`'s remaining
+threads and text items, the rest were punted or declined and are not owed.
