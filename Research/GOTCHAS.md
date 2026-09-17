@@ -58,3 +58,5 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 54. daemon-effects-escape-the-traced-process: "dockerd, containerd, and runc are not children of the `docker` CLI."
 55. read-only-can-still-block: "A buggy systemd locked up when interrogated about service state, with no changes made."
 56. a-trap-is-not-a-transient-marker: "`setenforce 0; work; setenforce 1` with and without `trap` are one do/undo pair."
+57. a-whole-write-replaces-every-part: "`usermod -G wheel alice` without `-a` drops alice from every other group; `nft flush ruleset` deletes the rules another framework added."
+58. a-read-folds-absent-into-a-value: "`systemctl is-active` answers `inactive` for a unit that does not exist; `swapon --show` prints nothing for both `noauto` and no fstab line."
