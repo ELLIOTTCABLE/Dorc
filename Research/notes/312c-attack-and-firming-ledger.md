@@ -95,3 +95,28 @@ Findings (the first four acked in chat, "almost everything", 2026-09-16; the res
   its own sh (never the engine); eviction across a pivot is traversal membership by
   construction (§ 1.7, § 3.3). Nobody edits another's spelling; insertion into a hierarchy is
   by yield. Implied ABI: a lookup receives a resolved catalog beside a relative key.
+
+## § 4 — 2026-09-16: closures edited into 311j (acked)
+
+Three edits, each acked in chat and made ahistorically:
+
+- § 1.6, § 1.4, § 2.1, § 2.3, the relation table: an mKey's mParent instance is a value
+  supplied by exactly one of the bind, the yield, or the primary mScheme's per-shape
+  declaration, as an mKey of one of the mParent's mSort's mSchemes; disagreement refuses,
+  attributed to both; absence is unknown from that level. `:parent-key-of` is gone.
+- § 3.2 and § 2.2: the DISJOINT walk in route terms. At the deepest SAME level A, DISJOINT iff
+  every mKey of both legs carries `:sole-route` and either one leg is empty or the legs' tops
+  share an mScheme with `:guarantees-unique-name` and differing values; an mKey against its own
+  container reads UNKNOWN; legs whose tops are of different mSchemes read UNKNOWN. This
+  recovers survival across a differently-lengthed leg (a knob in a namespace against a knob
+  in the boot) from `:sole-route` read as the route claim § 2.2 defines, with no new
+  declaration, and leaves the strangers case and sibling sub-stores of different sorts
+  UNKNOWN.
+- § 3.2 and § 3.5: SAME at a level by one instance (inherited through a wrapper's sentinel, or
+  one placeholder in a transit-free span) or by equal values under
+  `:guarantees-unique-referent`; attribution names the sentinel or the route claim
+  accordingly, and the owner's warrant only where two lookups returned equal values.
+
+The exercise record's drifted-day render and observations follow the edited model. Next on
+the list: the adversarial review of the 311→311j diff and the exercise (one outside lineage;
+a second on request), then its adjudication here.

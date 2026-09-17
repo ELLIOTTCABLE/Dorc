@@ -221,14 +221,12 @@ blue-drifted day, with the flag:
  4  # ip netns add blue                                     # converged: namespace blue exists
  5  ip netns exec blue sysctl -w net.ipv4.ip_forward=1      # runs: diverged (blue does not forward)
  6  # sysctl -w net.ipv4.conf.all.rp_filter=1               # converged; survives line 5 (rachel: sole-route on net/*; simon: unique-name, sole-route on the namespace)
- 7  ( sysctl_check, inside blue ) \
- 7     || ip netns exec blue sysctl -w kernel.pid_max=4194304   # verify: converged, but past line 5
- 8  ( sysctl_check -w kernel.pid_max=4194304 ) \
- 8     || sysctl -w kernel.pid_max=4194304                  # verify: converged, but past line 5
+ 7  # ip netns exec blue sysctl -w kernel.pid_max=4194304   # converged; survives line 5 (rachel: sole-route on net/*; simon: sole-route on the namespace)
+ 8  # sysctl -w kernel.pid_max=4194304                      # converged; the same cell as line 7
  9  printf 0 >/proc/sys/net/ipv4/ip_forward                # runs: a wall
 10  ( sysctl_check -w net.ipv4.ip_forward=1 ) \
 10     || sysctl -w net.ipv4.ip_forward=1                   # verify: converged, but past line 9
-plan: 2 to run, 3 to verify (3 skipped)
+plan: 2 to run, 1 to verify (5 skipped)
 ```
 
 ## The three seats that can supply a store
@@ -394,12 +392,11 @@ and the wrapper selects, so the read is the mechanism that matters.
   the sort with one indexical key, resolved like any coordinate where the site runs; no role,
   no blessed string, no new rule; the lend keeps entry, inheritance, and perishing, and the two
   derivations of a lent instance are checked for coherence.
-- `obs-identical-instances-need-no-warrant` (~SUSPECT of § 3.2's text; +SURE it must hold) —
-  an inherited mParent is one mKey on both sides, not two equal values from two lookups.
-  § 3.2's "every level's shape carries `:guarantees-unique-referent`" applies to equal values;
-  read strictly over inherited levels, no same-host pair would ever be SAME. Whether the
-  engine shares the placeholder through the wrapper's sentinel or resolves twice and rests on
-  the owner's warrant is an engine choice; both are sound and attributed.
+- `obs-identical-instances-need-no-warrant` (+SURE; `311j` § 3.2) — an inherited mParent is
+  one mKey on both sides, not two equal values from two lookups, so SAME at that level rests
+  on the wrapper's sentinel or the engine's route claim, and `:guarantees-unique-referent` is
+  consulted only where two lookups returned equal values. Whether the engine shares the
+  placeholder or resolves twice as a canary is an engine choice; both are sound and attributed.
 - `obs-the-natural-key-is-the-ambiguous-one` (+SURE) — the path is the primary mScheme; the
   dotted name yields into it by a lookup that must run where the mKey was bound, because a
   knob exists only in the namespace that has its interface.
@@ -407,22 +404,18 @@ and the wrapper selects, so the read is the mechanism that matters.
   declining procfs; `:yields` is never asked. A binder per mScheme (Rachel claiming
   `/proc/sys/*` locators as `sm.ProcSysPath` keys) would let line 9 wall one mCell instead of
   everything; in this book only line 10 is below it, and it collides either way.
-- `obs-same-sort-different-depth-reads-unknown` (+SURE of the walk) — lines 7 and 8 verify on
-  the drifted day because under the shared boot the children are a namespace key and a knob
-  key, two mSchemes of two mSorts; § 3.2 is written for aligned chains and is silent, and the
-  generous reading (each shape carries `:guarantees-unique-name`, so disjoint) is refuted by
-  `one-state-reached-through-two-kinds` itself, since two mSorts over one referent would then
-  read DISJOINT. "A namespace is not its boot" has no seat in `311j`: § 1.2 forbids the engine
-  assuming it and no owner can say it. It recurs wherever one mSort's shapes identify at
-  different depths (`systemctl --user` units in a user's manager beside system units in the
-  boot's). The one sound seat visible is a third lookup warrant, declared by a spelling's owner
-  about their own spelling only: distinct keys never reach one referent, whatever their
-  mParents; it licenses DISJOINT from key inequality with no shared mParent. Sysctl paths, unit
-  names across managers, and dpkg names hold it; paths do not (hardlinks), and the pid
-  spelling refutes a lazy declaration (pid 1 and pid 4821 are distinct keys and one process).
-  Unacked; the guard is honest without it.
+- `obs-a-leg-separates-by-sole-route` (+SURE of the walk; `311j` § 3.2) — line 5's knob sits
+  one store deeper than line 8's (a namespace in the boot, against the boot itself). Rachel's
+  `:sole-route` on `net/*` says every route to line 5's knob enters its namespace; a route to
+  line 8's knob enters no store below the boot; so they are two knobs, and lines 7 and 8
+  survive line 5 on the drifted day, with no declaration beyond the two `:identified-in` and
+  two `:sole-route` lines Rachel and Simon had already written. What stays UNKNOWN, correctly:
+  two sorts' knobs both directly in the boot (the strangers of
+  `one-state-reached-through-two-kinds`), two sub-stores of different sorts under one parent
+  (a knob in a network namespace against one in a UTS namespace), a leaf whose shape lacks
+  `:sole-route` (a view), and a cell against its own container.
 - `obs-the-glue-lines-pay-on-drifted-days` (+SURE) — the floor already reaches the
-  steady-state shape; the two yields buy line 6's survival on a blue-drifted day and one probe
-  on any day. USER_STORY stage 5's lesson, replayed at the identity tier.
+  steady-state shape; the two yields buy lines 6, 7, and 8 their survival on a blue-drifted
+  day and one probe on any day. USER_STORY stage 5's lesson, replayed at the identity tier.
 - `obs-cloned-boots-are-simons-line` ([HUMAN] lean, 2026-09-16) — the model expresses the
   cloned-boot horizon as a stdlib warrant with a name on it, never as a rule of its own.
