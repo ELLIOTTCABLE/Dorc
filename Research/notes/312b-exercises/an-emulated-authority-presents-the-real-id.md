@@ -282,6 +282,110 @@ level, UNKNOWN against everything, never standing for the world's `status.acme.o
 drifted day it verifies instead of surviving. The decline's breadcrumb is the most useful line
 in the plan that morning: the book has been maintaining a record nobody can resolve.
 
+## The four first guesses, and what each is made of
+
+A later sitting proposed four sentences a provider's describer and the stdlib might say, as the
+way to buy back the lines the render above leaves as guards. Each was shaved to what it says
+about objects and relations, checked against `311j` for redundancy, and paired with the same
+pattern elsewhere. All four decompose into existing relations. They stay on the shelf as
+first-guess constructs: where the abstract spellings chafe, recomposing them is how ergonomics
+is bought back, and taking the existing construct can quietly cost usability that is only
+discovered later (**[HUMAN]**, 2026-09-18).
+
+- "My service is entered through these hosts." A lookup from typed route-names to a store's
+  mKey that declines what it does not know: a secondary mScheme's `:yields` with declining arms
+  (§ 2.1). It needs no closure (nothing consumes "these and no others") and is no part of
+  `:sole-route` (many routes into a store all enter it). Pair: `sm.Path` into `sm.Inode`; a
+  namespace label into its nsfs inode. The difference the pair shows: `stat` asks the store's
+  own arbiter and is handed the mKey; a host table is its author reciting. Both are `resolve()`
+  bodies, and the value plane already grades a table below a world read. A host that fronts
+  several unrelated stores by path is several mSchemes over one class of strings, each owned by
+  whoever knows that store, each declining the rest; the endpoint is not a unit of composition.
+- "I am a plain store, a view, or a driver." Three independent declarations, not a category:
+  `:sole-route` (§ 2.2); a closed mPlacement set, as against one pointing outward or undeclared,
+  which is ⊤ (§ 2.4); a finished at-most footprint, as against none, which is a wall (§ 2.5).
+  View and driver are the silent defaults; plain store is what is earned. Pairs: ext4 against
+  an overlay's lower layer; `cp` against `apt-get install` and its postinst; a FUSE mount
+  against a CDN.
+- "My store lives at my registrable domain." `:identified-in`, with a node of somebody else's
+  tree as the mParent, so that a store acquires a common ancestor with stores its describer
+  never heard of. What it asserts of the world: this store belongs to that registration and to
+  no other. The one piece of new content among the four. Pair: a filesystem identified in a
+  boot by device number. The difference: `st_dev` is handed back by the arbiter when the file
+  is touched, a measured edge; "the store at `amazonaws.com.`" is recited. A far end proving
+  which registration it answers for (the names in its certificate) is the candidate
+  measurement; open.
+- The registry tree. A delegation tree: each node's owner alone assigns child labels, so a
+  label path from the root is unique with no two owners coordinating. An ordinary mSort
+  identified in itself level by level, :rootness at the top, its warrants true of
+  registrations. Pairs: nested pid and user namespaces; the OID arcs; ISBN prefixes; address
+  delegation; Dorc's own reverse-DNS names for mSorts, which already lean on this tree for the
+  uniqueness of vocabulary. Dana's file above is this.
+
+## A store-sort under the tree: the revised glue
+
+Built from the shaved parts, with no relation this record had not already used. Petra knows AWS
+and owns nobody's resources: she publishes the store keys once, hangs them under one
+registration, and publishes the lookup that enters them.
+
+```sh
+# dorc-lang/v0.2   petra-aws-stores.oracle.sh
+pt_AwsStore__declaration() { : : primary-scheme "pt.AwsStoreKey" }
+pt_AwsStoreKey__resolve() {                      # "s3", "route53", "ec2/eu-west-1": the services, at the grain their identifiers are scoped
+   case "$1" in
+   s3|route53|ec2/*)  printf 'identified-in sm.ZoneCut:amazonaws.com. warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
+   *)                 return 2 ;;
+   esac
+}
+pt_AwsEndpointUrl__resolve() {                   # a URL someone typed or configured, into the store it enters; what I do not recognise, I decline
+   local host="${1#*://}"; host="${host%%[:/]*}"
+   case "$host" in
+   s3.amazonaws.com|s3.*.amazonaws.com|*.s3.*.amazonaws.com)  printf 'yields pt.AwsStoreKey:s3\n'      >>"${DREP_V1:-/dev/null}" ;;
+   route53.amazonaws.com)                                      printf 'yields pt.AwsStoreKey:route53\n' >>"${DREP_V1:-/dev/null}" ;;
+   ec2.*.amazonaws.com)  local r="${host#ec2.}"
+                         printf 'yields pt.AwsStoreKey:ec2/%s\n' "${r%.amazonaws.com}"                   >>"${DREP_V1:-/dev/null}" ;;
+   *)                    return 2 ;;             # localhost:4566; s3.corp.acme.example; anything else
+   esac
+}
+```
+
+Ravi changes one line: `rv_S3Endpoint__resolve` yields `pt.AwsEndpointUrl:$url` where it yielded
+`sm.Url:$url`. Quinn's remote, configured `provider = AWS`, does the same (another provider's
+remote is a second mScheme of hers, into Hugo's mSort as before). Nobody edits Petra's file, and
+Petra has read nobody's.
+
+The walks that change:
+
+- Line 6 against line 3. Quinn's bucket: her remote's URL, through Petra's lookup to
+  `pt.AwsStoreKey:s3`, stored by Petra's arm in `sm.ZoneCut:amazonaws.com.`, which Dana's lookup
+  resolves to the apex `amazonaws.com.`, in `com.`, in `.`. Carla's record sits in
+  `acme.example.`, in `example.`, in `.`. The tops `com.` and `example.` differ under Dana's
+  `:guarantees-unique-name`; every store below is `:sole-route` by Dana's arm and Petra's.
+  DISJOINT. On a morning only the CNAME has drifted, the sync's converged fact survives line 3.
+- Lines 5 and 7 against line 3. Alice's profile points at `s3.corp.acme.example`; Petra's lookup
+  declines it; the bucket's store is unknown from that level; UNKNOWN; both verify. Line 8's
+  `localhost:4566` likewise. The emulator and the proxy are both names Petra never heard of.
+- Line 7 against line 6 (the C2 guard). One side unknown; UNKNOWN; line 7 guards. Were Alice's
+  profile the public endpoint, both buckets would sit under `pt.AwsStoreKey:s3`, SAME at the
+  store by one yielded mKey and Petra's warrant, and the two bucket mKeys would be tops of two
+  strangers' mSchemes: UNKNOWN still, and rightly, since they are one bucket.
+- Strangers on one provider (no book line). Had Bram identified his hosted zones in
+  `pt.AwsStoreKey:route53`, his records and Quinn's buckets would meet at Petra's registration
+  with tops `route53` and `s3`: one mScheme, `:guarantees-unique-name`, DISJOINT. What strangers
+  share is the thin store-sort, never a resource vocabulary.
+
+Render, a morning only the CNAME has drifted, with the flag:
+
+```
+ 3  flarectl dns create-or-update --zone acme.example …        # runs: diverged (the CNAME points elsewhere)
+ 4  # cli53 rrcreate --replace acme.org 'status 300 A …'       # converged; survives line 3 (dana: two zones, each delegated)
+ 5  ( … ) || aws s3 mb s3://acme-site-assets                   # verify: converged, but past line 3 (petra's lookup does not know s3.corp.acme.example)
+ 6  # rclone sync ./public s3remote:acme-site-assets           # converged; survives line 3 (petra: the s3 store, at amazonaws.com.; dana: another delegation)
+ 7  ( … ) || aws s3 cp ./robots.txt s3://…/robots.txt          # verify: converged, but past line 3 (petra's lookup does not know s3.corp.acme.example)
+ 8  ( … ) || aws --endpoint-url http://localhost:4566 s3 mb …  # verify: converged, but past line 3 (petra's lookup does not know localhost:4566)
+plan: 1 to run, 3 to verify (2 skipped)
+```
+
 ## Cost, briefly
 
 Per distinct name, a few `dig`s up the labels, memoised within an unwalled span; per hosted
@@ -348,3 +452,30 @@ stops depending on whose resolver answers.
 - `obs-served-by-this-box-is-the-companion-case` — an origin whose address is this box's and
   whose port a local listener holds chains under the boot by three lookups, none of them
   Hugo's above; worked in `311t` § 5 (the `robots.txt` sitting), not here.
+- `obs-the-four-guesses-are-existing-relations` (+SURE) — a lookup with declining arms, three
+  declarations a store already has, one `:identified-in` edge, and an ordinary mSort that is a
+  delegation tree. Nothing in the revised glue asked `311j` for a relation it lacks.
+- `obs-the-registration-edge-is-the-one-new-sentence` (+SURE of the strain; --WONDER of the
+  repair) — § 3.2's walk asks `:sole-route` of `amazonaws.com.` for what Petra hung there, and
+  Dana's blanket arm supplies the letter. Read as reachability it is false: the corporate proxy
+  reaches the s3 store through no name in that zone. Petra's arrangement is safe where Hugo's
+  was not because she hangs only stores she recognises and declines the rest, so no one store
+  is ever hung twice by her; what the separation leans on is that a store has one registration
+  as its mParent, by its describer's word, and `311j` has no warrant that says that.
+- `obs-one-operator-several-registrations` (~SUSPECT of frequency) — large operators serve one
+  tenancy under several registrations (a storage host under one, a management host under
+  another). A recited edge absorbs it: the describer picks one mParent and lists the other
+  hosts as routes in her lookup. A measured edge would measure two registrations for one store
+  and need the recital anyway.
+- `obs-the-corporate-route-needs-an-arm-petra-cannot-write` (+SURE) — the organisation's one
+  true sentence ("this URL is a stateless route into the s3 store") is an arm of Petra's lookup
+  that only the organisation can author. A bind names one mScheme, and a lookup that declines
+  falls through to nobody. This is the open composition corner, separate authors composing arms
+  into one lookup, reduced here to one line of one file; punted (**[HUMAN]**, 2026-09-18). The
+  thin store-sort is the same corner seen from the other side: better than a shared resource
+  vocabulary, still less than ideal for collaboration.
+- `obs-one-scheme-one-sort-chafes-at-multi-provider-tools` (~SUSPECT) — Quinn's remote is AWS or
+  not according to its configuration, and one mScheme cannot yield into Petra's mSort on one arm
+  and Hugo's on another; she needs two mSchemes and a bind that chooses between them by a read.
+  Spellable, verbose, and a second place where recomposed first-guess constructs might earn
+  their keep.
