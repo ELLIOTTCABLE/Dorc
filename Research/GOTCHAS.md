@@ -63,3 +63,4 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 59. an-emulated-authority-presents-the-real-id: "`localstack` answers `sts get-caller-identity` with the real account's id; a corporate proxy serves that same account under a vanity domain."
 60. a-tenant-answers-under-the-operators-name: "`abc123.execute-api.us-east-1.amazonaws.com` is a customer's Lambda answering under Amazon's own name and certificate; GitHub moved user pages to `github.io` to stop exactly this."
 61. a-private-name-resolves-only-inside: "`git.corp.internal` resolves on the office VPN and nowhere past the book's `ssh` pivot."
+62. backing-is-not-presenting: "`dd` over `disk.img` rewrites every file of the filesystem loop-mounted from it, yet none of them is a file of the outer filesystem; every file of an overlay is a file of its lower one."
