@@ -777,3 +777,40 @@ can still report falsely, and pasted report lines are a cargo-cult risk. A repor
 for the connection the tool itself verified; a separate probe is another connection. Whether the
 engine could ever measure it (the trace backstop of `plans/077`) is unexamined. It does not by
 itself give cross-provider DISJOINT, which stays with § 11's three candidates.
+
+## § 13 — 2026-09-18: the human's read of the flagship, and the state at the rewind
+
+**[HUMAN]** on § 12: "silence licenses" is fairly damning; it is exactly the pattern where a
+thinner model fully represents the world and collapsing concepts introduces footguns. On balance
+attestation is not dead on arrival and needs more investigation: a stay of execution for a
+system that, by the conductor's own walk, is not strictly necessary. Not an ack, not a weld.
+Noted, not for deep investigation now: consumption of attestation could be made opt-out (a flag
+in the family of `--risk-faultless-skips`). That is dangerous in a specific way: authors in the
+middle of the gradual-enhancement curve might stop authoring early, never writing the descriptors
+that let Dorc elide their work for consumers who did not opt out: a coverage footgun for the
+ecosystem, though it may flatten the curve.
+
+State at the rewind, for a successor (description, not a worklist):
+- Read `311t` whole, §§ 3, 11, 12 first; then the exercise record
+  `312b-exercises/an-emulated-authority-presents-the-real-id.md`, knowing that its survival of
+  line 4 past line 3 skipped mPlacements (§ 8) and that its revised glue predates §§ 10–12; then
+  the litmus paragraph now opening `311j` § 4; GOTCHAS entries from
+  `an-emulated-authority-presents-the-real-id` to `backing-is-not-presenting`.
+- Standing, none ruled: the table of § 11 as the candidate re-cut of 311 (the human's lean, which
+  must first beat "suspiciously tidy" and complexity creep on concrete ops strawmen); `:sole-route`
+  as two ends of one row (acked as a true narrowing); the line around mReferent of § 9 (a single
+  state-holder; the identity-locus concept turned down as a participant); attestation as a gate
+  (§ 12); the phrasing corrections of § 11; the three leaks and the candidate repair of § 8, held
+  and unevaluated.
+- Withdrawn, so nothing rests on them: the equivalence of § 9 (a store's own mPlacement closure as
+  the container half) and its cross-check; "the certificate is the web's `st_dev`"; suffix lists;
+  a stdlib root keyed on minted shape tags; "one referent, two chains" as the reading of the
+  hosted-zone case; the registration edge as `:identified-in`.
+- Tabled by the human: the flag-shaped cross-root clause; the declared canonical; modelling
+  several forms of one thing; UUID and digest roots; cyclic chains; the admin saying "this is my
+  server"; separate authors composing arms into one lookup; abstraction and sharing of oracle
+  shapes; opt-out consumption of attestation; a research round on trust stores, relying-party
+  validation, and DNS's own authority records, not started.
+- **[HUMAN]**, 2026-09-18: a few ledger-only, fully acked changes are to be folded into `311j`
+  when things quiesce; they have not, and `311j` carries only the § 4 litmus from this arc. The
+  copy into the 312 series waits on this arc.
