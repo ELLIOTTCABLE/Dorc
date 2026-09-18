@@ -101,7 +101,7 @@ could read it, status. "Physical" and "social" as in § 1.
   `blog` siblings under `example.com` with unique-name ⇒ DISJOINT ⇒ the health check survives a
   restart; wrong DISJOINT; the CDN/vanity/VPC-endpoint shape. (b) one name, two boxes: a rebuild
   gives a new address; the `until dig @1.1.1.1` line and the later `ssh` resolve through
-  different catalogs (a public resolver against libc plus nscd, GOTCHA 48); one placeholder ⇒
+  different catalogs (a public resolver against libc plus nscd, `a-cached-lookup-answers-for-the-past`); one placeholder ⇒
   SAME ⇒ the ssh lands on the reissued address; wrong SAME. (c) the catalog has other authors:
   TTL expiry, the registrar, certbot's TXT records, a colleague's terraform; no book line touches
   the record, so nothing perishes the resolution; an unperished resolution. (d) the container
@@ -134,7 +134,7 @@ could read it, status. "Physical" and "social" as in § 1.
   terminators is AWS's own answer (`sts`, `get-bucket-location`), which
   `kill-emulator-presents-real-id` shows is forgeable. Kills: keypair-as-root for DISJOINT.
   Catches: the operator's grouping (social, tabled). Status: OPEN under the tabled item.
-- `kill-emulator-presents-real-id` — GOTCHA 59. localstack answers `sts get-caller-identity` with
+- `kill-emulator-presents-real-id` — `an-emulated-authority-presents-the-real-id`. localstack answers `sts get-caller-identity` with
   the real account id; a corporate proxy serves the real account under a vanity domain. Kills:
   operator tokens as physical collision arbiters on their own. Catches: the presented chain
   (localstack fails it; a corp-CA proxy fails root pinning; a vanity front with a public cert
@@ -148,10 +148,10 @@ could read it, status. "Physical" and "social" as in § 1.
   asynchronously; if the deploy dies halfway, 9's plan-time `active` survives 8 and the service
   stays down. Readable by: a GitHub oracle that finds any push-triggered workflow in
   `.github/workflows/` and declares the push's footprint ⊤ (a total wall; arbitrary code runs
-  somewhere). Status: horizon at parity with GOTCHA 53 absent that oracle; with it, a wall.
+  somewhere). Status: horizon at parity with `a-plain-cp-can-trigger-a-watcher` absent that oracle; with it, a wall.
 - `kill-reissued-address-to-a-stranger` — cloud addresses are reissued to other tenants within
   minutes of a delete; a name still pointing at the old address reaches a stranger; ssh's host-key
-  check dies (GOTCHA 43, barely). Kills: any unique-referent on address-shaped keys. Catches:
+  check dies (`a-host-key-identifies-an-endpoint-not-a-machine`, barely). Kills: any unique-referent on address-shaped keys. Catches:
   instance ids carry unique-referent, addresses never; the standup `witness()` re-reads the id.
   Status: posture, no open question.
 - `kill-cross-plane-precondition` — identity says DISJOINT (correctly) while the downstream line's
@@ -244,3 +244,35 @@ The case is `kill-cdn-over-local-origin`. Worked from scratch in chat; the concl
   guard (a drifted `apt-get install` re-checks the later `route53` record at apply): one API call,
   no attention saved for that line. Buying those lines back needs the remote store's sole-route,
   which is the tabled social table. Not this sitting's.
+
+## § 6 — 2026-09-18: the emulated-authority exercise
+
+Record: `312b-exercises/an-emulated-authority-presents-the-real-id.md` (a six-line book: two DNS
+records in two zones through two providers' tools; one bucket reached through a corporate proxy
+by `aws` and through the public endpoint by `rclone`; the same bucket name seeded into localstack
+by flag; a stdlib of Dana's DNS tree and Hugo's URL origin; four tool authors who never met).
+The non-ledger home for how a stdlib handling of DNS and rootness would function. Nothing ruled;
+the model unedited. Findings, all unacked:
+
+- An operator-minted identifier sits BELOW the endpoint it was read through, and the endpoint is
+  a name with no warrants; SAME being "and" over levels, an emulator presenting the real id can
+  never mint SAME, and nothing mints DISJOINT there. The exercised gotcha is carried by
+  arrangement, with no certificate read and no endpoint list. The tempting first draft (a bucket
+  identified in an `sts` account id, route-scoped, warranted) fires the wrong SAME and is
+  `311m`'s parentless warrant.
+- An origin is a name: the one warrant that would separate the localstack line from the sync
+  (`:guarantees-unique-name` on origins) is refuted by the same book's two endpoints for one
+  bucket. The ambient endpoint is a singleton spelling (`self`), the home for the env-selected
+  and binary-read endpoint, one mPlaceholder per mEntryChain.
+- DNS is a genuine store of zones and RRsets and of nothing else. The glue is a delegation check
+  each provider author runs alone (their API's assigned name servers against the parent's
+  delegation): it gave the book's one survival (two zones under two delegations), gives two
+  strangers in one zone their collision, and declines on a hosted zone nobody delegates to.
+  Hanging origins under the tree is the wrong DISJOINT of `kill-route-declared-as-store`.
+- :rootness on `.` is the stdlib's line and its knife is a split horizon across two mVantages.
+- The cost shown: a record's chain ends at a mRoot, a bucket's at the mRoute; one drifted DNS line
+  guards every remote line below it. The vanity pair stays UNKNOWN; the proxy's operator is the
+  one party who could say otherwise.
+- Bears on `311p` thread 6 (the route vouch broader than its justification, unedited in `311j`):
+  two flag-spelled lines naming one literal origin are SAME only by § 1.10's vouch as written;
+  under that thread's narrowing the ambient `self` is the only same-endpoint sameness.
