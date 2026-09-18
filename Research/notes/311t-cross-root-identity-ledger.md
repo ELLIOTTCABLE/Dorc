@@ -333,3 +333,85 @@ tree". In brief:
 Tabled this sitting (**[HUMAN]**): the flag-shaped portion (two complete `:sole-route` chains to
 two roots reading DISJOINT under the flag, as the multi-author no-fault residue), unread and
 set aside so the critical path stays on the registration edge, which the next sitting digs.
+
+## § 8 — 2026-09-18: authority, the registration edge dug, two holes; held unevaluated
+
+Reached in chat, in order:
+
+- The registration edge from first principles. One `stat` gives three things: a token handed
+  back by the store's arbiter; route-invariance of that token; and knowing who answered. The
+  third is free under an arbiter that is queryable, true, and cannot be proxied, which so far
+  means the kernel running the interpreter, asked about filesystem-flavoured objects
+  (**[HUMAN]**: that, and not local-against-remote, is the division). The web has the first two
+  (operator-minted ids) and lacks the third (`an-emulated-authority-presents-the-real-id`). A
+  verified certificate is not a token and not identity; it establishes who answered, and the
+  tool already performs it against the host it selected. RETRACTED: "the certificate is the
+  web's `st_dev`". The division: measure who answered; recite who is entitled to answer; yield
+  only on agreement. What hangs on the tree is an id NAMESPACE under the authority that attests
+  it, never a store by its hosts.
+- **[HUMAN]**: authority is inherent to identity, treated epistemically and not adversarially: an
+  authority is somebody everyone must know because the world said so, and Dorc piggybacks on the
+  world's solution instead of demanding double social work of describers. The conductor's read of
+  `311j` under it: a fully qualified mKey is a chain of deferrals to issuers; the warrants and
+  `:sole-route` are testimony about an issuer's habits; :rootness is an authority needing no
+  introduction; `:corresponds` is an authority over a transition; § 1.10's local-route vouch is
+  the degenerate case of knowing who answered. One constraint falls out, no relation: a lookup
+  that reads a token across a transit establishes who answered, or declines.
+- DNS already models much of this (`NS` and `SOA` for delegation and the zone apex; the `AA` bit
+  and non-recursive queries for authoritative against relayed; DNSSEC for attested delegation;
+  `CAA`, `TLSA`, and challenge `TXT` records for "who is entitled"), and nothing about what sits
+  behind a name. Relying-party validation of OpenID Connect tokens and SPIFFE trust domains are
+  the same measure-recite-agree shape. A research round is likely; not started.
+- **[HUMAN]** nack, accepted: no suffix lists. One step at a time: zone cuts are measured, and
+  below the last cut a describer claims labels arm by arm; what is not written is not in play,
+  which is composition, fail-safety, and the authority stop-point at once. "Registration" as a
+  special level was a DNS trapping. `a-tenant-answers-under-the-operators-name` minted.
+- **[HUMAN]**: a self-hosted service is the same oracle as a provider's; the interesting part is
+  reuse, tabled. A private name failing across a change of mVantage is correct and is a litmus
+  for the whole arc: Dorc as a typecheck of the admin's naming infrastructure.
+  `a-private-name-resolves-only-inside` minted; the litmus paragraph and four gotchas now open
+  `311j` § 4.
+
+The two holes, attacked (conductor; the leaks and the candidate below are HELD, unevaluated by
+the human, recorded so they are not lost):
+
+- One hole, not two: § 3.2's DISJOINT-by-divergence assumes one referent has one chain. True
+  under a single arbiter measuring every level; false wherever a thing sits in two authorities'
+  trees. Murderers: a container named on a data-plane host and a management-plane host; a package
+  reached through a registry host and an API host; a hosted-zone row described as the world's
+  RRset by one tool's describer and as an operator's resource by another's; a registrar's API
+  writing the delegation the tree itself measures; one repository namespace read through two
+  registrations.
+- A conflation found: who answered (attestation), who am I (credentials: an OBSERVER, never an
+  mParent), and which namespace minted this id (the mParent) are three things. Hanging a bucket
+  under the caller's account makes one bucket written by two accounts read DISJOINT;
+  `312b:lead-identify-in-the-narrowest-primary-store` again. Visibility per caller is
+  :observer-dependence.
+- `leak-divergence-bypasses-the-placement-bound`: for a cross-sort pair the second bullet of
+  § 3.2 answers DISJOINT on divergence and § 2.5's bound (overlapping or undeclared mPlacements
+  collide) is never consulted.
+- `leak-writes-do-not-disturb-placements`: § 2.4 says writes to an mPlacement affect K and never
+  that a write to K disturbs K's mPlacements; one direction collides, the other leaks.
+- `leak-the-sort-owner-cannot-place-a-federated-sort`: the owner of a world-wide mSort cannot
+  enumerate who hosts its members; only the describer who glued knows; a yield may supply an
+  mParent instance (§ 1.6) and nothing lets it supply an mPlacement instance.
+- Candidate repair (~SUSPECT, unhunted): for a cross-sort pair, divergence yields DISJOINT only
+  when both mSorts' mPlacement sets are closed and do not overlap, with footprints widened by the
+  written mKey's mPlacements, and a yield allowed to supply the mPlacement instance. Same-sort
+  pairs unchanged.
+- Against the exercise record: its line 4 survived line 3 on identity alone while Dana's mSort
+  declared no mPlacements, which § 2.10 reads as ⊤; the sysctl record had this right. Left until
+  the hole settles.
+
+**[HUMAN]** assertion, attacked and defended: identity-in-DNS against writable world-state is the
+persisted-against-live division of `311q` § 13 (a config file's `[foo]` against the running
+process's own answer; a registrar's row against what resolvers say): two authorities federating
+behind a leaky abstraction to act as one, to be solved once and not by a DNS hack. Defended: a
+hosted-zone row and the world's answer are a persisted form and a live form joined by movers
+(the operator's own propagation; resolvers' TTLs), and the `until dig …` loop is the admin
+writing the mover's wait by hand. It corrects the conductor's "one referent, two chains": they
+are two referents, DISJOINT identity between them is right, and what is missing is interference
+through the move, `312a:relation-requires-is-missing`, which mPlacement only approximates. The
+one strain: under a single arbiter both forms are attested for free; in DNS the live side's "who
+answered" is itself open, so the DNS case is the shared problem plus the no-arbiter constraint,
+and the two compose.

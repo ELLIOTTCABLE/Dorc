@@ -4158,6 +4158,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/hostsim/CLAUDE.md:22 — — the hand-rolled LCG is the only entropy (no `rand`
 - cited: 30X (1)
 
+## lead-identify-in-the-narrowest-primary-store
+- defined: —
+- cited: 03 311t 312b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id (4)
+
 ## 229:leak-category-archive-metadata
 - defined: Research/notes/229-research-reproducible-builds-metadata-inertness.md:816 — [A-rb-archives-2026]: "file ordering, users, groups, numeric
 
@@ -5414,7 +5418,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## relation-requires-is-missing
 - defined: —
-- cited: 311q 312a (2)
+- cited: 311q 311t 312a (3)
 
 ## core/CLAUDE:relational-compare-chokepoint
 - defined: spike/crates/core/CLAUDE.md:66 — — ALL whole-coordinate comparison sits behind
