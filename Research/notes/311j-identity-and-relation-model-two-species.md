@@ -71,7 +71,7 @@ mSort's relations to its immediate neighbours. Several mSchemes into one mSort i
 cooperative case: one owner admitting several ways of writing down what they describe. Several
 mSorts over one world-thing is the ordinary strangers case (two vendors describing one tool;
 two vocabularies reaching one mCell under `/proc/sys`): undetectable to the engine except
-where both owners' mPlacements land on one place, UNSPOKEN at the chokepoint (collides for
+where both owners' mPlacements land on one place, KNOWN_UNSPOKEN at the chokepoint (collides for
 sparing, never transports), and merged only by a human act, one mSort's mSchemes made to
 yield into the other's. An mSort has no mKeys and no `resolve()`, is never valid where an
 mScheme is, and is named only when something is declared about it as a whole; the floor of
@@ -197,7 +197,7 @@ mSort-Bearer (`enabled`, in a symlink's existence; `active`, in pid 1's memory) 
 with two mPlacements and two :observer-dependences, and their mFullyQualifiedKeys differ
 exactly where one survives a reboot and the other does not, with no declaration about
 reboots by anyone. A whole-bearer claim (`disturbs` a service) reaches its mCells by the
-mSort-Bearer's entailment (§2.5) and otherwise collides with them as unspoken. There is no
+mSort-Bearer's entailment (§2.5) and otherwise collides with them as known-unspoken. There is no
 aspect species and no selector position.
 
 ### § 1.10-vantage-route-placeholder-witness
@@ -315,7 +315,7 @@ definition may spare.
 
 As `plans/30U`: disturbing an mKey of K entails disturbing these mKeys of other mSorts;
 arm-incremental, collide-adding; the reached completion record finishes the definition and is
-the sole licensor of sparing across UNSPOKEN pairs (§3.2). Declared by K's owner. About
+the sole licensor of sparing across KNOWN_UNSPOKEN pairs (§3.2). Declared by K's owner. About
 effects, not identity: it carries a package's postinst enabling its unit, a restart killing a
 main process, every cross-mSort consequence no mFullyQualifiedKey expresses. One bound on the
 licensor: "nothing else" means nothing outside K's declared mPlacements and the declared
@@ -386,7 +386,7 @@ its parts' mPlacements.
 | `:sole-route` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | a view declared :sole-route is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
 | `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
-| `:reaches` + finished | many, per matched shape | mSort owner | unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
+| `:reaches` + finished | many, per matched shape | mSort owner | known-unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer is value, coarse is safe) |
@@ -409,11 +409,11 @@ to know where to run `resolve()` calls and which ambient mParents to bind.
 
 ### § 3.2-compare (one chokepoint, four answers)
 
-> Alias analysis's may/must trichotomy, plus `unspoken` for "no generator applies".
+> Alias analysis's may/must trichotomy, plus `known-known-unspoken` for "no generator applies".
 
-compare(x, y) ∈ {same, disjoint, unspoken, unknown}, consumers as today
+compare(x, y) ∈ {same, disjoint, known-unspoken, unknown}, consumers as today
 (`compare-consumer-map`: same → the fact is about this mCell; disjoint → sparing under
-`--risk-faultless-skips`; unknown and unspoken → the safe bottoms). For two
+`--risk-faultless-skips`; unknown and known-unspoken → the safe bottoms). For two
 mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mParents:
 
 - if either mFullyQualifiedKey contains an unknown link, or one terminates at a mRoute the
@@ -437,7 +437,7 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
 - mKeys of different mSorts share no primary mScheme (an mScheme belongs to one mSort), so
   their mFullyQualifiedKeys meet, if at all, only at a common ancestor, and that meeting is not
   a claim about the leaves (a package status file and a unit file share a filesystem). At the
-  leaf the pair is UNSPOKEN; sparing across it rides only the footprint side's finished
+  leaf the pair is KNOWN_UNSPOKEN; sparing across it rides only the footprint side's finished
   definition (§2.5), bounded by mPlacements. Two mSchemes of ONE mSort yielding one
   mKey-Primary is the sole same-referent generator across ways of naming; Dorc equates mKeys
   and never merges mSorts.
@@ -578,7 +578,7 @@ line here is the model element it forces.
   mParent-Catalog instance and declares which; a cache and the file it caches are two
   mParent-Catalogs (§2.1).
 - `one-state-reached-through-two-kinds` — the strangers case: two mSorts over one mCell,
-  minted by authors who never met; UNSPOKEN at the chokepoint, collision only through
+  minted by authors who never met; KNOWN_UNSPOKEN at the chokepoint, collision only through
   overlapping mPlacements, merged only by a human act (§1.2, §3.2).
 
 ### § 4.2-refuted-shapes-and-what-killed-each
@@ -596,7 +596,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
   an mReferent, and strangers mint overlapping vocabularies constantly; reading an mSort as
   the world's category makes two mSorts' disjointness an assumption, which is the
   wrong-DISJOINT knife. Surviving form: an mSort is a declared carrier; cross-mSort pairs are
-  unspoken (§1.2).
+  known-unspoken (§1.2).
 - A DEFAULT mScheme PER mSort. Killed by: it makes an mSort valid where an mScheme belongs, and
   the bind stops saying what the author actually holds. Surviving form: a bind or mark always
   names an mScheme (§1.3).
@@ -659,7 +659,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
   mParent-Catalogs.
 - SHARED ANCESTORS AS COLLISIONS. Killed by the package status file and the unit file sharing
   a filesystem. Surviving form: ancestors are mParents; `compare()` at the divergence (§3.2).
-- mRoute-VERSUS-mRoot AND mRoots-DIFFER AS UNSPOKEN. Killed by the finished definition spending
+- mRoute-VERSUS-mRoot AND mRoots-DIFFER AS KNOWN_UNSPOKEN. Killed by the finished definition spending
   across mWorlds: a mFullyQualifiedKey with fewer measured links compared more decisively
   than the same one complete, and the Package author became the wrong name in the why chain.
   Surviving form: both read UNKNOWN; partial measurement never widens (§3.2).

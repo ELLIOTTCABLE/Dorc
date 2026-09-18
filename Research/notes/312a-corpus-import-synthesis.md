@@ -60,7 +60,7 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
   `271:rul-emission-selector-on-mark`, `271:rul-selector-disjointness-dialect-scoped`,
   `271:rul-kind-or-selector-is-a-behaviour-choice`, and the `30J` acks of 2026-08-19 and 08-23.
   Selectors become mAspectSorts; the mSort-versus-selector behaviour menu collapses to one
-  behaviour (unspoken, then collide unless the owner's finished definition speaks); `30J`'s P2
+  behaviour (known-unspoken, then collide unless the owner's finished definition speaks); `30J`'s P2
   gate on strangers has no counterpart (~SUSPECT it wants a seat in assignment, not a rule).
 - `reack-name-floor-default` — `300:rul-reference-entity-name-floor` (ruled; human-corrected
   2026-08-15), dissolved toward default-safe; an mSort with no `resolve()` gets no same-mSort sparing.
@@ -163,8 +163,8 @@ the import; `26Ob:ack-two-contracts-outside-versus-unanalyzable` supplies the fi
   `26Ob:ack-guards-reach-elisions-witness`) — SAME from measured mTokens re-read at standup is
   witnessed; SAME or DISJOINT from a warrant alone is declared; the survival tier was always
   declared. Every card carries this bit.
-- `fnd-unspoken-and-unknown-repair-differently` (+SURE of the text; ~SUSPECT of the intent) —
-  unspoken can be lifted by the footprint side's finished definition; unknown only by the
+- `fnd-known-unspoken-and-unknown-repair-differently` (+SURE of the text; ~SUSPECT of the intent) —
+  known-unspoken can be lifted by the footprint side's finished definition; unknown only by the
   missing warrant. Which bottoms have a nearest person differs, and § 3.2 of 311 should say
   whether the asymmetry is deliberate.
 - `fnd-admin-seat-is-owed` (+SURE) — by typed ruling (§ 3) and by every exercise so far
@@ -182,7 +182,7 @@ the import; `26Ob:ack-two-contracts-outside-versus-unanalyzable` supplies the fi
   `/var/lib/dpkg/status`: a file-grained claim over-walls, a package-grained claim is precise.
   Same tool, two claim granularities, two outcomes.
 - `fnd-vacuous-bottom-and-paranoid-authors` — a detached body once read as clean because
-  vacuous-bottom looked like "nothing upstream mutated this" (`16P` DP-8): unspoken must never
+  vacuous-bottom looked like "nothing upstream mutated this" (`16P` DP-8): known-unspoken must never
   read as safe-to-spare. An executed ufw strawman's own defensive sanitiser produced a false
   converged verdict (`151` X4): even a careful author needs a mechanical net, which bears on
   which seats get one.
@@ -208,4 +208,3 @@ tripping a watcher).
 Thirty-four harvested cases were added to `Research/GOTCHAS.md` as items 23–56, pending the
 human's chop into a frontier file and an extras file. Recommended frontier cut: 23–33, 39, 40
 (each forced a ruling or a crisis and recurs across rounds); the rest to extras.
-

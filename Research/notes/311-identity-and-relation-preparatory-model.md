@@ -42,7 +42,7 @@ recursively, a mFullyQualifiedKey, until a mRoot, a declared global mKey-Primary
 the last resort. State has mPlacements, many-valued, which feed collisions only. Two things
 `compare()` by walking their mFullyQualifiedKeys to the first divergence inside a shared mKey-PrimaryStore
 and asking what the `:identified-in` edge into that mKey-PrimaryStore licenses for inequality; never diverging is sameness;
-different mRoots are unspoken (no generator applies to the pair). Every positive answer rests
+different mRoots are known-unspoken (no generator applies to the pair). Every positive answer rests
 on an explicitly typed,
 long-named, absent-by-default warrant owned by one author; silence is unknown. Transitions
 are of three species, each perishing a different fact. The context slot survives as a
@@ -177,7 +177,7 @@ declaration about reboots by anyone. Three independent findings forced this fold
 mKey-PrimaryStore per identity-bearing thing, per-aspect mPlacement, per-aspect
 :observer-dependence. The whole-mKey claim (`disturbs Service:nginx`) reaches its
 mAspectSorts by the owner's effect entailment (§2.4), and absent that entailment collides
-with them as unspoken, which is the safe bottom. The selector position in the coordinate
+with them as known-unspoken, which is the safe bottom. The selector position in the coordinate
 and the selector dialect (`277` §3, `30J`) have no counterpart in this model.
 
 ### § 1.9-vantage-route-placeholder-witness
@@ -287,7 +287,7 @@ mode).
 
 Unchanged from `plans/30U`: disturbing an mKey of K entails disturbing these mKeys of
 other mSorts; arm-incremental, collide-adding; the reached completion record finishes the
-definition and is the sole licensor of sparing across UNSPOKEN mKeys (§3.2). Declared by
+definition and is the sole licensor of sparing across KNOWN_UNSPOKEN mKeys (§3.2). Declared by
 K's owner. This relation is about effects, not identity, and it is what carries a package's
 postinst enabling its unit, a restart killing a main process, and every other cross-mSort
 consequence that no mFullyQualifiedKey expresses.
@@ -328,7 +328,7 @@ mAspectSort A borrows mSort K's `:named-in` edge: A's mKeys are addressed by K's
 K's mKey-CatalogStore, and A has its own `resolve()`, mKey-PrimaryStore, mPlacements, and
 :observer-dependence. Declared by A's owner, who is normally K's owner. Consumer: mResolution
 of A's mKeys via K's §2.1. The whole-mKey relationship between K:x and A:x is carried by
-K's :reaches (§2.4); without it they are unspoken and collide, which is safe.
+K's :reaches (§2.4); without it they are known-unspoken and collide, which is safe.
 
 ### § 2.8-hierarchical-catalog-store (versus flat; traversal structure)
 
@@ -364,7 +364,7 @@ composite is the union of its parts' mPlacements.
 | :named-in | one per mSort, mKey-CatalogStore per mKey | mSort owner (mKey-CatalogStore: fixed / site / ambient) | no mKey-CatalogStore ⇒ mRoute only | mResolution | :guarantees-unique-referent (same from equality) · :guarantees-unique-name (disjoint from inequality) |
 | :identified-in (the `resolve()`) | one per mSort | mSort owner | none ⇒ mKey-Primary = mKey-Natural | identity | :guarantees-unique-referent · :guarantees-unique-name · :sole-route · :rootness |
 | :lives-in | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision | none positive; omission is the silent channel |
-| :reaches + finished | many, per arm | mSort owner | unspoken ⇒ collide | cross-mRoot sparing | the premature finished record |
+| :reaches + finished | many, per arm | mSort owner | known-unspoken ⇒ collide | cross-mRoot sparing | the premature finished record |
 | :corresponds | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | :observer-independence | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | :named-like | one per mAspectSort | aspect owner | none | mResolution reuse | none |
@@ -387,17 +387,17 @@ and which ambient mKey-CatalogStores to bind.
 ### § 3.2-compare (one chokepoint, four answers)
 
 > Alias analysis's trichotomy: `same` is must-alias, `disjoint` is must-not-alias, `unknown`
-> is may-alias, and `unspoken` is may-alias with the extra fact that no generator applies to
+> is may-alias, and `known-known-unspoken` is may-alias with the extra fact that no generator applies to
 > the pair at all (no shared mKey-PrimaryStore, no mCorrespondence, no finished definition). It becomes
 > decidable only when one arrives, and it is named for silence so that it never reads as
 > separation. `24F`'s `MayAlias` was this vocabulary before the corpus renamed it.
 
-compare(x, y) ∈ {same, disjoint, unspoken, unknown}, consumers exactly as today
+compare(x, y) ∈ {same, disjoint, known-unspoken, unknown}, consumers exactly as today
 (`compare-consumer-map`: same → the fact is about this mCell; disjoint → sparing under
-`--risk-faultless-skips`; unknown and unspoken → the safe bottoms). For two mFullyQualifiedKeys:
+`--risk-faultless-skips`; unknown and known-unspoken → the safe bottoms). For two mFullyQualifiedKeys:
 
 - walk from the mRoots. If the mRoots differ, or one side is a mRoute and the other is not, the
-  answer is UNSPOKEN, and sparing across the pair rides only the footprint side's finished
+  answer is KNOWN_UNSPOKEN, and sparing across the pair rides only the footprint side's finished
   definition (§2.4), as `30U` has it.
 - at the first level where the two mKeys differ inside a shared mKey-PrimaryStore S: DISJOINT iff S's
   `:identified-in` edge for that mSort carries :guarantees-unique-name and every level above it carries
@@ -688,7 +688,7 @@ The r31-prep sittings this document synthesizes, in order:
   synthesis; mined for paths not taken, and the source of §6.2's last nine entries.
 - `Research/GOTCHAS.md` — minted 2026-09-08 from these sittings; twenty-two items at this
   writing; referenced by slug.
-- Vocabulary minted here and used ahistorically above: `unspoken` (née `unrelated`, `30U` §7
+- Vocabulary minted here and used ahistorically above: `known-known-unspoken` (née `unrelated`, `30U` §7
   and `compare-consumer-map`).
 
 Human leans typed across the sittings and treated here as leans, never rulings: default safe

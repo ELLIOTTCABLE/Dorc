@@ -88,9 +88,9 @@ stands; what it must not refute is the per-cell store.
 ### 3. `thr-identifying-store-makes-siblings-collide` — 311l §1 · 311n 4; +SURE on the text
 
 §2.4 makes the identifying store one of a sort's mPlacements; §2.5 lets a finished definition
-spare an UNSPOKEN pair only where no mPlacements overlap. Two cells of one bearer (`mode` and
+spare an KNOWN_UNSPOKEN pair only where no mPlacements overlap. Two cells of one bearer (`mode` and
 `contents` of one file; `enabled` and `active` of one unit) are different sorts under §1.9, so
-UNSPOKEN, and share the bearer as identifying placement: overlap, collide. `chmod` walls every
+KNOWN_UNSPOKEN, and share the bearer as identifying placement: overlap, collide. `chmod` walls every
 contents fact of the same file; `systemctl enable` walls `is-active`; and nobody has a sentence
 against it, not even Tessa, who owns both cells. Repair, both passes: the identifying store
 answers identity and leaves §2.5's overlap test; placements answer interference; a write to a
@@ -116,10 +116,10 @@ namespace. Thread 1's rule then reads the parent's declaration at each level. `3
 
 `echo 0 | sudo tee /proc/sys/net/ipv4/ip_forward`: the path is argv, so 30T's redirect binder
 never sees it; Tessa's path lookup stats it (procfs regular files stat), and tee's footprint is a
-File cell. Line 10's knob is another sort, so UNSPOKEN, and sparing rides File's finished
+File cell. Line 10's knob is another sort, so KNOWN_UNSPOKEN, and sparing rides File's finished
 definition, which the stdlib must ship or every drifted `cp` walls the book, bounded by §2.5's
 placements: File's (a procfs device) and KernelParam's (a namespace) are different sorts and
-never overlap by any reading. Spared; the host stays dark. Two consequences. §1.2's "UNSPOKEN
+never overlap by any reading. Spared; the host stays dark. Two consequences. §1.2's "KNOWN_UNSPOKEN
 at the chokepoint (collides for sparing)" holds only until the footprint side finishes its
 definition; this is 30U's knife, a finished definition false for one shape (writing a procfs
 file is not "nothing else"), attributed to Tessa, and the userspace mitigation is 30T's

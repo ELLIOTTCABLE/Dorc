@@ -44,7 +44,7 @@ licence is the measured `contents` mCell of that inode. Walk. The chmod oracle's
 names the `mode` mCell (the part-level footprint `312b` § 8 held). § 1.9: `mode` and
 `contents` are two mSorts, each `:identified-in` the bearer `I@F` with a singleton mKey. § 3.2
 fourth bullet: different mSorts share no primary mScheme; the pair meets at `I@F`; at the leaf
-it is UNSPOKEN; sparing rides the footprint side's finished definition, bounded by mPlacements
+it is KNOWN_UNSPOKEN; sparing rides the footprint side's finished definition, bounded by mPlacements
 (§ 2.5). § 2.4: "exactly one mPlacement of an mSort sits on its identifying mFullyQualifiedKey
 — the mParent-Store", and mPlacements are "mKeys of other mSorts", so a mCell's identifying
 mPlacement is its bearer `I@F`, and both cells carry it. § 2.5's bound `compare()`s the two
@@ -62,7 +62,7 @@ placements that would partition them are dominated by the one placement they sha
 
 The other reading: "sits on its identifying mFullyQualifiedKey" as "the placement *is* the
 mCell's own mFullyQualifiedKey". Under it sibling cells' identifying placements differ (two
-sorts, unspoken, no overlap) and the finding vanishes — but the reading contradicts "mKeys of
+sorts, known-unspoken, no overlap) and the finding vanishes — but the reading contradicts "mKeys of
 other mSorts" in the same paragraph, and it makes the identifying placement of a file its own
 identity rather than its filesystem, which is not what `dd` over a loop image (§ 2.4's example)
 needs. Whichever is meant, the text should say it.
@@ -94,7 +94,7 @@ ssh db2 'dpkg -s postgresql-16 >/dev/null || apt-get install -y postgresql-16'  
 
 § 1.10: across a transit the mRoute is never vouched; every mKey in lines 3–5 terminates in
 its own mRoute. § 3.2 first bullet: two mRoutes across a transit read UNKNOWN. Line 3 runs on
-a drifted day; line 4 (same machine, different mSorts — would be UNSPOKEN plus a finished
+a drifted day; line 4 (same machine, different mSorts — would be KNOWN_UNSPOKEN plus a finished
 definition within one mWorld) and line 5 (a different machine) both collide, both guard. The
 only door out is a stdlib mRoot (`sm.BootId` with `:rootness`), and every honest such token is
 one of the two horizons (`identity-tokens-have-clone-horizons`,
@@ -177,7 +177,7 @@ and "a second mRoot is a second mWorld". § 2.2: `:rootness` is "equivalent to
 `:guarantees-unique-name`. If "two mRoots" means two *keys* of one root shape, then boot X
 against boot Y never separates, a root shape's unique-name is dead weight, and `:rootness`
 buys SAME only — a narrowing against `311` § 1.4's "globally comparable" and `311` § 3.2's
-unspoken-plus-finished (which at least spared). § 4.2's kill for the old rule (a partial key
+known-unspoken-plus-finished (which at least spared). § 4.2's kill for the old rule (a partial key
 compared more decisively than the complete one) is answered by UNKNOWN for mRoute-versus-mRoot
 and for two root *shapes*; two measured, warranted keys of one root shape is not the widening
 case. If "two mRoots" means two root shapes, say so; if keys, the cross-machine half of

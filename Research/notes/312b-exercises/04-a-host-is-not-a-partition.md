@@ -44,7 +44,7 @@ S3, partial measurement: as S2, but alpha's probe did not run the instance `reso
 #   … → machine-alpha → ROUTE(alpha)
 ```
 
-§ 3.2: one side a mRoute, the other not: UNSPOKEN. Sparing rides the footprint side's finished
+§ 3.2: one side a mRoute, the other not: KNOWN_UNSPOKEN. Sparing rides the footprint side's finished
 definition; Package's is written; alpha's guard is spared. Fewer measured links produced more
 license than S2's complete chain under the honest reading.
 
@@ -84,8 +84,8 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-Primar
 
 ## Observations
 
-- `obs-unspoken-is-sort-level-only` — § 3.2's route-versus-root and roots-differ clauses read
-  unspoken; both must read unknown. Unspoken means two vocabularies that never met inside one
+- `obs-known-unspoken-is-sort-level-only` — § 3.2's route-versus-root and roots-differ clauses read
+  known-unspoken; both must read unknown. Unspoken means two vocabularies that never met inside one
   mWorld, which is what 30U's finished definition was written to spend; a mRoute or a second mRoot
   is a second mWorld, and no finished definition speaks to it.
 - `obs-partial-measurement-must-never-widen` — S3 against S2: a chain with fewer measured links

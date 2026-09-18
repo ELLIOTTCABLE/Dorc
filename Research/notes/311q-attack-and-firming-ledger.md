@@ -217,11 +217,11 @@ against ctime collides by SAME placement with no speech, and contents against mt
 owner's `:reaches`, as under B. The per-facet finished definitions are one table expanded, each
 bounded by placements as every 30U sentence is. No store exclusion and no owner-aware rule. The
 collapse rests on one reading of § 2.5 to be pinned: SAME or undeclared placements collide,
-UNSPOKEN placements do not; the same reading stage 5 needs, and the same reading where `311p`
+KNOWN_UNSPOKEN placements do not; the same reading stage 5 needs, and the same reading where `311p`
 thread 5's `tee /proc/sys` knife lives.
 
 Two residues where B's default was safer, both the strangers case wearing a facet: a stranger's
-facet of my bearer placed in the stranger's own vocabulary is UNSPOKEN against my placements
+facet of my bearer placed in the stranger's own vocabulary is KNOWN_UNSPOKEN against my placements
 and my finished definition spares it (B collides cross-owner attributes by default, blunter and
 safer); and whole-bearer coverage under A rests on the facet author declaring named-by. Human
 (**[HUMAN]**): everything read acked; on strangers' facets, unconvinced the category warrants a
@@ -625,7 +625,7 @@ override. Attribution's question is what to do so the override is no longer need
 Re-analysed from the durable stance (chat): the durable repair is nearly always a declining arm
 keyed on a shape, or a relation between two vocabularies that nobody wrote, and both are one hop
 from the admin if the why-chain cites the shape at which a sentence was applied (store type,
-version, context) and, for a survival across an unspoken pair, the absent relation with its two
+version, context) and, for a survival across an known-unspoken pair, the absent relation with its two
 candidate owners ranked by reach. **[HUMAN]**: both refinements obvious and not worth recording,
 which is the pattern holding: narratives carry full reasoning chains with every load-bearing
 input, and a trusted negative-existential claim ("nothing else") owes a full report of what the
@@ -635,7 +635,7 @@ and how do I make right cheaper" is the same chain read the other way, and the c
 sometimes where the admin is the highest-leverage buyer of value, sometimes where someone bought
 value badly. Gloss (**[HUMAN]**, not for now): realistic `dorc why` for a trusted "nothing else"
 likely looks like a bisect over installed oracles and tools, which the engine cannot decide
-provably when it places unspokens against unknowns; iterative debugging, containers, or
+provably when it places known-unspokens against unknowns; iterative debugging, containers, or
 host-native watchers, all lint- and tooling-shaped aid, out of scope and explicitly not a
 repair. Closed: pain 8 shares the shape of the whole project, which is all a model can be asked
 to do.

@@ -79,11 +79,11 @@ mount, the host key):
 From `312b-exercises/04` (`a-host-is-not-a-partition`: one NFS export under two targets,
 with and without a declared root):
 
-- `hole-route-versus-root-reads-unspoken` (+SURE of the text) — `311` § 3.2 makes a
-  mRoute-terminated chain against a rooted one unspoken, which a finished definition can spend;
+- `hole-route-versus-root-reads-known-unspoken` (+SURE of the text) — `311` § 3.2 makes a
+  mRoute-terminated chain against a rooted one known-unspoken, which a finished definition can spend;
   a chain with fewer measured links compares more decisively than the same chain complete.
   Latent today (no roots declared); live on the first true root.
-- `hole-different-roots-read-unspoken` (+SURE of the text) — two mRoots are two mWorlds; the
+- `hole-different-roots-read-known-unspoken` (+SURE of the text) — two mRoots are two mWorlds; the
   finished definition is a within-mWorld sentence; spending it across mWorlds names the wrong
   author in the why chain. Both holes reintroduce `a-host-is-not-a-partition` against
   `26Ob:ack-cross-world-wall-is-the-floor` (TYPED), which 311 otherwise reproduces exactly at
@@ -198,7 +198,7 @@ Findings from the rabbit hole under `312b-exercises/04`, superseding in part the
   --WONDER: part of `:reaches` derives from store overlap (a package's placement includes its
   unit file), not all of it (postinst enabling a unit touches boot state no file lists).
 - `fnd-delete-the-route-and-root-clauses` — 311 § 3.2's route-versus-root and roots-differ
-  clauses read unspoken, spendable by a within-mWorld finished definition; both must read
+  clauses read known-unspoken, spendable by a within-mWorld finished definition; both must read
   unknown, and with per-mKey parents cross-mWorld comparison runs through the ordinary mKey
   walk. `26Ob:ack-cross-world-wall-is-the-floor` is reproduced at the no-root floor. The
   clause was buying pivot-book cross-mWorld sparing; that value returns through the menu
@@ -361,7 +361,7 @@ attacked with sh. Nothing ruled.
 
 - Held: one parent per mCell (a lazy bind is saved by declaring both placements); the engine's
   route claim under `cd`, ρ writes, `ln -sfn`, unmodeled retargets, and `&` (each by an existing
-  rule); strangers naming one mKey-PrimaryStore by different mSorts (unspoken, precision only); whole-to-part
+  rule); strangers naming one mKey-PrimaryStore by different mSorts (known-unspoken, precision only); whole-to-part
   `:reaches` against `enable --now` (a part-level footprint names what it touches).
 - `fnd-schemes-belong-to-one-sort` — the ABC case: a naming system declared under two mSorts is
   the shadowing refusal; reuse is delegation inside a `resolve()` body (sanctioned composition,

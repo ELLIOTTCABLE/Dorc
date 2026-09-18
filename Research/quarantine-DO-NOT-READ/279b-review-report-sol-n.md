@@ -18,7 +18,7 @@ work as settled enough to gate a rebuild.
 
 ## Findings, most severe first
 
-### 279b-fd1 — Backing disclosure is consumed as an unspoken completeness claim
+### 279b-fd1 — Backing disclosure is consumed as an known-unspoken completeness claim
 
 **Severity: BLOCKER · Confidence: HIGH**
 

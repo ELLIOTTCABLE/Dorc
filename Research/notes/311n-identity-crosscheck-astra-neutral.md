@@ -83,7 +83,7 @@ I did not establish an ordinary ops situation that is wholly unrepresentable. Fi
 
    Under §1.9, these are different mCell mSorts under one file mBearer. [311j §2.4](/C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:297) makes their mParent-Store an mPlacement of each. Both therefore have the same file among their mandatory placements.
 
-   At the leaves, §3.2 makes the cross-mSort pair UNSPOKEN. A finished definition cannot rescue the separation: §2.5 requires a collision when the declared mPlacements overlap. Adding narrower placements does not remove the mandatory shared file.
+   At the leaves, §3.2 makes the cross-mSort pair KNOWN_UNSPOKEN. A finished definition cannot rescue the separation: §2.5 requires a collision when the declared mPlacements overlap. Adding narrower placements does not remove the mandatory shared file.
 
    The predecessor did not require that identifying parent to be a placement; its §2.3 also explicitly allowed the measured backing to refine the declared read footprint. The new restriction defeats the stated distinction between identifying something and determining which writes affect it.
 
