@@ -558,7 +558,17 @@ convention for a key identified in another sort's key.
 
 ## § 16 — 2026-09-17: the pains acked; the difference witness raised and killed; one engine clause
 
-The ten product-surface pains (chat), with the human's positions (**[HUMAN]**): 1 and 6, eternal,
+The ten product-surface pains, as listed in chat: 1 the value is in the knife (survival rides
+"and that is all", the one sentence that also skips a stranger's line); 2 two authors describing
+one thing cannot be told they are; 3 no cheap safe way to say "these are different things"; 4
+write-the-file-then-restart gets the least help (no persisted-to-live mover); 5 values that
+change with nothing written; 6 every wrapper rides one "I touch nothing else"; 7 the model's
+concepts do not match how tools present themselves, and the curve past the in-book check is a
+cliff of concepts; 8 attribution is right but repair is not cheap; 9 adding a library can make a
+book less safe (monotonicity holds at the guard tier, fails at the survival tier); 10 changing
+your mind means duplicating.
+
+The human's positions (**[HUMAN]**): 1 and 6, eternal,
 the project's core tradeoff; 2, no worse in the property corner than elsewhere (conductor's read,
 gently taken); 4, possibly understated and potentially significant, not ruled into the model; 5,
 an easy horizon; 7, the next big piece of work rather than intractable, since the model need not
@@ -598,3 +608,14 @@ cases); no reads, no predicts, no new speech; the exposure is a failed write con
 conductor's correction stands that stock may-alias kills are conservative, so it is a small
 kill-rule refinement in the engine, not the model's; carried to implementation as a clause on
 `an-kill`, no section.
+
+Typed (**[HUMAN]**), correcting the reading of pain 8: "least effort" in attribution is not
+"fastest", which is degenerately always the admin who just hit the error; Dorc is not a
+firefighting tool (statelessness and re-probing make it dangerous to lean on during a fire), and
+the admin's fire-time repair is a hand edit, a hack, or an override. Least effort means the
+fewest hops to the fix landing permanently with the most-leveraged party for whom it is least
+effort and most durable, never a party who will correctly say "not my problem" and bounce it.
+Overrides are a necessity of uneven-skill collaboration but are not what attribution is about;
+the requirement they impose is that sh resolution reigns supreme for all analysis, so that no
+analytic outcome exists that a well-placed shim in the book, in sh load order, cannot
+override. Attribution's question is what to do so the override is no longer needed.
