@@ -273,7 +273,13 @@ the license-contamination map. Cross-references are `docID:slug`.
   frozen) · **`notes/312b`** (the epistemics-and-assignment sittings ledger; records in
   `312b-exercises/`) · **`notes/311j`** (the two-species model, mSort and mScheme — the
   CURRENT cut of 311, ahistorical, replaces 311 when stable) · **`notes/311q`** (the
-  attack-and-firming ledger over 311j; successors append at its tail). **`notes/311`** is the preparatory identity-and-relation MODEL those
+  attack-and-firming ledger over 311j; successors append at its tail) · the identity
+  crosscheck over 311j: reports `notes/311l`–`311o` (Fable neutral/adversarial, Astra
+  neutral/adversarial) and **`notes/311p`** (the adjudication; seven threads) · the
+  ops-state traits mapping: `notes/311r` (the clean-context worksheet, forty-seven reads; a
+  resource, never a goal) and `notes/311s` (its synthesis: thirteen behavioural clusters) ·
+  **`notes/311t`** (the cross-root identity ledger: the web, DNS, and sparing across roots;
+  § 3 is the working set of killers). **`notes/311`** is the preparatory identity-and-relation MODEL those
   sittings synthesized (§1–§3 the model; §6 the forcing functions and dead ends; nothing
   ruled). The epistemics-and-assignment phase that follows it: **`notes/312a`** (the corpus
   import, FROZEN: which typed rulings the model modifies, the prior seat assignments to
