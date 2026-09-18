@@ -61,3 +61,4 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 57. a-whole-write-replaces-every-part: "`usermod -G wheel alice` without `-a` drops alice from every other group; `nft flush ruleset` deletes the rules another framework added."
 58. a-read-folds-absent-into-a-value: "`systemctl is-active` answers `inactive` for a unit that does not exist; `swapon --show` prints nothing for both `noauto` and no fstab line."
 59. an-emulated-authority-presents-the-real-id: "`localstack` answers `sts get-caller-identity` with the real account's id; a corporate proxy serves that same account under a vanity domain."
+60. a-tenant-answers-under-the-operators-name: "`abc123.execute-api.us-east-1.amazonaws.com` is a customer's Lambda answering under Amazon's own name and certificate; GitHub moved user pages to `github.io` to stop exactly this."
