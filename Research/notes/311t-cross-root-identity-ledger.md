@@ -606,3 +606,93 @@ not a kill. The conductor's attack; § 9's first two exploration findings are WI
   holders; two tools for two tasks. What survives of the human's (B) is the specific defects:
   § 2.4's over-claim, the identifying store inside the sibling overlap test (`311p` thread 3),
   and the three held leaks of § 8. The conductor's lean of § 9 is gone.
+
+## § 11 — 2026-09-18: phrasing corrected; the table by meaning and by end; attestation opened
+
+Every item in this section needs deep investigation; nothing is ruled. A successor starts here.
+
+**Phrasing** (**[HUMAN]** gentle nacks, accepted):
+- "Hands out the address" and "mints" pierce referential agnosticism, a hole fallen into three
+  times. What Dorc can hold: T's mKey means something only relative to P, with an authored claim
+  standing behind the "only". The gloss made "I mint from scratch" sound free. It is not: "I
+  re-present nobody's things" is cheap only where an arbiter labels the INSTANCE (mount types).
+  A `kubectl` endpoint may be a virtual cluster whose objects are a host cluster's; a registry URL
+  a proxy; a database endpoint a pooler; `DOCKER_HOST` a socket proxy. The mSort's describer
+  cannot know per instance; it needs a read or whoever stood the instance up. On the web it is
+  what "who answered" tries to establish.
+- "One mParent by design" holds per mKey. The arc showed a THING may have several mKeys under
+  several mParents; the near closure below is the claim that this one does not.
+- "Holds" and "lives in" pierce too. `311j` § 2.4 already has the clean form: "K's state is
+  affected by writes to these mKeys". **[HUMAN]** offered it as a union: T resolves in P, or T can
+  be surprisingly overwritten by others' writes to P. Conductor's tightening (phrasing only): the
+  first member is already the walk's (an mKey against its own ancestor collides), so an
+  mPlacement need only name things NOT on T's chain whose writes can change T (a uid's passwd
+  file; a loop filesystem's image; a database's write-ahead file). Read so, `311p` thread 3
+  disappears by definition.
+- `backing-is-not-presenting` minted in GOTCHAS.
+
+**The table** (rows named by what is true in the world; the two ends kept apart):
+
+| what is true in the world | end | who can know it | positive entry | closure (the knife) | in `311j` today |
+|---|---|---|---|---|---|
+| T's mKey means something only relative to P | T's | T's describer | "this thing is also k' relative to Q" | "it has no other home" | entry: `:identified-in`, `:corresponds`; closure: ABSENT |
+| | P's | P's describer, or whoever stood the instance up | "mKeys relative to me are Q's things, thus" | "I re-present nobody's things" | entry: `:corresponds`; closure: `:sole-route` |
+| a write to P can change T, P not on T's chain | T's | T's describer | "writes to P can change me" | "nothing else off my chain can" | `:lives-in` and its sentinel |
+| | P's | P's describer | "writing me also changes T" | "writing me changes nothing else" | `:reaches` and the finished record |
+| answers about T are A's word (OPEN) | T's | T's describer | "answers about me are vouched by A" | "by nobody else" | nothing |
+| | A's | A's holder | "I also vouch for that" | "what I vouch for is this alone" | nothing |
+
+Observations from building it:
+- `:lives-in` and `:reaches` are ONE fact spoken from two ends (a package says "installing me
+  disturbs that unit"; a loop filesystem says "writes to that image change me"); which end speaks
+  depends on who knows.
+- The second row already demands consent from both ends: sparing an unspoken pair needs the
+  writer's "nothing else" bounded by the fact's closed mPlacements (§ 2.5). The split of
+  `:sole-route` brings the first row to the shape the second has had all along.
+- The first row's positive entry is itself a knife today (`:corresponds` licenses SAME); a
+  collide-only form ("may also be k' under Q") does not exist; silence already reads UNKNOWN, so
+  it would matter only for contradicting someone else's closure.
+- **[HUMAN]**: the rhyme is useful and is not proof. Of course an abstract model can be made to
+  rhyme; the interesting question is which cells SHOULD be missing, because the world modelled
+  has a global truth. The strawman being fought: "ops is chaotic and has some insane identity
+  relationships; the whole table demands population to describe the world safely and with the
+  epistemics right, without artificial backflips by the users doing the modelling."
+- **[HUMAN]** current lean: re-cut 311 ENTIRELY according to this table; make it the mental model;
+  give the pairs rhyming names; establish clear rules for how they compose and when both ends
+  must be present to license something. First it must defend itself against "suspiciously tidy"
+  and complexity creep: it must be MORE CORRECT than the current model on concrete ops strawmen
+  with reasonably behaving, non-omniscient users.
+- **[HUMAN]** on the closure's blast radius: nearly free and can be SPELLED. The model may keep one
+  set of entities with two spellings at different levels of claim, as with emitting entries while
+  omitting "and that's all", where the latter is both the opt-in to danger and the sentinel. The
+  line between model and UX is fuzzy; not a nack of either option.
+- Both-legs, defined: `compare()` walks down to the deepest level A where two chains are the same
+  thing; each mKey's remaining chain below A is its leg; the qualifying warrant is needed on every
+  store of BOTH legs, so a second door (always a store on the other leg) blocks DISJOINT by its
+  own silence.
+
+**Attestation, opened.** The conductor first held that "who answered" is a discipline on lookups
+and the registration an ordinary `:identified-in` mParent. The hidden assumption: the answerer is
+always an ancestor of what it answers for. Against it:
+- apt: the mKey `nginx` means something relative to an archive's suite; its bytes sit on any
+  mirror; what makes an answer trustworthy is the archive's SIGNING KEY, on nobody's chain and
+  not a DNS name. Hung under the host's registration the namespace is wrong twice: two mirrors of
+  one archive read DISJOINT; two archives on one proxy host are not separated. The signer gets
+  both right and a mirror cannot forge it.
+- Plural attestors are everyday (one operator's ids vouched under two or three registrations).
+  Identification is single-valued per mKey; attestation is not. Forcing attestation into the
+  chain made describers pick "the" registration, which is the two-registrations hole of § 8: a
+  symptom of the conflation.
+- Against: not strictly needed (one mParent plus an alias list in the lookup expresses it); a
+  third pair of closures; buying cross-provider DISJOINT from it needs a new generator (closed,
+  pairwise-disjoint attestor sets), which smells of the killed store-sets and might work here
+  only because attestors compare in vocabularies the world forces (registrations; key
+  fingerprints). `312b:lead-warrantless-tokens-are-witness-only` pulls the other way.
+- **[HUMAN]**: attestation living in global namespaces through cryptographic reality plausibly
+  suits a different kind of comparison (ack-ish). The `312b` rule likely concerns REPLACING a
+  licence with attestation; what is being built may be a new CONSTRAINT that strictly buys
+  collisions over the same model without it, the two standing relationships covering what `312b`
+  feared. Unsure.
+- Three candidate ways to license cross-provider separation, none chosen: the chain with a
+  registration abused as an mParent; attestor-set disjointness as a new generator; the tabled
+  flag-shaped clause of § 7.
