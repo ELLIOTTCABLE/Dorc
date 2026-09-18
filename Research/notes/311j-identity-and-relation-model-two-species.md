@@ -409,7 +409,7 @@ to know where to run `resolve()` calls and which ambient mParents to bind.
 
 ### § 3.2-compare (one chokepoint, four answers)
 
-> Alias analysis's may/must trichotomy, plus `known-known-unspoken` for "no generator applies".
+> Alias analysis's may/must trichotomy, plus `known-unspoken` for "no generator applies".
 
 compare(x, y) ∈ {same, disjoint, known-unspoken, unknown}, consumers as today
 (`compare-consumer-map`: same → the fact is about this mCell; disjoint → sparing under

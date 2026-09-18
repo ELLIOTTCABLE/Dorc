@@ -387,7 +387,7 @@ and which ambient mKey-CatalogStores to bind.
 ### § 3.2-compare (one chokepoint, four answers)
 
 > Alias analysis's trichotomy: `same` is must-alias, `disjoint` is must-not-alias, `unknown`
-> is may-alias, and `known-known-unspoken` is may-alias with the extra fact that no generator applies to
+> is may-alias, and `known-unspoken` is may-alias with the extra fact that no generator applies to
 > the pair at all (no shared mKey-PrimaryStore, no mCorrespondence, no finished definition). It becomes
 > decidable only when one arrives, and it is named for silence so that it never reads as
 > separation. `24F`'s `MayAlias` was this vocabulary before the corpus renamed it.
@@ -688,7 +688,7 @@ The r31-prep sittings this document synthesizes, in order:
   synthesis; mined for paths not taken, and the source of §6.2's last nine entries.
 - `Research/GOTCHAS.md` — minted 2026-09-08 from these sittings; twenty-two items at this
   writing; referenced by slug.
-- Vocabulary minted here and used ahistorically above: `known-known-unspoken` (née `unrelated`, `30U` §7
+- Vocabulary minted here and used ahistorically above: `known-unspoken` (née `unrelated`, `30U` §7
   and `compare-consumer-map`).
 
 Human leans typed across the sittings and treated here as leans, never rulings: default safe
