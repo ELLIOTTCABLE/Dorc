@@ -11,7 +11,7 @@
 > Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
 > authors, stated fully enough that the concretization step (names, spellings, user-facing
 > usage — the `312` series) can be built on it without re-modeling. §1–§3 are the MODEL; §4 is
-> the forcing-function inventory.
+> the litmus and the forcing-function inventory.
 >
 > Scope discipline: abstract objects and relations only. No syntax, no strawman sh, no UX, no
 > gradual-enhancement ladder, no implementation.
@@ -520,6 +520,25 @@ and nothing else; there is no selector position, no selector dialect, no aspect 
 authored region predicate, no engine-side name floor, no engine table that generates `same`.
 
 ## § 4-forcing-functions
+
+The model is held to four situations. `compare()` owes each its answer under the true sentences
+of the parties who can know, owes UNKNOWN wherever nobody has spoken, and may never give the
+opposite answer while every sentence in play is true: a wrong SAME or DISJOINT with no false
+sentence behind it refutes the cut. Owed separation must be reachable with speech linear in the
+number of describers, none naming another. The first two are the classic pair, under an arbiter
+that is queryable, true, and cannot be proxied (the kernel running the interpreter, asked about
+filesystem-flavoured objects), which hands back the same mTokens by whatever route; the second
+two are the same two shapes where no such arbiter exists, and who answered must be established
+before any mToken counts.
+
+- `not-every-transit-changes-the-referent` — owes SAME: sameness must inherit through a wrapper
+  whose describer never heard of dpkg.
+- `same-name-different-referent-per-viewpoint` — owes DISJOINT, never SAME: identical argv; the
+  separating mParent is ambient, lent by the wrapper.
+- `an-emulated-authority-presents-the-real-id` — the first shape with no arbiter: equal mTokens
+  are not SAME, and unequal routes are not DISJOINT, until who answered is known.
+- `a-private-name-resolves-only-inside` — the second shape with no arbiter: owes UNKNOWN until
+  someone speaks, and an explanation that names the mVantage.
 
 ### § 4.1-slugged-gotchas-and-what-each-forces
 
