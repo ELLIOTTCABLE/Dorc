@@ -415,3 +415,147 @@ through the move, `312a:relation-requires-is-missing`, which mPlacement only app
 one strain: under a single arbiter both forms are attested for free; in DNS the live side's "who
 answered" is itself open, so the DNS case is the shared problem plus the no-arbiter constraint,
 and the two compose.
+
+## § 9 — 2026-09-18: several forms of one thing; the line around mReferent; `:sole-route` split and attacked
+
+**Whether to model the class at all** (argued both ways at the human's direction, each given its
+best world). The class: several co-existing things that can disagree, joined by a step that
+copies one into another (a reload, a boot, a login, a TTL). Not incarnations, which succeed one
+another and never coexist. For: it is the dominant structure of ops state (`311s`, six
+clusters); the commoner bug is the MISSING mover; the knowledge is per tool and amortises; only
+a stateless prober can heal a lost mover, and only where the live side is readable; it is the
+remote story's interference half. Against: correctness is already met (distinct things, DISJOINT
+identity, a write to the file perishes what reads it); sh spells the changed-guard and Half-B
+lifts it; a vouch on a read that is not really live (`nginx -T`, `sshd -T`) is a new knife;
+movers are a bottomless per-daemon pit. The honest delta between the two best worlds is small:
+elision of movers where the live side is readable, a vocabulary for "this verdict read the wrong
+form", and the remote interference half, against one relation, describer burden, and that knife.
+Conductor's lean (~SUSPECT): not now; additive later PROVIDED forms stay distinct things,
+DISJOINT, related only by mPlacement; a merged-forms cell would make the later edge a re-keying.
+
+Framing asked and answered: "two things, same identity, disagree, neither singularly
+authoritative" is in-class, the general case. How authority flows is a property of the edges
+(one-way: a config file into a daemon; two-way: a live ruleset saved back to its file; none: two
+persisted spellings someone must keep agreeing). The fleet of cloned hosts is the boundary and
+already lives in the per-host dimension.
+
+**[HUMAN]** framing, this sitting:
+- The concept was named "identity locus" for discussion: a referent may have zero or more; the
+  case where Dorc holds one identity across a class of things the book treats as one. It is NOT
+  minted as a model participant and must never appear as a tagged term. If the corner later
+  proves most valuable with a mandated source of truth, "replica" or "fork" would lead instead.
+- "Things the admin thinks of as one thing" is a bridge too far as a scope driver: intent is
+  unknowable and the model will PUSH how users model. Scope is decided by the world-behaviour
+  Dorc models or encourages. Much of "two things disagree and can then agree" is ordinary sh
+  flow and tool behaviour; the only interest at this stage is whether the abstract model needs
+  a concept of referent separate from the current one.
+- Nack: not modelling it does not make it unmodelable. No hole has been shown; the discussion is
+  ergonomics and fidelity, as it would be for any arbitrary thing lifted into the model.
+- A sibling conductor's note: the relation is maybe always directional, but the direction is not
+  fixed (Redis persists memory to disk, the inverse of the config case). Pointers: NMDA
+  (RFC 8342) and earlier YANG datastore models; drift categories (intended, remnant); abstract
+  interpretation as the closest semantic model (referents as summary locations; propagation as
+  weak and strong updates).
+- Aid is fully set aside: identity at the 311 stage is exclusively `compare()`, SAME and
+  DISJOINT, collaborative mutually-unaware speech, and collision or sparing.
+- The outcome may simply be a very precise line around mReferent and mKey; the concern is
+  whether that line is a horizon beyond which meaningful behaviour is unmodelable.
+
+**The synthesis** (conductor; the human acked most of it, nothing ruled):
+- Identity loci are expressible today: two things that can disagree are two state-holders, two
+  mCells with their own mPlacements, DISJOINT identity between them correct; a mover is a book
+  line with a footprint on one and a backing in the other; propagation with no book line is
+  `:reaches` from the writer's footprint; direction never enters identity.
+- The hosted-zone murderer of § 8 was a describer conflating two loci and identifying an
+  operator's row in the world's tree: a false sentence with an author, not honest strangers.
+  Keyed in the store its state lives in, it collides with the other tool's key as strangers
+  under one store.
+- Proposed line: an mReferent is a single state-holder. If two reads through one mKey can
+  disagree with no write between them, the mKey names a summary, not an mReferent.
+  `:guarantees-unique-referent` is claimable only of single state-holders, hence never of a
+  bearer-with-loci as a whole, with or without an authoritative locus; authority among loci is a
+  fact about movers, which identity does not read. The test is operational and referentially
+  agnostic. It creates no horizon (~SUSPECT): what lies outside "one referent" is "several", which
+  the model holds; what stays outside is state with no read at all, the verdict plane's horizon.
+  Consequence owed: § 1.9 gives an mCell its own mPlacement (`311p` thread 2).
+- The concrete question left: the genuine case is ONE state-holder reachable through two honest
+  id systems hung under two ancestors (a data-plane name and a management-plane id; one namespace
+  under two registrations). Chains diverge high, DISJOINT follows, and whether a false sentence
+  lies behind it depends on what `:sole-route` says and who says it.
+
+**`:sole-route` as two sentences** (**[HUMAN]**: acked as a true narrowing of the problem-space,
+no logical hole seen, not ruled; attack before any second item is called necessary):
+- The two halves are distinguished by which kind of second chain a party can enumerate: a second
+  CONTAINER presenting the same contents (known to whoever knows the container), and a second
+  HOME for the children themselves (known to whoever knows the children). On any edge one half
+  is usually trivial, and which one varies (inode in filesystem: the container half is live;
+  namespace in registration: the children half), which is why every single-seat version fails.
+- Single seats, tried: child-only makes a blanket inode claim cover both legs of an overlay pair
+  and one file reads DISJOINT from itself (a correctness failure). Parent-only (the current text)
+  leaves the two-registrations case with Dana's blanket arm as the only sentence to call false,
+  about a thing she never heard of. Forbidding foreign children under a store kills the
+  registration edge.
+- The both-legs rule does most of the work: a second door is always a second store on the OTHER
+  leg, and a view stays silent there, so the pair reads UNKNOWN whatever the viewed store's
+  describer believes. Hence the container half need only say "I am not a view of something
+  else" (self-knowledge), never "nothing views me" (unknowable). FUSE re-exports, encrypted
+  views, bind mounts, `/proc/<pid>/root`, and a btrfs file keyed by subvolume against the same
+  file keyed by device all land UNKNOWN or SAME; the last is saved by the rule that the tops
+  share an mScheme, which is quietly load-bearing.
+- The children half cannot be weakened the same way: the two-home cases are symmetric. It is a
+  genuine negative existential about the world, the same species as `disturbs nothing-else`.
+- What the children half is: `:guarantees-unique-name` lifted one level. The model has
+  injectivity of mKeys within an mParent and nothing for injectivity of the mParent assignment:
+  one thing, one home. § 4.2's pid case gets the right seat: a process has a key in every
+  ancestor pid namespace, the half is false, the pid describer declines.
+- It blocks nothing owed: siblings consult neither half; two files in two filesystems need "not
+  a view" per type and "inodes live only in their filesystem", true by construction; the sysctl
+  record's unequal-depth case NEEDS the children half ("a `net/*` knob lives only in its
+  namespace"), which puts Rachel's line back beside Simon's; two providers need one sentence
+  each about their own namespace. Movable children are true at each instant and the move is a
+  routing write; things multi-homed by design (a process in several cgroup-v1 hierarchies; a
+  clustered filesystem under two boots) decline, UNKNOWN, correct.
+- Worries: the world adds doors (an operator opening a second registration for one namespace:
+  safe while nobody hangs anything there, a wrong DISJOINT attributable to both hangers once
+  someone does; **[HUMAN]**: chronology, MH2-flavoured, mildly out of scope for now); cargo-cult
+  of a value-unlocking negative existential; whether this is two relations or one `:sole-route`
+  needing consent from both ends of the edge, a native describer giving both at once.
+- **[HUMAN]**: if a negative existential is necessary it gets boxed in, attacked, and reduced,
+  and that is to be talked through before any tuning. A long name alone is neither enough nor
+  interesting; the work is the "rare" part, usually MOVING RESPONSIBILITY OUT of the negative
+  existential, which is gradual-enhancement work, spelling-adjacent but not only spelling. It is
+  one of the best motivations for keeping two things in the model that look similar: one carries
+  the negative existential and is made much rarer by a second thing that is epistemically pure.
+
+**Home-injectivity against mPlacements** (**[HUMAN]** side-eye, not a nack: "my two homes" spoken
+by a describer is an old pattern; are these truly two tools, or is this (A) a finding about the
+parent's statement plus (B) a finding that mPlacements are poorly designed and should be changed,
+not supplemented). The conductor's exploration, no lean adopted:
+- The container half is equivalent to the store's OWN closed mPlacement set: a store whose state
+  lives only in itself or its backing device is thereby not a view, and a view either lists what
+  it views (overlap, collide) or stays silent (⊤, collide). The sentence already exists; § 3.2
+  reads a separately seated warrant instead of it.
+- Over CONTAINMENT edges (the mParent holds the child's state) the children half is equivalent to
+  the child mSort's closed mPlacement set: a thing in two containers has two mPlacements. With
+  each mSort closing its own mPlacements one level, the seats of `311p` thread 4 and of Dana's
+  blanket arm both fall out. Under this reading `311p` thread 3 (the identifying store inside the
+  sibling overlap test) and the three held leaks of § 8 are all defects of how mPlacements are
+  consulted, and the human's (B) holds for containment.
+- The registration edge is NOT containment: a registration neither holds nor mints what is hung
+  under it, so § 2.4's "exactly one mPlacement sits on the identifying chain" is false of it, and
+  closing mPlacements says nothing about one registration against another. Exclusivity of
+  ATTESTATION has no home in mPlacements. That residue is about a kind of edge `311j` does not
+  distinguish from containment, more than about the parent's statement.
+- Against changing mPlacements to carry identity: the sentinel's blast radius doubles; identity
+  would read a relation `311j` deliberately reserves for interference; siblings still need the
+  walk; it smells of the killed store-sets shape (§ 4.2), though a DISJOINT-only use escapes that
+  kill (same sets, different roles reads "overlap", which is safe); and reading "writes to these
+  mKeys" as including a stranger's aliases makes the sentinel unsayable. Against supplementing:
+  two knife sentences about one world-fact that can disagree, with no rule for what disagreement
+  means; the container half is a plain duplicate.
+- A non-merging cousin: keep identity's own warrant, and cross-check it against mPlacement
+  closure (a store claimed `:sole-route` whose mPlacements are not closed at itself is a static
+  contradiction, refused, attributed) rather than deriving one from the other.
+- The positive, epistemically pure twin exists for both: an mPlacement entry ("my state also
+  lives there") and, for attestation, "also attested under that registration" are collide-adding
+  and safe from partial knowledge; only the closures are knives.
