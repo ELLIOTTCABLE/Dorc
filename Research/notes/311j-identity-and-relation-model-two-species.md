@@ -521,24 +521,28 @@ authored region predicate, no engine-side name floor, no engine table that gener
 
 ## § 4-forcing-functions
 
-The model is held to four situations. `compare()` owes each its answer under the true sentences
-of the parties who can know, owes UNKNOWN wherever nobody has spoken, and may never give the
-opposite answer while every sentence in play is true: a wrong SAME or DISJOINT with no false
-sentence behind it refutes the cut. Owed separation must be reachable with speech linear in the
-number of describers, none naming another. The first two are the classic pair, under an arbiter
-that is queryable, true, and cannot be proxied (the kernel running the interpreter, asked about
-filesystem-flavoured objects), which hands back the same mTokens by whatever route; the second
-two are the same two shapes where no such arbiter exists, and who answered must be established
-before any mToken counts.
+A cut of the model is tested against four situations (from `Research/GOTCHAS.md`; more live
+there). Half of what is owed is the answer: whether two lines of a book touch one piece of the
+world or two. The true answer must be reachable once those who can know have spoken; where
+nobody has, the cut must decline to say; and it may never reach the false answer while
+everything said is true, since a wrong answer with no false statement behind it refutes the
+cut. The other half is who must say what. Every statement the answer rests on is something one
+party can know about their own tool, store, or machine, said by that party alone, describing
+nothing they cannot see and naming no other author, so that the speech needed grows with the
+authors and never with the pairs of them. A cut that is right only by asking someone to know
+what they cannot has failed as surely as one that is wrong. The first two situations are the
+classic pair, under a kernel that can be asked, answers truly, and cannot be impersonated; the
+second two are the same shapes where nothing plays that part, and who answered must be settled
+before what they said counts.
 
-- `not-every-transit-changes-the-referent` — owes SAME: sameness must inherit through a wrapper
-  whose describer never heard of dpkg.
-- `same-name-different-referent-per-viewpoint` — owes DISJOINT, never SAME: identical argv; the
-  separating mParent is ambient, lent by the wrapper.
-- `an-emulated-authority-presents-the-real-id` — the first shape with no arbiter: equal mTokens
-  are not SAME, and unequal routes are not DISJOINT, until who answered is known.
-- `a-private-name-resolves-only-inside` — the second shape with no arbiter: owes UNKNOWN until
-  someone speaks, and an explanation that names the mVantage.
+- `not-every-transit-changes-the-referent` — owes "one thing": the sameness must carry through
+  a wrapper whose author never heard of dpkg.
+- `same-name-different-referent-per-viewpoint` — owes "two things", never one: identical argv;
+  what separates them is ambient, set by the wrapper.
+- `an-emulated-authority-presents-the-real-id` — the first shape with nothing to ask: equal ids
+  do not make one thing, and different addresses do not make two, until who answered is known.
+- `a-private-name-resolves-only-inside` — the second shape with nothing to ask: owes "cannot
+  say" until someone speaks, and an explanation naming where the name was resolved from.
 
 ### § 4.1-slugged-gotchas-and-what-each-forces
 
