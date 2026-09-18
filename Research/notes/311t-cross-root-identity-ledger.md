@@ -276,3 +276,60 @@ the model unedited. Findings, all unacked:
 - Bears on `311p` thread 6 (the route vouch broader than its justification, unedited in `311j`):
   two flag-spelled lines naming one literal origin are SAME only by § 1.10's vouch as written;
   under that thread's narrowing the ambient `self` is the only same-endpoint sameness.
+
+## § 7 — 2026-09-18: the unacceptable cost, the four first guesses, and their decomposition
+
+**[HUMAN]**: § 6's cost (every remote-touching line walls every other) is unacceptable: half of
+ops is remote, and the attention product is dead under it. No mechanism or finding is ruled
+against. Narrow repair by explicit statement (an override making an unenforceable but reasonable
+claim about a remote service) is available; the worry is the general default case most users
+meet most days. The flag stays on the table only for what it already names: faultless skips,
+where the issue is epistemology and no speaker can be blamed or expected to fix it because the
+fix is each naming the other, M×N across the ecosystem.
+
+The conductor's first guess at the default case was four sentences: a provider's describer says
+which hosts enter their service, what kind of thing it is (plain store, view, driver), and that
+their store lives at their registrable domain; the stdlib says DNS registrations form a tree.
+Walked in three stages at the human's direction (shave to objects and relations under
+referential agnosticism and test for redundancy; find the pattern elsewhere; rebuild the DNS
+story from the shaved parts). Detail and the revised strawman (Petra's store keys under Dana's
+tree) are in the exercise record, sections "The four first guesses" and "A store-sort under the
+tree". In brief:
+
+- All four decompose into existing `311j` relations: a secondary mScheme's `:yields` with
+  declining arms; `:sole-route`, a closed mPlacement set, and a finished footprint as three
+  independent declarations (view and driver are the silent defaults; plain store is earned);
+  one `:identified-in` edge; an ordinary mSort that is a delegation tree.
+- The one piece of new content is the registration edge: "this store belongs to that
+  registration and to no other". Its local twin is a filesystem in a boot by device number,
+  where the arbiter hands the edge back (`st_dev`); on the web it is recited. The certificate
+  is re-sited: a candidate MEASUREMENT of this edge (the far end proving which registration it
+  answers for), the web's `st_dev`, not hardening of the host lookup. **[HUMAN]**: unconvinced it
+  is optional, it may be the foundation; the tension is that people talk in DNS names and the
+  path-is-not-an-id hole must not be re-dug. Open.
+- Two things are recited on the web that the filesystem measures: the name-to-store lookup and
+  the store-to-registration edge.
+- **[HUMAN]** nack, accepted: strangers on one provider are not stuck. The endpoint is not a
+  unit of composition: a host fronting several stores is several mSchemes over one class of
+  strings, each declining the rest, and strangers' resource mSorts identify into a thin
+  store-sort's mKeys and separate there as siblings. **[HUMAN]** nit: a thin store-sort is still
+  less than ideal for collaboration; it is the open composition corner (separate authors
+  composing arms into one lookup; fall through to another author's handler on decline; hard to
+  spell in sh), reduced to a small corner and punted.
+- **[HUMAN]**: the four first guesses are not dead. A first guess that decomposes into the
+  abstract model is what to reach for when the abstract model chafes; recomposing
+  technically-reachable constructs into first-guess ones is how ergonomics is re-bought. Default
+  lean: take the existing construct, remembering that such minimalism can quietly hurt usability
+  in ways found only later.
+- **[HUMAN]** acks: routers and proxies need speech (what one does, translation or mutation, is
+  unknowable without an author, as with pivots and wrappers); a self-compiled or self-hosted
+  copy of a known shape is the abstraction-and-sharing question, for later.
+- Strains the revised strawman exposed (exercise observations): § 3.2's walk asks `:sole-route`
+  of a registration for the store hung there, and `311j` has no warrant for what is actually
+  leaned on (a store has one registration, by its describer's word); one operator serves one
+  tenancy under several registrations; an organisation's proxy needs an arm in a lookup only
+  someone else owns; a multi-provider tool chafes at one mScheme, one mSort.
+
+Tabled this sitting (**[HUMAN]**): the flag-shaped portion (two complete `:sole-route` chains to
+two roots reading DISJOINT under the flag, as the multi-author no-fault residue), unread and
+set aside so the critical path stays on the registration edge, which the next sitting digs.
