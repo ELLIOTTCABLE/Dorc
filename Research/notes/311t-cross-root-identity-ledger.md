@@ -559,3 +559,50 @@ not supplemented). The conductor's exploration, no lean adopted:
 - The positive, epistemically pure twin exists for both: an mPlacement entry ("my state also
   lives there") and, for attestation, "also attested under that registration" are collide-adding
   and safe from partial knowledge; only the closures are knives.
+
+## § 10 — 2026-09-18: the equivalence of § 9 attacked, and withdrawn
+
+**[HUMAN]**: "the store's own mPlacement is `:sole-route`" is attractive and suspiciously tidy; is
+the mPlacement of a store doing two jobs (a placement named for another reason that must not
+ruin the privilege; a wish to disclaim the privilege without a second store to name; a store's
+selfness and physicality conflated with how it holds children)? Expect a comparison of upsides,
+not a kill. The conductor's attack; § 9's first two exploration findings are WITHDRAWN as stated:
+
+- The two are different statements that coincide for plain disk filesystems. The mPlacement of a
+  store says where the store's own state lives: arity the store, about the store as an object.
+  The container half says whether the things identified in a store coincide with things
+  identified in another: arity the store with respect to one child mSort.
+- Closure true, yet a view: an overlay's state does live in its upper and lower directories, and
+  each of its files is also a file of the lower filesystem; mPlacement overlap does not catch it
+  at directory grain, since a footprint on a file and an mPlacement naming a directory are
+  siblings, DISJOINT. Likewise a pid namespace (its state in the boot; its pids also the parent
+  namespace's), an NSS view of LDAP, a chroot, an organisation's consolidated view of accounts.
+- Outward mPlacement, yet a compartment: a loop-mounted filesystem, an LVM volume, a qcow2 image
+  must name their backing (`dd` over it rewrites every inner fact) and are compartments for their
+  children. § 9's "closed at itself or its backing device" smuggled in the distinction between
+  BACKING (my state is bytes inside one foreign child) and VIEWING (my children are foreign
+  children), a role mPlacements do not have.
+- Cannot close, yet a compartment: a database whose describer cannot enumerate tablespaces, WAL,
+  and replicas still knows its rows are reachable only through it; tying the two forfeits the
+  sparing of others around its writes.
+- Arity: a git repository is one object with one mPlacement, a compartment for its refs and not
+  for its content-addressed commits.
+- The equivalence is rescuable only by giving mPlacement entries a role (backs me; I present its
+  contents), which relocates the container half rather than removing it. As a role on entries:
+  names the viewed store when known, natural pure twin; strains on arity, puts identity's data in
+  the interference relation, gives the closure a third consumer. As its own statement: right
+  arity, sayable without knowing where one's bytes live, keeps the consumers apart, silence
+  disables; duplicates when the viewed store is also an mPlacement, admits a contradiction.
+- WITHDRAWN too: the cross-check "`:sole-route` claimed but mPlacements not closed at itself is a
+  contradiction"; it would refuse every loop-mounted filesystem.
+- The sibling claim fails the same way: a process's state lives in one place and it is identified
+  in two pid namespaces, so the child's mPlacement closure is true and it has two homes. The axis
+  is MINTING against HOLDING. `:identified-in` has always been about who mints the address
+  (`311j` § 1.6: a user namespace for a uid, whose state sits in a passwd file); mPlacements are
+  about who holds the state; they coincide for disks and come apart for namespaces, kernel and
+  web alike. The registration edge is one more minter that holds nothing, not a special kind.
+  § 2.4's "exactly one mPlacement sits on the identifying chain" over-claims even locally.
+- Standing: both halves of the split are statements about minters; mPlacements are about
+  holders; two tools for two tasks. What survives of the human's (B) is the specific defects:
+  § 2.4's over-claim, the identifying store inside the sibling overlap test (`311p` thread 3),
+  and the three held leaks of § 8. The conductor's lean of § 9 is gone.
