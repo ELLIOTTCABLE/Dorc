@@ -619,3 +619,23 @@ Overrides are a necessity of uneven-skill collaboration but are not what attribu
 the requirement they impose is that sh resolution reigns supreme for all analysis, so that no
 analytic outcome exists that a well-placed shim in the book, in sh load order, cannot
 override. Attribution's question is what to do so the override is no longer needed.
+
+## § 17 — 2026-09-17: pain 8 closed
+
+Re-analysed from the durable stance (chat): the durable repair is nearly always a declining arm
+keyed on a shape, or a relation between two vocabularies that nobody wrote, and both are one hop
+from the admin if the why-chain cites the shape at which a sentence was applied (store type,
+version, context) and, for a survival across an unspoken pair, the absent relation with its two
+candidate owners ranked by reach. **[HUMAN]**: both refinements obvious and not worth recording,
+which is the pattern holding: narratives carry full reasoning chains with every load-bearing
+input, and a trusted negative-existential claim ("nothing else") owes a full report of what the
+set turned out to contain in a world its author could not see. The other half of `dorc why`,
+under-sold: it is a gradual-enhancement tool as much as a failure tool; "why did it go right,
+and how do I make right cheaper" is the same chain read the other way, and the critical link is
+sometimes where the admin is the highest-leverage buyer of value, sometimes where someone bought
+value badly. Gloss (**[HUMAN]**, not for now): realistic `dorc why` for a trusted "nothing else"
+likely looks like a bisect over installed oracles and tools, which the engine cannot decide
+provably when it places unspokens against unknowns; iterative debugging, containers, or
+host-native watchers, all lint- and tooling-shaped aid, out of scope and explicitly not a
+repair. Closed: pain 8 shares the shape of the whole project, which is all a model can be asked
+to do.
