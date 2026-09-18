@@ -60,3 +60,4 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 56. a-trap-is-not-a-transient-marker: "`setenforce 0; work; setenforce 1` with and without `trap` are one do/undo pair."
 57. a-whole-write-replaces-every-part: "`usermod -G wheel alice` without `-a` drops alice from every other group; `nft flush ruleset` deletes the rules another framework added."
 58. a-read-folds-absent-into-a-value: "`systemctl is-active` answers `inactive` for a unit that does not exist; `swapon --show` prints nothing for both `noauto` and no fstab line."
+59. an-emulated-authority-presents-the-real-id: "`localstack` answers `sts get-caller-identity` with the real account's id; a corporate proxy serves that same account under a vanity domain."
