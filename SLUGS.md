@@ -4164,7 +4164,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lead-warrantless-tokens-are-witness-only
 - defined: —
-- cited: 03 311t 312b (3)
+- cited: 03 311t 312b (4)
 
 ## 229:leak-category-archive-metadata
 - defined: Research/notes/229-research-reproducible-builds-metadata-inertness.md:816 — [A-rb-archives-2026]: "file ordering, users, groups, numeric

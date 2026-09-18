@@ -696,3 +696,84 @@ always an ancestor of what it answers for. Against it:
 - Three candidate ways to license cross-provider separation, none chosen: the chain with a
   registration abused as an mParent; attestor-set disjointness as a new generator; the tabled
   flag-shaped clause of § 7.
+
+## § 12 — 2026-09-18: the attestation flagship (conductor; unacked; built at the human's direction)
+
+Task (**[HUMAN]**): give "attestation is not needed" its best foundation with every tool of § 11,
+then build a counterexample that HURTS without a separate, non-store, non-identifying, n-ary edge;
+abstract the pain fully, then lower it to several ops cases.
+
+**The world without it, at its best.** Who-answered lives inside lookup bodies as ordinary sh: the
+body checks that the tool verified TLS against a host its describer recites, or that a signing
+key's fingerprint is one it recites, and declines otherwise; plural attestors are a longer
+`case`. Strengthened by custody: only the namespace owner's mSchemes may yield its primary, the
+owner publishes the ONLY reader of the operator's ids (an indexical singleton), and strangers
+identify their things under that reader's mKey. Every honest outcome of the other world is
+reproducible; apt is done right (the lookup yields the archive by its signer, whatever the
+mirror). A wrong outcome is a false yield with an author, so
+`lit`-style attribution holds. "Not strictly needed" is defended: for correctness with attribution.
+
+**Where it hurts.** A reasonable, non-omniscient describer (Ravi) accepts `--endpoint-url` as just
+a flag, passes it to his check, and files the bucket under the owner's reader, which reads the
+ambient endpoint and never saw his flag:
+
+```sh
+aws --endpoint-url http://localhost:4566 s3 mb s3://acme-site-assets    # seeds the emulator
+aws s3 mb s3://acme-site-assets                                          # the real bucket
+```
+
+Both mKeys get one fully qualified key; SAME; one probe answers both; the emulator has the
+bucket, the real account does not, and the real line is elided. Ravi uttered nothing about
+endpoints. The defect in the model's own terms: this is the one place where SILENCE LICENSES. A
+filing under an mParent silently asserts "whoever answered my read speaks for this mParent", made
+by every describer who touches the namespace, including those who never thought about it.
+
+**The world with it, minimal** (a gate, never a generator):
+1. A namespace's describer may list who answers for it: mKeys of answerer mSorts (a verified TLS
+   name under a registration; a signing key's fingerprint; an ssh host key; implicitly, the kernel
+   reached by this entry chain). Many-valued; others may ADD entries, attributed to them.
+2. Required exactly where dangerous: a namespace may carry `:guarantees-unique-referent` across
+   reads performed inside binaries only if it lists its answerers. Floor mSorts are untouched.
+3. Every read (a lookup or a verdict) of an mKey at or under such a namespace reports who
+   answered; inherited down the chain until a descendant lists its own.
+4. Admission: a report comparing SAME with some entry files the mKey; anything else, no report
+   included, reads unknown from that level.
+5. What a report rests on (trust store, known_hosts, keyrings) is a marked read, so a book line
+   writing them perishes admissions below it.
+6. Nothing here yields SAME or DISJOINT by itself.
+Under it lazy Ravi's facts are not admitted: UNKNOWN, both lines probe. Diligent Ravi reports per
+invocation: the emulator's answerer is in nobody's list, the real line is admitted and elides on
+its own probe. The party who knows a proxy is faithful (its operator) gains a seat, an added
+entry, without forking anyone's lookup: a special-case answer to the arm-composition corner. It
+strictly buys refusals over the same model without it (**[HUMAN]**'s suspicion holds for the
+gate); an added entry admits more than the gate alone and still less than the ungated world;
+`312b:lead-warrantless-tokens-are-witness-only` is respected, since a token only gates.
+
+**Why a separate n-ary edge.** apt: the answerer (a signing key) is on nobody's chain, holds
+nothing, is plural during key rotation, and one host answers for many archives. Neither the
+relative-to row nor the writes-can-change row has a cell for it.
+
+**The pain, abstracted.** A fact about mKey k is produced by a read r; r was answered by some
+a(r) the engine cannot see unless told; filing the fact under k's mParent asserts that a(r)
+speaks for that mParent. Without the edge the assertion is implicit and universal; with it, one
+seat enumerates who speaks, reads say who answered, mismatch or silence is unknown. The model
+ALREADY relies on this where it is free: placeholders are keyed by entry chain, which is "this
+read was answered by the kernel reached through this entry". Attestation generalises the entry
+chain to answerers reached inside binaries.
+
+**Lowered.** Every mature tool has a verification-off switch or a silent route rewrite that a
+reasonable describer will not enumerate: `--endpoint-url`, `--no-verify-ssl`, a swapped CA bundle;
+apt's `[trusted=yes]` and a proxy repository under one host; a kubeconfig's
+`insecure-skip-tls-verify` and a context NAME standing for a cluster; git's `url.*.insteadOf`,
+`GIT_SSL_NO_VERIFY`, `StrictHostKeyChecking=no`; the docker daemon's `registry-mirrors` (content
+is safe by digest, a root; the tag-to-digest answer is not); `dig` through a resolver against a
+non-recursive query carrying the authoritative bit, or DNSSEC's validated bit, DNS's native
+who-answered; and the degenerate case, `sudo`, `chroot`, `docker exec`, answered by the entered
+kernel and already carried by the entry chain.
+
+**Costs and open.** The report is author-produced: the knife moves from "must remember to
+decline" (forgetting is wrong) to "must remember to claim" (forgetting is safe), but a describer
+can still report falsely, and pasted report lines are a cargo-cult risk. A report is only honest
+for the connection the tool itself verified; a separate probe is another connection. Whether the
+engine could ever measure it (the trace backstop of `plans/077`) is unexamined. It does not by
+itself give cross-provider DISJOINT, which stays with § 11's three candidates.
