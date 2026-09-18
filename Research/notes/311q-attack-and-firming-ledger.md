@@ -639,3 +639,85 @@ provably when it places known-unspokens against unknowns; iterative debugging, c
 host-native watchers, all lint- and tooling-shaped aid, out of scope and explicitly not a
 repair. Closed: pain 8 shares the shape of the whole project, which is all a model can be asked
 to do.
+
+## § 18 — 2026-09-17: pain 2 dug; the root question opened
+
+The doctrine, re-read (chat, `plans/28M` and `plans/30J` read whole): 28M stands under 311j (one
+speaker per licence; a composite may only withhold; custody is the price); 30J's object, the
+selector dialect, has no counterpart, since a property is a sort whose key is its owner's, so two
+owners' properties of one bearer are two sorts, KNOWN_UNSPOKEN, and a stranger reusing an
+owner's word names the owner's sort (30J §6.5 and 28M §11 close by construction); 30J's gate
+(a predict as proxy for descriptive responsibility) is served by the placement declaration
+itself. **[HUMAN]**: 30J neither in nor out; the mSort/mScheme split makes a stranger's scheme
+speaking into a sort a larger and tighter coupling than a selector ever was, a steeper hill;
+the same general approach may apply; the richer tool is that any key can now be embedded in a
+chain and compared, so dangerous cases can be told "use the chain" and incomparable ones
+written out as always-guard at far less loss than the selector era paid. The old machinery's
+justification was "no possible knower" (strictly worse than who-knows-cheapest); devil's
+advocate, that it was out of line with the design; conductor's opinion: mostly right, a
+precision rescue by a proxy for coherence in an era whose composition surface was words, retired
+by addresses. Leverage (**[HUMAN]**): rules, horizons, limitations, and
+unergonomic-but-monotonic choices remain available as later rescues; complex machinery is
+justified only when the abstraction it buys is watertight; humans are smart, give them simple
+models and powerful tools. KNOWN_UNSPOKEN renamed by the human (an authored-corpus fact, moved
+only by a new sentence, never by measurement). The abstraction-and-sharing gap (no higher-kinded
+sharing; fork-and-maintain is unsustainable; 311j reads verbose) raised twice this sitting and
+punted (**[HUMAN]**).
+
+The two narrow pieces, walked: the default, KNOWN_UNSPOKEN placement pairs collide, which is
+28M §8 at the placement level (**[HUMAN]**: the correctness choice, not welded, and a real-world
+dig is wanted: does a network op wall a book of ordinary file ops); and the removal: "and that
+is all" today reads "in any vocabulary, including ones I have never heard of" (USER_STORY stage
+7), an implicit universal, to be struck so the sentence reaches only what can be compared with
+the finisher's placements plus foreign stores the finisher names (**[HUMAN]** lean: one syntax,
+the named negative spelled inside the tool's own `__disturbs()`, `disturbs no-other:sm.File`).
+Value under collide alone: `apt-get update`, drifted most mornings, walls every fileless fact in
+an ordinary book (knobs, firewall rules, containers, DNS records, `@active` in memory), the slow
+checks exactly. Naive recaptures and their breaks: spare-unspoken (the `tee` knife; the apt
+hook); "different sorts are disjoint" (procfs); "different worlds are disjoint" (NFS). The
+commonality: sibling stores of different sorts under one container, with nobody having said
+they differ; per-finisher enumeration is O(everything); the container's owner is the knower: a
+partition, cross-sort unique-name declared by the parent among its sole-route children (the
+boot: filesystems, kernel tables, daemon memory), inherited down chains, entailment-safe under
+28M §8 because the category words are the container's; its knives are existing ones (a view
+called a store; a daemon store that is secretly a file). Where the container has no owner, the
+world, no partition exists and roots enumerate.
+
+Roots: a new root's owner names the stdlib roots it never shares bytes with (O(M), symmetric,
+one speaker); two private roots can never name each other; the only knower is a third party
+whose negative is a single-speaker at-most claim, admissible under 28M (**[HUMAN]**: the admin
+seat is not a meaningful category, an admin's shim is an oracle and step one of the curve; the
+question is composition and its soundness, hopefully uncomplicated). Inhabitants of neither
+filesystem nor namespace: cloud accounts, clusters, SaaS control planes, remote databases and
+brokers, network devices, the DNS root, the machine beneath the boot; each expressible with
+existing relations (yields into measured server ids; cross-world footprints and reaches,
+allowed by omission and to be stated; correspondence by the transition owner; waiting reads for
+async authorities; observer-dependence for tenants; dynamic reaches for label selectors;
+declined rootness for IP-keyed appliances); residue by design: clones, third-party SAME,
+invisible automations. Containment tested by what the owner can do to the contained: a hosting
+provider contains the machine (`bobdon-cli reboot server-42` is a lifecycle write no local line
+names; candidate gotcha, unminted), a VM's boot chains into its instance in a cloud account,
+DNS contains nothing (delete the record, the repo stands). GOTCHA 59 minted. Co-minters
+(`terraform`, `aws`) meeting at a canonical root and colliding is the win (**[HUMAN]**).
+
+The explosion (**[HUMAN]**): if DNS is not a containment root, every third-party remote API is
+its own root, four to six per homelab book, dozens per small org, thousands of providers in the
+world; a drifted remote line walls everything beneath it; naming each other is a non-starter;
+the effort allocation shifts, the stdlib's local types being the outliers and the general case
+enormous, so multiparty collaboration cannot be waved away. Conductor's proposed one-shape:
+every remote authority partitions state by tenancy, tenancy isolation being the product every
+one sells, so a stdlib container keyed by (authority, tenancy), into which each provider oracle
+yields with one line, separates distinct providers by key inequality with no pairwise naming;
+exceptions nameable (acting-on-behalf as a cross-root footprint; co-minting caught at the shared
+key); the knife is the authority half of the key (a measured apex splits one tenancy behind a
+proxy; a declared word is a commons); the net: equal reported tenancy ids under different
+authority words read UNKNOWN, never DISJOINT, one-directional, residue two id spellings of one
+tenancy. **[HUMAN]**: gentle nack on tenancy, probably a thin model built to save and not honest
+about the layer beneath; possible ack on the net. The step is enormous (**[HUMAN]**): the corner
+was ignored under the misapprehension that it would be a second copy of the filesystem, DNS and
+paths both being hierarchical namespaces; the core fact is that nothing on the web is
+sole-route, since a remote resource survives losing every route to it, which is critical for a
+corner about identity, equality, and incarnation. Standing suspicion (**[HUMAN]**): DNS should
+sit closer to the filesystem in the model and the model is wrong, not the world; the granular
+dig to come is why DNS-as-container-of-providers fails as the keystone that would make DNS the
+filesystem story, so that rootness per provider, insane and unscalable, is never needed.
