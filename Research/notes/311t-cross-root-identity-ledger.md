@@ -1115,3 +1115,21 @@ example; about five added words per site at most; a specification, never a teach
   describer's mPlacements DISJOINT from the other's, the containerd describer's definition
   finished, and dockerd a front over containerd's things whose describer would withhold
   `:sole-route` if anything asked.
+- **[HUMAN]** hard ack, as written: an author who mints an mSort and hangs it on nothing
+  comparable stays guard-only under the flag. The reason is referential agnosticism: that author
+  could as easily have typed a name for an entire duplicated filesystem type and hung it on
+  nothing; a name typed with no warrant and no correlation visible to Dorc can never be
+  meaningfully compared with anything. **[HUMAN]** on the conductor's restriction of § 3.2's
+  one-top clause to one mSort: reads as a narrow patch; wants a more fundamental fix or a
+  co-example outside it.
+- `fnd-a-closure-reaches-its-speakers-vocabulary-and-no-further` (conductor; ~SUSPECT) — the
+  restriction is one instance of a rule the model already follows in one place. `311j`
+  § 2.7-observer-dependence is written so: independence is declared per NAMED mSort O, and an O
+  its speaker never named stays dependent. Three other closures are written as universals over
+  strangers' names and each yields a wrong elision there: the finished record (`ctr` against
+  `docker`, above); the `:lives-in` sentinel (the same walk from the other end); and the one-top
+  clause, which rests on "the thing in the store has no other home", a sentence only that thing's
+  describer can say and only about names that describer knows, which is the child's-end closure
+  of § 11's first row doing its job at its honest reach. The wrapper's sentinel has the same form
+  (`311p` thread 7) and is already harmless because § 2.7's default catches what it would carry.
+  Across vocabularies, difference comes only from a shared key space whose owner warrants it.
