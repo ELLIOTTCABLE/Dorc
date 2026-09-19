@@ -239,7 +239,7 @@ test -s /etc/app/b.conf || cp b.conf /etc/app/  # 4   / is sda1
 A is the boot; legs `[F1, Ia]`, `[F2, Ib]`; tops differ under the fs owner's unique-name and
 `:sole-route` by contract; below them `Ia` and `Ib` need `:sole-route`, Tessa's, which she can
 only make blanket. `312b` § 7 `fnd-two-epistemic-seats-mis-sited` proposed the parent's
-per-shape classification carry "children are sole-routed", the parent declaring once, children
+per-shape classification carry the children's `:sole-route`, the parent declaring once, children
 inheriting; `311j` kept the child seat. Rearrangement: § 2.2 is already per shape one level up;
 let the parent's shape declaration carry the children's `:sole-route`, and let the child owner
 declare none. With `fnd-disjoint-clause-over-demands-and-under-delivers` (a), siblings never

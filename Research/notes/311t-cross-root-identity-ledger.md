@@ -1182,5 +1182,4 @@ example; about five added words per site at most; a specification, never a teach
   sentinel's danger in its table cell; the phrasing pass at four sites; five lines in § 4.2; a
   new § 3.7 naming what the model supersedes as written (`30U`'s generator sentence; two
   `ANALYZER-NEEDS` rows). The emulated-authority exercise record took three adjacent superseded
-  notes. NOT renamed: the ledgers and the two exercise records still write `:sole-route`; a
-  corpus-wide rename waits on the human's word.
+  notes.

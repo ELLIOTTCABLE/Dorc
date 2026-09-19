@@ -14,7 +14,7 @@ record line to the report lane; a trailer's `$name` refers to an earlier `local`
 prefixes mark who owns the spelling (`sm.` the stdlib; two letters a tool author) and carry no
 weight.
 
-<!-- /* superseded: `sole-route` throughout is `311j`'s `:aliases-nothing-else`, in its self-knowledge reading (`311j` § 2.2, folded 2026-09-19); where this record reads it as "reachable only through it", as in `obs-the-registration-edge-is-the-one-new-sentence`, it reads the older form. */ -->
+<!-- /* superseded: where this record reads the store's closure as "reachable only through it", as in `obs-the-registration-edge-is-the-one-new-sentence`, it reads an older form than the self-knowledge reading of `311j` § 2.2 (folded 2026-09-19). */ -->
 
 ## The world
 
