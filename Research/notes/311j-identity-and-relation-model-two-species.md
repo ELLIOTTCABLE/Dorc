@@ -525,8 +525,8 @@ perished conclusion names the footprint that perished it.
 ### § 3.6-scope (what this model leaves untouched)
 
 The verdict, vouch, and guard tier; footprints, `:reaches`, the completion record as the
-witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint and consumer map; the universal meet;
-measure-in-context, entry forms, `safe-across`; the read-set closure as the falsification net
+witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint
+and consumer map; the universal meet; measure-in-context, entry forms, `safe-across`; the read-set closure as the falsification net
 for unmarked reads (`27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the
 standup `witness()`; the integrity plane; the committee law. The invariance line's store half
 is measured away by §2.2 and its observer half lives as §2.7; the context slot is a mVantage

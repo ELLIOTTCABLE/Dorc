@@ -14,6 +14,8 @@ record line to the report lane; a trailer's `$name` refers to an earlier `local`
 prefixes mark who owns the spelling (`sm.` the stdlib; two letters a tool author) and carry no
 weight.
 
+<!-- /* superseded: `sole-route` throughout is `311j`'s `:aliases-nothing-else`, in its self-knowledge reading (`311j` § 2.2, folded 2026-09-19); where this record reads it as "reachable only through it", as in `obs-the-registration-edge-is-the-one-new-sentence`, it reads the older form. */ -->
+
 ## The world
 
 An S3 bucket is reached by name through an endpoint: a URL the client picks from a flag, an
@@ -241,6 +243,7 @@ The walks:
   `:guarantees-unique-name`, with differing values, and every store below down to the leaves'
   mParents is `:sole-route`. DISJOINT. On a day the CNAME has drifted, line 4 survives line 3:
   two provider authors who never met, separated by Dana's tree and one `dig` apiece.
+  <!-- /* superseded: this survival answers only the address question; under `311j` § 2.5 as folded 2026-09-19 the write-path question is also asked, Dana's mSorts declare no mPlacements, an undeclared mPlacement collides, and line 4 verifies in both renders (`311t` § 8). */ -->
 - Two strangers in one zone (no book line; a colleague's `dnscontrol` beside Carla's
   `flarectl`). Both yield into `sm.RRsetKey` under `acme.example.`. The same owner and type:
   one mKey, SAME, one mCell, each tool's write a write to the other's fact. Different owners
@@ -323,6 +326,8 @@ discovered later (**[HUMAN]**, 2026-09-18).
   uniqueness of vocabulary. Dana's file above is this.
 
 ## A store-sort under the tree: the revised glue
+
+<!-- /* superseded: this glue hangs a store under a registration as `:identified-in`; `311t` § 11 judged that a conflation of identification with who answers for a namespace, and § 10 withdrew the registration edge as `:identified-in`. The strawman stands as the record of the attempt. */ -->
 
 Built from the shaved parts, with no relation this record had not already used. Petra knows AWS
 and owns nobody's resources: she publishes the store keys once, hangs them under one
