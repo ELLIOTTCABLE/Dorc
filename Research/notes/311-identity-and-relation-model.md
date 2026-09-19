@@ -302,9 +302,10 @@ template the mSite or environment fills) to mKeys of other mSorts. Declared by K
 a completion sentinel closing the set. Every mSort in a mFullyQualifiedKey may declare
 mPlacements, not only leaves (a loop-backed filesystem's state lives in a file of the outer
 filesystem; `dd` over the image rewrites every inner fact), and a fact answers to the
-mPlacements of every member of its mFullyQualifiedKey. An mKey's mParent instance is
-implicitly one of its mPlacements; declaring it again is harmless, and §3.2's walk already
-collides a write at or above it. Consumer: collision, and the write-path question of §2.5.
+mPlacements of every member of its mFullyQualifiedKey. An mKey's mParent instance is no
+mPlacement and needs no declaration: §3.2's walk collides a write at or above it. An
+mPlacement naming a store says more: every write to an mKey relative to that store may change
+K, nobody having said otherwise. Consumer: collision, and the write-path question of §2.5.
 A footprint not DISJOINT from an mPlacement collides with K's mCells and with every fact
 identified beneath K; an omitted mPlacement is a silent channel
 (`an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and licenses nothing
