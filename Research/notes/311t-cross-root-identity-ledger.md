@@ -1095,3 +1095,23 @@ example; about five added words per site at most; a specification, never a teach
   weight is that `30U`'s ruled sentence (a finished definition generates cross-kind disjointness)
   becomes necessary-not-sufficient, `ANALYZER-NEEDS` rows and USER_STORY stages 5 and 7 follow,
   every oracle's shape is constrained by it, and one more turn of hunting moved the rule twice.
+- **[HUMAN]** acks: § 2.5 spares narrowly and collides widely (the earlier "narrowest" meant
+  least value yielded); the write-path question asked of every pair, at first gloss. Memory
+  check, confirmed by the conductor: strangers' routes are why § 9 split `:sole-route` into two
+  ends, heading toward pairs that need both present. It carries a front over another's store (the
+  front's describer is silent on its own leg) and does not carry the vendor's store against a
+  knob sitting directly in the shared mParent, where the stranger's leg holds no store to be
+  silent and both closures are one party's.
+- CORRECTED (conductor): "it constrains every oracle's shape" overstated what address-first adds.
+  Under collide-widely alone, sparing across two mSorts already needs both sides' mParent
+  instances and declared mPlacements to `compare()` DISJOINT, which already needs a shared key
+  space. What address-first adds over § 2.5 pinned wide: it asks the walk about the two things
+  themselves, so `:sole-route` is demanded of every store on both legs, where the mPlacement test
+  never asks; and it takes the mParent instance out of that test, which gives back the pairs the
+  wide meaning kills (a store that sits inside a filesystem against any file of that filesystem:
+  most of USER_STORY stage 5). A lower bound with nobody badly written, wrong under either
+  reading of `311j` today: `ctr task kill` of a container's task against a converged
+  `docker start` of that container, two daemons comparable and distinct as processes, each
+  describer's mPlacements DISJOINT from the other's, the containerd describer's definition
+  finished, and dockerd a front over containerd's things whose describer would withhold
+  `:sole-route` if anything asked.
