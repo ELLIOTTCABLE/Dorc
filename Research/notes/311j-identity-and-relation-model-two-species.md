@@ -108,8 +108,8 @@ which mSort an mKey reaches, and which mParent mSort and warrants apply, is know
 bytes arrive. A value with no mScheme is nothing; an
 mScheme with no supplyable mParent instance leaves the mFullyQualifiedKey unknown from that
 level. Derived views: mKey-Natural, an mKey of a secondary mScheme (what tool authors and
-books write); mKey-Primary, an mKey of the primary mScheme (what the mParent-Store answers
-with; where the dangerous warrants can honestly sit). They coincide when an mSort's only
+books write); mKey-Primary, an mKey of the primary mScheme (meaningful only relative to its
+mParent-Store; where the dangerous warrants can honestly sit). They coincide when an mSort's only
 mScheme is its primary mScheme.
 
 ### § 1.5-token-and-the-two-warrants
@@ -143,9 +143,10 @@ follows the mScheme:
   looked up in (a mount namespace for a path; a passwd database for a login name; a process
   table for a pid), and the edge carries ROUTING: which instance, and perishing (§3.3). Never
   identity.
-- through the primary mScheme the mParent is the mParent-Store, the thing that mints the
-  mSort's addresses (a filesystem for an inode; a user namespace for a uid; a dpkg database
-  for a canonical package name), and the edge carries IDENTITY: it is what `compare()` walks
+- through the primary mScheme the mParent is the mParent-Store, the mKey relative to which
+  alone the mKey-Primary means anything (a DNS zone for a record's owner name; a user namespace
+  for a uid; a dpkg database for a canonical package name), and the edge carries IDENTITY: it
+  is what `compare()` walks
   (§3.2). At the primary mScheme, mParent-Catalog and mParent-Store are one mKey.
 
 Through the primary mScheme the mParent's mSort (`:identified-in`) and the warrants (§1.5;
@@ -159,7 +160,7 @@ primary mScheme's declaration for the matched shape (§2.2); two seats that disa
 contradiction, refused and attributed to both. A shape with no `:identified-in` is scoped in
 the mRoute (§1.10). A mRoot is a shape declared
 :rootness: its mKeys need no mParent, which claims they are globally comparable (the DNS
-mRoot; a cloud instance-id honestly minted unique). Nothing is a mRoot by default;
+mRoot; a cloud instance-id whose issuer never repeats one). Nothing is a mRoot by default;
 `identity-tokens-have-clone-horizons` is the standing witness.
 
 ### § 1.7-resolution-and-traversal
@@ -255,8 +256,8 @@ mechanical net against lazy borrowing.
 > ER's identifying relationship. Identifying is not containing.
 
 mScheme P is `:primary-of` mSort K, once per mSort, and a second name is a second mScheme: P's
-mKeys are the addresses K's mParent-Store answers with, and P's `resolve()` is the identity on
-the mKey. P's owner declares, per matched shape of the mKey's value, `:identified-in` mSort M
+mKeys mean something only relative to K's mParent-Store, and P's `resolve()` is the identity
+on the mKey. P's owner declares, per matched shape of the mKey's value, `:identified-in` mSort M
 (the mParent's mSort for mKeys of that shape) and, absent by default:
 
 - :guarantees-unique-referent and :guarantees-unique-name (§1.5), governing what mToken
