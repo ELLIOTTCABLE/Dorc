@@ -81,13 +81,12 @@ mScheme is, and is named only when something is declared about it as a whole; th
 > A term language over a carrier. Never itself an mSort.
 
 A way of writing down which mReferent is meant, with one accountable owner. An mScheme fixes:
-its `resolve()`; exactly one of `:primary-of` its mSort, with its declarations per matched
-shape (§2.2), or
-`:yields` the mKey of another mScheme of the same mSort (§2.1); where its mKeys are looked up,
-when it is a secondary mScheme (§2.1); its lookup warrants (§1.5); and whether it is
-:hierarchical (§2.8). An mScheme belongs to exactly one mSort; declaring one under two mSorts
-is a static contradiction, refused (reuse of a lookup is delegation inside a `resolve()`
-body). The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary
+its `resolve()`; whether it is `:primary-of` an mSort, with its declarations per matched
+shape (§2.2); what it `:yields`, per matched shape, each an mKey of another mScheme of any
+mSort (§2.1); where its mKeys are looked up, when it is a secondary mScheme (§2.1); its lookup
+warrants (§1.5); and whether it is :hierarchical (§2.8). An mSort has exactly one primary
+mScheme, which yields into that mSort for at least one shape; nothing else constrains where an
+mScheme yields. The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary
 mScheme of an mSort nobody has named, with an identity `resolve()`, no warrants, and the
 mRoute as its only mParent; that mSort acquires a name the first time its owner declares
 something about it as a whole. There is no default mScheme: a bind or a mark always names an
@@ -103,9 +102,10 @@ runtime string will denote. It is minted at a bind, or at an emission point a `r
 declares (§2.1), and before any lookup runs. The mScheme is always declared. The value is a
 literal, or a mPlaceholder for a captured value; the mParent is an instance one of the seats
 of §1.6 supplies, or a mPlaceholder. Every lookup is a measurement that binds mPlaceholders
-and never changes the structure of the mFullyQualifiedKey, which the mSchemes declare; the
-one thing measurement decides late is which declared shape an mKey-Primary's value matches
-(§2.2), so which mParent mSort and warrants apply is known only once bytes arrive. A value with no mScheme is nothing; an
+and chooses among the structures of the mFullyQualifiedKey the mSchemes declare, never outside
+them; what measurement decides late is which declared shape a value matches (§2.1, §2.2), so
+which mSort an mKey reaches, and which mParent mSort and warrants apply, is known only once
+bytes arrive. A value with no mScheme is nothing; an
 mScheme with no supplyable mParent instance leaves the mFullyQualifiedKey unknown from that
 level. Derived views: mKey-Natural, an mKey of a secondary mScheme (what tool authors and
 books write); mKey-Primary, an mKey of the primary mScheme (what the mParent-Store answers
@@ -234,10 +234,10 @@ operations rare and long-named; safe ones short) but no spellings are proposed h
 
 ### § 2.1-yields (a secondary mScheme, into the primary mScheme; the mParent-Catalog)
 
-mScheme S `:yields` mScheme T, both of one mSort: S's `resolve()`, run in the mVantage, maps an
-mKey of S to an mKey of T, and may supply that mKey's mParent instance (§1.6). T is the
-primary mScheme or a secondary mScheme that in turn yields it; the chain always terminates at
-the primary mScheme. Declared by S's owner, once per secondary mScheme. Where S's own mKeys
+mScheme S `:yields` mScheme T, per matched shape, T of any mSort: S's `resolve()`, run in the
+mVantage, maps an mKey of S to an mKey of T, and may supply that mKey's mParent instance
+(§1.6). T is a primary mScheme or a secondary mScheme that in turn yields one; the chain
+always terminates at a primary mScheme. Declared by S's owner, per matched shape. Where S's own mKeys
 are looked up — S's mParent-Catalog — is an instance supplied by one seat, as a store is
 (§1.6): the bind that minted the mKey, S's owner's declaration, or the mEntryChain's instance
 for that mSort (§1.10), each naming it as an mKey of one of that mSort's mSchemes; an unknown
@@ -381,7 +381,7 @@ its parts' mPlacements.
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
 | `:primary-of` (`:identified-in` per matched shape) | one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :rootness, per matched shape |
-| `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | one per secondary mScheme | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
+| `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | per matched shape of a secondary mScheme, into any mSort | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
 | `:sole-route` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | a view declared :sole-route is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
 | `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
@@ -396,8 +396,8 @@ its parts' mPlacements.
 
 ### § 3.1-identity-of-a-key
 
-identity(k), for k an mKey of mScheme S of mSort K: run S's `resolve()` from k's mVantage, and
-each yielded mScheme's in turn, until an mKey of K's primary mScheme is in hand, each emission
+identity(k), for k an mKey of mScheme S: run S's `resolve()` from k's mVantage, and each
+yielded mScheme's in turn, until an mKey of a primary mScheme is in hand, each emission
 supplying the mParent instance for the mKey it yields; then the mKey-Primary scoped in
 identity(mParent), recursively through each level's primary mScheme, until a mRoot, the
 mRoute, or an unknown link. Each level carries the warrants declared for the shape its mKey
