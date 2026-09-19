@@ -70,10 +70,9 @@ mSort fixes is only what its owner declares under it — which mScheme is its pr
 mSort's relations to its immediate neighbours. Several mSchemes into one mSort is the
 cooperative case: one owner admitting several ways of writing down what they describe. Several
 mSorts over one world-thing is the ordinary strangers case (two vendors describing one tool;
-two vocabularies reaching one mCell under `/proc/sys`): undetectable to the engine except
-where both owners' mPlacements land on one place, KNOWN_UNSPOKEN at the chokepoint (collides for
-sparing, never transports), and merged only by a human act, one mSort's mSchemes made to
-yield into the other's. An mSort has no mKeys and no `resolve()`, is never valid where an
+two vocabularies reaching one mCell under `/proc/sys`): undetectable to the engine,
+KNOWN_UNSPOKEN at the chokepoint (§3.2), and merged only by a human act, one mSort's mSchemes
+made to yield into the other's. An mSort has no mKeys and no `resolve()`, is never valid where an
 mScheme is, and is named only when something is declared about it as a whole; the floor of
 §1.3 lets an mScheme precede its mSort's name.
 
