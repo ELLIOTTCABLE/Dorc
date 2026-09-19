@@ -207,9 +207,10 @@ mParent-Catalog mSorts to the instances wrappers lent (§3.4). It is not part of
 identity. It says where a `resolve()` executes; it supplies the ambient mParent for every mKey
 of a secondary mScheme looked up in a lent mParent-Catalog mSort; and for a shape with no
 `:identified-in` it is the mRoute, the last-resort mParent. For transit-free local execution
-the engine itself vouches the mRoute: two same-spelled mKeys of one mScheme in one unwalled
-span are one mPlaceholder, because one shell process resolves one cwd-qualified mKey in one
-mount table. Across a transit the mRoute is never vouched; across mVantages it is unknown.
+the engine itself vouches the mRoute, and the ambient and inherited mParent instances within
+one unwalled span: each is resolved once per mEntryChain and shared, one mPlaceholder. Two
+same-spelled leaf mKeys are two mPlaceholders, SAME only by warrant (§3.2). Across a transit
+the mRoute is never vouched; across mVantages it is unknown.
 mFullyQualifiedKeys whose mTokens are not yet measured are mPlaceholders keyed by (mKey,
 ambient mParents, mEntryChain); the probe standup binds them; the apply standup re-reads them
 through the same entry and `compare()`s (the `witness()`); mismatch is integrity, never a
@@ -431,7 +432,8 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   :sole-route (§2.2); else UNKNOWN. The one-top case rests on a store never being among its
   own contents. Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
-  through a wrapper's sentinel, §3.4, or one mKey in one transit-free unwalled span, §1.10) or
+  through a wrapper's sentinel, §3.4, or one ambient instance resolved once in a transit-free
+  unwalled span, §1.10) or
   are equal values whose shape carries :guarantees-unique-referent. Two mFullyQualifiedKeys
   are SAME iff they are SAME at every level down to the leaf.
 - mKeys of different mSorts share no primary mScheme (an mScheme belongs to one mSort), so
