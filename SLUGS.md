@@ -189,7 +189,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 277:addresses-are-not-coordinates
 - defined: Research/notes/277-entity-algebra-design.md:476 — (`272` §5): store-member locators feed exactly
-- cited: 26M 271 272 30Ta 311 311c 311d 311h 312a (9)
+- cited: 26M 271 272 30Ta 311c 311d 311h 312a (8)
 
 ## 270:adj-adjudicability-list
 - defined: Research/plans/270-round27-charter.md:281 — (né `24S:A4`) — the machine-read topology clauses +
@@ -1010,7 +1010,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 311j _tmp-naming-rewrite-owed (7)
+- cited: 26Ob 311a 311c 311j _tmp-naming-rewrite-owed (5)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -1121,7 +1121,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cor-standup-witness-licenses-bare-line-elision
 - defined: —
-- cited: 26Ob 311 311c 311d 311j (6)
+- cited: 26Ob 311c 311d 311j (5)
 
 ## 28M:cor-trust-sentence-at-least-not-measurements
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:539 — [TYPED] — "nothing in Dorc is
@@ -3722,7 +3722,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## inv-referent-agnostic
 - defined: spike/CLAUDE.md:515 — — the engine never decodes an `OpaqueToken`'s or kind's
 - defined: spike/crates/core/CLAUDE.md:141 — — never decode a token's/kind's text for meaning;
-- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 26Ob 27C 27D 27I 27O 28L 311 311c 311j oracle/CLAUDE (40)
+- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 26Ob 27C 27D 27I 27O 28L 311c 311j oracle/CLAUDE (39)
 
 ## inv-referent-agnostic-here
 - defined: Research/notes/28Va-aid-extraction-map.md:612 — — resolving interned tokens to text in this crate is for
@@ -4755,7 +4755,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## open-observer-sort-inventory
 - defined: —
-- cited: 01 311 (2)
+- cited: 01 (1)
 
 ## operands-are-pure-and-capped
 - defined: Research/notes/28Va-aid-extraction-map.md:569 — — every operand is a `Copy` scalar or an interned
@@ -5493,7 +5493,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## req-verdict-marks-every-read-cell
 - defined: —
-- cited: 30T 311 311c 311j ORACLE_PROVIDES (6)
+- cited: 30T 311c 311j ORACLE_PROVIDES (5)
 
 ## req-wall-narrative-gains-region
 - defined: —
@@ -6133,7 +6133,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:rul-composite-meets-toward-guard-run
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:283 — [ACKED hard — the product rule restated
-- cited: 28K 28P 311 311c 311d 311j (8)
+- cited: 28K 28P 311c 311d 311j (7)
 
 ## 28M:rul-conflict-between-totals-is-falsification
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:313 — [ACKED] — judgment-tier
@@ -6234,7 +6234,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-disjoint-is-an-rc-predicate
 - defined: —
-- cited: 30T 30W 311 311a 311b 311c 312a ROADMAP (11)
+- cited: 30T 30W 311a 311b 311c 312a ROADMAP (9)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6637,7 +6637,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311 311a 311b 311c 311h 311j 312a ORACLE_PROVIDES (26)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b 311c 311h 311j 312a ORACLE_PROVIDES (24)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -7081,7 +7081,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-reference-entity-name-floor
 - defined: —
-- cited: 300 300c 311 311c 311d 312a (10)
+- cited: 300 300c 311c 311d 312a (8)
 
 ## rul-reflow-fix-in-phase-four
 - defined: —
@@ -7989,7 +7989,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 311 311j (10)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 311j (9)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
