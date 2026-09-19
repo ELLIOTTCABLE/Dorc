@@ -1133,3 +1133,22 @@ example; about five added words per site at most; a specification, never a teach
   of § 11's first row doing its job at its honest reach. The wrapper's sentinel has the same form
   (`311p` thread 7) and is already harmless because § 2.7's default catches what it would carry.
   Across vocabularies, difference comes only from a shared key space whose owner warrants it.
+- **[HUMAN]** ack, 2026-09-19, after repeated attack: separation is only ever concluded from a
+  single definition's own distinctions. Two tops: one mScheme's body warrants that its distinct
+  mKeys are distinct things. One top: one primary mScheme's `resolve()` body files different
+  shapes at different levels, and an omission is a distinction only inside the body that made it;
+  the test is read off authored text (that body has some arm whose `:identified-in` names the
+  store's mSort), and the same mSort is that same body trivially. This is `311j`
+  § 3.5-committee-law-satisfied applied to `compare()`; the one-top clause as written drew a
+  distinction from two definitions at once. **[HUMAN]**: "stranger" is no term of the engine's; no
+  mechanic interprets reverse-DNS names; absent `30J`'s speaker closures the largest unit
+  guaranteed to be one speaker is the single definition. The human's formulation of the wrinkle,
+  confirmed: the claims place B precisely (in Y, only in Y, Y in X) and place A only as finely as
+  A's definition speaks; nothing says A is outside Y, and nobody who could be asked holds both
+  words. Depth changes nothing: the walk re-localises every pair to the deepest shared level, the
+  test reads the one store under it, and deeper stores only add closures that can each be false.
+  Surveyed at the human's prompt: a child overlapping its parent is among the commonest shapes in
+  ops (managers' inventories, nested namespaces, groupings, partitions, peer tools carving one
+  subsystem), the dangerous configuration of it is rare, a loop filesystem is backing and never
+  this shape, and the restated clause costs only a privately minted sub-store its separation from
+  another definition's direct child.
