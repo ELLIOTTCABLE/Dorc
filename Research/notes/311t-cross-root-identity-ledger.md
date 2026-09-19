@@ -955,3 +955,38 @@ acknowledgment by contract and the flag. Conductor, re-done under it:
   `311j` today. No structural repair proposed; the two shapes on the table are saying the unnamed
   conjunct in `311j` § 1.7, and the per-shape demand above, under which a borrowed ambient
   singleton is refused where a namespace's describer asked for a measuring seat.
+
+**Corrections and positions, later the same sitting.**
+- **[HUMAN]** position (stated as open to pushback; the human adds it to the edits owed to
+  `311j`): an mScheme may yield into several mSorts. An mSort has exactly one primary mScheme,
+  which must cohere by yielding at least some of the time into the mSort that claims it; beyond
+  that nothing constrains where an mScheme yields. `311j` § 1.3, § 2.1, and the parenthetical of
+  § 3.2's fourth bullet say otherwise; their source is `312b` § 8's
+  `fnd-schemes-belong-to-one-sort`, from a sitting headed nothing-ruled, and no typed ack of it
+  was found. Consequences (conductor, ~SUSPECT): the path's owner can hand a `/proc/sys` path to
+  the knob's mSort, so the line above calling that hand-over inexpressible describes `311j`'s text
+  only, and what remains of the arm-composition corner is the stranger's side; the exercise's
+  `obs-one-scheme-one-sort-chafes-at-multi-provider-tools` dissolves; a footprint's mSort, and so
+  its entailment, is whatever the lookup reached. Costs: the static refusal `312b` § 7 counted as
+  a benefit of two species is forfeited; `311j` § 1.4's "never changes the structure of the
+  mFullyQualifiedKey" weakens to choosing among declared structures.
+- **[HUMAN]** lean: warrants and like annotations belong per lexical path of a body, on a line
+  they are about, which also gives aid a line to point at; a body may then claim different levels
+  of dangerous truth for different argv and world-state; a win, and what the engine (lattices,
+  value-flow placeholders) is best at. `311j` § 2.2 already does this for a primary mScheme, per
+  matched shape.
+- WITHDRAWN as a finding: `fnd-the-binarys-route-rides-the-vouch-unnamed`. **[HUMAN]**:
+  "unknowable", in the sense relevant to the flag, is epistemic and set-logical, never "hidden" or
+  "laborious"; what a tool consults is visible to Dorc as input values, or exposable by the
+  describer's authored probing, or seekable by the describer (the manpage, at the floor); the one
+  unknowable in the framing is future change of the tool. Conductor agrees: which cluster a
+  `kubectl` line reaches is the mParent instance of its mKey
+  (`same-name-different-referent-per-viewpoint`, selected by configuration instead of a wrapper);
+  supplying it is ordinary describer work through the three seats; the reads of that lookup are
+  marked reads like any other, and their incompleteness is the adequacy already priced at the
+  vouch (`ANALYZER-NEEDS:an-backing-selfframing`). What stands: `311m`'s text item that `311j`
+  § 3.3's routing species names only `PATH`; and "forcing" as a plain observation, never a
+  mechanism: a book line that states its selection in argv (`--context prod`) lets the describer
+  supply the mParent instance at the bind seat from an input value, through an arm that owes
+  nothing to the tool's precedence rules, the part most exposed to future change; the ambient arm
+  can be left unknown or declined until its describer has bothered.

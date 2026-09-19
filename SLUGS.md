@@ -442,7 +442,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-backing-selfframing
 - defined: —
-- cited: 30Mb 30Q 30T 311c ANALYZER-NEEDS (8)
+- cited: 30Mb 30Q 30T 311c 311t ANALYZER-NEEDS (9)
 
 ## an-cross-host-kind
 - defined: —
