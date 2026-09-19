@@ -459,8 +459,9 @@ second mKey inside one mParent.
 ### § 3.3-perishing (three mutator species, three invalidated facts)
 
 - A ROUTING mutation (a mount, a symlink replacement, a rename, a user added, a hostname
-  change, a write to `PATH` for command-word lookup) touches routing mKeys or a
-  mParent-Catalog. Every mResolution whose mTraversal includes a touched mKey — or whose
+  change, a write to any environment variable, cwd, or configuration a lookup reads) touches
+  routing mKeys, a mParent-Catalog, or shell state a `resolve()` read. Every mResolution whose
+  mTraversal includes a touched mKey, or whose `resolve()` read the written state — or whose
   mParent-Catalog was touched at all, under the flat default — perishes; every
   mFullyQualifiedKey built on it reads unknown below the line; dependent SAME conclusions lose
   authority and dependent elisions demote to guards; dependent DISJOINT conclusions collide.
