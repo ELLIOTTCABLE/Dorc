@@ -306,9 +306,9 @@ mPlacements of every member of its mFullyQualifiedKey. An mKey's mParent instanc
 implicitly one of its mPlacements; declaring it again is harmless, and §3.2's walk already
 collides a write at or above it. Consumer: collision, and the write-path question of §2.5.
 A footprint not DISJOINT from an mPlacement collides with K's mCells and with every fact
-identified beneath K; an omitted mPlacement is a
-silent channel (`an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and
-licenses nothing positive. mPlacement is distinct from mParent: the mParent is one and
+identified beneath K; an omitted mPlacement is a silent channel
+(`an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and licenses nothing
+positive. mPlacement is distinct from mParent: the mParent is one and
 answers identity; mPlacements are many and answer interference. Two mCells with different
 mParents can share a mPlacement and so collide without being the same
 (`the-subject-includes-the-observer`: two observers' writability mCells share the file's
@@ -444,9 +444,8 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
   through a wrapper's sentinel, §3.4, or one ambient instance resolved once in a transit-free
-  unwalled span, §1.10) or
-  are equal values whose shape carries :guarantees-unique-referent. Two mFullyQualifiedKeys
-  are SAME iff they are SAME at every level down to the leaf.
+  unwalled span, §1.10) or are equal values whose shape carries :guarantees-unique-referent.
+  Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
 - mKeys of different mSorts share no primary mScheme, so their mFullyQualifiedKeys meet, if at
   all, only at a common ancestor, and that meeting is not a claim about the leaves (a package
   status file and a unit file share a filesystem). The walk above decides such a pair as it

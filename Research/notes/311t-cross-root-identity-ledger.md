@@ -1168,3 +1168,19 @@ example; about five added words per site at most; a specification, never a teach
   thing outside every store of that mSort while B's files it inside one, and both hold only if
   that store gives its own mKeys to its parent's things, which the closure denies); the
   thing's-end gap stays 312's. Candidate names live in the root `_tmp-` naming file.
+- STAMPED (**[HUMAN]**, 2026-09-19, "stamp it all"): the store's closure is
+  `:aliases-nothing-else` in 311; many names will churn if the table shape is taken, the
+  "guarantees" being better spelled as closure statements when spelling lands. **[HUMAN]**: Dorc
+  as an engine for code motion modulo aliasing across unknown externs is quite exact, and a good
+  model to fall back to by default. Folded into `311j` the same day, one commit each
+  (`c300446f` to `1c65920e` and the rewrap after): § 1.10 the narrowed vouch; § 3.3 routing
+  mutations widened past `PATH`; § 1.9's reboot derivation struck; § 1.2 pointed at § 3.2; § 1.5
+  warrants per matched shape; an mScheme yields into any mSort per matched shape (§ 1.3, § 1.4,
+  § 2.1, § 3.1, § 2.10); the rename with the self-knowledge reading (§ 2.2 and every use); § 3.2's
+  separation from one definition's own distinctions; address first and then write path (§ 3.2's
+  fourth bullet, § 2.5, § 2.4 with the implicit mParent instance, § 2.10, § 3.6) with the
+  sentinel's danger in its table cell; the phrasing pass at four sites; five lines in § 4.2; a
+  new § 3.7 naming what the model supersedes as written (`30U`'s generator sentence; two
+  `ANALYZER-NEEDS` rows). The emulated-authority exercise record took three adjacent superseded
+  notes. NOT renamed: the ledgers and the two exercise records still write `:sole-route`; a
+  corpus-wide rename waits on the human's word.
