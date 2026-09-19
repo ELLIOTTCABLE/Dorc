@@ -1040,3 +1040,33 @@ example; about five added words per site at most; a specification, never a teach
   SAME-only reading is the disclosed-weak name floor of `311j` § 4.2 moved onto mPlacements:
   unequal names, nobody's speech, sparing. Threads 3 and 5, the two readings, and the partition
   are one knot, judged by the conductor not small.
+- **[HUMAN]**: separation resting on silence is a dealbreaker wherever it licenses something
+  dangerous; the case as walked is unacceptable (mutually unaware speakers doing ordinary things
+  must never yield a wrong elision), so it is forced to default-collide and speech is forced on
+  whoever climbs out. A spelled negative existential is strictly better than an implicit one: a
+  specification sentence "no A ever coincides with B" is the same existential, acked by nobody,
+  with no escape route. A parent-spoken partition is sound and value-expensive, and makes
+  third-party children vestigial for sparing. Find the existing rhyme before minting.
+- `fnd-difference-between-strangers-is-earned-one-way` (conductor; ~SUSPECT, unhunted) — wherever
+  this corpus separates two mutually unaware authors' things, both have identified into one key
+  space whose owner warrants `:guarantees-unique-name` from self-knowledge: canonical package
+  names (USER_STORY stage 6); Dana's zones (§ 6); the thin store-sort of § 7, in the words of the
+  human's own nack there ("strangers' resource mSorts identify into a thin store-sort's mKeys and
+  separate there as siblings"); inodes, for every file-backed store
+  (`312b:lead-identify-in-the-narrowest-primary-store`). Never pairwise naming, never a parent
+  enumerating its children, never silence. The partition sentence of the conductor's counterpoint
+  is WITHDRAWN: the pair "two mKeys of two mSorts under one mParent instance" keeps no "two
+  things" sentence, and the way out is to become the first pair (two mKeys of one primary
+  mScheme) by identifying into a shared key space. Third parties spare by filing themselves; a
+  false filing is a false `:identified-in` with an author. Mode against contents is Tessa's two
+  mKeys of one mScheme under the inode, under her warrant.
+- `fnd-address-first-dissolves-the-two-readings` (conductor; ~SUSPECT) — if no pair spares unless
+  the walk of `311j` § 3.2 answers DISJOINT (KNOWN_UNSPOKEN never spares; § 3.2's fourth bullet
+  and `30U`'s cross-kind licensor change), then: the vendor-against-knob hole closes at any depth
+  (tops of two mSorts, or a minted store that cannot honestly say it presents nobody's things);
+  the mParent instance leaves § 2.5's test, because the walk already covers writes at or above
+  it; the test runs over declared mPlacements only, overlap meaning not-DISJOINT; and both
+  closures reach only what can be compared, the human's strike of the implicit universal
+  (`311q` § 18) applied to both ends. Cost: USER_STORY stage 5 keeps its file-backed survivals
+  through inodes and loses `active` against files until a stdlib key space exists for what sits
+  directly in a boot. Not small; touches `30U`.

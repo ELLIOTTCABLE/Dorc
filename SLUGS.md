@@ -4160,7 +4160,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lead-identify-in-the-narrowest-primary-store
 - defined: —
-- cited: 03 311t 312b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id (5)
+- cited: 03 311t 312b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id (6)
 
 ## lead-warrantless-tokens-are-witness-only
 - defined: —
