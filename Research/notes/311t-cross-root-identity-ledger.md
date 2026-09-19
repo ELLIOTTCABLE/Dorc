@@ -990,3 +990,38 @@ acknowledgment by contract and the flag. Conductor, re-done under it:
   supply the mParent instance at the bind seat from an input value, through an arm that owes
   nothing to the tool's precedence rules, the part most exposed to future change; the ambient arm
   can be left unknown or declined until its describer has bothered.
+
+**The small-edits sitting.** **[HUMAN]** plan: loose ends; then the edits owed to `311j`; then,
+only on the human's explicit ack, a new adversarial panel over those changes. The model keeps the
+name 311, and revisiting any larger item becomes 312; this supersedes `311q` § 12's line about the
+312 series (two fundamental rewrites were killed, properties and the attestation edges, which is
+why). **[HUMAN]** on phrasing: referentially agnostic grammar is primary; a non-agnostic example
+may stay as a parenthetical; where the ledgers show repeated breaches prefer a less pulling
+example; about five added words per site at most; a specification, never a teaching document.
+- Typed acks for `311j`, each re-walked by the conductor first: § 1.10, the engine vouches ambient
+  and inherited instances only, same-spelled floor leaf mKeys being separate mPlaceholders (full
+  ack; the defect is a SAME with no author behind it, against § 3.5); § 3.3's routing species
+  widened past `PATH` to any environment, cwd, or configuration a lookup reads (acked in spirit,
+  the mechanism unexamined; **[HUMAN]**: an engine decision deserves either authored speech or
+  differential-tested proof that shell always behaves so, and whatever is not shell behaviour
+  demands the former); § 1.9's reboot derivation struck; § 1.2's parenthetical pointed at § 3.2;
+  warrants per lexical path for every lookup, § 1.5; the sentinel's danger said briefly, left to
+  the conductor.
+- Punted to 312 by the conductor's re-walk: rewording `:sole-route` to the self-knowledge reading
+  (`311p` thread 1's soundness argument for unequal depth uses the strong reading; the weak one
+  needs the child's "no other home"); the single-state-holder line of § 9 (a bearer with two loci
+  could then carry no `:guarantees-unique-referent`, so a wrapped `systemctl` read could share no
+  fact with the bare line unless mCells get their own stores).
+- **[HUMAN]** nack of "mPlacements are off-chain only": as an authoring rule it is a no-op and a
+  burden; chain members are implicitly mPlacements, a redundant declaration is harmless, and a
+  list copied from a tool's documentation should not move when the chain does. The conductor's
+  substitute, "a shared chain member is never an overlap in § 2.5's test", WITHDRAWN after a walk
+  (+SURE a hole): two vocabularies for one slot, both identified in one mParent instance, each
+  closed at just the parent; today the shared mParent instance is the SAME mPlacement on both
+  sides and the pair collides, which is the net `311j` § 1.2 names ("except where both owners'
+  mPlacements land on one place"); the clause removes that net and the second line is spared.
+  `311p` thread 3 closes without an edit: mCells that should separate take separate stores at the
+  substrate's granularity, and mCells sharing a store collide (`311q` § 8). Noted: counting EVERY
+  ancestor in § 2.5's test would overlap every pair on a host at the boot and end USER_STORY
+  stage 5; the test counts the mParent instance only, a pragmatic cut whose principled form
+  (address first, then write path; the partition of `311q` § 18) is 312's.
