@@ -1025,3 +1025,18 @@ example; about five added words per site at most; a specification, never a teach
   ancestor in § 2.5's test would overlap every pair on a host at the boot and end USER_STORY
   stage 5; the test counts the mParent instance only, a pragmatic cut whose principled form
   (address first, then write path; the partition of `311q` § 18) is 312's.
+- CORRECTED, on the human's prompt that reuse being available does not make it right: "`311p`
+  thread 3 closes without an edit" is overstated. Separating sibling mCells by giving them
+  separate stores works only under the reading of § 2.5 in which SAME mPlacements alone overlap
+  (`disc-placement-pairs-read-two-ways`), since the two minted stores are themselves two mSorts
+  under one mParent instance that nobody has called distinct. Under that reading the net of
+  `311j` § 1.2 is evaded by the same idiom: a stranger who mints a store of their own under the
+  shared mParent instance (a vendor's table in a network namespace, against a knob identified in
+  the namespace directly) presents an mPlacement that is the other's descendant, never SAME, and a
+  finished definition spares one slot from itself (+SURE of the walk under that reading; it holds
+  in `311j` today, and is `311p` thread 5's second consequence met from thread 3's side). Under
+  the other reading (whatever is not DISJOINT collides; the correctness choice of `311q` § 18)
+  the net holds at any depth and no sibling mCells ever spare without the partition sentence. The
+  SAME-only reading is the disclosed-weak name floor of `311j` § 4.2 moved onto mPlacements:
+  unequal names, nobody's speech, sparing. Threads 3 and 5, the two readings, and the partition
+  are one knot, judged by the conductor not small.
