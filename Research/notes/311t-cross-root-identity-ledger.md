@@ -1152,3 +1152,19 @@ example; about five added words per site at most; a specification, never a teach
   subsystem), the dangerous configuration of it is rare, a loop filesystem is backing and never
   this shape, and the restated clause costs only a privately minted sub-store its separation from
   another definition's direct child.
+- **[HUMAN]** acks toward the fold: `311j` § 2.4's "exactly one mPlacement sits on its identifying
+  mFullyQualifiedKey" becomes "an mKey's mParent instance is implicitly one of its mPlacements;
+  declaring it again is harmless"; the emulated-authority exercise record takes adjacent
+  `<!-- /* superseded: … */ -->` notes, never a rewrite; § 4.2 gains brief lines for the shapes
+  this sitting killed (the human may later drop that section for tightness); the model grows a
+  very terse list of what it is known to supersede as currently written (an exception to normal
+  practice, for a churn-heavy round; root docs excluded, known stale). The panel may fall to a
+  successor; no predisposition on its brief. **[HUMAN]** on naming: `:relation` is only a gloss
+  for an abstract relationship and constrains no sh spelling; a warrant's likely spelling home is
+  a record to the report lane; "view" is mildly unsold. Conductor (~SUSPECT): the additive entry
+  relation floated beside the closure is NOT owed and stays out of 311; and the rename carries a
+  change of reading, from § 2.2's "reachable only through it" to the self-knowledge form of § 9,
+  which the restated one-top clause no longer blocks (if A were B, A's definition files the
+  thing outside every store of that mSort while B's files it inside one, and both hold only if
+  that store gives its own mKeys to its parent's things, which the closure denies); the
+  thing's-end gap stays 312's. Candidate names live in the root `_tmp-` naming file.
