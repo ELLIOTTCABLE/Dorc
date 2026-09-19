@@ -26,7 +26,7 @@ What holds after four sittings, in order of how it was reached:
   and `fnd-two-epistemic-seats-mis-sited`. Its bites are `kill-route-declared-as-store` below. It
   says nothing about DNS being different from the filesystem.
 - `hold-refag-correction` (**[HUMAN]**, acked by the conductor) — the four "edges" a container was
-  said to give (mints identity, holds state, sole-route, coherent local routing) reduce inside the
+  said to give (mints identity, holds state, aliases-nothing-else, coherent local routing) reduce inside the
   model to the two lookup warrants, the placement set, and the volatile bit, each claimable about
   any sort at any level. "Hands out" and "lives in" were world-talk. Nothing about filesystems is
   by derivation; every filesystem fact is a composed human claim.
@@ -55,7 +55,7 @@ What holds after four sittings, in order of how it was reached:
 
 Retracted along the way, so nothing rests on them: "the stdlib can provide a filesystem-tier
 foundation for web resources" (true only with operator-declared grouping, tabled, or with guards);
-"sole-route by decline discipline" (a valid mechanism, but it is the social canonical table);
+"aliases-nothing-else by decline discipline" (a valid mechanism, but it is the social canonical table);
 "the registry tree is physical" (only where DNSSEC-signed); "a stdlib root-of-roots with
 unique-name over shape tags" (`kill-stdlib-shape-tag-unique-name`).
 
@@ -242,7 +242,7 @@ The case is `kill-cdn-over-local-origin`. Worked from scratch in chat; the concl
   sh. That is why it is a killer and the guard-shaped cases are not.
 - `fnd-what-collide-by-default-costs` (+SURE) — every web fact below every local write becomes a
   guard (a drifted `apt-get install` re-checks the later `route53` record at apply): one API call,
-  no attention saved for that line. Buying those lines back needs the remote store's sole-route,
+  no attention saved for that line. Buying those lines back needs the remote store's aliases-nothing-else,
   which is the tabled social table. Not this sitting's.
 
 ## § 6 — 2026-09-18: the emulated-authority exercise
@@ -297,7 +297,7 @@ tree) are in the exercise record, sections "The four first guesses" and "A store
 tree". In brief:
 
 - All four decompose into existing `311j` relations: a secondary mScheme's `:yields` with
-  declining arms; `:sole-route`, a closed mPlacement set, and a finished footprint as three
+  declining arms; `:aliases-nothing-else`, a closed mPlacement set, and a finished footprint as three
   independent declarations (view and driver are the silent defaults; plain store is earned);
   one `:identified-in` edge; an ordinary mSort that is a delegation tree.
 - The one piece of new content is the registration edge: "this store belongs to that
@@ -324,13 +324,13 @@ tree". In brief:
 - **[HUMAN]** acks: routers and proxies need speech (what one does, translation or mutation, is
   unknowable without an author, as with pivots and wrappers); a self-compiled or self-hosted
   copy of a known shape is the abstraction-and-sharing question, for later.
-- Strains the revised strawman exposed (exercise observations): § 3.2's walk asks `:sole-route`
+- Strains the revised strawman exposed (exercise observations): § 3.2's walk asks `:aliases-nothing-else`
   of a registration for the store hung there, and `311j` has no warrant for what is actually
   leaned on (a store has one registration, by its describer's word); one operator serves one
   tenancy under several registrations; an organisation's proxy needs an arm in a lookup only
   someone else owns; a multi-provider tool chafes at one mScheme, one mSort.
 
-Tabled this sitting (**[HUMAN]**): the flag-shaped portion (two complete `:sole-route` chains to
+Tabled this sitting (**[HUMAN]**): the flag-shaped portion (two complete `:aliases-nothing-else` chains to
 two roots reading DISJOINT under the flag, as the multi-author no-fault residue), unread and
 set aside so the critical path stays on the registration edge, which the next sitting digs.
 
@@ -353,7 +353,7 @@ Reached in chat, in order:
   authority is somebody everyone must know because the world said so, and Dorc piggybacks on the
   world's solution instead of demanding double social work of describers. The conductor's read of
   `311j` under it: a fully qualified mKey is a chain of deferrals to issuers; the warrants and
-  `:sole-route` are testimony about an issuer's habits; :rootness is an authority needing no
+  `:aliases-nothing-else` are testimony about an issuer's habits; :rootness is an authority needing no
   introduction; `:corresponds` is an authority over a transition; § 1.10's local-route vouch is
   the degenerate case of knowing who answered. One constraint falls out, no relation: a lookup
   that reads a token across a transit establishes who answered, or declines.
@@ -416,7 +416,7 @@ one strain: under a single arbiter both forms are attested for free; in DNS the 
 answered" is itself open, so the DNS case is the shared problem plus the no-arbiter constraint,
 and the two compose.
 
-## § 9 — 2026-09-18: several forms of one thing; the line around mReferent; `:sole-route` split and attacked
+## § 9 — 2026-09-18: several forms of one thing; the line around mReferent; `:aliases-nothing-else` split and attacked
 
 **Whether to model the class at all** (argued both ways at the human's direction, each given its
 best world). The class: several co-existing things that can disagree, joined by a step that
@@ -481,9 +481,9 @@ already lives in the per-host dimension.
 - The concrete question left: the genuine case is ONE state-holder reachable through two honest
   id systems hung under two ancestors (a data-plane name and a management-plane id; one namespace
   under two registrations). Chains diverge high, DISJOINT follows, and whether a false sentence
-  lies behind it depends on what `:sole-route` says and who says it.
+  lies behind it depends on what `:aliases-nothing-else` says and who says it.
 
-**`:sole-route` as two sentences** (**[HUMAN]**: acked as a true narrowing of the problem-space,
+**`:aliases-nothing-else` as two sentences** (**[HUMAN]**: acked as a true narrowing of the problem-space,
 no logical hole seen, not ruled; attack before any second item is called necessary):
 - The two halves are distinguished by which kind of second chain a party can enumerate: a second
   CONTAINER presenting the same contents (known to whoever knows the container), and a second
@@ -518,7 +518,7 @@ no logical hole seen, not ruled; attack before any second item is called necessa
 - Worries: the world adds doors (an operator opening a second registration for one namespace:
   safe while nobody hangs anything there, a wrong DISJOINT attributable to both hangers once
   someone does; **[HUMAN]**: chronology, MH2-flavoured, mildly out of scope for now); cargo-cult
-  of a value-unlocking negative existential; whether this is two relations or one `:sole-route`
+  of a value-unlocking negative existential; whether this is two relations or one `:aliases-nothing-else`
   needing consent from both ends of the edge, a native describer giving both at once.
 - **[HUMAN]**: if a negative existential is necessary it gets boxed in, attacked, and reduced,
   and that is to be talked through before any tuning. A long name alone is neither enough nor
@@ -554,7 +554,7 @@ not supplemented). The conductor's exploration, no lean adopted:
   two knife sentences about one world-fact that can disagree, with no rule for what disagreement
   means; the container half is a plain duplicate.
 - A non-merging cousin: keep identity's own warrant, and cross-check it against mPlacement
-  closure (a store claimed `:sole-route` whose mPlacements are not closed at itself is a static
+  closure (a store claimed `:aliases-nothing-else` whose mPlacements are not closed at itself is a static
   contradiction, refused, attributed) rather than deriving one from the other.
 - The positive, epistemically pure twin exists for both: an mPlacement entry ("my state also
   lives there") and, for attestation, "also attested under that registration" are collide-adding
@@ -562,7 +562,7 @@ not supplemented). The conductor's exploration, no lean adopted:
 
 ## § 10 — 2026-09-18: the equivalence of § 9 attacked, and withdrawn
 
-**[HUMAN]**: "the store's own mPlacement is `:sole-route`" is attractive and suspiciously tidy; is
+**[HUMAN]**: "the store's own mPlacement is `:aliases-nothing-else`" is attractive and suspiciously tidy; is
 the mPlacement of a store doing two jobs (a placement named for another reason that must not
 ruin the privilege; a wish to disclaim the privilege without a second store to name; a store's
 selfness and physicality conflated with how it holds children)? Expect a comparison of upsides,
@@ -593,7 +593,7 @@ not a kill. The conductor's attack; § 9's first two exploration findings are WI
   the interference relation, gives the closure a third consumer. As its own statement: right
   arity, sayable without knowing where one's bytes live, keeps the consumers apart, silence
   disables; duplicates when the viewed store is also an mPlacement, admits a contradiction.
-- WITHDRAWN too: the cross-check "`:sole-route` claimed but mPlacements not closed at itself is a
+- WITHDRAWN too: the cross-check "`:aliases-nothing-else` claimed but mPlacements not closed at itself is a
   contradiction"; it would refuse every loop-mounted filesystem.
 - The sibling claim fails the same way: a process's state lives in one place and it is identified
   in two pid namespaces, so the child's mPlacement closure is true and it has two homes. The axis
@@ -636,7 +636,7 @@ Every item in this section needs deep investigation; nothing is ruled. A success
 | what is true in the world | end | who can know it | positive entry | closure (the knife) | in `311j` today |
 |---|---|---|---|---|---|
 | T's mKey means something only relative to P | T's | T's describer | "this thing is also k' relative to Q" | "it has no other home" | entry: `:identified-in`, `:corresponds`; closure: ABSENT |
-| | P's | P's describer, or whoever stood the instance up | "mKeys relative to me are Q's things, thus" | "I re-present nobody's things" | entry: `:corresponds`; closure: `:sole-route` |
+| | P's | P's describer, or whoever stood the instance up | "mKeys relative to me are Q's things, thus" | "I re-present nobody's things" | entry: `:corresponds`; closure: `:aliases-nothing-else` |
 | a write to P can change T, P not on T's chain | T's | T's describer | "writes to P can change me" | "nothing else off my chain can" | `:lives-in` and its sentinel |
 | | P's | P's describer | "writing me also changes T" | "writing me changes nothing else" | `:reaches` and the finished record |
 | answers about T are A's word (OPEN) | T's | T's describer | "answers about me are vouched by A" | "by nobody else" | nothing |
@@ -648,7 +648,7 @@ Observations from building it:
   depends on who knows.
 - The second row already demands consent from both ends: sparing an unspoken pair needs the
   writer's "nothing else" bounded by the fact's closed mPlacements (§ 2.5). The split of
-  `:sole-route` brings the first row to the shape the second has had all along.
+  `:aliases-nothing-else` brings the first row to the shape the second has had all along.
 - The first row's positive entry is itself a knife today (`:corresponds` licenses SAME); a
   collide-only form ("may also be k' under Q") does not exist; silence already reads UNKNOWN, so
   it would matter only for contradicting someone else's closure.
@@ -797,7 +797,7 @@ State at the rewind, for a successor (description, not a worklist):
   the litmus paragraph now opening `311j` § 4; GOTCHAS entries from
   `an-emulated-authority-presents-the-real-id` to `backing-is-not-presenting`.
 - Standing, none ruled: the table of § 11 as the candidate re-cut of 311 (the human's lean, which
-  must first beat "suspiciously tidy" and complexity creep on concrete ops strawmen); `:sole-route`
+  must first beat "suspiciously tidy" and complexity creep on concrete ops strawmen); `:aliases-nothing-else`
   as two ends of one row (acked as a true narrowing); the line around mReferent of § 9 (a single
   state-holder; the identity-locus concept turned down as a participant); attestation as a gate
   (§ 12); the phrasing corrections of § 11; the three leaks and the candidate repair of § 8, held
@@ -826,7 +826,7 @@ tagged: "landing" (where a contact ended), "pin", "forced route".
   facet collapse need; `311q` § 18 records the human's correctness choice as "they collide". Under
   § 18 every cross-vocabulary survival rests on the partition of `311q` § 18.
 - `obs-table-covers-five-of-eleven-relations` (+SURE of the count) — § 11's table maps
-  `:identified-in`, `:corresponds`, `:sole-route`, `:lives-in`, and `:reaches` out of `311j`
+  `:identified-in`, `:corresponds`, `:aliases-nothing-else`, `:lives-in`, and `:reaches` out of `311j`
   § 2.10's eleven. All eleven sort under four facts about the world: address (what an mKey is
   relative to), write path (whose writes change what), route (what a lookup passes through:
   `:yields`, the mTraversal, `:hierarchical`, `:lends`), and asker (`:observer-independence`).
@@ -1007,7 +1007,7 @@ example; about five added words per site at most; a specification, never a teach
   demands the former); § 1.9's reboot derivation struck; § 1.2's parenthetical pointed at § 3.2;
   warrants per lexical path for every lookup, § 1.5; the sentinel's danger said briefly, left to
   the conductor.
-- Punted to 312 by the conductor's re-walk: rewording `:sole-route` to the self-knowledge reading
+- Punted to 312 by the conductor's re-walk: rewording `:aliases-nothing-else` to the self-knowledge reading
   (`311p` thread 1's soundness argument for unequal depth uses the strong reading; the weak one
   needs the child's "no other home"); the single-state-holder line of § 9 (a bearer with two loci
   could then carry no `:guarantees-unique-referent`, so a wrapped `systemctl` read could share no
@@ -1079,7 +1079,7 @@ example; about five added words per site at most; a specification, never a teach
     and under the narrow meaning that silence spares; the ancestor problem that made the wide
     meaning value-dead came only from the mParent instance sitting in the test;
   - across two mSorts, only the shared-key-space clause of § 3.2 may separate (two tops of one
-    mScheme under `:guarantees-unique-name`); the one-top clause rests on `:sole-route` alone, a
+    mScheme under `:guarantees-unique-name`); the one-top clause rests on `:aliases-nothing-else` alone, a
     universal about every route including strangers', and with it a vendor's minted store that
     honestly believes itself primary separates a slot from the stranger's knob naming it; for two
     mKeys of one mSort the clause stays as acked on 2026-09-17;
@@ -1097,7 +1097,7 @@ example; about five added words per site at most; a specification, never a teach
   every oracle's shape is constrained by it, and one more turn of hunting moved the rule twice.
 - **[HUMAN]** acks: § 2.5 spares narrowly and collides widely (the earlier "narrowest" meant
   least value yielded); the write-path question asked of every pair, at first gloss. Memory
-  check, confirmed by the conductor: strangers' routes are why § 9 split `:sole-route` into two
+  check, confirmed by the conductor: strangers' routes are why § 9 split `:aliases-nothing-else` into two
   ends, heading toward pairs that need both present. It carries a front over another's store (the
   front's describer is silent on its own leg) and does not carry the vendor's store against a
   knob sitting directly in the shared mParent, where the stranger's leg holds no store to be
@@ -1106,7 +1106,7 @@ example; about five added words per site at most; a specification, never a teach
   Under collide-widely alone, sparing across two mSorts already needs both sides' mParent
   instances and declared mPlacements to `compare()` DISJOINT, which already needs a shared key
   space. What address-first adds over § 2.5 pinned wide: it asks the walk about the two things
-  themselves, so `:sole-route` is demanded of every store on both legs, where the mPlacement test
+  themselves, so `:aliases-nothing-else` is demanded of every store on both legs, where the mPlacement test
   never asks; and it takes the mParent instance out of that test, which gives back the pairs the
   wide meaning kills (a store that sits inside a filesystem against any file of that filesystem:
   most of USER_STORY stage 5). A lower bound with nobody badly written, wrong under either
@@ -1114,7 +1114,7 @@ example; about five added words per site at most; a specification, never a teach
   `docker start` of that container, two daemons comparable and distinct as processes, each
   describer's mPlacements DISJOINT from the other's, the containerd describer's definition
   finished, and dockerd a front over containerd's things whose describer would withhold
-  `:sole-route` if anything asked.
+  `:aliases-nothing-else` if anything asked.
 - **[HUMAN]** hard ack, as written: an author who mints an mSort and hangs it on nothing
   comparable stays guard-only under the flag. The reason is referential agnosticism: that author
   could as easily have typed a name for an entire duplicated filesystem type and hung it on

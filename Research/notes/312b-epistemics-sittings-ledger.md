@@ -88,17 +88,17 @@ with and without a declared root):
   author in the why chain. Both holes reintroduce `a-host-is-not-a-partition` against
   `26Ob:ack-cross-world-wall-is-the-floor` (TYPED), which 311 otherwise reproduces exactly at
   the no-root floor.
-- `hole-sole-route-orientation` (~SUSPECT; ambiguous text) — § 3.2's "every level above it"
+- `hole-aliases-nothing-else-orientation` (~SUSPECT; ambiguous text) — § 3.2's "every level above it"
   must mean every level between the divergence and the leaf, per § 2.2's definition; under
-  either reading the NFS case rests on the File or Filesystem owner withholding :sole-route for
+  either reading the NFS case rests on the File or Filesystem owner withholding :aliases-nothing-else for
   network mounts, with no net for one who did not think of it.
 - `law-partial-measurement-never-widens` (owed) — a mDerivation with an unmeasured or
   mRoute-terminated link yields at most what it yields measured.
 - `lead-rootness-is-a-stdlib-only-seat` — a mRoot's blast radius is every mSort identifying into
   it, retroactively; declaring one is the highest-leverage act in the identity model and
   belongs with countability's few.
-- `lead-cross-target-disjointness-is-the-admins-sole-route` — "these targets share no mKey-PrimaryStore"
-  is :sole-route at the Target mKey-PrimaryStore, the admin's seat; it is the reserved posture option, and
+- `lead-cross-target-disjointness-is-the-admins-aliases-nothing-else` — "these targets share no mKey-PrimaryStore"
+  is :aliases-nothing-else at the Target mKey-PrimaryStore, the admin's seat; it is the reserved posture option, and
   no rule change replaces it.
 - `nit-same-is-or-across-derivations` — the mKey walk is "and" over levels; SAME overall is
   "or" across mDerivations (mKey walk; mCorrespondence; provider identifier); worth stating
@@ -186,7 +186,7 @@ Findings from the rabbit hole under `312b-exercises/04`, superseding in part the
   (`sm.File`; the netns sysctls) the mSort-PrimaryStore varies per mKey; the owner declares a
   menu of admissible parent mSorts (`sm.LocalFilesystem`, `sm.NetworkExport`,
   `sm.ClusterFilesystem`, decline) and `resolve()` picks per mKey, returning the mPrimaryKey with
-  the parent's mKey; each admissible parent carries its own :sole-route answer. 311 § 2.10's
+  the parent's mKey; each admissible parent carries its own :aliases-nothing-else answer. 311 § 2.10's
   one identifying parent per mSort becomes one parent per mKey, one menu per mSort. The lazy resolve (statfs
   fsid in Boot) is true and unsafe; under the menu the lazy resolve has no arm and declines.
 - `fnd-bound-the-finished-definition-by-stores` (ACKED) — "nothing else" means "nothing outside
@@ -202,22 +202,22 @@ Findings from the rabbit hole under `312b-exercises/04`, superseding in part the
   unknown, and with per-mKey parents cross-mWorld comparison runs through the ordinary mKey
   walk. `26Ob:ack-cross-world-wall-is-the-floor` is reproduced at the no-root floor. The
   clause was buying pivot-book cross-mWorld sparing; that value returns through the menu
-  (local-exclusive parents carry :sole-route) and through the admin's cross-target posture,
+  (local-exclusive parents carry :aliases-nothing-else) and through the admin's cross-target posture,
   never through the finished definition.
 - `law-partial-measurement-never-widens` (owed) — a mDerivation with an unmeasured or
   mRoute-terminated link yields at most what it yields measured.
-- `fnd-sole-route-is-provable-by-constitution-or-contract` — never for views. A process in its
-  kernel, a package in its dpkg file, an inode in its ext4 table are :sole-route by what they
+- `fnd-aliases-nothing-else-is-provable-by-constitution-or-contract` — never for views. A process in its
+  kernel, a package in its dpkg file, an inode in its ext4 table are :aliases-nothing-else by what they
   are; ext4 in its boot by the filesystem's own contract (concurrent mounting unsupported); a
   client NFS mount, an NSS view of LDAP, a chroot's view of a bind mount are views and get no
-  :sole-route. Parent classification and :sole-route are one declaration. Clones are
-  :guarantees-unique-referent failures on a token, never :sole-route failures. 311 § 2.2's
+  :aliases-nothing-else. Parent classification and :aliases-nothing-else are one declaration. Clones are
+  :guarantees-unique-referent failures on a token, never :aliases-nothing-else failures. 311 § 2.2's
   hardlink example is a :guarantees-unique-name failure on paths, handled by `resolve()`; a
   one-word fix owed.
 - `fnd-warrants-sit-on-edge-types` — :guarantees-unique-referent and :guarantees-unique-name on
   a :named-in edge type (a sort's natural keys into an mSort-CatalogStore), declared by the child sort's
-  owner; :sole-route on an :identified-in edge type (a sort into its parent sort). Location of
-  :sole-route is contested: 311 puts it on the child; the person who knows whether the parent is
+  owner; :aliases-nothing-else on an :identified-in edge type (a sort into its parent sort). Location of
+  :aliases-nothing-else is contested: 311 puts it on the child; the person who knows whether the parent is
   a store or a view is the parent's owner; exercise 04 leaned parent.
 - `fnd-directionality` — :named-in runs inward from a value to an mKey-CatalogStore (the lift; `resolve()`
   performs it and is the only relation with a value on its left); :identified-in and :lives-in
@@ -305,7 +305,7 @@ Findings:
   whole mSort and either duplicate speech they do not own or leave it empty, in which case
   their mSort collides with everything.
 - `fnd-the-primary-store-is-the-primary-lookups-catalog-store` — the mSort declares no mKey-PrimaryStore and has no key
-  concept of its own; `:sole-route` and `:rootness` sit on the primary naming system's `:named-in`
+  concept of its own; `:aliases-nothing-else` and `:rootness` sit on the primary naming system's `:named-in`
   edge; a secondary naming system's mKey-CatalogStore may be a different object from the mKey-PrimaryStore
   (`sm.File` by path: the mount table, not the filesystem). The polymorphic parent
   (local / network / cluster filesystem) is decided by the PARENT mSort's own primary
@@ -321,7 +321,7 @@ Findings:
 - `fnd-two-epistemic-seats-mis-sited` — the lookup warrants are the mKey-CatalogStore owner's knowledge
   (how the passwd database behaves under duplicate names) yet both shapes have the
   naming-system author write them; a default warrant declared on the mSort-CatalogStore,
-  inherited and only narrowable, seats it correctly. `:sole-route` is the mSort-PrimaryStore's
+  inherited and only narrowable, seats it correctly. `:aliases-nothing-else` is the mSort-PrimaryStore's
   knowledge (store or view); the parent declares once, children inherit; 311 puts it on the
   child.
 - `fnd-sort-names-the-carrier-only` (**[HUMAN]**, hard nack) — 311 § 1.2's "sort" is
@@ -376,7 +376,7 @@ attacked with sh. Nothing ruled.
   naming system reaches the mKey-PrimaryStore (a filesystem named by the device number a file's `resolve()`
   emits), each arm returning the mKey-PrimaryStore's key together with its own parent, and a decline
   arm for types the expert refuses to treat as mKey-PrimaryStores (procfs). A subsort proposal was made and
-  retracted in the same sitting. :sole-route stays a DECLARED warrant, absent by default: nested
+  retracted in the same sitting. :aliases-nothing-else stays a DECLARED warrant, absent by default: nested
   pid namespaces refute deriving it from chain shape (guest pid 1 and host pid 4821 are one
   mReferent and both chains resolve cleanly to one boot). "Index-kinds" (`30W`, context axes) is a
   different concept; never reuse the name.
@@ -438,7 +438,7 @@ Exercise 04 is still OPEN: its file is the ten-observation version and owes a re
 light staged form (the no-root floor; a root arrives; the world with declared mKey-PrimaryStores); its § 2 block
 above predates § 5 and is superseded where they differ. Owed on design-of-record documents,
 each waiting on the human's word: 311 § 2.2 (the parent menu; the hardlink example), 311 § 3.2
-(delete the route and root clauses; state :sole-route's orientation leaf-ward; state that SAME
+(delete the route and root clauses; state :aliases-nothing-else's orientation leaf-ward; state that SAME
 is "or" across mDerivations and "and" within the mKey walk), 30U (the finished definition's
 licensor bounded by stores). Punted by the human: the flag's re-derivation; where custody and
 marks sit; whether the admin's cross-target line is a book line, a lint, or a posture flag.

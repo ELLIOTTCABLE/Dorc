@@ -39,7 +39,7 @@ These names address **the same kernel field**, not merely two settings with rela
 Now use the published Michael/Rachel declarations without changing their semantics:
 
 - Michael’s lookup yields `sm.ProcSysPath:net/ipv4/ip_forward` and `sm.ProcSysPath:net/ipv4/conf/all/forwarding`.
-- Rachel’s `net/*` arm puts both in the same network namespace and grants `:guarantees-unique-name`, `:guarantees-unique-referent`, and `:sole-route`.
+- Rachel’s `net/*` arm puts both in the same network namespace and grants `:guarantees-unique-name`, `:guarantees-unique-referent`, and `:aliases-nothing-else`.
 - **311j §3.2:** the deepest shared ancestor is that namespace. The two legs have different values of the same primary mScheme, with the required warrants. The answer is DISJOINT.
 - Michael’s footprint names the first key; Rachel’s finished definition adds nothing. Under `--risk-faultless-skips`, the second line’s measured convergence can survive the first line.
 - The resulting book disables forwarding and removes the line that would restore it.
@@ -102,7 +102,7 @@ Under **311j §3.2**, their deepest SAME ancestor is the boot. Both remaining le
 sm.NetnsInode       versus       sm.ProcSysPath
 ```
 
-The required “tops are mKeys of one mScheme” condition fails. The answer is **UNKNOWN**, so the second command needs a guard. All the stated `:sole-route` warrants can be true without satisfying that condition. [A-311j:unequal-depth-comparison-rule](C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:420)
+The required “tops are mKeys of one mScheme” condition fails. The answer is **UNKNOWN**, so the second command needs a guard. All the stated `:aliases-nothing-else` warrants can be true without satisfying that condition. [A-311j:unequal-depth-comparison-rule](C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:420)
 
 The exercise instead says the second command survives, and **311q §4 explicitly records the edit as recovering that survival**. Those statements disagree with the edited rule. [A-312b:unequal-depth-survival-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/312b-exercises/net-sysctls-are-per-namespace.md:407), [A-311q:unequal-depth-closure-claim](C:/Users/ec/Sync/Code/Dorc/Research/notes/311q-attack-and-firming-ledger.md:107)
 

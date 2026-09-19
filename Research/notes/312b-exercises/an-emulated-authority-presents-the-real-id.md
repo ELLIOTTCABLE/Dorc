@@ -182,7 +182,7 @@ sm_AuthoritativeZone__declaration() { : : primary-scheme "sm.ZoneApex" }
 sm_ZoneApex__resolve() {                         # identity on the apex; whoever yielded it supplied its store
    case "$1" in
    .)   printf 'warrants rootness\n' >>"${DREP_V1:-/dev/null}" ;;      # the one global registry; a split horizon resolving SAME is this line's fault
-   *.)  printf 'warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
+   *.)  printf 'warrants guarantees-unique-name,guarantees-unique-referent,aliases-nothing-else\n' >>"${DREP_V1:-/dev/null}" ;;
    *)   return 2 ;;
    esac
 }
@@ -241,7 +241,7 @@ The walks:
   `sm.RRsetKey:"status.acme.org. A"`, in `acme.org.`, in `org.`, in `.`. The root is one
   mWorld by :rootness. The tops `example.` and `org.` are mKeys of one mScheme carrying
   `:guarantees-unique-name`, with differing values, and every store below down to the leaves'
-  mParents is `:sole-route`. DISJOINT. On a day the CNAME has drifted, line 4 survives line 3:
+  mParents is `:aliases-nothing-else`. DISJOINT. On a day the CNAME has drifted, line 4 survives line 3:
   two provider authors who never met, separated by Dana's tree and one `dig` apiece.
   <!-- /* superseded: this survival answers only the address question; under `311j` § 2.5 as folded 2026-09-19 the write-path question is also asked, Dana's mSorts declare no mPlacements, an undeclared mPlacement collides, and line 4 verifies in both renders (`311t` § 8). */ -->
 - Two strangers in one zone (no book line; a colleague's `dnscontrol` beside Carla's
@@ -269,8 +269,8 @@ plan: 2 to run, 3 to verify (1 skipped)
 The DNS tree separates so well that Hugo is tempted to hang origins under it:
 `sm.HttpOrigin` `:identified-in` `sm.ZoneCut:$host`. Then line 7's origin sits in
 `acme.example.` and line 6's in `amazonaws.com.`; the tops `example.` and `com.` differ under
-Dana's `:guarantees-unique-name`; the zones are `:sole-route`; DISJOINT; line 7 survives the
-sync; C2 fires. The sentence Hugo would have made false is Dana's: `:sole-route` on a zone says
+Dana's `:guarantees-unique-name`; the zones are `:aliases-nothing-else`; DISJOINT; line 7 survives the
+sync; C2 fires. The sentence Hugo would have made false is Dana's: `:aliases-nothing-else` on a zone says
 what is identified in it is reachable only through it, and a store behind an origin is
 reachable through as many names as anyone cares to point at it (this book has two). A name is a
 route to what answers, and a zone is a store of names. Records live in zones; nothing else
@@ -298,14 +298,14 @@ discovered later (**[HUMAN]**, 2026-09-18).
 - "My service is entered through these hosts." A lookup from typed route-names to a store's
   mKey that declines what it does not know: a secondary mScheme's `:yields` with declining arms
   (§ 2.1). It needs no closure (nothing consumes "these and no others") and is no part of
-  `:sole-route` (many routes into a store all enter it). Pair: `sm.Path` into `sm.Inode`; a
+  `:aliases-nothing-else` (many routes into a store all enter it). Pair: `sm.Path` into `sm.Inode`; a
   namespace label into its nsfs inode. The difference the pair shows: `stat` asks the store's
   own arbiter and is handed the mKey; a host table is its author reciting. Both are `resolve()`
   bodies, and the value plane already grades a table below a world read. A host that fronts
   several unrelated stores by path is several mSchemes over one class of strings, each owned by
   whoever knows that store, each declining the rest; the endpoint is not a unit of composition.
 - "I am a plain store, a view, or a driver." Three independent declarations, not a category:
-  `:sole-route` (§ 2.2); a closed mPlacement set, as against one pointing outward or undeclared,
+  `:aliases-nothing-else` (§ 2.2); a closed mPlacement set, as against one pointing outward or undeclared,
   which is ⊤ (§ 2.4); a finished at-most footprint, as against none, which is a wall (§ 2.5).
   View and driver are the silent defaults; plain store is what is earned. Pairs: ext4 against
   an overlay's lower layer; `cp` against `apt-get install` and its postinst; a FUSE mount
@@ -338,7 +338,7 @@ registration, and publishes the lookup that enters them.
 pt_AwsStore__declaration() { : : primary-scheme "pt.AwsStoreKey" }
 pt_AwsStoreKey__resolve() {                      # "s3", "route53", "ec2/eu-west-1": the services, at the grain their identifiers are scoped
    case "$1" in
-   s3|route53|ec2/*)  printf 'identified-in sm.ZoneCut:amazonaws.com. warrants guarantees-unique-name,guarantees-unique-referent,sole-route\n' >>"${DREP_V1:-/dev/null}" ;;
+   s3|route53|ec2/*)  printf 'identified-in sm.ZoneCut:amazonaws.com. warrants guarantees-unique-name,guarantees-unique-referent,aliases-nothing-else\n' >>"${DREP_V1:-/dev/null}" ;;
    *)                 return 2 ;;
    esac
 }
@@ -365,7 +365,7 @@ The walks that change:
   `pt.AwsStoreKey:s3`, stored by Petra's arm in `sm.ZoneCut:amazonaws.com.`, which Dana's lookup
   resolves to the apex `amazonaws.com.`, in `com.`, in `.`. Carla's record sits in
   `acme.example.`, in `example.`, in `.`. The tops `com.` and `example.` differ under Dana's
-  `:guarantees-unique-name`; every store below is `:sole-route` by Dana's arm and Petra's.
+  `:guarantees-unique-name`; every store below is `:aliases-nothing-else` by Dana's arm and Petra's.
   DISJOINT. On a morning only the CNAME has drifted, the sync's converged fact survives line 3.
 - Lines 5 and 7 against line 3. Alice's profile points at `s3.corp.acme.example`; Petra's lookup
   declines it; the bucket's store is unknown from that level; UNKNOWN; both verify. Line 8's
@@ -461,7 +461,7 @@ stops depending on whose resolver answers.
   declarations a store already has, one `:identified-in` edge, and an ordinary mSort that is a
   delegation tree. Nothing in the revised glue asked `311j` for a relation it lacks.
 - `obs-the-registration-edge-is-the-one-new-sentence` (+SURE of the strain; --WONDER of the
-  repair) — § 3.2's walk asks `:sole-route` of `amazonaws.com.` for what Petra hung there, and
+  repair) — § 3.2's walk asks `:aliases-nothing-else` of `amazonaws.com.` for what Petra hung there, and
   Dana's blanket arm supplies the letter. Read as reachability it is false: the corporate proxy
   reaches the s3 store through no name in that zone. Petra's arrangement is safe where Hugo's
   was not because she hangs only stores she recognises and declines the rest, so no one store

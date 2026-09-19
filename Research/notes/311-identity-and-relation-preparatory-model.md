@@ -234,11 +234,11 @@ claim that lookup in N is a function. This relation never licenses disjointness 
 mKey-CatalogStore-disjointness is not referent-disjointness (`a-host-is-not-a-partition`,
 `address-inequality-is-not-referent-inequality`, `containment-by-path-prefix-lies`).
 
-### § 2.2-identified-in (the `resolve()`, the primary-store, sole-route, rootness)
+### § 2.2-identified-in (the `resolve()`, the primary-store, aliases-nothing-else, rootness)
 
 > ER modeling's identifying relationship: a weak mKey's mKey-Primary includes its
 > identifying mKey's mKey; a strong mKey has its own. Identifying is NOT containing.
-> The containing half is :sole-route below (networking: single-homed), a separate,
+> The containing half is :aliases-nothing-else below (networking: single-homed), a separate,
 > dangerous claim; conflating the two is the hardlink and NFS mistake.
 
 K's `resolve()`, declared and executed by K's owner in the mVantage the mKey resolved from,
@@ -251,7 +251,7 @@ K's owner about the mKey-Primary:
 
 - :guarantees-unique-referent and :guarantees-unique-name (§1.5), governing what mToken equality and
   inequality license at K's level of a mFullyQualifiedKey;
-- :sole-route: K's mReferents are reachable only through their mKey-PrimaryStore, so disjoint
+- :aliases-nothing-else: K's mReferents are reachable only through their mKey-PrimaryStore, so disjoint
   mKey-PrimaryStores imply disjoint K-referents. Required for a divergence at the mKey-PrimaryStore level
   to yield DISJOINT for K. Fails for replicated rows, for files reachable through several
   directories (a hardlink), for a record whose current state spans several files
@@ -362,7 +362,7 @@ composite is the union of its parts' mPlacements.
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
 | :named-in | one per mSort, mKey-CatalogStore per mKey | mSort owner (mKey-CatalogStore: fixed / site / ambient) | no mKey-CatalogStore ⇒ mRoute only | mResolution | :guarantees-unique-referent (same from equality) · :guarantees-unique-name (disjoint from inequality) |
-| :identified-in (the `resolve()`) | one per mSort | mSort owner | none ⇒ mKey-Primary = mKey-Natural | identity | :guarantees-unique-referent · :guarantees-unique-name · :sole-route · :rootness |
+| :identified-in (the `resolve()`) | one per mSort | mSort owner | none ⇒ mKey-Primary = mKey-Natural | identity | :guarantees-unique-referent · :guarantees-unique-name · :aliases-nothing-else · :rootness |
 | :lives-in | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision | none positive; omission is the silent channel |
 | :reaches + finished | many, per arm | mSort owner | known-unspoken ⇒ collide | cross-mRoot sparing | the premature finished record |
 | :corresponds | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
@@ -401,7 +401,7 @@ compare(x, y) ∈ {same, disjoint, known-unspoken, unknown}, consumers exactly a
   definition (§2.4), as `30U` has it.
 - at the first level where the two mKeys differ inside a shared mKey-PrimaryStore S: DISJOINT iff S's
   `:identified-in` edge for that mSort carries :guarantees-unique-name and every level above it carries
-  :sole-route; else UNKNOWN. Deeper levels are not consulted; separation is decided once.
+  :aliases-nothing-else; else UNKNOWN. Deeper levels are not consulted; separation is decided once.
 - if no level differs: SAME iff every level's equality is warranted (:guarantees-unique-
   mReferent on that level's `:identified-in` edge, or the engine's own transit-free local-mRoute claim of §1.9
   at the bottom); else UNKNOWN.
@@ -462,14 +462,14 @@ shape (§3.6).
 
 ### § 3.5-committee-law-satisfied
 
-Every positive step is one author's line: a `:named-in` or `:identified-in` edge and its warrants, a `resolve()`, a :sole-route
+Every positive step is one author's line: a `:named-in` or `:identified-in` edge and its warrants, a `resolve()`, a :aliases-nothing-else
 flag, a mPlacement set and its sentinel, an entailment and its finished record, a
 mCorrespondence, a :observer-independence, a :lends. The engine only chains and meets. A
 granting composite ("these two accounts are one") is entailed jointly by the account
 owner's :identified-in declaration and the database owner's `resolve()`, each speaking about their
 own mSort (`28M:rul-composite-meets-toward-guard-run`). A withholding composite (a mount
 perishing an account's mResolution) names nobody and needs nobody's consent. Attribution:
-every survival names the :sole-route and :guarantees-unique-name lines it rested on; every SAME
+every survival names the :aliases-nothing-else and :guarantees-unique-name lines it rested on; every SAME
 names the `resolve()` calls and mCorrespondences; every perished conclusion names the footprint that
 perished it.
 
@@ -523,10 +523,10 @@ line here is the model element it forces.
 - `not-every-transit-changes-the-referent` — leaf mSorts inherit through their mKeys; a
   transit that lends no mKey-CatalogStore on a mKey leaves it untouched (§3.4).
 - `address-inequality-is-not-referent-inequality` — :named-in licenses no disjointness across
-  mKey-CatalogStores; :sole-route is a separate, dangerous flag (§2.1, §2.2).
+  mKey-CatalogStores; :aliases-nothing-else is a separate, dangerous flag (§2.1, §2.2).
 - `distinct-names-alias-within-a-kind` — :guarantees-unique-name is absent by default; the
   `resolve()` supplies the mKey-Primary (§1.5, §2.2).
-- `containment-by-path-prefix-lies` — the File mKey-Natural's mKey-CatalogStore is not :sole-route;
+- `containment-by-path-prefix-lies` — the File mKey-Natural's mKey-CatalogStore is not :aliases-nothing-else;
   containment is mTraversal membership on the mKey-Primary side (§2.2, §2.8).
 - `namespace-composition-is-not-concatenation` — mKey-CatalogStores are mKeys with
   identities, never strings composed by the engine (§1.4, §3.4).
@@ -542,7 +542,7 @@ line here is the model element it forces.
 - `a-name-is-not-a-target-over-time` — mPlaceholders, the standup `witness()`, integrity
   withhold; sameness of a target is continuity witnessed, never a spelling (§1.9).
 - `a-store-is-not-one-inode` — mPlacement is many-valued and distinct from the mSort-PrimaryStore
-  ; :sole-route is not implied by :lives-in (§2.2, §2.3).
+  ; :aliases-nothing-else is not implied by :lives-in (§2.2, §2.3).
 - `an-omitted-store-breaks-invariance` — mPlacement totality; the completion sentinel;
   omission is the silent channel (§2.3).
 - `nonzero-status-is-not-speech` — every warrant is typed speech, never an exit status; the
@@ -582,7 +582,7 @@ Recorded as what-killed-it, so the dead end is not re-walked.
 - "STORED-IN" AS ONE RELATION conflating routing and containment (`311d`; and the current
   design's keyed-by versus stored-in). Killed by hardlinks, bind mounts, NFS: mKey-CatalogStore
   disjointness is not mReferent disjointness. Surviving form: :named-in, :identified-in with
-  :sole-route, and mPlacement as three relations (§2.1–§2.3).
+  :aliases-nothing-else, and mPlacement as three relations (§2.1–§2.3).
 - TERMINAL TOKENS (`311f`'s `Measured(File, fsid:inode)`). Killed by NFS and by the mKey-PrimaryStore
   question: an inode is a mKey in a filesystem, a filesystem identifier is a mKey in whatever
   minted it; the File owner should never learn NFS. Surviving form: :rootness as an explicit

@@ -18,7 +18,7 @@ Class 2 (lost or inconsistent since 311): `fnd-disjoint-clause-over-demands-and-
 `fnd-two-roots-forecloses-warranted-separation`; `fnd-indexical-clause-versus-singleton-spelling`;
 `fnd-cross-sort-same-narrowed-by-design` (a price, not a fault);
 `fnd-coherence-of-instance-derivations-unstated`. Class 3 (wrong speaker / over-knowing):
-`fnd-sole-route-sited-on-the-child`; `fnd-warrants-claim-all-time-for-a-span`;
+`fnd-aliases-nothing-else-sited-on-the-child`; `fnd-warrants-claim-all-time-for-a-span`;
 `fnd-shape-is-not-a-function-of-bytes`; `fnd-sentinel-rests-on-a-privileged-read`;
 `fnd-observer-sorts-must-be-enumerated`. Class 4: three small text ambiguities. § 5: seven
 suspected faults that do not hold.
@@ -108,12 +108,12 @@ and works; 3-vs-5 hits `fnd-two-roots-forecloses-warranted-separation` below.
 
 +SURE on all four parts; they are readings of § 3.2's second bullet as written.
 
-(a) The tops over-demand `:sole-route`. The clause requires it of "every mKey of both legs",
+(a) The tops over-demand `:aliases-nothing-else`. The clause requires it of "every mKey of both legs",
 tops included. When two legs' tops are siblings under the shared level A, of one mScheme with
 `:guarantees-unique-name`, differing values, they name two mReferents by unique-name alone: if
-both reached one mReferent it would have two mKeys in A. `:sole-route` is load-bearing only
+both reached one mReferent it would have two mKeys in A. `:aliases-nothing-else` is load-bearing only
 strictly below a top (it is what stops guest pid 1 and host pid 4821 from reading DISJOINT,
-§ 4.2). The over-demand bites where the leaf shape honestly cannot carry `:sole-route`:
+§ 4.2). The over-demand bites where the leaf shape honestly cannot carry `:aliases-nothing-else`:
 
 ```sh
 kill -HUP "$(cat /run/nginx.pid)"                                          # 3
@@ -122,12 +122,12 @@ kill -0 "$(cat /run/haproxy.pid)" 2>/dev/null || systemctl start haproxy   # 4
 
 Both pids are in the inherited pid namespace (one instance). Legs `[P1]`, `[P2]`; tops of one
 mScheme; the pid owner can declare `:guarantees-unique-name` (one process, one pid, in one
-namespace) but § 4.2 forbids `:sole-route` on pids. Text: UNKNOWN; line 4 guards whenever
+namespace) but § 4.2 forbids `:aliases-nothing-else` on pids. Text: UNKNOWN; line 4 guards whenever
 line 3 runs. Truth: two processes. The same defect closes every Docker-exec'd book: two files
 in a container's overlay root are siblings under one overlay device, unique-name on inodes
-holds, but the inode shape cannot carry `:sole-route` there (the file is also reachable through
+holds, but the inode shape cannot carry `:aliases-nothing-else` there (the file is also reachable through
 the upper directory on the host), so `printf … >/etc/app/a.conf` never separates from a
-`test -s /etc/app/b.conf` licence. Fix: demand `:sole-route` of every leg mKey strictly below
+`test -s /etc/app/b.conf` licence. Fix: demand `:aliases-nothing-else` of every leg mKey strictly below
 its top; keep unique-name and inequality on the tops. No new declaration.
 
 (b) The "either one leg is empty" disjunct is unreachable. A leg is the chain strictly below
@@ -139,9 +139,9 @@ every case with an empty leg. Dead text, presumably a residue of an earlier cut.
 `[nsB, net/ipv4/ip_forward]` and `[kernel/pid_max]`; the tops are an `sm.NetnsInode` and an
 `sm.ProcSysPath`, different mSchemes; the only remaining disjunct is (b)'s dead one; UNKNOWN.
 `311q` § 4 records the edit as recovering "survival across a differently-lengthed leg", and the
-exercise's `obs-a-leg-separates-by-sole-route` and its drifted-day render (lines 7 and 8
+exercise's `obs-a-leg-separates-by-aliases-nothing-else` and its drifted-day render (lines 7 and 8
 "survive line 5") rest on it. Line 6 against 5 *is* licensed (tops `H` and `B`, both
-`sm.NetnsInode`, unique-name, differing; `:sole-route` below). What the differently-lengthed
+`sm.NetnsInode`, unique-name, differing; `:aliases-nothing-else` below). What the differently-lengthed
 case actually needs is an axiom the model refuses: `:identified-in` irreflexive (a store is not
 a member of itself), so that "reachable only through nsB" and "reachable only through the boot
 directly" cannot name one mReferent. § 3.2's "an mKey against its own container reads UNKNOWN"
@@ -153,7 +153,7 @@ state the axiom and its cost, or fix the exercise's claim and render; --WONDER w
 wants, and I lean to the exercise being wrong as written and the axiom being worth pricing
 separately.
 
-(d) Direction, for the record: `311` § 3.2 asked `:sole-route` of "every level above" the
+(d) Direction, for the record: `311` § 3.2 asked `:aliases-nothing-else` of "every level above" the
 divergence (root-ward), which protects nothing — the shared ancestor's other routes are
 irrelevant to two keys that share it. `311j` moved it leaf-ward, correctly, and overshot at
 the tops. The 311→311j change here is an improvement with one residual defect.
@@ -218,16 +218,16 @@ gap; burndown dropped the item, not the gap.
 
 ## § 3-wrong-speaker-or-over-knowing
 
-### fnd-sole-route-sited-on-the-child
+### fnd-aliases-nothing-else-sited-on-the-child
 
 +SURE on the textual contradiction; ~SUSPECT on how often it bites. § 2.2 has the primary
-mScheme's owner declare `:sole-route` "per matched shape of the mKey's value" and offers "an
+mScheme's owner declare `:aliases-nothing-else` "per matched shape of the mKey's value" and offers "an
 inode in its ext4 table" as constitution; five sentences later, "the child mSort's owner never
 learns the mParent's types". An inode number's bytes do not say ext4, nfs, overlay or sshfs.
-Tessa can declare `:sole-route` on inodes only blanket (true for stores; false for views — an
+Tessa can declare `:aliases-nothing-else` on inodes only blanket (true for stores; false for views — an
 overlay file is also reachable through its upper directory, an NFS or sshfs inode through the
 server) or decline (losing every cross-filesystem DISJOINT). Blanket is safe only
-conditionally: each view type's owner must decline `:sole-route` at *its* level so the walk
+conditionally: each view type's owner must decline `:aliases-nothing-else` at *its* level so the walk
 fails there first, and when one does not, § 3.5's attribution names Tessa's line for the fs
 owner's error.
 
@@ -237,11 +237,11 @@ test -s /etc/app/b.conf || cp b.conf /etc/app/  # 4   / is sda1
 ```
 
 A is the boot; legs `[F1, Ia]`, `[F2, Ib]`; tops differ under the fs owner's unique-name and
-`:sole-route` by contract; below them `Ia` and `Ib` need `:sole-route`, Tessa's, which she can
+`:aliases-nothing-else` by contract; below them `Ia` and `Ib` need `:aliases-nothing-else`, Tessa's, which she can
 only make blanket. `312b` § 7 `fnd-two-epistemic-seats-mis-sited` proposed the parent's
-per-shape classification carry the children's `:sole-route`, the parent declaring once, children
+per-shape classification carry the children's `:aliases-nothing-else`, the parent declaring once, children
 inheriting; `311j` kept the child seat. Rearrangement: § 2.2 is already per shape one level up;
-let the parent's shape declaration carry the children's `:sole-route`, and let the child owner
+let the parent's shape declaration carry the children's `:aliases-nothing-else`, and let the child owner
 declare none. With `fnd-disjoint-clause-over-demands-and-under-delivers` (a), siblings never
 need it at all.
 
@@ -340,8 +340,8 @@ so this is safe; recorded because the seat is the same one the model rejected fo
   section); nothing for identity to add. Holds.
 - `useradd alice; chown alice /x`: a routing write to the passwd entry (§ 3.3) and a fresh
   mPlaceholder for the later lookup. Holds.
-- Guest pid 1 against host pid 4821: absent `:sole-route` on pids, UNKNOWN (§ 4.2). Holds —
-  and is why (a) above must keep `:sole-route` on every leg mKey below a top.
+- Guest pid 1 against host pid 4821: absent `:aliases-nothing-else` on pids, UNKNOWN (§ 4.2). Holds —
+  and is why (a) above must keep `:aliases-nothing-else` on every leg mKey below a top.
 - Hardlinks, bind mounts, symlinked config dirs read SAME: representable by the file owner's
   `:guarantees-unique-referent` on inodes; the difficulty is only that § 1.5's wording makes
   the honest form unsayable (`fnd-warrants-claim-all-time-for-a-span`), not a modeling gap.
@@ -357,4 +357,4 @@ so this is safe; recorded because the seat is the same one the model rejected fo
 `fnd-sibling-cells-of-one-bearer-always-collide` (a), one clause in § 2.5 plus one sentence in
 § 2.4 fixing the reading. Then `fnd-supply-modes-survive-their-own-retraction`,
 `fnd-two-roots-forecloses-warranted-separation`, and `fnd-warrants-claim-all-time-for-a-span`,
-each a wording decision. `fnd-sole-route-sited-on-the-child` is the one seat move.
+each a wording decision. `fnd-aliases-nothing-else-sited-on-the-child` is the one seat move.

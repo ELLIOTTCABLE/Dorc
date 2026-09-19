@@ -53,9 +53,9 @@ I did not establish an ordinary ops situation that is wholly unrepresentable. Fi
 
    Assume both processes remain alive throughout the relevant span; recycled identifiers are not involved. The second process is already running when probed.
 
-   A PID mScheme can truthfully declare `:guarantees-unique-name` within this namespace: one process has one PID there. It cannot generally declare `:sole-route`, because that process can also have a PID in another namespace—the model’s own reason for retaining that warrant separately.
+   A PID mScheme can truthfully declare `:guarantees-unique-name` within this namespace: one process has one PID there. It cannot generally declare `:aliases-nothing-else`, because that process can also have a PID in another namespace—the model’s own reason for retaining that warrant separately.
 
-   At the shared namespace, different PIDs already prove different processes under §1.5. Any subsequent descent to their state mCells needs the appropriate containment warrants. But [311j §3.2](/C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:420) requires `:sole-route` on **every** mKey of both legs, including the two differing PID mKeys themselves. It consequently returns UNKNOWN despite having the local inequality proof.
+   At the shared namespace, different PIDs already prove different processes under §1.5. Any subsequent descent to their state mCells needs the appropriate containment warrants. But [311j §3.2](/C:/Users/ec/Sync/Code/Dorc/Research/notes/311j-identity-and-relation-model-two-species.md:420) requires `:aliases-nothing-else` on **every** mKey of both legs, including the two differing PID mKeys themselves. It consequently returns UNKNOWN despite having the local inequality proof.
 
    This is a loss of expressible separation, not an unsafe DISJOINT. Requiring a canonical host-wide process identity would make the author discover information unnecessary to establish the local truth.
 

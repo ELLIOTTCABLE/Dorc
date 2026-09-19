@@ -30,8 +30,8 @@ clone horizon), Machine identifies in Instance, both probes ran every `resolve()
 ```
 
 Same mRoot mSort; first divergence at the top; instance-ids carry :guarantees-unique-name. § 3.2:
-DISJOINT if "every level above it carries :sole-route." Read mRoot-ward, nothing is above:
-DISJOINT, :sole-route never consulted. Read leaf-ward, which is what § 2.2 defines :sole-route
+DISJOINT if "every level above it carries :aliases-nothing-else." Read mRoot-ward, nothing is above:
+DISJOINT, :aliases-nothing-else never consulted. Read leaf-ward, which is what § 2.2 defines :aliases-nothing-else
 for: Machine-in-Instance, Boot-in-Machine, Filesystem-in-Boot, File-in-Filesystem must all hold,
 and File-in-Filesystem is false on NFS (one export, two client fsids), so an owner who declared
 it lazily yields DISJOINT and one who withheld it yields UNKNOWN. Either way alpha's guard is
@@ -77,7 +77,7 @@ transports to alpha.
 S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-PrimaryStore."
 
 ```sh
-# not a spelling: the admin asserts sole-route at the Target mKey-PrimaryStore for every sort whose chain
+# not a spelling: the admin asserts aliases-nothing-else at the Target mKey-PrimaryStore for every sort whose chain
 # passes through a Filesystem; S2's divergence then yields DISJOINT honestly, attributed to the
 # admin's line; S1 stays unknown without it
 ```
@@ -92,7 +92,7 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-Primar
   compared no less decisively. A monotonicity law is owed: a mDerivation with an unmeasured or
   mRoute-terminated link yields at most what it yields with the link measured. `16P` DP-8's
   vacuous-bottom is the same law from the other side.
-- `obs-sole-route-runs-leaf-ward` — § 2.2 defines :sole-route as what lets a divergence at a
+- `obs-aliases-nothing-else-runs-leaf-ward` — § 2.2 defines :aliases-nothing-else as what lets a divergence at a
   mKey-PrimaryStore level license disjointness beneath it; § 3.2's "every level above it", after "walk from
   the mRoots", reads the other way. State the orientation: every level between the divergence
   and the leaf.
@@ -107,8 +107,8 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-Primar
   should never learn NFS" holds only if the Filesystem owner does: identify a network mount in its
   server (an unknown link, through the mVantage) or decline. A statfs fsid scoped in Boot is
   true and unsafe.
-- `obs-cross-target-disjointness-is-the-admins-sole-route` — S6: "these targets share no mKey-PrimaryStore"
-  is :sole-route at the Target mKey-PrimaryStore, the admin's seat under the posture option
+- `obs-cross-target-disjointness-is-the-admins-aliases-nothing-else` — S6: "these targets share no mKey-PrimaryStore"
+  is :aliases-nothing-else at the Target mKey-PrimaryStore, the admin's seat under the posture option
   `26Ob:ack-cross-world-wall-is-the-floor` reserved. The model needs the seat; no rule change
   replaces it.
 - `obs-same-is-or-across-derivations` — S4: the mKey walk is "and" over its levels; SAME overall
@@ -117,5 +117,5 @@ S6, the admin's posture, in behaviour only: "alpha and beta share no mKey-Primar
 - `obs-reads-decline-outside-their-ontology` — S5: the File `resolve()` declining on non-regular files
   is the net that keeps a borrowed path from minting SAME for a kernel object.
 - `obs-attribution-tests-the-rule` — for any fix: when the case fires, the why chain must name
-  a line that could be wrong (the mRoot declaration; a missing :sole-route; the admin's posture),
+  a line that could be wrong (the mRoot declaration; a missing :aliases-nothing-else; the admin's posture),
   never one that could not (the Package author's within-mWorld sentence).

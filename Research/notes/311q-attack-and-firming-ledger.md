@@ -19,7 +19,7 @@ warrants declared per matched shape of an mKey-Primary's value, by the primary m
 owner; a second name is a second mScheme. The mScheme-alone floor; no default mScheme. mKeys
 as plan-time objects. mCells as mSorts with singleton mKeys under their mSort-Bearer. The
 finished definition bounded by declared mPlacements. `compare()` reading mRoute-versus-mRoot
-and mRoots-differ as unknown, :sole-route leaf-ward, SAME "or" across mDerivations and "and"
+and mRoots-differ as unknown, :aliases-nothing-else leaf-ward, SAME "or" across mDerivations and "and"
 within one, partial measurement never widening. Its § 4.2 carries the refuted shapes.
 
 Typed this sitting (**[HUMAN]**):
@@ -105,11 +105,11 @@ Three edits, each acked in chat and made ahistorically:
   declaration, as an mKey of one of the mParent's mSort's mSchemes; disagreement refuses,
   attributed to both; absence is unknown from that level. `:parent-key-of` is gone.
 - § 3.2 and § 2.2: the DISJOINT walk in route terms. At the deepest SAME level A, DISJOINT iff
-  every mKey of both legs carries `:sole-route` and either one leg is empty or the legs' tops
+  every mKey of both legs carries `:aliases-nothing-else` and either one leg is empty or the legs' tops
   share an mScheme with `:guarantees-unique-name` and differing values; an mKey against its own
   container reads UNKNOWN; legs whose tops are of different mSchemes read UNKNOWN. This
   recovers survival across a differently-lengthed leg (a knob in a namespace against a knob
-  in the boot) from `:sole-route` read as the route claim § 2.2 defines, with no new
+  in the boot) from `:aliases-nothing-else` read as the route claim § 2.2 defines, with no new
   declaration, and leaves the strangers case and sibling sub-stores of different sorts
   UNKNOWN.
 - § 3.2 and § 3.5: SAME at a level by one instance (inherited through a wrapper's sentinel, or
@@ -124,9 +124,9 @@ The exercise record's drifted-day render and observations follow the edited mode
 Four passes (`311l`–`311o`, two lineages) over 311j and the 311→311j diff; adjudication and
 synthesis in `notes/311p`. Seven threads survive, the first four with two-lineage support: § 3.2's
 DISJOINT bullet as committed is defective (its empty-leg disjunct is unreachable, so the
-exercise's drifted-day survival does not follow, and it over-demands `:sole-route` at the tops);
+exercise's drifted-day survival does not follow, and it over-demands `:aliases-nothing-else` at the tops);
 the mCell fold lost the per-cell store; the identifying store makes sibling cells collide;
-`:sole-route` is the parent store's knowledge. One rule deleted from § 3.5 (the two-mSchemes
+`:aliases-nothing-else` is the parent store's knowledge. One rule deleted from § 3.5 (the two-mSchemes
 canary; refuted by both Astra passes and verified). Everything else waits on the human.
 
 ## § 6 — 2026-09-17: the cell question, under comparison
@@ -300,7 +300,7 @@ The reasoning round that followed, banked here for the successor:
   word; the `ip_forward`/`conf.all.forwarding` alias is the criterion saying knobs are
   individuals); an identity chain of its own (equivalent to bearer plus placement in every case
   walked; the chain belongs to the placement); all four warrants (unique-name and
-  unique-referent trivially true of a declared name and noise to write; `:sole-route` only ever
+  unique-referent trivially true of a declared name and noise to write; `:aliases-nothing-else` only ever
   meant a relation, shaved; `:rootness` never; and a warrant *offered* to a facet author is
   `311m`'s parentless-warrant knife); `:corresponds` (follows from the bearer's); `:lends`; the
   transit-free route claim. Meaningful there and shared with individuals: placements (usually
@@ -345,12 +345,12 @@ two mKeys of one mRoot shape compare as siblings and mRoots of two shapes stay U
 (**[HUMAN]** gentlest ack, left to the conductor's judgement after analysis; ~SUSPECT sound);
 § 3.2's DISJOINT bullet rewritten: the dead empty-leg case gone, siblings under one mParent
 separated by `:guarantees-unique-name` alone, unequal depth separated when the deeper mKey's
-stores are `:sole-route` and a store is never among its own contents (**[HUMAN]** all three
-acked); `:sole-route` re-described as a store's own property, what is identified in me is
+stores are `:aliases-nothing-else` and a store is never among its own contents (**[HUMAN]** all three
+acked); `:aliases-nothing-else` re-described as a store's own property, what is identified in me is
 reachable only through me, sited in § 2.2 with which line carries it left unfixed
 (**[HUMAN]**: the seat is a surface question, not the model's); § 2.6's false-friend line names
 loose correspondence. The § 3.5 canary deletion acked. The exercise record follows: Rachel's
-`:sole-route` lines gone, Simon's namespace carries it, Rachel withholds
+`:aliases-nothing-else` lines gone, Simon's namespace carries it, Rachel withholds
 `:guarantees-unique-name` on `net/*` (the forwarding alias, `311o`), Simon warrants nsfs inodes
 within a span; its drifted-day render is now licensed by the text.
 
@@ -494,7 +494,7 @@ engine support). Not owed.
 The § 13 "consequence" restated: under the ruler a knob reads as a property of its namespace,
 boot, or interface, with the dotted and slashed forms as synonyms and no warrants, where the
 sysctl exercise models it as an individual with spellings and warrants; the exercise's four
-comparisons land the same under either (the namespaces' unique-name and sole-route separate),
+comparisons land the same under either (the namespaces' unique-name and aliases-nothing-else separate),
 and both descriptions stand.
 
 GOTCHAS gained two forcing functions each re-derived this arc: `a-whole-write-replaces-every-part`
@@ -513,7 +513,7 @@ the shared group-line placement, and paying sibling precision (every `usermod -a
 keys one cell) with one dormant omission (the primary group lives in passwd, not a group line).
 The strain (sibling walls; docker wanting a membership cell to reach; `usermod -G`'s whole
 write) makes her graduate membership to an individual in the group's store. What swaps, with
-its sin: `fg-sole-route-on-a-store-with-a-second-home` (the dormant omission becomes a false
+its sin: `fg-aliases-nothing-else-on-a-store-with-a-second-home` (the dormant omission becomes a false
 store claim; wrong DISJOINT, attributed to her);
 `fg-graduation-changes-what-other-authors-footprints-cover` (a whole-user footprint stops
 covering memberships now under the group; other authors' true sentences under-claim with no
@@ -677,7 +677,7 @@ checks exactly. Naive recaptures and their breaks: spare-unspoken (the `tee` kni
 hook); "different sorts are disjoint" (procfs); "different worlds are disjoint" (NFS). The
 commonality: sibling stores of different sorts under one container, with nobody having said
 they differ; per-finisher enumeration is O(everything); the container's owner is the knower: a
-partition, cross-sort unique-name declared by the parent among its sole-route children (the
+partition, cross-sort unique-name declared by the parent among its aliases-nothing-else children (the
 boot: filesystems, kernel tables, daemon memory), inherited down chains, entailment-safe under
 28M §8 because the category words are the container's; its knives are existing ones (a view
 called a store; a daemon store that is secretly a file). Where the container has no owner, the
@@ -716,7 +716,7 @@ tenancy. **[HUMAN]**: gentle nack on tenancy, probably a thin model built to sav
 about the layer beneath; possible ack on the net. The step is enormous (**[HUMAN]**): the corner
 was ignored under the misapprehension that it would be a second copy of the filesystem, DNS and
 paths both being hierarchical namespaces; the core fact is that nothing on the web is
-sole-route, since a remote resource survives losing every route to it, which is critical for a
+aliases-nothing-else, since a remote resource survives losing every route to it, which is critical for a
 corner about identity, equality, and incarnation. Standing suspicion (**[HUMAN]**): DNS should
 sit closer to the filesystem in the model and the model is wrong, not the world; the granular
 dig to come is why DNS-as-container-of-providers fails as the keystone that would make DNS the

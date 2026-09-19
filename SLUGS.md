@@ -2636,6 +2636,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Vd (1)
 
+## 311l:fnd-aliases-nothing-else-sited-on-the-child
+- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:221
+
 ## 28O:fnd-ambient-bind-outranked-the-marks-own-coordinate
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:130
 
@@ -3086,9 +3089,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-smoke-book-never-reloads-nginx
 - defined: —
 - cited: 26F 312a Research/trial/r26/README Research/trial/r26/live-evidence/README (4)
-
-## 311l:fnd-sole-route-sited-on-the-child
-- defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:221
 
 ## fnd-solver-takes-no-seed-at-all
 - defined: —

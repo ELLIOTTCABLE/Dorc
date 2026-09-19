@@ -14,12 +14,12 @@
 Four passes, two lineages, converge on one thing: the DISJOINT bullet of §3.2 as committed on
 2026-09-16 does not say what it was argued to say. Its "one leg is empty" disjunct is
 unreachable, so the exercise's drifted-day survival of lines 7 and 8 does not follow from the
-text, and it demands `:sole-route` of the two legs' tops where `:guarantees-unique-name` alone
+text, and it demands `:aliases-nothing-else` of the two legs' tops where `:guarantees-unique-name` alone
 separates them, so two processes in one namespace can never be told apart. That is my error and
 the first thing to repair. Three further threads have two-lineage support and re-walk cleanly:
 the mCell fold of §1.9 dropped the per-cell store, so `enabled` and `active` cannot differ across
 a reboot as the section claims and any two properties of one bearer always collide under §2.4
-and §2.5; `:sole-route` is declared by the child where the parent store's owner holds the
+and §2.5; `:aliases-nothing-else` is declared by the child where the parent store's owner holds the
 knowledge; and §1.10's engine vouch is stated for every floor spelling while justified only for
 what the shell itself resolves. One false rule (§3.5's canary) was deleted. The rest is
 text-level, or did not survive re-walking. Nothing here reaches 312.
@@ -33,11 +33,11 @@ the leaf, so a leg is empty only when the mKey is A itself, and the preceding se
 sends that case to UNKNOWN. The disjunct is dead. Walk the exercise's line 5 against line 8: A
 is the boot; legs `[B, net/ipv4/ip_forward]` and `[kernel/pid_max]`; tops an `sm.NetnsInode`
 and an `sm.ProcSysPath`, different mSchemes; UNKNOWN. So the exercise's
-`obs-a-leg-separates-by-sole-route`, its drifted-day render, and `311q` §4's "recovers survival"
+`obs-a-leg-separates-by-aliases-nothing-else`, its drifted-day render, and `311q` §4's "recovers survival"
 do not follow from the committed rule. Cause: the argument in chat used "nothing below A on G's
 chain" to mean G's strict ancestors; the text wrote "leg" to include the leaf.
 
-What the argument actually needs, stated: F's shape carries `:sole-route`, so every route to
+What the argument actually needs, stated: F's shape carries `:aliases-nothing-else`, so every route to
 F's referent enters F's mParent; G's mParent is A, so G's route enters no store strictly below A;
 F's mParent is strictly below A and is not A, because a store is never among its own contents;
 hence F and G are two referents. That premise, the well-foundedness of `:identified-in`, is
@@ -49,17 +49,17 @@ walk uses. The text should say both.
 
 Second defect, three passes (311l (a), 311m §1.2, 311n 3): the tops are over-demanded. Two
 children of one shared A, of one mScheme carrying `:guarantees-unique-name`, with differing
-values, are two referents by that warrant alone; `:sole-route` does work only strictly below a
+values, are two referents by that warrant alone; `:aliases-nothing-else` does work only strictly below a
 top, where it is what keeps guest pid 1 and host pid 4821 from reading DISJOINT (§4.2). The
-demand bites exactly where a leaf shape honestly cannot carry `:sole-route`: two pids in one
+demand bites exactly where a leaf shape honestly cannot carry `:aliases-nothing-else`: two pids in one
 namespace; two files in a container's overlay root. Verified by the route argument: the tops'
-`:sole-route` is never used.
+`:aliases-nothing-else` is never used.
 
 Proposed second bullet, for the human: "Otherwise, with each leg's top the child of A on its
 side: DISJOINT iff either (a) the two tops are mKeys of one mScheme, each carrying
 `:guarantees-unique-name`, with differing values, and every mKey strictly below its top, on both
-legs, carries `:sole-route` for its shape; or (b) one mKey's mParent is A, the other's is not,
-and the other mKey's shape carries `:sole-route`. Else UNKNOWN. A store is never among its own
+legs, carries `:aliases-nothing-else` for its shape; or (b) one mKey's mParent is A, the other's is not,
+and the other mKey's shape carries `:aliases-nothing-else`. Else UNKNOWN. A store is never among its own
 contents, which (b) rests on; a key against its own container still reads UNKNOWN, since a write
 to a container must collide with everything inside it." The exercise's render and `311q` §4
 stand only once this lands, and the exercise carries a second defect that lands with it (§3,
@@ -97,18 +97,18 @@ answers identity and leaves §2.5's overlap test; placements answer interference
 container is §3.3's routing or lifecycle perishing. With thread 2 the two cells' stores differ
 anyway; the exclusion still matters for cells that share a store.
 
-### 4. `thr-sole-route-is-the-parents-knowledge` — 311l §3 · 311m §1.2; `312b` §7 found it against 311; +SURE on the seat, ~SUSPECT on frequency
+### 4. `thr-aliases-nothing-else-is-the-parents-knowledge` — 311l §3 · 311m §1.2; `312b` §7 found it against 311; +SURE on the seat, ~SUSPECT on frequency
 
-§2.2 has the child's primary owner declare `:sole-route` per shape of the child's bytes, and says
+§2.2 has the child's primary owner declare `:aliases-nothing-else` per shape of the child's bytes, and says
 five sentences later that the child "never learns the mParent's types". An inode number carries
 nothing about ext4, overlay-lower, nfs, or sshfs. Tessa must declare blanket, which is false on
 every docker host (an overlay lower inode is reachable through the merged view), or not at all,
 which forfeits every file-versus-file survival and kills stage 5 for the commonest line in every
 book. Whether a store's contents are reachable from outside it is the store's nature, compartment
-or view, and its owner classifies it per shape one level up already. Repair: `:sole-route`
+or view, and its owner classifies it per shape one level up already. Repair: `:aliases-nothing-else`
 becomes the parent shape's claim about edges into it ("what is identified in me is reachable
 only through me"; ext4 and a network namespace yes; overlay-lower, nfs-client, a pid namespace
-no), and the child declares none. Rachel's `net/*` `:sole-route` becomes Simon's on the
+no), and the child declares none. Rachel's `net/*` `:aliases-nothing-else` becomes Simon's on the
 namespace. Thread 1's rule then reads the parent's declaration at each level. `312b` §7's
 `fnd-two-epistemic-seats-mis-sited` said this and 311j did not take it.
 
@@ -220,7 +220,7 @@ was refusal plus false attribution of two correct authors, the worst aid failure
 ## § 4-what-this-redirects
 
 In 311: §3.2 rewritten as thread 1; cells regain their own stores (thread 2) and the identifying
-store leaves the placement test (thread 3); `:sole-route` re-seated on the parent (thread 4);
+store leaves the placement test (thread 3); `:aliases-nothing-else` re-seated on the parent (thread 4);
 §1.2 and §2.5 made honest about strangers and the finished definition (thread 5); §1.10 narrowed
 (thread 6); the route and the sentinel priced (thread 7). Every thread is a statement about the
 model; the one authoring-surface remark (a per-filesystem-type finished definition for files) is
