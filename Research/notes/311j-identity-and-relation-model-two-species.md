@@ -117,9 +117,9 @@ mScheme is its primary mScheme.
 > OWL's inverse-functional and functional properties, spelled out by direction.
 
 A mToken is an mKey-Primary's value: bytes a `resolve()` returned, compared for equality only,
-never decoded (`inv-referent-agnostic`), always scoped in an mParent. Any lookup — a secondary
-mScheme's, or a primary mScheme's for one matched shape — may carry two independent, separately declared,
-absent-by-default warrants:
+never decoded (`inv-referent-agnostic`), always scoped in an mParent. Any lookup, a secondary
+mScheme's or a primary mScheme's, may carry per matched shape two independent, separately
+declared, absent-by-default warrants:
 
 - :guarantees-unique-referent — within one mParent, equal mKeys reach one mReferent; the
   lookup is a function. Licenses SAME from equality. Fails for round-robin lookups
@@ -129,8 +129,8 @@ absent-by-default warrants:
   from inequality. Fails for symlinks and hardlinks, package `provides`
   (`distinct-names-alias-within-a-kind`), route-qualified handles.
 
-Declared once, by the lookup's owner, holding for every mKey that takes it inside any one
-mParent while that mKey's mResolution or mToken stands (§3.3). The one lookup the engine
+Declared per matched shape, by the lookup's owner, holding for every mKey of that shape inside
+any one mParent while that mKey's mResolution or mToken stands (§3.3). The one lookup the engine
 vouches for itself is the transit-free local mRoute (§1.10); across a transit nothing is
 claimed, only measured and witnessed.
 
