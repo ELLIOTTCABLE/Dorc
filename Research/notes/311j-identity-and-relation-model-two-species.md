@@ -300,28 +300,34 @@ K's state is affected by writes to these mKeys. Many-valued: an edge type from a
 template the mSite or environment fills) to mKeys of other mSorts. Declared by K's owner, with
 a completion sentinel closing the set. Every mSort in a mFullyQualifiedKey may declare
 mPlacements, not only leaves (a loop-backed filesystem's state lives in a file of the outer
-filesystem; `dd` over the image rewrites every inner fact). Exactly one mPlacement of an
-mSort sits on its identifying mFullyQualifiedKey — the mParent-Store — and the rest are
-non-identifying, followed for interference only. Consumer: collision, and the bound of §2.5.
-A footprint touching any mPlacement collides with K's mCells; an omitted mPlacement is a
+filesystem; `dd` over the image rewrites every inner fact), and a fact answers to the
+mPlacements of every member of its mFullyQualifiedKey. An mKey's mParent instance is
+implicitly one of its mPlacements; declaring it again is harmless, and §3.2's walk already
+collides a write at or above it. Consumer: collision, and the write-path question of §2.5.
+A footprint not DISJOINT from an mPlacement collides with K's mCells and with every fact
+identified beneath K; an omitted mPlacement is a
 silent channel (`an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and
 licenses nothing positive. mPlacement is distinct from mParent: the mParent is one and
 answers identity; mPlacements are many and answer interference. Two mCells with different
 mParents can share a mPlacement and so collide without being the same
 (`the-subject-includes-the-observer`: two observers' writability mCells share the file's
-mode). Under §2.5 a declared mPlacement set is knife-tier: it bounds what the finished
-definition may spare.
+mode). Under §2.5 a closed mPlacement set is knife-tier: it is one of the two closures every
+sparing rests on.
 
 ### § 2.5-reaches (effect entailment), and the finished definition
 
 As `plans/30U`: disturbing an mKey of K entails disturbing these mKeys of other mSorts;
-arm-incremental, collide-adding; the reached completion record finishes the definition and is
-the sole licensor of sparing across KNOWN_UNSPOKEN pairs (§3.2). Declared by K's owner. About
+arm-incremental, collide-adding; the reached completion record finishes the definition: it
+witnesses that the write set, after entailment, is complete. Declared by K's owner. About
 effects, not identity: it carries a package's postinst enabling its unit, a restart killing a
-main process, every cross-mSort consequence no mFullyQualifiedKey expresses. One bound on the
-licensor: "nothing else" means nothing outside K's declared mPlacements and the declared
-mPlacements of the mSorts K reaches; the engine `compare()`s mPlacements through the ordinary
-chokepoint, and an overlap, or an undeclared mPlacement on either side, collides. The
+main process, every cross-mSort consequence no mFullyQualifiedKey expresses, and it generates
+no DISJOINT ("nothing else" is no other thing, never no other mKey for the thing written). An
+elision is spared past a write only when two questions are answered, in order, for every pair
+of a footprint mKey and a fact's mCell, of one mSort or of two. First, `compare()` answers
+DISJOINT (§3.2). Second, no write path joins them: the footprint's definition is finished;
+the mPlacements declared by every member of the fact's mFullyQualifiedKey are closed; and
+every footprint mKey `compare()`s DISJOINT with every one of them. It spares narrowly and
+collides widely: whatever is not DISJOINT collides, and so does an undeclared mPlacement. The
 finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots
 (§3.2).
 
@@ -386,12 +392,12 @@ its parts' mPlacements.
 | `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | per matched shape of a secondary mScheme, into any mSort | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
 | `:aliases-nothing-else` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | an aliasing store declared :aliases-nothing-else is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
-| `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
-| `:reaches` + finished | many, per matched shape | mSort owner | known-unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
+| `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything | collision; the write-path question (§2.5) | none positive; omission is the silent channel; the closed set is one of sparing's two closures |
+| `:reaches` + finished | many, per matched shape | mSort owner | unfinished ⇒ collide | the write-path question (§2.5), within one mWorld; never a generator of DISJOINT | the premature finished record |
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer is value, coarse is safe) |
-| `:lends` (+ sentinel) | per wrapper, per mParent-Catalog mSort | wrapper owner | ⊤ ⇒ walls | ambient mParent supply | a wrong lend measures the wrong mVantage |
+| `:lends` (+ sentinel) | per wrapper, per mParent-Catalog mSort | wrapper owner | ⊤ ⇒ walls | ambient mParent supply | a wrong lend measures the wrong mVantage; the sentinel is an at-most claim over every mParent-Catalog mSort |
 | mCompositeSort | per composite | the author holding the roles | n/a | identity | as any mSort |
 
 ## § 3-composition
@@ -440,13 +446,13 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   unwalled span, §1.10) or
   are equal values whose shape carries :guarantees-unique-referent. Two mFullyQualifiedKeys
   are SAME iff they are SAME at every level down to the leaf.
-- mKeys of different mSorts share no primary mScheme (an mScheme belongs to one mSort), so
-  their mFullyQualifiedKeys meet, if at all, only at a common ancestor, and that meeting is not
-  a claim about the leaves (a package status file and a unit file share a filesystem). At the
-  leaf the pair is KNOWN_UNSPOKEN; sparing across it rides only the footprint side's finished
-  definition (§2.5), bounded by mPlacements. Two mSchemes of ONE mSort yielding one
-  mKey-Primary is the sole same-referent generator across ways of naming; Dorc equates mKeys
-  and never merges mSorts.
+- mKeys of different mSorts share no primary mScheme, so their mFullyQualifiedKeys meet, if at
+  all, only at a common ancestor, and that meeting is not a claim about the leaves (a package
+  status file and a unit file share a filesystem). The walk above decides such a pair as it
+  decides any other: DISJOINT where it separates them, and otherwise KNOWN_UNSPOKEN, which
+  never spares and never transports, whatever either side has declared finished (§2.5). Two
+  mSchemes yielding one mKey-Primary is the sole same-referent generator across ways of
+  naming; Dorc equates mKeys and never merges mSorts.
 - partial measurement never widens: a mDerivation with an unmeasured or mRoute-terminated link
   yields at most what it would yield with the link measured.
 
@@ -517,8 +523,8 @@ perished conclusion names the footprint that perished it.
 
 ### § 3.6-scope (what this model leaves untouched)
 
-The verdict, vouch, and guard tier; footprints, `:reaches`, finished definitions, and
-`--risk-faultless-skips`; the four-answer chokepoint and consumer map; the universal meet;
+The verdict, vouch, and guard tier; footprints, `:reaches`, the completion record as the
+witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint and consumer map; the universal meet;
 measure-in-context, entry forms, `safe-across`; the read-set closure as the falsification net
 for unmarked reads (`27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the
 standup `witness()`; the integrity plane; the committee law. The invariance line's store half
