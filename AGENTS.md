@@ -52,14 +52,10 @@ Be defensive about multiple worktrees, for the documents that involve 'global pr
 - "performance" must be considered from two angles, and one dominates:
   - this is a network-appliance, and 1. ~O(hosts) network-tunnels will dominate most anything controller-local/algorithmic; but
   - even more so 2. *slow remote-host commands* dominate all of that (i.e. the-thing-dorc-is-built-to-automate.) algorithmically "expensive" analyses are unlikely to actually be expensive compared to the slow `docker` command they're eliminating, *especially* if they can fully eliminate application-on-a-host of *all* commands (i.e. establish that it's converged.)
-- *exclusion-check* any and all design work / analysis:
-  - before excluding any edge/quadrant/case (esp. as irrelevant), re-test it under all four-by-two directions:
-    1. the reverse propagation direction (for analyzer components),
-    2. the "other phase" (if you're working re: probe, then reconsider from the perspective of apply; and vice versa),
-    3. the "other user" (if you're working on oracle-author-things, reconsider as a lazy admin), and
-    4. the "other reliability" (if you've been assuming reliable-oracles, consider unreliable oracles.)
-  - if irrelevant only under particular cells, then that's *deffered*, not irrelevant, and it will sneak back in.
-  - corrolary: verify a claimed failure (subagent claim, error-message, test failure) *in other cells*; a "fix" for one cell can *break others*
+- *exclusion-check* (the "two-by-six") before ruling any case out: flip to the other product (elision ↔ aid), phase (compile · probe · apply), propagation-direction, hat (engineer ↔ admin), reliability (any assumption fails), and the other, unaware user
+  - irrelevant in only some cells = *deferred*, not irrelevant; it sneaks back in
+  - claimed failures and fixes get the same check (subagent claim, error-message, test failure); a fix for one cell breaks others
+  - detail: `architect` skill (conductors only)
 
 ## Terminology firming
 Some terms have shifted throughout the planning documents; be careful of these meaning something slightly different in older documents:

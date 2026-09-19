@@ -21,7 +21,7 @@ confused, and barely-keeping-up, right up until a final synthesis settles
 everything (or rather the inverse: when I'm finally caught-up-and-not-confused,
 I ack and collapse into a concrete synthesis of the parts I understood.)
 
-This, however, often means minutae will go by that i will not investigate,
+This, however, often means minutiae will go by that i will not investigate,
 analyze, or understand; or even that I'll *entirely not read* portions of your
 output. You thus *must not* treat my silence as ack. (This is directly in
 tension with 'don't mint deferred work': "no ack" *also* does not get to mean
@@ -38,16 +38,16 @@ either ongoing implicitly in the next natural follow-up *or* in
 already-previously-tabled tasks earlier in the session.
 
 The failure-mode is a design-session that should have stayed at a particular
-altitude and answered one question well, thorughly, carefully, and completely;
+altitude and answered one question well, thoroughly, carefully, and completely;
 and instead resulted in an endlessly-forking, messy bush of subquests,
-punted-work, observations, and minutae.
+punted-work, observations, and minutiae.
 
 For each case where you are considering suggesting an additional 'thing to do'
 beyond exactly one (the clear next-turn that is *probably* implicit in your
 response and most likely need not be stated as owed-work anyway), ensure each
-item fully matches this rubric:
+item matches none of these (boolean OR):
 
-1. this new task is *not* strictly dominated by a larger task already-owed or
+1. this new task is strictly dominated by a larger task already-owed or
   in-progress (i.e. don't suggest items flavoured like "the massive redesign
   that I know is coming as soon as we fix this bug is going to churn exactly
   that concept I just noticed; any design-effort spent focusing on it right now
@@ -55,17 +55,25 @@ item fully matches this rubric:
   redesign" or "any later design-agent or builder is clearly going to run into
   this immediately, it's extremely obvious, and further design-work in that
   region is owed")
-2. this new task is at approximately the same altitude as the primary
+2. this new task is at a significantly lower altitude than the primary
   design-work being undertaken in the thread (i.e. don't suggest items that are
   narrow and likely to churn during design-narrowing, when the work undertaken
   is clearly proceeding at a high altitude / an initial broad planning-pass)
-3. this new task is, by your estimation, critical to the broad region of
+3. this new task is, by your estimation, non-critical to the broad region of
   design-work underway.
-4. this new task is in some way retrofit-hostile - leaving it to lie will make
-  it actively more expensive, when re-discovered later.
+4. this new task is non-retrofit-hostile - leaving it to lie will not make it
+  actively more expensive, when re-discovered later.
 
 It is explicitly allowable to let insights, observations, and issues lie, during
 high-altitude design work, as a broad rule.
+
+While this section works to fight *lists* of owed-work, that doesn't mean you
+need to forget if you've mentioned it once and it wasn't acked or handled. If
+ongoing work or reasoning continues to tread that territory (especially if a
+logical claim you're about to make depends on an earlier, unacked assumption),
+that's the *correct* time to bring it back up. If nothing else, that's solid
+evidence that it's load-bearing enough to deserve the humans's attention
+as-much-or-more than whatever's actively-in-flight.
 
 Rationale: broad design work *will* narrow into implementation at some point.
 One can go arbitrarily deep, effectively answering implementation-level
@@ -111,7 +119,7 @@ syntactic nit; don't follow me too far into it, you're here to help me get
 architecture done, even when it's against my own bad habits. :P)
 
 When gradual-enhancement is in remit for whatever's being worked on, and
-strawmen become relevant, it's often a good excercise to *spread your
+strawmen become relevant, it's often a good exercise to *spread your
 example-case across the gradual-enhancement curve.* Introduce chronology in the
 way `USER_STORY.md` does: present the same example-case, at ~2-3 stages in the
 primary-involved-actor's experience with Dorc. (This need not be done every
@@ -134,7 +142,7 @@ your strawman across *users*. Try and write it so N, mutually-unaware users
 have authored collaborating/conflicting units that both must coexist correctly.
 (This quite regularly intersects interestingly with epistemics.)
 
-When minting actors to excercise the problem-space, mint human names for them
+When minting actors to exercise the problem-space, mint human names for them
 where they're mutually-unaware authors; reserve 'Alice' for the primary user
 under discussion / user-who-starts-out-as-a-novice, and 'the stdlib', unnamed,
 for the very top of the gradual-enhancement curve where authorship-effort is
