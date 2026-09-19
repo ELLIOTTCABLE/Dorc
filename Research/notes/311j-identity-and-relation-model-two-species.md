@@ -194,9 +194,8 @@ like any other mSort with one difference of shape: its primary mScheme is
 `:identified-in` the mSort it is a property of (its mSort-Bearer), and its own mKey is a
 singleton, so a mCell's identity is its mSort-Bearer's plus which property. Two mCells of one
 mSort-Bearer (`enabled`, in a symlink's existence; `active`, in pid 1's memory) are two mSorts
-with two mPlacements and two :observer-dependences, and their mFullyQualifiedKeys differ
-exactly where one survives a reboot and the other does not, with no declaration about
-reboots by anyone. A whole-bearer claim (`disturbs` a service) reaches its mCells by the
+with two mPlacements and two :observer-dependences. A whole-bearer claim (`disturbs` a service)
+reaches its mCells by the
 mSort-Bearer's entailment (§2.5) and otherwise collides with them as known-unspoken. There is no
 aspect species and no selector position.
 
