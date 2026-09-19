@@ -1183,3 +1183,62 @@ example; about five added words per site at most; a specification, never a teach
   new § 3.7 naming what the model supersedes as written (`30U`'s generator sentence; two
   `ANALYZER-NEEDS` rows). The emulated-authority exercise record took three adjacent superseded
   notes.
+
+## § 15 — 2026-09-19: a successor's standup: grain, the parent that is no placement, the write side of placements
+
+Conductor: a rewound Fable successor. Nothing ruled beyond the typed acks named. The panel of § 14's
+plan is on HOLD (**[HUMAN]**, typed); the conductor's standup read was that nothing substantive
+blocks it, that about a quarter of the model's lines turned over since the last panel's copy, and
+that `311p` is burned down except the sibling-cell residue punted to 312.
+
+- WITHDRAWN (conductor's own, the same sitting): a clause skipping, in § 2.5's test, any mPlacement
+  that is a shared ancestor of both mKeys. Counterexample with every sentence true: a describer of
+  database rows identified in the main file's inode, unable to enumerate sidecar files across
+  journal modes, declares that the rows live in the filesystem and closes the set; a write to a
+  sidecar is a sibling inode, DISJOINT by the walk, and the clause spares the row fact. The engine
+  cannot tell "my mParent, redundantly" from "somewhere relative to my mParent, I cannot say
+  which"; the second must collide.
+- `ack-a-parent-is-no-placement` (**[HUMAN]**, typed ack; folded, `5e5ef9ed`) — § 2.4's "implicitly
+  one of its mPlacements; declaring it again is harmless" was false twice over: an implicit
+  mPlacement would collide every sibling pair, and a declared one walls every sibling. It
+  supersedes the wording acked in § 14. The intent behind that wording (a list copied from
+  documentation costs nothing) cannot be met.
+- `ack-grain-of-a-pair-is-its-coarser-key` (**[HUMAN]**, typed ack) — an address edge and an
+  mPlacement are both dependence (of what the mKey means; of the state). Grain lives in mKeys,
+  never in edges: `compare()` separates only below the deepest shared level and only where both
+  chains continue below it. A sentence (mPlacement, footprint, or fact) naming a store has an
+  empty leg there. An mPlacement naming an mKey relative to a store is exactly as fine as two
+  siblings. "A write inside p counts" rests on silence (nobody has said a write to an mKey
+  relative to p is no write to p), never on a store's state being an aggregate, which the
+  conductor first wrote and which pierces referential agnosticism.
+- `fnd-a-store-named-placement-is-the-cheapest-honest-closure` (conductor; read and not contested)
+  — coarse and closed beats fine and open: a describer who cannot enumerate can still say "this
+  store and that one, nothing else", where an open list collides with the whole book. The ladder:
+  undeclared; a store; a sub-store carved by shape; enumerated or probe-emitted mKeys; closed.
+- CORRECTED by the human: a pattern over mKeys is meaningful. It is a shape arm in a lookup's own
+  body yielding into a sub-mSort (`/proc` under the path mScheme; § 2.2 already matches shapes of
+  an mKey-Primary's value). What § 4.2 refuted was a consumer-side prefix predicate used for
+  containment. Its reach is bounded by § 3.2's one-definition rule; a third party's arm is the
+  arm-composition corner of § 7, still punted.
+- `fnd-writes-do-not-answer-to-their-stores-placements` (conductor; § 8's held
+  `leak-writes-do-not-disturb-placements` dug at the human's direction; **[HUMAN]**: an omission,
+  not a complexity; the precise rule UNACKED) — a fact answers to the mPlacements of every member
+  of its chain and a write answers to none of its own, so a write to an mKey relative to a store
+  spares a fact about whatever that store's describer named (a converged loop mount; a write
+  inside it; a checksum fact on the image: DISJOINT by the walk, the store's `:lives-in` on the
+  wrong leg, the writer's finished record false of a thing its speaker cannot see per instance).
+  The population today is the File family (loop mounts, image files), because elsewhere the walk
+  already answers KNOWN_UNSPOKEN; it grows with every shared key space. Candidate rule: a write to
+  an mKey may also be a write to any mPlacement declared by a member of that mKey's
+  mFullyQualifiedKey, nobody having said otherwise; each such mPlacement strictly below the
+  deepest level the footprint mKey shares with the fact joins the footprint (tested against the
+  fact and against the fact's mPlacements), and a member with no closed set joins as ⊤. The fact
+  side stays as written. It is the constructive half of bounding the finished record (`311q`
+  § 18's struck universal; § 14's
+  `fnd-a-closure-reaches-its-speakers-vocabulary-and-no-further`): the finisher answers at the
+  level spoken at, each store above answers for itself. Why shared stores stay out: a path from
+  one sibling through the store's mPlacement to another is two whole-store sentences composed,
+  over a pair the store's own key space already separated at finer grain; including them ends
+  USER_STORY stage 5 (two files, one backing, SAME). Why the fact side is not mirrored down to
+  "below the shared level" too: a store whose mPlacement is an mKey relative to itself (a zone and
+  its in-bailiwick glue; a filesystem and its quota file) keeps its net there.
