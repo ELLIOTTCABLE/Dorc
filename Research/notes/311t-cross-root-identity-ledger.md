@@ -1070,3 +1070,28 @@ example; about five added words per site at most; a specification, never a teach
   (`311q` § 18) applied to both ends. Cost: USER_STORY stage 5 keeps its file-backed survivals
   through inodes and loses `active` against files until a stdlib key space exists for what sits
   directly in a boot. Not small; touches `30U`.
+- **[HUMAN]**, 2026-09-19: acks the logic of the two findings above as read and takes it for the
+  correct route; § 2.5 is never to be left ambiguous, and is to take its narrowest meaning unless
+  a reason is found that it needs the wide one. The conductor's last hunt over address-first
+  (each ~SUSPECT, none hunted further):
+  - the wide meaning IS needed once the mParent instance has left the test: a declared mPlacement
+    spelled in a private vocabulary is incomparable with a stranger's write to that very thing,
+    and under the narrow meaning that silence spares; the ancestor problem that made the wide
+    meaning value-dead came only from the mParent instance sitting in the test;
+  - across two mSorts, only the shared-key-space clause of § 3.2 may separate (two tops of one
+    mScheme under `:guarantees-unique-name`); the one-top clause rests on `:sole-route` alone, a
+    universal about every route including strangers', and with it a vendor's minted store that
+    honestly believes itself primary separates a slot from the stranger's knob naming it; for two
+    mKeys of one mSort the clause stays as acked on 2026-09-17;
+  - the write-path question is asked of every pair, the same mSort included, and over the
+    declared mPlacements of every member of the fact's chain: `dd` over a loop image against a
+    file inside the loop filesystem is two inodes of one mSort, DISJOINT by the walk, and `311j`
+    as written never reaches the filesystem's mPlacement from the file's fact;
+  - a footprint naming a whole mSort and no mKey has no chain, reads UNKNOWN, and never spares
+    across mSorts (USER_STORY stage 5's own apt strawman is one);
+  - the curve: an author at USER_STORY stage 4 must identify their thing in a shared key space
+    (one `:identified-in` at the bind) before anything of theirs spares or is spared.
+  Why the conductor called it large: the text change to `311j` is a handful of sentences; the
+  weight is that `30U`'s ruled sentence (a finished definition generates cross-kind disjointness)
+  becomes necessary-not-sufficient, `ANALYZER-NEEDS` rows and USER_STORY stages 5 and 7 follow,
+  every oracle's shape is constrained by it, and one more turn of hunting moved the rule twice.
