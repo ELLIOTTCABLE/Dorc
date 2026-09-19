@@ -250,9 +250,9 @@ across mParent-Catalogs (`a-host-is-not-a-partition`,
 mSort does not describe (a path reaching a socket, under an mScheme into files): the
 mechanical net against lazy borrowing.
 
-### § 2.2-primary-of (:identified-in, :sole-route, :rootness)
+### § 2.2-primary-of (:identified-in, :aliases-nothing-else, :rootness)
 
-> ER's identifying relationship. Identifying is not containing; containing is :sole-route.
+> ER's identifying relationship. Identifying is not containing.
 
 mScheme P is `:primary-of` mSort K, once per mSort, and a second name is a second mScheme: P's
 mKeys are the addresses K's mParent-Store answers with, and P's `resolve()` is the identity on
@@ -273,13 +273,15 @@ value matching no declared shape reads unknown from this level. A grade governs 
 included: a lookup without :guarantees-unique-name cannot contradict anything by returning
 two different mTokens.
 
-A store is :sole-route when what is identified in it is reachable only through it: by
-constitution (a kernel for its processes; an ext4 filesystem for its inodes; a dpkg database
-for its packages; a network namespace for its `net/*` knobs) or by contract (ext4: concurrent
-mounting unsupported), and never for a view (a client NFS mount; an NSS view of LDAP; a
-chroot's view of a bind mount; a pid namespace; an overlay's lower layer). Whoever describes
-the store holds it. §3.2 reads it per store, level by level below a shared mParent, to
-separate two mKeys whose chains cannot both reach one mReferent. State spanning several files
+A store is :aliases-nothing-else when nothing identified in it is, by the store's own
+construction, also identified in another store: it gives its own mKeys to no other store's
+mReferents (a DNS zone for its records; a dpkg database for its packages; a network namespace
+for its `net/*` knobs; a disk filesystem for its inodes), and never where it does (a client
+NFS mount; an NSS view of LDAP; a chroot; a nested pid namespace; an overlay; a front over
+another daemon; a relabelling of part of its mParent's state). It is self-knowledge: whether
+another store aliases this one is not claimed, since nobody can know it, and §3.2 asks the
+warrant of every store on both legs, so that an aliasing store blocks separation by its own
+silence. Whoever describes the store holds it. State spanning several files
 (`a-store-is-not-one-inode`) is a mPlacement matter (§2.4); a hardlink is a
 :guarantees-unique-name failure on the path mScheme, dissolved by the path mScheme yielding
 the inode.
@@ -382,7 +384,7 @@ its parts' mPlacements.
 |---|---|---|---|---|---|
 | `:primary-of` (`:identified-in` per matched shape) | one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :rootness, per matched shape |
 | `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | per matched shape of a secondary mScheme, into any mSort | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
-| `:sole-route` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | a view declared :sole-route is a wrong DISJOINT |
+| `:aliases-nothing-else` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | an aliasing store declared :aliases-nothing-else is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
 | `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything of the mSort | collision; the bound on the finished definition | none positive; omission is the silent channel; the set bounds sparing |
 | `:reaches` + finished | many, per matched shape | mSort owner | known-unspoken ⇒ collide | cross-mSort sparing, within one mWorld, bounded by mPlacements | the premature finished record |
@@ -427,7 +429,7 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   A on its side (the mKey itself when its mParent is A). DISJOINT iff (the two tops are mKeys
   of one mScheme, each carrying :guarantees-unique-name, with differing values, or exactly one
   mKey is its own top) and every store strictly below A down to either leaf's mParent is
-  :sole-route (§2.2); else UNKNOWN. The one-top case rests on a store never being among its
+  :aliases-nothing-else (§2.2); else UNKNOWN. The one-top case rests on a store never being among its
   own contents. Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
   through a wrapper's sentinel, §3.4, or one ambient instance resolved once in a transit-free
@@ -504,7 +506,7 @@ granting composite ("these two accounts are one") is entailed jointly by one mSc
 `:yields` and the primary mScheme's declaration for that shape, each author speaking about their own lookup
 (`28M:rul-composite-meets-toward-guard-run`); a withholding composite (a mount perishing an
 account's mResolution) names nobody and needs nobody's consent. Attribution:
-every survival names the :sole-route and :guarantees-unique-name declarations it rested on and
+every survival names the :aliases-nothing-else and :guarantees-unique-name declarations it rested on and
 the mPlacement sets that bounded it; every SAME names the `resolve()` calls, the declarations,
 the sentinels and route claims that made instances one, and the mCorrespondences; every
 perished conclusion names the footprint that perished it.
@@ -561,7 +563,7 @@ line here is the model element it forces.
   mFullyQualifiedKeys; a transit that lends no mParent-Catalog on an mKey's mFullyQualifiedKey
   leaves it untouched (§3.4).
 - `address-inequality-is-not-referent-inequality` — a secondary mScheme's lookup licenses no
-  disjointness across mParent-Catalogs; :sole-route is a separate property of a store (§2.1, §2.2).
+  disjointness across mParent-Catalogs; :aliases-nothing-else is a separate property of a store (§2.1, §2.2).
 - `distinct-names-alias-within-a-kind` — :guarantees-unique-name is absent by default; the
   mKey-Primary comes from the `:yields` chain (§1.5, §2.1).
 - `containment-by-path-prefix-lies` — a path prefix is no store; containment is mTraversal
@@ -580,7 +582,7 @@ line here is the model element it forces.
 - `a-name-is-not-a-target-over-time` — mPlaceholders, the standup `witness()`, integrity
   withhold; sameness of a target is continuity witnessed, never a spelling (§1.10).
 - `a-store-is-not-one-inode` — mPlacement is many-valued and distinct from mParent;
-  :sole-route is not implied by `:lives-in` (§2.2, §2.4).
+  :aliases-nothing-else is not implied by `:lives-in` (§2.2, §2.4).
 - `an-omitted-store-breaks-invariance` — mPlacement totality; the completion sentinel;
   omission is the silent channel; the set bounds the finished definition (§2.4, §2.5).
 - `nonzero-status-is-not-speech` — every warrant is typed speech, never an exit status; the rc
@@ -636,9 +638,9 @@ Recorded as what-killed-it, so the shape is not re-walked.
 - SUBSORTS, A TYPE MENU, OR ONE MEMBER PER TYPE. Killed by: a second name is a second mScheme,
   and the variation is a partial function of one mScheme's values. Surviving form: per-shape
   declarations on one `resolve()` (§2.2).
-- DERIVING :sole-route FROM THE STRUCTURE OF THE mFullyQualifiedKey. Killed by nested pid
+- DERIVING :aliases-nothing-else FROM THE STRUCTURE OF THE mFullyQualifiedKey. Killed by nested pid
   namespaces: guest pid 1 and host pid 4821 are one mReferent and both mFullyQualifiedKeys
-  resolve cleanly to one boot. Surviving form: :sole-route stays declared, absent by default,
+  resolve cleanly to one boot. Surviving form: :aliases-nothing-else stays declared, absent by default,
   per store (§2.2).
 - AN ASPECT SPECIES (a selector position; an aspect borrowing another mSort's lookup). Killed
   by: one mParent per identity-bearing thing, per-aspect mPlacement, and per-aspect
@@ -658,7 +660,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
   form: one mParent, mCompositeSorts for roles (§2.9).
 - "STORED-IN" AS ONE RELATION conflating routing and containment. Killed by hardlinks, bind
   mounts, NFS: mParent-Catalog disjointness is not mReferent disjointness. Surviving form:
-  `:yields` with its mParent-Catalog, the store's :sole-route, and
+  `:yields` with its mParent-Catalog, the store's :aliases-nothing-else, and
   mPlacement as three relations.
 - TERMINAL mTokens (`Measured(File, fsid:inode)`). Killed by NFS and by the mParent question:
   an inode is an mKey in a filesystem, a filesystem identifier is an mKey in whatever minted
