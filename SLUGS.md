@@ -444,6 +444,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Mb 30Q 30T 311c 311t ANALYZER-NEEDS (9)
 
+## an-compare-chokepoint
+- defined: —
+- cited: 310 311a 311j ANALYZER-NEEDS _tmp-naming-rewrite-owed (5)
+
 ## an-cross-host-kind
 - defined: —
 - cited: 30Ta ANALYZER-NEEDS (2)
@@ -470,7 +474,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: 310 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (5)
+- cited: 310 311j ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -6186,7 +6190,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-cross-kind-sparing-needs-a-finished-definition
 - defined: —
-- cited: 30U ORACLE_PROVIDES Research/LIVING_STATUS (3)
+- cited: 30U 311j ORACLE_PROVIDES Research/LIVING_STATUS (4)
 
 ## 28E:rul-danger-axis-is-completion-class
 - defined: Research/notes/28E-why-surface-design-sitting.md:423 — (nack on my reported/written split) —

@@ -533,6 +533,14 @@ is measured away by §2.2 and its observer half lives as §2.7; the context slot
 and nothing else; there is no selector position, no selector dialect, no aspect species, no
 authored region predicate, no engine-side name floor, no engine table that generates `same`.
 
+### § 3.7-supersedes (as currently written; terse by design)
+
+- `plans/30U` § 1 `rul-cross-kind-sparing-needs-a-finished-definition` and § 4 "as a
+  generator": a finished definition stays necessary for sparing across mSorts and generates no
+  disjointness (§2.5).
+- `ANALYZER-NEEDS:an-kind-reach` and `ANALYZER-NEEDS:an-compare-chokepoint`: the `unrelated`
+  answer never spares, whatever is finished (§3.2).
+
 ## § 4-forcing-functions
 
 A cut of the model is tested against four situations (from `Research/GOTCHAS.md`; more live
@@ -595,7 +603,8 @@ line here is the model element it forces.
 - `a-store-is-not-one-inode` — mPlacement is many-valued and distinct from mParent;
   :aliases-nothing-else is not implied by `:lives-in` (§2.2, §2.4).
 - `an-omitted-store-breaks-invariance` — mPlacement totality; the completion sentinel;
-  omission is the silent channel; the set bounds the finished definition (§2.4, §2.5).
+  omission is the silent channel; the closed set is one of sparing's two closures (§2.4,
+  §2.5).
 - `nonzero-status-is-not-speech` — every warrant is typed speech, never an exit status; the rc
   regimes of `311a` §6 stand (§1.11).
 - `composite-identity-is-structure-not-a-bag` — exactly one mParent; roles are a
@@ -615,8 +624,8 @@ line here is the model element it forces.
   mParent-Catalog instance and declares which; a cache and the file it caches are two
   mParent-Catalogs (§2.1).
 - `one-state-reached-through-two-kinds` — the strangers case: two mSorts over one mCell,
-  minted by authors who never met; KNOWN_UNSPOKEN at the chokepoint, collision only through
-  overlapping mPlacements, merged only by a human act (§1.2, §3.2).
+  minted by authors who never met; KNOWN_UNSPOKEN at the chokepoint, which never spares;
+  merged only by a human act (§1.2, §3.2).
 
 ### § 4.2-refuted-shapes-and-what-killed-each
 
@@ -720,3 +729,19 @@ Recorded as what-killed-it, so the shape is not re-walked.
   wrong bind is a wrong SAME that lands, attributed.
 - CONVERGENCE OF TWO SYSTEMS FROM ONE WINDOW AS EVIDENCE. Killed by the human's first bullet.
   Surviving discipline: clean-context adversarial review before any design-of-record.
+- A FINISHED DEFINITION AS A GENERATOR OF DISJOINT ACROSS mSorts. Killed by `ctr task kill`
+  against a converged `docker start` of that same container: "nothing else" is no other thing,
+  never no other mKey for the thing written. Surviving form: `compare()` decides every pair;
+  the completion record witnesses a complete write set (§2.5, §3.2).
+- ONLY SAME mPlacements OVERLAP. Killed by: unequal names, nobody's speech, sparing, the name
+  floor moved onto mPlacements. Surviving form: whatever is not DISJOINT collides (§2.5).
+- A STORE'S CLOSURE AS "REACHABLE ONLY THROUGH IT". Killed by: nobody can know what else
+  aliases their store. Surviving form: :aliases-nothing-else, self-knowledge, asked of both
+  legs (§2.2).
+- SEPARATION DRAWN FROM TWO DEFINITIONS AT ONCE. Killed by one definition's store inside a
+  shared mParent against another definition's mKey directly in it, one slot under two
+  vocabularies, every positive sentence true. Surviving form: an omission is a distinction
+  only inside the body that made it (§3.2).
+- A PARENT PARTITIONING ITS CHILDREN'S mSorts. Killed by: children minted by other definitions
+  could never spare. Surviving form: both sides identify into one mScheme whose body warrants
+  :guarantees-unique-name (§3.2).
