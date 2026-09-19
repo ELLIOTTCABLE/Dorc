@@ -271,17 +271,18 @@ the license-contamination map. Cross-references are `docID:slug`.
   the epistemic and composition gaps). These are exploratory proposals and reviews, not
   adopted direction. Then the design phase proper: **`notes/312a`** (the corpus import,
   frozen) · **`notes/312b`** (the epistemics-and-assignment sittings ledger; records in
-  `312b-exercises/`) · **`notes/311j`** (the two-species model, mSort and mScheme — the
-  CURRENT cut of 311, ahistorical, replaces 311 when stable) · **`notes/311q`** (the
-  attack-and-firming ledger over 311j; successors append at its tail) · the identity
-  crosscheck over 311j: reports `notes/311l`–`311o` (Fable neutral/adversarial, Astra
+  `312b-exercises/`) · **`notes/311`** (THE identity-and-relation model: two species, mSort
+  and mScheme; ahistorical; nothing ruled; its § 3.7 names what it supersedes; the ledgers and
+  reviews around it cite it as `311j`, the id it carried until 2026-09-19, and any `311`
+  section they cite beside that is a first draft kept only in git) · **`notes/311q`** (the
+  attack-and-firming ledger over it; successors append at its tail) · the identity
+  crosscheck over it: reports `notes/311l`–`311o` (Fable neutral/adversarial, Astra
   neutral/adversarial) and **`notes/311p`** (the adjudication; seven threads) · the
   ops-state traits mapping: `notes/311r` (the clean-context worksheet, forty-seven reads; a
   resource, never a goal) and `notes/311s` (its synthesis: thirteen behavioural clusters) ·
   **`notes/311t`** (the cross-root identity ledger: the web, DNS, and sparing across roots;
-  § 3 is the working set of killers). **`notes/311`** is the preparatory identity-and-relation MODEL those
-  sittings synthesized (§1–§3 the model; §6 the forcing functions and dead ends; nothing
-  ruled). The epistemics-and-assignment phase that follows it: **`notes/312a`** (the corpus
+  § 3 is the working set of killers; § 14 the sitting that folded the panel's residue and
+  promoted the model). The epistemics-and-assignment phase that ran beside it: **`notes/312a`** (the corpus
   import, FROZEN: which typed rulings the model modifies, the prior seat assignments to
   re-verify, the unknowability classes, the seat gaps) · **`notes/312b`** (its LIVING
   sittings ledger: typed conduct, exercise takeaways, the time and naming sittings, the shape

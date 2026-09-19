@@ -1,8 +1,8 @@
-# 311j — Identity and relation: the two-species model (the current cut of 311)
+# 311 — Identity and relation: the model
 
 > AI-authored PREPARATORY MODEL (Fable, the `r31-prep-design-duck` sittings; the human present
-> and adjudicating). Notes-tier, ahistorical: the current cut of the `notes/311` model, kept as
-> a separate document until it replaces 311. Nothing here is ruled; grades on the conductor's
+> and adjudicating). Notes-tier, ahistorical; the ledgers and reviews around it cite it as
+> `311j`, the id it carried until 2026-09-19. Nothing here is ruled; grades on the conductor's
 > claims are +SURE / ~SUSPECT / -GUESS / --WONDER, and **[LEAN]** marks a human lean paraphrased
 > from chat, never a ruling. Authority: root docs, `spike/CLAUDE.md`, and the welds outrank this;
 > where this document disagrees with `plans/30W`, `notes/272`, `plans/30T` §6, `plans/30U` §7,
