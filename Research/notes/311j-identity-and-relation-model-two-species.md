@@ -426,11 +426,15 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
 - otherwise walk downward from the top to the deepest level at which the two chains are SAME
   by the rule below; call it A. If either mKey is A itself, the pair reads UNKNOWN: a write to
   a container collides with everything inside it. Otherwise call each mKey's top the child of
-  A on its side (the mKey itself when its mParent is A). DISJOINT iff (the two tops are mKeys
-  of one mScheme, each carrying :guarantees-unique-name, with differing values, or exactly one
-  mKey is its own top) and every store strictly below A down to either leaf's mParent is
-  :aliases-nothing-else (§2.2); else UNKNOWN. The one-top case rests on a store never being among its
-  own contents. Separation is decided once, at A.
+  A on its side (the mKey itself when its mParent is A). Separation is only ever concluded
+  from a single definition's own distinctions, in one of two ways. Two tops: both are mKeys of
+  one mScheme, each carrying :guarantees-unique-name, with differing values. One top: exactly
+  one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some
+  other shape, `:identified-in` the mSort of the other side's top; an omission is a
+  distinction only inside the body that made it. DISJOINT iff one of the two holds and every
+  store strictly below A down to either leaf's mParent is :aliases-nothing-else (§2.2); else
+  UNKNOWN. The one-top case rests also on a store never being among its own contents.
+  Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
   through a wrapper's sentinel, §3.4, or one ambient instance resolved once in a transit-free
   unwalled span, §1.10) or
