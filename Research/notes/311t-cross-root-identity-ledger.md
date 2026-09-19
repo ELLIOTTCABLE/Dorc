@@ -814,3 +814,144 @@ State at the rewind, for a successor (description, not a worklist):
 - **[HUMAN]**, 2026-09-18: a few ledger-only, fully acked changes are to be folded into `311j`
   when things quiesce; they have not, and `311j` carries only the § 4 litmus from this arc. The
   copy into the 312 series waits on this arc.
+
+## § 14 — 2026-09-18: a successor's sitting: the class behind attestation, sparing as two questions, what the closures owe
+
+Conductor: a rewound Fable successor. Nothing ruled. Words used in chat only and never to be
+tagged: "landing" (where a contact ended), "pin", "forced route".
+
+**Standup findings** (conductor):
+- `disc-placement-pairs-read-two-ways` (+SURE of the texts; ~SUSPECT unreconciled) — `311q` § 8
+  pins "KNOWN_UNSPOKEN mPlacement pairs do not collide" as the reading USER_STORY stage 5 and the
+  facet collapse need; `311q` § 18 records the human's correctness choice as "they collide". Under
+  § 18 every cross-vocabulary survival rests on the partition of `311q` § 18.
+- `obs-table-covers-five-of-eleven-relations` (+SURE of the count) — § 11's table maps
+  `:identified-in`, `:corresponds`, `:sole-route`, `:lives-in`, and `:reaches` out of `311j`
+  § 2.10's eleven. All eleven sort under four facts about the world: address (what an mKey is
+  relative to), write path (whose writes change what), route (what a lookup passes through:
+  `:yields`, the mTraversal, `:hierarchical`, `:lends`), and asker (`:observer-independence`).
+  Route is the model's existing third relation (`311j` § 4.2, the kill of stored-in as one
+  relation) and § 11's table has no row for it.
+
+**The class behind attestation.** **[HUMAN]**: the flagship of § 12 is too narrow; a gut sense
+that the class is large in ops, with real doubt whether licensing in the usual sense,
+verification, attestation, and certificate checking interact with elision at all; a guessed
+shape, explicitly not a requirement: cheaply recorded by a tool's describer where relevant;
+protecting others' lazier work from themselves; already an ops pattern whose verification step is
+painful and helps. Conductor:
+- `fnd-most-verification-never-meets-elision` (~SUSPECT) — payload integrity (signatures,
+  checksums) protects bytes a running line installs, and elision only removes runs. The conductor
+  could not build an elision that apt's signing key protects (apt copies the remote namespace into
+  local lists through a book-visible line, and every verdict reads local state), which leaves
+  § 11's motivating case showing the edge's shape and none of its value. Authorization is
+  :observer-dependence or a missing precondition; validity windows are the never-settled regime.
+- `fnd-reuse-across-contacts-is-the-interaction` (+SURE of the logic) — plain sh never reuses an
+  answer; Dorc reuses one across contacts (probe to apply; site to site; a fact past a running
+  line), and reuse is sound only if both contacts reached the same other party, which can change
+  with no write the book shows.
+- The class in ops words: a recorded expectation of who is on the other side, checked at each
+  contact, refusing loudly, never granting. `known_hosts`; borg refusing a relocated repository;
+  Terraform's state lineage; Postgres refusing a standby whose system identifier differs;
+  `start-stop-daemon --exec` against a pidfile; `mountpoint -q`; git's `safe.directory`; pip's
+  `EXTERNALLY-MANAGED`; `allowed_account_ids`; molly-guard; a shell prompt carrying host, user,
+  cwd, branch, context, and profile. Walks kept in chat: a `kubectl config use-context` line
+  between two applies (the diligent footprint of the context line removes the wall protecting a
+  lazy `kubectl` describer; pain 9 of `311q` § 16); `iptables` reaching the nft or the legacy
+  backend by an alternatives link; a name failing over between plan and apply; an unmounted
+  mountpoint as the free local twin (the device number rides the same `stat`).
+- `fnd-attestation-decomposes-into-existing-seats` (~SUSPECT, unhunted) — "who is entitled to
+  answer" is a lookup with declining arms (the exercise's Petra) fed where the contact ended
+  instead of the typed name, so a signing key is a secondary mKey yielding the archive, and the
+  added entry of § 12 is the punted arm-composition corner of § 7; the gate is `311j` § 1.6's
+  refusal when two seats disagree; the one new piece is a per-shape demand that the mParent
+  instance come from a seat that measured it.
+- A contact's far end can be plural four ways, each with an existing plural home: a set
+  (`terraform plan` across providers; the universal meet), a sequence (proxy, CDN, origin; the
+  mTraversal), roles (reads on a replica, writes on a primary;
+  `composite-identity-is-structure-not-a-bag`), and several tokens for one far end (mDerivations
+  by coherence, whose disagreement is an emulator detector).
+- **[HUMAN]**: "landing" reads as bog-standard work of this arc; renaming and cohering is welcome;
+  inventing a parallel concept and keeping both is not, absent an eyes-open motivation.
+  Conductor's mapping: a `resolve()` already returns where it ended (the mKey-Primary and a
+  supplied mParent instance from one read); mPlaceholders keyed by mEntryChain are "answered by
+  this kernel"; the standup `witness()` is equality of far ends across probe and apply; the
+  ambient `self` spelling is a PREDICTED far end (the describer re-implements the tool's
+  precedence); `plans/30S` pin-or-sever is the constructive form for environment.
+- **[HUMAN]** nack, accepted: "who the tool connected to, never who it said it was" is impossible
+  for large classes; `stat` reports only what the kernel said; an epistemic point apart from
+  security and apart from user speech against Dorc measurement. Floated: two tiers of claim, one
+  chaining through cryptography, perhaps first-class handling of one. Fence (**[HUMAN]**):
+  anything where Dorc makes its own claims about cryptographic parties goes to an opaque reviewer
+  first. Conductor (~SUSPECT): tier by CONSUMPTION, since origin is unknowable: a token consumed
+  only through inequality (two contacts whose tokens differ share no answer; agreement licenses
+  nothing; `312b:lead-warrantless-tokens-are-witness-only` as a rule), and an expected identity
+  handed to the tool, which refuses inside its own contact while Dorc reads an exit status as
+  today. RETRACTED: that a refute-only token catches § 12's emulator; the flag differing between
+  the two lines caught it, which is declared routing input.
+- **[HUMAN]**: the pinned form is interesting though surely a small class, because it is
+  spelling-narrow AND improves the off-ramp, which nothing else this round does; what would
+  modelling it buy. Conductor (~SUSPECT): model cost near zero (a bound mKey of a pin mScheme
+  supplying the mParent instance at the bind seat and flowing into argv); it buys a plan-time
+  literal for a remote thing, the tool re-checking at apply through the author's own bytes,
+  indifference to routing the book cannot see, and the admin's seat of
+  `tab-admin-says-this-is-my-server` in native sh; it never buys DISJOINT (one machine, many keys;
+  content digests excepted, `tab-uuid-and-digest-roots`); issuer pins carry no functional warrant;
+  pins held in ambient config are invisible again.
+- **[HUMAN]**: MH2 never had a round; an old idea that has brushed against Dorc repeatedly and
+  never sat well in it.
+
+**Sparing is two questions.** Conductor:
+- `fnd-sparing-needs-address-and-write-path` (+SURE of the logic; ~SUSPECT as the model's cut) —
+  "not one thing" (the walk of `311j` § 3.2) and "no write path between them" (`:lives-in` and
+  `:reaches` with both closures) are independent; a package and its configuration file are two
+  things and a write to one changes the other. § 8's
+  `leak-divergence-bypasses-the-placement-bound` is an address answer standing in for a write-path
+  answer. In the other direction `30U` § 2 defers address aliasing to "the identity tier" while
+  `311j` § 3.2 sends a pair of two mSorts back to the finished definition (+SURE of both texts): a
+  write-path sentence standing in for an address answer.
+- WITHDRAWN the same sitting: "transport lacks a route conjunct" as the reading of `311p`
+  thread 6. **[HUMAN]** suspicion: the engine can never look inside a binary; a possible break of
+  referential agnosticism. Conductor: a conjunct the engine must evaluate would be one; the honest
+  form is `311p`'s own repair (the engine vouches ambient and inherited instances only; sameness
+  of a leaf across two contacts is its lookup owner's `:guarantees-unique-referent`, which already
+  prices routing the owner cannot see). Route stays a fact with one consumer, perishing.
+- Corrections to the conductor's first rebuild of the table: the pairs `compare()` meets are four
+  (two mKeys of one primary mScheme under one mParent instance; two mKeys of two mSorts under one
+  mParent instance; one candidate mReferent under two mParent instances; two parentless mKeys),
+  and both ends of § 11's first row sit in the third; "across mSchemes" at a divergence always
+  means across mSorts, since an mFullyQualifiedKey holds only mKey-Primaries; for the second pair
+  the "one thing" sentence exists as the human merge of `311j` § 1.2 and the "two things" sentence
+  is the partition of `311q` § 18, absent, on which USER_STORY stage 5 rests (~SUSPECT of how a
+  stdlib chains a filesystem and a service manager).
+- **[HUMAN]**: the `tee /proc/sys` case (`311p` thread 5) is a poor driver: that path is not an
+  `sm.File`, it is the knob, and the answer has the vague shape of the path's lookup handing it
+  over; the case assumes a badly written oracle; the problem it stands for is real, and the fear
+  inside it is about collaboration and composition. Conductor agrees: `311j` § 2.1 already has the
+  net (a `resolve()` declines on mReferents its mSort does not describe) and `311m`'s walk needs
+  Tessa to skip it; the hand-over itself is inexpressible today (an mScheme belongs to one mSort,
+  § 1.3), which is the arm-composition corner of § 7. A driver with nobody badly written, offered:
+  an `iptables` describer and an `nft` describer over one kernel ruleset.
+
+**What the closures owe.** **[HUMAN]** (a principle, typed): unknowable does not entail
+should-not-exist. Handling the unknowable is Dorc's routine job: spread knowledge as far as it
+goes, and place the genuinely unknowable residue that value still needs between a double-ended
+acknowledgment by contract and the flag. Conductor, re-done under it:
+- "Nothing re-presents me" is unknowable (a store is overlaid, exported, or bind-mounted later
+  with no mark on the viewed side) and, separately, not needed for value: any second chain to a
+  thing in P passes through the presenting store, whose own silence blocks DISJOINT under
+  both-legs (overlay, NFS client, and nested pid namespace walked). Two properties, not one; the
+  redundancy holds only where every chain lists every store it passes through
+  (`312b:lead-identify-in-the-narrowest-primary-store`). ~SUSPECT complete.
+- `fnd-the-binarys-route-rides-the-vouch-unnamed` (~SUSPECT) — an mTraversal covers what an
+  authored `resolve()` read; a fact produced by running a binary also carries "and the binary
+  went where the mKey says", a negative existential about the binary's inputs that no describer
+  can close (tools gain routing inputs long after their describers wrote). It is needed for value
+  wherever a describer supplies a complete chain for an ambient contact, and it already sits where
+  the principle puts it, inside the vouch under the flag, but nothing names it (USER_STORY's
+  receipt does not). The model's safe silence exists: an unsupplied instance is an unknown link,
+  which reads UNKNOWN and guards on drifted days. The epistemically pure twin (§ 9) is forcing the
+  route in the book line itself (`--context prod`; `git -C`; an `ssh` line naming its
+  `known_hosts`), bound by the describer at the bind seat and threaded into the check; legal in
+  `311j` today. No structural repair proposed; the two shapes on the table are saying the unnamed
+  conjunct in `311j` § 1.7, and the per-shape demand above, under which a borrowed ambient
+  singleton is refused where a namespace's describer asked for a measuring seat.

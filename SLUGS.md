@@ -4160,11 +4160,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lead-identify-in-the-narrowest-primary-store
 - defined: —
-- cited: 03 311t 312b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id (4)
+- cited: 03 311t 312b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id (5)
 
 ## lead-warrantless-tokens-are-witness-only
 - defined: —
-- cited: 03 311t 312b (4)
+- cited: 03 311t 312b (5)
 
 ## 229:leak-category-archive-metadata
 - defined: Research/notes/229-research-reproducible-builds-metadata-inertness.md:816 — [A-rb-archives-2026]: "file ordering, users, groups, numeric
@@ -4731,7 +4731,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## open-bound-token-same-across-chains
 - defined: —
-- cited: 311a 311b 311c _tmp-r31-identity-handoff (7)
+- cited: 311a 311b 311c (6)
 
 ## open-cell-granted-acquire-ux
 - defined: —
@@ -6530,7 +6530,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-ground-identity-in-final-outcomes
 - defined: —
-- cited: 311b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id Research/notes/312b-exercises/net-sysctls-are-per-namespace _tmp-r31-identity-handoff (4)
+- cited: 311b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id Research/notes/312b-exercises/net-sysctls-are-per-namespace (3)
 
 ## 23O:rul-guard-license
 - defined: Research/notes/23O-round-23-closeout.md:224 — — a guard mints only from a matching (call-site, reached converged-vouch,
@@ -7386,7 +7386,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-three-rc-regimes
 - defined: —
-- cited: 311a 311c _tmp-r31-identity-handoff (4)
+- cited: 311a 311c (3)
 
 ## rul-top-absorbs-absolute-maps
 - defined: —
