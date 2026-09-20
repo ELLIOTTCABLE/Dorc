@@ -1331,3 +1331,22 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   operation for; a bound is stated in one catalog instance, and a daemon that writes from another
   mount namespace is outside it (`daemon-effects-escape-the-traced-process`); a lookup that never
   shortens needs a depth cap.
+- Typed this turn (**[HUMAN]**): ack that a stranger cannot make another's `resolve()` yield into
+  them; insertion into an existing recursion is punted, as designed. A gut note, not a ruling: the
+  hard part of arm composition is correctness, never spelling; it would make it critical that
+  soundness stay hyper-local (one link, one step, one speaker; flagged negative existentials
+  excepted) and that no author be encouraged to build soundness out of the constructed
+  co-properties of several of their own mSorts. Ack that an upward read is owed and enters this
+  version of the model; its siting is open (an emission in an existing body is suspected; a new
+  entry point is acceptable if more ergonomic). Conditional: the engine reading an mKey's bytes
+  should never have been in 311 and dies once the chain form is confirmed better. Sequence
+  agreed: settle these small changes, fold, record the whole arc as an exercise under
+  `312b-exercises/` (dead ends, dangers, the planned repair), then the adversarial panel, then
+  the re-cut on that foundation.
+- CORRECTED (conductor): "identity stays flat" was wrong wording. Identity is a chain, and it may
+  nest (a zone in a zone; an object in a namespace; a rule in a chain in a table), in which case a
+  bound naming a level is a store and § 3.2 already answers. Files are the odd case: their nesting
+  sits in the lookup chain while the primary mKey (an inode in a device) does not nest. The
+  conductor checked the origin of § 2.8's syntax reading: `30T` § 5 hands the engine PATH syntax
+  as POSIX language, for the load plane; § 2.8 extended it to hostnames and unit names, which no
+  specification hands the engine. `30T`'s own use is a different consumer and is untouched.
