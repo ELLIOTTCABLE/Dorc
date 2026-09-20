@@ -1242,3 +1242,48 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   USER_STORY stage 5 (two files, one backing, SAME). Why the fact side is not mirrored down to
   "below the shared level" too: a store whose mPlacement is an mKey relative to itself (a zone and
   its in-bailiwick glue; a filesystem and its quota file) keeps its net there.
+- `fnd-coarse-bounds-are-two-way-by-nature` (conductor; the human asked for the damage in detail) —
+  a drifted `docker pull` above three `cp` lines on a single-root host brings all three back as
+  guards. Three layers cause it and the candidate rule is the thinnest: an incomparable vocabulary
+  never spares (§ 14's hard ack); an honest describer who cannot list what a write touches must
+  bound the write set as coarsely as the read set, since "the image, nothing else" is false of a
+  pull; the candidate rule bites only where both were dodged. Monotone against having no oracle
+  (a total wall); confined to drifted days and to the one filesystem named; a guard, never a run.
+  TUNE, unacked: the pickup reads members ABOVE the written mKey only. At the written mKey's own
+  level the speaker can know where that thing's state is recorded (the ordinary finished-record
+  knife, at its designed seat); what can change a thing legitimately exceeds what writing it
+  touches (a resolver cache bounded coarsely over its upstream files, whose flush writes none);
+  and USER_STORY stage 5's price stays one `disturbs()` arm per verb. Given up: the automatic
+  collision of `usermod` with a fact on the passwd file, which returns to the sort owner's
+  authored `:reaches` (USER_STORY stage 7's seat). Residue: the level a coarse bound is hung at
+  changes outcomes for a sloppy describer, never for an honest one.
+- `fnd-a-prefix-is-a-naming-convention-and-a-mount-is-a-boundary` (conductor) — "it touches only
+  that directory and below" is a sentence about paths and the fact is held by inode; a bind-backed
+  volume, a relocated data root, a hardlink, and a rename each cross a directory boundary, and the
+  crossings are labelled on the thing crossed (link count; the mount table), so membership is
+  measurable, never a warrant. A directory relabels things of its filesystem and can never say
+  `:aliases-nothing-else`; `/proc` carves cleanly because it is a mount. Sources for "no general
+  reverse index": [B-unix-se-files-by-inode-2012] [B-stackoverflow-same-inode-2009]
+  [A-btrfs-inspect-internal-manpage-2024] [A-lwn-xfs-parent-pointers-2024].
+- `fnd-the-route-row-wants-its-closure` (conductor; ~SUSPECT, unhunted by anyone else; **[HUMAN]**
+  asked for the upward check generalised past inodes, on three taste objections: narrow, cruft,
+  and not referentially agnostic) — the shape is a grouping structure over a flat identity space,
+  where membership is either single-valued with a label readable from the member (a file with one
+  name; a process's one cgroup; a controller owner reference; a subnet's one network; a file's one
+  owning package) or many-valued with none (tags; groups; label selectors; aliases pointing at a
+  record). Model form: a sentence may name a SUBTREE of a `:hierarchical` mScheme (every mKey at
+  or beneath R in one mParent-Catalog instance), a rung between a store and an mKey; an mKey
+  beneath R reads UNKNOWN against it; an mKey not beneath R reads DISJOINT only where its matched
+  shape carries `:guarantees-unique-name` (its one mKey is not beneath R, so it is none of the
+  things beneath R), which is that warrant's existing licence quantified over a prefix, drawn
+  from one definition's own distinctions; otherwise UNKNOWN. No new relation and no new warrant;
+  one new term. Two subtrees separate only where one of them is closed from its own end (nothing
+  beneath it has an mKey outside it), the downward walk, paid only for bound against bound. A
+  `:hierarchical` primary mScheme needs none of this: its prefixes are mParents by a recursive
+  `:identified-in`, expressible today. It is the route row § 14 found missing from § 11's table,
+  with an entry (the mTraversal) and a closure at either end. It also gives an honest reading to
+  a sentence that leaks today: an mPlacement naming a directory compares as a sibling inode with
+  every file beneath it, DISJOINT. Near § 4.2's refuted region predicate, and distinct from it:
+  nothing is authored by a sort owner, retargeting stays with mTraversal perishing, and a second
+  name withdraws the warrant. Leans on § 14's lean that a warrant may sit on a lexical path
+  conditioned on measured state. Conductor's read: it rides the re-cut as that row.
