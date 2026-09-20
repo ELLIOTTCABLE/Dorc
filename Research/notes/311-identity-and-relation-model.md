@@ -378,7 +378,11 @@ Default: flat, so the mTraversal is the mParent-Catalog as a whole and any touch
 perishes every mResolution through it — the coarse, safe floor. This replaces authored region
 predicates: containment is membership in a mTraversal, and a mutator that touches a directory
 needs to know nothing about files (`renaming-a-parent-moves-every-child-name`,
-`namespace-composition-is-not-concatenation`).
+`namespace-composition-is-not-concatenation`). A routing mKey named whole, in a footprint or as
+an mPlacement, stands for whatever its mScheme reaches beneath it: in §2.5's test it reads
+UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
+§3.2 answers of the two as siblings (unequal mTokens say only that the thing is not the routing
+mKey itself).
 
 ### § 2.9-composite-sorts (roles)
 
