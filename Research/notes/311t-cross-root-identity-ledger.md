@@ -1306,3 +1306,28 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   Machine [B-eclecticlight-time-machine-filesystems-2024]. It bears on how cheap the measurement
   is and never on soundness: the warrant is given only on a path that measured the whole route
   alias-free, and declines otherwise.
+- `fnd-a-hierarchy-is-a-chain-of-lookups-built-in-userspace` (**[HUMAN]** proposal; conductor's
+  attack; nothing folded) — "hierarchical" need not mean a string the engine splits. All the engine
+  needs is that a lookup sometimes supplies, as the mParent-Catalog of what it yields, another mKey
+  of its own mScheme or of a set of mSchemes that feed one another (a path yielding a directory
+  entry looked up in a shorter path; a mounted level between two directory levels, each owner
+  speaking one level and any level free to withhold its warrant). The mTraversal is then that
+  explicit chain, the splitting is `dirname` in the stdlib's body, and § 2.8's reading of mKey
+  syntax by the engine can go; perishing and `namespace-composition-is-not-concatenation` are
+  served better, since nothing is concatenated or decomposed outside a lookup. Identity stays
+  flat (an inode in a device): the routing chain feeds only a sentence naming a routing mKey whole
+  (§ 2.8 as folded today) and perishing, never SAME or DISJOINT between two things. What it forces
+  into the open (conductor, +SURE of the logic): "no new warrant" was an artefact of packing a
+  whole path into one mKey in one catalog. Split into levels, each level owes two sentences: one
+  mKey for the thing in this catalog (`:guarantees-unique-name`, existing) and looked up in no
+  other catalog, which is the thing's-end closure of § 11's first row, § 9's "unique-name lifted
+  one level", left OPEN for 312; here it is measured per mKey (a link count of one) under
+  `rul-warrants-are-path-granular-and-built-at-evaluation`, and rhymes as a sentinel
+  (`looked-up-in nothing-else`). Rule shape: a thing is outside a routing mKey named whole iff
+  every level of its own chain is so closed and every member compares DISJOINT from that mKey;
+  inside iff a member is SAME; else UNKNOWN. Only the thing's leg is asked, unlike § 3.2. Priced
+  limits: the chain exists only after resolution; a grouping the thing was not named through (a
+  process and its cgroup; a file and its owning package) needs an upward read the model has no
+  operation for; a bound is stated in one catalog instance, and a daemon that writes from another
+  mount namespace is outside it (`daemon-effects-escape-the-traced-process`); a lookup that never
+  shortens needs a depth cap.
