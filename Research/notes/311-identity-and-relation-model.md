@@ -130,7 +130,10 @@ declared, absent-by-default warrants:
   (`distinct-names-alias-within-a-kind`), route-qualified handles.
 
 Declared per matched shape, by the lookup's owner, holding for every mKey of that shape inside
-any one mParent while that mKey's mResolution or mToken stands (§3.3). The one lookup the engine
+any one mParent while that mKey's mResolution or mToken stands (§3.3). A matched shape is a
+control-flow path of the owner's body: a warrant is constructed when that body is evaluated for
+the mKey in hand, may rest on what the path measured, and may be declined by any path the
+dialect admits; a path that does not reach a warrant has not given it. The one lookup the engine
 vouches for itself is the transit-free local mRoute (§1.10); across a transit nothing is
 claimed, only measured and witnessed.
 
