@@ -64,3 +64,4 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 60. a-tenant-answers-under-the-operators-name: "`abc123.execute-api.us-east-1.amazonaws.com` is a customer's Lambda answering under Amazon's own name and certificate; GitHub moved user pages to `github.io` to stop exactly this."
 61. a-private-name-resolves-only-inside: "`git.corp.internal` resolves on the office VPN and nowhere past the book's `ssh` pivot."
 62. backing-is-not-presenting: "`dd` over `disk.img` rewrites every file of the filesystem loop-mounted from it, yet none of them is a file of the outer filesystem; every file of an overlay is a file of its lower one."
+63. a-directory-can-have-two-parents: "HFS+ hardlinks whole directories for Time Machine, and a bind mount answers one directory at two paths; only Linux's on-disk tree refuses."
