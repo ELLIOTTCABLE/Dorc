@@ -1287,3 +1287,22 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   nothing is authored by a sort owner, retargeting stays with mTraversal perishing, and a second
   name withdraws the warrant. Leans on § 14's lean that a warrant may sit on a lexical path
   conditioned on measured state. Conductor's read: it rides the re-cut as that row.
+- `ack-a-routing-key-named-whole-is-no-sibling` (**[HUMAN]**, typed ack that the hole is real and
+  needs a fix) — an mPlacement naming a directory compared its inode with a file's and read
+  DISJOINT, which says only that the file is not the directory. The collide half is folded
+  (`5ed426a2`, § 2.8): a routing mKey named whole stands for whatever its mScheme reaches beneath
+  it and reads UNKNOWN in § 2.5's test against every mKey that mScheme can yield in that
+  mParent-Catalog instance. The buy-back (an mKey not beneath it, under `:guarantees-unique-name`
+  for the whole route) is NOT folded. **[HUMAN]** acks toward it: several names kill it; it is a
+  carve-out rescuing the commonest case and the general hole must never be papered over; bound
+  against bound is the harder problem.
+- `rul-warrants-are-path-granular-and-built-at-evaluation` (**[HUMAN]**, typed, "ruled for 311";
+  folded `37e87ad6`, § 1.5) — a warrant must be constructable by runtime evaluation, which is
+  non-optional for many shapes; it is granular to the control-flow graph of the owner's body, and
+  any path the dialect admits may decline it at any point. This promotes § 14's lean.
+- CORRECTED (conductor): "a directory has exactly one parent" was stated too flatly. It is true of
+  an on-disk tree on Linux (`link(2)` refuses a directory), false of the mounted tree (a bind
+  mount gives one directory two paths), and false on HFS+, which hardlinks directories for Time
+  Machine [B-eclecticlight-time-machine-filesystems-2024]. It bears on how cheap the measurement
+  is and never on soundness: the warrant is given only on a path that measured the whole route
+  alias-free, and declines otherwise.
