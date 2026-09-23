@@ -1350,3 +1350,53 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   conductor checked the origin of § 2.8's syntax reading: `30T` § 5 hands the engine PATH syntax
   as POSIX language, for the load plane; § 2.8 extended it to hostnames and unit names, which no
   specification hands the engine. `30T`'s own use is a different consumer and is untouched.
+- `fnd-the-upward-read-is-an-ordinary-lookup` (conductor; ~SUSPECT; siting OPEN by the human's
+  word) — a secondary mScheme owned by the grouping's describer, keyed on the thing's own primary
+  token, yielding that same thing and supplying the grouping as its catalog plus the closure; run
+  only where a sentence names a key of that grouping whole and a comparable thing has no chain in
+  it; detectable statically because the body yields its own argument. The one new engine step:
+  constructing a key of that mScheme from a primary token at comparison time, where keys are
+  minted today only at binds and declared emission points.
+- `fnd-no-hierarchy-declaration-is-needed` (the human's proposal, checked; ~SUSPECT) — perishing,
+  "inside", and "outside" each need only the chain the lookups produced and the per-level
+  closures; the engine needs statically only whether an mSort is ever supplied as a catalog by a
+  loaded lookup (read off record shapes at lift), and only to read a bare whole-named key. The
+  proposed detector corrected: upward reads cannot define a hierarchy (files have none), and
+  cycles are not needed (one level supports a bound).
+- Vocabulary (**[HUMAN]**, typed 2026-09-23; recorded in the root `_tmp-` naming file, unapplied):
+  `may-read` / `may-write`, with the sets Readset / Writeset, replace placement, backing,
+  footprint, and the entailment; the test reads "a line is transparent to a fact iff
+  Writeset(line) ∩ Readset(fact) = ∅". The alias closure replaces "reference count one"
+  (**[HUMAN]** direction): at each level the lookup emits the other names it knows for the thing,
+  then `alias nothing-else`; a listed alias is checked like the first name; only the closure is
+  the knife; it is the thing's-end closure of § 11's first row.
+- `nack-a-primary-key-implies-no-descendants` (**[HUMAN]**; conductor's counterexamples: a zone
+  identified in a zone; objects in a namespace; child cgroups; tables in a database; addresses in
+  an interface) — the split "a routing name given whole is a region; a primary key is the thing"
+  was a filesystem artefact and is dropped. Stands: "item" (the thing's own state) and "children"
+  (everything beneath it, by identity chain or access path) are disjoint sets; both exclusive
+  directions are inhabited (`chmod D`; a write inside D) with unequal precision (item-only buys
+  chmod-class lines; children-only buys almost nothing; DNS entails item from beneath, the zone
+  owner's two entries). Conductor's recommendation, UNACKED (the human leans to keeping an
+  explicit item/children mark; an asterisk floated): a bare key denotes the wide set, its
+  mReferent and everything beneath, which § 3.2 and the folded § 2.8 sentence already do; `@cell`
+  denotes one part; fail-safety puts the mark on the narrow claim, so an asterisk on the children
+  would leave the dangerous reading bare; "every item-only write is a cell write" ~SUSPECT
+  (filesystems, DNS, Kubernetes, cgroups, interfaces checked; databases and git not); cell
+  precision on identity-chain containers waits on the sibling-cell residue (312). Under the
+  recommendation `-beneath` is unneeded.
+- `fnd-a-referent-is-an-aggregate-and-a-may-set` (**[HUMAN]** challenge; conductor's retraction)
+  — the stipulation "one concrete mReferent, one value at one instant" was wrong as the term's
+  meaning: philosophy of language admits plural, abstract, and absent referents; a weak
+  reference's referent is one aggregate object; alias analysis's referents are may-points-to sets
+  of summary objects; a Rust or C++ referent is a place, possibly unsized. The model's usage is
+  already the aggregate one (§ 1.1: a machine, a mount table; cells as fields) and a key without
+  `:guarantees-unique-referent` reaches a may-set (§ 1.5); a bare container key denotes a summary
+  object; a shape-carved sub-mSort is a summary over its members. The deep (reachability) reading
+  is the conservative summary for a callee the analysis cannot see, hence the bare form; "a cell
+  is a part, never a thing reached through" is the sort owner's layout, ~SUSPECT. **[HUMAN]**:
+  mReferent keeps its name and is made extremely explicit at the freeze (the naming file carries
+  the text owed).
+- Pending on the human, none typed: the mirror rule's tuned wording; the outside rule with its
+  alias closure; deleting § 2.8's key-syntax sentence; the upward read's siting; the item/children
+  mark.
