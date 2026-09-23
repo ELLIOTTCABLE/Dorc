@@ -1400,3 +1400,23 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
 - Pending on the human, none typed: the mirror rule's tuned wording; the outside rule with its
   alias closure; deleting § 2.8's key-syntax sentence; the upward read's siting; the item/children
   mark.
+- `fnd-a-cell-fuses-a-field-and-a-named-read` (conductor, 2026-09-23; **[HUMAN]** gentle ack the
+  next turn, and the terminology FROZEN: mReferent divided from mField, "even if only defensively,
+  to stop people referring to the latter as a referent"; the role of each in the model not yet
+  fixed) — § 1.9's "the unit that has a value: what a probe measures and a mutator writes" fuses
+  two things. A FIELD: a part of a referent at the grain its store's keys expose, one value at one
+  instant, written whole or not at all at that grain, what a Readset or Writeset entry reaches (a
+  compiler's memory location). A NAMED READ: an author's question over one or more fields, its
+  identity the bearer plus a name (`sm.Service:nginx@active`; the pre-r30 selector), what a
+  verdict measures (a compiler's derived value). Two named reads may read one field: `test -x`
+  reads the mode field, the owner fields, and the caller's credentials, so a `chmod` declared as
+  writing `@mode` alone must collide with an `[ -x ]` guard's fact, and treating the two as two
+  fields with two homes elides the guard wrongly. One named read may read many fields
+  (`@installed` over the status stanza). The one-to-one case (`@mode`) is the cornerstone example
+  that hid the fusion. Consequence, ~SUSPECT and unfolded: a named read's identity answers only
+  whether two facts ask one question and never enters the interference test, only its Readset
+  does; then `311p` thread 3 (`chmod` past a contents fact: the mode field against the data
+  blocks, DISJOINT at the store's grain, the bearer never appearing) and thread 2 (`@active` reads
+  a field in the manager's memory, scoped in the boot, and perishes at reboot; `@enabled` reads a
+  symlink inode in a filesystem and survives) dissolve at the definition, with no per-cell
+  identity store. The named read's word stays open in the naming file.
