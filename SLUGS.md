@@ -472,6 +472,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30N 30Q 30Qd ANALYZER-NEEDS (8)
 
+## an-invariance-speech-act
+- defined: —
+- cited: 311 ANALYZER-NEEDS (3)
+
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
 - cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
@@ -1081,6 +1085,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## constraint-one-red-window-no-intermediate-landing
 - defined: —
 - cited: 30Ia 30K (2)
+
+## constraints-on-other-components
+- defined: —
+- cited: 30U 311 (2)
 
 ## plan/CLAUDE:consumed-channel-blocking
 - defined: spike/crates/plan/CLAUDE.md:58 — — consumed `Stdout`/`Stderr` arrive un-collapsed
@@ -5546,6 +5554,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28P:res-case-bodied-wrapped-verdict-coverage
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:173 — — builder-4's measured
 
+## res-cell-level-relation-is-the-filtered-meet
+- defined: —
+- cited: 26Ob 311 (2)
+
 ## 28P:res-command-v-is-its-own-poison-wall
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:612 — (disclosed, not chased)
 
@@ -5625,6 +5637,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/28K-oracle-loading-and-resolution.md:357 — — a library *designed* to replace stdlib families cannot
 - cited: 28M (1)
 
+## res-per-index-relation-table
+- defined: —
+- cited: 26Ob 311 (2)
+
 ## 28P:res-plural-families-withhold-off-peak
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:251 — (disclosed under-approximation)
 - cited: 28Q 305 (2)
@@ -5686,6 +5702,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## res-world-coordinate-repeats-per-datum
 - defined: —
 - cited: 30Vd (1)
+
+## res-worlds-compare-through-the-chokepoint
+- defined: —
+- cited: 26Ob 311 (2)
 
 ## resid-return-arity
 - defined: —
@@ -5997,6 +6017,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-bind-equals-tail-disambiguates
 - defined: —
 - cited: 28A (1)
+
+## rul-binder-claims-are-ordinary
+- defined: —
+- cited: 30T 311 (2)
 
 ## rul-binds-entity-only-provisional
 - defined: —

@@ -873,41 +873,42 @@ until its document is rewritten. Remove an entry when its document catches up. A
 another prior document is found to disagree. Each entry names the passage, gives its claim, then
 gives this model's claim after "Here".
 
-- `plans/30U` §1 `rul-cross-kind-sparing-needs-a-finished-definition`, §4 "As a generator", and
-  §7 "The comparison", with `plans/30T` §7 `rul-binder-claims-are-ordinary`: a finished
-  definition generates cross-kind provably-disjoint verdicts, and a footprint cell is found
-  disjoint from another kind's backing cell through it. Here: a finished definition stays
-  necessary for sparing across mSorts and generates no DISJOINT (2.6-may-write-the-writeset).
-  `compare()` decides every pair. A cross-mSort pair the walk does not separate reads
-  KNOWN_UNSPOKEN, whatever is finished (3.2-compare-one-chokepoint-four-answers).
-- `ANALYZER-NEEDS` `an-kind-reach`, `an-compare-chokepoint`, and `an-disjointness`: the
-  `unrelated` answer is the cross-kind answer only absent the claimed kind's finished
-  definition, and the record licenses cross-kind sparing. Here: `unrelated` is KNOWN_UNSPOKEN,
-  and `provably-disjoint` is DISJOINT. KNOWN_UNSPOKEN never spares, whatever is finished
+- `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator",
+  and `30U:constraints-on-other-components` "The comparison", with
+  `30T:rul-binder-claims-are-ordinary`: a finished definition generates cross-kind
+  provably-disjoint verdicts, and a footprint cell is found disjoint from another kind's backing
+  cell through it. Here: a finished definition stays necessary for sparing across mSorts and
+  generates no DISJOINT (2.6-may-write-the-writeset). `compare()` decides every pair. A
+  cross-mSort pair the walk does not separate reads KNOWN_UNSPOKEN, whatever is finished
   (3.2-compare-one-chokepoint-four-answers).
-- `plans/30W` §1 and §5, with `notes/26Ob` §10b `res-per-index-relation-table`: a kind's owner
-  declares the kind referent-transparent, one grade under which token equality gives same and
-  token inequality gives disjoint. Here: a lookup carries two independent warrants per matched
-  shape, `:guarantees-unique-referent` and `:guarantees-unique-name`, each absent by default
+- `ANALYZER-NEEDS:an-kind-reach`, `ANALYZER-NEEDS:an-compare-chokepoint`, and
+  `ANALYZER-NEEDS:an-disjointness`: the `unrelated` answer is the cross-kind answer only absent
+  the claimed kind's finished definition, and the record licenses cross-kind sparing. Here:
+  `unrelated` is KNOWN_UNSPOKEN, and `provably-disjoint` is DISJOINT. KNOWN_UNSPOKEN never
+  spares, whatever is finished (3.2-compare-one-chokepoint-four-answers).
+- `plans/30W` §1 and §5, with `26Ob:res-per-index-relation-table`: a kind's owner declares the
+  kind referent-transparent, one grade under which token equality gives same and token
+  inequality gives disjoint. Here: a lookup carries two independent warrants per matched shape,
+  `:guarantees-unique-referent` and `:guarantees-unique-name`, each absent by default
   (1.5-token-and-the-two-warrants, 2.2-primary-of-and-identified-in). `:rootness` is the
   separate per-shape claim of global comparability (§2.2).
-- `plans/30W` §1 index-kinds and §10 build item 1, with `notes/26Ob` §10b
-  `res-worlds-compare-through-the-chokepoint`: the context slot is a product over index-kinds,
-  and a world is a coordinate in a cell's key. Here: the context slot is a mVantage and nothing
-  else, an address that is part of no mKey's identity (1.10-vantage-route-placeholder-witness,
-  4.1-boundary-of-this-model). Identity is the mFullyQualifiedKey
-  (1.8-fully-qualified-key-topic-and-derivation). A world is an mWorld, a terminus of a
-  mFullyQualifiedKey, and nothing speaks across mWorlds (§1.8,
+- `plans/30W` §1 index-kinds and §10 build item 1, with
+  `26Ob:res-worlds-compare-through-the-chokepoint`: the context slot is a product over
+  index-kinds, and a world is a coordinate in a cell's key. Here: the context slot is a mVantage
+  and nothing else, an address that is part of no mKey's identity
+  (1.10-vantage-route-placeholder-witness, 4.1-boundary-of-this-model). Identity is the
+  mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation). A world is an mWorld, a
+  terminus of a mFullyQualifiedKey, and nothing speaks across mWorlds (§1.8,
   3.2-compare-one-chokepoint-four-answers).
-- `plans/30W` §2 and §3 `kind__disjoint()`, its `rul-disjoint-is-an-rc-predicate` [TYPED], and
-  `plans/30T` §6 on the region predicate: an owner-authored region predicate generates
+- `plans/30W` §2 and §3 `kind__disjoint()`, its `30W:rul-disjoint-is-an-rc-predicate` [TYPED],
+  and `30T:file-identity` on the region predicate: an owner-authored region predicate generates
   disjointness between regions. Here: there is no authored region predicate
   (4.1-boundary-of-this-model). Containment is membership in a mTraversal. The region test over
   `:hierarchical` mSchemes (2.9-hierarchical-and-the-region-test) and the `:places` lookup
   (2.10-places-the-upward-lookup) decide it.
-- `plans/30W` §2 to §4, `notes/26Ob` §10b `res-cell-level-relation-is-the-filtered-meet` and
-  §10f, `plans/27C` §4(A), `ANALYZER-NEEDS` `an-invariance-speech-act`, and `plans/271`
-  `rul-invariance-speech-act` [TYPED]: the kind owner's invariance line
+- `plans/30W` §2 to §4, `26Ob:res-cell-level-relation-is-the-filtered-meet` and
+  `26Ob:10f-the-target-pin`, `plans/27C` §4(A), `ANALYZER-NEEDS:an-invariance-speech-act`, and
+  `271:rul-invariance-speech-act` [TYPED]: the kind owner's invariance line
   (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport
   across an index or an axis, and the store member yields invariant, keyed, or ⊤ per (kind,
   selector, index-kind). Here: there is no invariance line and no per-kind table against axes
@@ -932,14 +933,14 @@ gives this model's claim after "Here".
   and are never compared against File facts. Here: a may-read entry is an mKey that `compare()`s
   against every writeset entry, and an entry naming a store reaches every mKey relative to that
   store (2.5-may-read-the-readset, 2.6-may-write-the-writeset).
-- `plans/30T` §6 per-aspect identity: "same file" is one relation per aspect, and the identity
-  tier carries an authored per-aspect relation mapping. Here: there is no aspect species
-  (4.1-boundary-of-this-model). Each aspect is a cell, a singleton mSort with its own may-read
-  set and its own `:observer-dependence` (1.9-cell-a-singleton-sort). Same-for-existence is the
-  mParent-Catalog entry, which creation, deletion, and rename write
+- `30T:file-identity` per-aspect identity: "same file" is one relation per aspect, and the
+  identity tier carries an authored per-aspect relation mapping. Here: there is no aspect
+  species (4.1-boundary-of-this-model). Each aspect is a cell, a singleton mSort with its own
+  may-read set and its own `:observer-dependence` (1.9-cell-a-singleton-sort).
+  Same-for-existence is the mParent-Catalog entry, which creation, deletion, and rename write
   (3.3-perishing-three-mutator-species). Same-for-contents is the inode's mReferent, reached
   when the path mScheme yields the inode (2.3-aliases-nothing-else-the-store-warrant).
-- `plans/30T` §6 the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
+- `30T:file-identity` the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
   path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey are
   routing writes to its mParent-Catalog entry, and a writeset may name them
   (3.3-perishing-three-mutator-species). Path-distinct mKeys separate under
