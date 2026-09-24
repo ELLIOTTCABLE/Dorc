@@ -1598,3 +1598,27 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
 - Pending on the human, restated: the outside rule with its alias closure; the upward read's
   siting. Resolved this sitting: the mirror rule (replaced, acked); the key-syntax sentence
   (dead); item against children (deep).
+- `rul-the-outside-rule-with-the-alias-closure` (conductor's detail; **[HUMAN]** "ack on
+  closure", then "I ack", 2026-09-23) — for a region (a key given whole, resolved to a referent
+  D) against a fact's key x, whose routing chain the lookups produced level by level, each
+  level able to emit `alias nothing-else` (the referent at that level reachable by exactly this
+  one entry; the path lookup's body checks a link count of one for a file, and for a directory
+  the link count plus no other mount in `mountinfo` exposing it): four outcomes. The leaf
+  compares SAME with D: x is D, SAME. Some other level compares SAME with D: the region covers
+  x, the chokepoint verdict is UNKNOWN as for a key against its own container, one level
+  suffices and no closure is needed (a second path is irrelevant once the path in hand passes
+  through D). Every level compares DISJOINT with D and every level is closed: outside,
+  DISJOINT. Otherwise unknown, and the folded collide half of § 2.8 applies. Only the fact's
+  leg is asked; D needs no closure, since the region is its referent however named; region
+  against region stays unknown unless one owner enumerates. Compare works on referents, never
+  strings (`containment-by-path-prefix-lies` by construction). The conductor's first wording
+  "inside if any level is SAME" was corrected by the human to the four outcomes above. Every
+  level, not just the leaf, on two books: a `mount --bind /etc/app` into a docker volume (the
+  leaf `app.env` has link count one and compares DISJOINT; only the directory level's
+  `mountinfo` check withholds the closure); an LDAP alias entry `ou=engineering` pointing at
+  `ou=eng` (alice's own entry is ordinary; only the OU level sees `objectClass: alias`) with a
+  client that does not dereference aliases. Not covered: a grouping the thing was not named
+  through (the upward read); a daemon writing from another mount namespace than the book's.
+  New and additive: the per-level closure record (the thing's-end routing statement, emitted at
+  evaluation under `rul-warrants-are-path-granular-and-built-at-evaluation`) and the rule that
+  consumes it; their absence changes nothing.
