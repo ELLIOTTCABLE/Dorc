@@ -196,7 +196,7 @@ A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P, a
 p, reaches mReferent R: a FACT with a BACKING, the mTraversal — the ordered chain of routing
 mKeys the lookup crossed (each directory entry and symlink for a path; the resolver
 configuration and mVantage for a hostname; the unit table for a service name). A
-:hierarchical mScheme's structure fixes how an mKey decomposes into a mTraversal (§2.8). A
+:hierarchical mScheme's lookups produce the mTraversal, one level per lookup (§2.8). A
 mResolution perishes under ordinary effective-mWorld reach from any mutator whose Writeset
 touches a mTraversal member. Its target object is not its backing: an mKey can stop reaching
 an object without the object changing (`renaming-a-parent-moves-every-child-name`,
@@ -405,14 +405,16 @@ Measurement in the denoted context (`plans/27C`) stays the default lane.
 
 ### § 2.8-hierarchical (mTraversal structure; on the mScheme)
 
-An mScheme is :hierarchical when its mKeys decompose into an ordered chain of its own mKeys,
-each a routing mKey the lookup crosses: a path into directory entries, a hostname into
-resolver steps from a mVantage, a dotted unit name into its instance table. Otherwise FLAT (an
-inode number; a uid). A :hierarchical mScheme may contain INDEXICAL components whose
-mResolution depends on the observing process (`/proc/self`); only the mScheme owner can say
-which, and an undeclared indexical component reads unknown. The engine derives the
-decomposition from mKey SYNTAX, which is language, plus this declaration (`30T` §5's
-syntax-versus-semantics line). Consumer: mResolution backings (§1.7), hence perishing (§3.3).
+An mScheme is :hierarchical when its lookups name, as the mParent-Catalog of what they yield,
+an mKey of the same mScheme or of an mScheme that in turn feeds it: a path yields a directory
+entry looked up in a shorter path, a hostname a resolver step from a mVantage, a dotted unit
+name an entry in its instance table. Otherwise FLAT (an inode number; a uid). The mTraversal is
+the chain those lookups produced, one level per lookup; the engine never reads an mKey's
+syntax, and whatever splitting an mKey needs happens inside a lookup's body. A :hierarchical
+mScheme may contain INDEXICAL components whose mResolution depends on the observing process
+(`/proc/self`); only the mScheme owner can say which, in the lookup that meets them, and an
+undeclared indexical component reads unknown. Consumer: mResolution backings (§1.7), hence
+perishing (§3.3).
 Default: flat, so the mTraversal is the mParent-Catalog as a whole and any touch on it
 perishes every mResolution through it — the coarse, safe floor. This replaces authored region
 predicates: containment is membership in a mTraversal, and a mutator that touches a directory
@@ -444,7 +446,7 @@ union of its parts' may-read sets.
 | `:may-write` (the verb's at-most set; the mSort's entailment) + finished | per matched shape of the verb; many, per matched shape, on the mSort | the verb's author; the mSort owner | unfinished ⇒ collide | the write-path question (§2.5), within one mWorld; never a generator of DISJOINT | the premature finished record |
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
-| `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer buys sparing, coarse is safe) |
+| `:hierarchical` | per mScheme | read off the mScheme's lookups: they name catalogs of their own mScheme or of mSchemes feeding it | flat ⇒ whole-mParent-Catalog mTraversal | perishing; the region test (§2.8) | none (finer buys sparing, coarse is safe) |
 | `:lends` (+ sentinel) | per wrapper, per mParent-Catalog mSort | wrapper owner | ⊤ ⇒ walls | ambient mParent supply | a wrong lend measures the wrong mVantage; the sentinel is an at-most claim over every mParent-Catalog mSort |
 | mCompositeSort | per composite | the author holding the roles | n/a | identity | as any mSort |
 
