@@ -285,9 +285,10 @@ that names it (§1.4, §1.6). The singleton mSort has no mScheme of its own. The
 
 A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
 diffuse. The cell's may-read set (§2.5) says where that mState is held. The freshness of a fact
-about the cell follows that set, never the mParent. Example: `enabled` is held in a symlink in
-a filesystem and survives a reboot. `active` is held in the service manager's memory in the boot
-and does not. Both are cells under one mParent.
+about the cell follows that set, together with any write that covers the mParent (§2.9, §3.3).
+Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it
+through that set. `enabled` is held in a symlink in a filesystem, and survives a reboot only
+where its mParent is not itself scoped in the boot (§3.3).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two
 `:observer-dependence`s. §3.2 decides between them as between any two mSorts. A writeset entry
