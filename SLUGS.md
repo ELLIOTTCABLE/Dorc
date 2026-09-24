@@ -1014,7 +1014,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311a 311c _tmp-naming-rewrite-owed (4)
+- cited: 26Ob 311a 311c 312cb _tmp-naming-rewrite-owed (5)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -1095,7 +1095,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## containment-by-path-prefix-lies
 - defined: —
-- cited: 311t 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (5)
+- cited: 311t 312cb 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (6)
 
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -2651,6 +2651,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311l:fnd-aliases-nothing-else-sited-on-the-child
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:221
 
+## 312cb:fnd-aliasing-stores-forfeit-every-container-and-nfs-home
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:530
+
 ## 28O:fnd-ambient-bind-outranked-the-marks-own-coordinate
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:130
 
@@ -2712,6 +2715,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28L:fnd-case-frontmatter-overwrites-lock-metadata
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:404 — (X2a, +SURE) — a new
 
+## 312cb:fnd-cells-of-one-parent-never-separate-or-separate-on-a-warrant-nobody-holds
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:178
+
 ## 28L:fnd-class-b-is-one-hundred-components
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:851 — (x2g at the merged state, +SURE
 
@@ -2741,6 +2747,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-corpus-carries-twelve-plural-families
 - defined: —
 - cited: 305a 307c (4)
+
+## 312cb:fnd-correspondence-speaks-across-worlds-from-one-vantage
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:386
 
 ## 28R:fnd-corroborated-literal-plane-only
 - defined: Research/notes/28R-context-kernel-review.md:41 — (+SURE as corroboration) — three independent
@@ -2839,6 +2848,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28S:fnd-fixpoint-does-not-protect-tier
 - defined: Research/notes/28S-authorship-arc-close-ledger.md:37 — — the byte-identity lock gates do NOT catch a
 
+## 312cb:fnd-flat-perishing-eats-the-package-vocabulary
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:324
+
 ## 30Qc:fnd-frames-are-subshell-scopes
 - defined: Research/notes/30Qc-load-plane-lane-report.md:780 — — the CONFIRM ruling 1 demanded
 
@@ -2848,6 +2860,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:fnd-hash-munge-has-no-reachable-input-today-and-is-built-anyway
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:429
+
+## 312cb:fnd-held-in-is-said-twice-and-checked-never
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:273
 
 ## 30Ba:fnd-hole-number-counts-files-not-holes
 - defined: Research/notes/30Ba-minispec-review-neutral.md:466 — (+SURE)
@@ -2884,6 +2899,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28O:fnd-legacy-short-kinds-in-binds
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:164
+
+## 312cb:fnd-lend-sentinel-closes-an-open-universe
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:229
 
 ## 28R:fnd-lifecycle-contagion-vs-statelessness
 - defined: Research/notes/28R-context-kernel-review.md:97 — (~SUSPECT; CHECK-ITEM; full-read
@@ -2938,6 +2956,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-nonvacuity-probe-is-a-naming-convention
 - defined: Research/notes/30Ba-minispec-review-neutral.md:219 — (+SURE)
+
+## 312cb:fnd-observer-independence-is-quadratic-speech
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:127
 
 ## 311l:fnd-observer-sorts-must-be-enumerated
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:299
@@ -3029,6 +3050,12 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Qa:fnd-region-routes-account-double-counts
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:155 — (+SURE)
 
+## 312cb:fnd-region-test-quantifies-over-an-absent-traversal
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:437
+
+## 312cb:fnd-region-test-walks-only-one-side
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:570
+
 ## 28L:fnd-registry-words-escape-the-ascii-law
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:691 — (x2c) — `⊤` in
 - cited: 28W (1)
@@ -3060,6 +3087,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-root-module-names-a-deleted-unit
 - defined: Research/notes/30Ba-minispec-review-neutral.md:243 — (+SURE about the file; ~SUSPECT about the build)
 
+## 312cb:fnd-rootness-has-no-smaller-scope-to-retreat-to
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:485
+
 ## 30Ba:fnd-seat-citation-ignores-everything-between
 - defined: Research/notes/30Ba-minispec-review-neutral.md:136 — (+SURE)
 
@@ -3078,6 +3108,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311l:fnd-sentinel-rests-on-a-privileged-read
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:285
 - cited: 311p (1)
+
+## 312cb:fnd-separation-dies-at-the-route
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:17
 
 ## 311l:fnd-shape-is-not-a-function-of-bytes
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:271
@@ -3124,6 +3157,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311l:fnd-supply-modes-survive-their-own-retraction
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:161
+
+## 312cb:fnd-survival-attribution-omits-the-correspondence
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:92
 
 ## fnd-survival-footprint-lane-scans-forward
 - defined: —
@@ -5241,7 +5277,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:pure-predicate-carry
 - defined: spike/CLAUDE.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
-- cited: 27Xf 300 308 (5)
+- cited: 27Xf 300 308 312cb (6)
 
 ## q-entry-economics
 - defined: —
@@ -6484,7 +6520,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c (19)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312cb (21)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
