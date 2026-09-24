@@ -6534,7 +6534,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-ground-identity-in-final-outcomes
 - defined: —
-- cited: 311b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id Research/notes/312b-exercises/net-sysctls-are-per-namespace (3)
+- cited: 311b Research/notes/312b-exercises/an-emulated-authority-presents-the-real-id Research/notes/312b-exercises/containment-by-path-prefix-lies Research/notes/312b-exercises/net-sysctls-are-per-namespace (4)
 
 ## 23O:rul-guard-license
 - defined: Research/notes/23O-round-23-closeout.md:224 — — a guard mints only from a matching (call-site, reached converged-vouch,
