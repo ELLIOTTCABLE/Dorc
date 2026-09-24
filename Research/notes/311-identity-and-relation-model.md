@@ -2,10 +2,10 @@
 
 > AI-authored preparatory model (Fable, the `r31-prep-design-duck` sittings, the human present
 > and adjudicating). Notes-tier and ahistorical. Ledgers and reviews cite it as `311j`. Nothing
-> here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this document. Where
-> it disagrees with a prior document, it is a deliberate proposal to re-litigate that document,
-> and §4.2 registers the disagreement until the document is rewritten. `[LEAN]` marks a human
-> lean paraphrased from chat, never a ruling.
+> here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this document. Where it
+> disagrees with a prior document, it is a deliberate proposal to re-litigate that document, and
+> §4.2 registers the disagreement until the document is rewritten. `[LEAN]` marks a human lean
+> paraphrased from chat, never a ruling.
 >
 > Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
 > authors. They are stated fully enough that the concretization step (names, spellings,
@@ -26,7 +26,8 @@
 - "Lookup" stays untagged. It means the relation between an mKey and what it reaches.
 - An mKey's bytes are its mValue. An mReferent's condition is its mState (§1.1).
 - An in-Dorc mSort or mScheme is always written with its prefix: `sm.File`, `sm.Path`.
-- The four answers of `compare()` are written SAME, DISJOINT, KNOWN_UNSPOKEN, and UNKNOWN (§3.2).
+- The four answers of `compare()` are written SAME, DISJOINT, KNOWN_UNSPOKEN, and UNKNOWN
+  (§3.2).
 - A blockquote under a heading is non-normative. It names a false friend from a neighbouring
   field, or a name the object carried before this document.
 
@@ -38,8 +39,8 @@ claim. So the engine must decide whether the piece of the world an earlier line 
 same piece a later line's licence depends on. That decision is identity.
 
 Identity has two consumers with opposite failure directions. SAME lets one fact stand for
-another. DISJOINT lets a licence survive a write. Each under-executes when wrong. UNKNOWN is safe
-for both.
+another. DISJOINT lets a licence survive a write. Each under-executes when wrong. UNKNOWN is
+safe for both.
 
 The engine knows only syntax, authored speech, and what authored probes returned. It never
 decodes an mKey and never holds an mReferent. No single author knows the whole path from a
@@ -48,8 +49,8 @@ change which mReferent an mKey reaches mid-book.
 
 The law the model must satisfy: the true answer is reachable once those who can know have
 spoken. Where nobody has spoken, the model declines to answer. The model never reaches a false
-answer while every statement behind it is true. A wrong answer with no false statement behind
-it refutes the model. Who must say what is §3.5.
+answer while every statement behind it is true. A wrong answer with no false statement behind it
+refutes the model. Who must say what is §3.5.
 
 ## § 1-the-model-objects
 
@@ -73,8 +74,8 @@ The engine never holds an mReferent. It reaches mReferents only through mKeys, m
 mDerivations. Every identity question is ultimately "do these two mKeys reach one mReferent".
 Before a lookup binds an mKey, that mKey names a may-set of mReferents (§1.5).
 
-An mState is the condition of one mReferent at one instant: what a write changes and what a
-read observes. The engine never holds an mState, and no mKey names one. An mState is known only
+An mState is the condition of one mReferent at one instant: what a write changes and what a read
+observes. The engine never holds an mState, and no mKey names one. An mState is known only
 through a read, which yields an mValue. Two mReferents may have equal mStates and stay two. One
 mReferent's mState changes and it stays one.
 
@@ -91,7 +92,7 @@ mReferent at two instants may yield two mValues.
 ### § 1.2-sort-the-declared-carrier
 
 > Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents
-> write *kind*.
+> write _kind_.
 
 An mSort is one owner's declared vocabulary: a carrier in the logician's sense, a domain of
 discourse someone chose to speak in. It has reverse-DNS naming, no registry, and
@@ -138,8 +139,8 @@ mScheme at all. Its mKeys are then singletons under mParents (§1.9).
 
 The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary mScheme
 of an mSort nobody has named. It has an identity `resolve()`, no warrants, and the mRoute as its
-only mParent. That mSort acquires a name the first time its owner declares something about it
-as a whole.
+only mParent. That mSort acquires a name the first time its owner declares something about it as
+a whole.
 
 There is no default mScheme. A bind or a mark always names an mScheme. A mark of the form
 `parent-key@sm.Sort` names the mParent's mScheme and the singleton's mSort (§1.9).
@@ -148,11 +149,11 @@ There is no default mScheme. A bind or a mark always names an mScheme. A mark of
 
 > RDBMS primary key and natural key, with their culture: the natural key is user-typed, may
 > alias, and is never identity. The primary key is what the store answers with. Pre-311
-> documents write *entity*.
+> documents write _entity_.
 
-An mKey is a plan-time object that models what a runtime string will denote. It has three
-parts: an mValue, its mScheme, and its mParent (§1.6). It is minted at a bind, or at an emission
-point a `resolve()` declares (§2.1), before any lookup runs.
+An mKey is a plan-time object that models what a runtime string will denote. It has three parts:
+an mValue, its mScheme, and its mParent (§1.6). It is minted at a bind, or at an emission point
+a `resolve()` declares (§2.1), before any lookup runs.
 
 - The mScheme is always declared.
 - The mValue is a literal, or a mPlaceholder for a captured mValue.
@@ -204,10 +205,10 @@ Separately from the per-shape warrant, a lookup may emit a closure, `alias nothi
 the one level it resolved. The closure states that the mReferent at that level is reachable by
 exactly this one entry anywhere in the instance the lookup ran in, not only in the
 mParent-Catalog the entry was found in. For a path that instance is the whole mount namespace.
-It is a statement about one mKey, from the thing's end, made on the path that measured it. For
-a file, the evidence is a link count of one. For a directory, the evidence is that no other
-mount exposes it. Where the lookup knows other entries, it emits them first, and a listed alias
-is checked as the first entry is. The closure and the per-shape warrant are two statements. The
+It is a statement about one mKey, from the thing's end, made on the path that measured it. For a
+file, the evidence is a link count of one. For a directory, the evidence is that no other mount
+exposes it. Where the lookup knows other entries, it emits them first, and a listed alias is
+checked as the first entry is. The closure and the per-shape warrant are two statements. The
 region test (§2.9) consumes the closure. A hardlink or a bind mount is where the closure is
 withheld.
 
@@ -252,8 +253,8 @@ Cloned identifiers are the standing witness.
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
 p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
 chain of routing mKeys the lookup crossed. Examples: each directory entry and symlink for a
-path, the resolver configuration and mVantage for a hostname, the unit table for a service
-name. A `:hierarchical` mScheme's lookups produce the mTraversal, one level per lookup (§2.9).
+path, the resolver configuration and mVantage for a hostname, the unit table for a service name.
+A `:hierarchical` mScheme's lookups produce the mTraversal, one level per lookup (§2.9).
 
 A mResolution perishes under ordinary effective-mWorld reach from any mutator whose writeset
 touches a mTraversal member. Its target object is not its backing. An mKey can stop reaching an
@@ -276,7 +277,7 @@ transition owner (§2.7). mDerivations combine by coherence (§3.2), never by pr
 
 ### § 1.9-cell-a-singleton-sort
 
-> Pre-311 documents write *aspect*.
+> Pre-311 documents write _aspect_.
 
 A cell is a singleton mSort identified in its mParent. Its owner declares it `:identified-in`
 the mParent's mSort (§2.2). Under any one mParent instance it has exactly one mKey, written
@@ -291,10 +292,10 @@ Example: `active` is held in the service manager's memory in the boot, and a reb
 through that set. `enabled` is held in a symlink in a filesystem, and survives a reboot only
 where its mParent is not itself scoped in the boot (§3.3).
 
-Two cells of one mParent are two mSorts, with two may-read sets and two
-`:observer-dependence`s. §3.2 decides between them as between any two mSorts. A writeset entry
-naming the mParent whole covers its cells (§2.9, §3.2). The marked line that answers a cell is a
-read of the cell's mKey. The fact's identity is the mTopic (§1.8).
+Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
+§3.2 decides between them as between any two mSorts. A writeset entry naming the mParent whole
+covers its cells (§2.9, §3.2). The marked line that answers a cell is a read of the cell's mKey.
+The fact's identity is the mTopic (§1.8).
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -395,15 +396,15 @@ mParent mSort's primary mScheme classifies, one level up. Each owner speaks one 
 matching no declared shape reads unknown from this level.
 
 A grade governs every consumer of the answer it grades, corroboration and contradiction
-included. A lookup without `:guarantees-unique-name` cannot contradict anything by returning
-two different mTokens.
+included. A lookup without `:guarantees-unique-name` cannot contradict anything by returning two
+different mTokens.
 
 - Arity: at most one mScheme per mSort.
 - Declared by: the mSort's owner, on the primary mScheme.
 - Default: none. The floor of §1.3 supplies an unwarranted identity primary mScheme.
 - Consumer: identity (§3.1).
-- Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:rootness`, per
-  matched shape.
+- Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:rootness`, per matched
+  shape.
 
 ### § 2.3-aliases-nothing-else-the-store-warrant
 
@@ -431,9 +432,9 @@ dissolves it.
 ### § 2.4-parent-as-a-relation
 
 `:parent` is one per mKey (§1.6): never plural, never a species of its own. Its mSort is the
-primary mScheme's declaration for the matched shape. Its instance is whichever seat supplied
-it. The far end is an ordinary mKey with an identity of its own, never a string the engine
-composes. A mVantage supplies instances and is never an mParent.
+primary mScheme's declaration for the matched shape. Its instance is whichever seat supplied it.
+The far end is an ordinary mKey with an identity of its own, never a string the engine composes.
+A mVantage supplies instances and is never an mParent.
 
 - Arity: one per mKey.
 - Declared by: derived from the mScheme's declarations and the supplying seat.
@@ -456,9 +457,9 @@ A fact's readset is the marked reads of the body that answered it, together with
 entries declared by every member of the mKey's mFullyQualifiedKey. It is closed only when every
 declared set is closed.
 
-An mKey's mParent instance is no may-read entry and needs no declaration. §3.2's walk collides
-a write at or above it. A may-read entry naming a store says more: every write to an mKey
-relative to that store may change K, nobody having said otherwise.
+An mKey's mParent instance is no may-read entry and needs no declaration. §3.2's walk collides a
+write at or above it. A may-read entry naming a store says more: every write to an mKey relative
+to that store may change K, nobody having said otherwise.
 
 A writeset entry not DISJOINT from a may-read entry collides with K's cells and with every fact
 identified beneath K. An omitted entry is a silent channel. It licenses nothing positive.
@@ -484,12 +485,11 @@ A line's writeset is the at-most set of mKeys it may write. It is the may-write 
 verb's author declared per matched shape (the footprint of `plans/30U`), closed by the
 completion record, and widened by the may-write entailment that mSort owners declare.
 
-A write to an mKey is also a write to every container on that mKey's mFullyQualifiedKey. So
-each container's may-write entailment joins the line's writeset. A container at or above the
-deepest level that the written mKey shares with the read mKey contributes nothing to the test
-against that fact. Otherwise a filesystem's entailment, which names its disk, would make two
-files in one filesystem collide through it. May-read entries are never consulted on the write
-side.
+A write to an mKey is also a write to every container on that mKey's mFullyQualifiedKey. So each
+container's may-write entailment joins the line's writeset. A container at or above the deepest
+level that the written mKey shares with the read mKey contributes nothing to the test against
+that fact. Otherwise a filesystem's entailment, which names its disk, would make two files in
+one filesystem collide through it. May-read entries are never consulted on the write side.
 
 The entailment: writing an mKey of K entails may-write of these mKeys of other mSorts. It is
 arm-incremental and collide-adding. The reached completion record finishes the definition. It
@@ -499,8 +499,8 @@ restart killing a main process, and every cross-mSort consequence no mFullyQuali
 expresses. It generates no DISJOINT: "nothing else" is no other thing, never no other mKey for
 the thing written.
 
-An elision is spared past a write only when two questions are answered, in order, for every
-pair of a writeset entry and the mKey a fact reads, of one mSort or of two:
+An elision is spared past a write only when two questions are answered, in order, for every pair
+of a writeset entry and the mKey a fact reads, of one mSort or of two:
 
 1. `compare()` answers DISJOINT (§3.2, or §2.9 where an mKey is given whole).
 2. No write path joins them. The writeset's definition is finished. The fact's readset (§2.5) is
@@ -524,9 +524,9 @@ across mRoutes or mRoots (§3.2).
 
 mKey X inside mParent A `:corresponds` to mKey Y inside mParent B: they denote the same
 mReferent. The owner of the transition between A and B declares it. That owner is neither mKey's
-mScheme owner. Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u
-alice` knows inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint
-are mKeys under the export on the named server, from this mVantage.
+mScheme owner. Examples: the container manager knows guest pid 1 is host pid 4821.
+`sudo -u alice` knows inner "me" is outer "alice". A mount line's oracle knows mKeys under the
+mountpoint are mKeys under the export on the named server, from this mVantage.
 
 Absent a mCorrespondence, mKeys across a transition `compare()` UNKNOWN unless a
 mFullyQualifiedKey binds mTokens on both sides. The mCorrespondence is the model's only declared
@@ -606,11 +606,11 @@ An mSort G may declare that it `:places` another mSort T. G's owner publishes a 
 invoked with the mValue of an mKey of T. Its matched shapes decide which spellings of T it
 answers: a path-shaped mValue answered, an inode number declined. For that mKey it emits
 `looked-up-in G:key` and a closure `looked-up-in nothing-else`, scoped to routes of mSort G.
-These are the records any lookup emits. Membership is a relation between two mReferents, never
-a spelling of one, so the placing lookup is not an mScheme of T.
+These are the records any lookup emits. Membership is a relation between two mReferents, never a
+spelling of one, so the placing lookup is not an mScheme of T.
 
-The route so recorded is a mTraversal of the mKey for the region test (§2.9). It perishes as
-any mResolution does (§3.3). It is never the mKey's mParent, which is the route the mKey's own
+The route so recorded is a mTraversal of the mKey for the region test (§2.9). It perishes as any
+mResolution does (§3.3). It is never the mKey's mParent, which is the route the mKey's own
 lookup supplied (§1.6).
 
 The engine invokes G's lookup only when all three hold:
@@ -623,8 +623,8 @@ The engine invokes G's lookup only when all three hold:
 It invokes the lookup with every mKey it holds for that mReferent. Two answers that disagree are
 refused and attributed to G's owner.
 
-The store's end of the same relation is G's enumeration of its members. The may-write
-entailment of §2.6 already carries that as write reach.
+The store's end of the same relation is G's enumeration of its members. The may-write entailment
+of §2.6 already carries that as write reach.
 
 - Arity: per (G, T).
 - Declared by: G's owner.
@@ -686,18 +686,18 @@ Two mFullyQualifiedKeys. Levels are numbered from the leaf, level 0, upward thro
    SAME by `:rootness`. Two mKeys of that shape meet there and compare as siblings. mRoots of
    two shapes are two mWorlds. A mRoute is another. Nothing speaks across mWorlds, not even the
    finished definition, whose sentence is within-mWorld (§2.6).
-2. Otherwise walk downward from the top to the deepest level at which the two chains are SAME
-   by the one-level rule. Call that level A. If either mKey is A itself, the pair reads
-   UNKNOWN: a write to a container collides with everything inside it.
+2. Otherwise walk downward from the top to the deepest level at which the two chains are SAME by
+   the one-level rule. Call that level A. If either mKey is A itself, the pair reads UNKNOWN: a
+   write to a container collides with everything inside it.
 3. Otherwise call the child of A on each side that side's top. The top is the mKey itself when
    its mParent is A. Separation is only ever concluded from a single definition's own
    distinctions, in one of two ways.
-   - Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`,
-     with differing mValues.
+   - Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with
+     differing mValues.
    - One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme
      declares, for some other shape, `:identified-in` the mSort of the other side's top. An
-     omission is a distinction only inside the body that made it. This way rests also on a
-     store never being among its own contents.
+     omission is a distinction only inside the body that made it. This way rests also on a store
+     never being among its own contents.
 4. The pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down
    to either leaf's mParent, is `:aliases-nothing-else` (§2.3). Otherwise it reads UNKNOWN.
    Separation is decided once, at A.
@@ -736,8 +736,8 @@ authority. It never computes the successor identity.
   state, or, under the flat default, when its mParent-Catalog was touched at all. Every
   mFullyQualifiedKey built on a perished mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
-  conclusions collide. The touched object itself is untouched. Creation, deletion, and rename
-  of an mKey are routing writes to its mParent-Catalog entry, its existence cell. So
+  conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
+  an mKey are routing writes to its mParent-Catalog entry, its existence cell. So
   `userdel alice; useradd alice` perishes every mResolution of the old mKey. A writeset that
   omits the entry is the ordinary at-most omission knife, now visibly covering routing mKeys.
 - A state mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
@@ -754,9 +754,9 @@ authority. It never computes the successor identity.
 > Dynamic binding: `parameterize`, `fluid-let`.
 
 A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs,
-and nothing else. Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns
-exec` lends a network namespace. The lent instance becomes the ambient mParent for every mKey of
-a secondary mScheme looked up in that mParent-Catalog mSort.
+and nothing else. Examples: a chroot lends a mount namespace. `sudo -u` lends a user.
+`ip netns exec` lends a network namespace. The lent instance becomes the ambient mParent for
+every mKey of a secondary mScheme looked up in that mParent-Catalog mSort.
 
 mParent-Catalog mSorts not lent inherit the caller's instance only after the wrapper's
 completion sentinel. Before it they are ⊤. Leaf mKeys inherit transitively through their
@@ -810,8 +810,8 @@ Attribution:
 This model uses, and does not redefine:
 
 - the verdict, vouch, and guard tier
-- the authored may-write entries, the completion record as the witness of a finished
-  definition, and `--risk-faultless-skips`
+- the authored may-write entries, the completion record as the witness of a finished definition,
+  and `--risk-faultless-skips`
 - the four-answer chokepoint and its consumer map
 - the universal meet
 - measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across`
@@ -828,13 +828,13 @@ and nothing else.
 
 ### § 4.2-supersessions-pending-in-prior-documents
 
-A living register of statements in prior documents that this model contradicts. An entry
-stays until its document is rewritten. Remove an entry when its document catches up. Add an
-entry when another prior document is found to disagree. Each entry names the passage, gives
-its claim, then gives this model's claim after "Here".
+A living register of statements in prior documents that this model contradicts. An entry stays
+until its document is rewritten. Remove an entry when its document catches up. Add an entry when
+another prior document is found to disagree. Each entry names the passage, gives its claim, then
+gives this model's claim after "Here".
 
-- `plans/30U` §1 `rul-cross-kind-sparing-needs-a-finished-definition`, §4 "As a generator",
-  and §7 "The comparison", with `plans/30T` §7 `rul-binder-claims-are-ordinary`: a finished
+- `plans/30U` §1 `rul-cross-kind-sparing-needs-a-finished-definition`, §4 "As a generator", and
+  §7 "The comparison", with `plans/30T` §7 `rul-binder-claims-are-ordinary`: a finished
   definition generates cross-kind provably-disjoint verdicts, and a footprint cell is found
   disjoint from another kind's backing cell through it. Here: a finished definition stays
   necessary for sparing across mSorts and generates no DISJOINT (§2.6). `compare()` decides
@@ -843,8 +843,7 @@ its claim, then gives this model's claim after "Here".
 - `ANALYZER-NEEDS` `an-kind-reach`, `an-compare-chokepoint`, and `an-disjointness`: the
   `unrelated` answer is the cross-kind answer only absent the claimed kind's finished
   definition, and the record licenses cross-kind sparing. Here: `unrelated` is KNOWN_UNSPOKEN,
-  and `provably-disjoint` is DISJOINT. KNOWN_UNSPOKEN never spares, whatever is finished
-  (§3.2).
+  and `provably-disjoint` is DISJOINT. KNOWN_UNSPOKEN never spares, whatever is finished (§3.2).
 - `plans/30W` §1 and §5, with `notes/26Ob` §10b `res-per-index-relation-table`: a kind's owner
   declares the kind referent-transparent, one grade under which token equality gives same and
   token inequality gives disjoint. Here: a lookup carries two independent warrants per matched
@@ -856,11 +855,11 @@ its claim, then gives this model's claim after "Here".
   else, an address that is part of no mKey's identity (§1.10, §4.1). Identity is the
   mFullyQualifiedKey (§1.8). A world is an mWorld, a terminus of a mFullyQualifiedKey, and
   nothing speaks across mWorlds (§1.8, §3.2).
-- `plans/30W` §2 and §3 `kind__disjoint()`, its `rul-disjoint-is-an-rc-predicate` [TYPED],
-  and `plans/30T` §6 on the region predicate: an owner-authored region predicate generates
-  disjointness between regions. Here: there is no authored region predicate (§4.1).
-  Containment is membership in a mTraversal. The region test over `:hierarchical` mSchemes
-  (§2.9) and the `:places` lookup (§2.10) decide it.
+- `plans/30W` §2 and §3 `kind__disjoint()`, its `rul-disjoint-is-an-rc-predicate` [TYPED], and
+  `plans/30T` §6 on the region predicate: an owner-authored region predicate generates
+  disjointness between regions. Here: there is no authored region predicate (§4.1). Containment
+  is membership in a mTraversal. The region test over `:hierarchical` mSchemes (§2.9) and the
+  `:places` lookup (§2.10) decide it.
 - `plans/30W` §2 to §4, `notes/26Ob` §10b `res-cell-level-relation-is-the-filtered-meet` and
   §10f, `plans/27C` §4(A), `ANALYZER-NEEDS` `an-invariance-speech-act`, and `plans/271`
   `rul-invariance-speech-act` [TYPED]: the kind owner's invariance line
@@ -869,30 +868,30 @@ its claim, then gives this model's claim after "Here".
   selector, index-kind). Here: there is no invariance line and no per-kind table against axes
   (§4.1). Whether a lifecycle write or a lent instance reaches a cell is the shape of its
   mFullyQualifiedKey, not a declaration (§3.3, §3.4). Leaf mKeys inherit across a transit with
-  no speech from anyone (§3.4). The observer half of the line is `:observer-independence` of
-  O, declared per mSort and absent by default (§2.8). The store half is displaced by
+  no speech from anyone (§3.4). The observer half of the line is `:observer-independence` of O,
+  declared per mSort and absent by default (§2.8). The store half is displaced by
   `:aliases-nothing-else` and measured mTokens (§2.3, §3.2).
 - `notes/272` §3 (the carried-by table and emission-set non-interference) and `plans/27C` §4
   (the who-am-I derivation as contradiction-checker): an engine-owned substrate-by-axis table
   and a taint over who-am-I ingredients derive keying and check declarations. Here: the engine
-  holds no table that generates SAME (§4.1). Keying is the mFullyQualifiedKey's shape (§3.3).
-  No `resolve()` can measure observer-dependence, so it remains speech (§2.8). The
-  contradictions the engine refuses are two seats disagreeing on an mParent instance (§1.6), a
-  warranted SAME against a warranted DISJOINT (§3.2), and two disagreeing answers from one
-  placing lookup (§2.10).
-- `notes/272` §5 the fence: emitted locators feed only the dependence bit and the keying
-  recipe, and are never compared against File facts. Here: a may-read entry is an mKey that
-  `compare()`s against every writeset entry, and an entry naming a store reaches every mKey
-  relative to that store (§2.5, §2.6).
-- `plans/30T` §6 per-aspect identity: "same file" is one relation per aspect, and the
-  identity tier carries an authored per-aspect relation mapping. Here: there is no aspect
-  species (§4.1). Each aspect is a cell, a singleton mSort with its own may-read set and its
-  own `:observer-dependence` (§1.9). Same-for-existence is the mParent-Catalog entry, which
+  holds no table that generates SAME (§4.1). Keying is the mFullyQualifiedKey's shape (§3.3). No
+  `resolve()` can measure observer-dependence, so it remains speech (§2.8). The contradictions
+  the engine refuses are two seats disagreeing on an mParent instance (§1.6), a warranted SAME
+  against a warranted DISJOINT (§3.2), and two disagreeing answers from one placing lookup
+  (§2.10).
+- `notes/272` §5 the fence: emitted locators feed only the dependence bit and the keying recipe,
+  and are never compared against File facts. Here: a may-read entry is an mKey that `compare()`s
+  against every writeset entry, and an entry naming a store reaches every mKey relative to that
+  store (§2.5, §2.6).
+- `plans/30T` §6 per-aspect identity: "same file" is one relation per aspect, and the identity
+  tier carries an authored per-aspect relation mapping. Here: there is no aspect species (§4.1).
+  Each aspect is a cell, a singleton mSort with its own may-read set and its own
+  `:observer-dependence` (§1.9). Same-for-existence is the mParent-Catalog entry, which
   creation, deletion, and rename write (§3.3). Same-for-contents is the inode's mReferent,
   reached when the path mScheme yields the inode (§2.3).
 - `plans/30T` §6 the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
-  path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey
-  are routing writes to its mParent-Catalog entry, and a writeset may name them (§3.3).
+  path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey are
+  routing writes to its mParent-Catalog entry, and a writeset may name them (§3.3).
   Path-distinct mKeys separate under `:guarantees-unique-name` and `:aliases-nothing-else`
   (§3.2).
 - `plans/30W` §4 "Containment among index-kinds": containment among stores is a `reaches`
