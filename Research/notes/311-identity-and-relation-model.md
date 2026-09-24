@@ -352,7 +352,13 @@ sparing rests on.
 
 A line's Writeset is the at-most set of mKeys it may write: the may-write entries its verb's
 author declared per matched shape (`plans/30U`'s footprint), closed by the completion record,
-widened by the may-write entailment that mSort owners declare. The entailment, as `plans/30U`:
+widened by the may-write entailment that mSort owners declare. A write to an mKey is also a
+write to every container on that mKey's mFullyQualifiedKey, so each container's may-write
+entailment joins the line's Writeset; a container at or above the deepest level the written
+mKey shares with the mKey a fact reads contributes nothing to the test against that fact (a
+filesystem's entailment names its disk, and two files in one filesystem would otherwise
+collide through it). May-read entries are never consulted on the write side. The entailment,
+as `plans/30U`:
 writing an mKey of K entails may-write of these mKeys of other mSorts; arm-incremental,
 collide-adding; the reached completion record finishes the definition: it witnesses that the
 write set, after entailment, is complete. Declared by K's owner. About effects, not identity:
