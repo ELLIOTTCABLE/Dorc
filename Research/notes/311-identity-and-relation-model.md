@@ -20,7 +20,8 @@
 > in for it; every relation, attribute, or warrant is written `:fixed-term`, always preceded by
 > a space; every abstract operation is written `op()`; every concrete authored member keeps the
 > `__name()` form; a derived view of a species is written species-hyphen-gloss (mKey-Primary,
-> mParent-Catalog, mSort-Bearer), never a declared species; an in-Dorc mSort or mScheme is
+> mParent-Catalog, mParent-Store), never a declared species; "cell" stays untagged and means a
+> singleton mSort under its mParent (§1.9); an in-Dorc mSort or mScheme is
 > always written with its prefix (`sm.File`, `sm.Path`). "Lookup" (the relation between an
 > mKey and what it reaches) and "value" (a string; sh defines it) stay untagged. A blockquote
 > under a heading names a false friend, and nothing else.
@@ -66,11 +67,11 @@ owner-adjudication as the social contract. It is not a category of the world. Th
 knows what an mSort denotes and never assumes two mSorts denote disjoint mReferents: what an
 mSort fixes is only what its owner declares under it — which mScheme is its primary mScheme
 (§2.2), its may-read set (§2.4), its may-write entailment and finished definition (§2.5), its
-:observer-dependence (§2.7), and its mCells (§1.9) — and the owner speaks only about the
+:observer-dependence (§2.7), and its cells (§1.9) — and the owner speaks only about the
 mSort's relations to its immediate neighbours. Several mSchemes into one mSort is the
 cooperative case: one owner admitting several ways of writing down what they describe. Several
 mSorts over one world-thing is the ordinary strangers case (two vendors describing one tool;
-two vocabularies reaching one mCell under `/proc/sys`): undetectable to the engine,
+two vocabularies reaching one cell under `/proc/sys`): undetectable to the engine,
 KNOWN_UNSPOKEN at the chokepoint (§3.2), and merged only by a human act, one mSort's mSchemes
 made to yield into the other's. An mSort has no mKeys and no `resolve()`, is never valid where an
 mScheme is, and is named only when something is declared about it as a whole; the floor of
@@ -183,8 +184,8 @@ an object without the object changing (`renaming-a-parent-moves-every-child-name
 A mFullyQualifiedKey is the recursive identity of an mKey: its mKey-Primary scoped in its
 mParent, whose identity is itself a mFullyQualifiedKey through the mParent's own primary
 mScheme, terminating at a mRoot, the mRoute (§1.10), or unknown. It is one mDerivation of
-identity. A mTopic — what a claim is about: a mCell, plus the observer instance when the
-mCell's mSort is observer-dependent (§2.7) — may carry several mDerivations with different
+identity. A mTopic — what a claim is about: the mKey read, plus the observer instance when
+that mKey's mSort is observer-dependent (§2.7) — may carry several mDerivations with different
 generators: its mFullyQualifiedKey, a provider-supplied identifier, a mCorrespondence from a
 transition owner (§2.6). mDerivations combine by coherence (§3.2), never by priority.
 (`witness()` is reserved for the standup re-measurement of §1.10.)
@@ -358,8 +359,9 @@ is the model's only declared sameness generator besides mToken equality.
 
 ### § 2.7-observer-dependence
 
-K's mCells' VALUES depend on which mKey of mSort O the measurement was taken under. Declared by
-K's owner per mSort as its complement, :observer-independence of O. Default: a mCell measured
+The values that reads of K's cells yield depend on which mKey of mSort O the read was taken
+under. Declared by K's owner per mSort as its complement, :observer-independence of O. Default:
+a cell measured
 under a lent mKey of O is assumed to depend on it, so its fact is about (mReferent,
 O-instance) and never stands for the same mReferent under another O-instance. Consumer: the
 SAME consumer, as a qualifier on the claim's mTopic. This is the surviving half of the old
@@ -423,7 +425,7 @@ supplying the mParent instance for the mKey it yields; then the mKey-Primary sco
 identity(mParent), recursively through each level's primary mScheme, until a mRoot, the
 mRoute, or an unknown link. Each level carries the warrants declared for the shape its mKey
 matched. A mCompositeSort's identity is its owner's function of its parts'
-identities; a mCell's is its mSort-Bearer's plus which mCell (§1.9); an mKey of an
+identities; a cell's is its mParent's plus its mSort (§1.9); an mKey of an
 observer-dependent mSort carries the O-instance in its mTopic. The mVantage is consulted only
 to know where to run `resolve()` calls and which ambient mParents to bind.
 
@@ -432,7 +434,7 @@ to know where to run `resolve()` calls and which ambient mParents to bind.
 > Alias analysis's may/must trichotomy, plus `known-unspoken` for "no generator applies".
 
 compare(x, y) ∈ {same, disjoint, known-unspoken, unknown}, consumers as today
-(`compare-consumer-map`: same → the fact is about this mCell; disjoint → sparing under
+(`compare-consumer-map`: same → the fact is about this mKey; disjoint → sparing under
 `--risk-faultless-skips`; unknown and known-unspoken → the safe bottoms). For two
 mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mParents:
 
@@ -488,7 +490,7 @@ second mKey inside one mParent.
   mFullyQualifiedKey built on it reads unknown below the line; dependent SAME conclusions lose
   authority and dependent elisions demote to guards; dependent DISJOINT conclusions collide.
   The touched object itself is untouched. Creation, deletion, and rename of an mKey are
-  routing writes to its mParent-Catalog entry (its existence mCell), so `userdel alice;
+  routing writes to its mParent-Catalog entry (its existence cell), so `userdel alice;
   useradd alice` perishes every mResolution of the old mKey
   (`a-recreated-name-is-a-new-referent`); a Writeset that omits the entry is the ordinary
   at-most omission knife, now visibly covering routing mKeys.
@@ -497,8 +499,8 @@ second mKey inside one mParent.
   (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation whose Writeset
   touches a mParent-Store perishes the mTokens scoped in it.
 - A LIFECYCLE mutation (a reboot, a re-provision) disturbs a mRoot-adjacent mKey (a boot, a
-  tenure); every mKey-Primary scoped in it names a new mReferent afterward; mCells whose
-  mFullyQualifiedKeys pass through it are new and unmeasured; mCells whose
+  tenure); every mKey-Primary scoped in it names a new mReferent afterward; cells whose
+  mFullyQualifiedKeys pass through it are new and unmeasured; cells whose
   mFullyQualifiedKeys do not are untouched. "Keyed by Boot" and "invariant across Boot" are
   the shape of the mFullyQualifiedKey, not declarations.
 
@@ -635,7 +637,7 @@ line here is the model element it forces.
 - `a-cached-lookup-answers-for-the-past` — a secondary mScheme's `resolve()` reads one
   mParent-Catalog instance and declares which; a cache and the file it caches are two
   mParent-Catalogs (§2.1).
-- `one-state-reached-through-two-kinds` — the strangers case: two mSorts over one mCell,
+- `one-state-reached-through-two-kinds` — the strangers case: two mSorts over one cell,
   minted by authors who never met; KNOWN_UNSPOKEN at the chokepoint, which never spares;
   merged only by a human act (§1.2, §3.2).
 
@@ -677,12 +679,12 @@ Recorded as what-killed-it, so the shape is not re-walked.
 - AN ASPECT SPECIES (a selector position; an aspect borrowing another mSort's lookup). Killed
   by: one mParent per identity-bearing thing, a per-aspect may-read set, and per-aspect
   :observer-dependence already make an aspect an mSort in all but name, and the borrowed
-  lookup is a primary mScheme `:identified-in` the mSort-Bearer. Surviving form: a mCell is an mSort
-  with a singleton mKey under its mSort-Bearer (§1.9).
+  lookup is a primary mScheme `:identified-in` the mParent's mSort. Surviving form: a cell is a
+  singleton mSort under its mParent (§1.9).
 - IDENTITY AS A PER-KIND TABLE AGAINST AXES (the trichotomy invariant/keyed/⊤ per index-kind,
   `30W` §4; the filtered meet, `26Ob` §10b). Killed by: the mSort owner cannot know the axes;
   silence walls forever and a guess ("keyed by Host") plus a referent-transparent Host yields
-  a wrong DISJOINT on a shared volume. The truth: a mCell's identity is a property of what its
+  a wrong DISJOINT on a shared volume. The truth: a cell's identity is a property of what its
   mKey denotes, not of the mScheme the mKey is written in.
 - THE CONTEXT AS PART OF THE `FactKey`. Killed by: a qualified mKey is an address of a question
   and asserts no partition; the dangerous inference lived in the meet's generators. Surviving
@@ -702,7 +704,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
 - ONE GRADE ON A LOOKUP (transparent/identifying). Killed by clones: equal machine-ids on two
   machines threaten SAME, which a disjointness grade cannot protect. Surviving form: two
   independent warrants per lookup (§1.5).
-- OBJECT IDENTITY CARRIES EVERY OBSERVATION ("one mCell, one fact, whichever probe read it").
+- OBJECT IDENTITY CARRIES EVERY OBSERVATION ("one cell, one fact, whichever probe read it").
   Killed by `test -w` under two users on one file. Surviving form: :observer-dependence per
   mSort, absent means dependent (§2.7).
 - AUTHORED REGION PREDICATES (`kind__disjoint`; a subtree selector). Killed by the
