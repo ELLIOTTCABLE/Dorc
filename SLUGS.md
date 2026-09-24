@@ -1093,6 +1093,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## plan/CLAUDE:consumed-channel-blocking
 - defined: spike/crates/plan/CLAUDE.md:58 — — consumed `Stdout`/`Stderr` arrive un-collapsed
 
+## containment-by-path-prefix-lies
+- defined: —
+- cited: 311t 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (5)
+
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
 - cited: 307c (1)
@@ -7409,6 +7413,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:112 — — the per-site verdict set is {elide, guard, run}. A guard
 - cited: 239 23A 23B 23C 23F 23Ia 23L 24A 24D 26Lb 28K 28U 30L 30Pd 30Qb 311a (25)
 
+## rul-the-outside-rule-with-the-alias-closure
+- defined: —
+- cited: 311t 312cc (3)
+
 ## 30Qb:rul-the-planner-answers-questions-it-does-not-schedule
 - defined: Research/notes/30Qb-emission-planner-lane-report.md:67
 
@@ -8013,7 +8021,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T (8)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312cc (9)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -8804,6 +8812,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## thm-process-confluence-conflict-free
 - defined: —
 - cited: 26C (2)
+
+## thr-identifying-store-makes-siblings-collide
+- defined: —
+- cited: 311p 312cc (2)
 
 ## 271:thread-cargo-cult-cohort-size
 - defined: Research/plans/271-block-settle-rulings-ledger.md:705 — (2026-07-12; human-voiced story + the
