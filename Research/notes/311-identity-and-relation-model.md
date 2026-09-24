@@ -826,3 +826,25 @@ Recorded as what-killed-it, so the shape is not re-walked.
 - A PARENT PARTITIONING ITS CHILDREN'S mSorts. Killed by: children minted by other definitions
   could never spare. Surviving form: both sides identify into one mScheme whose body warrants
   :guarantees-unique-name (§3.2).
+- THE mParent AS AN IMPLICIT may-read ENTRY ("declaring it again is harmless"). Killed by: a
+  describer of database rows who cannot enumerate the sidecar files names the filesystem; a
+  write to a sidecar is a sibling inode, DISJOINT by the walk, and the row fact is spared.
+  Surviving form: the mParent is no may-read entry, and an entry naming a store reaches every
+  mKey relative to it (§2.4).
+- SKIPPING SHARED ANCESTORS IN THE may-read TEST. Killed by the same sidecar case. Surviving
+  form: §2.5 as written.
+- A TERM FOR A REFERENT'S PARTS (a field). Killed by: every part is an ordinary mReferent of an
+  ordinary mSort, and a term over a sorted, tracked mReferent privileges one graph of
+  mSort-inhabitants over the others. Surviving form: §1.1, §1.9.
+- A QUESTION SPECIES BESIDE THE mReferent (a property, an expression, a claim). Killed by: the
+  engine cannot tell a stored singleton from a derived one and need not; the marked line is a
+  read of an mKey and the fact's identity is the mTopic. Surviving form: §1.8, §1.9.
+- A MIRROR RULE OVER may-read (a write to an mKey is a write to its containers' may-read
+  entries). Killed by a resolver cache that may-reads `/etc/hosts`: a query populating the
+  cache would collide with a fact on that file, and the model could not say the cache is not
+  held in it. Surviving form: a write inside a container is a write to it, so the container's
+  own may-write entailment applies (§2.5).
+- THE UPWARD LOOKUP AS A SECOND mScheme OF THE PLACED mSort. Killed by: mSchemes stay singular,
+  one way of writing a path, and two mSchemes over one class of strings are meant to conflict
+  safely, never to cohere; membership is a relation between two mReferents, never a spelling of
+  one. Surviving form: `:places` and its lookup (§2.8).
