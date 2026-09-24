@@ -122,3 +122,74 @@ owed by anyone else. The partial Kimi report `312ce` stays untracked.
   synonym-rotation rule, outside the lines this phase touched and left for the human.
 - State: tip `8166ab99` before this ledger commit. § 3's other nine holds stand unchanged, and
   thread 2 stays held with § 4's correction attached.
+
+## § 7-the-sentinel-danger-line-sitting
+
+The item `hold-sentinel-danger-line` was explained for a ruling, and the exchange widened into
+the flag's meaning. Rulings and framings the human typed are graded; the conductor's claims are
+marked as such and none is acked unless the line says so.
+
+- The item as put: § 3.4's danger line says the sentinel is an at-most claim over every
+  mParent-Catalog mSort and names no consumer. Four options were offered: leave the line; add one
+  sentence naming the consequence (a wrong sentinel is a wrong SAME with no flag in front); price
+  a sentinel-inherited SAME under `--risk-faultless-skips`; bound the sentinel's reach to sorts
+  its author can compare against. The conductor leaned to the second, and framed the fourth as
+  reducing to a stdlib obligation to name the kernel's context axes.
+- **[TYPED]** 2026-09-24, ground truth: the hole is real, inherent, and epistemic, and it is
+  present across the whole product, not only at wrappers. A wrapper carries a reasonable program
+  across the axes its author and the program's author both understand, and still changes a third
+  party's report of a fluent nobody named. No stdlib menu, however rich, closes it, and reaching
+  for one is a footgun that blocks the correct design decision. The only sound behaviour was the
+  original: enumerate every piece of external state a move can change, or wall. Hence the flag.
+  The human places this at frame-problem tier. The conductor acked, named it the frame problem in
+  McCarthy and Hayes's sense (the non-effects of an action cannot be finitely axiomatised over an
+  open world of fluents), and withdrew two statements: "what bounds the sentinel's honesty is the
+  stdlib's menu of context sorts", and "the case is rare today". Option four is withdrawn with
+  them.
+- **[HUMAN]** question A: much of the unflagged hope rides on collision through the roots.
+  Strangers describe one conceptual type under two names, both grounded in a shared external
+  reality they can see (`sm.File`, paths, filesystems), and collide at merge through that root,
+  fail-safe, with some sparing in a described world. Does this apply to wrappers and dimensions
+  as 311 models them, or are dimensions more dangerous? Conductor: it applies, and the lent case
+  already is it. The lent mParent-Catalog mSort is the shared root, and by § 2.8's default only
+  the wrapper's author needs to name it. Dimensions are not more dangerous in kind. The one
+  exception is the post-sentinel default: everywhere else silence about a sort lands on the safe
+  bottom, and after the sentinel an unnamed sort inherits, inheritance is one mPlaceholder, and
+  one mPlaceholder is SAME. Unacked.
+- **[HUMAN]** question B: is the hole a missing "only under the flag" sentence, since no
+  oracle-engineer's negative existential ever licenses fail-dangerous function without the
+  admin's flag? Conductor: nack on that reading. The consumer map, unchanged from `271` and
+  `spike/CLAUDE.md`, exempts SAME from the flag, and the sentinel is the one negative existential
+  in the model whose consequence is SAME. Applying the principle is the third option, a model
+  change. The other SAME generators are untouched by it, because none is an open-world negative
+  existential. Unacked.
+- **[TYPED]** 2026-09-24, the flag's precise meaning: (1) a fail-dangerous interaction, (2) that
+  depends on unattributable, committee, ambient, or inexistent speech, the "nobody could have
+  known" class. The direction of the failure does not matter, only that it risks under-execution
+  and results from epistemics. It does NOT qualify where, under any amount of engine effort,
+  skill, or engineering, a causor can theoretically be named who was enabled to make the correct
+  speech and did not. Dorc is then obligated to do that work and make the failure attributable.
+  Mid-curve, where a user has not yet put in the effort, is not epistemically unknowable.
+- **[TYPED]** 2026-09-24: there is no machine-crossing class visible to Dorc, and for this topic
+  the phrase breaks referential agnosticism. The conductor's hedge that § 1.10's "transit" meant
+  such a class is withdrawn. Every wrapper entry is a transit and a change of mVantage.
+- Conductor verdict, unacked: the sentinel qualifies, with the exclusion applied inside the
+  same consumer. A perturbed fluent that has a name the wrapper's author did not lend is that
+  author's attributable omission, not flag-class. A fluent no mSort names is the residue: the
+  wrapper's author cannot lend it, the fact's describer cannot key on it or declare dependence on
+  it, and the stdlib cannot name an open set. The engine cannot tell the two apart when it
+  decides, so the consumer is gated wholesale and attribution sorts the cases afterward, as the
+  finished record already sits. The price stated two turns earlier ("the sudo pair at every
+  wrapped site") was said to be lower, on a reading of § 1.10 recorded next.
+- Conductor claim, under the human's scrutiny, not graded: under the letter of § 1.10 the mRoute
+  is unknown across any wrapper, so a chain ending at the mRoute never transports across one, and
+  the sentinel's SAME can land only on unmeasured ambient instances under a shared mRoot. The
+  human asked for a ground-up re-derivation before grading it. That re-derivation is not in this
+  section.
+- Conductor observation, unacked: § 3.4 carries only the inherit sentinel. `311a` § 3 had two,
+  inherit (the `sudo` shape) and reset, `env -i`-shaped (the `ssh` shape: unnamed sorts take the
+  new world's own instances). The reset form fails safe in both directions and needs no flag. As
+  written, an `ssh` oracle has no honest sentinel to close. The register carries no kill for the
+  reset form.
+- State: `hold-sentinel-danger-line` stays held. The human's flag criteria and the refag
+  correction are typed and bind the rest of the burndown.
