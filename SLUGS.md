@@ -1107,7 +1107,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## containment-by-path-prefix-lies
 - defined: —
-- cited: 311t 312ca 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (6)
+- cited: 311t 311u 312ca 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (7)
 
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -5466,8 +5466,112 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/23G-pin-repairs.md:64 — (XFAIL) — 23C-fd10, ruling h4 (refuse-home)
 - cited: 24I (1)
 
+## 311u:refuted-a-question-species
+- defined: Research/notes/311u-refuted-shapes-register.md:96
+
+## 311u:refuted-a-term-for-parts
+- defined: Research/notes/311u-refuted-shapes-register.md:89
+
+## 311u:refuted-an-aspect-species
+- defined: Research/notes/311u-refuted-shapes-register.md:80
+
+## 311u:refuted-authored-region-predicates
+- defined: Research/notes/311u-refuted-shapes-register.md:306
+
+## 311u:refuted-closure-as-reachable-only-through-me
+- defined: Research/notes/311u-refuted-shapes-register.md:259
+
+## 311u:refuted-context-inside-the-key
+- defined: Research/notes/311u-refuted-shapes-register.md:117
+
+## 311u:refuted-default-scheme-per-sort
+- defined: Research/notes/311u-refuted-shapes-register.md:40
+
+## 311u:refuted-deriving-the-store-warrant-from-chain-shape
+- defined: Research/notes/311u-refuted-shapes-register.md:72
+
+## 311u:refuted-equal-keys-reach-one-referent-by-default
+- defined: Research/notes/311u-refuted-shapes-register.md:143
+
+## 311u:refuted-finished-definition-generates-disjoint
+- defined: Research/notes/311u-refuted-shapes-register.md:268
+
+## 311u:refuted-identity-as-a-table-against-axes
+- defined: Research/notes/311u-refuted-shapes-register.md:106
+
+## 311u:refuted-identity-carries-every-observation
+- defined: Research/notes/311u-refuted-shapes-register.md:252
+
+## 311u:refuted-measurement-replaces-declarations
+- defined: Research/notes/311u-refuted-shapes-register.md:214
+
+## 311u:refuted-mirror-rule-over-may-read
+- defined: Research/notes/311u-refuted-shapes-register.md:295
+
+## 311u:refuted-one-declared-species
+- defined: Research/notes/311u-refuted-shapes-register.md:20
+
+## 311u:refuted-one-grade-per-lookup
+- defined: Research/notes/311u-refuted-shapes-register.md:135
+
+## 311u:refuted-one-parent-sort-per-scheme
+- defined: Research/notes/311u-refuted-shapes-register.md:55
+
+## 311u:refuted-only-same-entries-overlap
+- defined: Research/notes/311u-refuted-shapes-register.md:276
+- cited: 311 (1)
+
+## 311u:refuted-parent-as-an-implicit-read-entry
+- defined: Research/notes/311u-refuted-shapes-register.md:284
+
+## 311u:refuted-parent-partitions-its-children
+- defined: Research/notes/311u-refuted-shapes-register.md:193
+- cited: 311 (1)
+
+## 311u:refuted-resolution-backed-by-its-target
+- defined: Research/notes/311u-refuted-shapes-register.md:316
+
+## 311u:refuted-route-versus-root-as-known-unspoken
+- defined: Research/notes/311u-refuted-shapes-register.md:174
+
 ## 30O:refuted-scout-claims
 - defined: Research/notes/30O-owed-kernel-work-and-schedule.md:127 — — verified stale, so nobody re-chases them
+
+## 311u:refuted-separation-from-two-definitions
+- defined: Research/notes/311u-refuted-shapes-register.md:184
+
+## 311u:refuted-shared-ancestors-as-collisions
+- defined: Research/notes/311u-refuted-shapes-register.md:166
+
+## 311u:refuted-sort-as-a-world-category
+- defined: Research/notes/311u-refuted-shapes-register.md:31
+
+## 311u:refuted-store-sets-compared-as-bags
+- defined: Research/notes/311u-refuted-shapes-register.md:225
+
+## 311u:refuted-stored-in-as-one-relation
+- defined: Research/notes/311u-refuted-shapes-register.md:235
+
+## 311u:refuted-subsorts-or-a-type-menu
+- defined: Research/notes/311u-refuted-shapes-register.md:64
+
+## 311u:refuted-terminal-tokens
+- defined: Research/notes/311u-refuted-shapes-register.md:125
+
+## 311u:refuted-the-disclosed-weak-name-floor
+- defined: Research/notes/311u-refuted-shapes-register.md:156
+
+## 311u:refuted-the-two-schemes-disagreement-canary
+- defined: Research/notes/311u-refuted-shapes-register.md:203
+
+## 311u:refuted-two-parent-edges-per-key
+- defined: Research/notes/311u-refuted-shapes-register.md:47
+
+## 311u:refuted-union-totality-with-no-author
+- defined: Research/notes/311u-refuted-shapes-register.md:244
+
+## 311u:refuted-upward-lookup-as-a-second-scheme
+- defined: Research/notes/311u-refuted-shapes-register.md:323
 
 ## plan/CLAUDE:region-decisions-meet-universally
 - defined: spike/crates/plan/CLAUDE.md:311 — (`plans/30L` §5) — `plan::region` groups per-instance
