@@ -257,3 +257,41 @@ ack.
   does not have to remember them; the human refreshes the root documents.
 - Nit held for the next item, per the human ("I'll rewind first"): why an ext4 filesystem is
   unrooted in § 2.2's sketch.
+
+## § 9-the-sentinel-edit-applied
+
+Applied at `6acb402b`, resolving `hold-sentinel-danger-line` under the § 8 ack.
+
+- `311:3.4-entry-and-lends`: an unlent mParent-Catalog mSort is ⊤ under the wrapper. After the
+  wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the
+  mRoute inherit the caller's instances instead. Leaf mKeys then inherit transitively with no
+  further speech. The danger line gains "A wrong sentinel is a wrong SAME. The flag prices it."
+- `311:3.2-compare-one-chokepoint-four-answers`: the engine consumes a SAME that rests on a
+  wrapper's sentinel under the flag. The one-level rule's inherited instance carries "under the
+  flag". Step 1 reads "two mRoutes across a wrapper". The sentence "The consumer map is
+  unchanged" is gone, since § 4.1 and § 4.2 now carry the change.
+- `311:1.10-vantage-route-placeholder-witness`: the engine vouches the mRoute and the ambient
+  instances for execution under no wrapper, and under a wrapper the inherited instances § 3.4
+  admits. Two mVantages share the mRoute and the ambient instances through a wrapper's sentinel
+  under the flag. Otherwise they are unknown across mVantages.
+- `311:1.5-token-and-the-two-warrants`: the engine's one vouch is the local mRoute under no
+  wrapper. Across a wrapper the wrapper's author speaks, and everything else is measured and
+  witnessed.
+- `311:4.1-boundary-of-this-model`: the consumer map is used with one stated exception, a
+  sentinel-inherited SAME rides the flag.
+- `311:4.2-supersessions-pending-in-prior-documents`: the preamble now admits one brief entry
+  per root document where a passage became untrue, with the human refreshing root documents.
+  Three entries added: the `spike/CLAUDE.md` compare-consumer-map invariant with
+  `311a:note-transport-single-consented-sparing-double`; `KNOBS:kSURVIVAL` with
+  `ANALYZER-NEEDS:an-mode-gate`; and USER_STORY's bought-unsoundness sentence that everywhere
+  past the flag only measurements are trusted. The `271` entry's "inherit across a transit with
+  no speech from anyone" reads "across a wrapper with no further speech, under the flag".
+- The word "transit" is gone from 311's own prose. One occurrence remains as the quoted member
+  name `undivided-by-transit-across` inside the `271` entry, another document's spelling. The
+  words "transition" (a mapping's owner, § 2.7) and "transitively" are different words and stay.
+  The register `311u` took the same one-word change in one survivor line.
+- Linter: the added lines carry no violation. The whole file carries sixty-two advisories and
+  the one pre-existing hard flag (`terminates` in § 1.8 against `stop` in § 1.7), untouched.
+- State: tip `6acb402b` before this ledger commit. Nine holds of § 3 remain; thread 2 stays held
+  with § 4's correction; the next item by the human's order is
+  `hold-stdlib-key-space-over-the-boots-children`, with the ext4 nit held for it.

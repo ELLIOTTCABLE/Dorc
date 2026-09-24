@@ -494,7 +494,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-mode-gate
 - defined: —
-- cited: 311 ANALYZER-NEEDS (2)
+- cited: 311 312cg ANALYZER-NEEDS (3)
 
 ## an-oracle-ref-sha
 - defined: —
@@ -1026,7 +1026,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 312cb _tmp-naming-rewrite-owed (6)
+- cited: 26Ob 311 311a 311c 312cb 312cg _tmp-naming-rewrite-owed (7)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -4719,7 +4719,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## note-transport-single-consented-sparing-double
 - defined: —
-- cited: 311 311a (2)
+- cited: 311 311a 312cg (3)
 
 ## 28Ra:note-two-planes-weld-is-vocabulary-not-mechanism
 - defined: Research/notes/28Ra-context-kernel-review-fable-neutral.md:260 — : `syn-one-context-two-planes`
