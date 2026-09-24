@@ -446,7 +446,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-compare-chokepoint
 - defined: —
-- cited: 310 311 311a ANALYZER-NEEDS _tmp-naming-rewrite-owed (5)
+- cited: 310 311a ANALYZER-NEEDS _tmp-naming-rewrite-owed (4)
 
 ## an-cross-host-kind
 - defined: —
@@ -474,7 +474,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
+- cited: 310 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (5)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -1010,7 +1010,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c _tmp-naming-rewrite-owed (5)
+- cited: 26Ob 311a 311c _tmp-naming-rewrite-owed (4)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
@@ -1121,7 +1121,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cor-standup-witness-licenses-bare-line-elision
 - defined: —
-- cited: 26Ob 311 311c 311d (5)
+- cited: 26Ob 311c 311d (4)
 
 ## 28M:cor-trust-sentence-at-least-not-measurements
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:539 — [TYPED] — "nothing in Dorc is
@@ -3722,7 +3722,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## inv-referent-agnostic
 - defined: spike/CLAUDE.md:515 — — the engine never decodes an `OpaqueToken`'s or kind's
 - defined: spike/crates/core/CLAUDE.md:141 — — never decode a token's/kind's text for meaning;
-- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 26Ob 27C 27D 27I 27O 28L 311 311c oracle/CLAUDE (39)
+- cited: 193 19G 19H 1A9 1AA 204 205 20H 20J 20P 218a 22B 22W 231 23E 23H 23O 24A 24O 26C 26G 26O 26Ob 27C 27D 27I 27O 28L 311c oracle/CLAUDE (38)
 
 ## inv-referent-agnostic-here
 - defined: Research/notes/28Va-aid-extraction-map.md:612 — — resolving interned tokens to text in this crate is for
@@ -5493,7 +5493,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## req-verdict-marks-every-read-cell
 - defined: —
-- cited: 30T 311 311c ORACLE_PROVIDES (5)
+- cited: 30T 311c ORACLE_PROVIDES (4)
 
 ## req-wall-narrative-gains-region
 - defined: —
@@ -6133,7 +6133,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:rul-composite-meets-toward-guard-run
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:283 — [ACKED hard — the product rule restated
-- cited: 28K 28P 311 311c 311d (7)
+- cited: 28K 28P 311c 311d (6)
 
 ## 28M:rul-conflict-between-totals-is-falsification
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:313 — [ACKED] — judgment-tier
@@ -6190,7 +6190,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-cross-kind-sparing-needs-a-finished-definition
 - defined: —
-- cited: 30U 311 ORACLE_PROVIDES Research/LIVING_STATUS (4)
+- cited: 30U ORACLE_PROVIDES Research/LIVING_STATUS (3)
 
 ## 28E:rul-danger-axis-is-completion-class
 - defined: Research/notes/28E-why-surface-design-sitting.md:423 — (nack on my reported/written split) —
@@ -6637,7 +6637,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311 311a 311b 311c 311h 312a ORACLE_PROVIDES (24)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b 311c 311h 312a ORACLE_PROVIDES (23)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -7989,7 +7989,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 311 (9)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T (8)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
