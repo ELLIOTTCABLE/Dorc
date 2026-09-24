@@ -1461,3 +1461,36 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   key in an entry and a property in a mark; a property's Readset is declared, defaults to
   unbounded, and is never inferred from a shared name. The naming file still records mField in
   the site sense, untouched pending the human's word.
+- ACKED (**[HUMAN]**, typed 2026-09-23): mReferent, mState, mValue as three terms (the naming
+  file carries the definitions: a referent is a persisting thing that has state; a state is its
+  condition at an instant, never held by Dorc; a value is bytes a shell holds, what a read
+  yields from a state, the standing use of § 1.4 and the value plane; "string" withdrawn);
+  every selector is full reverse-DNS like every key (`sm.Unit:nginx@sm.Active`); no sort-local
+  name table exists, every sort name being global by design; "bearer" retires.
+- `fnd-the-marked-line-is-a-read-and-the-species-dissolves` (conductor; **[HUMAN]** ack) — with
+  `scheme:key@sm.Sort` read as a KEY (the singleton of the global sort, identified in the
+  referent the left key names; the left scheme never yields into it; the sort declares its own
+  `:identified-in`; strangers mint freely; state possibly diffuse; the sort's may-read says
+  where it is held), the marked shell line is a read of that key and the fact's identity is
+  § 1.8's mTopic, the key read plus the observer instance. No question-species is needed: the
+  engine cannot tell a stored singleton from a derived one and need not. Withdrawn on the way:
+  mExpression (LCM's available expression was the precise compiler term, killed by the human as
+  a second meaning beside sh syntax); mProperty (JavaScript's stored-member reading); mClaim
+  (tried on by the human, nacked by the conductor: § 1.11's speech kinds and the spike's
+  `Claim<Tier,_>` make a fact a claim by observation, so the word names the output). The
+  inhabitant proving a singleton sort needs sort-level machinery while identity-keyed by
+  another's referent: `sm.Path:F@sm.Writable` (own may-read: mode and owner; own
+  `:observer-independence`; own perishing under `chmod` and none under `truncate`; no key of its
+  own). Freeze text owed to § 1.9: a cell is a singleton sort under its parent, keyed
+  `parent-key@sort`; § 1.8 stands.
+- RETRACTED (conductor, 2026-09-23): the claim two sittings earlier that a question-species
+  dissolved `311p` threads 2 and 3. Thread 3 stands one level down: two singletons of two sorts
+  under one parent read known-unspoken under § 3.2, and only the parent's owner keying them in
+  one scheme with `:guarantees-unique-name` separates them (§ 14's
+  `fnd-difference-between-strangers-is-earned-one-way`). Thread 2 resolves by parenting, never
+  by a species: `@sm.Enabled` hangs under the unit file in a filesystem and `@sm.Active` under
+  the unit in the manager (`312b:lead-identify-in-the-narrowest-primary-store`; § 8's ruling
+  that a persisted form and a live form are two referents).
+- OPEN: "receiver" for the referent left of `@` (**[HUMAN]** holds it) against the conductor's
+  reading that it is the mParent under the confirmed semantics; the human asked why "parent"
+  works and whether a second kind of parent hides in `sm.SchemeA:key@sm.SortB`.
