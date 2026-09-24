@@ -42,8 +42,8 @@ transitions authored by yet other people change which mReferent an mKey reaches 
 
 The model has two declared species, never substitutable: the mScheme (a way of writing a
 thing down; what every bind and mark names; owns a `resolve()`) and the mSort (one owner's
-declared carrier, under which that owner's speech coheres; owns nothing a bind can name). One
-mScheme per mSort is primary; every mKey has one mParent; identity is the mFullyQualifiedKey,
+declared carrier, under which that owner's speech coheres; owns nothing a bind can name). At
+most one mScheme per mSort is primary; every mKey has one mParent; identity is the mFullyQualifiedKey,
 the chain of mParents through primary mSchemes; `compare()` decides at the first divergence;
 every positive answer rests on a typed, absent-by-default warrant one owner declared for one
 shape of mKey-Primary, and silence is unknown.
@@ -86,8 +86,8 @@ An mSort is one owner's declared vocabulary: a carrier in the logician's sense, 
 discourse someone chose to speak in, with reverse-DNS naming, no registry, and
 owner-adjudication as the social contract. It is not a category of the world. The engine never
 knows what an mSort denotes and never assumes two mSorts denote disjoint mReferents: what an
-mSort fixes is only what its owner declares under it — which mScheme is its primary mScheme
-(§2.2), its may-read set (§2.4), its may-write entailment and finished definition (§2.5), its
+mSort fixes is only what its owner declares under it — which mScheme, if any, is its primary
+mScheme (§2.2), its may-read set (§2.4), its may-write entailment and finished definition (§2.5), its
 :observer-dependence (§2.7), and its cells (§1.9) — and the owner speaks only about the
 mSort's relations to its immediate neighbours. Several mSchemes into one mSort is the
 cooperative case: one owner admitting several ways of writing down what they describe. Several
@@ -106,13 +106,15 @@ A way of writing down which mReferent is meant, with one accountable owner. An m
 its `resolve()`; whether it is `:primary-of` an mSort, with its declarations per matched
 shape (§2.2); what it `:yields`, per matched shape, each an mKey of another mScheme of any
 mSort (§2.1); where its mKeys are looked up, when it is a secondary mScheme (§2.1); its lookup
-warrants (§1.5); and whether it is :hierarchical (§2.8). An mSort has exactly one primary
-mScheme, which yields into that mSort for at least one shape; nothing else constrains where an
-mScheme yields. The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary
-mScheme of an mSort nobody has named, with an identity `resolve()`, no warrants, and the
-mRoute as its only mParent; that mSort acquires a name the first time its owner declares
-something about it as a whole. There is no default mScheme: a bind or a mark always names an
-mScheme.
+warrants (§1.5); and whether it is :hierarchical (§2.8). An mSort has at most one primary
+mScheme; where it has one, that mScheme yields into the mSort for at least one shape, and
+nothing else constrains where an mScheme yields. An mSort may have no mScheme at all: its mKeys
+are then singletons under mParents (§1.9). The floor: an mScheme that declares neither
+`:primary-of` nor `:yields` is the primary mScheme of an mSort nobody has named, with an
+identity `resolve()`, no warrants, and the mRoute as its only mParent; that mSort acquires a
+name the first time its owner declares something about it as a whole. There is no default
+mScheme: a bind or a mark always names an mScheme, and a mark of the form `parent-key@sm.Sort`
+names the mParent's mScheme and the singleton's mSort (§1.9).
 
 ### § 1.4-key
 
@@ -213,16 +215,20 @@ transition owner (§2.6). mDerivations combine by coherence (§3.2), never by pr
 
 ### § 1.9-cell
 
-A mCell is the unit that has a value: what a probe measures and a mutator writes. It is an mKey
-of an mSort whose values are measurable (`enabled`, `active`, `contents`, `mode`), declared
-like any other mSort with one difference of shape: its primary mScheme is
-`:identified-in` the mSort it is a property of (its mSort-Bearer), and its own mKey is a
-singleton, so a mCell's identity is its mSort-Bearer's plus which property. Two mCells of one
-mSort-Bearer (`enabled`, in a symlink's existence; `active`, in pid 1's memory) are two mSorts
-with two mPlacements and two :observer-dependences. A whole-bearer claim (`disturbs` a service)
-reaches its mCells by the
-mSort-Bearer's entailment (§2.5) and otherwise collides with them as known-unspoken. There is no
-aspect species and no selector position.
+A cell is a singleton mSort identified in its mParent: an mSort whose owner declares
+`:identified-in` the mParent's mSort (§2.2) and which has, under any one mParent instance,
+exactly one mKey, written `parent-key@sm.Sort` with the mSort's name in full reverse-DNS. That
+mKey is minted at the mark that names it (§1.4, §1.6): the singleton mSort has no mScheme of
+its own, and the mScheme left of `@` is the mParent's. A cell's identity is its mParent's plus
+its mSort (§3.1). Its mReferent's mState may be held elsewhere than its mParent, and may be
+diffuse: the cell's may-read set (§2.4) says where that mState is held, and the freshness of a
+fact about the cell follows that set, never the mParent (`enabled`, held in a symlink in a
+filesystem, survives a reboot; `active`, held in the service manager's memory in the boot, does
+not; both under one mParent). Two cells of one mParent are two mSorts with two may-read sets
+and two :observer-dependences, and §3.2 decides between them as between any two mSorts. A
+Writeset entry naming the mParent whole covers its cells (§2.8, §3.2). The marked line that
+answers a cell is a read of the cell's mKey, and the fact's identity is the mTopic (§1.8).
+There is no aspect species.
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -280,7 +286,7 @@ mechanical net against lazy borrowing.
 
 > ER's identifying relationship. Identifying is not containing.
 
-mScheme P is `:primary-of` mSort K, once per mSort, and a second name is a second mScheme: P's
+mScheme P is `:primary-of` mSort K, at most once per mSort, and a second name is a second mScheme: P's
 mKeys mean something only relative to K's mParent-Store, and P's `resolve()` is the identity
 on the mKey. P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M
 (the mParent's mSort for mKeys of that shape) and, absent by default:
@@ -424,7 +430,7 @@ union of its parts' may-read sets.
 
 | relation | arity | declared by | default | consumer | danger |
 |---|---|---|---|---|---|
-| `:primary-of` (`:identified-in` per matched shape) | one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :rootness, per matched shape |
+| `:primary-of` (`:identified-in` per matched shape) | at most one mScheme per mSort | the mSort's owner, on the primary mScheme | none — the floor of §1.3 supplies an unwarranted identity primary mScheme | identity (§3.1) | :guarantees-unique-referent · :guarantees-unique-name · :rootness, per matched shape |
 | `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | per matched shape of a secondary mScheme, into any mSort | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
 | `:aliases-nothing-else` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | an aliasing store declared :aliases-nothing-else is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
@@ -565,7 +571,7 @@ and consumer map; the universal meet; measure-in-context, entry forms, `safe-acr
 for unmarked reads (`27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the
 standup `witness()`; the integrity plane; the committee law. The invariance line's store half
 is measured away by §2.2 and its observer half lives as §2.7; the context slot is a mVantage
-and nothing else; there is no selector position, no selector dialect, no aspect species, no
+and nothing else; there is no selector dialect, no aspect species, no
 authored region predicate, no engine-side name floor, no engine table that generates `same`.
 
 ### § 3.7-supersedes (as currently written; terse by design)
