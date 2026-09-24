@@ -209,8 +209,8 @@ shape. They are independent, separately declared, and absent by default.
 The lookup's owner declares each warrant per matched shape. The warrant holds for every mKey of
 that shape inside any one mParent, while that mKey's mResolution or mToken stands
 (3.3-perishing-three-mutator-species). A matched shape is a control-flow path of the owner's
-body. A warrant is constructed when that body is evaluated for the mKey in hand. It may rest on
-what the path measured. Any path the dialect admits may decline it. A path that does not reach a
+body. A warrant is constructed when that body is evaluated for the mKey in hand. The declaration is
+per shape. The instance is per evaluation. It may rest on what the path measured. Any path the dialect admits may decline it. A path that does not reach a
 warrant has not given it.
 
 The engine vouches for one lookup itself: the transit-free local mRoute
@@ -288,7 +288,9 @@ mScheme. The recursion terminates at a mRoot, at the mRoute
 mDerivation of identity.
 
 An mWorld is a terminus of a mFullyQualifiedKey. Each mRoot shape is one mWorld. Each mRoute is
-one mWorld. Nothing speaks across mWorlds (3.2-compare-one-chokepoint-four-answers).
+one mWorld. No mFullyQualifiedKey and no finished definition speaks across mWorlds. A
+mCorrespondence may speak across mWorlds (2.7-corresponds-across-a-transition,
+3.2-compare-one-chokepoint-four-answers).
 
 A mTopic is what a claim is about: the mKey read, plus the observer instance when that mKey's
 mSort is observer-dependent (2.8-observer-dependence-and-independence). A mTopic may carry
@@ -536,9 +538,11 @@ of a writeset entry and the mKey a fact reads, of one mSort or of two:
 
 1. `compare()` answers DISJOINT (3.2-compare-one-chokepoint-four-answers, or
    2.9-hierarchical-and-the-region-test where an mKey is given whole).
-2. No write path joins them. The writeset's definition is finished. The fact's readset
-   (2.5-may-read-the-readset) is closed. Every writeset entry `compare()`s DISJOINT with every
-   entry of that readset.
+2. No write path joins them. The writeset's definition is finished. The at-most set is closed.
+   Where the body emits at runtime, the verb author's completion record closes it. For each
+   origin cell whose entailment widened the set, a reached finished record exists for that
+   cell's mSort and shape (`plans/30U`). The fact's readset (2.5-may-read-the-readset) is
+   closed. Every writeset entry `compare()`s DISJOINT with every entry of that readset.
 
 The test spares narrowly and collides widely. Whatever is not DISJOINT collides, and so does an
 undeclared may-read entry. The finished definition is a within-mWorld sentence. It never speaks
@@ -628,7 +632,9 @@ routes of 2.10-places-the-upward-lookup, leaf first:
 
 Only x's mTraversals are walked. D needs no closure of its own. Every level is asked, never only
 the leaf, because an alias may sit at any level: a bind mount of a directory above a file, or an
-alias entry above a leaf. A leaf's own closure cannot see it.
+alias entry above a leaf. A leaf's own closure cannot see it. `compare()`
+(3.2-compare-one-chokepoint-four-answers) compares a level by the identity of the mReferent that
+the level resolved to.
 
 - Arity: per mScheme.
 - Declared by: read off the mScheme's lookups. They name catalogs of their own mScheme or of
@@ -659,8 +665,10 @@ The engine invokes G's lookup only when all three hold:
   route of mSort G
 - G declares that it places T
 
-It invokes the lookup with every mKey it holds for that mReferent. Two answers that disagree are
-refused and attributed to G's owner.
+It invokes the lookup with every mKey it holds for that mReferent. The `looked-up-in` records of
+every invocation accumulate. A closure `looked-up-in nothing-else` from one invocation can
+contradict a record from another invocation. The engine then refuses both answers and
+attributes the refusal to G's owner.
 
 The store's end of the same relation is G's enumeration of its members. The may-write entailment
 of 2.6-may-write-the-writeset already carries that as write reach.
@@ -723,8 +731,10 @@ Two mFullyQualifiedKeys. Levels are numbered from the leaf, level 0, upward thro
    terminates at a mRoute the other does not share, the pair reads UNKNOWN. That covers one at
    the mRoute and one at a mRoot, and two mRoutes across a transit. A mRoot shape is one mWorld,
    SAME by `:rootness`. Two mKeys of that shape meet there and compare as siblings. mRoots of
-   two shapes are two mWorlds. A mRoute is another. Nothing speaks across mWorlds, not even the
-   finished definition, whose sentence is within-mWorld (2.6-may-write-the-writeset).
+   two shapes are two mWorlds. A mRoute is another. No mFullyQualifiedKey speaks across mWorlds.
+   The finished definition does not speak across mWorlds, because its sentence is within-mWorld
+   (2.6-may-write-the-writeset). A mCorrespondence is the one mDerivation that may speak across
+   mWorlds (2.7-corresponds-across-a-transition).
 2. Otherwise walk downward from the top to the deepest level at which the two chains are SAME by
    the one-level rule. Call that level A. If either mKey is A itself, the pair reads UNKNOWN: a
    write to a container collides with everything inside it.
@@ -871,7 +881,8 @@ and nothing else.
 A living register of statements in prior documents that this model contradicts. An entry stays
 until its document is rewritten. Remove an entry when its document catches up. Add an entry when
 another prior document is found to disagree. Each entry names the passage, gives its claim, then
-gives this model's claim after "Here".
+gives this model's claim after "Here". The root documents are outside this register. They are
+human-authored. Only the human refreshes them.
 
 - `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator",
   and `30U:constraints-on-other-components` "The comparison", with
@@ -950,3 +961,9 @@ gives this model's claim after "Here".
   relation their owners declare. Here: containment among stores is the mParent chain
   (1.6-parent-one-per-key, 1.8-fully-qualified-key-topic-and-derivation). The may-write
   entailment carries effects, never identity (2.6-may-write-the-writeset).
+- `notes/277` §3 (the selector dialect, the survival-license algebra), `plans/30J` §12 (dialect
+  keying), and the `spike/CLAUDE.md` sparing-algebra invariant: a same-entity claim spares a
+  backing only when both carry minted selectors of one dialect and the two selectors differ.
+  Here: the model excludes a selector dialect (4.1-boundary-of-this-model). Two cells
+  of one mParent are two mSorts. They separate only as 3.2-compare-one-chokepoint-four-answers
+  separates any two mSorts (1.9-cell-a-singleton-sort).

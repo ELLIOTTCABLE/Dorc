@@ -1086,9 +1086,8 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
-## considered-and-dead
+## 312ca:considered-and-dead
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:576
-- defined: Research/notes/312ce-identity-model-crosscheck-kimi-n.md:130
 - cited: 312c 312cb 312cc 312cd (8)
 
 ## constraint-adversarial-review-belongs-to-round-close
@@ -2413,9 +2412,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## finding-referent-distinctness-is-not-noninterference
 - defined: —
 - cited: 30Ta (1)
-
-## 312ce:finding-region-test-cannot-reach-disjoint
-- defined: Research/notes/312ce-identity-model-crosscheck-kimi-n.md:59
 
 ## 26L:finding-review-unit-can-exceed-action-unit
 - defined: Research/notes/26L-native-orchestration-and-contingent-progression.md:256
