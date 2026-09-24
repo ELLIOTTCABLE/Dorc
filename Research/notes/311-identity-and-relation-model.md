@@ -171,8 +171,9 @@ the region test (§2.8) consumes this one, and a hardlink or a bind mount is whe
 
 ### § 1.6-parent
 
-Every mKey has exactly one mParent, the mKey it was resolved inside. What the edge carries
-follows the mScheme:
+Every mKey has exactly one mParent, the mKey it was resolved inside. An mKey may carry further
+routes, one per other lookup that reached it (§2.8, the placing lookup); none of them is its
+mParent. What the edge carries follows the mScheme:
 
 - through a secondary mScheme the mParent is the mParent-Catalog, the thing the mKey was
   looked up in (a mount namespace for a path; a passwd database for a login name; a process
@@ -263,8 +264,8 @@ its Readset the body's marked reads, `30T:req-verdict-marks-every-read-cell`, vo
 tool-oracle author); a WRITESET CLAIM (an at-most may-write set per matched shape with its
 completion witness, `30U`, by the tool-oracle author or the filesystem binder); a MAY-WRITE
 ENTAILMENT (§2.5, by the mSort owner); a mCorrespondence (§2.6, by the transition owner); the
-per-mScheme declarations (§2.1, §2.2, §2.8); the per-mSort declarations (§2.4, §2.7, §1.9); the
-wrapper's :lends and their sentinel (§3.4).
+per-mScheme declarations (§2.1, §2.2, §2.8); the per-mSort declarations (§2.4, §2.7, §1.9, and
+`:places` with its lookup, §2.8); the wrapper's :lends and their sentinel (§3.4).
 
 ## § 2-model-relations
 
@@ -441,6 +442,20 @@ D needs no closure of its own. Every level is asked, never only the leaf, becaus
 sit at any level (a bind mount of a directory above a file; an alias entry above a leaf) and a
 leaf's own closure cannot see it.
 
+An mSort G may declare that it `:places` another mSort T: G's owner publishes a lookup that is
+invoked with the mValue of an mKey of T, whose matched shapes decide which spellings of T it
+answers (a path-shaped mValue answered; an inode number declined), and which emits for that
+mKey `looked-up-in G:key` and a closure `looked-up-in nothing-else` scoped to routes of mSort G.
+These are the records any lookup emits. The route so recorded is a mTraversal of the mKey for
+the region test above, and it perishes as any mResolution does (§3.3); it is never the mKey's
+mParent, which is the route the mKey's own lookup supplied (§1.6). The engine invokes G's
+lookup only when a Writeset or Readset entry names an mKey of G given whole, an mKey of T that
+a fact reads has no route of mSort G, and G declares that it places T; it invokes it with every
+mKey it holds for that mReferent, and two answers that disagree are refused and attributed to
+G's owner. Absent the declaration, the pair reads as §3.2 decides it. A false closure is G's
+owner's wrong DISJOINT. The store's end of the same relation is G's enumeration of its
+members, which the may-write entailment of §2.5 already carries as write reach.
+
 ### § 2.9-composite-sorts (roles)
 
 A mTopic whose mReferent's mState depends on several inputs IN ROLES (a base and an overlay; a primary and
@@ -463,6 +478,7 @@ union of its parts' may-read sets.
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | `:hierarchical` | per mScheme | read off the mScheme's lookups: they name catalogs of their own mScheme or of mSchemes feeding it | flat ⇒ whole-mParent-Catalog mTraversal | perishing; the region test (§2.8) | none (finer buys sparing, coarse is safe) |
+| `:places` (G places T; the upward lookup) | per (G, T) | G's owner | absent ⇒ no route of mSort G for T's mKeys; the pair reads as §3.2 decides it | the region test (§2.8); perishing | a false `looked-up-in nothing-else` is a wrong DISJOINT |
 | `:lends` (+ sentinel) | per wrapper, per mParent-Catalog mSort | wrapper owner | ⊤ ⇒ walls | ambient mParent supply | a wrong lend measures the wrong mVantage; the sentinel is an at-most claim over every mParent-Catalog mSort |
 | mCompositeSort | per composite | the author holding the roles | n/a | identity | as any mSort |
 
