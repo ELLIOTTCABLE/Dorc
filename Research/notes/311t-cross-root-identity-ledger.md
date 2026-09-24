@@ -1622,3 +1622,38 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   New and additive: the per-level closure record (the thing's-end routing statement, emitted at
   evaluation under `rul-warrants-are-path-granular-and-built-at-evaluation`) and the rule that
   consumes it; their absence changes nothing.
+- The upward read, sited (conductor, three sittings; **[HUMAN]** "ack what I've read thus far,
+  mostly", 2026-09-23, disliking the spellings). Walked on packages: a drifted `apt-get install`
+  upgrading nginx above two converged `cp` lines, one into `/etc/nginx`, one into `/etc/app`;
+  the package bound given whole collides with both today, since neither file's chain has a
+  package level. Three strawmen, all bodies with `dpkg -S` or `dpkg -L` typed in, differing
+  only in role: (A) a second scheme of files that accepts `sm.Path` values, yielding the file and
+  looked up in the package, needing one engine permission to run a loaded lookup on a value
+  bound under another scheme; (B) the downward list, USER_STORY stage 7's `dpkg -L`, already
+  in the model, one host read per package named in a bound; (C) a sort-level body on the
+  package sort invoked with a file key's value, emitting a membership record and its closure.
+  Costs: controller work negligible; host reads O(distinct files under a bound) for the upward
+  read against O(distinct packages) for the downward list, each cheaper in different books
+  (`dist-upgrade` against a directory region), both riding the one probe pass. The conductor
+  first leaned A (no new record kind; the outside rule consumes a chain unchanged).
+  **[HUMAN]** NACK of A's shape, not its meat: schemes stay singular ("one kind of thing that
+  is a path"; two `sm.Path`-like schemes in different rDNS namespaces are meant to conflict
+  safely, never to cohere); collaboration joins at the SORT, as `sm.Uid` and `sm.Username`
+  join at `sm.User`. Conceded: the input's spelling belongs in the body's own matched arms, the
+  seat 311 already uses (`net/*` against `kernel/*`), so a path-shaped value is answered and
+  an inode number declined with no scheme named; and a file's package is a RELATION between
+  two referents, never a spelling of the file, so encoding it as "the file as dpkg sees it" is
+  what made a scheme appear. Corrected shape: a sort-level body on G, declared against the
+  sort it places (the omitted `places "sm.File"` trailer, which is what puts the pair
+  (G, T) in the engine's static table; the human caught its absence), invoked with a T key's
+  value, every key the engine holds for the referent tried and disagreement refused. Its record
+  is not new: `looked-up-in G:key` plus `looked-up-in nothing-else`, the thing's end of the
+  ROUTE row (§ 14 found that row missing) at the across-catalogs level; the store's end is the
+  downward list with its closure; the path lookup already speaks the same thing's end for
+  directories. One parent per key holds by one clause: the parent is the route the key's own
+  lookup supplied; routes another sort's upward body adds are additional routes on the key,
+  walked by the outside rule and perished by writes to their catalog, never the parent. What
+  the model gains: one declaration kind (a sort naming the sorts it places), one engine
+  permission (invoke that sort's upward body with a placed key's value when a bound in that
+  sort is in play and the key has no route in it), and no new relation. The two ends stay
+  related but separate statements; their licensing law is 312's.
