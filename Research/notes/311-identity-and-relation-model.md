@@ -206,7 +206,7 @@ p, reaches mReferent R: a FACT with a BACKING, the mTraversal — the ordered ch
 mKeys the lookup crossed (each directory entry and symlink for a path; the resolver
 configuration and mVantage for a hostname; the unit table for a service name). A
 :hierarchical mScheme's lookups produce the mTraversal, one level per lookup (§2.8). A
-mResolution perishes under ordinary effective-mWorld reach from any mutator whose Writeset
+mResolution perishes under ordinary effective-mWorld reach from any mutator whose writeset
 touches a mTraversal member. Its target object is not its backing: an mKey can stop reaching
 an object without the object changing (`renaming-a-parent-moves-every-child-name`,
 `a-path-is-not-a-referent`), and an object can change without its mKey changing.
@@ -235,7 +235,7 @@ fact about the cell follows that set, never the mParent (`enabled`, held in a sy
 filesystem, survives a reboot; `active`, held in the service manager's memory in the boot, does
 not; both under one mParent). Two cells of one mParent are two mSorts with two may-read sets
 and two :observer-dependences, and §3.2 decides between them as between any two mSorts. A
-Writeset entry naming the mParent whole covers its cells (§2.8, §3.2). The marked line that
+writeset entry naming the mParent whole covers its cells (§2.8, §3.2). The marked line that
 answers a cell is a read of the cell's mKey, and the fact's identity is the mTopic (§1.8).
 There is no aspect species.
 
@@ -260,7 +260,7 @@ see a recycled mKey (a reissued pid or inode); that stays on the outside-churn h
 
 A mSite is within a book line, with an argv, an mEntryChain, and a program point. Speech at or
 about a mSite, each with one author: a VERDICT FACT (the measured answer to a read of a cell,
-its Readset the body's marked reads, `30T:req-verdict-marks-every-read-cell`, vouched by the
+its readset the body's marked reads, `30T:req-verdict-marks-every-read-cell`, vouched by the
 tool-oracle author); a WRITESET CLAIM (an at-most may-write set per matched shape with its
 completion witness, `30U`, by the tool-oracle author or the filesystem binder); a MAY-WRITE
 ENTAILMENT (§2.5, by the mSort owner); a mCorrespondence (§2.6, by the transition owner); the
@@ -333,7 +333,7 @@ One per mKey (§1.6): never plural, never a species of its own. Its mSort is the
 mScheme's declaration for the matched shape; its instance is whichever seat supplied it; the
 far end is an ordinary mKey. A mVantage supplies instances and is never an mParent.
 
-### § 2.4-may-read (the Readset)
+### § 2.4-may-read (the readset)
 
 > Separation logic's footprint, at the read side: the mReferents an answer may depend on.
 
@@ -342,12 +342,12 @@ type from an mSort (a template the mSite or environment fills) to mKeys of other
 Declared by K's owner, with a completion sentinel closing the set. Every mSort in a
 mFullyQualifiedKey may declare may-read entries, not only leaves (a loop-backed filesystem's
 state lives in a file of the outer filesystem; `dd` over the image rewrites every inner fact).
-A fact's Readset is the marked reads of the body that answered it together with the may-read
+A fact's readset is the marked reads of the body that answered it together with the may-read
 entries declared by every member of the mKey's mFullyQualifiedKey; it is closed only when every
 declared set is closed. An mKey's mParent instance is no may-read entry and needs no
 declaration: §3.2's walk collides a write at or above it. A may-read entry naming a store says
 more: every write to an mKey relative to that store may change K, nobody having said
-otherwise. Consumer: collision, and the write-path question of §2.5. A Writeset entry not
+otherwise. Consumer: collision, and the write-path question of §2.5. A writeset entry not
 DISJOINT from a may-read entry collides with K's cells and with every fact identified beneath
 K; an omitted entry is a silent channel (`an-omitted-store-breaks-invariance`,
 `a-store-is-not-one-inode`) and licenses nothing positive. May-read is distinct from mParent:
@@ -357,13 +357,13 @@ same (`the-subject-includes-the-observer`: two observers' writability cells shar
 mode). Under §2.5 a closed may-read set is knife-tier: it is one of the two closures every
 sparing rests on.
 
-### § 2.5-may-write (the Writeset, its entailment, and the finished definition)
+### § 2.5-may-write (the writeset, its entailment, and the finished definition)
 
-A line's Writeset is the at-most set of mKeys it may write: the may-write entries its verb's
+A line's writeset is the at-most set of mKeys it may write: the may-write entries its verb's
 author declared per matched shape (`plans/30U`'s footprint), closed by the completion record,
 widened by the may-write entailment that mSort owners declare. A write to an mKey is also a
 write to every container on that mKey's mFullyQualifiedKey, so each container's may-write
-entailment joins the line's Writeset; a container at or above the deepest level the written
+entailment joins the line's writeset; a container at or above the deepest level the written
 mKey shares with the mKey a fact reads contributes nothing to the test against that fact (a
 filesystem's entailment names its disk, and two files in one filesystem would otherwise
 collide through it). May-read entries are never consulted on the write side. The entailment,
@@ -375,10 +375,10 @@ it carries a package's postinst enabling its unit, a restart killing a main proc
 cross-mSort consequence no mFullyQualifiedKey expresses, and it generates no DISJOINT
 ("nothing else" is no other thing, never no other mKey for the thing written). An elision is
 spared past a write only when two questions are answered, in order, for every pair of a
-Writeset entry and the mKey a fact reads, of one mSort or of two. First, `compare()` answers
-DISJOINT (§3.2). Second, no write path joins them: the Writeset's definition is finished; the
+writeset entry and the mKey a fact reads, of one mSort or of two. First, `compare()` answers
+DISJOINT (§3.2). Second, no write path joins them: the writeset's definition is finished; the
 may-read sets declared by every member of the fact's mFullyQualifiedKey are closed; and every
-Writeset entry `compare()`s DISJOINT with every one of their entries. It spares narrowly and
+writeset entry `compare()`s DISJOINT with every one of their entries. It spares narrowly and
 collides widely: whatever is not DISJOINT collides, and so does an undeclared may-read entry.
 The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots
 (§3.2).
@@ -428,7 +428,7 @@ Default: flat, so the mTraversal is the mParent-Catalog as a whole and any touch
 perishes every mResolution through it — the coarse, safe floor. This replaces authored region
 predicates: containment is membership in a mTraversal, and a mutator that touches a directory
 needs to know nothing about files (`renaming-a-parent-moves-every-child-name`,
-`namespace-composition-is-not-concatenation`). A routing mKey named whole, in a Writeset or as
+`namespace-composition-is-not-concatenation`). A routing mKey named whole, in a writeset or as
 a may-read entry, stands for whatever its mScheme reaches beneath it: in §2.5's test it reads
 UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
 §3.2 answers of the two as siblings (unequal mTokens say only that the thing is not the routing
@@ -449,7 +449,7 @@ mKey `looked-up-in G:key` and a closure `looked-up-in nothing-else` scoped to ro
 These are the records any lookup emits. The route so recorded is a mTraversal of the mKey for
 the region test above, and it perishes as any mResolution does (§3.3); it is never the mKey's
 mParent, which is the route the mKey's own lookup supplied (§1.6). The engine invokes G's
-lookup only when a Writeset or Readset entry names an mKey of G given whole, an mKey of T that
+lookup only when a writeset or readset entry names an mKey of G given whole, an mKey of T that
 a fact reads has no route of mSort G, and G declares that it places T; it invokes it with every
 mKey it holds for that mReferent, and two answers that disagree are refused and attributed to
 G's owner. Absent the declaration, the pair reads as §3.2 decides it. A false closure is G's
@@ -559,11 +559,11 @@ second mKey inside one mParent.
   The touched object itself is untouched. Creation, deletion, and rename of an mKey are
   routing writes to its mParent-Catalog entry (its existence cell), so `userdel alice;
   useradd alice` perishes every mResolution of the old mKey
-  (`a-recreated-name-is-a-new-referent`); a Writeset that omits the entry is the ordinary
+  (`a-recreated-name-is-a-new-referent`); a writeset that omits the entry is the ordinary
   at-most omission knife, now visibly covering routing mKeys.
 - A STATE mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
   first write can also change an mKey-Primary
-  (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation whose Writeset
+  (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation whose writeset
   touches a mParent-Store perishes the mTokens scoped in it.
 - A LIFECYCLE mutation (a reboot, a re-provision) writes a mRoot-adjacent mKey (a boot, a
   tenure); every mKey-Primary scoped in it names a new mReferent afterward; cells whose
@@ -601,7 +601,7 @@ account's mResolution) names nobody and needs nobody's consent. Attribution:
 every survival names the :aliases-nothing-else and :guarantees-unique-name declarations it rested on and
 the may-read sets that bounded it; every SAME names the `resolve()` calls, the declarations,
 the sentinels and route claims that made instances one, and the mCorrespondences; every
-perished conclusion names the Writeset that perished it.
+perished conclusion names the writeset that perished it.
 
 ### § 3.6-scope (what this model leaves untouched)
 
