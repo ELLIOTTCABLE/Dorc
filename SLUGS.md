@@ -45,6 +45,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:834 — — a variable's anchors are the bytes immediately beside
 - cited: 30C (1)
 
+## a-socket-on-a-shared-mount-is-not-shared
+- defined: —
+- cited: 03 312c 312ca Research/GOTCHAS (4)
+
 ## oracle/CLAUDE:a-top-reject-is-not-a-definition-vector
 - defined: spike/crates/oracle/CLAUDE.md:134 — (the emission stage, measured) —
 - cited: 28Q 307 30A 30Nc plan/CLAUDE (5)
@@ -455,6 +459,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## an-cwd-state
 - defined: —
 - cited: 30Qf 30T 30Ta ANALYZER-NEEDS (4)
+
+## an-derived-footprint
+- defined: —
+- cited: 28P 30T 312c ANALYZER-NEEDS (5)
 
 ## an-effect-class
 - defined: —
@@ -1078,9 +1086,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
-## 312ca:considered-and-dead
+## considered-and-dead
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:576
-- cited: 312cb 312cc 312cd (7)
+- defined: Research/notes/312ce-identity-model-crosscheck-kimi-n.md:130
+- cited: 312c 312cb 312cc 312cd (8)
 
 ## constraint-adversarial-review-belongs-to-round-close
 - defined: —
@@ -2404,6 +2413,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## finding-referent-distinctness-is-not-noninterference
 - defined: —
 - cited: 30Ta (1)
+
+## 312ce:finding-region-test-cannot-reach-disjoint
+- defined: Research/notes/312ce-identity-model-crosscheck-kimi-n.md:59
 
 ## 26L:finding-review-unit-can-exceed-action-unit
 - defined: Research/notes/26L-native-orchestration-and-contingent-progression.md:256
@@ -7478,7 +7490,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-the-outside-rule-with-the-alias-closure
 - defined: —
-- cited: 311t 312cb 312cc (4)
+- cited: 311t 312c 312cb 312cc (5)
 
 ## 30Qb:rul-the-planner-answers-questions-it-does-not-schedule
 - defined: Research/notes/30Qb-emission-planner-lane-report.md:67
@@ -8085,7 +8097,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312ca 312cb 312cc (11)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312c 312ca 312cb 312cc (12)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
