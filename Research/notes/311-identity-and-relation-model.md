@@ -799,7 +799,8 @@ and needs nobody's consent.
 Attribution:
 
 - Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it
-  rested on, and the may-read sets that bounded it.
+  rested on, the route closures it rested on (§1.5, §2.10), and the may-read sets that bounded
+  it.
 - Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that
   made instances one, and the mCorrespondences.
 - Every perished conclusion names the writeset that perished it.
