@@ -97,3 +97,28 @@ reserves (`311t` § 14: an engine decision deserves authored speech or different
 Tip of `ai/main` at close of this sitting: `0738c00f` (311's clear fixes) over `2fbcc4f7`
 (`312c`). This ledger is the next commit. The human addresses § 3 directly; nothing in § 3 is
 owed by anyone else. The partial Kimi report `312ce` stays untracked.
+
+## § 6-the-refuted-shapes-register-resurrected
+
+- **[TYPED]** 2026-09-24, resolving `hold-refuted-shapes-blockquotes`: resurrect the
+  refuted-shapes register as a separate sub-document with a slug per entry, so the two
+  blockquotes in 311 point at it. Drop entries no longer relevant. The register is an addendum
+  for reasoning and reference during this phase of design, not an exhaustive record. No
+  gotcha-to-element map: GOTCHAS slugs appear inline in the register's prose where a case is
+  one, and a separate map would duplicate that.
+- Applied, `023f6107`: `notes/311u` minted with thirty-four entries, each re-verified against
+  311's current text and pointed at 311 by section slug. Every entry carries the shape, the
+  case, and the survivor. Dropped from the pre-rewrite register: the two process kills
+  (renaming `resolve()` as a fix for the fallthrough idiom; convergence of two systems from one
+  window as evidence). Folded: the shared-ancestor skip into
+  `311u:refuted-parent-as-an-implicit-read-entry`, its case being the same. The register's
+  linter result: zero hard violations, one advisory passive in the header's "Nothing here is
+  ruled", the sentence 311's own header carries.
+- Applied, `8166ab99`: 311's blockquote convention widened to admit a refuted shape, and two
+  non-normative blockquotes added, under § 2.6 pointing at
+  `311u:refuted-only-same-entries-overlap` and under § 3.2 pointing at
+  `311u:refuted-parent-partitions-its-children`. The added lines lint clean. The whole file
+  carries one pre-existing hard flag, `terminates` (§ 1.8) against `stop` (§ 1.7) under the
+  synonym-rotation rule, outside the lines this phase touched and left for the human.
+- State: tip `8166ab99` before this ledger commit. § 3's other nine holds stand unchanged, and
+  thread 2 stays held with § 4's correction attached.

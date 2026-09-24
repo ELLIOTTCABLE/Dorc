@@ -5519,14 +5519,15 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-only-same-entries-overlap
 - defined: Research/notes/311u-refuted-shapes-register.md:276
-- cited: 311 (1)
+- cited: 311 312cg (2)
 
 ## 311u:refuted-parent-as-an-implicit-read-entry
 - defined: Research/notes/311u-refuted-shapes-register.md:284
+- cited: 312cg (1)
 
 ## 311u:refuted-parent-partitions-its-children
 - defined: Research/notes/311u-refuted-shapes-register.md:193
-- cited: 311 (1)
+- cited: 311 312cg (2)
 
 ## 311u:refuted-resolution-backed-by-its-target
 - defined: Research/notes/311u-refuted-shapes-register.md:316
