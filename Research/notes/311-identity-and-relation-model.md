@@ -40,10 +40,10 @@
 Dorc removes a line only on connected claims that the line is unnecessary: a measurement claimed
 before anything runs, plus an author's vouch. An earlier line that really runs can destroy the
 claim. So the engine must decide whether the piece of the world an earlier line touches is the
-same piece a later line's licence depends on. That decision is identity.
+same piece a later line's license depends on. That decision is identity.
 
 Identity has two consumers with opposite failure directions. SAME lets one fact stand for
-another. DISJOINT lets a licence survive a write. Each under-executes when wrong. UNKNOWN is
+another. DISJOINT lets a license survive a write. Each under-executes when wrong. UNKNOWN is
 safe for both.
 
 The engine knows only syntax, authored speech, and what authored probes returned. It never
