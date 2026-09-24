@@ -503,10 +503,9 @@ the thing written.
 An elision is spared past a write only when two questions are answered, in order, for every
 pair of a writeset entry and the mKey a fact reads, of one mSort or of two:
 
-1. `compare()` answers DISJOINT (§3.2).
-2. No write path joins them. The writeset's definition is finished. The may-read sets declared
-   by every member of the fact's mFullyQualifiedKey are closed. Every writeset entry
-   `compare()`s DISJOINT with every one of their entries.
+1. `compare()` answers DISJOINT (§3.2; §2.9 where an mKey is given whole).
+2. No write path joins them. The writeset's definition is finished. The fact's readset (§2.5) is
+   closed. Every writeset entry `compare()`s DISJOINT with every entry of that readset.
 
 The test spares narrowly and collides widely. Whatever is not DISJOINT collides, and so does an
 undeclared may-read entry. The finished definition is a within-mWorld sentence. It never speaks
