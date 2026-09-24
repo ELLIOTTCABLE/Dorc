@@ -1554,3 +1554,47 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   path, asking nothing of the region's store. Freeze consequences: write the unique-name
   warrant once as one row with two spellings; name `looked-up-in nothing-else` as the routing
   twin of the open identity cell. This resolves the "double spelling" flagged the turn before.
+- ACKS (**[HUMAN]**, typed 2026-09-23): mParent for the referent left of `@`, and "the parent
+  instance at the bind seat" for the key written there (the seats being § 1.6's three suppliers
+  of a parent instance; for a singleton the bind seat is the mark); the minimum of one scheme
+  per sort DROPPED (a sort may have no scheme, "exactly one primary" becomes "at most one", and
+  no degenerate scheme is carved out for singletons); a bare key in an entry is deep, ruled by
+  safe-defaulting and gradual enhancement, its spelling kept out of 311; the engine never reads
+  key syntax at the model level (§ 2.8's sentence dies; any such reading would be a transparent
+  optimisation, never user-visible). NIT (**[HUMAN]**): the two ends of the alias row are related
+  but SEPARATE statements in 311; whether licensing needs both ends in agreement, either end, or
+  a lattice (partial presence buys collision; dual presence and coherence buy elision), and
+  what "a warrant" is at all, are 312's, after spelling is stable. The conductor's "one warrant,
+  two spellings" and "either end suffices" are RETRACTED.
+- `fnd-the-mirror-rule-is-not-derivable-from-may-read` (conductor; the human asked why a write
+  must write its target's read-items, for a careful justification, and whether any reviewer
+  had found it) — the rule as tuned added the may-read entries of the written key's containers,
+  strictly below the level shared with the fact's key, to the Writeset. It is not derivable:
+  "C may-read B" is influence, B toward C, and the rule needed realization, C's contents kept
+  in B. The leak it repaired fires only where the walk already reads DISJOINT across sorts (a
+  shared key space with unique-name, loop0 and sda as block devices, both filesystems honestly
+  `:aliases-nothing-else`) and a container of the written key is kept in something on the
+  fact's side; the uid-against-passwd shape collides anyway as known-unspoken. PROVENANCE:
+  found by the conductor (§ 8, held unevaluated), raised by no panel report, in none of
+  `311p`'s seven threads, attacked only by its author. Walked slowly on two books: a `cp` into a
+  loop mount against a checksum fact on the image (the rule collides, correctly), and a
+  `resolvectl query` populating a cache that may-reads `/etc/hosts` against a `cmp` fact on
+  that file (the rule collides, wrongly, and the model could not say the cache is not kept in
+  the file).
+- WITHDRAWN and REPLACED (**[HUMAN]** objection, "a user typed may-read; you are describing
+  something that may-writes", the counterexample demanded and given; **[HUMAN]** ack,
+  2026-09-23) — the mirror rule as a rule over may-read is gone. The right sentence is the
+  container describer's write-side statement, which the model already has as sort-level
+  may-write (§ 2.5's entailment; the P's-end cell of § 11's write-path row): a loop filesystem
+  declares `may-write <its image>` then `nothing-else`; a resolver cache declares `may-write
+  nothing-else`. The two cases then separate, the loop write colliding with the image fact and
+  the query sparing the hosts fact. What survives of the mirror is one sentence and one clause:
+  a write inside a container is a write to that container, so the container's may-write
+  applies; containers at or above the level both keys share do not contribute, since a
+  filesystem's may-write names its disk and two files in it would otherwise collide through
+  it. The safe default is existing law: a container with no declared may-write has an
+  unbounded set and writes inside it collide with everything; a closure omitting the image is
+  a false `nothing-else`, attributable. May-read entries are never consulted on the write side.
+- Pending on the human, restated: the outside rule with its alias closure; the upward read's
+  siting. Resolved this sitting: the mirror rule (replaced, acked); the key-syntax sentence
+  (dead); item against children (deep).
