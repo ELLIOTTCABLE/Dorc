@@ -1744,3 +1744,30 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   § 1.11 mention routes and `:places`) · `7724e30c` (§ 4.2: six kill lines). Also § 3.3's
   "disturbs a mRoot-adjacent mKey" reads "writes". The naming file carries the APPLIED marks.
   Kept out, unchanged from the list above.
+- The STE100 rewrite, reviewed for behaviour only (conductor, 2026-09-24; the human: "make the
+  clear fixes, narrow"). The editor's uncommitted rewrite was committed as it stood (`ca68b868`),
+  dropping § 2.10's relation table, § 3.7, and all of § 4; the litmus moved into § 0. Five
+  behavioural findings, each fixed in its own commit:
+  `fnd-cell-freshness-contradicts-lifecycle-perishing` (§ 1.9 said freshness follows the
+  may-read set "never the mParent" and gave `enabled` surviving a reboot under the same mParent
+  as `active`; § 3.3 makes a cell whose chain passes through the boot new, and § 2.9 makes a
+  key named whole cover what is beneath it; the wobbliness ack over-generalised: perishing by
+  may-read alone holds for a cell held in the boot under a mParent that is not, and a cell
+  under a mParent that is in the boot is still covered; fix `c4ba4312`: freshness follows the
+  set together with any write covering the mParent, and `enabled` survives a reboot only where
+  its mParent is not scoped in the boot, which is § 8's persisted-against-live ruling and
+  touches an acked sentence) · `fnd-region-test-consumes-a-closure-the-upward-lookup-never-emits`
+  (§ 2.9 step 3 required `alias nothing-else` while § 2.10 emits `looked-up-in nothing-else`,
+  so a placing route could never reach DISJOINT; § 1.5 scoped the closure to "in its
+  mParent-Catalog", which under the chain form reads as the directory and lets a hardlink in
+  another directory pass; the directory link-count evidence was wrong; fix `888a0cc9`: the
+  closure covers the whole instance the lookup ran in, the directory evidence is the mount
+  table alone, the region test accepts either closure by name, and § 1.6's catalog example is a
+  directory for a path's entry; the two closure names remain, unmerged) ·
+  `fnd-places-trigger-fires-on-one-side-only` (§ 2.10 fired only for a T key a fact reads; fix
+  `8676ae0b`: the T key on either side of the pair) ·
+  `fnd-survival-attribution-omits-route-closures` (fix `a368430d`: § 3.5 names them) ·
+  `fnd-write-path-test-skips-marked-reads` (§ 2.6 step 2 compared against declared may-read
+  sets only, while § 2.5 defines the readset with marked reads; pre-existing, made visible; fix
+  `b8aeb9eb`: step 2 runs over the fact's readset, and step 1 cites § 2.9 for a key given
+  whole). Everything else matched the acked semantics.
