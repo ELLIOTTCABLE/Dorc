@@ -213,9 +213,9 @@ body. A warrant is constructed when that body is evaluated for the mKey in hand.
 per shape. The instance is per evaluation. It may rest on what the path measured. Any path the dialect admits may decline it. A path that does not reach a
 warrant has not given it.
 
-The engine vouches for one lookup itself: the transit-free local mRoute
-(1.10-vantage-route-placeholder-witness). Across a transit nothing is claimed. Everything is
-measured and witnessed.
+The engine vouches for one lookup itself: the local mRoute under no wrapper
+(1.10-vantage-route-placeholder-witness). Across a wrapper, the wrapper's author speaks
+(3.4-entry-and-lends), and everything else is measured and witnessed.
 
 Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for
 the one level it resolved. The closure states that the mReferent at that level is reachable by
@@ -334,11 +334,13 @@ any mKey's identity. It does three things:
   mParent-Catalog mSort.
 - For a shape with no `:identified-in`, it is the mRoute: the last-resort mParent.
 
-For transit-free local execution, the engine itself vouches the mRoute, and the ambient and
-inherited mParent instances within one unwalled span. Each is resolved once per mEntryChain and
-shared: one mPlaceholder. Two same-spelled leaf mKeys are two mPlaceholders, SAME only by
-warrant (3.2-compare-one-chokepoint-four-answers). Across a transit the mRoute is never vouched.
-Across mVantages it is unknown.
+For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
+instances within one unwalled span. Under a wrapper, it vouches the inherited instances that
+3.4-entry-and-lends admits. Each is resolved once per mEntryChain and shared: one mPlaceholder.
+Two same-spelled leaf mKeys are two mPlaceholders, SAME only by warrant
+(3.2-compare-one-chokepoint-four-answers). Two mVantages share the mRoute and the ambient
+instances through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends).
+Otherwise the mRoute and the ambient instances are unknown across mVantages.
 
 A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey,
 ambient mParents, mEntryChain). The probe standup binds it. The apply standup re-reads it
@@ -723,20 +725,22 @@ and which ambient mParents to bind.
 > (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own
 > distinctions.
 
-`compare(x, y)` answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN. The consumer map is
-unchanged. SAME means the fact is about this mKey. DISJOINT licenses sparing under
-`--risk-faultless-skips`. UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
+`compare(x, y)` answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN. SAME means the fact
+is about this mKey. The engine consumes a SAME that rests on a wrapper's sentinel under
+`--risk-faultless-skips` (3.4-entry-and-lends). DISJOINT licenses sparing under the same flag.
+UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
 
 One level. Two mKeys at one level are SAME iff they are one instance, or they are equal mValues
 whose shape carries `:guarantees-unique-referent`. One instance means one mPlaceholder:
-inherited through a wrapper's sentinel (3.4-entry-and-lends), or one ambient instance resolved
-once in a transit-free unwalled span (1.10-vantage-route-placeholder-witness).
+inherited through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends), or
+one ambient instance resolved once in one unwalled span under no wrapper
+(1.10-vantage-route-placeholder-witness).
 
 Two mFullyQualifiedKeys. Levels are numbered from the leaf, level 0, upward through mParents.
 
 1. If either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN. If one
    terminates at a mRoute the other does not share, the pair reads UNKNOWN. That covers one at
-   the mRoute and one at a mRoot, and two mRoutes across a transit. A mRoot shape is one mWorld,
+   the mRoute and one at a mRoot, and two mRoutes across a wrapper. A mRoot shape is one mWorld,
    SAME by `:rootness`. Two mKeys of that shape meet there and compare as siblings. mRoots of
    two shapes are two mWorlds. A mRoute is another. No mFullyQualifiedKey speaks across mWorlds.
    The finished definition does not speak across mWorlds, because its sentence is within-mWorld
@@ -815,9 +819,10 @@ and nothing else. Examples: a chroot lends a mount namespace. `sudo -u` lends a 
 `ip netns exec` lends a network namespace. The lent instance becomes the ambient mParent for
 every mKey of a secondary mScheme looked up in that mParent-Catalog mSort.
 
-mParent-Catalog mSorts not lent inherit the caller's instance only after the wrapper's
-completion sentinel. Before it they are ⊤. Leaf mKeys inherit transitively through their
-mFullyQualifiedKeys with no speech from anyone. A wrapper may declare mCorrespondences across
+An unlent mParent-Catalog mSort is ⊤ under the wrapper. After the wrapper's completion
+sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the
+caller's instances instead. Leaf mKeys then inherit transitively through their
+mFullyQualifiedKeys with no further speech. A wrapper may declare mCorrespondences across
 the mParent-Catalogs it lends (2.7-corresponds-across-a-transition). A lend may depend on the
 guest, as sudoers matches the guest command. The wrapper author then declares the
 guest-insensitive default and supplies a policy read that declines on departure.
@@ -827,7 +832,7 @@ guest-insensitive default and supplies a policy read that declines on departure.
 - Default: ⊤, which walls.
 - Consumer: ambient mParent supply.
 - Danger: a wrong lend measures the wrong mVantage. The sentinel is an at-most claim over every
-  mParent-Catalog mSort.
+  mParent-Catalog mSort. A wrong sentinel is a wrong SAME. The flag prices it.
 
 ### § 3.5-committee-law-and-attribution
 
@@ -869,7 +874,8 @@ This model uses, and does not redefine:
 - the verdict, vouch, and guard tier
 - the authored may-write entries, the completion record as the witness of a finished definition,
   and `--risk-faultless-skips`
-- the four-answer chokepoint and its consumer map
+- the four-answer chokepoint and its consumer map, except that a sentinel-inherited SAME rides
+  the flag (3.4-entry-and-lends)
 - the universal meet
 - measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across`
   (`plans/27C`)
@@ -888,8 +894,8 @@ and nothing else.
 A living register of statements in prior documents that this model contradicts. An entry stays
 until its document is rewritten. Remove an entry when its document catches up. Add an entry when
 another prior document is found to disagree. Each entry names the passage, gives its claim, then
-gives this model's claim after "Here". The root documents are outside this register. They are
-human-authored. Only the human refreshes them.
+gives this model's claim after "Here". A root document gets one brief entry where a passage
+became untrue. The human refreshes root documents.
 
 - `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator",
   and `30U:constraints-on-other-components` "The comparison", with
@@ -932,7 +938,7 @@ human-authored. Only the human refreshes them.
   selector, index-kind). Here: there is no invariance line and no per-kind table against axes
   (4.1-boundary-of-this-model). Whether a lifecycle write or a lent instance reaches a cell is
   the shape of its mFullyQualifiedKey, not a declaration (3.3-perishing-three-mutator-species,
-  3.4-entry-and-lends). Leaf mKeys inherit across a transit with no speech from anyone (§3.4).
+  3.4-entry-and-lends). Leaf mKeys inherit across a wrapper with no further speech, under the flag (§3.4).
   The observer half of the line is `:observer-independence` of O, declared per mSort and absent
   by default (2.8-observer-dependence-and-independence). The store half is displaced by
   `:aliases-nothing-else` and measured mTokens (2.3-aliases-nothing-else-the-store-warrant,
@@ -974,3 +980,14 @@ human-authored. Only the human refreshes them.
   Here: the model excludes a selector dialect (4.1-boundary-of-this-model). Two cells
   of one mParent are two mSorts. They separate only as 3.2-compare-one-chokepoint-four-answers
   separates any two mSorts (1.9-cell-a-singleton-sort).
+- `spike/CLAUDE.md` compare-consumer-map and
+  `311a:note-transport-single-consented-sparing-double`: every SAME is vouch-tier and unflagged.
+  Here: the engine consumes a SAME that rests on a wrapper's sentinel under
+  `--risk-faultless-skips` (3.4-entry-and-lends, 3.2-compare-one-chokepoint-four-answers). Every
+  other SAME generator is vouch-tier.
+- `KNOBS:kSURVIVAL` and `ANALYZER-NEEDS:an-mode-gate`: the flag gates the survival tier's
+  sparing. Here: the flag also gates a SAME that rests on a wrapper's sentinel
+  (3.4-entry-and-lends).
+- `USER_STORY.md`, the bought-unsoundness section: past the flag the admin trusts named authors'
+  at-most claims, and everywhere else only measurements. Here: past the flag the admin also
+  trusts wrappers' sentinels (3.4-entry-and-lends).

@@ -149,7 +149,7 @@ UNKNOWN. Recreation under a stable name, pid reuse, round-robin lookups, cached 
 moving `latest` tag are ordinary ops (`a-recreated-name-is-a-new-referent`,
 `recycled-keys-outrun-the-unwalled-span`, `resolution-is-set-valued`,
 `a-cached-lookup-answers-for-the-past`). The claim's owner differs at every level.
-**Survivor.** The engine vouches only the transit-free local mRoute, and the ambient and
+**Survivor.** The engine vouches the local mRoute under no wrapper, and the ambient and
 inherited instances in one span. A lookup's functionality is its owner's opt-in
 (1.5-token-and-the-two-warrants, 1.10-vantage-route-placeholder-witness).
 
