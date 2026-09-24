@@ -193,3 +193,67 @@ marked as such and none is acked unless the line says so.
   reset form.
 - State: `hold-sentinel-danger-line` stays held. The human's flag criteria and the refag
   correction are typed and bind the rest of the burndown.
+
+## § 8-the-sentinel-sitting-closed
+
+The sentinel sitting of § 7 ran to a ruling. Findings the human read and replied to, then the
+ack.
+
+- **[TYPED]** 2026-09-24, shaping the transit question: 311 cannot have first-class transits
+  unless "a transit" is abstracted in fully model-internal terms (the answer cannot be "it goes
+  over the network"). If no such meaning is synthesized, the prior author's assumptions must not
+  be broken silently: why was it special-cased, and what constraint did it protect. The human's
+  suspicion: no cross-host distinction is meaningful for the model; "a different machine" glosses
+  "many dimensions changed", and every unnamed dimension changes anyway.
+- **[TYPED]** 2026-09-24, the law: every negative existential requires the flag. Absence of the
+  flag, or absence of the sentinel, yields the fail-safe behaviour. Corollary: with both present,
+  the dangerous behaviour fires where sane execution wants it.
+- **[TYPED]** 2026-09-24, style for the ledgers and chat: explain the concept, then point at the
+  section slug in a parenthetical. A bare `§ N.N` is for re-citation inside one paragraph only.
+- Conductor, re-derived and read by the human: "transit" in 311 has only ever meant a wrapper
+  entry (the first revision cites the `sudo` gotcha `not-every-transit-changes-the-referent` as
+  one). What `311:1.10-vantage-route-placeholder-witness` protects is the engine's parity vouch
+  stopping at any binary in wrapper position. The two sentences the conductor had called
+  contradictory are two rungs of one rule: § 1.10's "unknown across mVantages" is the floor with
+  no sentinel or no flag, § 3.4's inheritance is the licensed rung, and the flag is the missing
+  conjunct. A rooted, measured chain transports by equal mTokens in every rung, so the flag prices
+  only unrooted or unmeasured chains across a wrapper.
+- **[HUMAN]** the click: the human had been holding one of SAME and DISJOINT. "Everything
+  changed" reaches for a DISJOINT that cannot be ascertained (network filesystems; colluding
+  binaries), and either direction is an author's nothing-else. Question: is the conductor
+  reaching for two negative existentials, one per direction? Conductor: not one per direction.
+  Both sentinel forms are SAME-side (inherit yields SAME across the wrapper; reset yields SAME
+  within the wrapper's span and UNKNOWN across it). DISJOINT across a wrapper is earned as
+  everywhere, through two keys of one root shape and `:aliases-nothing-else` on every store of
+  both legs, the store describer's already-priced existential.
+- Conductor, on the reset sentence (the human asked why it was removed): it was in no revision
+  of 311. It exists in `311a` § 3 and in the regrounding digest `311c`. `312a` already spoke of
+  one sentinel, singular, and the first draft of 311 (`0ec8ee70`) carried only inherit. No ledger
+  or register records a decision. Under rooting it dissolves: `ssh` lends a fresh measured
+  `sm.Boot`, rooted chains follow, and the unrooted floor reads ⊤ under `ssh`. Without rooting,
+  `ssh` has no honest description in 311. Read by the human ("Okay").
+- Conductor, on why no other sentinel is dual: inherit and reset are two payloads of one closure
+  at one end, not two ends. A transition's nothing-else must say where the rest went, a store's
+  excludes the rest. The wrapper row is two-ended as `311t` § 11's table has rows: the wrapper's
+  end speaks lends and the sentinel, the fact's end has `:observer-independence` per named O with
+  dependence as its default, and its closure is measurement to a root. What is unique to the
+  corner is that its speaker-end closure licenses SAME rather than DISJOINT, so it alone was
+  unpriced. Read by the human ("Okay").
+- Disposition put, and its total price: `hold-sentinel-danger-line` becomes a license change. A
+  SAME that rests on a wrapper's sentinel is consumed only under `--risk-faultless-skips`;
+  absent the sentinel or the flag, unlent sorts stay ⊤. Price: every sharing of a fact across or
+  within a wrapper through a sort nobody rooted moves behind the flag, which under § 2.2's
+  unrooted sketch is every `sudo`-threaded book, and the flag's meaning widens to "at-most
+  footprints and wrappers' nothing-else". Rooting collapses the price to the floor and becomes
+  load-bearing for `ssh`. Unchanged: kill-reach, DISJOINT across wrappers, entered-value lends,
+  rooted measured chains.
+- **[TYPED]** 2026-09-24, the ack, with instructions for the edit: the word "transit" disappears
+  from 311, with one consistent word for entering a wrapper's dimensions and no accidental
+  implication of network transience. Edits are ahistorical, with no "used to be called". "Never"
+  is not used: state how things are, and where a case is excluded that the positive statement's
+  corollary does not imply, state that case clearly. The `asd-ste100` skill applies. Edits are as
+  narrow as possible so the verbiage opens no new hole. `KNOBS:kSURVIVAL` gets a brief line in
+  § 4.2. Root documents also get brief § 4.2 lines where a passage became untrue, so the human
+  does not have to remember them; the human refreshes the root documents.
+- Nit held for the next item, per the human ("I'll rewind first"): why an ext4 filesystem is
+  unrooted in § 2.2's sketch.
