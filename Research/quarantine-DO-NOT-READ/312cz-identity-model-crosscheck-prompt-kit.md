@@ -1,8 +1,10 @@
 # 312cz — identity-model (`notes/311`) multi-lineage crosscheck: prompt kit
 
-> Tier: QUARANTINED. Status: DRAFT v3 for human review (v1 and v2 nits applied); nothing
-> dispatched, nothing committed. One bundle, six lanes (two Fable, two GPT-6-Astra, two
-> Kimi K3), each lineage split `-n` / `-a`. Sited under `312c`, the ID of the
+> Tier: QUARANTINED. Status: v4, DISPATCHED. `fable-a`, `astra-n`, and `astra-a` ran under
+> the v3 four-step process (their sections are as they ran, `fable-a` re-vocabularied);
+> `fable-n`, `kimi-n`, and `kimi-a` were rewritten to the v4 ledgered breadth-first method
+> after the v3 process killed three harnesses (the as-run record below). One bundle, six
+> lanes (two Fable, two GPT-6-Astra, two Kimi K3), each lineage split `-n` / `-a`. Sited under `312c`, the ID of the
 > adjudication-and-synthesis this review feeds: the crosscheck is the first step of
 > graduating the stabilized, frozen `311` model to `312`, which becomes plans-tier.
 > Authored 2026-09-24 by the Fable conductor under an explicit human instruction; the
@@ -64,6 +66,19 @@ Four steps, in order, no skipping ahead; every section spells them out in its ow
    considered-and-dead.
 
 The rationale is deliberately not encoded in any section.
+
+**The v4 method (`fable-n`, `kimi-n`, `kimi-a`):** the v3 step 2 concentrated the
+review's largest single thought into one response, and three harnesses killed it there
+(their per-response output caps count thinking). v4 forbids that thought: nothing is
+thought about twice before it is written down once. Read the core documents and 311
+across several responses without synthesizing; create the report file with headers
+only; then breadth first — walk 311 section by section and write each suspicion as a
+one-to-three-line stub with its own edit, opening no second front until the current one
+is on disk, pursuing nothing in depth, reading nothing beyond the core documents, until
+the breadth is satisfying; then depth, one stub at a time, in order — dig exactly what
+that stub needs (corpus, neighbours, git history, the one scout where a lane has one),
+elaborate it or mark it considered-and-dead, one edit, then the next; then close with
+small edits. "Reason deeply" appears nowhere in a v4 section.
 
 ### The shared spine (what every lane is told, tuned per lineage)
 
@@ -212,9 +227,13 @@ The rationale is deliberately not encoded in any section.
   Write/Edit/Bash deny rules), was created for the shim path and remains available. The
   human then dispatched both Kimi lanes manually in a separate harness from verbatim
   extractions at `~/Desktop/312cz-prompt-kimi-{n,a}.tmp.md`.
+- v4: `fable-n`, `kimi-n`, and `kimi-a` were rewritten to the ledgered breadth-first
+  method at the human's direction; a fresh `fable-n` was dispatched natively with the v4
+  section, and the desktop extractions for the two Kimi lanes were overwritten with their
+  v4 sections for the human's manual re-dispatch.
 - Reports are committed by pathspec as each lands, one per commit, after
-  `mise run slugs`; the kit is committed as dispatched, and the human intends to reorder
-  history so it precedes the reports once everything is quiet.
+  `mise run slugs`; the kit is committed as dispatched (v3 first, then v4), and the human
+  intends to reorder history so the kit precedes the reports once everything is quiet.
 
 ---
 
@@ -242,18 +261,19 @@ list of real-world ops facts that have killed earlier designs — the model unde
 was shaped against it, so a gotcha it handles is nothing and a gotcha it mishandles is
 something.
 
-Under review: `Research/notes/311-identity-and-relation-model.md` at commit
-`6b7108b4ccabc3d961508d98a563ebc06616623b` — verify `git rev-parse HEAD` first, and again
-at the end; if it moved, say so in the report. Another team produced this document across
-a series of design sittings with the project's owner, revised it fifty-three times, and
-has now declared it stable and frozen: this review is the gate before it is promoted from
-a note to a plan, so what you find now is cheap to fix and what you miss becomes law. It
-is the abstract model of identity across mutually-unknowing authors: the objects,
-relations, warrants, and laws the engine will use to decide whether the piece of the
-world an earlier line's write touched is the piece a later line's license depends on. It
-rules nothing; the root docs and the welds outrank it; its § 4.2 registers the prior
-documents it deliberately contradicts. I did not author it and hold no settled view of
-it. Review it.
+Under review: `Research/notes/311-identity-and-relation-model.md` — verify
+`git rev-parse HEAD` first and again at the end, and record both in the report (it is
+expected to have moved past `6b7108b4ccabc3d961508d98a563ebc06616623b` by commits that
+touch nothing you read; say so if a commit touched the model itself). Another team
+produced this document across a series of design sittings with the project's owner,
+revised it fifty-three times, and has now declared it stable and frozen: this review is
+the gate before it is promoted from a note to a plan, so what you find now is cheap to
+fix and what you miss becomes law. It is the abstract model of identity across
+mutually-unknowing authors: the objects, relations, warrants, and laws the engine will
+use to decide whether the piece of the world an earlier line's write touched is the piece
+a later line's license depends on. It rules nothing; the root docs and the welds outrank
+it; its § 4.2 registers the prior documents it deliberately contradicts. I did not author
+it and hold no settled view of it. Review it.
 
 Three things I care about, in this order. First and mostly: is the model right as
 written — self-consistent, without oversights, its subtleties actually holding — judged by
@@ -294,23 +314,40 @@ already on record, that is a good signal: nod, drop a footnote, and move to the 
 Not because a covered flaw is unimportant, but because your time buys the most where
 nobody has looked.
 
-Work in this order, and do not skip ahead:
+The one law of your method: nothing is thought about twice before it is written down
+once. Every suspicion, objection, dead end, or note goes into your report file the moment
+it occurs to you — one Edit call — and you may not consider a second front until the
+first is on disk. Never attempt to think through the whole document in one response: the
+harness kills any single response past 64,000 output tokens, your thinking included, and
+everything in it is lost. Short responses, many of them.
+
+Work in this order:
 
 1. Read the core documents — root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
    `USER_STORY.md`, `AGENTS.md`, `KNOBS.md`, `spike/CLAUDE.md`, `Research/GOTCHAS.md` — and
-   then the model, in whole.
-2. Reason deeply. Then create your report file at
-   `Research/notes/312ca-identity-model-crosscheck-fable-n.md` and write it: empty section
-   headers for whatever you will want — findings, dead ends, opinions, coverage — and
-   under them your suspicions and initial findings, fully elaborated, from reasoning over
-   the model and those core documents alone. Nothing else is open yet.
-3. Only then dig: `Research/README.md` maps the corpus; the neighbours above; the model's
-   own history (`git log -p --follow` on its path is a first-class instrument here);
-   anything else you want, and at most one sonnet-tier scout for search, location, and
-   excerpting only — it must not synthesize or opine. Compare and contrast; square each
-   suspicion against the design's history and against reality.
-4. Update the same file into your full and final report. Dead ends stay in it, marked
-   considered-and-dead.
+   then the model, in whole, across several responses. Do not synthesize while reading.
+   As soon as the reads are done, create your report file at
+   `Research/notes/312ca-identity-model-crosscheck-fable-n.md` with only its section
+   headers (one Write, well under 200 lines): suspicions · findings · considered-and-dead
+   · coverage · overall.
+2. Breadth first. Walk the model section by section, and `Research/GOTCHAS.md` entry by
+   entry if it helps, and for each suspicion that occurs to you write a stub into the file
+   with one Edit — a slug of three or more words, the section slug, one or two sentences —
+   and stop that thought there. Then the next. Pursue nothing in depth, read nothing
+   beyond the core documents, and open no second front before the current one is on
+   disk. Continue until you are satisfied with the breadth of the investigation, not
+   before.
+3. Depth, one stub at a time, in order. For each: dig exactly what it needs —
+   `Research/README.md` maps the corpus; the neighbours above; the model's own history
+   (`git log -p --follow` on its path is a first-class instrument here); at most one
+   sonnet-tier scout, for search, location, and excerpting only, never synthesis — then
+   either elaborate the stub into a full finding (the book in plain sh, the world, the
+   model's reading, why it is wrong or forced and whose true statement it rests on, the
+   smallest repair) or move it to considered-and-dead with one line saying why. One
+   item, one Edit, then the next.
+4. Close with small Edits: order the findings by the two weightings above (kind first,
+   consequence second), fill coverage (which sections you checked), and write a short
+   overall assessment.
 
 Rules, few and real: never read any path containing `quarantine-DO-NOT-READ` or
 `corpora`, nor any file whose name begins with `29`, and keep your scout out of them:
@@ -320,13 +357,11 @@ cannot read files, write your one file, or run read-only git, stop and say so; w
 is optional, and a load-bearing claim about what a real tool does that you cannot check is
 marked `-GUESS`, never asserted from memory.
 
-The final report: findings ordered by the two weightings above (kind first, consequence
-second), each with a slug of three or more words, the section slug(s) at issue, your
-confidence (`+SURE` / `~SUSPECT` / `-GUESS`), the sh, the model's reading, and the smallest
-repair direction you see; the considered-and-dead entries; coverage (which sections you
-checked); and a short overall assessment. Cite only documents that exist in the tree. Do
-not commit. Your final message: the report path, HEAD at start and end, and a
-one-paragraph headline.
+The final report: each finding with a slug of three or more words, the section slug(s) at
+issue, your confidence (`+SURE` / `~SUSPECT` / `-GUESS`), the sh, the model's reading, and
+the smallest repair direction; the considered-and-dead entries; coverage; the overall
+assessment. Cite only documents that exist in the tree. Do not commit. Your final
+message: the report path, HEAD at start and end, and a one-paragraph headline.
 === END DISPATCH: fable-n ===
 
 === DISPATCH: fable-a | mode=review | base=6b7108b4ccabc3d961508d98a563ebc06616623b ===
@@ -801,14 +836,15 @@ that identity question across authors who have never met: sorts, schemes, keys, 
 referents, warrants, a `compare()` chokepoint with four answers (SAME, DISJOINT,
 KNOWN_UNSPOKEN, UNKNOWN), the readset/writeset test, perishing, and the committee law of
 who must say what. Another team produced it across design sittings with the project's
-owner, revised it fifty-three times, and has now declared it stable and frozen at commit
-`6b7108b4ccabc3d961508d98a563ebc06616623b` (assert `git rev-parse HEAD` equals that at the
-start and the end, and say so): this review is the gate before it is promoted from a note
-to a plan, so what you find now is cheap to fix and what you miss becomes law. By its own
-header it rules nothing, the root documents and the welds outrank it, and its § 4.2
-registers the prior documents it deliberately contradicts. Its scope is abstract objects
-and relations only: no syntax, no spellings, no UX, no implementation. Assess it as
-design, without assuming it is self-validating.
+owner, revised it fifty-three times, and has now declared it stable and frozen. Record
+`git rev-parse HEAD` at the start and the end of your work in the report; the document
+itself was frozen at `6b7108b4ccabc3d961508d98a563ebc06616623b`, and later commits touch
+only review reports — say so if one touched the model. This review is the gate before
+the model is promoted from a note to a plan, so what you find now is cheap to fix and
+what you miss becomes law. By its own header it rules nothing, the root documents and the
+welds outrank it, and its § 4.2 registers the prior documents it deliberately
+contradicts. Its scope is abstract objects and relations only: no syntax, no spellings,
+no UX, no implementation. Assess it as design, without assuming it is self-validating.
 
 The model's own law is the test (§ 0): the true answer is reachable once those who can
 know have spoken; where nobody has spoken, it declines; it never reaches a false answer
@@ -856,29 +892,43 @@ Out of scope, so not findings: syntax, spellings, UX, and implementation (the sp
 Rust code implements the predecessor model and is not the target); market fit, corpus
 measurement, and whole-system soundness-totalism (settled by `DESIGN.md`).
 
-Work in this order, and do not skip ahead:
+The one law of your method: nothing is thought about twice before it is written down
+once. Every suspicion, objection, dead end, or note goes into your report file the moment
+it occurs to you — one edit — and you may not consider a second front until the first is
+on disk. Never attempt to think through the whole model in one response: your harness
+kills any single response past its output cap, your thinking included, and everything in
+it is lost. Short responses, many of them.
 
-1. Read the core documents, fully: root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
-   `USER_STORY.md`; `AGENTS.md` (its terminology-firming section bridges the older
-   "kind"/"entity" vocabulary to this model's mSort/mKey), `KNOBS.md`, `spike/CLAUDE.md`
-   (the invariants: `compare-consumer-map`, `never-derive-separation`,
-   `silence-licenses-nothing`, `set-lifting-universal-meet`, `top-identifies-with-nothing`,
-   and the rest); `Research/GOTCHAS.md` (the project's list of real-world ops facts that
-   killed earlier designs; the model was shaped against it, so a gotcha it handles is not
-   a finding and a gotcha it mishandles is) — and then 311, in whole, twice.
-2. Reason deeply. Then create your report file at
-   `Research/notes/312ce-identity-model-crosscheck-kimi-n.md` and write it: empty section
-   headers for whatever you will want — findings, dead ends, opinions, coverage — and
-   under them your suspicions and initial findings, fully elaborated, from reasoning over
-   311 and those core documents alone. Nothing else is open yet.
-3. Only then dig: `Research/README.md` maps the corpus; the neighbours 311 contradicts or
-   touches (`Research/plans/30U`, `30W`, `30T`, `27C`, `30S`; `Research/notes/272`, `277`,
-   `275`; `ANALYZER-NEEDS.md`; `ORACLE_PROVIDES.md`); the model's own history
-   (`git log -p --follow` on its path is a first-class instrument here); anything else you
-   want. Compare and contrast; square each suspicion against the design's history and
-   against reality.
-4. Update the same file into your full and final report. Dead ends stay in it, marked
-   considered-and-dead.
+Work in this order:
+
+1. Read the core documents, fully, across several responses: root `README.md`,
+   `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`; `AGENTS.md` (its terminology-firming
+   section bridges the older "kind"/"entity" vocabulary to this model's mSort/mKey),
+   `KNOBS.md`, `spike/CLAUDE.md` (the invariants: `compare-consumer-map`,
+   `never-derive-separation`, `silence-licenses-nothing`, `set-lifting-universal-meet`,
+   `top-identifies-with-nothing`, and the rest); `Research/GOTCHAS.md` (the project's list
+   of real-world ops facts that killed earlier designs; the model was shaped against it,
+   so a gotcha it handles is not a finding and a gotcha it mishandles is) — and then 311,
+   in whole. Do not synthesize while reading. As soon as the reads are done, create your
+   report file at `Research/notes/312ce-identity-model-crosscheck-kimi-n.md` with only its
+   section headers (one write, well under 200 lines): suspicions · findings ·
+   considered-and-dead · coverage · overall.
+2. Breadth first. Walk 311 section by section, and `Research/GOTCHAS.md` entry by entry
+   if it helps, and for each suspicion that occurs to you write a stub into the file with
+   one edit — a slug of three or more words, the section slug, one or two sentences — and
+   stop that thought there. Then the next. Pursue nothing in depth, read nothing beyond
+   the core documents, and open no second front before the current one is on disk.
+   Continue until you are satisfied with the breadth of the investigation, not before.
+3. Depth, one stub at a time, in order. For each: dig exactly what it needs —
+   `Research/README.md` maps the corpus; the neighbours 311 contradicts or touches
+   (`Research/plans/30U`, `30W`, `30T`, `27C`, `30S`; `Research/notes/272`, `277`, `275`;
+   `ANALYZER-NEEDS.md`; `ORACLE_PROVIDES.md`); the model's own history
+   (`git log -p --follow` on its path is a first-class instrument here) — then either
+   elaborate the stub into a full finding in the shape below, or move it to
+   considered-and-dead with one line saying why. One item, one edit, then the next.
+4. Close with small edits: order the findings by KIND then CONSEQUENCE then severity,
+   fill the coverage table (which sections of 311 you checked), and write a short overall
+   assessment.
 
 If you cannot read files, write your one file, or run read-only git, or the files named
 above do not exist, STOP and say so; never review from memory of similar projects. Web
@@ -886,8 +936,7 @@ search is authorized if your harness provides it, to check what a real tool actu
 does; its absence is not a failure and must not stop the review, and a load-bearing
 tool-behaviour claim you cannot check is marked `-GUESS`, never asserted from memory.
 
-The final report opens with the HEAD you verified. Use at most 15 findings, ordered by
-KIND then CONSEQUENCE then severity, each in this shape:
+The finding shape (at most 15 findings in the final report):
 
 - `### <slug of three or more words>`
 - kind: `as-written` | `squares-badly` | `lost-in-churn`
@@ -903,10 +952,8 @@ KIND then CONSEQUENCE then severity, each in this shape:
 - repair: the smallest direction you see
 
 Cite only documents that exist in the tree. Separate verified findings from suspected
-concerns. End with a coverage table (which sections of 311 you checked), strong properties
-that held, and the considered-and-dead entries. Never claim to have executed anything you
-did not. Do not commit. Your final message: the report path, HEAD at start and end, and a
-one-paragraph headline.
+concerns. Never claim to have executed anything you did not. Do not commit. Your final
+message: the report path, HEAD at start and end, and a one-paragraph headline.
 === END DISPATCH: kimi-n ===
 
 === DISPATCH: kimi-a | mode=review | base=6b7108b4ccabc3d961508d98a563ebc06616623b ===
@@ -939,19 +986,20 @@ ugly, and bring it in the plainest ops-sh you can write, because the argument I 
 win is with people who fix servers for a living and have no patience for anyone's private
 words.
 
-The document is `Research/notes/311-identity-and-relation-model.md` at commit
-`6b7108b4ccabc3d961508d98a563ebc06616623b` (assert `git rev-parse HEAD` equals that at the
-start and the end, and say so). It is the identity model for "Dorc", a static-analysis
-orchestrator for ops work whose runbooks ("books", admin-authored) and tool-descriptions
-("oracles", engineer-authored) are spelled in idiomatic POSIX sh, and whose product is
-removing a line from a plan — or guarding it — only on connected, attributed claims: a
-read-only probe measured the state, an author vouched the measured state means the line is
-unnecessary, and no line that really runs in between could have destroyed the claim. The
-model decides that last clause: whether the piece of the world an earlier write touched
-is the piece a later license depends on. SAME feeds transport (one fact stands for
-another); DISJOINT feeds sparing (a license survives a write); both under-execute when
-wrong, and the wrongly-removed line is the project's cardinal sin. UNKNOWN is safe for
-both.
+The document is `Research/notes/311-identity-and-relation-model.md`. Record
+`git rev-parse HEAD` at the start and the end of your work in the report; the document
+was frozen at `6b7108b4ccabc3d961508d98a563ebc06616623b`, and later commits touch only
+review reports — say so if one touched the model. It is the identity model for "Dorc", a
+static-analysis orchestrator for ops work whose runbooks ("books", admin-authored) and
+tool-descriptions ("oracles", engineer-authored) are spelled in idiomatic POSIX sh, and
+whose product is removing a line from a plan — or guarding it — only on connected,
+attributed claims: a read-only probe measured the state, an author vouched the measured
+state means the line is unnecessary, and no line that really runs in between could have
+destroyed the claim. The model decides that last clause: whether the piece of the world an
+earlier write touched is the piece a later license depends on. SAME feeds transport (one
+fact stands for another); DISJOINT feeds sparing (a license survives a write); both
+under-execute when wrong, and the wrongly-removed line is the project's cardinal sin.
+UNKNOWN is safe for both.
 
 They revised it fifty-three times, and now it is frozen and queued for promotion from a
 note to a plan — after which it is law, and anything you miss is ours to live with. It has
@@ -970,7 +1018,7 @@ host. Find the real breaks, each backed by the model's exact text.
 Attack with the model's own law as the knife: construct a world and a book where every
 appointed party's statement is true and the model answers wrong; where the true answer is
 unreachable however many people speak; where two of the model's own paths to one referent
-disagree; where a real ops fact has no seat in the model. Reason across the seams: where
+disagree; where a real ops fact has no seat in the model. Look across the seams: where
 two locally-right rules compose wrong; where one rule's default is safe alone and unsafe
 next to another rule's default; where a rule stated for one mScheme, one level, or one
 instance quietly assumes something about another. Do not manufacture faults: try to
@@ -1015,33 +1063,49 @@ Out of scope, so not findings: syntax, spellings, UX, and implementation (the sp
 Rust code implements the predecessor model and is not the target); market fit, corpus
 measurement, and whole-system soundness-totalism (settled by `DESIGN.md`).
 
-Work in this order, and do not skip ahead:
+The one law of your method: nothing is thought about twice before it is written down
+once. Every suspicion, attack, dead end, or note goes into your report file the moment it
+occurs to you — one edit — and you may not consider a second front until the first is on
+disk. Never attempt to think through the whole model in one response: your harness kills
+any single response past its output cap, your thinking included, and everything in it is
+lost. Short responses, many of them.
 
-1. Read the core documents, fully: root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
-   `USER_STORY.md`; `AGENTS.md` (its terminology-firming section bridges the older
-   "kind"/"entity" vocabulary to mSort/mKey; its exclusion-check — flip product, phase,
-   direction, hat, reliability, the unaware user — is a good instrument), `KNOBS.md`,
-   `spike/CLAUDE.md` (the invariants: `compare-consumer-map`, `never-derive-separation`,
-   `silence-licenses-nothing`, `set-lifting-universal-meet`, `top-identifies-with-nothing`,
-   and the rest); `Research/GOTCHAS.md` (the project's list of real-world ops facts that
-   killed earlier designs; the model was shaped against it, so a gotcha it handles is
-   nothing and a gotcha it mishandles is a kill) — and then 311, in whole, twice.
-2. Reason deeply. Then create your report file at
-   `Research/notes/312cf-identity-model-crosscheck-kimi-a.md` and write it: empty section
-   headers for whatever you will want — findings, dead ends, opinions, coverage — and
-   under them your suspicions and initial attacks, fully elaborated, from reasoning over
-   311 and those core documents alone. Nothing else is open yet.
-3. Only then dig: `Research/README.md` maps the corpus; the neighbours 311 contradicts or
-   touches (`Research/plans/30U`, `30W`, `30T`, `27C`, `30S`; `Research/notes/272`, `277`,
-   `275`; `ANALYZER-NEEDS.md`; `ORACLE_PROVIDES.md`); the model's own history
-   (`git log -p --follow` on its path is a first-class instrument here); anything else you
-   want. Compare and contrast; square each attack against the design's history and
-   against reality.
-4. Update the same file into your full and final report. Dead ends stay in it, marked
-   considered-and-dead.
+Work in this order:
 
-Minimum attack coverage before concluding (an attempted category may end
-considered-and-dead; coverage is mandatory, findings are not):
+1. Read the core documents, fully, across several responses: root `README.md`,
+   `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`; `AGENTS.md` (its terminology-firming
+   section bridges the older "kind"/"entity" vocabulary to mSort/mKey; its
+   exclusion-check — flip product, phase, direction, hat, reliability, the unaware user —
+   is a good instrument), `KNOBS.md`, `spike/CLAUDE.md` (the invariants:
+   `compare-consumer-map`, `never-derive-separation`, `silence-licenses-nothing`,
+   `set-lifting-universal-meet`, `top-identifies-with-nothing`, and the rest);
+   `Research/GOTCHAS.md` (the project's list of real-world ops facts that killed earlier
+   designs; the model was shaped against it, so a gotcha it handles is nothing and a
+   gotcha it mishandles is a kill) — and then 311, in whole. Do not synthesize while
+   reading. As soon as the reads are done, create your report file at
+   `Research/notes/312cf-identity-model-crosscheck-kimi-a.md` with only its section
+   headers (one write, well under 200 lines): attacks · findings · considered-and-dead ·
+   coverage · verdict.
+2. Breadth first. Walk 311 section by section, `Research/GOTCHAS.md` entry by entry, and
+   the coverage list below item by item, and for each attack that occurs to you write a
+   stub into the file with one edit — a slug of three or more words, the section slug, one
+   or two sentences — and stop that thought there. Then the next. Pursue nothing in
+   depth, read nothing beyond the core documents, and open no second front before the
+   current one is on disk. Continue until you are satisfied with the breadth of the
+   investigation, not before.
+3. Depth, one stub at a time, in order. For each: dig exactly what it needs —
+   `Research/README.md` maps the corpus; the neighbours 311 contradicts or touches
+   (`Research/plans/30U`, `30W`, `30T`, `27C`, `30S`; `Research/notes/272`, `277`, `275`;
+   `ANALYZER-NEEDS.md`; `ORACLE_PROVIDES.md`); the model's own history
+   (`git log -p --follow` on its path is a first-class instrument here) — then either
+   elaborate the stub into a full finding in the shape below, or move it to
+   considered-and-dead with one line saying why. One item, one edit, then the next.
+4. Close with small edits: order the findings by KIND then CONSEQUENCE then severity,
+   fill the attack-coverage table against the list below, and write a blunt overall
+   verdict.
+
+Minimum attack coverage (an attempted category may end considered-and-dead; coverage is
+mandatory, findings are not):
 
 - one attempt at a wrong SAME: two referents the model's positive statements make one;
 - one attempt at a wrong DISJOINT: a write that reaches a referent the model spares past;
@@ -1061,8 +1125,7 @@ search is authorized if your harness provides it, to check what a real tool actu
 does; its absence is not a failure and must not stop the review, and a load-bearing
 tool-behaviour claim you cannot check is marked `-GUESS`, never asserted from memory.
 
-The final report opens with the HEAD you verified. Use at most 15 findings, ordered by
-KIND then CONSEQUENCE then severity, each in this shape:
+The finding shape (at most 15 findings in the final report):
 
 - `### <slug of three or more words>`
 - kind: `as-written` | `squares-badly` | `lost-in-churn`
@@ -1078,8 +1141,7 @@ KIND then CONSEQUENCE then severity, each in this shape:
 - repair: the smallest direction you see
 
 Cite only documents that exist in the tree. Label each finding a design flaw, a design
-concern, or an open question. End with attack coverage against the list above, the
-considered-and-dead entries (each failed attack in one line, with why), and a blunt
-overall verdict. Never claim to have executed anything you did not. Do not commit. Your
-final message: the report path, HEAD at start and end, and a one-paragraph headline.
+concern, or an open question. Never claim to have executed anything you did not. Do not
+commit. Your final message: the report path, HEAD at start and end, and a one-paragraph
+headline.
 === END DISPATCH: kimi-a ===

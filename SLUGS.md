@@ -1078,6 +1078,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
+## 312ca:considered-and-dead
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:20
+- cited: 312cb 312cc 312cd (7)
+
 ## constraint-adversarial-review-belongs-to-round-close
 - defined: —
 - cited: 30Ia 30K (2)
@@ -1095,7 +1099,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## containment-by-path-prefix-lies
 - defined: —
-- cited: 311t 312cb 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (6)
+- cited: 311t 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (5)
 
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -2651,9 +2655,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311l:fnd-aliases-nothing-else-sited-on-the-child
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:221
 
-## 312cb:fnd-aliasing-stores-forfeit-every-container-and-nfs-home
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:530
-
 ## 28O:fnd-ambient-bind-outranked-the-marks-own-coordinate
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:130
 
@@ -2715,9 +2716,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28L:fnd-case-frontmatter-overwrites-lock-metadata
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:404 — (X2a, +SURE) — a new
 
-## 312cb:fnd-cells-of-one-parent-never-separate-or-separate-on-a-warrant-nobody-holds
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:178
-
 ## 28L:fnd-class-b-is-one-hundred-components
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:851 — (x2g at the merged state, +SURE
 
@@ -2749,7 +2747,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 305a 307c (4)
 
 ## 312cb:fnd-correspondence-speaks-across-worlds-from-one-vantage
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:386
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:256
 
 ## 28R:fnd-corroborated-literal-plane-only
 - defined: Research/notes/28R-context-kernel-review.md:41 — (+SURE as corroboration) — three independent
@@ -2849,7 +2847,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28S-authorship-arc-close-ledger.md:37 — — the byte-identity lock gates do NOT catch a
 
 ## 312cb:fnd-flat-perishing-eats-the-package-vocabulary
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:324
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:139
 
 ## 30Qc:fnd-frames-are-subshell-scopes
 - defined: Research/notes/30Qc-load-plane-lane-report.md:780 — — the CONFIRM ruling 1 demanded
@@ -2860,9 +2858,6 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:fnd-hash-munge-has-no-reachable-input-today-and-is-built-anyway
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:429
-
-## 312cb:fnd-held-in-is-said-twice-and-checked-never
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:273
 
 ## 30Ba:fnd-hole-number-counts-files-not-holes
 - defined: Research/notes/30Ba-minispec-review-neutral.md:466 — (+SURE)
@@ -2900,8 +2895,8 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28O:fnd-legacy-short-kinds-in-binds
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:164
 
-## 312cb:fnd-lend-sentinel-closes-an-open-universe
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:229
+## 312cb:fnd-lend-sentinel-mints-same-past-a-stranger-and-the-net-does-not-catch-it
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:67
 
 ## 28R:fnd-lifecycle-contagion-vs-statelessness
 - defined: Research/notes/28R-context-kernel-review.md:97 — (~SUSPECT; CHECK-ITEM; full-read
@@ -2957,12 +2952,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-nonvacuity-probe-is-a-naming-convention
 - defined: Research/notes/30Ba-minispec-review-neutral.md:219 — (+SURE)
 
-## 312cb:fnd-observer-independence-is-quadratic-speech
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:127
-
 ## 311l:fnd-observer-sorts-must-be-enumerated
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:299
-- cited: 311p (1)
+- cited: 311p 312cb (2)
 
 ## fnd-oob-astids-reached-a-panicking-read
 - defined: —
@@ -3039,6 +3031,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 302 303 307b (3)
 
+## 312cb:fnd-refuted-shapes-live-only-in-git
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:388
+
 ## fnd-region-guard-economics-are-a-population-property
 - defined: —
 - cited: 30N 30Nc (2)
@@ -3051,10 +3046,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:155 — (+SURE)
 
 ## 312cb:fnd-region-test-quantifies-over-an-absent-traversal
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:437
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:202
 
-## 312cb:fnd-region-test-walks-only-one-side
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:570
+## 312cb:fnd-register-omits-the-as-built-sparing-algebra
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:349
 
 ## 28L:fnd-registry-words-escape-the-ascii-law
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:691 — (x2c) — `⊤` in
@@ -3087,8 +3082,8 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-root-module-names-a-deleted-unit
 - defined: Research/notes/30Ba-minispec-review-neutral.md:243 — (+SURE about the file; ~SUSPECT about the build)
 
-## 312cb:fnd-rootness-has-no-smaller-scope-to-retreat-to
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:485
+## 312cb:fnd-route-examples-foreclose-the-acked-repair
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:302
 
 ## 30Ba:fnd-seat-citation-ignores-everything-between
 - defined: Research/notes/30Ba-minispec-review-neutral.md:136 — (+SURE)
@@ -3105,12 +3100,12 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Md (2)
 
+## 312cb:fnd-sentinel-posture-inverts-thirty-s
+- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:373
+
 ## 311l:fnd-sentinel-rests-on-a-privileged-read
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:285
 - cited: 311p (1)
-
-## 312cb:fnd-separation-dies-at-the-route
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:17
 
 ## 311l:fnd-shape-is-not-a-function-of-bytes
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:271
@@ -3157,9 +3152,6 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311l:fnd-supply-modes-survive-their-own-retraction
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:161
-
-## 312cb:fnd-survival-attribution-omits-the-correspondence
-- defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:92
 
 ## fnd-survival-footprint-lane-scans-forward
 - defined: —
@@ -5071,7 +5063,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28T:post-survival-is-the-product
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:35 — — the elide-half/survival lane is the CORE product
-- cited: KNOBS (1)
+- cited: 312cb KNOBS (2)
 
 ## 28T:post-two-plane-firewall
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:28 — — license plane and narrative/aid plane are two consumers
@@ -5277,7 +5269,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:pure-predicate-carry
 - defined: spike/CLAUDE.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
-- cited: 27Xf 300 308 312cb (6)
+- cited: 27Xf 300 308 (5)
 
 ## q-entry-economics
 - defined: —
@@ -6520,7 +6512,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312cb (21)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c (19)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -6998,6 +6990,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-positive-speech-only
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:74 — — authors owe POSITIVE speech only: pins name what a
+- cited: 312cb (2)
 
 ## 271:rul-posix-in-spirit-defaults
 - defined: Research/plans/271-block-settle-rulings-ledger.md:764 — (task 12; 2026-07-12; TYPED — "find the POSIX
@@ -7451,7 +7444,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-the-outside-rule-with-the-alias-closure
 - defined: —
-- cited: 311t 312cc (3)
+- cited: 311t 312cb 312cc (4)
 
 ## 30Qb:rul-the-planner-answers-questions-it-does-not-schedule
 - defined: Research/notes/30Qb-emission-planner-lane-report.md:67
@@ -7493,6 +7486,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-transport-wall-alone-is-banned
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:61 — — the fence may never ship as the whole
+- cited: 312cb (1)
 
 ## rul-tree-render-is-a
 - defined: —
@@ -8057,7 +8051,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312cc (9)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312cb 312cc (10)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
