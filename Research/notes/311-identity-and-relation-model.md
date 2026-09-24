@@ -30,7 +30,7 @@
 - A blockquote under a heading is non-normative. It names a false friend from a neighbouring
   field, or a name the object carried before this document.
 
-## § 0 the-problem-and-the-law
+## § 0-the-problem-and-the-law
 
 Dorc removes a line only on connected claims that the line is unnecessary: a measurement claimed
 before anything runs, plus an author's vouch. An earlier line that really runs can destroy the
@@ -51,9 +51,9 @@ spoken. Where nobody has spoken, the model declines to answer. The model never r
 answer while every statement behind it is true. A wrong answer with no false statement behind
 it refutes the model. Who must say what is §3.5.
 
-## § 1 the-model-objects
+## § 1-the-model-objects
 
-### § 1.1 referent-state-and-value
+### § 1.1-referent-state-and-value
 
 An mReferent is a persisting piece of the world that has state. Examples: an inode, a database
 row, a package record, a kernel parameter, a running process, a machine, a mount table.
@@ -88,7 +88,7 @@ are three kinds:
 An mValue is what a read yields from an mState. It is never the mState. Two reads of one
 mReferent at two instants may yield two mValues.
 
-### § 1.2 sort-the-declared-carrier
+### § 1.2-sort-the-declared-carrier
 
 > Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents
 > write *kind*.
@@ -118,7 +118,7 @@ An mSort has no mKeys and no `resolve()`. It is never valid where an mScheme is.
 only when something is declared about it as a whole. The floor of §1.3 lets an mScheme precede
 its mSort's name.
 
-### § 1.3 scheme-a-way-of-writing
+### § 1.3-scheme-a-way-of-writing
 
 > A term language over a carrier. Never itself an mSort.
 
@@ -144,7 +144,7 @@ as a whole.
 There is no default mScheme. A bind or a mark always names an mScheme. A mark of the form
 `parent-key@sm.Sort` names the mParent's mScheme and the singleton's mSort (§1.9).
 
-### § 1.4 key-and-its-two-views
+### § 1.4-key-and-its-two-views
 
 > RDBMS primary key and natural key, with their culture: the natural key is user-typed, may
 > alias, and is never identity. The primary key is what the store answers with. Pre-311
@@ -174,7 +174,7 @@ Two derived views:
 
 The two views coincide when an mSort's only mScheme is its primary mScheme.
 
-### § 1.5 token-and-the-two-warrants
+### § 1.5-token-and-the-two-warrants
 
 > OWL's inverse-functional and functional properties, spelled out by direction.
 
@@ -211,7 +211,7 @@ is checked as the first entry is. The closure and the per-shape warrant are two 
 region test (§2.9) consumes the closure. A hardlink or a bind mount is where the closure is
 withheld.
 
-### § 1.6 parent-one-per-key
+### § 1.6-parent-one-per-key
 
 Every mKey has exactly one mParent: the mKey it was resolved inside. An mKey may carry further
 routes, one per other lookup that reached it (§2.10). None of them is its mParent. What the
@@ -247,7 +247,7 @@ A shape with no `:identified-in` is scoped in the mRoute (§1.10). A mRoot is a 
 DNS mRoot, or a cloud instance-id whose issuer never repeats one. Nothing is a mRoot by default.
 Cloned identifiers are the standing witness.
 
-### § 1.7 resolution-and-its-traversal
+### § 1.7-resolution-and-its-traversal
 
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
 p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
@@ -259,7 +259,7 @@ A mResolution perishes under ordinary effective-mWorld reach from any mutator wh
 touches a mTraversal member. Its target object is not its backing. An mKey can stop reaching an
 object without the object changing. An object can change without its mKey changing.
 
-### § 1.8 fully-qualified-key-topic-and-derivation
+### § 1.8-fully-qualified-key-topic-and-derivation
 
 A mFullyQualifiedKey is the recursive identity of an mKey: its mKey-Primary scoped in its
 mParent, whose identity is itself a mFullyQualifiedKey through the mParent's own primary
@@ -274,7 +274,7 @@ mSort is observer-dependent (§2.8). A mTopic may carry several mDerivations wit
 generators: its mFullyQualifiedKey, a provider-supplied identifier, or a mCorrespondence from a
 transition owner (§2.7). mDerivations combine by coherence (§3.2), never by priority.
 
-### § 1.9 cell-a-singleton-sort
+### § 1.9-cell-a-singleton-sort
 
 > Pre-311 documents write *aspect*.
 
@@ -296,7 +296,7 @@ Two cells of one mParent are two mSorts, with two may-read sets and two
 naming the mParent whole covers its cells (§2.9, §3.2). The marked line that answers a cell is a
 read of the cell's mKey. The fact's identity is the mTopic (§1.8).
 
-### § 1.10 vantage-route-placeholder-witness
+### § 1.10-vantage-route-placeholder-witness
 
 A mVantage is the address a probe reached an mReferent from: the mEntryChain, a finite map from
 mParent-Catalog mSorts to the instances wrappers lent (§3.4). It is not part of any mKey's
@@ -318,7 +318,7 @@ through the same entry and `compare()`s the two. That re-read is the `witness()`
 integrity, never a verdict input. The `witness()` cannot see a recycled mKey, such as a reissued
 pid or inode. That stays on the outside-churn horizon.
 
-### § 1.11 site-and-claim-species
+### § 1.11-site-and-claim-species
 
 A mSite is within a book line. It has an argv, an mEntryChain, and a program point. Speech at or
 about a mSite has one author per claim. The claim species are:
@@ -335,12 +335,12 @@ about a mSite has one author per claim. The claim species are:
 
 Every warrant is typed speech, never an exit status.
 
-## § 2 the-model-relations
+## § 2-the-model-relations
 
 Each relation states its arity, who declares it, its default, which consumer reads it, and which
 warrant makes it dangerous.
 
-### § 2.1 yields-into-another-scheme
+### § 2.1-yields-into-another-scheme
 
 mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort. S's `resolve()`, run
 in the mVantage, maps an mKey of S to an mKey of T. It may supply that mKey's mParent instance
@@ -371,7 +371,7 @@ into files. This is the mechanical net against lazy borrowing.
 - Danger: the lookup warrants. A wrong yield or a wrong supplied instance is a wrong SAME or
   DISJOINT, attributed to the yield.
 
-### § 2.2 primary-of-and-identified-in
+### § 2.2-primary-of-and-identified-in
 
 > ER's identifying relationship. Identifying is not containing.
 
@@ -405,7 +405,7 @@ two different mTokens.
 - Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:rootness`, per
   matched shape.
 
-### § 2.3 aliases-nothing-else-the-store-warrant
+### § 2.3-aliases-nothing-else-the-store-warrant
 
 A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own
 construction, also identified in another store. The store gives its own mKeys to no other
@@ -428,7 +428,7 @@ dissolves it.
 - Consumer: DISJOINT (§3.2).
 - Danger: an aliasing store declared `:aliases-nothing-else` is a wrong DISJOINT.
 
-### § 2.4 parent-as-a-relation
+### § 2.4-parent-as-a-relation
 
 `:parent` is one per mKey (§1.6): never plural, never a species of its own. Its mSort is the
 primary mScheme's declaration for the matched shape. Its instance is whichever seat supplied
@@ -441,7 +441,7 @@ composes. A mVantage supplies instances and is never an mParent.
 - Consumer: routing, through a secondary mScheme. Identity, through the primary mScheme.
 - Danger: none of its own.
 
-### § 2.5 may-read-the-readset
+### § 2.5-may-read-the-readset
 
 > Separation logic's footprint, at the read side: the mReferents an answer may depend on.
 
@@ -478,7 +478,7 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 - Danger: none positive. Omission is the silent channel. The closed set is one of sparing's two
   closures.
 
-### § 2.6 may-write-the-writeset
+### § 2.6-may-write-the-writeset
 
 A line's writeset is the at-most set of mKeys it may write. It is the may-write entries the
 verb's author declared per matched shape (the footprint of `plans/30U`), closed by the
@@ -517,7 +517,7 @@ across mRoutes or mRoots (§3.2).
 - Consumer: the write-path question above, within one mWorld. Never a generator of DISJOINT.
 - Danger: the premature finished record.
 
-### § 2.7 corresponds-across-a-transition
+### § 2.7-corresponds-across-a-transition
 
 > A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is
 > not it.
@@ -538,7 +538,7 @@ sameness generator besides mToken equality.
 - Consumer: a SAME mDerivation (§1.8), vouch-tier, attributed to the transition author.
 - Danger: a wrong mCorrespondence is a wrong SAME.
 
-### § 2.8 observer-dependence-and-independence
+### § 2.8-observer-dependence-and-independence
 
 The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken
 under. K's owner declares the complement, `:observer-independence` of O, per mSort. By default,
@@ -554,7 +554,7 @@ It must remain speech. Measurement in the denoted context (`plans/27C`) stays th
 - Consumer: the SAME consumer, as a qualifier on the claim's mTopic.
 - Danger: a false independence.
 
-### § 2.9 hierarchical-and-the-region-test
+### § 2.9-hierarchical-and-the-region-test
 
 An mScheme is `:hierarchical` when its lookups name, as the mParent-Catalog of what they yield,
 an mKey of the same mScheme or of an mScheme that in turn feeds it. Examples: a path yields a
@@ -600,7 +600,7 @@ alias entry above a leaf. A leaf's own closure cannot see it.
 - Consumer: mResolution backings (§1.7), hence perishing (§3.3), and the region test.
 - Danger: none. Finer buys sparing. Coarse is safe.
 
-### § 2.10 places-the-upward-lookup
+### § 2.10-places-the-upward-lookup
 
 An mSort G may declare that it `:places` another mSort T. G's owner publishes a lookup that is
 invoked with the mValue of an mKey of T. Its matched shapes decide which spellings of T it
@@ -633,7 +633,7 @@ entailment of §2.6 already carries that as write reach.
 - Consumer: the region test (§2.9), and perishing.
 - Danger: a false `looked-up-in nothing-else` is G's owner's wrong DISJOINT.
 
-### § 2.11 composite-sorts-and-roles
+### § 2.11-composite-sorts-and-roles
 
 A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a
 mCompositeSort. Examples: a base and an overlay, or a primary and its replica set. The author
@@ -647,9 +647,9 @@ mParents. The may-read set of a mCompositeSort is the union of its parts' may-re
 - Consumer: identity (§3.1).
 - Danger: as any mSort.
 
-## § 3 composition-and-laws
+## § 3-composition-and-laws
 
-### § 3.1 identity-of-a-key
+### § 3.1-identity-of-a-key
 
 `identity(k)`, for k an mKey of mScheme S:
 
@@ -665,7 +665,7 @@ plus its mSort (§1.9). An mKey of an observer-dependent mSort carries the O-ins
 mTopic. The mVantage is consulted only to know where to run `resolve()` calls and which ambient
 mParents to bind.
 
-### § 3.2 compare-one-chokepoint-four-answers
+### § 3.2-compare-one-chokepoint-four-answers
 
 > Alias analysis's may/must trichotomy, plus KNOWN_UNSPOKEN for "no generator applies".
 
@@ -724,7 +724,7 @@ is unchanged. Genuinely different mKey-Primaries for one mReferent are two mDeri
 mTopic, reconciled by coherence, never a second mKey inside one mParent. Examples: an NFS
 filehandle and the server's inode, or a machine-id and a cloud instance-id.
 
-### § 3.3 perishing-three-mutator-species
+### § 3.3-perishing-three-mutator-species
 
 Three mutator species invalidate three kinds of fact. In all three, the engine withdraws
 authority. It never computes the successor identity.
@@ -749,7 +749,7 @@ authority. It never computes the successor identity.
   mFullyQualifiedKeys do not are untouched. "Keyed by Boot" and "invariant across Boot" are the
   shape of the mFullyQualifiedKey, not declarations.
 
-### § 3.4 entry-and-lends
+### § 3.4-entry-and-lends
 
 > Dynamic binding: `parameterize`, `fluid-let`.
 
@@ -772,7 +772,7 @@ policy read that declines on departure.
 - Danger: a wrong lend measures the wrong mVantage. The sentinel is an at-most claim over every
   mParent-Catalog mSort.
 
-### § 3.5 committee-law-and-attribution
+### § 3.5-committee-law-and-attribution
 
 Every positive step is one author's line:
 
@@ -803,9 +803,9 @@ Attribution:
   made instances one, and the mCorrespondences.
 - Every perished conclusion names the writeset that perished it.
 
-## § 4 relation-to-other-documents
+## § 4-relation-to-other-documents
 
-### § 4.1 boundary-of-this-model
+### § 4.1-boundary-of-this-model
 
 This model uses, and does not redefine:
 
@@ -826,7 +826,7 @@ The model excludes a selector dialect, an aspect species, an authored region pre
 engine-side name floor, and an engine table that generates SAME. The context slot is a mVantage
 and nothing else.
 
-### § 4.2 supersessions-pending-in-prior-documents
+### § 4.2-supersessions-pending-in-prior-documents
 
 A living register of statements in prior documents that this model contradicts. An entry
 stays until its document is rewritten. Remove an entry when its document catches up. Add an
