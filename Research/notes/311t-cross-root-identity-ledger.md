@@ -1420,3 +1420,44 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   a field in the manager's memory, scoped in the boot, and perishes at reboot; `@enabled` reads a
   symlink inode in a filesystem and survives) dissolve at the definition, with no per-cell
   identity store. The named read's word stays open in the naming file.
+- `fnd-the-freeze-glossary-by-world` (conductor, 2026-09-23; **[HUMAN]**: "still cohering", no
+  ack) — a specification-tier glossary in four worlds (Outside: state a command can observe or
+  change, the executing shell's own variables included; Shell: events, bodies running, strings
+  bound, records emitted, verdicts returned; Text: authored source; Model: plan-time objects),
+  no term in two worlds, the crossings named (Text executes as Shell; Shell reads and writes
+  Outside; Shell is ingested into Model; Model names Outside and never holds it). Its
+  differences from `notes/311`: terminological (the two uses of "value"; mCell into a stored
+  half and a question half; the acked set names; mParent-Store and mParent-Catalog as keys
+  naming what prose calls a store; grain; transparent for spared; the four worlds);
+  functional, each ~SUSPECT: (1) § 2.5 compares "a footprint mKey and a fact's mCell", a key
+  against a question, where the glossary compares Writeset entries against Readset entries
+  only, the question never entering, which is the earlier dissolution of `311p` threads 2 and
+  3; (2) the observer's referents as Readset entries, where § 2.7 makes the observer a topic
+  qualifier only (wider, safe). A third, reserving stored subdivisions to the sort owner, was
+  WITHDRAWN under the nack below. Correction to the glossary's own text: Readset inheritance
+  runs along the identity chain (§ 2.4), never the access path.
+- `fnd-the-standard-split-is-field-against-property` (conductor) — the object languages' field
+  (stored member) against property (accessor computed over fields) is disjoint by construction;
+  for a compiler engineer "field-sensitive" analysis fixes field as a stored member, and
+  "property" in PL means a predicate over states; a property whose name matches a field has it
+  as its backing field; false friends: JavaScript's property covers both, Swift says stored and
+  computed property, Kotlin's property wraps a field. Offered: mField as the stored member,
+  mProperty as the named read.
+- **[HUMAN]** NACK (2026-09-23) on any reading of "field" that means the sorted,
+  themselves-referents entries in a referent that is a store: a first-class, sorted,
+  Dorc-tracked referent is never doubled over by a novel term, whatever tree, chain, or graph
+  of sort-inhabitants it sits in, so that no one graph is privileged over the others. The
+  human's framing, acked by the conductor as coherent: a referent has a type (an mSort) and
+  names (mSchemes); this arc names the things in Outside or Model that are NOT world-values
+  under an mSort, so they are never confused with referent, value, or cell. Consequences
+  (conductor, unacked): mField dies in both senses (a stored subdivision is an ordinary referent
+  of an ordinary sort under its bearer, § 1.9's "one difference of shape"; a site is a may-read
+  entry at a lower store, a tracked referent or nothing); mProperty is the only new tag; mCell
+  retires whole rather than narrowing to a half; "part", "field", "site", "home", and "beneath"
+  as nouns retire; the whole-entry rule restates on relations (a key given whole denotes its
+  referent and every referent whose identity chain or access path passes through it, already
+  § 3.2 plus the folded § 2.8 sentence); the stranger restriction withdrawn (a stranger mints a
+  sort under my bearer like any sort; known-unspoken). Hazard named: `@x` names a referent's
+  key in an entry and a property in a mark; a property's Readset is declared, defaults to
+  unbounded, and is never inferred from a shared name. The naming file still records mField in
+  the site sense, untouched pending the human's word.
