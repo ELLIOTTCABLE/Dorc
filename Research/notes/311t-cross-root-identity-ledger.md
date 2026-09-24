@@ -1494,3 +1494,63 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
 - OPEN: "receiver" for the referent left of `@` (**[HUMAN]** holds it) against the conductor's
   reading that it is the mParent under the confirmed semantics; the human asked why "parent"
   works and whether a second kind of parent hides in `sm.SchemeA:key@sm.SortB`.
+- `fnd-one-kind-of-parent` (conductor; **[HUMAN]** "Okay; acked") — sorts never have parents,
+  keys do; a sort's `:identified-in` declaration constrains the parent's sort per shape and
+  names no instance. `sm.SchemeA:key@sm.SortB` is one link of `:identified-in`, B's own, whose
+  instance the left key supplies after resolution through A's yields, so A is irrelevant beyond
+  being how the author wrote the referent's name, and a left key resolving to the wrong sort is
+  a shape mismatch, refused. The two flavours 311 has (catalog through a secondary scheme,
+  store through the primary) are one edge per key, and a singleton's edge is always the
+  identity kind. What looks like a second parent, where the state is held, is an entry in the
+  sort's may-read set, never a parent (`311t` § 10's minting against holding, and the folded
+  "a parent is no placement" read from the other side). Extension, chat only: for a plural sort
+  under a parent (`sm.Unit:nginx@sm.DropIn`) the same spelling names no key but the set of that
+  sort's referents identified in the parent, a legal entry.
+- CORRECTED (conductor, on the human's objection): "a singleton's scheme" was wrong; nothing
+  yields into a singleton sort and no author types its key. Its key is minted at the mark as
+  (parent instance, sort). 311's letter gives it a degenerate primary scheme (one value, identity
+  lookup) so that "every sort has a primary scheme" holds; that is ceremony and may go at the
+  freeze, with § 1.3's "a bind or a mark always names an mScheme" clarified: a mark of the form
+  `scheme:key@sort` names the parent's scheme and the singleton's sort (~SUSPECT).
+- CORRECTED (conductor; the human's wobbliness strawman): "thread 2 resolves by parenting" was
+  the weaker route, superseded. A file's wobbliness perishes at every boot however the file was
+  named: its parent is the file (any scheme yielding an `sm.File` may sit left of the `@`; the
+  sort declares `:identified-in sm.File`), and its freshness is its sort's may-read set, declared
+  once by the wobbliness describer, naming a referent scoped in the boot; a reboot's footprint
+  names the boot whole, the deep reading collides everything beneath, the fact goes stale, and
+  the topic "wobbliness of F" is the same topic afterward with a new state to measure. So
+  `@sm.UnitActiveness` (held in the manager's memory, in the boot) and `@sm.UnitEnabledness`
+  (held in a symlink, in a filesystem) hang under one unit and a reboot kills one fact and
+  spares the other by their may-read sets alone; no choice of parent is forced on the author.
+  Identity is minting; freshness is holding; one kind of parent. **[HUMAN]**: "Okay; acked."
+- `fnd-the-left-of-at-is-the-parent-instance` (conductor; **[HUMAN]** "Okay", not typed as an
+  ack) — the referent left of `@` is the singleton's mParent (its mParent-Store view); the key
+  written there is the parent instance as § 1.6 defines it, supplied at the bind seat (the mark)
+  as a key of one of the parent's sort's schemes. "Receiver" would name the same thing with the
+  lookup connotation the semantics ruled out; "bearer" and mSort-Bearer retire. User-facing: a
+  possessive ("nginx's activeness"), no term.
+- Wrap-up of the naming (conductor; read by the human, not acked): the `@x` two-namespace hazard
+  DISSOLVES once every `@sm.X` is a key (a mark and an entry both name keys); the cell-to-bearer
+  relation (`:named-like` / "named-by") is `:identified-in` and its naming row closes;
+  remaining open rows are 312 spelling (the closures' names against the "guarantees" form; the
+  `kind__` prefix; `:rootness`; the identifying-store word; "individual"); the one semantic item
+  still open is item against children (deep bare key with the singleton spelling as the narrow
+  form, against an explicit mark); the next step after that is the rename pass over 311.
+- `fnd-the-alias-row-has-two-levels-and-two-ends` (conductor; read, not acked) — the address row
+  of § 11's table ("T's key means something only relative to P") has an identity level and a
+  routing level, each with two ends, each end a positive entry and a closure. Within one store
+  (one referent, one key): P's end is `:guarantees-unique-name` per shape (positive twin: the
+  lookup yields the canonical key); T's end is `alias nothing-else` per key, measured (positive
+  twin: `alias k'` entries). Across stores (one referent, one store): P's end is
+  `:aliases-nothing-else` (positive twin: `:corresponds` by the transition owner); T's end is
+  "no other home", the OPEN 312 cell, whose routing-level twin is this arc's `looked-up-in
+  nothing-else` (positive twin: `:corresponds` from T's side). The law: two keys under one
+  parent separate on EITHER end (the per-shape warrant implies the per-key instances, never the
+  reverse); two things in two stores separate only with `:aliases-nothing-else` on every store
+  of both legs (§ 3.2 as folded), the open thing's-end cell being needed only where one thing
+  sits in two stores by design (cgroup-v1 hierarchies; a clustered filesystem under two boots),
+  which decline and read UNKNOWN, so the cell may stay empty at the freeze (~SUSPECT; § 9's own
+  argument); a thing is outside a region on T's end alone at every routing level of its own
+  path, asking nothing of the region's store. Freeze consequences: write the unique-name
+  warrant once as one row with two spellings; name `looked-up-in nothing-else` as the routing
+  twin of the open identity cell. This resolves the "double spelling" flagged the turn before.
