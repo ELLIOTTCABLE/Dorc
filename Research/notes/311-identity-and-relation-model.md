@@ -23,8 +23,9 @@
 > mParent-Catalog, mParent-Store), never a declared species; "cell" stays untagged and means a
 > singleton mSort under its mParent (§1.9); an in-Dorc mSort or mScheme is
 > always written with its prefix (`sm.File`, `sm.Path`). "Lookup" (the relation between an
-> mKey and what it reaches) and "value" (a string; sh defines it) stay untagged. A blockquote
-> under a heading names a false friend, and nothing else.
+> mKey and what it reaches) stays untagged; an mKey's bytes are its mValue and an mReferent's
+> condition is its mState (§1.1). A blockquote under a heading names a false friend, and
+> nothing else.
 
 ## § 0-one-screen
 
@@ -51,11 +52,31 @@ shape of mKey-Primary, and silence is unknown.
 
 ### § 1.1-referent
 
-A piece of the world that has state: an inode, a database row, a package record, a kernel
-parameter, a running process, a machine, a mount table. The engine never holds an mReferent.
-It reaches mReferents only through mKeys, mTokens, and mDerivations, and every identity
-question is ultimately "do these two mKeys reach one mReferent". mReferents are what GOTCHAS
-are about.
+An mReferent is a persisting piece of the world that has state: an inode, a database row, a
+package record, a kernel parameter, a running process, a machine, a mount table. It has the
+mSort of the mKey that reaches it (two mSorts over one piece of the world is the strangers case
+of §1.2) and one or more mKeys. It may have parts, and every part is an ordinary mReferent of an
+ordinary mSort identified in it (§1.9); no other term names a part. The engine never holds an
+mReferent. It reaches mReferents only through mKeys, mTokens, and mDerivations, and every
+identity question is ultimately "do these two mKeys reach one mReferent"; before a lookup binds
+an mKey, that mKey names a may-set of mReferents (§1.5). An mReferent survives changes to its
+mState; it does not survive destruction and recreation under its old mKey
+(`a-recreated-name-is-a-new-referent`), nor a lifecycle write to what it is scoped in (§3.3).
+An mReferent is not an mKey (an mKey names it), not an mState (it has one), not an mValue (a
+read yields one from it), not a mTopic (§1.8, an mKey read with its observer instance), and not
+the set an mKey given whole denotes (§2.8: the container is the mReferent, the set is a set).
+mReferents are what GOTCHAS are about.
+
+An mState is the condition of one mReferent at one instant: what a write changes and what a
+read observes. The engine never holds an mState and no mKey names one; an mState is known only
+through a read, which yields an mValue. Two mReferents may have equal mStates and stay two; one
+mReferent's mState changes and it stays one.
+
+An mValue is bytes a shell holds or will hold, with an exit status where one is produced: an
+mKey's mValue (bytes that name an mReferent, bound at a bind), a captured mValue (bytes a read
+copied out of an mState, graded by provenance, `notes/275`), a verdict's exit status. An mValue
+is what a read yields from an mState, never the mState: two reads of one mReferent at two
+instants may yield two mValues.
 
 ### § 1.2-sort
 
@@ -98,15 +119,15 @@ mScheme.
 > RDBMS primary key and natural key, with their culture: the natural key is user-typed, may
 > alias, is never identity; the primary key is what the store answers with.
 
-An mKey is a plan-time object: a value, its mScheme, and its mParent (§1.6), modeling what a
+An mKey is a plan-time object: an mValue, its mScheme, and its mParent (§1.6), modeling what a
 runtime string will denote. It is minted at a bind, or at an emission point a `resolve()`
-declares (§2.1), and before any lookup runs. The mScheme is always declared. The value is a
-literal, or a mPlaceholder for a captured value; the mParent is an instance one of the seats
+declares (§2.1), and before any lookup runs. The mScheme is always declared. The mValue is a
+literal, or a mPlaceholder for a captured mValue; the mParent is an instance one of the seats
 of §1.6 supplies, or a mPlaceholder. Every lookup is a measurement that binds mPlaceholders
 and chooses among the structures of the mFullyQualifiedKey the mSchemes declare, never outside
-them; what measurement decides late is which declared shape a value matches (§2.1, §2.2), so
+them; what measurement decides late is which declared shape an mValue matches (§2.1, §2.2), so
 which mSort an mKey reaches, and which mParent mSort and warrants apply, is known only once
-bytes arrive. A value with no mScheme is nothing; an
+bytes arrive. An mValue with no mScheme is nothing; an
 mScheme with no supplyable mParent instance leaves the mFullyQualifiedKey unknown from that
 level. Derived views: mKey-Natural, an mKey of a secondary mScheme (what tool authors and
 books write); mKey-Primary, an mKey of the primary mScheme (meaningful only relative to its
@@ -117,7 +138,7 @@ mScheme is its primary mScheme.
 
 > OWL's inverse-functional and functional properties, spelled out by direction.
 
-A mToken is an mKey-Primary's value: bytes a `resolve()` returned, compared for equality only,
+A mToken is an mKey-Primary's mValue: bytes a `resolve()` returned, compared for equality only,
 never decoded (`inv-referent-agnostic`), always scoped in an mParent. Any lookup, a secondary
 mScheme's or a primary mScheme's, may carry per matched shape two independent, separately
 declared, absent-by-default warrants:
@@ -155,9 +176,9 @@ follows the mScheme:
 
 Through the primary mScheme the mParent's mSort (`:identified-in`) and the warrants (§1.5;
 :rootness, §2.2) are declared by the primary mScheme's owner per matched shape of
-the mKey's value, a function of the mKey's own bytes, so an emitter (a secondary mScheme,
+the mKey's mValue, a function of the mKey's own bytes, so an emitter (a secondary mScheme,
 possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent
-instance where it is the seat that supplied it. The mParent instance is a value supplied by
+instance where it is the seat that supplied it. The mParent instance is an mValue supplied by
 exactly one of three seats, each naming it as an mKey of one of the mParent's mSort's
 mSchemes: the bind that minted the mKey (§1.4), the lookup that yielded it (§2.1), or the
 primary mScheme's declaration for the matched shape (§2.2); two seats that disagree are a
@@ -261,7 +282,7 @@ mechanical net against lazy borrowing.
 
 mScheme P is `:primary-of` mSort K, once per mSort, and a second name is a second mScheme: P's
 mKeys mean something only relative to K's mParent-Store, and P's `resolve()` is the identity
-on the mKey. P's owner declares, per matched shape of the mKey's value, `:identified-in` mSort M
+on the mKey. P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M
 (the mParent's mSort for mKeys of that shape) and, absent by default:
 
 - :guarantees-unique-referent and :guarantees-unique-name (§1.5), governing what mToken
@@ -273,8 +294,8 @@ on the mKey. P's owner declares, per matched shape of the mKey's value, `:identi
 
 The mParent's TYPE varies per shape (an ext4 filesystem in the mRoute; an NFS filesystem in a
 host; a tmpfs in a boot), so the child mSort's owner never learns the mParent's types: the
-mParent mSort's primary mScheme classifies, one level up, each owner speaking one level. A
-value matching no declared shape reads unknown from this level. A grade governs every consumer of the answer it grades, corroboration and contradiction
+mParent mSort's primary mScheme classifies, one level up, each owner speaking one level. An
+mValue matching no declared shape reads unknown from this level. A grade governs every consumer of the answer it grades, corroboration and contradiction
 included: a lookup without :guarantees-unique-name cannot contradict anything by returning
 two different mTokens.
 
@@ -359,7 +380,7 @@ is the model's only declared sameness generator besides mToken equality.
 
 ### § 2.7-observer-dependence
 
-The values that reads of K's cells yield depend on which mKey of mSort O the read was taken
+The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken
 under. Declared by K's owner per mSort as its complement, :observer-independence of O. Default:
 a cell measured
 under a lent mKey of O is assumed to depend on it, so its fact is about (mReferent,
@@ -392,7 +413,7 @@ mKey itself).
 
 ### § 2.9-composite-sorts (roles)
 
-A mTopic whose value depends on several inputs IN ROLES (a base and an overlay; a primary and
+A mTopic whose mReferent's mState depends on several inputs IN ROLES (a base and an overlay; a primary and
 its replica set) is an mKey of a mCompositeSort minted by the author who knows the roles,
 normally the tool author, and that mSort's identity is its owner's function of its named
 parts. Plurality of inputs is an mSort with structure, never a set of mParents
@@ -411,7 +432,7 @@ union of its parts' may-read sets.
 | `:may-write` (the verb's at-most set; the mSort's entailment) + finished | per matched shape of the verb; many, per matched shape, on the mSort | the verb's author; the mSort owner | unfinished ⇒ collide | the write-path question (§2.5), within one mWorld; never a generator of DISJOINT | the premature finished record |
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
-| `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer is value, coarse is safe) |
+| `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer buys sparing, coarse is safe) |
 | `:lends` (+ sentinel) | per wrapper, per mParent-Catalog mSort | wrapper owner | ⊤ ⇒ walls | ambient mParent supply | a wrong lend measures the wrong mVantage; the sentinel is an at-most claim over every mParent-Catalog mSort |
 | mCompositeSort | per composite | the author holding the roles | n/a | identity | as any mSort |
 
@@ -449,7 +470,7 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   a container collides with everything inside it. Otherwise call each mKey's top the child of
   A on its side (the mKey itself when its mParent is A). Separation is only ever concluded
   from a single definition's own distinctions, in one of two ways. Two tops: both are mKeys of
-  one mScheme, each carrying :guarantees-unique-name, with differing values. One top: exactly
+  one mScheme, each carrying :guarantees-unique-name, with differing mValues. One top: exactly
   one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some
   other shape, `:identified-in` the mSort of the other side's top; an omission is a
   distinction only inside the body that made it. DISJOINT iff one of the two holds and every
@@ -458,7 +479,7 @@ mFullyQualifiedKeys, levels numbered from the leaf (level 0) upward through mPar
   Separation is decided once, at A.
 - two mKeys at one level are SAME iff they are one instance (one mPlaceholder: inherited
   through a wrapper's sentinel, §3.4, or one ambient instance resolved once in a transit-free
-  unwalled span, §1.10) or are equal values whose shape carries :guarantees-unique-referent.
+  unwalled span, §1.10) or are equal mValues whose shape carries :guarantees-unique-referent.
   Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
 - mKeys of different mSorts share no primary mScheme, so their mFullyQualifiedKeys meet, if at
   all, only at a common ancestor, and that meeting is not a claim about the leaves (a package
@@ -668,9 +689,9 @@ Recorded as what-killed-it, so the shape is not re-walked.
   Killed by: what a filesystem identifier is scoped in varies by the filesystem's TYPE (ext4
   in a boot; NFS in a server; sshfs synthesising inodes per client), never by the child mSort
   or its mSchemes. Surviving form: mParent and warrants are declared per matched shape of the
-  mKey's value (§2.2).
+  mKey's mValue (§2.2).
 - SUBSORTS, A TYPE MENU, OR ONE MEMBER PER TYPE. Killed by: a second name is a second mScheme,
-  and the variation is a partial function of one mScheme's values. Surviving form: per-shape
+  and the variation is a partial function of one mScheme's mValues. Surviving form: per-shape
   declarations on one `resolve()` (§2.2).
 - DERIVING :aliases-nothing-else FROM THE STRUCTURE OF THE mFullyQualifiedKey. Killed by nested pid
   namespaces: guest pid 1 and host pid 4821 are one mReferent and both mFullyQualifiedKeys
