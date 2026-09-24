@@ -446,7 +446,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-compare-chokepoint
 - defined: —
-- cited: 310 311a ANALYZER-NEEDS _tmp-naming-rewrite-owed (4)
+- cited: 310 311 311a ANALYZER-NEEDS _tmp-naming-rewrite-owed (5)
 
 ## an-cross-host-kind
 - defined: —
@@ -474,7 +474,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: 310 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (5)
+- cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -6190,7 +6190,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-cross-kind-sparing-needs-a-finished-definition
 - defined: —
-- cited: 30U ORACLE_PROVIDES Research/LIVING_STATUS (3)
+- cited: 30U 311 ORACLE_PROVIDES Research/LIVING_STATUS (4)
 
 ## 28E:rul-danger-axis-is-completion-class
 - defined: Research/notes/28E-why-surface-design-sitting.md:423 — (nack on my reported/written split) —
@@ -6234,7 +6234,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-disjoint-is-an-rc-predicate
 - defined: —
-- cited: 30T 30W 311a 311b 311c 312a ROADMAP (9)
+- cited: 30T 30W 311 311a 311b 311c 312a ROADMAP (10)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -6637,7 +6637,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311a 311b 311c 311h 312a ORACLE_PROVIDES (23)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311 311a 311b 311c 311h 312a ORACLE_PROVIDES (24)
 
 ## rul-iteration-waste-acceptable
 - defined: —

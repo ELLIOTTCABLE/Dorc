@@ -2,11 +2,10 @@
 
 > AI-authored preparatory model (Fable, the `r31-prep-design-duck` sittings, the human present
 > and adjudicating). Notes-tier and ahistorical. Ledgers and reviews cite it as `311j`. Nothing
-> here is ruled. The root docs,
-> `spike/CLAUDE.md`, and the welds outrank this document. Where it disagrees with `plans/30W`,
-> `notes/272`, `plans/30T` §6, `plans/30U` §7, `notes/26Ob` §10, or `plans/27C` §4, it is a
-> deliberate proposal to re-litigate them. `[LEAN]` marks a human lean paraphrased from chat,
-> never a ruling.
+> here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this document. Where
+> it disagrees with a prior document, it is a deliberate proposal to re-litigate that document,
+> and §3.7 registers the disagreement until the document is rewritten. `[LEAN]` marks a human
+> lean paraphrased from chat, never a ruling.
 >
 > Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
 > authors. They are stated fully enough that the concretization step (names, spellings,
@@ -503,7 +502,7 @@ the thing written.
 An elision is spared past a write only when two questions are answered, in order, for every
 pair of a writeset entry and the mKey a fact reads, of one mSort or of two:
 
-1. `compare()` answers DISJOINT (§3.2; §2.9 where an mKey is given whole).
+1. `compare()` answers DISJOINT (§3.2, or §2.9 where an mKey is given whole).
 2. No write path joins them. The writeset's definition is finished. The fact's readset (§2.5) is
    closed. Every writeset entry `compare()`s DISJOINT with every entry of that readset.
 
@@ -824,3 +823,76 @@ This model uses, and does not redefine:
 The model excludes a selector dialect, an aspect species, an authored region predicate, an
 engine-side name floor, and an engine table that generates SAME. The context slot is a mVantage
 and nothing else.
+
+### § 3.7 supersessions-pending-in-prior-documents
+
+A living register of statements in prior documents that this model contradicts. An entry
+stays until its document is rewritten. Remove an entry when its document catches up. Add an
+entry when another prior document is found to disagree. Each entry names the passage, gives
+its claim, then gives this model's claim after "Here".
+
+- `plans/30U` §1 `rul-cross-kind-sparing-needs-a-finished-definition`, §4 "As a generator",
+  and §7 "The comparison", with `plans/30T` §7 `rul-binder-claims-are-ordinary`: a finished
+  definition generates cross-kind provably-disjoint verdicts, and a footprint cell is found
+  disjoint from another kind's backing cell through it. Here: a finished definition stays
+  necessary for sparing across mSorts and generates no DISJOINT (§2.6). `compare()` decides
+  every pair. A cross-mSort pair the walk does not separate reads KNOWN_UNSPOKEN, whatever is
+  finished (§3.2).
+- `ANALYZER-NEEDS` `an-kind-reach`, `an-compare-chokepoint`, and `an-disjointness`: the
+  `unrelated` answer is the cross-kind answer only absent the claimed kind's finished
+  definition, and the record licenses cross-kind sparing. Here: `unrelated` is KNOWN_UNSPOKEN,
+  and `provably-disjoint` is DISJOINT. KNOWN_UNSPOKEN never spares, whatever is finished
+  (§3.2).
+- `plans/30W` §1 and §5, with `notes/26Ob` §10b `res-per-index-relation-table`: a kind's owner
+  declares the kind referent-transparent, one grade under which token equality gives same and
+  token inequality gives disjoint. Here: a lookup carries two independent warrants per matched
+  shape, `:guarantees-unique-referent` and `:guarantees-unique-name`, each absent by default
+  (§1.5, §2.2). `:rootness` is the separate per-shape claim of global comparability (§2.2).
+- `plans/30W` §1 index-kinds and §10 build item 1, with `notes/26Ob` §10b
+  `res-worlds-compare-through-the-chokepoint`: the context slot is a product over index-kinds,
+  and a world is a coordinate in a cell's key. Here: the context slot is a mVantage and nothing
+  else, an address that is part of no mKey's identity (§1.10, §3.6). Identity is the
+  mFullyQualifiedKey (§1.8). A world is an mWorld, a terminus of a mFullyQualifiedKey, and
+  nothing speaks across mWorlds (§1.8, §3.2).
+- `plans/30W` §2 and §3 `kind__disjoint()`, its `rul-disjoint-is-an-rc-predicate` [TYPED],
+  and `plans/30T` §6 on the region predicate: an owner-authored region predicate generates
+  disjointness between regions. Here: there is no authored region predicate (§3.6).
+  Containment is membership in a mTraversal. The region test over `:hierarchical` mSchemes
+  (§2.9) and the `:places` lookup (§2.10) decide it.
+- `plans/30W` §2 to §4, `notes/26Ob` §10b `res-cell-level-relation-is-the-filtered-meet` and
+  §10f, `plans/27C` §4(A), `ANALYZER-NEEDS` `an-invariance-speech-act`, and `plans/271`
+  `rul-invariance-speech-act` [TYPED]: the kind owner's invariance line
+  (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport
+  across an index or an axis, and the store member yields invariant, keyed, or ⊤ per (kind,
+  selector, index-kind). Here: there is no invariance line and no per-kind table against axes
+  (§3.6). Whether a lifecycle write or a lent instance reaches a cell is the shape of its
+  mFullyQualifiedKey, not a declaration (§3.3, §3.4). Leaf mKeys inherit across a transit with
+  no speech from anyone (§3.4). The observer half of the line is `:observer-independence` of
+  O, declared per mSort and absent by default (§2.8). The store half is displaced by
+  `:aliases-nothing-else` and measured mTokens (§2.3, §3.2).
+- `notes/272` §3 (the carried-by table and emission-set non-interference) and `plans/27C` §4
+  (the who-am-I derivation as contradiction-checker): an engine-owned substrate-by-axis table
+  and a taint over who-am-I ingredients derive keying and check declarations. Here: the engine
+  holds no table that generates SAME (§3.6). Keying is the mFullyQualifiedKey's shape (§3.3).
+  No `resolve()` can measure observer-dependence, so it remains speech (§2.8). The
+  contradictions the engine refuses are two seats disagreeing on an mParent instance (§1.6), a
+  warranted SAME against a warranted DISJOINT (§3.2), and two disagreeing answers from one
+  placing lookup (§2.10).
+- `notes/272` §5 the fence: emitted locators feed only the dependence bit and the keying
+  recipe, and are never compared against File facts. Here: a may-read entry is an mKey that
+  `compare()`s against every writeset entry, and an entry naming a store reaches every mKey
+  relative to that store (§2.5, §2.6).
+- `plans/30T` §6 per-aspect identity: "same file" is one relation per aspect, and the
+  identity tier carries an authored per-aspect relation mapping. Here: there is no aspect
+  species (§3.6). Each aspect is a cell, a singleton mSort with its own may-read set and its
+  own `:observer-dependence` (§1.9). Same-for-existence is the mParent-Catalog entry, which
+  creation, deletion, and rename write (§3.3). Same-for-contents is the inode's mReferent,
+  reached when the path mScheme yields the inode (§2.3).
+- `plans/30T` §6 the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
+  path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey
+  are routing writes to its mParent-Catalog entry, and a writeset may name them (§3.3).
+  Path-distinct mKeys separate under `:guarantees-unique-name` and `:aliases-nothing-else`
+  (§3.2).
+- `plans/30W` §4 "Containment among index-kinds": containment among stores is a `reaches`
+  relation their owners declare. Here: containment among stores is the mParent chain (§1.6,
+  §1.8). The may-write entailment carries effects, never identity (§2.6).
