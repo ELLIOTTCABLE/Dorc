@@ -4,7 +4,7 @@
 > and adjudicating). Notes-tier and ahistorical. Ledgers and reviews cite it as `311j`. Nothing
 > here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this document. Where
 > it disagrees with a prior document, it is a deliberate proposal to re-litigate that document,
-> and §3.7 registers the disagreement until the document is rewritten. `[LEAN]` marks a human
+> and §4.2 registers the disagreement until the document is rewritten. `[LEAN]` marks a human
 > lean paraphrased from chat, never a ruling.
 >
 > Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
@@ -803,7 +803,9 @@ Attribution:
   made instances one, and the mCorrespondences.
 - Every perished conclusion names the writeset that perished it.
 
-### § 3.6 boundary-of-this-model
+## § 4 relation-to-other-documents
+
+### § 4.1 boundary-of-this-model
 
 This model uses, and does not redefine:
 
@@ -824,7 +826,7 @@ The model excludes a selector dialect, an aspect species, an authored region pre
 engine-side name floor, and an engine table that generates SAME. The context slot is a mVantage
 and nothing else.
 
-### § 3.7 supersessions-pending-in-prior-documents
+### § 4.2 supersessions-pending-in-prior-documents
 
 A living register of statements in prior documents that this model contradicts. An entry
 stays until its document is rewritten. Remove an entry when its document catches up. Add an
@@ -851,12 +853,12 @@ its claim, then gives this model's claim after "Here".
 - `plans/30W` §1 index-kinds and §10 build item 1, with `notes/26Ob` §10b
   `res-worlds-compare-through-the-chokepoint`: the context slot is a product over index-kinds,
   and a world is a coordinate in a cell's key. Here: the context slot is a mVantage and nothing
-  else, an address that is part of no mKey's identity (§1.10, §3.6). Identity is the
+  else, an address that is part of no mKey's identity (§1.10, §4.1). Identity is the
   mFullyQualifiedKey (§1.8). A world is an mWorld, a terminus of a mFullyQualifiedKey, and
   nothing speaks across mWorlds (§1.8, §3.2).
 - `plans/30W` §2 and §3 `kind__disjoint()`, its `rul-disjoint-is-an-rc-predicate` [TYPED],
   and `plans/30T` §6 on the region predicate: an owner-authored region predicate generates
-  disjointness between regions. Here: there is no authored region predicate (§3.6).
+  disjointness between regions. Here: there is no authored region predicate (§4.1).
   Containment is membership in a mTraversal. The region test over `:hierarchical` mSchemes
   (§2.9) and the `:places` lookup (§2.10) decide it.
 - `plans/30W` §2 to §4, `notes/26Ob` §10b `res-cell-level-relation-is-the-filtered-meet` and
@@ -865,7 +867,7 @@ its claim, then gives this model's claim after "Here".
   (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport
   across an index or an axis, and the store member yields invariant, keyed, or ⊤ per (kind,
   selector, index-kind). Here: there is no invariance line and no per-kind table against axes
-  (§3.6). Whether a lifecycle write or a lent instance reaches a cell is the shape of its
+  (§4.1). Whether a lifecycle write or a lent instance reaches a cell is the shape of its
   mFullyQualifiedKey, not a declaration (§3.3, §3.4). Leaf mKeys inherit across a transit with
   no speech from anyone (§3.4). The observer half of the line is `:observer-independence` of
   O, declared per mSort and absent by default (§2.8). The store half is displaced by
@@ -873,7 +875,7 @@ its claim, then gives this model's claim after "Here".
 - `notes/272` §3 (the carried-by table and emission-set non-interference) and `plans/27C` §4
   (the who-am-I derivation as contradiction-checker): an engine-owned substrate-by-axis table
   and a taint over who-am-I ingredients derive keying and check declarations. Here: the engine
-  holds no table that generates SAME (§3.6). Keying is the mFullyQualifiedKey's shape (§3.3).
+  holds no table that generates SAME (§4.1). Keying is the mFullyQualifiedKey's shape (§3.3).
   No `resolve()` can measure observer-dependence, so it remains speech (§2.8). The
   contradictions the engine refuses are two seats disagreeing on an mParent instance (§1.6), a
   warranted SAME against a warranted DISJOINT (§3.2), and two disagreeing answers from one
@@ -884,7 +886,7 @@ its claim, then gives this model's claim after "Here".
   relative to that store (§2.5, §2.6).
 - `plans/30T` §6 per-aspect identity: "same file" is one relation per aspect, and the
   identity tier carries an authored per-aspect relation mapping. Here: there is no aspect
-  species (§3.6). Each aspect is a cell, a singleton mSort with its own may-read set and its
+  species (§4.1). Each aspect is a cell, a singleton mSort with its own may-read set and its
   own `:observer-dependence` (§1.9). Same-for-existence is the mParent-Catalog entry, which
   creation, deletion, and rename write (§3.3). Same-for-contents is the inode's mReferent,
   reached when the path mScheme yields the inode (§2.3).
