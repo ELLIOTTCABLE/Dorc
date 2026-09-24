@@ -1657,3 +1657,30 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   permission (invoke that sort's upward body with a placed key's value when a bound in that
   sort is in play and the key has no route in it), and no new relation. The two ends stay
   related but separate statements; their licensing law is 312's.
+- ACKED (**[HUMAN]**, "mostly", 2026-09-23): the route row as a whole; the one-parent clause;
+  the siting. The row: T's referent is reachable through P, a third relation beside identity
+  and write reach, with the crossing lookup as its speaker. Thing's end: `looked-up-in P:key`
+  from whichever lookup crossed P, with a closure scoped per route-sort (the path lookup's
+  closure says nothing about packages). Store's end: the downward list and its closure. Two
+  levels, within one catalog and across catalogs. Consumers: the outside rule (covered if any
+  route of the bound's sort reaches the bound; outside if all are DISJOINT and that sort's
+  closure is present) and perishing (a write to P's catalog perishes the route; `apt-get
+  install` writing dpkg's database perishes every package route). The one-parent clause: the
+  parent is the route the key's own lookup supplied, the link `compare()` walks and the seat
+  supplying parent instances to singletons; routes another sort's upward body adds are walked
+  by the outside rule and perished, never parents. Entries by role, names 312's: the route
+  record and its closure (exist); a sort's declaration that it places another sort (owed; it
+  is what puts the pair in the engine's table); the upward body on the placing sort, invoked
+  with a placed key's value, every key held for the referent tried, disagreement refused
+  (owed); the downward members body (today only as write reach, stage 7's `dpkg -L`; as
+  membership owed or reused); one engine sentence. The human's characterisation, typed: with
+  this ruled, every sort walls everything around it until it is mapped into the filesystem,
+  spiritually, allowing for the few roots, which closes longstanding holes. Restated: cross-sort
+  sparing exists only where the walk answers DISJOINT, which needs both sides in a shared key
+  space; the stdlib's key spaces are those spaces, and a sort hung on nothing comparable walls
+  (§ 14's hard ack). Default posture confirmed: a bound in sort G against a fact of sort T
+  collides unless G's describer translates the bound into a comparable key space by the
+  write-path row (what writing it writes; stage 5's `apt-get update` naming the list files)
+  or the route row (membership); the upward body's absence is exactly that floor, its
+  positive records add only collisions, and its closure alone spares, the attributable knife.
+  Next, by the human: review under a fresh panel; dispatch still needs the typed ack.
