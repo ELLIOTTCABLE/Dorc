@@ -65,7 +65,7 @@ discourse someone chose to speak in, with reverse-DNS naming, no registry, and
 owner-adjudication as the social contract. It is not a category of the world. The engine never
 knows what an mSort denotes and never assumes two mSorts denote disjoint mReferents: what an
 mSort fixes is only what its owner declares under it — which mScheme is its primary mScheme
-(§2.2), its mPlacements (§2.4), its effect entailment and finished definition (§2.5), its
+(§2.2), its may-read set (§2.4), its may-write entailment and finished definition (§2.5), its
 :observer-dependence (§2.7), and its mCells (§1.9) — and the owner speaks only about the
 mSort's relations to its immediate neighbours. Several mSchemes into one mSort is the
 cooperative case: one owner admitting several ways of writing down what they describe. Several
@@ -173,7 +173,7 @@ p, reaches mReferent R: a FACT with a BACKING, the mTraversal — the ordered ch
 mKeys the lookup crossed (each directory entry and symlink for a path; the resolver
 configuration and mVantage for a hostname; the unit table for a service name). A
 :hierarchical mScheme's structure fixes how an mKey decomposes into a mTraversal (§2.8). A
-mResolution perishes under ordinary effective-mWorld reach from any mutator whose footprint
+mResolution perishes under ordinary effective-mWorld reach from any mutator whose Writeset
 touches a mTraversal member. Its target object is not its backing: an mKey can stop reaching
 an object without the object changing (`renaming-a-parent-moves-every-child-name`,
 `a-path-is-not-a-referent`), and an object can change without its mKey changing.
@@ -222,13 +222,13 @@ see a recycled mKey (a reissued pid or inode); that stays on the outside-churn h
 ### § 1.11-site-and-claim-species
 
 A mSite is within a book line, with an argv, an mEntryChain, and a program point. Speech at or
-about a mSite, each with one author: a VERDICT FACT (a mCell's measured value, backed by the
-marked read set, `30T:req-verdict-marks-every-read-cell`, vouched by the tool-oracle author);
-a FOOTPRINT CLAIM (an at-most write set per matched shape with its completion witness, `30U`,
-by the tool-oracle author or the filesystem binder); an EFFECT ENTAILMENT (§2.5, by the mSort
-owner); a mCorrespondence (§2.6, by the transition owner); the per-mScheme declarations
-(§2.1, §2.2, §2.8); the per-mSort declarations (§2.4, §2.7, §1.9); the wrapper's :lends and
-their sentinel (§3.4).
+about a mSite, each with one author: a VERDICT FACT (the measured answer to a read of a cell,
+its Readset the body's marked reads, `30T:req-verdict-marks-every-read-cell`, vouched by the
+tool-oracle author); a WRITESET CLAIM (an at-most may-write set per matched shape with its
+completion witness, `30U`, by the tool-oracle author or the filesystem binder); a MAY-WRITE
+ENTAILMENT (§2.5, by the mSort owner); a mCorrespondence (§2.6, by the transition owner); the
+per-mScheme declarations (§2.1, §2.2, §2.8); the per-mSort declarations (§2.4, §2.7, §1.9); the
+wrapper's :lends and their sentinel (§3.4).
 
 ## § 2-model-relations
 
@@ -286,7 +286,7 @@ another daemon; a relabelling of part of its mParent's state). It is self-knowle
 another store aliases this one is not claimed, since nobody can know it, and §3.2 asks the
 warrant of every store on both legs, so that an aliasing store blocks separation by its own
 silence. Whoever describes the store holds it. State spanning several files
-(`a-store-is-not-one-inode`) is a mPlacement matter (§2.4); a hardlink is a
+(`a-store-is-not-one-inode`) is a may-read matter (§2.4); a hardlink is a
 :guarantees-unique-name failure on the path mScheme, dissolved by the path mScheme yielding
 the inode.
 
@@ -296,44 +296,48 @@ One per mKey (§1.6): never plural, never a species of its own. Its mSort is the
 mScheme's declaration for the matched shape; its instance is whichever seat supplied it; the
 far end is an ordinary mKey. A mVantage supplies instances and is never an mParent.
 
-### § 2.4-lives-in (mPlacement; the read footprint)
+### § 2.4-may-read (the Readset)
 
-> Separation logic's footprint; `disturbs` and `backing` already squat the word.
+> Separation logic's footprint, at the read side: the mReferents an answer may depend on.
 
-K's state is affected by writes to these mKeys. Many-valued: an edge type from an mSort (a
-template the mSite or environment fills) to mKeys of other mSorts. Declared by K's owner, with
-a completion sentinel closing the set. Every mSort in a mFullyQualifiedKey may declare
-mPlacements, not only leaves (a loop-backed filesystem's state lives in a file of the outer
-filesystem; `dd` over the image rewrites every inner fact), and a fact answers to the
-mPlacements of every member of its mFullyQualifiedKey. An mKey's mParent instance is no
-mPlacement and needs no declaration: §3.2's walk collides a write at or above it. An
-mPlacement naming a store says more: every write to an mKey relative to that store may change
-K, nobody having said otherwise. Consumer: collision, and the write-path question of §2.5.
-A footprint not DISJOINT from an mPlacement collides with K's mCells and with every fact
-identified beneath K; an omitted mPlacement is a silent channel
-(`an-omitted-store-breaks-invariance`, `a-store-is-not-one-inode`) and licenses nothing
-positive. mPlacement is distinct from mParent: the mParent is one and
-answers identity; mPlacements are many and answer interference. Two mCells with different
-mParents can share a mPlacement and so collide without being the same
-(`the-subject-includes-the-observer`: two observers' writability mCells share the file's
-mode). Under §2.5 a closed mPlacement set is knife-tier: it is one of the two closures every
+K `:may-read` these mKeys: K's mState is affected by writes to them. Many-valued: an edge
+type from an mSort (a template the mSite or environment fills) to mKeys of other mSorts.
+Declared by K's owner, with a completion sentinel closing the set. Every mSort in a
+mFullyQualifiedKey may declare may-read entries, not only leaves (a loop-backed filesystem's
+state lives in a file of the outer filesystem; `dd` over the image rewrites every inner fact).
+A fact's Readset is the marked reads of the body that answered it together with the may-read
+entries declared by every member of the mKey's mFullyQualifiedKey; it is closed only when every
+declared set is closed. An mKey's mParent instance is no may-read entry and needs no
+declaration: §3.2's walk collides a write at or above it. A may-read entry naming a store says
+more: every write to an mKey relative to that store may change K, nobody having said
+otherwise. Consumer: collision, and the write-path question of §2.5. A Writeset entry not
+DISJOINT from a may-read entry collides with K's cells and with every fact identified beneath
+K; an omitted entry is a silent channel (`an-omitted-store-breaks-invariance`,
+`a-store-is-not-one-inode`) and licenses nothing positive. May-read is distinct from mParent:
+the mParent is one and answers identity; may-read entries are many and answer interference.
+Two cells with different mParents can share a may-read entry and so collide without being the
+same (`the-subject-includes-the-observer`: two observers' writability cells share the file's
+mode). Under §2.5 a closed may-read set is knife-tier: it is one of the two closures every
 sparing rests on.
 
-### § 2.5-reaches (effect entailment), and the finished definition
+### § 2.5-may-write (the Writeset, its entailment, and the finished definition)
 
-As `plans/30U`: disturbing an mKey of K entails disturbing these mKeys of other mSorts;
-arm-incremental, collide-adding; the reached completion record finishes the definition: it
-witnesses that the write set, after entailment, is complete. Declared by K's owner. About
-effects, not identity: it carries a package's postinst enabling its unit, a restart killing a
-main process, every cross-mSort consequence no mFullyQualifiedKey expresses, and it generates
-no DISJOINT ("nothing else" is no other thing, never no other mKey for the thing written). An
-elision is spared past a write only when two questions are answered, in order, for every pair
-of a footprint mKey and a fact's mCell, of one mSort or of two. First, `compare()` answers
-DISJOINT (§3.2). Second, no write path joins them: the footprint's definition is finished;
-the mPlacements declared by every member of the fact's mFullyQualifiedKey are closed; and
-every footprint mKey `compare()`s DISJOINT with every one of them. It spares narrowly and
-collides widely: whatever is not DISJOINT collides, and so does an undeclared mPlacement. The
-finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots
+A line's Writeset is the at-most set of mKeys it may write: the may-write entries its verb's
+author declared per matched shape (`plans/30U`'s footprint), closed by the completion record,
+widened by the may-write entailment that mSort owners declare. The entailment, as `plans/30U`:
+writing an mKey of K entails may-write of these mKeys of other mSorts; arm-incremental,
+collide-adding; the reached completion record finishes the definition: it witnesses that the
+write set, after entailment, is complete. Declared by K's owner. About effects, not identity:
+it carries a package's postinst enabling its unit, a restart killing a main process, every
+cross-mSort consequence no mFullyQualifiedKey expresses, and it generates no DISJOINT
+("nothing else" is no other thing, never no other mKey for the thing written). An elision is
+spared past a write only when two questions are answered, in order, for every pair of a
+Writeset entry and the mKey a fact reads, of one mSort or of two. First, `compare()` answers
+DISJOINT (§3.2). Second, no write path joins them: the Writeset's definition is finished; the
+may-read sets declared by every member of the fact's mFullyQualifiedKey are closed; and every
+Writeset entry `compare()`s DISJOINT with every one of their entries. It spares narrowly and
+collides widely: whatever is not DISJOINT collides, and so does an undeclared may-read entry.
+The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots
 (§3.2).
 
 ### § 2.6-corresponds (declared sameness across a transition)
@@ -378,8 +382,8 @@ Default: flat, so the mTraversal is the mParent-Catalog as a whole and any touch
 perishes every mResolution through it — the coarse, safe floor. This replaces authored region
 predicates: containment is membership in a mTraversal, and a mutator that touches a directory
 needs to know nothing about files (`renaming-a-parent-moves-every-child-name`,
-`namespace-composition-is-not-concatenation`). A routing mKey named whole, in a footprint or as
-an mPlacement, stands for whatever its mScheme reaches beneath it: in §2.5's test it reads
+`namespace-composition-is-not-concatenation`). A routing mKey named whole, in a Writeset or as
+a may-read entry, stands for whatever its mScheme reaches beneath it: in §2.5's test it reads
 UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
 §3.2 answers of the two as siblings (unequal mTokens say only that the thing is not the routing
 mKey itself).
@@ -390,8 +394,8 @@ A mTopic whose value depends on several inputs IN ROLES (a base and an overlay; 
 its replica set) is an mKey of a mCompositeSort minted by the author who knows the roles,
 normally the tool author, and that mSort's identity is its owner's function of its named
 parts. Plurality of inputs is an mSort with structure, never a set of mParents
-(`composite-identity-is-structure-not-a-bag`). mPlacement of a mCompositeSort is the union of
-its parts' mPlacements.
+(`composite-identity-is-structure-not-a-bag`). The may-read set of a mCompositeSort is the
+union of its parts' may-read sets.
 
 ### § 2.10-relation-table
 
@@ -401,8 +405,8 @@ its parts' mPlacements.
 | `:yields` (the mParent-Catalog, supplied by one seat; the yielded mKey's mParent instance where the yield supplies it) | per matched shape of a secondary mScheme, into any mSort | the mScheme's owner | none ⇒ the mScheme is a floor primary mScheme | mResolution; the mFullyQualifiedKey | the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT, attributed to the yield |
 | `:aliases-nothing-else` | per store | the store's describer | absent ⇒ nothing inside that store separates from anything outside it | DISJOINT (§3.2) | an aliasing store declared :aliases-nothing-else is a wrong DISJOINT |
 | `:parent` | one per mKey | derived (§2.3) | n/a | routing (secondary mScheme) · identity (primary mScheme) | none of its own |
-| `:lives-in` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything | collision; the write-path question (§2.5) | none positive; omission is the silent channel; the closed set is one of sparing's two closures |
-| `:reaches` + finished | many, per matched shape | mSort owner | unfinished ⇒ collide | the write-path question (§2.5), within one mWorld; never a generator of DISJOINT | the premature finished record |
+| `:may-read` | many per mSort, sentinel | mSort owner | ⊤ ⇒ collides with everything | collision; the write-path question (§2.5) | none positive; omission is the silent channel; the closed set is one of sparing's two closures |
+| `:may-write` (the verb's at-most set; the mSort's entailment) + finished | per matched shape of the verb; many, per matched shape, on the mSort | the verb's author; the mSort owner | unfinished ⇒ collide | the write-path question (§2.5), within one mWorld; never a generator of DISJOINT | the premature finished record |
 | `:corresponds` | per transition pair | transition owner | unknown | SAME mDerivation | a wrong mCorrespondence |
 | `:observer-independence` | per (mSort, O) | mSort owner | dependent ⇒ no carry | SAME qualifier | a false independence |
 | `:hierarchical` | per mScheme | mScheme owner | flat ⇒ whole-mParent-Catalog mTraversal | perishing | none (finer is value, coarse is safe) |
@@ -486,11 +490,12 @@ second mKey inside one mParent.
   The touched object itself is untouched. Creation, deletion, and rename of an mKey are
   routing writes to its mParent-Catalog entry (its existence mCell), so `userdel alice;
   useradd alice` perishes every mResolution of the old mKey
-  (`a-recreated-name-is-a-new-referent`); a footprint that omits the entry is the ordinary
+  (`a-recreated-name-is-a-new-referent`); a Writeset that omits the entry is the ordinary
   at-most omission knife, now visibly covering routing mKeys.
-- A STATE mutation writes mCells through mPlacements: ordinary kill-reach. A first write can
-  also change an mKey-Primary (`identity-tokens-perish-on-write-not-only-on-rename`), so a
-  state mutation whose footprint touches a mParent-Store perishes the mTokens scoped in it.
+- A STATE mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
+  first write can also change an mKey-Primary
+  (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation whose Writeset
+  touches a mParent-Store perishes the mTokens scoped in it.
 - A LIFECYCLE mutation (a reboot, a re-provision) disturbs a mRoot-adjacent mKey (a boot, a
   tenure); every mKey-Primary scoped in it names a new mReferent afterward; mCells whose
   mFullyQualifiedKeys pass through it are new and unmeasured; mCells whose
@@ -518,20 +523,20 @@ measure-in-context remain `plans/27C`'s.
 ### § 3.5-committee-law-satisfied
 
 Every positive step is one author's line: a `:yields` and its lookup warrants; a shape's `:identified-in` and
-its warrants; a mPlacement set and its sentinel; an entailment and its finished record; a
+its warrants; a may-read set and its sentinel; a may-write entailment and its finished record; a
 mCorrespondence; a :observer-independence; a :lends. The engine only chains and meets. A
 granting composite ("these two accounts are one") is entailed jointly by one mScheme's
 `:yields` and the primary mScheme's declaration for that shape, each author speaking about their own lookup
 (`28M:rul-composite-meets-toward-guard-run`); a withholding composite (a mount perishing an
 account's mResolution) names nobody and needs nobody's consent. Attribution:
 every survival names the :aliases-nothing-else and :guarantees-unique-name declarations it rested on and
-the mPlacement sets that bounded it; every SAME names the `resolve()` calls, the declarations,
+the may-read sets that bounded it; every SAME names the `resolve()` calls, the declarations,
 the sentinels and route claims that made instances one, and the mCorrespondences; every
-perished conclusion names the footprint that perished it.
+perished conclusion names the Writeset that perished it.
 
 ### § 3.6-scope (what this model leaves untouched)
 
-The verdict, vouch, and guard tier; footprints, `:reaches`, the completion record as the
+The verdict, vouch, and guard tier; the authored may-write entries, the completion record as the
 witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint
 and consumer map; the universal meet; measure-in-context, entry forms, `safe-across`; the read-set closure as the falsification net
 for unmarked reads (`27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the
@@ -607,9 +612,9 @@ line here is the model element it forces.
   :guarantees-unique-referent is absent by default on primary mSchemes (§1.6, §2.2).
 - `a-name-is-not-a-target-over-time` — mPlaceholders, the standup `witness()`, integrity
   withhold; sameness of a target is continuity witnessed, never a spelling (§1.10).
-- `a-store-is-not-one-inode` — mPlacement is many-valued and distinct from mParent;
-  :aliases-nothing-else is not implied by `:lives-in` (§2.2, §2.4).
-- `an-omitted-store-breaks-invariance` — mPlacement totality; the completion sentinel;
+- `a-store-is-not-one-inode` — may-read is many-valued and distinct from mParent;
+  :aliases-nothing-else is not implied by `:may-read` (§2.2, §2.4).
+- `an-omitted-store-breaks-invariance` — may-read totality; the completion sentinel;
   omission is the silent channel; the closed set is one of sparing's two closures (§2.4,
   §2.5).
 - `nonzero-status-is-not-speech` — every warrant is typed speech, never an exit status; the rc
@@ -617,7 +622,7 @@ line here is the model element it forces.
 - `composite-identity-is-structure-not-a-bag` — exactly one mParent; roles are a
   mCompositeSort minted by the author who holds them (§2.3, §2.9).
 - `the-subject-includes-the-observer` — :observer-dependence as the surviving half of the
-  invariance line; two observers' mCells share mPlacement but not identity (§2.4, §2.7).
+  invariance line; two observers' cells share a may-read entry but not identity (§2.4, §2.7).
 - `correspondence-is-known-only-to-the-transition-owner` — `:corresponds` as a
   transition-owner generator; mapped :lends are mCorrespondences (§2.6).
 - `identity-tokens-perish-on-write-not-only-on-rename` — a state mutation on a mParent-Store
@@ -639,8 +644,8 @@ line here is the model element it forces.
 Recorded as what-killed-it, so the shape is not re-walked.
 
 - ONE DECLARED SPECIES (an mSort is itself an mScheme; a second way of naming is a second mSort).
-  Killed by: every mSort-level attribute (mPlacements, entailment and the finished sentence,
-  :observer-dependence, mCells) is then written once per mScheme by the same author with
+  Killed by: every mSort-level attribute (the may-read set, entailment and the finished
+  sentence, :observer-dependence, cells) is then written once per mScheme by the same author with
   no seat to say the copies describe one thing; two finished sentences for one carrier land as
   withhold-and-narrate, never the fail-fast a contradiction deserves; a stranger who knows
   only a new lookup must mint a whole mSort or leave it empty. Surviving form: two species
@@ -670,7 +675,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
   resolve cleanly to one boot. Surviving form: :aliases-nothing-else stays declared, absent by default,
   per store (§2.2).
 - AN ASPECT SPECIES (a selector position; an aspect borrowing another mSort's lookup). Killed
-  by: one mParent per identity-bearing thing, per-aspect mPlacement, and per-aspect
+  by: one mParent per identity-bearing thing, a per-aspect may-read set, and per-aspect
   :observer-dependence already make an aspect an mSort in all but name, and the borrowed
   lookup is a primary mScheme `:identified-in` the mSort-Bearer. Surviving form: a mCell is an mSort
   with a singleton mKey under its mSort-Bearer (§1.9).
@@ -688,7 +693,7 @@ Recorded as what-killed-it, so the shape is not re-walked.
 - "STORED-IN" AS ONE RELATION conflating routing and containment. Killed by hardlinks, bind
   mounts, NFS: mParent-Catalog disjointness is not mReferent disjointness. Surviving form:
   `:yields` with its mParent-Catalog, the store's :aliases-nothing-else, and
-  mPlacement as three relations.
+  may-read as three relations.
 - TERMINAL mTokens (`Measured(File, fsid:inode)`). Killed by NFS and by the mParent question:
   an inode is an mKey in a filesystem, a filesystem identifier is an mKey in whatever minted
   it; the File owner should never learn NFS, and under this model does not, because the
@@ -740,8 +745,8 @@ Recorded as what-killed-it, so the shape is not re-walked.
   against a converged `docker start` of that same container: "nothing else" is no other thing,
   never no other mKey for the thing written. Surviving form: `compare()` decides every pair;
   the completion record witnesses a complete write set (§2.5, §3.2).
-- ONLY SAME mPlacements OVERLAP. Killed by: unequal names, nobody's speech, sparing, the name
-  floor moved onto mPlacements. Surviving form: whatever is not DISJOINT collides (§2.5).
+- ONLY SAME may-read entries OVERLAP. Killed by: unequal names, nobody's speech, sparing, the
+  name floor moved onto may-read entries. Surviving form: whatever is not DISJOINT collides (§2.5).
 - A STORE'S CLOSURE AS "REACHABLE ONLY THROUGH IT". Killed by: nobody can know what else
   aliases their store. Surviving form: :aliases-nothing-else, self-knowledge, asked of both
   legs (§2.2).
