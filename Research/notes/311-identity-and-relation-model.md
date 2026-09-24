@@ -33,7 +33,7 @@
 - A section is cited by its slug, as 2.6-may-write-the-writeset. Within the same paragraph or
   list item, a second citation of that section uses its number alone, as §2.6.
 - A blockquote under a heading is non-normative. It names a false friend from a neighbouring
-  field, or a name the object carried before this document.
+  field, a name the object carried before this document, or a refuted shape (`notes/311u`).
 
 ## § 0-the-problem-and-the-law
 
@@ -515,6 +515,9 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 
 ### § 2.6-may-write-the-writeset
 
+> A refuted shape: two entries overlap only when they are one place
+> (`311u:refuted-only-same-entries-overlap`). The model collides whatever is not DISJOINT.
+
 A line's writeset is the at-most set of mKeys it may write. It is the may-write entries the
 verb's author declared per matched shape (the footprint of `plans/30U`), closed by the
 completion record, and widened by the may-write entailment that mSort owners declare.
@@ -715,6 +718,10 @@ and which ambient mParents to bind.
 ### § 3.2-compare-one-chokepoint-four-answers
 
 > Alias analysis's may/must trichotomy, plus KNOWN_UNSPOKEN for "no generator applies".
+
+> A refuted shape: a parent partitions its children's mSorts
+> (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own
+> distinctions.
 
 `compare(x, y)` answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN. The consumer map is
 unchanged. SAME means the fact is about this mKey. DISJOINT licenses sparing under
