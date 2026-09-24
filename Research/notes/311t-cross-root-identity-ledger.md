@@ -1684,3 +1684,35 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   or the route row (membership); the upward body's absence is exactly that floor, its
   positive records add only collisions, and its closure alone spares, the attributable knife.
   Next, by the human: review under a fresh panel; dispatch still needs the typed ack.
+- The rename pass over `notes/311`, GO given 2026-09-23 (no worktree; narrow edits; commit
+  as you go; a clean-context STE100 rewrite follows, so target unambiguity). LANDED: `9977f627`
+  (placements, footprints, `:lives-in`, `:reaches` → may-read, may-write, Readset, Writeset;
+  § 2.4 and § 2.5 reworded in that vocabulary, the two-question test kept verbatim in shape) ·
+  `46adadd8` (the mCell tag and mSort-Bearer → untagged "cell" and mParent; § 1.8's mTopic is
+  "the mKey read plus the observer instance"; the naming-discipline line names "cell" as
+  untagged). HELD for the human's rewind, in this order: (1) § 1.1 mReferent made explicit,
+  mState and mValue added, the naming line's "value stays untagged" retired, § 1.4/§ 1.5/§ 1.6/
+  § 2.2/§ 3.2's "value" of a key tagged mValue, § 2.9's "whose value depends" → mState; (2) the
+  § 1.9 rewrite (a cell is a singleton mSort identified in its mParent, keyed
+  `parent-key@sm.Sort`, minted at the mark, no scheme of its own, state possibly diffuse, its
+  sort's may-read set saying where it is held and what its freshness follows; the marked line
+  is a read of that key; "no selector position" goes, "no aspect species" stays) with § 1.3's
+  "exactly one primary mScheme" → "at most one" and its mark clause, and § 0's "One mScheme
+  per mSort is primary" likewise; (3) § 2.5: a write inside a container is a write to that
+  container, so the container's may-write applies; containers at or above the level both keys
+  share do not contribute; (4) § 2.8: delete the key-syntax sentence, restate decomposition as
+  the chain the lookups produced, keep `:hierarchical` as a descriptive term ("its lookups
+  name catalogs of its own mScheme or of mSchemes feeding one another"), and § 1.7's "a
+  :hierarchical mScheme's structure fixes how an mKey decomposes" accordingly; (5) the outside
+  rule with its four outcomes, in § 2.8 after the routing-key-named-whole sentence, and the
+  per-level `alias nothing-else` closure stated in § 1.5 as a statement separate from the
+  per-shape warrant, with no word on how the two license together; (6) the route row: a
+  sort's declaration of the sorts it places, the upward body on the placing sort invoked with
+  a placed key's value, the route record `looked-up-in` from any lookup with a closure scoped
+  per route-sort, the parent as the key's own lookup's route and other routes never parents,
+  the one engine sentence; one paragraph at the end of § 2.8 plus a § 2.10 row, and a mention
+  in § 1.6 and § 1.11; (7) § 4.2 kill lines: the parent as an implicit placement, the
+  shared-ancestor skip, mField, the question species, the mirror rule over may-read, the
+  scheme-shaped upward read; (8) the naming file's APPLIED marks. Kept out by decision: the
+  observer's referents as Readset entries; every spelling; the identity-level thing's-end
+  closure; the licensing law of two-ended rows; attestation.
