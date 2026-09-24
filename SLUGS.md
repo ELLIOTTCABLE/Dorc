@@ -1079,7 +1079,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ta (1)
 
 ## 312ca:considered-and-dead
-- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:20
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:576
 - cited: 312cb 312cc 312cd (7)
 
 ## constraint-adversarial-review-belongs-to-round-close
@@ -1099,7 +1099,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## containment-by-path-prefix-lies
 - defined: —
-- cited: 311t 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (5)
+- cited: 311t 312ca 312cc Research/GOTCHAS Research/notes/312b-exercises/containment-by-path-prefix-lies (6)
 
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -2648,6 +2648,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - superseded: <!-- /* superseded: resolved at the license tier by 28Q §4 rul-verdict-primacy-at-the-ship-seat (sta…
 - cited: 28M 28Ra 28Rb 28Rf (6)
 
+## 312ca:fnd-absence-fact-has-no-stated-topic
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:349
+
 ## fnd-addresses-cannot-be-spelled-file-line
 - defined: —
 - cited: 30Vd (1)
@@ -2843,6 +2846,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-fence-pointer-explains-half-the-axioms
 - defined: Research/notes/30Ba-minispec-review-neutral.md:474 — (+SURE)
 
+## 312ca:fnd-finished-writeset-needs-both-records-unstated
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:520
+
 ## 28S:fnd-fixpoint-does-not-protect-tier
 - defined: Research/notes/28S-authorship-arc-close-ledger.md:37 — — the byte-identity lock gates do NOT catch a
 
@@ -2870,6 +2876,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Qa:fnd-in-loop-floor-is-the-whole-seam
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:44 — (+SURE, quoted at the seat)
+
+## 312ca:fnd-in-memory-state-never-spares-past-a-file-write
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:188
 
 ## 28R:fnd-incarnation-correlation-shapes
 - defined: Research/notes/28R-context-kernel-review.md:80 — (mixed grades) — for the
@@ -2900,6 +2909,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28R:fnd-lifecycle-contagion-vs-statelessness
 - defined: Research/notes/28R-context-kernel-review.md:97 — (~SUSPECT; CHECK-ITEM; full-read
+
+## 312ca:fnd-link-count-is-not-closure-evidence
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:265
 
 ## 28R:fnd-load-plane-bet-priced
 - defined: Research/notes/28R-context-kernel-review.md:32 — (~SUSPECT overall) — corpus numbers favor P1 (`.` is
@@ -2933,6 +2945,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-mut-closure-emits-ill-typed-lean
 - defined: —
 - cited: 300 304 (2)
+
+## 312ca:fnd-mworld-fence-contradicts-the-correspondence-example
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:421
 
 ## fnd-nee-state-is-not-derivable
 - defined: —
@@ -2971,6 +2986,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30P 30Pb (2)
 
+## 312ca:fnd-perish-set-of-an-unclosed-resolve-unstated
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:492
+
 ## fnd-permutation-pin-is-set-not-sequence
 - defined: —
 - cited: 302 303 (2)
@@ -2985,6 +3003,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-pinned-reports-absence-of-an-existing-harness
 - defined: Research/notes/30Ba-minispec-review-neutral.md:375 — (+SURE)
+
+## 312ca:fnd-placing-lookup-disagreement-undefined-over-sets
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:313
 
 ## fnd-plan-steps-stay-publicly-mutable
 - defined: —
@@ -3018,6 +3039,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-reach-lattice-outside-scope
 - defined: —
 - cited: 300 300a 304 30Ba (4)
+
+## 312ca:fnd-readset-closure-undefined-at-the-terminus
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:456
 
 ## fnd-redirect-guard-mint-is-absent
 - defined: —
@@ -3079,6 +3103,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 307 30O 30P 30Pb (4)
 
+## 312ca:fnd-revision-losses-footnote
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:550
+
 ## 30Ba:fnd-root-module-names-a-deleted-unit
 - defined: Research/notes/30Ba-minispec-review-neutral.md:243 — (+SURE about the file; ~SUSPECT about the build)
 
@@ -3133,6 +3160,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-solver-takes-no-seed-at-all
 - defined: —
 - cited: 302 303 (2)
+
+## 312ca:fnd-sparing-algebra-supersession-unregistered
+- defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:384
 
 ## 28M:fnd-split-family-composes-unrefused
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:382 — [+SURE] — contest detection is per-NAME
@@ -6414,6 +6444,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30T 311a 311c 312a (4)
 
+## rul-engine-owns-shell
+- defined: —
+- cited: 312ca (1)
+
 ## 30S:rul-engine-owns-shell-resolution-vars
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:79 — [human-typed 2026-08-24] — variables with
 
@@ -6488,7 +6522,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-export-is-an-index-fence
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:57 — — an ambient exported-env mutation between sites
-- cited: 311m (1)
+- cited: 311m 312ca (3)
 
 ## 28M:rul-fail-fast-union
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:302 — [TYPED] — fail-fast is licensed in a gradually-enhanced
@@ -6512,7 +6546,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c (19)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca (20)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7189,7 +7223,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-repeated-probing-reviewed-before-design
 - defined: spike/CLAUDE.md:485 — — Surface: any probing that is not
-- cited: 26Ob 30L 30P 30T 312b (5)
+- cited: 26Ob 30L 30P 30T 312b 312ca (7)
 
 ## rul-replay-editability-is-provenance
 - defined: —
@@ -7316,7 +7350,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (44)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (45)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -7548,7 +7582,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:rul-unsure-falls-toward-sh-parity
 - defined: spike/CLAUDE.md:543 — (human-typed 2026-08-16; LOAD-BEARING) —
-- cited: 26Ob 307 30A 30G 30M 30N 30Nf 30Pd 30Q 30Qc oracle/CLAUDE (15)
+- cited: 26Ob 307 30A 30G 30M 30N 30Nf 30Pd 30Q 30Qc 312ca oracle/CLAUDE (16)
 
 ## rul-untouched-variable-preservation
 - defined: —
@@ -8051,7 +8085,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312cb 312cc (10)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312ca 312cb 312cc (11)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
@@ -8089,7 +8123,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:silence-licenses-nothing
 - defined: spike/CLAUDE.md:202 — — an unmodeled command / wrapper / dimension / kind is
-- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb AID-NEEDS (18)
+- cited: 24D 24Kc 26N 28K 28O 28Q 28R 28Ra 28Rd 300 300e 302 306b 30Ia 30Ne 30Qb 312ca AID-NEEDS (19)
 
 ## sit-redirect-routing
 - defined: —
