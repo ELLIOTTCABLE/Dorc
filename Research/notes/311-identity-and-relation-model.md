@@ -565,7 +565,7 @@ second mKey inside one mParent.
   first write can also change an mKey-Primary
   (`identity-tokens-perish-on-write-not-only-on-rename`), so a state mutation whose Writeset
   touches a mParent-Store perishes the mTokens scoped in it.
-- A LIFECYCLE mutation (a reboot, a re-provision) disturbs a mRoot-adjacent mKey (a boot, a
+- A LIFECYCLE mutation (a reboot, a re-provision) writes a mRoot-adjacent mKey (a boot, a
   tenure); every mKey-Primary scoped in it names a new mReferent afterward; cells whose
   mFullyQualifiedKeys pass through it are new and unmeasured; cells whose
   mFullyQualifiedKeys do not are untouched. "Keyed by Boot" and "invariant across Boot" are

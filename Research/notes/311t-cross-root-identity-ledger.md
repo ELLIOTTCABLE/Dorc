@@ -1716,3 +1716,31 @@ that `311p` is burned down except the sibling-cell residue punted to 312.
   scheme-shaped upward read; (8) the naming file's APPLIED marks. Kept out by decision: the
   observer's referents as Readset entries; every spelling; the identity-level thing's-end
   closure; the licensing law of two-ended rows; attestation.
+- The rename pass's held remainder, LANDED after the rewind, one commit per item: `ecb2a82b`
+  (§ 1.1 states the mReferent, the mState, and the mValue as three things; every key's bytes
+  tagged mValue across § 1.4, § 1.5, § 1.6, § 2.2, § 2.7, § 3.2, § 4.2; § 2.9's "whose value
+  depends" is now "whose mReferent's mState depends"; the naming line retires "value stays
+  untagged") · `75fedffc` (§ 1.9 rewritten: a cell is a singleton mSort identified in its
+  mParent, keyed `parent-key@sm.Sort`, minted at the mark, no mScheme of its own, its
+  freshness following its may-read set never its mParent, `enabled` against `active` under one
+  mParent as the example; § 0, § 1.2, § 1.3, § 2.2, § 2.10 say "at most one primary mScheme";
+  § 1.3 says a mark of the form `parent-key@sm.Sort` names the mParent's mScheme and the
+  singleton's mSort; § 3.6 drops "no selector position") · `98538dc6` (§ 2.5: a write to an
+  mKey is a write to every container on its mFullyQualifiedKey, whose may-write entailment
+  joins the Writeset, a container at or above the deepest level shared with the fact's mKey
+  contributing nothing; may-read never consulted on the write side) · `7d692dc6` (§ 2.8 and
+  § 1.7: an mScheme is :hierarchical when its lookups name catalogs of their own mScheme or of
+  mSchemes feeding it; the mTraversal is the chain the lookups produced; the engine never reads
+  an mKey's syntax; indexical components are the lookup's to declare; § 2.10's row says the
+  relation is read off the lookups) · `63de48a2` (§ 1.5: the per-level `alias nothing-else`
+  closure as a statement separate from the per-shape warrant, listed aliases checked like the
+  first entry; § 2.8: the region test, leaf SAME → SAME, any level SAME → covered, UNKNOWN,
+  every level DISJOINT and closed on every mTraversal of D's mSort → DISJOINT, else UNKNOWN,
+  only x's mTraversals walked, every level asked) · `05e42cfa` (§ 2.8: `:places`, provisional
+  name, a sort's declaration of the sorts it places and the upward lookup invoked with a placed
+  mKey's mValue, emitting `looked-up-in` and its per-route-sort closure, its route a
+  mTraversal for the region test and never the mParent, the engine's one invocation rule, the
+  store's end being the enumeration the entailment already carries; a § 2.10 row; § 1.6 and
+  § 1.11 mention routes and `:places`) · `7724e30c` (§ 4.2: six kill lines). Also § 3.3's
+  "disturbs a mRoot-adjacent mKey" reads "writes". The naming file carries the APPLIED marks.
+  Kept out, unchanged from the list above.
