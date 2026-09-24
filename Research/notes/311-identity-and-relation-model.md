@@ -161,6 +161,14 @@ dialect admits; a path that does not reach a warrant has not given it. The one l
 vouches for itself is the transit-free local mRoute (§1.10); across a transit nothing is
 claimed, only measured and witnessed.
 
+Separately from the per-shape warrant, a lookup may emit, for the one level it resolved, that
+the mReferent at that level is reachable by exactly this one entry in its mParent-Catalog
+(`alias nothing-else`): a statement about one mKey, from the thing's end, made on the path that
+measured it (a link count of one for a file; for a directory, the link count and that no other
+mount exposes it). Where the lookup knows other entries it emits them first, and a listed alias
+is checked as the first entry is. This statement and the per-shape warrant are two statements;
+the region test (§2.8) consumes this one, and a hardlink or a bind mount is where it is withheld.
+
 ### § 1.6-parent
 
 Every mKey has exactly one mParent, the mKey it was resolved inside. What the edge carries
@@ -423,7 +431,15 @@ needs to know nothing about files (`renaming-a-parent-moves-every-child-name`,
 a may-read entry, stands for whatever its mScheme reaches beneath it: in §2.5's test it reads
 UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
 §3.2 answers of the two as siblings (unequal mTokens say only that the thing is not the routing
-mKey itself).
+mKey itself). That is the floor. The region test refines it, for an mKey D given whole against
+an mKey x, over each mTraversal of x as its lookups produced it (§1.7; and the routes of the
+next paragraph), leaf first: if x's leaf compares SAME with D, SAME; else if any level of a
+mTraversal compares SAME with D, D's region covers x and the pair reads UNKNOWN; else if, on
+every mTraversal of D's mSort, every level compares DISJOINT with D and every level emitted
+`alias nothing-else` (§1.5), DISJOINT; otherwise UNKNOWN. Only x's mTraversals are walked, and
+D needs no closure of its own. Every level is asked, never only the leaf, because an alias may
+sit at any level (a bind mount of a directory above a file; an alias entry above a leaf) and a
+leaf's own closure cannot see it.
 
 ### § 2.9-composite-sorts (roles)
 
