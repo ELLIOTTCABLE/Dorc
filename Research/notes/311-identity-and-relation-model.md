@@ -203,12 +203,14 @@ transit nothing is claimed. Everything is measured and witnessed.
 
 Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for
 the one level it resolved. The closure states that the mReferent at that level is reachable by
-exactly this one entry in its mParent-Catalog. It is a statement about one mKey, from the
-thing's end, made on the path that measured it. For a file, the evidence is a link count of
-one. For a directory, the evidence is the link count and that no other mount exposes it. Where
-the lookup knows other entries, it emits them first, and a listed alias is checked as the first
-entry is. The closure and the per-shape warrant are two statements. The region test (§2.9)
-consumes the closure. A hardlink or a bind mount is where the closure is withheld.
+exactly this one entry anywhere in the instance the lookup ran in, not only in the
+mParent-Catalog the entry was found in. For a path that instance is the whole mount namespace.
+It is a statement about one mKey, from the thing's end, made on the path that measured it. For
+a file, the evidence is a link count of one. For a directory, the evidence is that no other
+mount exposes it. Where the lookup knows other entries, it emits them first, and a listed alias
+is checked as the first entry is. The closure and the per-shape warrant are two statements. The
+region test (§2.9) consumes the closure. A hardlink or a bind mount is where the closure is
+withheld.
 
 ### § 1.6 parent-one-per-key
 
@@ -217,7 +219,7 @@ routes, one per other lookup that reached it (§2.10). None of them is its mPare
 mParent edge carries follows the mScheme.
 
 - Through a secondary mScheme, the mParent is the mParent-Catalog: the thing the mKey was looked
-  up in. Examples: a mount namespace for a path, a passwd database for a login name, a process
+  up in. Examples: a directory for a path's entry, a passwd database for a login name, a process
   table for a pid. The edge carries routing: which instance, and perishing (§3.3). It never
   carries identity.
 - Through the primary mScheme, the mParent is the mParent-Store: the mKey relative to which
@@ -585,7 +587,8 @@ mTraversal of x as its lookups produced it (§1.7), including the routes of §2.
 2. Else if any level of a mTraversal compares SAME with D: D's region covers x, and the pair
    reads UNKNOWN.
 3. Else if, on every mTraversal of D's mSort, every level compares DISJOINT with D and every
-   level emitted `alias nothing-else` (§1.5): DISJOINT.
+   level emitted its closure, `alias nothing-else` (§1.5) or `looked-up-in nothing-else`
+   (§2.10): DISJOINT.
 4. Otherwise: UNKNOWN.
 
 Only x's mTraversals are walked. D needs no closure of its own. Every level is asked, never only
