@@ -618,7 +618,8 @@ lookup supplied (§1.6).
 The engine invokes G's lookup only when all three hold:
 
 - a writeset or readset entry names an mKey of G given whole
-- an mKey of T that a fact reads has no route of mSort G
+- the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no
+  route of mSort G
 - G declares that it places T
 
 It invokes the lookup with every mKey it holds for that mReferent. Two answers that disagree are
