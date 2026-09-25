@@ -464,3 +464,68 @@ stays guard-only), so the ruling is about the text's consistency. Nothing applie
   coarse entry and the sort owner's downward enumeration relate.
 - State: `hold-zero-traversal-guard` stands, direction mostly acked, wording owed after the
   coarse-and-downward exchange. Nothing applied to 311.
+
+## § 13-the-coarse-and-downward-writeset-exchange
+
+The human asked what a coarse writeset and a downward writeset are, what the zero-traversal
+item owes 311, what it costs in elisions, whether it nets to sound modulo honesty, and how it
+spreads across the enhancement curve. Conductor's account, read (**[HUMAN]**: "mostly ack").
+Nothing applied to 311.
+
+- Vocabulary as put. A bare key in a writeset entry is deep by the cross-root ruling: the
+  referent and everything reachable beneath it (`311t` § 15). That is the coarse form, and it is
+  the default for every bare key, so every package write in a book is a coarse entry unless the
+  describer narrows it to a cell. The downward form is the sort owner's enumeration of members
+  (`dpkg -L`), which `311:2.10-places-the-upward-lookup` says is carried as write reach by the
+  entailment of `311:2.6-may-write-the-writeset`. "Beneath" is one relation with two ends, the
+  route row of `311t` § 11: the thing's end (a member names its groupings: the path traversal;
+  `dpkg -S`) and the store's end (a grouping names its members: `dpkg -L`). Each end has positive
+  entries that add collisions and a closure that is the knife.
+- What 311 consumes today. The region test consumes the thing's end only
+  (`311:2.9-hierarchical-and-the-region-test`). The store's end widens the writeset with points
+  that collide pairwise where SAME and separate nothing. Two consequences: with a deep entry
+  present, enumeration adds collisions only, and precision comes from narrowing the entry; and the
+  store's end's closure has no consumer for "outside".
+- The two ends fail on different aliases (conductor, +SURE on `dpkg -S` string matching, -GUESS
+  on merged-`/usr` specifics): `dpkg -S` matches spellings and must decline on a bind-mount
+  spelling; `dpkg -L` emits recorded paths that resolve through the path scheme to inodes and
+  sees through the bind mount. For directories it is the reverse: a path's own traversal is
+  exact, and `find` at probe misses members a later line creates.
+- Owed by the zero-traversal item, both clauses: `edit-disjoint-needs-a-spoken-closure` (step 3
+  answers DISJOINT only from a per-level closure on at least one traversal of D's sort, or a
+  zero-entry `looked-up-in nothing-else` from D's sort's placing lookup; a decline reads UNKNOWN)
+  and `edit-traversals-are-every-level-of-identity` (x's traversals are those produced at every
+  level of `identity(x)`, plus placing routes). Separate and not owed by the hole:
+  `add-store-end-closure-answers-outside` (a closed enumeration by the sort owner also concludes
+  outside when every member compares DISJOINT with x, covered when any is SAME, else UNKNOWN).
+- Price. Relative to the acked posture the two clauses cost nothing. The sparing they remove is an
+  inconsistency: a remote fact above `rm /var/cache/app/index` collides under the ordinary walk
+  (two worlds, UNKNOWN) and above `rm -rf /var/cache/app` spares under the vacuous universal. A
+  region write sparing what its member's point write collides is a bug's yield. The one trade is
+  in the stdlib placing body: it earns sparing for admin config past package writes only by
+  speaking the zero-entry closure on a spelling it can canonicalize. The weakening the conductor
+  volunteered: the taught stdlib shape (USER_STORY stage 7's `dpkg -L` arm) already catches the
+  bind-mount case as a pairwise SAME, so the forcing example bites the intermediate rung where
+  `:places` is published and the enumeration is not.
+- Soundness modulo honesty, this item only: after the two clauses every region-against-point
+  DISJOINT names its speech (a level's closure, the inode warrant, the store's
+  `:aliases-nothing-else`, or the zero-entry closure). Two neighbouring holes in the same section
+  stay open and untouched: `hold-region-against-region-floor` and
+  `hold-closure-evidence-sentences`.
+- The curve, all rungs the package sort owner's, none the admin's: nothing declared collides
+  (unfinished); a record before membership machinery spares shipped-file facts wrongly and is
+  30U's premature-record knife, unchanged but worth one teaching sentence in 312, since a key is
+  deep only over what the model can reach beneath it; `:places` published removes only that wrong
+  sparing; the enumeration published collides pairwise and, with the third change, separates
+  alias-robustly. No cliff found: each rung adds collisions or spoken separations and removes only
+  unsound elision.
+- Conductor's own defect, held for the human's word: the `0738c00f` rewrite of sparing's second
+  question reads "For each origin cell whose entailment widened the set, a reached finished
+  record exists for that cell's mSort and shape". The relative clause admits a narrowing reading
+  that excuses an origin sort with an empty entailment from the record `plans/30U` requires for
+  every cross-kind pair. Proposed: "For each origin cell in the writeset, a reached finished
+  record exists for that cell's mSort and shape." The lead sentence "The writeset's definition
+  is finished" still carries the strict meaning; the elaboration undercuts it.
+- Open for the human: whether the store's end separates at all, or the thing's end stays the one
+  separating instrument. The next exchange digs the store's-end separation for consequences and
+  holes.
