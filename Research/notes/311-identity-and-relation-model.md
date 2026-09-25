@@ -279,6 +279,16 @@ A mResolution perishes under ordinary effective-mWorld reach from any mutator wh
 touches a mTraversal member. Its target object is not its backing. An mKey can stop reaching an
 object without the object changing. An object can change without its mKey changing.
 
+A mResolution also depends on the read set of the lookup body that produced it. The engine
+derives that set from the body. Shell parity supplies the reads of sh constructs. The path
+mScheme supplies the reads of a path. The speech that describes an external command supplies
+the reads of that command.
+
+The read set is closed only when the read set of every external command in the body is closed.
+The author of the speech that describes an external command closes that command's read set by
+an explicit act. An open read set perishes the mResolution under any routing mutation
+(3.3-perishing-three-mutator-species).
+
 ### § 1.8-fully-qualified-key-topic-and-derivation
 
 A mFullyQualifiedKey is the recursive identity of an mKey: its mKey-Primary scoped in its
@@ -490,7 +500,8 @@ rewrites every inner fact.
 
 A fact's readset is the marked reads of the body that answered it, together with the may-read
 entries declared by every member of the mKey's mFullyQualifiedKey. It is closed only when every
-declared set is closed.
+declared set is closed. For a verdict fact, the vouch closes the marked reads of the body that
+answered it (`KNOBS:kCONTRACT-RUNGS`).
 
 An mKey's mParent instance is no may-read entry and needs no declaration. The walk of
 3.2-compare-one-chokepoint-four-answers collides a write at or above it. A may-read entry naming
@@ -793,8 +804,10 @@ authority. It never computes the successor identity.
 - A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
   read. Examples: a mount, a symlink replacement, a rename, a user added, a hostname change, a
   write to any environment variable, cwd, or configuration a lookup reads. A mResolution
-  perishes when its mTraversal includes a touched mKey, when its `resolve()` read the written
-  state, or, under the flat default, when its mParent-Catalog was touched at all. Every
+  perishes when its mTraversal includes a touched mKey. It also perishes when the written mKey
+  is in the read set of the lookup body that produced it (1.7-resolution-and-its-traversal). An
+  open read set perishes it under any routing mutation. Under the flat default, it also perishes
+  when its mParent-Catalog was touched at all. Every
   mFullyQualifiedKey built on a perished mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
   conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
