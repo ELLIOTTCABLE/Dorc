@@ -381,3 +381,34 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   binary.
 - State: the hold stands until the human acks the closing wording. Nothing applied to 311 in this
   sitting.
+
+## § 11-the-read-set-closure-applied
+
+- **[TYPED]** 2026-09-24, nack of a "constructed" closure as a model mechanism: `env -i` is one
+  layer down, the `env` tool's describer authoring its predict and marking its closure. The only
+  engine-mandated special case is shell builtins, by parity. The § 10 shape's "two ways to close"
+  collapses to one: an author's explicit act, with shell parity supplying sh constructs.
+- **[TYPED]** 2026-09-24, ack of the narrowing: closure is necessary for the dangerous actions,
+  cross-author survival and the like. It may be relaxed for author-only, small-blast-radius,
+  high-value actions such as self-vouch. What travels, what bites other authors, and what composes
+  into novel effective speech no human wrote needs the closure.
+- Applied, resolving `hold-unclosed-lookup-perish-set`: `311:1.7-resolution-and-its-traversal`
+  gains two paragraphs (a mResolution depends on its lookup body's read set; the engine derives
+  the set, shell parity for sh constructs, the path mScheme for paths, the describing speech for
+  external commands; closed only when every external command's read set is closed; the author of
+  that speech closes it by an explicit act; an open set perishes under any routing mutation).
+  `311:3.3-perishing-three-mutator-species` replaces "when its `resolve()` read the written
+  state" with the read-set clause and the open-set clause, the flat-default clause preserved
+  verbatim in meaning. `311:2.5-may-read-the-readset` gains one sentence: for a verdict fact the
+  vouch closes the body's marked reads (`KNOBS:kCONTRACT-RUNGS`). The word "leaf" was avoided in
+  311 for a body's commands, since 311 already uses it for level 0 of a chain.
+- Linter: the added lines carry zero hard violations and two "is closed" state advisories that
+  mirror 311's existing sentence. The whole file keeps its one pre-existing hard flag
+  (`terminates` against `stop`) and moves from sixty-two to sixty-four advisories.
+- The re-sited hole `hole-predict-read-set-closure` (a tool describer's read closure, the
+  read-side twin of `disturbs nothing-else`) is 312's spelling and is not owed by 311.
+- State: eight holds of § 3 remain (`hold-region-against-region-floor`,
+  `hold-zero-traversal-guard`, `hold-closure-evidence-sentences`,
+  `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
+  `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and thread
+  2 with § 4's correction). The ext4 nit stays held for the boot-children item.
