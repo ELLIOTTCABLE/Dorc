@@ -412,3 +412,55 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
   `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and thread
   2 with § 4's correction). The ext4 nit stays held for the boot-children item.
+
+## § 12-the-zero-traversal-sitting
+
+The item chosen as least consequential: `hold-zero-traversal-guard`. It withholds only a
+sparing that the acked floor denies elsewhere (`311t` § 14: a sort hung on nothing comparable
+stays guard-only), so the ruling is about the text's consistency. Nothing applied to 311.
+
+- As put: step 3 of the region test quantifies over "every mTraversal of D's mSort"
+  (`311:2.9-hierarchical-and-the-region-test`). A universal over zero traversals is true, so an x
+  with no traversal of D's sort reads DISJOINT. Three cases: x's own scheme is of D's sort (the
+  set is never empty); D's sort declares no `:places` for x's sort (§ 2.10's default sends the
+  pair to the ordinary walk); D's sort declares `:places`, the lookup runs on x's bytes and
+  declines (x has no route, the default does not apply, step 3 is vacuous). The corpus pin against
+  the shape is `notes/277` § 5's ⊤-is-never-the-empty-set, carried in `spike/CLAUDE.md`.
+- WITHDRAWN (conductor): the first motivating example, a vendor cell whose read set omitted the
+  cache. It rested on a false closure, the author's priced knife.
+- **[TYPED]** 2026-09-24, two comments. (1) Ack that an empty set read as vacuously safe must not
+  be a default without close consideration and a clear reason; the hole is true and worth the
+  attention. (2) A motivating example must not rest on a user doing wrong. Dorc cannot see
+  "forgetting": an author leaves a set open or closed, and that is all Dorc holds. Dorc's two
+  duties: introduce no footgun (a place that encourages being extra wrong, such as an implicit
+  negative existential), and draw no incorrect conclusion from clear, intended, correct speech.
+- Conductor, re-derived and read (**[HUMAN]**: "mostly ack"): the phrase "has no route of mSort G"
+  (`311:2.10-places-the-upward-lookup`) names three epistemic states with one word: nobody asked;
+  asked and the lookup declined; asked and the lookup answered "in no region of G". The forcing
+  book, every statement true: a package-shipped directory bind-mounted at `/srv/www`; a drifted
+  `apt-get install nginx-common` with a coarse writeset (the package given whole, closed by its
+  record); a converged `cp` to `/srv/www/index.html`; the package sort's placing lookup
+  (`dpkg -S`) string-matches recorded paths, sees no match for the bind-mount spelling, and
+  honestly declines, since the spelling may still name a shipped inode through a mount. x has no
+  package route. Step 3 is vacuous: DISJOINT. The `cp` is spared, the upgrade rewrites the inode,
+  and the customization is lost. The answer contradicts the law that partial measurement never
+  widens (`311:3.2-compare-one-chokepoint-four-answers`): measured, a canonicalizing body places
+  the file and step 2 answers UNKNOWN; unmeasured, the text answers DISJOINT. It contradicts § 0
+  (where nobody has spoken, decline) and § 2.9's own defence of asking every level. It is not
+  flag-class under § 7's criterion: a body that canonicalizes through the mount table could have
+  known. It is a footgun in the typed sense: the coarse whole-key bound is the recommended low
+  rung, and the vacuous step turns an unplaceable member into a proven-outside one.
+- Repair direction, mostly acked, wording not yet put: step 3 requires a closure for D's sort.
+  Either every level of at least one traversal of that sort carries its closure and compares
+  DISJOINT with D, or D's sort's placing lookup emitted `looked-up-in nothing-else` with no
+  `looked-up-in` record for x (x is in no region of that sort). A decline carries no closure and
+  reads UNKNOWN. A spoken zero-entry closure reads DISJOINT, attributed to G's owner. The
+  earlier "at least one traversal" guard alone was too blunt: it also sent the spoken negative to
+  UNKNOWN. Companion clause still needed: x's mTraversals are those produced at every level of
+  `identity(x)` (§ 3.1), or the guard costs every non-path fact its separation from every
+  recursive filesystem write (~SUSPECT the text already means this).
+- Held for the next exchange (**[HUMAN]** opened it): whether a coarse whole-key writeset entry
+  closed by its record is a legitimate finished form without downward enumeration, and how the
+  coarse entry and the sort owner's downward enumeration relate.
+- State: `hold-zero-traversal-guard` stands, direction mostly acked, wording owed after the
+  coarse-and-downward exchange. Nothing applied to 311.
