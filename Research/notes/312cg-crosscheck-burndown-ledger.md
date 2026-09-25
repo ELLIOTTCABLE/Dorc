@@ -295,3 +295,89 @@ Applied at `6acb402b`, resolving `hold-sentinel-danger-line` under the § 8 ack.
 - State: tip `6acb402b` before this ledger commit. Nine holds of § 3 remain; thread 2 stays held
   with § 4's correction; the next item by the human's order is
   `hold-stdlib-key-space-over-the-boots-children`, with the ext4 nit held for it.
+
+## § 10-the-lookup-read-set-sitting
+
+The human's order changed to least-consequential-first, which supersedes § 9's next item. The
+item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the boot-children item.
+
+- As put: the perishing clause "when its `resolve()` read the written state"
+  (`311:3.3-perishing-three-mutator-species`) presumes the engine knows a lookup body's reads.
+  The conductor offered three cases (closed, falsified, unauditable) and two options (perish under
+  any routing write; perish on marked reads only), leaning to the first.
+- **[TYPED]** 2026-09-24, three points that bind the rest: (1) "cannot know because the binary can
+  do anything" is speech, not epistemics. Dorc provides the tools to speak without implicitly
+  saying "and I'm done speaking". When an author does say it, the consequence is theirs. The cell
+  is closed by contract and design, not by algorithm or an if-branch. (2) Dorc controls dorc-lang.
+  Parsability is Dorc's job. Any form short of certainty is rejected at the language surface, so
+  ambiguity within oracles does not exist, by construction. (3) No cell licenses danger unflagged.
+  All behaviour fails safe, including at the conjunction of mutually-unaware speech, epistemic
+  unknowables, and partial speech.
+- Conductor, re-derived and read: the "unauditable" cell dissolves. It conflated two things. A
+  form the engine cannot classify (`eval`, a dynamic command name, a dynamic source) is rejected
+  by the unsafe boundary, so no cell. An external command in a substitution is a classified
+  construct whose read extent is speech. The taint pass of `plans/27C` § 4 is a falsifier in 311
+  (`311:4.1-boundary-of-this-model`), and the conductor had imported its carry-gate posture into
+  the perishing seat. By speech the cells are: open (⊤ perish set, fail-safe, the honest-walls
+  behaviour), closed (survival past a write W needs W's finished writeset, the closed read set,
+  and pairwise DISJOINT, the `311:2.6-may-write-the-writeset` shape on the routing side, under the
+  flag by the § 8 law), falsified (refused at load).
+- **[HUMAN]** ack that no spelling exists and that a hole is possible. Asked for thorough
+  verification that a closure statement is not dominated by knowledge the engine holds, with
+  transport set aside.
+- Conductor verification, read (**[HUMAN]**: "ack your general logic"): the engine holds shell
+  parity for sh constructs, the Dorc-constructed shell state (`311a` § 8: environment, cwd, PATH,
+  stdin are known finite sets), the stdlib path lookup's traversal for any path a construct
+  touches, and each modelled command's predict marks. Derivation by class: an sh construct is
+  exact. A modelled tool is exact iff its predict's read set is closed. An unmodelled binary
+  yields nothing, the frame problem on the read side. So a lookup-level closure is dominated
+  where the set is derivable and mis-sited where it is not, because "what `nginx -T` reads" is
+  knowledge about nginx, and its nearest competent edge is nginx's describer.
+  `rul-lookup-read-closure-exists` is WITHDRAWN. Replaced by `rul-lookup-read-set-is-derived`: a
+  mResolution's read set is the union of its body's leaves' read sets, closed iff every leaf is
+  closed, open ⇒ perish under any routing mutation, no lookup-level act. The hole is re-sited as
+  `hole-predict-read-set-closure`: no predict's read set is closed today
+  (`ANALYZER-NEEDS:an-backing-selfframing`, ruled for the verdict consumer where the vouch prices
+  adequacy). A lookup has no vouch.
+- **[HUMAN]** ack: the logic decomposes to other bodies than lookups.
+- **[TYPED]** nit: `__predict()` is intentionally unreliable, authored speech allowed to diverge
+  from the world. Under refag this should not matter, since Dorc composes authored speech and
+  guarantees none of it true. Conductor: it lands as "the closure attaches to whatever speech
+  describes the leaf that executed" (a predict's marks and closure when the predict ran; a
+  tool-level read declaration when the real binary ran under the oracle's self-vouch). Either is
+  authored, and closed is an explicit act.
+- **[TYPED]** the syscall tracer (`plans/077`) is U-shaped: a linting, hinting, safety-net
+  enhancement. The model and the product stand without it. It is set aside for uneven
+  availability, not for correctness. Dorc is built for the residue and the oddballs, systems
+  without those affordances. Indefinite defer, someday-maybe, strictly better where available.
+- **[HUMAN]** lean, pending the general shape: close the item as "311 says the read set must be
+  explicitly closed, just like every other trusted set", with no spelling attempted.
+- **[HUMAN]** aside for the build era, not this pass: "every trusted set must have a closure"
+  belongs in the type system. The set-of-facts construct consumes a network-received,
+  transit-verified statement of closure to become realized and concrete. Every licensure path
+  operates only over trusted-closed sets. Conductor: the corpus precedents are `Claim<Tier,_>`
+  (`ANALYZER-NEEDS:an-claim-tier`) and `notes/277` § 5's ⊤-is-never-the-empty-set pin. A
+  `Closed<Set>` newtype minted only from a received closure record is the analog. A steering
+  candidate for the build, not owed.
+- Conductor, the general shape of a read set, given for the human's understanding and banked as
+  read: a read set is the mKeys an answer may depend on. It has two flavours, state and routing,
+  partitioned by consumer and closed once. Three sources feed it: the sort owner's placement
+  (`311:2.5-may-read-the-readset`, with its sentinel), the body author's marks (closed by the
+  vouch for a verdict, `KNOBS:kCONTRACT-RUNGS`; by no act for a lookup), and each leaf tool's
+  reads (no speech today). The engine unions the sources, and the union is closed iff every source
+  is closed, a withholding composite in `plans/28M`'s sense. An entry is an mKey at any grain, and
+  a store named whole is a legal coarse entry. A closure is spoken (a tail record, static or
+  dynamic arms, one per completing path, `plans/30U` § 5's witness law) or constructed (an
+  engine-recognized construct whose complement is mechanical, `env -i` for the environment per
+  `plans/30S`). Both are explicit. The consumers are perishing (§ 3.3) and the state test
+  (§ 2.6 question 2), both under the flag, and no unflagged consumer exists. A never-settled
+  member (a resolver cache) is an honest entry that `KNOBS:kVOLATILES` handles. A remote member
+  (a zone) is the cross-root corner's.
+- Conductor, the one tension to confirm before closing: a verdict body's read set is closed by
+  the vouch as one act, the pinned default (`notes/24M`, rul24M-rungs-default). The 311 sentence
+  must scope the explicit-closure requirement to sets that have no closing act today (a lookup's
+  leaves; a tool's reads) and leave the verdict's pinned act as its closure. Otherwise the
+  sentence silently unpins the default and re-prices every verdict whose body runs an unmodelled
+  binary.
+- State: the hold stands until the human acks the closing wording. Nothing applied to 311 in this
+  sitting.

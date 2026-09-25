@@ -446,7 +446,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-backing-selfframing
 - defined: —
-- cited: 30Mb 30Q 30T 311c 311t ANALYZER-NEEDS _tmp-naming-rewrite-owed (10)
+- cited: 30Mb 30Q 30T 311c 311t 312cg ANALYZER-NEEDS _tmp-naming-rewrite-owed (11)
+
+## an-claim-tier
+- defined: —
+- cited: 312cg ANALYZER-NEEDS (4)
 
 ## an-compare-chokepoint
 - defined: —
