@@ -727,3 +727,49 @@ claims are marked and none is acked unless the line says so.
   pre-existing; no added line carries a violation.
 - State: the walk-through and the proposed edit are in chat, awaiting the human's ack; nothing
   of the relaxation is applied. Thread 2 stays held. The other five holds of § 16 stand.
+
+## § 18-the-emitted-traversal-applied
+
+The walk-through of § 17's ask ran in chat and was acked whole (**[TYPED]** 2026-09-26: "Ack.
+Commit granularly; `:hierarchical` going away should be separate"). Its content, banked as
+read: `:hierarchical` abstracts to a walk specifier (the lookup recursed through catalogs of its
+own scheme, so the dependency set arrived one member per step), and the model consumes only the
+set, through two roles a member plays, invalidation trigger and containment witness. For nested
+catalogs the roles coincide; for a search path or a positional prefix only the trigger is
+meaningful and the witness yields UNKNOWN, the safe bottom. Cases walked and named: the
+filesystem tree; the PATH search (a DAG over catalogs, absence-dependent); nsswitch, hosts, and
+DNS (a DAG whose later catalogs an earlier one selects); the positional prefix; the name-addressed
+flat catalog; no emission and partial emission; the large positional catalog; a symlink level; an
+indexical level; the region test over a mixed-sort traversal (UNKNOWN today and after, the acked
+"hung on nothing comparable" posture, no regression).
+
+Applied to 311, four commits, each linted at sixty-five findings (the one pre-existing hard flag
+and sixty-four advisories, one passive fewer than before, since the struck "was touched" left):
+
+- `ac0cb89b`, `edit-traversal-is-emitted`: `311:1.7-resolution-and-its-traversal` says the lookup
+  emits its mTraversal, one member per routing mKey crossed, as an at-most set that the lookup's
+  owner closes by an explicit act; no emission falls to the mParent-Catalog given whole; members
+  without the closing act keep that floor member beside them. The § 2.9 floor paragraph and its
+  Default line follow; § 3.3's flat-default clause is struck as subsumed.
+- `a9b33f8c`, `edit-retire-hierarchical`: the terms `:hierarchical` and flat are gone from 311
+  and from `311u`; the section is `2.9-the-traversal-and-the-region-test`, the slug replaced in
+  311, `311u`, and this ledger; the indexical paragraph reads "a lookup"; Arity is per lookup per
+  matched shape and Declared-by is the lookup's owner; § 1.3 drops its bullet; the § 4.2 entry
+  and the footer say "emitted mTraversals" and "lookups that cross several levels".
+- `31eadb43`, `edit-touching-collides-widely`: `311:3.3-invalidation-three-mutator-species`, a
+  writeset entry touches a mTraversal member when `compare()` answers other than DISJOINT.
+- `c51558f0`, `edit-positional-footer`: the § 2.9 footer carries the positional catalog, the
+  one-line-per-member emission, the ten-thousand-row table, and the single-emission want as 312's.
+
+Residues, each pre-existing and named in chat, none owed: a level's invalidation key is its
+entry's existence cell while its containment key is the referent it resolved to, which is
+well-defined once catalog entries are referents (`hold-catalog-entries-as-referents`); until then
+a level is its referent and an ancestor's state write over-invalidates, safe. The closing act's
+spelling is 312's; the `looked-up-in` records of `311:2.10-places-the-upward-lookup` are its
+natural form. The "feeds it" ambiguity of the retired definition is gone with it.
+
+- Resolved: thread 2 with § 4's correction. The wide reading stays the floor, as the correction
+  said, and the describer's precision is now speech in the model. State: tip `c51558f0` before
+  this ledger commit. Five holds of § 3 remain: `hold-region-against-region-floor`,
+  `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
+  `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`.
