@@ -5515,6 +5515,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311u:refuted-identity-as-a-table-against-axes
 - defined: Research/notes/311u-refuted-shapes-register.md:106
 
+## 311u:refuted-identity-by-natural-key
+- defined: Research/notes/311u-refuted-shapes-register.md:332
+
 ## 311u:refuted-identity-carries-every-observation
 - defined: Research/notes/311u-refuted-shapes-register.md:252
 

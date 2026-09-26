@@ -434,8 +434,8 @@ against lazy borrowing.
 
 > A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket,
 > under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the
-> directory entry, or the inode that the entry leads to. A bind names the mScheme whose mReferent
-> the tool acts on.
+> directory entry, or the inode that the entry leads to. A tool that removes the entry binds under
+> the first, and a tool that changes the file binds under the second.
 
 ### § 2.2-primary-of-and-identified-in
 
@@ -443,8 +443,11 @@ against lazy borrowing.
 
 mScheme P is `:primary-of` mSort K, at most once per mSort. A second name is a second mScheme.
 P's mKeys mean something only relative to K's mParent-Store. P's `resolve()` is the identity on
-the mKey. An mKey of P names the mReferent that K's mParent-Store holds under it, or none. It is
-a level of a mFullyQualifiedKey in both cases (1.8-fully-qualified-key-topic-and-derivation).
+the mKey. An mKey of P names the mReferent that K's mParent-Store holds under it, or none. For a
+`:root` shape, the world is the store. The mKey is a level of a mFullyQualifiedKey in both cases
+(1.8-fully-qualified-key-topic-and-derivation). A store that generates its mKeys at creation
+holds an mReferent under every mKey a book can name. A store that admits mKeys as names may
+hold none under an mKey a book names.
 
 P's owner declares, per matched shape of the mKey's mValue:
 
