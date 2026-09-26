@@ -251,14 +251,6 @@ its mParent. What the mParent edge carries follows the mScheme.
   It is what `compare()` walks (3.2-compare-one-chokepoint-four-answers). At the primary
   mScheme, mParent-Catalog and mParent-Store are one mKey.
 
-An entry of a mParent-Catalog is an mReferent. Whoever describes the catalog declares the entry's
-mSort, `:identified-in` the catalog's mSort (2.2-primary-of-and-identified-in). That mSort's
-primary mScheme keys an entry by its name in the catalog and carries its warrants per matched
-shape (1.5-token-and-the-two-warrants). The catalog holds the entry, or it does not. The mKey
-names the entry in both cases. The entry's existence is a cell (1.9-cell-a-singleton-sort). A
-read of a name the catalog does not hold reads that cell. A lookup that crosses the entry emits
-its mKey as a mTraversal member (1.7-resolution-and-its-traversal).
-
 Through the primary mScheme, that mScheme's owner declares the mParent's mSort
 (`:identified-in`) and the warrants (1.5-token-and-the-two-warrants, and `:root`,
 2.2-primary-of-and-identified-in). The declaration is per matched shape of the mKey's mValue, a
@@ -283,9 +275,7 @@ Cloned identifiers are the standing witness.
 > Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login
 > name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner
 > name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a
-> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one. A future entry
-> under a future directory: the directory's own entry is its mParent, and the chain ends at the
-> deepest directory that exists.
+> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
 
 ### § 1.7-resolution-and-its-traversal
 
@@ -453,7 +443,8 @@ against lazy borrowing.
 
 mScheme P is `:primary-of` mSort K, at most once per mSort. A second name is a second mScheme.
 P's mKeys mean something only relative to K's mParent-Store. P's `resolve()` is the identity on
-the mKey.
+the mKey. An mKey of P names the mReferent that K's mParent-Store holds under it, or none. It is
+a level of a mFullyQualifiedKey in both cases (1.8-fully-qualified-key-topic-and-derivation).
 
 P's owner declares, per matched shape of the mKey's mValue:
 
@@ -874,8 +865,9 @@ authority. It never computes the successor identity.
   invalidated mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
   conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
-  an mKey are routing writes to its mParent-Catalog entry, its existence cell. A writeset that
-  omits the entry is the ordinary at-most omission knife, now visibly covering routing mKeys.
+  an mKey are routing writes. They change what the mKey reaches. The mKeys they write are the
+  verb author's at-most claim. A writeset that omits them is the ordinary at-most omission
+  knife, now visibly covering routing mKeys.
 - A state mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
   first write can also change an mKey-Primary. So a state mutation whose writeset touches a
   mParent-Store invalidates the mTokens scoped in it.
@@ -1045,9 +1037,11 @@ became untrue. The human refreshes root documents.
   identity tier carries an authored per-aspect relation mapping. Here: there is no aspect
   species (4.1-boundary-of-this-model). Each aspect is a cell, a singleton mSort with its own
   may-read set and its own `:observer-dependence` (1.9-cell-a-singleton-sort).
-  Same-for-existence is the mParent-Catalog entry, which creation, deletion, and rename write
-  (3.3-invalidation-three-mutator-species). Same-for-contents is the inode's mReferent, reached
-  when the path mScheme yields the inode (2.3-aliases-nothing-else-the-store-warrant).
+  Same-for-existence and same-for-contents are two facts in the filesystem describer's
+  vocabulary. Contents is a fact about the inode the path mScheme yields
+  (2.3-aliases-nothing-else-the-store-warrant). Existence is a fact about the directory, or
+  about an mReferent keyed by name in it where the describer mints one. Creation, deletion, and
+  rename write the one the describer named (3.3-invalidation-three-mutator-species).
 - `30T:file-identity` the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
   path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey are
   routing writes to its mParent-Catalog entry, and a writeset may name them
