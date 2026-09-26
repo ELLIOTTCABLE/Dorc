@@ -609,3 +609,51 @@ Conductor's acks, each re-walked against 311's text before the edit:
   `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
   `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and
   thread 2 with § 4's correction.
+
+## § 16-the-example-footer-pass
+
+The item chosen as least consequential: `hold-closure-evidence-sentences`, the two sentences in
+`311:1.5-token-and-the-two-warrants` that name a link count of one and the mount table as the
+evidence for a file's and a directory's closure. Put to the human with three options (strike,
+qualify, leave), the conductor leaning to strike.
+
+- **[TYPED]** 2026-09-26: the two sentences are a bad example, and examples belong in
+  non-normative form only. Move every example that names a filesystem and the like out of the
+  model's normative prose into a non-normative blockquote footer after the section's prose. Not
+  battle-proof: one brief header line says the footers are exemplary and not fully worked. Moving
+  only, strictly: no new examples, no bloat, no footer where nothing moved. The human's lean was
+  very nearly to remove all examples.
+- The cut the pass used (conductor, put and not objected to): normative prose may name what the
+  engine holds, which is sh syntax, engine-owned shell state, and the model's own objects. An
+  example naming a filesystem, a kernel object, a daemon, a tool, a protocol, or a file format
+  moved to its section's footer.
+- Applied, `a9f8ccb7`: one header line; one Conventions line defining the footer blockquote;
+  footers in § 1.1, § 1.2, § 1.5, § 1.6, § 1.7, § 1.9, § 1.10, § 2.1, § 2.2, § 2.3, § 2.5,
+  § 2.6, § 2.7, § 2.9, § 2.10, § 2.11, § 3.2, § 3.3, § 3.4, and § 3.5. Every move is verbatim
+  except a label of at most a few words per footer item, so the item stands alone, and one
+  pronoun made explicit ("that set" to "its may-read set", § 1.9). Seven fused sentences split
+  with the rule kept in prose: the mParent's type per shape and `:rootness` failing for cloned
+  identifiers (§ 2.2); the entailment's carried consequences and the justification of the
+  shared-level exclusion (§ 2.6); the placing lookup's matched shapes (§ 2.10); the
+  guest-dependent lend (§ 3.4); the granting and withholding composites (§ 3.5). Kept in prose as
+  borderline model vocabulary rather than examples: "such as a boot or a tenure" (§ 3.3, the
+  lifecycle bullet's only anchor); "the path mScheme supplies the reads of a path" (§ 1.7, a rule
+  over three classes); "cloned identifiers are the standing witness" (§ 1.6). The § 4.2 register
+  is untouched. One pre-existing overlong line in § 1.5 was rewrapped.
+- The two evidence sentences moved verbatim into § 1.5's footer. They stay known-insufficient
+  per `312c` thread 6 (a procfs magic link; a bind mount of a regular file). The header line
+  prices that. A 312 or stdlib teaching pass may fix or drop them, and the human may strike them
+  with one word.
+- Linter: the whole file keeps its one hard flag (`terminates` against `stop`). Advisories went
+  from sixty-four to sixty-five. The new one is `is checked`, on a § 1.5 sentence whose wording
+  is unchanged from HEAD, so the line wrap moved it into the detector's view. No added line
+  carries a violation.
+- Consequence for another hold: the § 2.2 sketch that places an ext4 filesystem in the mRoute is
+  non-normative now, so the ext4 nit held for `hold-stdlib-key-space-over-the-boots-children` is
+  no longer a question about the model's text. The structural half of that hold stands: two
+  tops separate only as keys of one mScheme.
+- Resolved: `hold-closure-evidence-sentences`. State: tip `a9f8ccb7` before this ledger commit.
+  Six holds of § 3 remain: `hold-region-against-region-floor`,
+  `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
+  `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and
+  thread 2 with § 4's correction.
