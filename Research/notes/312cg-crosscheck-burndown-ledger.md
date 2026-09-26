@@ -1386,3 +1386,29 @@ litmus) and its wording owed. Candidate edits, put in chat for the human's word,
 
 Three holds of § 3 remain beside this one: `hold-region-against-region-floor`,
 `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`.
+
+## § 28-the-terminus-edits-and-the-forward-rewrite-applied
+
+**[TYPED]** 2026-09-26: land the rewrite; two edit rounds, two commits; the owed 311 edits and
+the `311u` entries first, in the backward form, minimal; then the forward rewrite standalone.
+
+- `c5e8f434`, backward: `311:2.5-may-read-the-readset` (⊤ at every undeclared member; each
+  entry adds its own chain's entries until no entry joins; closed only when every set that
+  joined is closed; an entry may name an mKey of another mWorld);
+  `311:1.10-vantage-route-placeholder-witness` (the mRoute is an address, holds no mState,
+  declares no set); `311u` gains `refuted-vantage-root-as-a-machine`,
+  `refuted-read-side-shared-level-exclusion`, `refuted-one-hop-dependency-inheritance`.
+- The forward rewrite, this commit: `311:2.6-may-write-the-writeset` defines the writeset as
+  the least set closed under four rules (the at-most entries; the entailment, fired by a write
+  to an mKey of K or beneath one; everything beneath a whole-marked member; every mKey k of M
+  whose declared may-read entry compares other than DISJOINT with a member, and every mKey of an
+  mSort with no closed set), with ⊤ for an unclosed at-most set or unfinished entailment, the
+  write-side exclusion kept pair-relative, and one pairwise sparing test over writeset and
+  readset. `311:2.5-may-read-the-readset`: the readset is the marked reads only; may-read
+  entries feed rule 4; an open set puts every mKey of the mSort in every writeset; the mRoute
+  declares none. § 1.9, § 1.10, § 3.3, § 3.5, and two § 5 lines follow. `:may-read` keeps its
+  name; the directional word is 312's. No object, relation, or answer changed.
+- Linter: 311 keeps its one pre-existing hard flag after both rounds; `311u` zero hard.
+- Resolved: `hold-terminus-closure-and-engine-vouch`. Three holds of § 3 remain:
+  `hold-region-against-region-floor`, `hold-stdlib-key-space-over-the-boots-children`,
+  `hold-cells-sparing-or-freshness`.

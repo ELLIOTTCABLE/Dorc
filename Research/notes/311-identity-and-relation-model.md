@@ -336,8 +336,9 @@ cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key).
 
 A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
 diffuse. The cell's may-read set (2.5-may-read-the-readset) says where that mState is held. The
-freshness of a fact about the cell follows that set, together with any write that covers the
-mParent (2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species).
+freshness of a fact about the cell follows the writesets that reach the cell through that set
+(2.6-may-write-the-writeset), together with any write that covers the mParent
+(2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
 3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
@@ -360,8 +361,8 @@ any mKey's identity. It does three things:
   mParent-Catalog mSort.
 - For a shape with no `:identified-in`, it is the mRoute: the last-resort mParent.
 
-The mRoute is an address. It holds no mState and declares no may-read set. A readset that
-reaches the mRoute is open (2.5-may-read-the-readset).
+The mRoute is an address. It holds no mState and declares no may-read set. Every mKey scoped
+in it is in every line's writeset (2.6-may-write-the-writeset).
 
 For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
 instances within one unwalled span. Under a wrapper, it vouches the inherited instances that
@@ -530,20 +531,19 @@ mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves. An 
 an mKey of another mWorld. `compare()` decides that pair as
 3.2-compare-one-chokepoint-four-answers decides any pair.
 
-A fact's readset is the marked reads of the body that answered it, together with the may-read
-entries declared by every member of the mKey's mFullyQualifiedKey. A member that declares no
-set contributes ⊤. Each entry adds the may-read entries of every member of its own
-mFullyQualifiedKey. That repeats until no entry joins. The readset is closed only when every
-set that joined is closed. For a verdict fact, the vouch closes the marked reads of the body
-that answered it (`KNOBS:kCONTRACT-RUNGS`).
+A fact's readset is the marked reads of the body that answered it. For a verdict fact, the
+vouch closes them (`KNOBS:kCONTRACT-RUNGS`). May-read entries are not in a readset. A write
+reaches K through them (2.6-may-write-the-writeset, rule 4). An mSort that declares no may-read
+set, or declares one and does not close it, is affected by every write: every mKey of that
+mSort is in every line's writeset. The mRoute declares no set
+(1.10-vantage-route-placeholder-witness).
 
 An mKey's mParent instance is no may-read entry and needs no declaration. The walk of
 3.2-compare-one-chokepoint-four-answers collides a write at or above it. A may-read entry naming
 a store says more: every write to an mKey relative to that store may change K, nobody having
 said otherwise.
 
-A writeset entry not DISJOINT from a may-read entry collides with K's cells and with every fact
-identified beneath K. An omitted entry is a silent channel. It licenses nothing positive.
+An omitted entry is a silent channel. It licenses nothing positive.
 
 May-read is distinct from mParent. The mParent is one and answers identity. May-read entries are
 many and answer interference. Two cells with different mParents can share a may-read entry and
@@ -554,8 +554,8 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 
 - Arity: many per mSort, with a sentinel.
 - Declared by: the mSort owner.
-- Default: ⊤, which collides with everything.
-- Consumer: collision, and the write-path question (2.6-may-write-the-writeset).
+- Default: ⊤. Every mKey of the mSort is then in every line's writeset.
+- Consumer: the writeset of a line (2.6-may-write-the-writeset).
 - Danger: none positive. Omission is the silent channel. The closed set is one of sparing's two
   closures.
 
@@ -568,14 +568,27 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 > A refuted shape: two entries overlap only when they are one place
 > (`311u:refuted-only-same-entries-overlap`). The model collides whatever is not DISJOINT.
 
-A line's writeset is the at-most set of mKeys it may write. It is the may-write entries the
-verb's author declared per matched shape (the footprint of `plans/30U`), closed by the
-completion record, and widened by the may-write entailment that mSort owners declare.
+A line's writeset is the set of mKeys the line may write or may change. It is the least set
+that four rules close:
 
-A write to an mKey is also a write to every container on that mKey's mFullyQualifiedKey. So each
-container's may-write entailment joins the line's writeset. A container at or above the deepest
-level that the written mKey shares with the read mKey contributes nothing to the test against
-that fact. May-read entries are never consulted on the write side.
+1. Every may-write entry the verb's author declared per matched shape is in the writeset (the
+   footprint of `plans/30U`). The completion record closes those entries. Where the body emits
+   at runtime, the verb author's completion record closes them.
+2. Where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey
+   that K's may-write entailment names is in the writeset. For each origin cell in the
+   writeset, a reached finished record for that cell's mSort and shape finishes the entailment
+   (`plans/30U`).
+3. Where an mKey given whole is in the writeset, every mKey reached beneath it is in the
+   writeset (2.9-the-traversal-and-the-region-test).
+4. Where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared
+   for an mKey k of mSort M, k is in the writeset (2.5-may-read-the-readset,
+   3.2-compare-one-chokepoint-four-answers). Every mKey of an mSort with no closed may-read set
+   is in every writeset.
+
+An unclosed at-most set or an unfinished entailment puts ⊤ in the writeset. ⊤ is DISJOINT from
+nothing. A container at or above the deepest level that the written mKey shares with the read
+mKey contributes no entailment to the test against that fact. May-read entries feed rule 4 and
+no other rule.
 
 The entailment: writing an mKey of K entails may-write of these mKeys of other mSorts. It is
 arm-incremental and collide-adding. The reached completion record finishes the definition. It
@@ -584,26 +597,21 @@ entailment is about effects, not identity. It carries every cross-mSort conseque
 mFullyQualifiedKey expresses. It generates no DISJOINT: "nothing else" is no other thing, never
 no other mKey for the thing written.
 
-An elision is spared past a write only when two questions are answered, in order, for every pair
-of a writeset entry and the mKey a fact reads, of one mSort or of two:
+An elision is spared past a line only when `compare()` answers DISJOINT for every pair of a
+writeset member and a readset member (2.5-may-read-the-readset), of one mSort or of two
+(3.2-compare-one-chokepoint-four-answers, or 2.9-the-traversal-and-the-region-test where an
+mKey is given whole).
 
-1. `compare()` answers DISJOINT (3.2-compare-one-chokepoint-four-answers, or
-   2.9-the-traversal-and-the-region-test where an mKey is given whole).
-2. No write path joins them. The writeset's definition is finished. The at-most set is closed.
-   Where the body emits at runtime, the verb author's completion record closes it. For each
-   origin cell in the writeset, a reached finished record exists for that cell's mSort and
-   shape (`plans/30U`). The fact's readset (2.5-may-read-the-readset) is closed. Every writeset
-   entry `compare()`s DISJOINT with every entry of that readset.
-
-The test spares narrowly and collides widely. Whatever is not DISJOINT collides, and so does an
-undeclared may-read entry. The finished definition is a within-mWorld sentence. It never speaks
-across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
+The test spares narrowly and collides widely. Whatever is not DISJOINT collides. The finished
+definition is a within-mWorld sentence. It never speaks across mRoutes or mRoots (§3.2). A
+may-read entry that names an mKey of another mWorld enters rule 4 where a write in that mWorld
+reaches it (§2.5).
 
 - Arity: per matched shape of the verb, for the at-most set. Many per matched shape on the
   mSort, for the entailment. Plus the finished record.
 - Declared by: the verb's author, for the at-most set. The mSort owner, for the entailment.
 - Default: unfinished, which collides.
-- Consumer: the write-path question above, within one mWorld. Never a generator of DISJOINT.
+- Consumer: the sparing test above, within one mWorld. Never a generator of DISJOINT.
 - Danger: the premature finished record.
 
 > Without the exclusion of containers at or above the shared level, a filesystem's entailment,
@@ -878,7 +886,8 @@ authority. It never computes the successor identity.
   an mKey are routing writes. They change what the mKey reaches. The mKeys they write are the
   verb author's at-most claim. A writeset that omits them is the ordinary at-most omission
   knife, now visibly covering routing mKeys.
-- A state mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
+- A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary
+  kill-reach. A
   first write can also change an mKey-Primary. So a state mutation whose writeset touches a
   mParent-Store invalidates the mTokens scoped in it.
 - A lifecycle mutation writes a mRoot-adjacent mKey, such as a boot or a tenure. Every
@@ -943,7 +952,7 @@ Attribution:
 
 - Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it
   rested on, the route closures it rested on (1.5-token-and-the-two-warrants,
-  2.10-places-the-upward-lookup), and the may-read sets that bounded it.
+  2.10-places-the-upward-lookup), and the closed may-read sets its writeset rested on.
 - Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that
   made instances one, and the mCorrespondences.
 - Every invalidated conclusion names the writeset that invalidated it.
@@ -1125,7 +1134,7 @@ reads the closure:
 
 - SAME.
 - DISJ: DISJOINT.
-- SPARE: the write-path question, step 2 of 2.6-may-write-the-writeset.
+- SPARE: the sparing test of 2.6-may-write-the-writeset.
 - INVAL: invalidation (3.3-invalidation-three-mutator-species).
 
 OPEN marks a cell with no statement in the model. The root naming file holds its candidate
@@ -1203,7 +1212,7 @@ The if-false column names the wrong answer:
 
 - wSAME: one fact stands for another thing's fact.
 - wDISJ: a license survives a write that destroyed it.
-- wSPARE: the same survival, reached through the write-path question.
+- wSPARE: the same survival, reached through the sparing test.
 - stale: a mResolution stands after a write that should have invalidated it, and every
   conclusion built on it stands with it.
 - vantage: the engine keys a fact at the wrong instance.
@@ -1237,5 +1246,5 @@ the rows. Within one consumer, the unflagged rows come first.
 
 [^vouch]:
     The vouch licenses the vouched line's own elision at the verdict tier, with no flag
-    (`KNOBS:kCONTRACT-RUNGS`). Its closure of the readset feeds the write-path question, under
+    (`KNOBS:kCONTRACT-RUNGS`). Its closure of the readset feeds the sparing test, under
     the flag.

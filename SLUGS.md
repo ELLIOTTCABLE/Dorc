@@ -5536,7 +5536,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-one-hop-dependency-inheritance
 - defined: Research/notes/311u-refuted-shapes-register.md:327
-- cited: 312cg (1)
+- cited: 312cg (2)
 
 ## 311u:refuted-one-parent-sort-per-scheme
 - defined: Research/notes/311u-refuted-shapes-register.md:55
@@ -5555,7 +5555,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-read-side-shared-level-exclusion
 - defined: Research/notes/311u-refuted-shapes-register.md:315
-- cited: 312cg (1)
+- cited: 312cg (2)
 
 ## 311u:refuted-resolution-backed-by-its-target
 - defined: Research/notes/311u-refuted-shapes-register.md:350
@@ -5604,7 +5604,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-vantage-root-as-a-machine
 - defined: Research/notes/311u-refuted-shapes-register.md:125
-- cited: 312cg (1)
+- cited: 312cg (2)
 
 ## plan/CLAUDE:region-decisions-meet-universally
 - defined: spike/crates/plan/CLAUDE.md:311 — (`plans/30L` §5) — `plan::region` groups per-instance
