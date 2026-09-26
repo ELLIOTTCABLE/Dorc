@@ -302,7 +302,7 @@ The human's order changed to least-consequential-first, which supersedes § 9's 
 item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the boot-children item.
 
 - As put: the perishing clause "when its `resolve()` read the written state"
-  (`311:3.3-perishing-three-mutator-species`) presumes the engine knows a lookup body's reads.
+  (`311:3.3-invalidation-three-mutator-species`) presumes the engine knows a lookup body's reads.
   The conductor offered three cases (closed, falsified, unauditable) and two options (perish under
   any routing write; perish on marked reads only), leaning to the first.
 - **[TYPED]** 2026-09-24, three points that bind the rest: (1) "cannot know because the binary can
@@ -397,7 +397,7 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   the set, shell parity for sh constructs, the path mScheme for paths, the describing speech for
   external commands; closed only when every external command's read set is closed; the author of
   that speech closes it by an explicit act; an open set perishes under any routing mutation).
-  `311:3.3-perishing-three-mutator-species` replaces "when its `resolve()` read the written
+  `311:3.3-invalidation-three-mutator-species` replaces "when its `resolve()` read the written
   state" with the read-set clause and the open-set clause, the flat-default clause preserved
   verbatim in meaning. `311:2.5-may-read-the-readset` gains one sentence: for a verdict fact the
   vouch closes the body's marked reads (`KNOBS:kCONTRACT-RUNGS`). The word "leaf" was avoided in
@@ -657,3 +657,73 @@ qualify, leave), the conductor leaning to strike.
   `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
   `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and
   thread 2 with § 4's correction.
+
+## § 17-the-flat-invalidation-sitting
+
+The item chosen as least consequential, 2026-09-26: thread 2 (`312c` thread 2, the flat
+default's perishing) with § 4's correction, unreviewed by the human until this sitting. Put as
+concepts from the ground (a resolution as a memoized lookup; perishing as eviction of that memo;
+hierarchical against flat traversals; the positional-catalog correction), then two questions the
+human asked were analysed. Rulings and framings the human typed are graded; the conductor's
+claims are marked and none is acked unless the line says so.
+
+- **[TYPED]** 2026-09-26, terminology: "perish" is not industry-standard and becomes
+  "invalidate", lower-case and unminted, meaning in 311 only the invalidation of a lookup result
+  (a mResolution or a mToken). "Kill" stays for a fact about a referent's state. The section slug
+  is renamed by mechanical global replace; a few dead citations in frozen documents are
+  accepted. Conductor: "eviction" was set aside as a capacity word, "invalidate" being the
+  correctness word in caches and incremental computation.
+- **[TYPED]** 2026-09-26, nack of the conductor's framing that the item lives "just under the
+  flag": this corner of the product exists only under the flag, so the flag is no rescue.
+  Retracted by the conductor.
+- **[TYPED]** 2026-09-26, the shape of the world is the describer's concern, and a sequential
+  index that re-addresses every later entry is a fact about the world's shape. That argues
+  against perish-whole as the default, while Dorc still owes an unsurprising system that is safe
+  by default. Two questions put: whether a positional describer has the tools under the model
+  without the flat rule; and whether either shape is vastly more common or vastly more dangerous.
+- Conductor's answers, read: the verb author has the tool (a whole-catalog writeset, under
+  `rul-api-entries-describe-apply-time-effect`); the scheme owner has the tool for transport
+  (withhold `:guarantees-unique-referent`, a position being a recycled key); the stranger who
+  writes the same catalog in another vocabulary is the seat where the floor is a net, since
+  protection otherwise rests on every writer knowing a positional scheme exists over the table.
+  Name-addressed catalogs are ~SUSPECT ten to one commoner; the danger is concentrated in the
+  positional minority (a wrong survival on a firewall or auth line, where "I only touched my
+  line" is the natural wrong belief). Both asymmetries point to a safe floor plus declared
+  precision, the polarity every other 311 default has.
+- **[HUMAN]** the third-party argument accepted as leaning toward a fail-safe default with an
+  explicit warrant for the dangerous behaviour, forcing an interloper to (1) apply the same
+  warrant, (2) read the type and consume it, or (3) revert to the floor by not specifying the
+  warrant and colliding with the type. Case 3 needs attention.
+- Conductor, on case 3: the invalidation test ("its mTraversal includes a touched mKey",
+  `311:3.3-invalidation-three-mutator-species`) is undefined against the four answers. Under
+  SAME-only a stranger's KNOWN_UNSPOKEN write invalidates nothing; under not-DISJOINT the
+  stranger reverts the type to the floor by collision, which is `311:2.6-may-write-the-writeset`'s
+  own reading. One clause owed. A stranger who shares the primary key space gets DISJOINT and
+  their under-claim bites, the standing price of a shared key space (`311t` § 14).
+- **[TYPED]** 2026-09-26, the positional construction: numeric indexes can be very large (a
+  rowid table renumbered after ten thousand rows), so one emitted line per prefix member does
+  not scale. The approach is right (a numeric range is a region) but wants an "implicit chain"
+  construction: a way for an author to express a chain, or a described set, in one emission,
+  generic across the forms ops presents, spelled exactly as sh; the same want as a path lookup
+  splitting on `/` in one shell function instead of one invocation per level. Punted to the
+  sh-spelling work, to stay present as a footer note in 311 unless the conductor sees a hole.
+  Suspicion: the `seq` line nailed it, and a sequence-typed construction spelled as sh is the
+  shape.
+- **[TYPED]** 2026-09-26: the sequential index that invalidates every later route is a gotcha
+  if absent. Applied: `GOTCHAS:an-insert-renumbers-every-later-key`.
+- **[TYPED]** 2026-09-26, nit: `:rootness` reads as an LLM-adopted spelling; the attribute is
+  presumably `:root`, with "rootness" a grammatical instance. Applied in 311 and `311u`.
+- **[TYPED]** 2026-09-26, the ask: one last careful turn on the relaxation, applying the
+  architect skill's tools to `:hierarchical` and to this cell; whether `:hierarchical` is
+  sufficiently abstract, the suspicion being that its name misleads toward hierarchy where its
+  meaning is one narrow recursion or walk specifier; refag first, then lowered to filesystems,
+  a general DAG, and successor-shell subsets; the 311 edit narrow, general, adding no ambiguity,
+  and only what is necessary; the cases checked named.
+- Applied, before the walk-through: the slug `3.3-perishing-three-mutator-species` renamed to
+  `3.3-invalidation-three-mutator-species` in 311, `311u`, and this ledger; every "perish" in
+  311's prose rewritten to "invalidate" in active voice where the actor is the mutator;
+  `:rootness` to `:root` in 311 and `311u`; the gotcha. Linter over 311: sixty-six findings before
+  and after, the one hard flag (`terminates` against `stop`) and sixty-five advisories, all
+  pre-existing; no added line carries a violation.
+- State: the walk-through and the proposed edit are in chat, awaiting the human's ack; nothing
+  of the relaxation is applied. Thread 2 stays held. The other five holds of § 16 stand.
