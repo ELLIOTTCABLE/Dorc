@@ -2,11 +2,12 @@
 
 > Written for a clean-context successor who will do the adjudication and synthesis. The outgoing
 > conductor's context was half full of tool noise, so the human ruled that the reasoned synthesis
-> is NOT the outgoing conductor's to write. `plan.md` in this directory is the outgoing conductor's
-> FIRST-PASS READ, written before that ruling; treat it as one more input, not as the plan of
-> record. Everything below is mechanics, state, rulings, and pointers. Grades throughout are the
-> lanes' (`graded-by: subagent`); the outgoing conductor read every lane's gather file and
-> hand-back but NO primary source.
+> is NOT the outgoing conductor's to write. A `plan.md` the outgoing conductor wrote after the
+> research was removed at the human's direction (a plan written after the fact is not a plan);
+> the few things in it that were not re-derivable from the lanes' files are in
+> `cross-lane-observations` below. Everything else here is mechanics, state, rulings, and
+> pointers. Grades throughout are the lanes' (`graded-by: subagent`); the outgoing conductor read
+> every lane's gather file and hand-back but NO primary source.
 
 ## the-question
 
@@ -74,10 +75,6 @@ Files in this directory:
     mapping table worth reading on its own.
   - `gather-wildcard-and-counter-thesis.md` (lane 10) — COMPLETE; carries a "seams to redraw"
     section and a breadth map.
-- `plan.md` — the outgoing conductor's first-pass read (§1 shape of the answer, §2 punts, §3
-  ranked partial precedents, §4 rule→precedent map, §5 contradictions, §6 gaps, §7 fronts, §8
-  ask-list). Superseded by the successor's own adjudication; its §8 ask-list is the set of
-  questions the human had not yet answered.
 - `sources.json` + `sources/` — the graded manifest and archived copies. Append-only; never
   hand-edited; the skill's `validate.sh` is the gate.
 - `.register.lock` — a `mkdir` lock directory created by the outgoing conductor's wrapper; if it
@@ -228,8 +225,12 @@ design remains the better shape if that ever bites. The outgoing conductor's ses
 
 - `ask-reading-lane-choice`: main-context scoped reads vs a clean-context Fable vs both vs
   neither — now moot in form (the successor IS the clean context) but the question of WHICH
-  primaries get a full read stands; `plan.md` §7 lists the outgoing conductor's candidates.
-- `ask-contradiction-sitting-next`: `plan.md` §5's seven deployed contradictions as a sitting.
+  primaries get a full read stands. The outgoing conductor's unranked candidates, by how much of
+  311 each lane says they cover: SMI-S Clause 7 (~12 printed pages); RFC 8881 §4 plus the
+  `unique_handles` attribute text; Ntzik & Gardner 2015; RETRO §§4–5; then the long ones
+  (Saltzer & Kaashoek ch.2 §2.2 + ch.3; RFC 8342; DSP0004's identity clauses; OntoClean 2000).
+- `ask-contradiction-sitting-next`: whether to sit on the deployed CONTRADICTIONS the lanes
+  surfaced (collated in `cross-lane-observations`) before any reads.
 - `ask-human-fetches`: which of the leads above to fetch out-of-band.
 - `ask-txos-duplicate`: keep both entries or note one superseded.
 - `ask-tooling-repair`: the three defects above; the outgoing conductor offered to draft the patch.
@@ -252,8 +253,38 @@ design remains the better shape if that ever bites. The outgoing conductor's ses
   independence rather than stating it); RFC 8881's `unique_handles` is the stronger precedent for
   independent, absent-by-default warrants.
 - The skill's `references/after-first-pass.md` → `narrow-and-regrade.md` govern what comes next:
-  a `plan.md` gate with the human, then fronts worked serially. The human has already said the
-  serial discipline is the point.
+  the skill's plan gate with the human, then fronts worked serially. The human has already said
+  the serial discipline is the point.
+
+## cross-lane-observations (the outgoing conductor's, made while reading the ten reports; not lane claims; the only content salvaged from the removed `plan.md`)
+
+- Ten independent lanes each confirmed the counter-thesis: no project models ops-extern identity
+  abstractly and broadly across mutually-unknowing authors. Lane 10's four punt-shapes — (i) the
+  name is the thing, (ii) one minting authority, (iii) delegated to humans or heuristics, (iv) one
+  domain only — recur in every other lane's evidence, which is corroboration lane 10 could not see.
+- Four 311 objects had NO precedent in any lane's mapping (lane 9's table names the first three
+  as gaps; the fourth is the conductor's collation): KNOWN_UNSPOKEN as distinct from UNKNOWN; the
+  may-write entailment plus the finished definition as an authored, closed writeset; the region
+  test and `:places`; `:aliases-nothing-else` as a store's self-knowledge. ~SUSPECT on the last:
+  RFC 8881's `unique_handles` (lane 6) is a server's statement about its own store and may be
+  exactly that precedent — a reason to read RFC 8881 §4 first.
+- Deployed prior art that CONTRADICTS a 311 rule or example, collated from the lanes for a
+  possible sitting: CPE 2.3 name matching (unequal strings ⇒ DISJOINT; UNKNOWN removed; live at
+  NVD — lane 8, evidence FOR 311); OntoClean's "every domain element must instantiate some
+  property carrying an IC" vs 311's absent-by-default warrants (lane 9); Kent against qualified
+  identification unless qualifiers are invariant vs 311's mParent-Store-relative primary keys
+  (lane 9; ~SUSPECT a real tension); Couch & Chiarini's "declared consistency is intractable,
+  observe instead" vs 311's speech-declared footprints (lane 5b); YANG's designed avoidance of
+  positional identity vs §2.9's positional catalogs, and DEP-17's "eliminate the aliases" as the
+  same move (lanes 1, 10); RFC 9499 split DNS vs the "DNS mRoot" EXAMPLE in §1.6 (lane 7;
+  example-level); promise theory's "overriding control" assuming away §0's premise (lane 5b).
+- Lane 9's "verbatim" for Saltzer & Kaashoek p.64 overstates: the quote presents the two
+  uniqueness rules as alternatives across schemes, which implies their independence rather than
+  stating it; RFC 8881's separate MUST/SHOULD/`unique_handles` is the stronger precedent for two
+  independent, absent-by-default warrants.
+- A footprint-corpus seam (SELinux refpolicy `.fc`/`.if`, AppArmor abstractions, pledge/unveil,
+  PaSh annotations) was flagged by lanes 7 and 10 and by the conductor as bearing on §2.5/§2.6
+  rather than identity; it is a NEW front and was not opened, per the human's ruling.
 
 ## update-line
 
