@@ -529,3 +529,83 @@ Nothing applied to 311.
 - Open for the human: whether the store's end separates at all, or the thing's end stays the one
   separating instrument. The next exchange digs the store's-end separation for consequences and
   holes.
+
+## § 14-the-store-end-sitting-and-the-explicit-deep-reversal
+
+The conductor's dig into the store's-end separation (concept, four consequences, six holes) was
+read. The human's response, graded; the conductor's acks and the applied tweaks follow in § 15.
+
+- Question put by the human: what a directory in `dpkg -L` output means. Conductor (+SURE):
+  dpkg records every directory a package creates or shares, up to `/.`, so `dpkg -L` lists the
+  whole ancestor chain of every shipped file. A directory entry means the directory object
+  itself, its existence and its own attributes, and one level only. The children the package
+  writes are listed separately. Under a deep reading of emitted members, `/.` covers the whole
+  filesystem and every package write collides with every file fact. Under a point reading,
+  `/etc/nginx/conf.d/mine.conf` is not covered by the package's `/etc/nginx` entry.
+- **[TYPED]** 2026-09-26, `lean-neither-deep-nor-point-by-default`: the human leans back from
+  deep-by-default to explicitness. A bare key in an entry names its referent. Reaching children
+  takes an explicit mark, spelled in chat as `:*`. Explicitness wins. This supersedes the
+  cross-root ack that a bare key in an entry is deep (`311t` § 15).
+- **[TYPED]** 2026-09-26, `rul-api-entries-describe-apply-time-effect`: "the tool changes the
+  world in a predictable way that your write-list cannot see" needs no special case. That is a
+  wrong write-list. Every Dorc API function describes what Dorc needs to know, which is what will
+  happen at apply time, and not what the tool easily gives. A describer who cannot statically
+  predict what an install will write constructs the prediction (modulo unknowable outside-world
+  change) or declines. The conductor's proposed sentence on pre-write evaluation of a deep key is
+  WITHDRAWN under this: a probe-time `dpkg -L` as the writeset of an upgrade is the describer's
+  wrong list, and the taught apt body leaves `install` open.
+- **[TYPED]** 2026-09-26, `rul-detected-disagreement-fails-safe-both-ways`: where the two ends of
+  a relation disagree and the disagreement is detected, the result is the safest conjunct for
+  each consumer, possibly opposite conjuncts for SAME and for DISJOINT. Whether both ends are
+  called at all is undecided. PUNTED to about 312. Open there: "both ends required and agreeing",
+  or "if both are present they must agree", or "one end has priority and is called first". The
+  human suspects the answer is not global and may vary by row according to danger.
+- **[HUMAN]** lean: take the store's-end separation, probably with the explicit-deep reversal.
+- **[HUMAN]** random thought, unsure: the soundest option may be to refuse the deep mark where
+  it increases danger or reduces correctness or safety.
+
+## § 15-the-store-end-tweaks-applied
+
+Conductor's acks, each re-walked against 311's text before the edit:
+
+- Ack of `lean-neither-deep-nor-point-by-default`, with one finding that makes it cheap: the
+  walk of `311:3.2-compare-one-chokepoint-four-answers` step 2 already collides a write to a
+  referent with everything identified in it, so a bare unit key covers the unit's cells and a bare
+  filesystem key covers its inodes with no mark. The mark reaches only what a scheme's lookups or
+  a placing route reach beneath: directory entries and package members. So the ceremony lands on
+  recursive tools (`rm -rf`, `chmod -R`, `cp -r`) and on tree-reading checks, where omitting the
+  mark is the describer's ordinary at-most omission. A lint on recursive flags against a bare
+  target is the natural net and is 312's.
+- Ack of `rul-api-entries-describe-apply-time-effect`. Consequence for the store's end under the
+  reversal: a bare package key plus a finished entailment is already pointwise under §2.6, with
+  no new rule. The one sentence still owed is the convergence of the two forms when an author did
+  mark the key deep and the owner did finish the enumeration.
+- Ack of the punt on disagreement. Applied only its floor, which is the safest conjunct for both
+  consumers and prejudges neither the calling policy nor attribution: a detected disagreement
+  reads UNKNOWN.
+- On the random thought (conductor; ~SUSPECT): the mark widens whichever set it sits in, which is
+  the safe direction for both consumers, so refusing it buys no safety. The danger of deep lives
+  in the DISJOINT arm of the region test, which the closure requirement now gates, and in a bare
+  key that a recursive tool should have marked. The reading under which the thought is right is
+  region against region: refuse to separate two deep entries at all, which is
+  `hold-region-against-region-floor`.
+- Applied to 311, each edit STE Strict and as narrow as the meaning allowed:
+  `311:2.9-hierarchical-and-the-region-test` gains the entry paragraph (an entry names its
+  referent; §3.2 collides a write to it with everything identified in it; an entry given whole
+  also names what is reached beneath by lookups or a placing route; the author marks it), the
+  test walks the mTraversals `identity(x)` produced at every level, and step 3 answers DISJOINT
+  only from a carried closure in one of two forms (per level on at least one mTraversal of D's
+  mSort with every such mTraversal clean, or the placing lookup's zero-record
+  `looked-up-in nothing-else`). `311:1.9-cell-a-singleton-sort`: a writeset entry naming the
+  mParent covers its cells by §3.2 step 2, "whole" dropped. `311:2.10-places-the-upward-lookup`:
+  a finished entailment's members stand in for P given whole in the test of §2.6, each member an
+  entry of that test, an unfinished entailment widens only, and a placing route into P against a
+  finished enumeration with no member SAME with x reads UNKNOWN.
+  `311:2.6-may-write-the-writeset` question 2: "For each origin cell in the writeset, a reached
+  finished record exists", the conductor's own `0738c00f` clause restored to `plans/30U`'s
+  meaning.
+- Resolved by these edits: `hold-zero-traversal-guard`. Untouched and still held:
+  `hold-region-against-region-floor`, `hold-closure-evidence-sentences`,
+  `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
+  `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`, and
+  thread 2 with § 4's correction.
