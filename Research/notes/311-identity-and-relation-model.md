@@ -848,7 +848,9 @@ authority. It never computes the successor identity.
 
 - A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
   read. A routing mutation invalidates a mResolution when its mTraversal includes a touched
-  mKey. It also invalidates the mResolution when the written mKey is in the read set of the
+  mKey. A writeset entry touches a mTraversal member when `compare()` answers other than
+  DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers). It also invalidates the
+  mResolution when the written mKey is in the read set of the
   lookup body that produced it (1.7-resolution-and-its-traversal). Any routing mutation
   invalidates a mResolution whose read set is open. Every mFullyQualifiedKey built on an
   invalidated mResolution reads unknown below the line. Dependent
