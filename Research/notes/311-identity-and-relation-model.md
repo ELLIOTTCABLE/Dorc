@@ -251,6 +251,14 @@ its mParent. What the mParent edge carries follows the mScheme.
   It is what `compare()` walks (3.2-compare-one-chokepoint-four-answers). At the primary
   mScheme, mParent-Catalog and mParent-Store are one mKey.
 
+An entry of a mParent-Catalog is an mReferent. Whoever describes the catalog declares the entry's
+mSort, `:identified-in` the catalog's mSort (2.2-primary-of-and-identified-in). That mSort's
+primary mScheme keys an entry by its name in the catalog and carries its warrants per matched
+shape (1.5-token-and-the-two-warrants). The catalog holds the entry, or it does not. The mKey
+names the entry in both cases. The entry's existence is a cell (1.9-cell-a-singleton-sort). A
+read of a name the catalog does not hold reads that cell. A lookup that crosses the entry emits
+its mKey as a mTraversal member (1.7-resolution-and-its-traversal).
+
 Through the primary mScheme, that mScheme's owner declares the mParent's mSort
 (`:identified-in`) and the warrants (1.5-token-and-the-two-warrants, and `:root`,
 2.2-primary-of-and-identified-in). The declaration is per matched shape of the mKey's mValue, a
@@ -275,7 +283,9 @@ Cloned identifiers are the standing witness.
 > Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login
 > name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner
 > name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a
-> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
+> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one. A future entry
+> under a future directory: the directory's own entry is its mParent, and the chain ends at the
+> deepest directory that exists.
 
 ### § 1.7-resolution-and-its-traversal
 
@@ -433,7 +443,9 @@ against lazy borrowing.
   DISJOINT, attributed to the yield.
 
 > A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket,
-> under an mScheme into files.
+> under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the
+> directory entry, or the inode that the entry leads to. A bind names the mScheme whose mReferent
+> the tool acts on.
 
 ### § 2.2-primary-of-and-identified-in
 
