@@ -693,7 +693,11 @@ the level resolved to.
 > its instance table. Lookups that cross one level: an inode number, a uid. An indexical routing
 > mKey: `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know
 > nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an
-> alias entry above a leaf.
+> alias entry above a leaf. A positional catalog: the resolution of position N depends on every
+> position at or before it, and `ufw insert 1` gives every later rule a new number. The lookup
+> emits positions 1 to N as its mTraversal, one line per member. A rowid table renumbered after
+> ten thousand rows makes that emission large. A single emission that describes the set, spelled
+> as sh, is work for the 312 series.
 
 ### § 2.10-places-the-upward-lookup
 
