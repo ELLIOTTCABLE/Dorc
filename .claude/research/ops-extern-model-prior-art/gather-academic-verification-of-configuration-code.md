@@ -13,7 +13,7 @@ reading copies for the five PDFs archived before writing), or raw source lines f
   objects). None of them models packages, services, or users.
   [A-colis-platform-maintainer-scripts-2022] [A-rehearsal-puppet-determinacy-2016] [B-tortoise-puppet-repair-2017]
   [A-citac-reliable-convergence-2016] [B-mancoosi-d21-system-configuration-metamodel-2009] [A-sibylfs-posix-oracle-2015]
-  [A-ntzik-gardner-posix-fusion-logic-2015] [B-txos-system-transactions-2009] +SURE
+  [A-ntzik-gardner-posix-fusion-logic-2015] [A-porter-txos-operating-system-transactions-2009] +SURE
 - Headline punt, in the authors' own words: CoLiS's path resolution "simply ignore[s]" symbolic
   links, because the feature-tree logic cannot express them finitely. The model is a tree with
   structural equality, so it has no hard links either. The authors judged the gap "not noticeable in
@@ -40,7 +40,7 @@ reading copies for the five PDFs archived before writing), or raw source lines f
   read set. Inode metadata and page data are versioned separately, much like 311's cells. Directory
   lists allow concurrent inserts and deletes of distinct entries, but iterating a list conflicts with
   any insert. That is 311's split between a catalog given whole and its member entries.
-  [B-txos-system-transactions-2009] ~SUSPECT (partial read)
+  [A-porter-txos-operating-system-transactions-2009] ~SUSPECT (partial read)
 - Two projects that reach 311u's refuted shape "unequal paths ⇒ disjoint" as a deliberate choice or
   a proposed optimisation. Citac's future work proposes omitting preservation tests "for file
   resources with non-overlapping file paths". Rehearsal's commutativity check is a path-keyed R/W/D
@@ -101,7 +101,7 @@ reading copies for the five PDFs archived before writing), or raw source lines f
 | [B-fsmove-fstrace-domains-source-2020] | FSMove's `domains.ml` | code-level proof of the key choice | — | `to_inode` mints fresh inodes per unseen path | code |
 | [A-sibylfs-posix-oracle-2015] | executable POSIX/Linux/OS X/FreeBSD fs spec and trace oracle | exhaustive for ~25 fs calls; 21,070 tests; about 40 configurations | references ≈ mKey-Primary/mToken; path resolution a separate module ≈ `resolve()` | single namespace, no mounts, no `*at` calls, no FIFOs, no crash | read+write semantics |
 | [A-ntzik-gardner-posix-fusion-logic-2015] | separation-style logic for POSIX with `..` and symlinks | abstract, sound (views framework); rm -r bugs in 3 implementations | path footprint vs update footprint ≈ traversal vs written key; effect frame ≈ routing-mutation invalidation | directory hard links excluded; sequential only | verification logic |
-| [B-txos-system-transactions-2009] | transactional Linux (150/303 syscalls) | real kernel; conflicts per object | object conflict ≈ DISJOINT by identity; parent-directory reads ≈ traversal; split payloads ≈ cells; list entry vs iteration ≈ catalog given whole | mount, setxattr, sockets, swapon unsupported | implementation |
+| [A-porter-txos-operating-system-transactions-2009] | transactional Linux (150/303 syscalls) | real kernel; conflicts per object | object conflict ≈ DISJOINT by identity; parent-directory reads ≈ traversal; split payloads ≈ cells; list entry vs iteration ≈ catalog given whole | mount, setxattr, sockets, swapon unsupported | implementation |
 | [A-groot-dns-verification-2020] | formal DNS resolution semantics and verifier | exhaustive for DNS; production battle-tested | set-valued resolution; CNAME/DNAME aliasing; "local not global" ≈ committee law | caches, failures, reachability; other orgs' zones | verification |
 | [B-mancoosi-d21-system-configuration-metamodel-2009] | FP7 metamodel for system configuration and maintainer scripts | broad (packages, services, settings, fs, modules, libs, processes); empirical clustering of the Debian corpus | sorts list; installation-specific inter-package config dependencies ≈ may-read across sorts | user edits between transactions; skeptical of static analysis | model / schema |
 | [B-mancoosi-d32-maintainer-script-dsl-2009] | DSL templates with ATL semantics per packaging helper | ~15 helper subsystems (alternatives, init, users/groups, menu, mime, …) | per-verb effect on name-keyed registries | name identity only; precondition "service exists" | mutation modelling |
@@ -226,16 +226,16 @@ reading copies for the five PDFs archived before writing), or raw source lines f
 > [A-ntzik-gardner-posix-fusion-logic-2015]:L905-917 (relevance: -0:SUSPECT)
 > $> mkdir -p /tmp/a/b/c · $> mkdir -p /tmp/a/e · $> rm -r /tmp/a/b/../.. — which should remove the directory /tmp/a and its contents. Both implementations actually result in the directory not being removed but becoming empty instead.
 
-> [B-txos-system-transactions-2009]:L440-442 (relevance: +1:SURE)
+> [A-porter-txos-operating-system-transactions-2009]:L440-442 (relevance: +1:SURE)
 > For two concurrent transactions to successfully commit in TxOS, they must write disjoint objects.
 
-> [B-txos-system-transactions-2009]:L474-476 (relevance: +1:SURE)
+> [A-porter-txos-operating-system-transactions-2009]:L474-476 (relevance: +1:SURE)
 > Many kernel objects are only read in a transaction, such as the parent directories in a path lookup.
 
-> [B-txos-system-transactions-2009]:L526-531 (relevance: -0:SUSPECT)
+> [A-porter-txos-operating-system-transactions-2009]:L526-531 (relevance: -0:SUSPECT)
 > write — Any number of insertions and deletions are allowed, provided they do not access the same entries. Reads (iterations) are not allowed.
 
-> [B-txos-system-transactions-2009]:L464-470 (relevance: -0:SUSPECT)
+> [A-porter-txos-operating-system-transactions-2009]:L464-470 (relevance: -0:SUSPECT)
 > the inode_header contains both file metadata (owner, permissions, etc.) and the mapping of file blocks to cached pages in memory (i_data). … TxOS versions these objects separately, allowing metadata operations and data operations on the same file to execute concurrently
 
 > [A-groot-dns-verification-2020]:L848-857 (relevance: +1:SURE)
@@ -271,9 +271,9 @@ reading copies for the five PDFs archived before writing), or raw source lines f
   +SURE on the assumption; ~SUSPECT on the mapping.
 - Coincides with 311 §2.9 and §3.3 (routing mutation invalidates any resolution whose traversal it
   touches): Ntzik–Gardner's effect frame [A-ntzik-gardner-posix-fusion-logic-2015], and TxOS's
-  parent-directory read sets [B-txos-system-transactions-2009]. ~SUSPECT
+  parent-directory read sets [A-porter-txos-operating-system-transactions-2009]. ~SUSPECT
 - Coincides with 311 §1.9 (cells) and §2.9 (a catalog given whole versus its members): TxOS's split
-  inode payloads and its list-conflict states [B-txos-system-transactions-2009]. -GUESS on how far the
+  inode payloads and its list-conflict states [A-porter-txos-operating-system-transactions-2009]. -GUESS on how far the
   analogy carries.
 - Coincides with 311 §3.5 (committee law: each author speaks only about their own thing): GRoot's
   "local not global correctness" [A-groot-dns-verification-2020]. Hummer's per-domain
@@ -339,7 +339,7 @@ reading copies for the five PDFs archived before writing), or raw source lines f
   quiet. My reading copies (`pdftotext -layout`) are in `$SC/l5a/`.
 - Duplicate registration: another lane registered the same TxOS paper as
   [A-porter-txos-operating-system-transactions-2009] while my entry was queued. My pre-registration
-  URL grep found nothing at the time. My [B-txos-system-transactions-2009] stays in the manifest,
+  URL grep found nothing at the time. My [A-porter-txos-operating-system-transactions-2009] stays in the manifest,
   graded B on my partial read. The conductor should pick one slug, and I did not touch the manifest.
 - `mancoosi-d21` and `d32` render their metamodel figures as images. The metaclass lists come from the
   KM3 listing and the prose only.

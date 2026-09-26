@@ -84,7 +84,7 @@ Ranked by how much of 311 they cover, with altitude. ~SUSPECT on the ranking; +S
    references with an explicit hard-link test class validated against 21,070 traces, and conflict
    per kernel object with parent-directory reads as a traversal read-set. Filesystem only; the one
    seam where nobody punted [A-ntzik-gardner-posix-fusion-logic-2015] [A-sibylfs-posix-oracle-2015]
-   [B-txos-system-transactions-2009].
+   [A-porter-txos-operating-system-transactions-2009].
 5. **Saltzer & Kaashoek's naming chapters + Saltzer 1978 + Lampson GNS + OntoClean** — the closed
    classical vocabulary (naming scheme, `resolve(name, context)`, unique-identifier name space,
    stable binding, limited context, synonym, indirect name, authority over absence), the two

@@ -290,6 +290,9 @@ column's sentence reassembled across those lines, verbatim in wording.
 
 - `dl.ifip.org` refused connections on three attempts (AIMS 2008, DSOM 2005, IM 2013). AIMS 2008
   read from the author's Tufts copy; the other two are Leads.
+- RESOLVED at final check: all 15 lane slugs are now in `sources.json` with archived copies in
+  `sources/` (registered after this lane stopped; not by this lane). The history below is kept
+  only as the record of the timeouts.
 - LOCK TIMEOUT (per brief, registration stopped): `register.sh` reported "lock timeout after 600s"
   for [B-traugott-huddleston-bootstrapping-infrastructure-1998] and
   [B-palatin-prodspec-annealing-intent-based-actuation-2021]; the

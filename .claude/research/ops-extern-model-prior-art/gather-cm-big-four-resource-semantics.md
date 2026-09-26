@@ -70,7 +70,102 @@ Unmodelled or modelled only as opaque text in all four: 4 (InvocationID), 7 (ino
 
 ## Citations
 
-(filled below after registration; line numbers from `$RD/sources/<slug>.<ext>`)
+Line numbers were checked against the lane's local reading copies (puppet @e227c275, chef @381a7c9c, salt @f37cdcd1, chef-rfc clone, Resource API and puppet-specifications fetches), which are the same bytes as the pinned URLs. Jira REST JSON archives as one line, so each Jira citation gives the comment author and date (or "description") and a phrase to find. HTML and PDF archives are cited by a phrase to find.
+
+- [A-puppet-type-rb-isomorphism-autorelation-code-2026]
+  - `lib/puppet/type.rb` L61-64: "an isomorphic name is the identity of a resource"; types whose name is not their identity "are said to be non-isomorphic".
+  - L440-447: `uniqueness_key` is the key attributes sorted by name, then their values: "Each distinct tuple must be unique for each resource type."
+  - L933-945: `isomorphic?` is a class-level flag.
+  - L2098-2103: `# Skip autorelation that we aren't managing`: `rel_catalog.resource(type, dep)`, then `next unless dep`, so an edge exists only when both ends are in the catalog.
+  - L2115-2129: autorequire, autobefore, autosubscribe and autonotify all go through one `autorelation`.
+- [A-puppet-resource-catalog-duplicate-alias-code-2026]
+  - `lib/puppet/resource/catalog.rb` L172-176: "Skip creating uniqueness key alias and checking collisions for non-isomorphic resources", then `ukey = resource.uniqueness_key`.
+  - L184-211: `alias`; "Cannot alias %{resource} to %{key}; resource %{newref} already declared".
+  - L392: lookup is `@resource_table[[type_name, res.uniqueness_key].flatten]`.
+  - L582-584: "Duplicate declaration: %{resource} is already declared; cannot redeclare".
+- [A-puppet-file-type-path-munge-autorequire-code-2026]
+  - `lib/puppet/type/file.rb` L34-35: "If Puppet is managing any parent directories of a file, the file resource autorequires them."
+  - L69-71 (repeated at L347-349): the path munge is `::File.expand_path` plus split and join, which is lexical and resolves no symlinks.
+  - L386-401: "Autorequire the nearest ancestor directory found in the catalog" (`parents.find { |p| catalog.resource(:file, p.to_s) }`); "if the resource is a link, make sure the target is created first".
+  - L403-419: owner and group are autorequired by name only: `if val.is_a?(Integer) or val =~ /^\d+$/` then `nil`.
+  - L464: `path.gsub(%r{/+}, '/').sub(%r{/$}, '')`, which collapses repeated slashes and strips the trailing slash.
+- [B-puppet-specifications-resource-types-2017]
+  - `resource_types.md` L45: the identity of `package` "is based on the name of the package and provider, because you can have different types of packages with the same name, e.g. rpm and gem".
+  - L51: `file` sets `path` from `title`, "stripping trailing slashes".
+  - L128-131: the autorequire example.
+  - L262: "the namevar is necessarily a parameter, and not a property, since changing the name identifies a different resource".
+- [A-puppet-resource-api-specification-2023]
+  - Resource API `README.md` L71: `canonicalize` is an optional feature flag.
+  - L186: "If a requested resource is not listed in the result, it is considered to not exist on the system."
+  - L299-362: the `canonicalize` section, with the fixpoint rule checked under `--strict=error|warning|off` (L347-362).
+  - L989-997: "The Resource API will not implement support for multiple providers at this time."
+  - L1034: the unbuilt idea of "allowing definitions to declare (partial) equivalence to other definitions (ala \"apt::package is a package\")".
+- [A-puppet-pup1073-composite-package-namevar-2013]
+  - Description: the change set `provider` `isnamevar` and overloaded `title_patterns`; conflicts between implicit and explicit default provider are "detected at catalog compilation".
+  - Andrew Parker, 2014-10-14: "The possibility for conflict still exists between providers that happen to manage the same pool of packages"; "a composite key does not provide an airtight guarantee of uniqueness but is better than dropping isomorphism".
+  - Henrik Lindberg, 2015-02-17: "We must continue to make references in a unique way"; "that is a really really bad idea".
+- [A-puppet-pup6397-mount-path-not-unique-2016]
+  - Description: "The root cause is the File type assuming that the path is a unique identifier (namevar), while that's not true when Mounts are involved"; "there are actually two /x directories: the *mountpoint* on the parent filesystem ... and the *mounted directory*".
+  - Branan Riley, 2016-08-03: "I think we only need to revert the {{autorequire}} portion of PUP-6099".
+- [A-puppet-pup1968-duplicate-resources-forge-modules-2014]
+  - Description (2014-03-18): two re-usable Forge modules that each declare the same resource cannot be used together.
+  - Eric Sorenson, 2014-05-21: "the work [Felix Frank] is doing on constraints ... could overlap/obviate the need for this".
+  - Status at fetch: Accepted, unresolved.
+- [B-puppet-pup1928-host-key-not-unique-2014]
+  - Description: `127.0.0.1` and `::1` both carry `localhost`, and hostname as the key cannot express that.
+  - Status: Resolved, Won't Fix.
+- [B-puppet-pup6770-uniqueness-key-trailing-slash-2016]
+  - Description (2016-10-04): `File['/tmp/test/']` "will yield different results for the #uniqueness_key when the resource is added to the catalog as a result of a compilation and ... {{Catalog#to_ral}}"; "a subsequent apply will then crash on an alias conflict".
+- [B-puppet-pup2451-autorequire-absent-cycle-2014]
+  - Chris Pitman, 2014-05-02: "It currently autorequires any ancestor resources, regardless of whether it is ensured present or absent."
+  - Status: Accepted, unresolved.
+- [A-puppet-core-lang-resources-uniqueness-2026] (HTML): find "uniqueness" and "namevar"; the title and namevar each have to be unique per resource type.
+- [B-puppet-core-lang-relationships-2026] (HTML; local copy `lang_relationships.htm`): find "refresh" and "noop"; this page covers notify/subscribe refresh events and noop suppressing refresh.
+- [B-kanies-puppet-next-generation-cm-2006] (PDF): find "named hash" and "element type and the element name".
+- [A-chef-resource-set-lookup-code-2026]
+  - `lib/chef/resource_collection/resource_set.rb` L46-51: `insert_as` does `key = create_key(resource_type, instance_name)` then `@resources_by_key[key] = resource`, with no existence check, so the last insert wins.
+  - L150-152: `create_key` returns `"#{resource_type}[#{instance_name}]"`.
+  - L165-198: string references are parsed and looked up through the same key.
+- [A-chef-resource-rb-identity-provides-code-2026]
+  - `lib/chef/resource.rb` L517-535: `identity` returns `name` when there are no identity properties, one value when there is one, or a hash.
+  - L814-819: identity "uniquely refers to a given resource on the given node (in such a way that it can be correlated across Chef runs)". It is not used by the collection lookup.
+  - L1369-1376: `provides` is DSL naming: declaring one "*replaces* that provides".
+- [A-chef-deprecation-resource-cloning-chef3694-2026] (HTML): find "entirely separate" and "impossible to safely deliver notifications to the right resource".
+- [A-chef-rfc056-load-and-converge-2015]
+  - `rfc056-load-and-converge.md` L31-39: `load_current_value` loads the real system value into a new instance before the action runs.
+  - L48-55: example with `current_value_does_not_exist!` and `converge_if_changed`.
+  - L71: "the actual value legitimately does not exist (rather than simply not filling in the object and getting `nil`s in it)".
+- [B-chef-rfc058-before-notification-whyrun-2015]
+  - `rfc058-before.md` L36: `:before` fires "before the resource updates, but *only* if an update will occur".
+  - L44: `notifies :stop, "service[blah]", :before` targets a resource by string.
+  - L67-84: `:before` runs a why-run test of the action and triggers on its result; it raises an error "if the resource does not support why-run".
+- [B-chef-rfc107-resource-map-locking-2018]
+  - `rfc107-resource-map-locking.md` L30-32: "the last class to load wins".
+  - L37-45: locked and unlocked `NodeMap`s, `allow_cookbook_override`, `__core_override__`.
+- [A-salt-requisites-doc-2026]
+  - `doc/ref/states/requisites.rst` L66: "Requisites match on both the ID Declaration and the ``name`` parameter."
+  - L143-144: watch and listen go through `mod_watch`.
+  - L369-372: watch "behavior is defined by the ``mod_watch`` function within the watching state module".
+  - L382-397: `mod_watch` is not called when the watching state itself reported changes, unless it returns `force_mod_watch`.
+- [A-salt-highstate-id-and-name-declaration-2026]
+  - `doc/ref/states/highstate.rst` L68-69: the ID declaration "Must be unique across entire state tree. If the same ID declaration is used twice, then a compilation error will occur."
+  - L241-243: `name` overrides the ID as the `name` argument.
+  - L249-262: `motd_perms` and `motd_quote` both have `name: /etc/motd`, as the documented way to avoid "clashing ID declarations".
+- [A-salt-writing-state-modules-return-contract-2026]
+  - `doc/ref/states/writing.rst` L250: "Test mode does not predict if the changes will be successful or not".
+- [B-salt-issue-5667-name-treated-as-id-2013] (GitHub issue): find "Recursive requisite found" (L389 of the local text copy).
+- [B-salt-issue-59922-requisite-in-id-name-conflict-2021] (GitHub issue): find "require_in" together with the ID and name collision in the issue body.
+- [A-ansible-checkmode-diffmode-doc-2026]
+  - check-mode guide RST (ansible-documentation) L7: modules without check-mode support "report nothing and do nothing".
+  - L15: "Check mode is just a simulation. It will not generate output for tasks that use conditionals based on registered variables (results of prior tasks)."
+- [A-ansible-builtin-file-module-code-2026]
+  - `lib/ansible/modules/file.py` L330-346: `get_state`. `PermissionError` is folded into absent (L338), and `st.st_nlink > 1` gives "hard" (L346).
+  - L621 and L649: `os.path.realpath` when following links.
+  - L875 and L894: hard links are compared by `st_ino` only, with no `st_dev`.
+  - L957-976: "Create user up to this point in real play", and the same for group.
+- [B-ansible-module-conventions-idempotency-2026]
+  - Module best-practices RST L27: "If your module is addressing an object, the option for that object should be called ``name`` whenever possible".
+- [C-ansible-proposal-71-pure-state-squashing-2017] (GitHub issue): find "state: pure" and the maintainers' reply sending it to roles.
 
 ## Leads not pulled
 
