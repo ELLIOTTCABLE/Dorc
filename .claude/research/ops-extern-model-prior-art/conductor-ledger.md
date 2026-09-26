@@ -136,7 +136,9 @@ Manifest hygiene to RECORD, not fix (the manifest is append-only by the skill's 
 ## tooling-defects (patched at the human's direction, "fix new-source as you see fit; keep it narrow")
 
 `~/.claude/skills/interactive-research/scripts/new-source.sh` (outside the repo; the human's
-dotfiles) now carries two narrow changes, `sh -n` clean, not yet exercised by a real run:
+dotfiles) now carries two narrow changes, `sh -n` clean and exercised by roughly ninety
+registrations of this round's serial batch after the edit (one registration that read the script
+mid-edit failed with a spurious syntax error and was retried cleanly):
 
 - `--max-time 120` on the artifact download (`curl -fsSL --retry 2 --max-time 120`); the
   out-of-band landing-page probe already had `--max-time 20`.
