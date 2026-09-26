@@ -773,3 +773,147 @@ natural form. The "feeds it" ambiguity of the retired definition is gone with it
   this ledger commit. Five holds of § 3 remain: `hold-region-against-region-floor`,
   `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
   `hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`.
+
+## § 19-the-future-entry-sitting
+
+The item chosen as least consequential, 2026-09-26: `hold-catalog-entries-as-referents`. Put as
+concepts from the ground (a catalog entry as a name-keyed referent; its existence cell; the two
+consumers, an absence fact and a creating write; a traversal level's two keys). The human asked
+for a careful pass over "the name a file will be created under" against systems that are
+pathological on purpose, with churn and outside actors excluded, and asked that the pass be
+banked whole. The human's questions and framings follow the pass, graded. 311's § 5 (`7b5a3140`,
+two non-normative indexes) landed this sitting and is not this ledger's; nothing below cites it.
+
+The pass, by what each class breaks (conductor; grades as marked):
+
+- `break-name-equality-is-catalog-defined` (+SURE, common) — the catalog's equality is not byte
+  equality. APFS, NTFS, FAT, HFS+, and SMB mounts fold case; ext4 folds case per directory under
+  a flag set at creation and inherited by children; HFS+ and APFS treat two Unicode spellings of
+  one accented name as one entry; NTFS gives every long name a short alias; DNS folds case;
+  Postgres folds unquoted identifiers and leaves quoted ones; MySQL folds table names per server
+  setting; git config folds section and key names and not subsection names; sysctl accepts dots
+  and slashes as one name; dpkg reads `nginx` and `nginx:amd64` as one entry on one architecture
+  and as two under multiarch. Consequence: the key's value is the canonical form the catalog's
+  lookup computes, and unique-name is declared only on a shape the lookup canonicalized. A future
+  entry cannot be asked, so its canonical form comes from the catalog's rule alone. A per-instance
+  rule is measured on the catalog instance, which exists, or on its nearest existing ancestor.
+- `break-the-name-resolves-through-a-search-chain` (+SURE, common) — `PATH`, nsswitch, systemd's
+  unit directories, git's ref namespaces, Postgres `search_path`, DNS search domains: an ordered
+  list of catalogs with first match wins. The resolution of a name depends on its absence in every
+  earlier member, and a creation earlier in the list shadows the hit without touching it. The
+  emitted traversal expresses this only if an absent entry is a key. The creating verb picks its
+  catalog by its own precedence, which can differ from the reader's (`CREATE TABLE` writes to the
+  first schema on `search_path`; a read takes the first schema that has the name). **[TYPED]**
+  2026-09-26: the traversal also depends on the list of catalogs itself, so adding a member to
+  `PATH` invalidates the resolution. Conductor: the read set of `311:1.7-resolution-and-its-traversal`
+  and `30S:rul-engine-owns-shell-resolution-vars` cover it, since the list is shell state the
+  lookup read. Order reasoning (a later member cannot shadow a hit) is a precision the describer
+  may add and need not.
+- `break-the-literal-resolves-to-another-name-at-creation` (+SURE, real) — a dangling symlink.
+  `[ ! -e x ]` follows the link and answers absent; `touch x` creates the file at the link's
+  target; `mkdir x` fails; `mv y x` replaces the link. Which entry "the name it will be created
+  under" names depends on whether the creating call follows a final symlink, per verb. DNS CNAMEs
+  and systemd `Alias=` have the same shape. The lookup offers the literal entry and the followed
+  entry, and the verb's describer picks per arm. Dotfile managers create dangling links routinely,
+  so the case is common on the human's target hosts.
+- `break-the-parent-is-also-future` (+SURE, common) — `mkdir -p a/b/c && touch a/b/c/x`, a
+  Kubernetes namespace created then applied into, a schema then a table. A future entry's parent
+  is the future entry of its parent, and the chain ends at the deepest existing catalog. The entry
+  sort's `:identified-in` admits, per shape, an existing catalog by its primary key and a future
+  one by its entry key. A mount that lands on that path later is a routing write to a traversal
+  member and invalidates everything beneath, so facts below it guard. **[TYPED]** 2026-09-26: the
+  recursion is acked, and the shape must be granular and controllable by the oracle author.
+- `break-creation-writes-other-catalogs-under-derived-names` (+SURE, common; the describer's
+  entailment, not the model's) — `useradd` creates the group, the home, the mail spool, and subuid
+  ranges; `ip link add` creates a sysctl subtree under the interface's name; `lvcreate` creates a
+  mapper name with doubled hyphens; a serial column creates a sequence; `apt-get install` creates
+  hundreds of entries, which the describer can list before install. A derived name needs its
+  naming function reproduced to compare with a book's literal. An unpredictable name (`mktemp`,
+  `generateName`, docker's random names, allocated uids and ifindexes) bounds the write to the
+  catalog whole. A future entry has no primary key, since the store allocates it at creation, so a
+  pre-creation fact is name-keyed only.
+- `safe-templates-and-defaults` (+SURE, absorbed) — a directory's default ACL, `/etc/skel`, sysctl
+  `conf/default/*`, a systemd template unit, a docker image: a template's state becomes a future
+  entry's initial state. A pre-creation fact is an absence fact only, and a template write does
+  not change absence. Where a template answers a read for a name with no entry (a DNS wildcard;
+  `systemctl cat foo@bar`), the raw entry table and the resolved answer are two catalogs, keyed
+  apart by the describer.
+- `safe-create-or-update-and-tombstones` (+SURE, absorbed) — `touch`, `ln -sf`, `mv` onto a name,
+  `kubectl apply`, `CREATE OR REPLACE`: a creation on an absent entry and a state write on a
+  present one, one at-most claim, told apart by the existence cell against the state cells. dpkg's
+  config-files state, Vault's soft delete, Kubernetes finalizers: an entry in a tombstone state is
+  a distinct cell; a guard reading the wrong cell is verdict adequacy. A refused name creates
+  nothing, and the absence fact stays true.
+- `safe-per-vantage-instances` (+SURE, absorbed) — `PrivateTmp`, per-netns `/proc/sys/net`,
+  per-user homes, git `--global` against `--local`: the lent instance and the vantage supply the
+  catalog instance.
+- Not found: a catalog in which one canonical name reaches two entries at one instant. An RRset,
+  a git multi-value key, and an LDAP attribute are one entry with list-valued state at the
+  describer's grain. Unique-referent therefore holds wherever canonicalization is right, and every
+  break above lives on the unique-name side.
+- What the paragraph must add beyond § 3's hold (conductor; ~SUSPECT complete for name-keyed
+  catalogs; -GUESS on ext4's and MySQL's exact folding rules per version): the key's value is the
+  catalog's canonical form, from the catalog's rule alone for a future entry, measured on the
+  nearest existing instance; a future entry's parent may be a future entry, and the chain ends at
+  the deepest existing catalog; where the literal resolves through an alias at creation, the
+  lookup offers both entries and the verb's describer chooses; a search-chain traversal lists the
+  absent entries it passed and the list it walked, which is why absent entries must be keys.
+
+The human's questions, and the conductor's answers as given in chat (none acked):
+
+- **[HUMAN]** Q1: the term for "the thing it was resolved inside". Not an mReferent, since
+  "inside" is a relation within the model and not a byte range on disk; not an mKey, since a key
+  points at something within a namespace. Is there a name for an object in the modelled sense, the
+  parent category of a catalog? Conductor: 311 has no such category. Its letter makes the mParent
+  an mKey (`311:1.6-parent-one-per-key`, `311:2.4-parent-as-a-relation`), and the thing that key
+  denotes an mReferent; "inside" is the `:parent` edge, a model relation
+  (`311:2.2-primary-of-and-identified-in`, identifying is not containing). The role has a name,
+  mParent with its two views, and the object playing it is the key. A species for "a namespace"
+  would be the referent-class node of `312b` § 7's B(b), which was set aside. Nit offered: § 1.6
+  could read "the mKey naming the catalog or store it was resolved inside".
+- **[HUMAN]** Q2, a lean and a gentle nack, open to pushback: the name against the final identity
+  matters less than how a scheme consumer resolves. Two consumers that resolve by one algorithm
+  reach one eventual place, so a placeholder stands for both sites, and "the same algorithm" is
+  what an mScheme is. Contract it out: an oracle reuses an mScheme only where it genuinely
+  resolves into the store the same way from every use-site, Dorc still owing the footgun and
+  enhancement work. Conductor: the contract is `311:1.5-token-and-the-two-warrants`'
+  `:guarantees-unique-referent` on the natural scheme (same input, same output), plus one catalog
+  instance, plus no routing write between (invalidation). 311 already licenses SAME between two
+  unresolved same-spelled leaves "by warrant" (`311:1.10-vantage-route-placeholder-witness`,
+  `311:3.2-compare-one-chokepoint-four-answers` one level), so the shape is present. The contract
+  binds the tool describer at the bind (which scheme, which arm) and the scheme owner at the arm.
+  The dangling symlink is its footgun: a verb whose call does not follow a final symlink, bound
+  under a following scheme, is a mis-bind with an author. A lint on creating verbs against a
+  followed bind is the natural net, 312's.
+- **[TYPED]** Q3: the list of catalogs is part of the traversal (banked above).
+- **[TYPED]** Q4: recursion; granular and controllable (banked above).
+
+Takeaways (**[HUMAN]**, explicitly in the oven, not ruled):
+
+- T1: placeholders, as in value-flow analysis. Conductor: 311's mPlaceholder covers unmeasured
+  tokens (`311:1.4-key-and-its-two-views`, `311:1.10-vantage-route-placeholder-witness`). The want
+  widens it to unresolved keys: no referent yet, or unresolvable at probe. A widened placeholder is
+  keyed by (scheme, canonical value, catalog instance, entry chain); two are SAME by the scheme's
+  unique-referent warrant; a routing write invalidates it as any resolution. This keeps `311p`
+  thread 6: SAME by the owner's warrant, never by an engine vouch.
+- T2: primary against natural key is over-enforced. For an uncreated item the natural key is the
+  primary key. What a natural key cannot do still holds. "Not yet created" is a special case of
+  "no resolvable primary key", and if that case compares by natural key, so does every natural
+  key. A primary key by concrete test stays preferable, and this case shows it insufficient. The
+  human feels a large unsoundness and wants time. Conductor's read: the pieces exist. The floor
+  makes a scheme with no primary its own primary, unwarranted (`311:1.3-scheme-a-way-of-writing`);
+  warrants sit on any lookup (§ 1.5); yields are per shape (`311:2.1-yields-into-another-scheme`).
+  Missing: an arm that yields no primary yields the natural key itself as the level, in its
+  catalog, under that arm's warrants; the walk admits such a level, where today an unknown link
+  reads UNKNOWN; and DISJOINT from a natural scheme's unique-name at the leaf, where today the
+  two-tops way consumes primaries only. The unsoundness is bounded by absent-by-default: SAME
+  needs unique-referent, which a path in one mount namespace at one instant honestly has, and
+  DISJOINT needs unique-name, which the path scheme withholds and a directory's entry scheme gives
+  by construction. The wider blade is that natural schemes alias more, so the describer's
+  unique-name is the knife. Today's asymmetry, SAME by a natural warrant through placeholders and
+  DISJOINT through primaries only, is what T2 evens out. The two framings coincide: an entry sort
+  per catalog is the catalog's name-keyed cells, and the natural key as its own primary when
+  unresolved is the same sort reached through the lookup's absent arm.
+- State: nothing applied to 311. `hold-catalog-entries-as-referents` stays held, widened by T1
+  and T2 into one question about placeholders and natural-key comparison. The other four holds
+  of § 18 stand.

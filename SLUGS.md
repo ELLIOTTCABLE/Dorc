@@ -6579,6 +6579,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30S:rul-engine-owns-shell-resolution-vars
 - defined: Research/plans/30S-environment-identity-and-vouch-envelopes.md:79 — [human-typed 2026-08-24] — variables with
+- cited: 312cg (1)
 
 ## spike/verify/CLAUDE:rul-engine-report-is-ephemeral
 - defined: spike/verify/CLAUDE.md:19 — — the committed report is always the cheap
