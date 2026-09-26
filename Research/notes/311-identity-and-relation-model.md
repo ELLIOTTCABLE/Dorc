@@ -12,8 +12,9 @@
 > user-facing usage: the `312` series) can build on them without re-modeling.
 >
 > Scope: abstract objects and relations only. No syntax, no strawman sh, no UX, no
-> gradual-enhancement ladder, no implementation. No spellings are proposed. `[LEAN]` Dangerous
-> operations get rare, long names. Safe operations get short names.
+> gradual-enhancement ladder, no implementation. No spellings are proposed. Section footers hold
+> examples. They are illustrative and not fully worked. `[LEAN]` Dangerous operations get rare,
+> long names. Safe operations get short names.
 
 ## Conventions
 
@@ -34,6 +35,7 @@
   list item, a second citation of that section uses its number alone, as §2.6.
 - A blockquote under a heading is non-normative. It names a false friend from a neighbouring
   field, a name the object carried before this document, or a refuted shape (`notes/311u`).
+- A blockquote at the end of a section is non-normative. It holds the section's examples.
 
 ## § 0-the-problem-and-the-law
 
@@ -60,8 +62,7 @@ refutes the model. Who must say what is 3.5-committee-law-and-attribution.
 
 ### § 1.1-referent-state-and-value
 
-An mReferent is a persisting piece of the world that has state. Examples: an inode, a database
-row, a package record, a kernel parameter, a running process, a machine, a mount table.
+An mReferent is a persisting piece of the world that has state.
 
 - It has the mSort of the mKey that reaches it. Two mSorts over one piece of the world is the
   strangers case (1.2-sort-the-declared-carrier).
@@ -96,6 +97,9 @@ are three kinds:
 An mValue is what a read yields from an mState. It is never the mState. Two reads of one
 mReferent at two instants may yield two mValues.
 
+> Examples of an mReferent: an inode, a database row, a package record, a kernel parameter, a
+> running process, a machine, a mount table.
+
 ### § 1.2-sort-the-declared-carrier
 
 > Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents
@@ -118,14 +122,16 @@ The owner speaks only about the mSort's relations to its immediate neighbours.
 
 Several mSchemes into one mSort is the cooperative case: one owner admits several ways of
 writing down what they describe. Several mSorts over one world-thing is the ordinary strangers
-case: two vendors describe one tool, or two vocabularies reach one cell under `/proc/sys`. The
-strangers case is undetectable to the engine. It reads KNOWN_UNSPOKEN at the chokepoint
+case. The strangers case is undetectable to the engine. It reads KNOWN_UNSPOKEN at the chokepoint
 (3.2-compare-one-chokepoint-four-answers). Only a human act merges it, by making one mSort's
 mSchemes yield into the other's.
 
 An mSort has no mKeys and no `resolve()`. It is never valid where an mScheme is. It is named
 only when something is declared about it as a whole. The floor of 1.3-scheme-a-way-of-writing
 lets an mScheme precede its mSort's name.
+
+> The strangers case: two vendors describe one tool, or two vocabularies reach one cell under
+> `/proc/sys`.
 
 ### § 1.3-scheme-a-way-of-writing
 
@@ -200,18 +206,16 @@ Any lookup, a secondary mScheme's or a primary mScheme's, may carry two warrants
 shape. They are independent, separately declared, and absent by default.
 
 - `:guarantees-unique-referent`: within one mParent, equal mKeys reach one mReferent. The lookup
-  is a function. It licenses SAME from equality. It fails for round-robin lookups, recycled
-  mKeys, and cloned identifiers presented as mRoots.
+  is a function. It licenses SAME from equality.
 - `:guarantees-unique-name`: within one mParent, one mReferent has one mKey. It licenses
-  DISJOINT from inequality. It fails for symlinks and hardlinks, package `provides`, and
-  route-qualified handles.
+  DISJOINT from inequality.
 
 The lookup's owner declares each warrant per matched shape. The warrant holds for every mKey of
 that shape inside any one mParent, while that mKey's mResolution or mToken stands
 (3.3-perishing-three-mutator-species). A matched shape is a control-flow path of the owner's
-body. A warrant is constructed when that body is evaluated for the mKey in hand. The declaration is
-per shape. The instance is per evaluation. It may rest on what the path measured. Any path the dialect admits may decline it. A path that does not reach a
-warrant has not given it.
+body. A warrant is constructed when that body is evaluated for the mKey in hand. The declaration
+is per shape. The instance is per evaluation. It may rest on what the path measured. Any path
+the dialect admits may decline it. A path that does not reach a warrant has not given it.
 
 The engine vouches for one lookup itself: the local mRoute under no wrapper
 (1.10-vantage-route-placeholder-witness). Across a wrapper, the wrapper's author speaks
@@ -220,13 +224,17 @@ The engine vouches for one lookup itself: the local mRoute under no wrapper
 Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for
 the one level it resolved. The closure states that the mReferent at that level is reachable by
 exactly this one entry anywhere in the instance the lookup ran in, not only in the
-mParent-Catalog the entry was found in. For a path that instance is the whole mount namespace.
-It is a statement about one mKey, from the thing's end, made on the path that measured it. For a
-file, the evidence is a link count of one. For a directory, the evidence is that no other mount
-exposes it. Where the lookup knows other entries, it emits them first, and a listed alias is
-checked as the first entry is. The closure and the per-shape warrant are two statements. The
-region test (2.9-hierarchical-and-the-region-test) consumes the closure. A hardlink or a bind
-mount is where the closure is withheld.
+mParent-Catalog the entry was found in. It is a statement about one mKey, from the thing's end,
+made on the path that measured it. Where the lookup knows other entries, it emits them first,
+and a listed alias is checked as the first entry is. The closure and the per-shape warrant are
+two statements. The region test (2.9-hierarchical-and-the-region-test) consumes the closure.
+
+> `:guarantees-unique-referent` fails for round-robin lookups, recycled mKeys, and cloned
+> identifiers presented as mRoots. `:guarantees-unique-name` fails for symlinks and hardlinks,
+> package `provides`, and route-qualified handles. For a path the closure's instance is the
+> whole mount namespace. For a file, the evidence is a link count of one. For a directory, the
+> evidence is that no other mount exposes it. A hardlink or a bind mount is where the closure is
+> withheld.
 
 ### § 1.6-parent-one-per-key
 
@@ -235,12 +243,10 @@ routes, one per other lookup that reached it (2.10-places-the-upward-lookup). No
 its mParent. What the mParent edge carries follows the mScheme.
 
 - Through a secondary mScheme, the mParent is the mParent-Catalog: the thing the mKey was looked
-  up in. Examples: a directory for a path's entry, a passwd database for a login name, a process
-  table for a pid. The edge carries routing: which instance, and perishing
+  up in. The edge carries routing: which instance, and perishing
   (3.3-perishing-three-mutator-species). It never carries identity.
 - Through the primary mScheme, the mParent is the mParent-Store: the mKey relative to which
-  alone the mKey-Primary means anything. Examples: a DNS zone for a record's owner name, a user
-  namespace for a uid, a dpkg database for a canonical package name. The edge carries identity.
+  alone the mKey-Primary means anything. The edge carries identity.
   It is what `compare()` walks (3.2-compare-one-chokepoint-four-answers). At the primary
   mScheme, mParent-Catalog and mParent-Store are one mKey.
 
@@ -262,18 +268,20 @@ Two seats that disagree are a contradiction. It is refused and attributed to bot
 
 A shape with no `:identified-in` is scoped in the mRoute
 (1.10-vantage-route-placeholder-witness). A mRoot is a shape declared `:rootness`. Its mKeys
-need no mParent, which claims they are globally comparable. Examples: the DNS mRoot, or a cloud
-instance-id whose issuer never repeats one. Nothing is a mRoot by default. Cloned identifiers
-are the standing witness.
+need no mParent, which claims they are globally comparable. Nothing is a mRoot by default.
+Cloned identifiers are the standing witness.
+
+> Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login
+> name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner
+> name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a
+> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
 
 ### § 1.7-resolution-and-its-traversal
 
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
 p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
-chain of routing mKeys the lookup crossed. Examples: each directory entry and symlink for a
-path, the resolver configuration and mVantage for a hostname, the unit table for a service name.
-A `:hierarchical` mScheme's lookups produce the mTraversal, one level per lookup
-(2.9-hierarchical-and-the-region-test).
+chain of routing mKeys the lookup crossed. A `:hierarchical` mScheme's lookups produce the
+mTraversal, one level per lookup (2.9-hierarchical-and-the-region-test).
 
 A mResolution perishes under ordinary effective-mWorld reach from any mutator whose writeset
 touches a mTraversal member. Its target object is not its backing. An mKey can stop reaching an
@@ -288,6 +296,9 @@ The read set is closed only when the read set of every external command in the b
 The author of the speech that describes an external command closes that command's read set by
 an explicit act. An open read set perishes the mResolution under any routing mutation
 (3.3-perishing-three-mutator-species).
+
+> Examples of a mTraversal: each directory entry and symlink for a path, the resolver
+> configuration and mVantage for a hostname, the unit table for a service name.
 
 ### § 1.8-fully-qualified-key-topic-and-derivation
 
@@ -322,16 +333,17 @@ cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key).
 A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
 diffuse. The cell's may-read set (2.5-may-read-the-readset) says where that mState is held. The
 freshness of a fact about the cell follows that set, together with any write that covers the
-mParent (2.9-hierarchical-and-the-region-test, 3.3-perishing-three-mutator-species). Example:
-`active` is held in the service manager's memory in the boot, and a reboot reaches it through
-that set. `enabled` is held in a symlink in a filesystem, and survives a reboot only where its
-mParent is not itself scoped in the boot (§3.3).
+mParent (2.9-hierarchical-and-the-region-test, 3.3-perishing-three-mutator-species).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
 3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
 writeset entry naming the mParent covers its cells (§3.2, step 2). The marked line that answers
 a cell is a read of the cell's mKey. The fact's identity is the mTopic
 (1.8-fully-qualified-key-topic-and-derivation).
+
+> Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it
+> through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot
+> only where its mParent is not itself scoped in the boot (3.3-perishing-three-mutator-species).
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -355,8 +367,10 @@ Otherwise the mRoute and the ambient instances are unknown across mVantages.
 A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey,
 ambient mParents, mEntryChain). The probe standup binds it. The apply standup re-reads it
 through the same entry and `compare()`s the two. That re-read is the `witness()`. A mismatch is
-integrity, never a verdict input. The `witness()` cannot see a recycled mKey, such as a reissued
-pid or inode. That stays on the outside-churn horizon.
+integrity, never a verdict input. The `witness()` cannot see a recycled mKey. That stays on the
+outside-churn horizon.
+
+> A recycled mKey the `witness()` cannot see: a reissued pid or inode.
 
 ### § 1.11-site-and-claim-species
 
@@ -398,13 +412,12 @@ one of that mSort's mSchemes:
 - S's owner's declaration
 - the mEntryChain's instance for that mSort (1.10-vantage-route-placeholder-witness)
 
-An unknown input makes the instance unknown. A cache and the file it caches are two
-mParent-Catalogs.
+An unknown input makes the instance unknown.
 
 S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's
 mKeys license before the primary mScheme is reached. They never license across mParent-Catalogs.
-A `resolve()` declines on mReferents its mSort does not describe. Example: a path reaching a
-socket, under an mScheme into files. This is the mechanical net against lazy borrowing.
+A `resolve()` declines on mReferents its mSort does not describe. This is the mechanical net
+against lazy borrowing.
 
 - Arity: per matched shape of a secondary mScheme, into any mSort.
 - Declared by: S's owner.
@@ -414,6 +427,9 @@ socket, under an mScheme into files. This is the mechanical net against lazy bor
   (3.1-identity-of-a-key).
 - Danger: the lookup warrants. A wrong yield or a wrong supplied instance is a wrong SAME or
   DISJOINT, attributed to the yield.
+
+> A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket,
+> under an mScheme into files.
 
 ### § 2.2-primary-of-and-identified-in
 
@@ -430,14 +446,13 @@ P's owner declares, per matched shape of the mKey's mValue:
   absent by default. They govern what mToken equality and inequality license at this level of a
   mFullyQualifiedKey.
 - `:rootness`, absent by default. The shape declares no mParent and thereby claims global
-  comparability. It is equivalent to `:guarantees-unique-referent` over the whole world. It
-  fails for cloned identifiers. A mToken duplicable across instances of its would-be mParent
-  must be scoped in something smaller, or left un-warranted.
+  comparability. It is equivalent to `:guarantees-unique-referent` over the whole world. A
+  mToken duplicable across instances of its would-be mParent must be scoped in something
+  smaller, or left un-warranted.
 
-The mParent's type varies per shape: an ext4 filesystem in the mRoute, an NFS filesystem in a
-host, a tmpfs in a boot. So the child mSort's owner never learns the mParent's types. The
-mParent mSort's primary mScheme classifies, one level up. Each owner speaks one level. An mValue
-matching no declared shape reads unknown from this level.
+The mParent's type varies per shape. So the child mSort's owner never learns the mParent's
+types. The mParent mSort's primary mScheme classifies, one level up. Each owner speaks one
+level. An mValue matching no declared shape reads unknown from this level.
 
 A grade governs every consumer of the answer it grades, corroboration and contradiction
 included. A lookup without `:guarantees-unique-name` cannot contradict anything by returning two
@@ -451,28 +466,32 @@ different mTokens.
 - Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:rootness`, per matched
   shape.
 
+> `:rootness` fails for cloned identifiers. The mParent's type varies per shape: an ext4
+> filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
+
 ### § 2.3-aliases-nothing-else-the-store-warrant
 
 A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own
 construction, also identified in another store. The store gives its own mKeys to no other
-store's mReferents. Examples where it holds: a DNS zone for its records, a dpkg database for its
-packages, a network namespace for its `net/*` knobs, a disk filesystem for its inodes. Examples
-where it never holds: a client NFS mount, an NSS view of LDAP, a chroot, a nested pid namespace,
-an overlay, a front over another daemon, a relabelling of part of its mParent's state.
+store's mReferents.
 
 The warrant is self-knowledge. Whether another store aliases this one is not claimed, since
 nobody can know it. 3.2-compare-one-chokepoint-four-answers asks the warrant of every store on
 both legs, so an aliasing store blocks separation by its own silence.
-
-State spanning several files is a may-read matter (2.5-may-read-the-readset). A hardlink is a
-`:guarantees-unique-name` failure on the path mScheme. The path mScheme yielding the inode
-dissolves it.
 
 - Arity: per store.
 - Declared by: whoever describes the store.
 - Default: absent. Nothing inside that store then separates from anything outside it.
 - Consumer: DISJOINT (3.2-compare-one-chokepoint-four-answers).
 - Danger: an aliasing store declared `:aliases-nothing-else` is a wrong DISJOINT.
+
+> Examples where it holds: a DNS zone for its records, a dpkg database for its packages, a
+> network namespace for its `net/*` knobs, a disk filesystem for its inodes. Examples where it
+> never holds: a client NFS mount, an NSS view of LDAP, a chroot, a nested pid namespace, an
+> overlay, a front over another daemon, a relabelling of part of its mParent's state. State
+> spanning several files is a may-read matter (2.5-may-read-the-readset). A hardlink is a
+> `:guarantees-unique-name` failure on the path mScheme. The path mScheme yielding the inode
+> dissolves it.
 
 ### § 2.4-parent-as-a-relation
 
@@ -494,9 +513,7 @@ the engine composes. A mVantage supplies instances and is never an mParent.
 K `:may-read` these mKeys: K's mState is affected by writes to them. The relation is
 many-valued. It is an edge type from an mSort to mKeys of other mSorts, a template the mSite or
 environment fills. K's owner declares it, with a completion sentinel closing the set. Every
-mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves. Example: a
-loop-backed filesystem's state lives in a file of the outer filesystem, and `dd` over the image
-rewrites every inner fact.
+mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves.
 
 A fact's readset is the marked reads of the body that answered it, together with the may-read
 entries declared by every member of the mKey's mFullyQualifiedKey. It is closed only when every
@@ -513,8 +530,7 @@ identified beneath K. An omitted entry is a silent channel. It licenses nothing 
 
 May-read is distinct from mParent. The mParent is one and answers identity. May-read entries are
 many and answer interference. Two cells with different mParents can share a may-read entry and
-so collide without being the same. Example: two observers' writability cells share the file's
-mode.
+so collide without being the same.
 
 A closed may-read set is knife-tier. It is one of the two closures every sparing rests on
 (2.6-may-write-the-writeset).
@@ -525,6 +541,10 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 - Consumer: collision, and the write-path question (2.6-may-write-the-writeset).
 - Danger: none positive. Omission is the silent channel. The closed set is one of sparing's two
   closures.
+
+> A may-read entry above the leaf: a loop-backed filesystem's state lives in a file of the outer
+> filesystem, and `dd` over the image rewrites every inner fact. A shared entry: two observers'
+> writability cells share the file's mode.
 
 ### § 2.6-may-write-the-writeset
 
@@ -538,16 +558,14 @@ completion record, and widened by the may-write entailment that mSort owners dec
 A write to an mKey is also a write to every container on that mKey's mFullyQualifiedKey. So each
 container's may-write entailment joins the line's writeset. A container at or above the deepest
 level that the written mKey shares with the read mKey contributes nothing to the test against
-that fact. Otherwise a filesystem's entailment, which names its disk, would make two files in
-one filesystem collide through it. May-read entries are never consulted on the write side.
+that fact. May-read entries are never consulted on the write side.
 
 The entailment: writing an mKey of K entails may-write of these mKeys of other mSorts. It is
 arm-incremental and collide-adding. The reached completion record finishes the definition. It
 witnesses that the write set, after entailment, is complete. K's owner declares it. The
-entailment is about effects, not identity. It carries a package's postinst enabling its unit, a
-restart killing a main process, and every cross-mSort consequence no mFullyQualifiedKey
-expresses. It generates no DISJOINT: "nothing else" is no other thing, never no other mKey for
-the thing written.
+entailment is about effects, not identity. It carries every cross-mSort consequence no
+mFullyQualifiedKey expresses. It generates no DISJOINT: "nothing else" is no other thing, never
+no other mKey for the thing written.
 
 An elision is spared past a write only when two questions are answered, in order, for every pair
 of a writeset entry and the mKey a fact reads, of one mSort or of two:
@@ -571,6 +589,10 @@ across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
 - Consumer: the write-path question above, within one mWorld. Never a generator of DISJOINT.
 - Danger: the premature finished record.
 
+> Without the exclusion of containers at or above the shared level, a filesystem's entailment,
+> which names its disk, would make two files in one filesystem collide through it. Examples of
+> the entailment: a package's postinst enabling its unit, a restart killing a main process.
+
 ### § 2.7-corresponds-across-a-transition
 
 > A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is
@@ -578,9 +600,7 @@ across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
 
 mKey X inside mParent A `:corresponds` to mKey Y inside mParent B: they denote the same
 mReferent. The owner of the transition between A and B declares it. That owner is neither mKey's
-mScheme owner. Examples: the container manager knows guest pid 1 is host pid 4821.
-`sudo -u alice` knows inner "me" is outer "alice". A mount line's oracle knows mKeys under the
-mountpoint are mKeys under the export on the named server, from this mVantage.
+mScheme owner.
 
 Absent a mCorrespondence, mKeys across a transition `compare()` UNKNOWN unless a
 mFullyQualifiedKey binds mTokens on both sides. The mCorrespondence is the model's only declared
@@ -592,6 +612,10 @@ sameness generator besides mToken equality.
 - Consumer: a SAME mDerivation (1.8-fully-qualified-key-topic-and-derivation), vouch-tier,
   attributed to the transition author.
 - Danger: a wrong mCorrespondence is a wrong SAME.
+
+> Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u alice` knows
+> inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint are mKeys
+> under the export on the named server, from this mVantage.
 
 ### § 2.8-observer-dependence-and-independence
 
@@ -612,21 +636,18 @@ It must remain speech. Measurement in the denoted context (`plans/27C`) stays th
 ### § 2.9-hierarchical-and-the-region-test
 
 An mScheme is `:hierarchical` when its lookups name, as the mParent-Catalog of what they yield,
-an mKey of the same mScheme or of an mScheme that in turn feeds it. Examples: a path yields a
-directory entry looked up in a shorter path. A hostname yields a resolver step from a mVantage.
-A dotted unit name yields an entry in its instance table. Otherwise the mScheme is flat, as an
-inode number or a uid is.
+an mKey of the same mScheme or of an mScheme that in turn feeds it. Otherwise the mScheme is
+flat.
 
 The mTraversal is the chain those lookups produced, one level per lookup. The engine never reads
 an mKey's syntax. Whatever splitting an mKey needs happens inside a lookup's body. A
 `:hierarchical` mScheme may contain indexical components, whose mResolution depends on the
-observing process (`/proc/self`). Only the mScheme owner can say which, in the lookup that meets
-them. An undeclared indexical component reads unknown.
+observing process. Only the mScheme owner can say which, in the lookup that meets them. An
+undeclared indexical component reads unknown.
 
 By default an mScheme is flat. The mTraversal is then the mParent-Catalog as a whole, and any
 touch on it perishes every mResolution through it. That is the coarse, safe floor. Containment
-is membership in a mTraversal. A path prefix is not a store. A mutator that touches a directory
-needs to know nothing about files.
+is membership in a mTraversal.
 
 An entry names the mReferent of its mKey. The walk of 3.2-compare-one-chokepoint-four-answers
 collides a write to that mReferent with everything identified in it. An entry given whole also
@@ -657,8 +678,7 @@ mTraversal that `identity(x)` produced at every level of x's mFullyQualifiedKey
 4. Otherwise: UNKNOWN.
 
 Only x's mTraversals are walked. D needs no closure of its own. Every level is asked, never only
-the leaf, because an alias may sit at any level: a bind mount of a directory above a file, or an
-alias entry above a leaf. A leaf's own closure cannot see it. `compare()`
+the leaf, because an alias may sit at any level. A leaf's own closure cannot see it. `compare()`
 (3.2-compare-one-chokepoint-four-answers) compares a level by the identity of the mReferent that
 the level resolved to.
 
@@ -670,14 +690,20 @@ the level resolved to.
   (3.3-perishing-three-mutator-species), and the region test.
 - Danger: none. Finer buys sparing. Coarse is safe.
 
+> Examples of a `:hierarchical` mScheme: a path yields a directory entry looked up in a shorter
+> path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in
+> its instance table. Flat mSchemes: an inode number, a uid. An indexical component:
+> `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know
+> nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an
+> alias entry above a leaf.
+
 ### § 2.10-places-the-upward-lookup
 
 An mSort G may declare that it `:places` another mSort T. G's owner publishes a lookup that is
 invoked with the mValue of an mKey of T. Its matched shapes decide which spellings of T it
-answers: a path-shaped mValue answered, an inode number declined. For that mKey it emits
-`looked-up-in G:key` and a closure `looked-up-in nothing-else`, scoped to routes of mSort G.
-These are the records any lookup emits. Membership is a relation between two mReferents, never a
-spelling of one, so the placing lookup is not an mScheme of T.
+answers. For that mKey it emits `looked-up-in G:key` and a closure `looked-up-in nothing-else`,
+scoped to routes of mSort G. These are the records any lookup emits. Membership is a relation
+between two mReferents, never a spelling of one, so the placing lookup is not an mScheme of T.
 
 The route so recorded is a mTraversal of the mKey for the region test
 (2.9-hierarchical-and-the-region-test). It perishes as any mResolution does
@@ -710,19 +736,23 @@ reads UNKNOWN.
 - Consumer: the region test (2.9-hierarchical-and-the-region-test), and perishing.
 - Danger: a false `looked-up-in nothing-else` is G's owner's wrong DISJOINT.
 
+> Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
+
 ### § 2.11-composite-sorts-and-roles
 
 A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a
-mCompositeSort. Examples: a base and an overlay, or a primary and its replica set. The author
-who knows the roles mints it, normally the tool author. That mSort's identity is its owner's
-function of its named parts. Plurality of inputs is an mSort with structure, never a set of
-mParents. The may-read set of a mCompositeSort is the union of its parts' may-read sets.
+mCompositeSort. The author who knows the roles mints it, normally the tool author. That mSort's
+identity is its owner's function of its named parts. Plurality of inputs is an mSort with
+structure, never a set of mParents. The may-read set of a mCompositeSort is the union of its
+parts' may-read sets.
 
 - Arity: per composite.
 - Declared by: the author holding the roles.
 - Default: not applicable.
 - Consumer: identity (3.1-identity-of-a-key).
 - Danger: as any mSort.
+
+> Examples: a base and an overlay, or a primary and its replica set.
 
 ## § 3-composition-and-laws
 
@@ -792,11 +822,11 @@ Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the le
 
 Different mSorts. mKeys of different mSorts share no primary mScheme. Their mFullyQualifiedKeys
 meet, if at all, only at a common ancestor, and that meeting is not a claim about the leaves.
-Example: a package status file and a unit file share a filesystem. The walk decides such a pair
-as it decides any other: DISJOINT where it separates them, and otherwise KNOWN_UNSPOKEN.
-KNOWN_UNSPOKEN never spares and never transports, whatever either side has declared finished
-(2.6-may-write-the-writeset). Two mSchemes yielding one mKey-Primary is the sole same-referent
-generator across ways of naming. Dorc equates mKeys and never merges mSorts.
+The walk decides such a pair as it decides any other: DISJOINT where it separates them, and
+otherwise KNOWN_UNSPOKEN. KNOWN_UNSPOKEN never spares and never transports, whatever either
+side has declared finished (2.6-may-write-the-writeset). Two mSchemes yielding one mKey-Primary
+is the sole same-referent generator across ways of naming. Dorc equates mKeys and never merges
+mSorts.
 
 Partial measurement never widens. A mDerivation with an unmeasured or mRoute-terminated link
 yields at most what it would yield with the link measured.
@@ -807,8 +837,11 @@ warranted DISJOINT on one pair is a contradiction: refuse both and attribute bot
 Otherwise the strongest warranted answer stands. SAME composes transitively. SAME then DISJOINT
 composes to DISJOINT. DISJOINT then DISJOINT never chains. The universal meet over backing sets
 is unchanged. Genuinely different mKey-Primaries for one mReferent are two mDerivations for one
-mTopic, reconciled by coherence, never a second mKey inside one mParent. Examples: an NFS
-filehandle and the server's inode, or a machine-id and a cloud instance-id.
+mTopic, reconciled by coherence, never a second mKey inside one mParent.
+
+> Two mSorts meeting at a common ancestor: a package status file and a unit file share a
+> filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the
+> server's inode, or a machine-id and a cloud instance-id.
 
 ### § 3.3-perishing-three-mutator-species
 
@@ -816,43 +849,44 @@ Three mutator species invalidate three kinds of fact. In all three, the engine w
 authority. It never computes the successor identity.
 
 - A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
-  read. Examples: a mount, a symlink replacement, a rename, a user added, a hostname change, a
-  write to any environment variable, cwd, or configuration a lookup reads. A mResolution
-  perishes when its mTraversal includes a touched mKey. It also perishes when the written mKey
-  is in the read set of the lookup body that produced it (1.7-resolution-and-its-traversal). An
-  open read set perishes it under any routing mutation. Under the flat default, it also perishes
-  when its mParent-Catalog was touched at all. Every
+  read. A mResolution perishes when its mTraversal includes a touched mKey. It also perishes
+  when the written mKey is in the read set of the lookup body that produced it
+  (1.7-resolution-and-its-traversal). An open read set perishes it under any routing mutation.
+  Under the flat default, it also perishes when its mParent-Catalog was touched at all. Every
   mFullyQualifiedKey built on a perished mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
   conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
-  an mKey are routing writes to its mParent-Catalog entry, its existence cell. So
-  `userdel alice; useradd alice` perishes every mResolution of the old mKey. A writeset that
+  an mKey are routing writes to its mParent-Catalog entry, its existence cell. A writeset that
   omits the entry is the ordinary at-most omission knife, now visibly covering routing mKeys.
 - A state mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
   first write can also change an mKey-Primary. So a state mutation whose writeset touches a
   mParent-Store perishes the mTokens scoped in it.
-- A lifecycle mutation writes a mRoot-adjacent mKey, such as a boot or a tenure. Examples: a
-  reboot, a re-provision. Every mKey-Primary scoped in it names a new mReferent afterward. Cells
-  whose mFullyQualifiedKeys pass through it are new and unmeasured. Cells whose
-  mFullyQualifiedKeys do not are untouched. "Keyed by Boot" and "invariant across Boot" are the
-  shape of the mFullyQualifiedKey, not declarations.
+- A lifecycle mutation writes a mRoot-adjacent mKey, such as a boot or a tenure. Every
+  mKey-Primary scoped in it names a new mReferent afterward. Cells whose mFullyQualifiedKeys
+  pass through it are new and unmeasured. Cells whose mFullyQualifiedKeys do not are untouched.
+  "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not
+  declarations.
+
+> Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change,
+> a write to any environment variable, cwd, or configuration a lookup reads.
+> `userdel alice; useradd alice` perishes every mResolution of the old mKey. Lifecycle
+> mutations: a reboot, a re-provision.
 
 ### § 3.4-entry-and-lends
 
 > Dynamic binding: `parameterize`, `fluid-let`.
 
 A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs,
-and nothing else. Examples: a chroot lends a mount namespace. `sudo -u` lends a user.
-`ip netns exec` lends a network namespace. The lent instance becomes the ambient mParent for
-every mKey of a secondary mScheme looked up in that mParent-Catalog mSort.
+and nothing else. The lent instance becomes the ambient mParent for every mKey of a secondary
+mScheme looked up in that mParent-Catalog mSort.
 
 An unlent mParent-Catalog mSort is ⊤ under the wrapper. After the wrapper's completion
 sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the
 caller's instances instead. Leaf mKeys then inherit transitively through their
 mFullyQualifiedKeys with no further speech. A wrapper may declare mCorrespondences across
 the mParent-Catalogs it lends (2.7-corresponds-across-a-transition). A lend may depend on the
-guest, as sudoers matches the guest command. The wrapper author then declares the
-guest-insensitive default and supplies a policy read that declines on departure.
+guest. The wrapper author then declares the guest-insensitive default and supplies a policy read
+that declines on departure.
 
 - Arity: per wrapper, per mParent-Catalog mSort, plus the sentinel.
 - Declared by: the wrapper owner.
@@ -860,6 +894,9 @@ guest-insensitive default and supplies a policy read that declines on departure.
 - Consumer: ambient mParent supply.
 - Danger: a wrong lend measures the wrong mVantage. The sentinel is an at-most claim over every
   mParent-Catalog mSort. A wrong sentinel is a wrong SAME. The flag prices it.
+
+> Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a
+> network namespace. A lend that depends on the guest: sudoers matches the guest command.
 
 ### § 3.5-committee-law-and-attribution
 
@@ -878,10 +915,9 @@ know about their own tool, store, or machine. That party says it alone, describe
 cannot see, and names no other author. So the speech needed grows with the number of authors,
 never with the number of pairs of them.
 
-A granting composite ("these two accounts are one") is entailed jointly by one mScheme's
-`:yields` and the primary mScheme's declaration for that shape. Each author speaks about their
-own lookup. A withholding composite (a mount perishing an account's mResolution) names nobody
-and needs nobody's consent.
+A granting composite is entailed jointly by one mScheme's `:yields` and the primary mScheme's
+declaration for that shape. Each author speaks about their own lookup. A withholding composite
+names nobody and needs nobody's consent.
 
 Attribution:
 
@@ -891,6 +927,9 @@ Attribution:
 - Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that
   made instances one, and the mCorrespondences.
 - Every perished conclusion names the writeset that perished it.
+
+> A granting composite: "these two accounts are one". A withholding composite: a mount perishing
+> an account's mResolution.
 
 ## § 4-relation-to-other-documents
 
