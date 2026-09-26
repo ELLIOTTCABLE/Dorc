@@ -1170,3 +1170,219 @@ findings from this item, none owed by 311: the stdlib chain and the two depths (
 placeholder for keys unresolvable at probe time (§ 19 T1); the horizon cost of nominal
 primaries and the lossiness of the future-parent recursion (this section). The next item by the
 human's order is `hold-terminus-closure-and-engine-vouch`.
+
+## § 24-the-terminus-closure-sitting
+
+The item chosen as least consequential, 2026-09-26: `hold-terminus-closure-and-engine-vouch`,
+over `2223e1e5`. Put first with a resolution the human did not follow and then reasserted
+against; re-put from the ground as a plain program; then the two questions of § 25 and § 26.
+Rulings and framings the human typed are graded; the conductor's claims are marked and none is
+acked unless the line says so. Nothing applied to 311.
+
+- As first put (conductor): (i) an undeclared may-read set is ⊤ at every member; (ii) the
+  terminus's list is irrelevant once the read side carries the shared-level exclusion that
+  `311:2.6-may-write-the-writeset` carries on the write side, so no engine vouch. The clause
+  was found by walking an honest ext4 describer who names the block device as a may-read
+  entry: inherited into every file fact in that filesystem, the entry compares KNOWN_UNSPOKEN
+  against a sibling inode write (a file sort against a block-device sort, related by nobody)
+  and collides every sibling survival, USER_STORY stage 5's included.
+- **[TYPED]** 2026-09-26, reassertion: fail safe. The core analysis is not weakened in default
+  settings to recoup elision value. From here on the design climbs backwards from the sound
+  default and does not weaken it.
+- WITHDRAWN (conductor) under it: the read-side clause. It removes collisions by an engine rule
+  with no speech behind it. The engine-vouch option of § 3's hold falls with it.
+- **[HUMAN]**: the resolution was not followed; build it up from first principles, concrete
+  before abstract, industry-standard terms, soft STE.
+- The plain program, as put and read (conductor): the checker caches a check's answer beside
+  the list of what the check read (a fact and its marked reads, closed by the vouch,
+  `311:2.5-may-read-the-readset`); a command's describer supplies its write list (§ 2.6);
+  item-by-item comparison of named things is question 1 (`compare()`,
+  `311:3.2-compare-one-chokepoint-four-answers`); the indirect path (a loop filesystem's image
+  and `dd` over it) is why each link's describer lists that link's outside dependencies and
+  every fact beneath inherits them, the chain being the mFullyQualifiedKey; completeness needs
+  an explicit "nothing else" per list, as Bazel refuses to cache an action with an undeclared
+  input; a link with no list reads either "anything" (safe, lossy) or "nothing extra" (the
+  forgotten image spares; unsafe).
+- **[TYPED]** 2026-09-26, step 5: missing falls toward ⊤, as usual, no exception; gradual
+  enhancement; silence licenses nothing.
+- The hole, as put: read literally, the top of every chain in today's text is the mRoute, which
+  nobody describes, so every fact inherits "anything" and no fact survives any write; § 2.5's
+  "closed only when every declared set is closed" hints at the other reading; a builder would
+  pick one.
+- **[TYPED]** 2026-09-26, terminology: the mRoute is the vantage-root and is not glossed as
+  "the machine". A boot is not a machine. Views, NFS, and tunnels make the gloss dangerously
+  wrong. Conductor: accepted. The vantage-root is where the probe stood, a route holding no
+  state, which is why its list is ⊤ and nothing hung on it spares.
+- The sound default and the climb, as put (conductor): take ⊤ everywhere and do not rescue it;
+  a chain ending at the vantage-root yields no survival; the climb is stdlib speech: (a) the
+  boot declared a `:root` shape with a closed empty list, lifecycle writes apart
+  (`311:3.3-invalidation-three-mutator-species`, third species); (b) the stdlib key space over
+  the boot's children (`hold-stdlib-key-space-over-the-boots-children`). With (a) every stdlib
+  chain ends at a described root; a chain that still ends at the vantage-root is a sort hung on
+  nothing, which does not spare by the `311t` § 14 ack.
+- The honest disk under the default, as put: with (a) alone, the filesystem's block-device
+  entry collides sibling survival (KNOWN_UNSPOKEN); (b) makes the filesystem and the device
+  comparable and the sibling survives with no engine rule. The acked write-side exclusion
+  (`311t` § 15: a child write is not a whole-filesystem write for the filesystem's own
+  entailment) is the one engine-granted removal of a collision in this corner; noted, not
+  reopened.
+- **[TYPED]** 2026-09-26, step 9: "nobody has said the disk and the file are different things"
+  is understood and internally consistent; any repair must acknowledge it, not paper over it,
+  or collaboration and referential agnosticism are harmed.
+- **[TYPED]** 2026-09-26, the litmus: 311 is allowed to result in zero value anywhere until the
+  stdlib speaks. There is no universally-true elision in a vacuum around ops. True elision is
+  reached only by relation to some world, amongst components that talk about the same thing in
+  one vocabulary. A correct 311 prevents all elision until there is speech, and a deeply
+  flexible speech about all of ops is no small task. A high stdlib burden before elision is
+  evidence of a correctly formed 311.
+
+## § 25-the-simpler-model-and-the-transitivity-hole
+
+**[HUMAN]**: the read-side clause felt backwards, an intuition to follow and destroy, the
+suspicion being that the shape is sound; the naming disliked. Treating the things that mutate
+into M as sites that were read felt like a category collapse, sensible only as a performance
+optimization over a simpler model. Asked: try the simpler model; hunt for a counterexample
+where the collapse is unsound (a case where `/srv/data/app.conf` and `/srv/disk.img` must be
+kept separate by a comparison); alternatively an obviously value-destroying case under
+best-effort authorship; invent nothing.
+
+- The simpler model, as put (conductor): two statements per party. `depends-on`: M's state
+  changes when X is written, directional (the loop filesystem on its image; a cache on its
+  file). Containment: everything inside M changes when M is written whole, the identity chain
+  read downward, declared by nobody. Given a write, propagate forward to a fixpoint through
+  both, then intersect with what the check read and nothing else. Reaching definitions.
+- `fnd-forward-and-backward-are-one-relation` (+SURE): 311's inheritance is the backward
+  closure over the same edges, and forward reachability from the write equals backward
+  reachability from the read for the same edges. The inheritance is an evaluation strategy,
+  sound exactly as far as it is a closure. "Read set" for the inherited entries is the
+  misnomer; under the forward reading they are `depends-on` edges consumed from the read end.
+  The honest word is directional and is 312's.
+- `fnd-the-text-is-one-hop` (+SURE): `311:2.5-may-read-the-readset` joins "the may-read
+  entries declared by every member of the mKey's mFullyQualifiedKey" and stops; an entry
+  brings none of its own chain's dependencies. Counterexample, every describer honest, no lag:
+  `/srv/disk1.img` on the root filesystem backs loop0 at `/mnt/outer`; `/mnt/outer/disk2.img`
+  backs loop1 at `/mnt/inner`; `dd if=./restore.img of=/srv/disk1.img` above a converged
+  `cmp ./golden.conf /mnt/inner/app.conf`. The fact's one-hop list holds its inode, the inner
+  filesystem's dependency `disk2.img`, and the terminus. The write, `disk1.img`'s inode on the
+  root filesystem, compares DISJOINT with `app.conf`'s inode (two filesystems, one scheme,
+  unique names) and DISJOINT with `disk2.img`'s inode for the same reason. Spared, wrongly.
+  Forward propagation collides in three steps. The shape is docker's devicemapper-on-loopback
+  and a VM image on an LVM volume on a loop device. Masked today by the undeclared terminus
+  (nothing spares), live the moment this item's ruling lands, so it belongs with the item.
+  Astra-n suspected it (`312cc`, "nested backing closure unproven") and could not prove it
+  from the text.
+- `fnd-no-must-be-kept-separate-case` (+SURE on the consumers walked; ~SUSPECT exhaustive):
+  every consumer of the fact's list walked (the survival test with its universal meet; the
+  closure conjunct; invalidation; the SAME consumer, which reads the topic and not the list;
+  the lookup body's separate read set, `311:1.7-resolution-and-its-traversal`; attribution,
+  which names the declaring set; a rename of the image, a routing write that leaves the inode
+  alone). Adding an entry only removes survivals. No wrong spare from an added entry was
+  constructed and none is believed to exist. The shape is sound as a closure and unsound only
+  where it stops short.
+- Value case: none caused by the collapse. The write-side exclusion is orthogonal: the forward
+  model needs it too, or a child write round-trips through the substrate (a list file; the
+  filesystem's entailment names the disk; the filesystem depends on the disk; every inode in
+  it; collide). The cut is principled: identity already answered that the two children are
+  different things, so a chain reaching one child's state from the other's write through their
+  shared substrate contradicts an answer the walk gave, and the round trip is the
+  over-approximation being cut.
+- What this adds to the ruling (conductor; a strengthening, more collisions): a third
+  sentence. The set is closed transitively, each entry bringing its own identity chain's
+  declared dependencies, closed only when every set along the way is closed. Equivalently, the
+  survival test stated as forward propagation from the write, with the read list left a read
+  list. Same relation; the nested case falls out with no special rule.
+
+## § 26-the-root-walk-over-cloud-identifiers-and-dns
+
+**[HUMAN]**: consider a genuine root, a UUID or similar, not a synthetic one; does collision
+proceed correctly in UUID-space; DNS has no reliable global root (a prior gotcha); the
+fully-correct walk-back-to-root and closure-of-root for DNS, outside classic filesystem
+material, under referential agnosticism, assuming stdlib-tier maximal-care authorship;
+gradual enhancement later.
+
+- A genuine root, abstractly (conductor): a store with no parent whose keys an issuer mints;
+  the issuer's guarantee is the warrant (`:root` as unique-referent over the world,
+  `311:2.2-primary-of-and-identified-in`) and the issuer's failure modes are the horizon; per
+  shape, by the issuer's describer, with the horizon named; a property of no byte format.
+- Cloud identifiers, walked: two instances attach one multi-attach volume. The stdlib declares
+  the volume id a root (the issuer mints it and does not repeat it; a restored snapshot mints
+  a new id). The filesystem is identified in the volume, not in either instance. A file fact on
+  one instance against a file write on the other walks inode, filesystem, volume, and answers
+  SAME or DISJOINT correctly with neither host in the chain. This is the correct answer to
+  `a-host-is-not-a-partition` that the sittings wanted for NFS and could not reach while a
+  filesystem was "in the mRoute". The volume's list closes empty (writes from attached
+  instances are inside it; detach and delete are lifecycle writes); the instance's likewise,
+  its disks' parents being volumes.
+- The self-hosted twin, walked: a guest's `/dev/vda` is `x.qcow2` on the host. The
+  hypervisor's describer, from the host's vantage, is the transition owner and declares that
+  the guest's disk depends on the host file. A host `dd of=x.qcow2` collides a guest file fact
+  in three hops. `fnd-cross-world-may-read-entries-are-needed` (+SURE the cases need it;
+  ~SUSPECT nothing in 311 forbids it): 311 does not say whether a may-read entry may be keyed
+  in another mWorld. Under referential agnosticism an entry is a key, a key carries its world,
+  and `compare()` answers as § 3.2 does. One sentence owed either way.
+- Clone horizons: `machine-id` (cloned images) and `boot_id` (a restored snapshot boots twice)
+  fail `:root`; the stdlib names the clone as the horizon or scopes the shape smaller, per
+  § 2.2's last sentence. The standup `witness()` catches a changed id and not a duplicated one.
+- DNS as data, walked: a record identified in a zone by owner name and type; a zone in its
+  parent by delegation; up to `.`. The root zone is a genuine root (one, signed, issuer the
+  root operators, list closed empty, horizon IANA), and so is a TLD. The trouble is whether a
+  lookup from a vantage reached it: split-horizon serves a second `example.com.` that `com.`
+  does not delegate. The stdlib zone lookup files a zone under `.` only when it measured the
+  delegation (the answering server is in the parent's NS set, or the answer validates under
+  DNSSEC where signed). Otherwise it files the zone under "the zones this server serves", the
+  server keyed from the vantage, so that chain ends at the vantage-root (`311t` § 8, zone cuts
+  measured, no suffix lists). Consequences: a Route53 write against a `dig` fact on the public
+  record is one key under `.`, collide; a registrar's NS write in `com.` is a routing write to
+  the child zone's identifying entry and invalidates it; a write to the internal zone against
+  a public fact is two roots of two shapes, UNKNOWN, an over-collision left standing (the
+  tabled cross-root policy); a private name is vantage-rooted and spares against nothing
+  outside, `a-private-name-resolves-only-inside` with no rule.
+- Zone lists: provider-hosted, closed empty (book writes are records inside). A self-hosted
+  primary depends on its zone file, declared by the BIND describer from that host's vantage,
+  cross-world. A secondary depends on the primary. A resolver cache is a referent on the
+  resolver host whose list names the zones; a fact read through it over-collides on TTL lag
+  and changes with no write after expiry (`KNOBS:kVOLATILES`); best-effort verdict bodies
+  query authoritative servers, and the admin's `until dig …` loop is the mover wait. Observer
+  dependence: split horizon answers by client address, so the record sort stays dependent by
+  default, and independence is declared per shape for zones that validated under `.`.
+- DNS as a route, walked: a hostname is a routing key in the resolver's catalog from the
+  vantage (NSS order, `/etc/hosts`, `resolv.conf`, the resolver, the upstream), yielding an
+  address and an endpoint. The thing reached is not identified in the name (`311t` § 3). A fact
+  about the host behind a name is keyed on what the entry measured, the name's resolution
+  being a routing member, so a write to `/etc/hosts`, `resolv.conf`, or the zone invalidates
+  it and the facts below guard. No root is needed.
+- What the walk says (conductor): collision proceeds correctly in both spaces given three kinds
+  of stdlib speech and nothing from the engine: `root-warrant-per-shape-with-horizon`;
+  `root-list-closed-empty-with-lifecycle-apart`; `transition-owner-declares-cross-world-dependency`
+  (the hypervisor; the primary's BIND; the cloud volume). Under these rules nothing spares
+  until the cloud, DNS, and hypervisor describers speak, and each one's first sentence buys a
+  correct collision before any survival, which agrees with the § 24 litmus.
+- Bearing on `hold-stdlib-key-space-over-the-boots-children`: under the vantage-root
+  correction the sentence is not "the machine's children" but "each store identified in the
+  genuine root that mints it" (a filesystem in its block device or volume; a boot as a root;
+  the service manager in its boot). The ext4 nit held there is this same point.
+
+## § 27-state-and-the-candidate-edits
+
+Nothing applied to 311 or `311u` this sitting. `hold-terminus-closure-and-engine-vouch` stands,
+its direction acked in substance (§ 24: ⊤ at every member; the vantage-root correction; the
+litmus) and its wording owed. Candidate edits, put in chat for the human's word, none ruled:
+
+- `edit-undeclared-set-is-top-at-every-member` (`311:2.5-may-read-the-readset`): acked in
+  substance.
+- `edit-vantage-root-list-is-top-with-reason` (§ 2.5 or `311:1.10-vantage-route-placeholder-witness`):
+  the mRoute is an address and holds no mState, so it has no list and contributes ⊤; a chain
+  ending there yields no survival.
+- `edit-read-set-closes-transitively` (§ 2.5; § 2.6 question 2): a strengthening; or the test
+  restated as forward propagation.
+- `edit-entries-may-be-keyed-in-another-world` (§ 2.5 or `311:1.8-fully-qualified-key-topic-and-derivation`):
+  or its refusal.
+- `311u` candidates: `refuted-read-side-shared-level-exclusion` (an engine rule removing
+  collisions with no speech; killed by the reassertion); `refuted-one-hop-dependency-inheritance`
+  (killed by nested backing); `refuted-vantage-root-as-a-machine` (killed by views, NFS,
+  tunnels, and a VM's disk being a host file).
+- Not this item's: the name of `:may-read` (a directional word, 312's); the boot-children
+  hold's reframing above.
+
+Three holds of § 3 remain beside this one: `hold-region-against-region-floor`,
+`hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`.
