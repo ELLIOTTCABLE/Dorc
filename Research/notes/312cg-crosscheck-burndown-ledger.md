@@ -1032,3 +1032,65 @@ hole; § 19's T2 as a general question about natural keys with no resolvable pri
 `dfc1f950` before this ledger commit. Four holds of § 3 remain: `hold-region-against-region-floor`,
 `hold-terminus-closure-and-engine-vouch`, `hold-stdlib-key-space-over-the-boots-children`,
 `hold-cells-sparing-or-freshness`.
+
+## § 22-the-entry-edit-retracted
+
+The § 21 paragraph was put back to the human and did not stand. Two corrections, then the
+retraction as applied.
+
+- **[HUMAN]** on "a future entry's primary key is its name": a directory entry has an explicit
+  primary key, the inode, which a future entry lacks, since that key is generated at creation.
+  Conductor: the entry meant was the record in the directory's map, not the file. Two entries can
+  point at one inode and `rm` of one leaves the other, so the inode cannot be the entry's identity.
+  The entry's primary key is its name in its directory, nominal by the directory's construction,
+  as a DNS record's is its owner name in its zone (the § 1.6 footer). A future entry has a name; a
+  future file has no inode. **[TYPED]** ack of the primary-key reading.
+- **[HUMAN]** the paragraph over-reached: it declared, in normative text, that every catalog's
+  entries are mReferents with an existence cell and a sort their describer must declare. That is
+  the stdlib shape the sittings had agreed to keep in userspace, dressed as model law. The § 3.3
+  sentence "its mParent-Catalog entry, its existence cell" was the same over-reach already in the
+  text, and the fix is to soften it, not to define what it presumed. Conductor: RETRACTED. The
+  model-native residue is one clause: an mKey of a primary mScheme names the mReferent its store
+  holds under it, or none, and is a level of a mFullyQualifiedKey in both cases. Whether a name
+  mScheme yields such an mKey for a name the store does not hold is the scheme owner's arm, which
+  `311:2.1-yields-into-another-scheme` already leaves to them.
+- **[HUMAN]**, playing defensively and not married to it: the change must support both shapes.
+  Sparse, the model before today: a sort that lists referents' primary keys directly, with the
+  crossed names as routing members. Rich: concrete or occasionally virtual entries between a
+  catalog and the referents a user expects. Only structures that need the complexity adopt it.
+  Conductor, confirmed and walked: under sparse, the describer's arm for a name the store does not
+  hold declines or names the catalog whole, so an absence fact and a creating write are coarse,
+  colliding with everything reached through that catalog, safe and lossy, with no model text
+  needed. Under rich, the describer mints a sort keyed by name in the catalog (a directory entry;
+  a Kubernetes object's name beside its generated UID), yields into it for absent names, and
+  emits those keys as the routing members, so absence and creation become name-granular and a
+  creation of `x` leaves a resolution through sibling `y` standing (two entries of one scheme
+  under one directory are DISJOINT). The one clause is inert for sparse, since nobody names an
+  unallocated inode, and is what rich needs. The two sentences that presumed rich are now
+  shape-neutral.
+- Observation, not this item's: rich buys sibling precision only while the directory's own cells
+  (its mtime, its listing) stay out of the creation's writeset. A cell and an entry under one
+  mParent are two mSorts that separate nowhere today, so a creation that honestly names the
+  directory's mtime touches every routing member under that directory. That is
+  `hold-cells-sparing-or-freshness` wearing the filesystem.
+
+Applied, `4fa4625d`, over `dfc1f950`:
+
+- `311:1.6-parent-one-per-key`: the § 21 paragraph and its footer example are gone.
+- `311:2.2-primary-of-and-identified-in` gains two sentences after "P's `resolve()` is the
+  identity on the mKey": an mKey of P names the mReferent that K's mParent-Store holds under it,
+  or none, and is a level of a mFullyQualifiedKey in both cases.
+- `311:3.3-invalidation-three-mutator-species`: creation, deletion, and rename of an mKey are
+  routing writes that change what the mKey reaches; the mKeys they write are the verb author's
+  at-most claim; a writeset that omits them is the ordinary at-most omission knife.
+- The `30T` per-aspect entry of `311:4.2-supersessions-pending-in-prior-documents`: contents is a
+  fact about the inode the path mScheme yields; existence is a fact about the directory, or about
+  an mReferent keyed by name in it where the describer mints one; creation, deletion, and rename
+  write the one the describer named.
+- The § 2.1 footer line from `dfc1f950` stays, the one footer entry the human allowed.
+- Linter: the three snippets carry zero violations; the whole file keeps its one pre-existing
+  hard flag and its total of sixty-five.
+
+Resolved, as corrected: `hold-catalog-entries-as-referents`. The model neither mandates nor
+forbids an entry sort. State: tip `4fa4625d` before this ledger commit. Four holds of § 3
+remain, unchanged from § 21.
