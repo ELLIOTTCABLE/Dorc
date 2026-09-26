@@ -71,7 +71,7 @@ An mReferent is a persisting piece of the world that has state.
   (1.9-cell-a-singleton-sort). No other term names a part.
 - It survives changes to its mState. It does not survive destruction and recreation under its
   old mKey. It does not survive a lifecycle write to what it is scoped in
-  (3.3-perishing-three-mutator-species).
+  (3.3-invalidation-three-mutator-species).
 - It is not an mKey (an mKey names it), not an mState (it has one), and not an mValue (a read
   yields one from it). It is not an mTopic (1.8-fully-qualified-key-topic-and-derivation). It is
   not the set an mKey given whole denotes: the container is the mReferent, and the set is a set
@@ -212,7 +212,7 @@ shape. They are independent, separately declared, and absent by default.
 
 The lookup's owner declares each warrant per matched shape. The warrant holds for every mKey of
 that shape inside any one mParent, while that mKey's mResolution or mToken stands
-(3.3-perishing-three-mutator-species). A matched shape is a control-flow path of the owner's
+(3.3-invalidation-three-mutator-species). A matched shape is a control-flow path of the owner's
 body. A warrant is constructed when that body is evaluated for the mKey in hand. The declaration
 is per shape. The instance is per evaluation. It may rest on what the path measured. Any path
 the dialect admits may decline it. A path that does not reach a warrant has not given it.
@@ -243,15 +243,15 @@ routes, one per other lookup that reached it (2.10-places-the-upward-lookup). No
 its mParent. What the mParent edge carries follows the mScheme.
 
 - Through a secondary mScheme, the mParent is the mParent-Catalog: the thing the mKey was looked
-  up in. The edge carries routing: which instance, and perishing
-  (3.3-perishing-three-mutator-species). It never carries identity.
+  up in. The edge carries routing: which instance, and invalidation
+  (3.3-invalidation-three-mutator-species). It never carries identity.
 - Through the primary mScheme, the mParent is the mParent-Store: the mKey relative to which
   alone the mKey-Primary means anything. The edge carries identity.
   It is what `compare()` walks (3.2-compare-one-chokepoint-four-answers). At the primary
   mScheme, mParent-Catalog and mParent-Store are one mKey.
 
 Through the primary mScheme, that mScheme's owner declares the mParent's mSort
-(`:identified-in`) and the warrants (1.5-token-and-the-two-warrants, and `:rootness`,
+(`:identified-in`) and the warrants (1.5-token-and-the-two-warrants, and `:root`,
 2.2-primary-of-and-identified-in). The declaration is per matched shape of the mKey's mValue, a
 function of the mKey's own bytes. So an emitter (a secondary mScheme, possibly a stranger's) can
 be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat
@@ -267,7 +267,7 @@ an mKey of one of the mParent's mSort's mSchemes:
 Two seats that disagree are a contradiction. It is refused and attributed to both.
 
 A shape with no `:identified-in` is scoped in the mRoute
-(1.10-vantage-route-placeholder-witness). A mRoot is a shape declared `:rootness`. Its mKeys
+(1.10-vantage-route-placeholder-witness). A mRoot is a shape declared `:root`. Its mKeys
 need no mParent, which claims they are globally comparable. Nothing is a mRoot by default.
 Cloned identifiers are the standing witness.
 
@@ -283,8 +283,8 @@ p, reaches mReferent R. It is a fact with a backing. The backing is the mTravers
 chain of routing mKeys the lookup crossed. A `:hierarchical` mScheme's lookups produce the
 mTraversal, one level per lookup (2.9-hierarchical-and-the-region-test).
 
-A mResolution perishes under ordinary effective-mWorld reach from any mutator whose writeset
-touches a mTraversal member. Its target object is not its backing. An mKey can stop reaching an
+Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member
+invalidates the mResolution. Its target object is not its backing. An mKey can stop reaching an
 object without the object changing. An object can change without its mKey changing.
 
 A mResolution also depends on the read set of the lookup body that produced it. The engine
@@ -294,8 +294,8 @@ the reads of that command.
 
 The read set is closed only when the read set of every external command in the body is closed.
 The author of the speech that describes an external command closes that command's read set by
-an explicit act. An open read set perishes the mResolution under any routing mutation
-(3.3-perishing-three-mutator-species).
+an explicit act. Any routing mutation invalidates a mResolution whose read set is open
+(3.3-invalidation-three-mutator-species).
 
 > Examples of a mTraversal: each directory entry and symlink for a path, the resolver
 > configuration and mVantage for a hostname, the unit table for a service name.
@@ -333,7 +333,7 @@ cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key).
 A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
 diffuse. The cell's may-read set (2.5-may-read-the-readset) says where that mState is held. The
 freshness of a fact about the cell follows that set, together with any write that covers the
-mParent (2.9-hierarchical-and-the-region-test, 3.3-perishing-three-mutator-species).
+mParent (2.9-hierarchical-and-the-region-test, 3.3-invalidation-three-mutator-species).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
 3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
@@ -343,7 +343,7 @@ a cell is a read of the cell's mKey. The fact's identity is the mTopic
 
 > Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it
 > through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot
-> only where its mParent is not itself scoped in the boot (3.3-perishing-three-mutator-species).
+> only where its mParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -445,7 +445,7 @@ P's owner declares, per matched shape of the mKey's mValue:
 - `:guarantees-unique-referent` and `:guarantees-unique-name` (1.5-token-and-the-two-warrants),
   absent by default. They govern what mToken equality and inequality license at this level of a
   mFullyQualifiedKey.
-- `:rootness`, absent by default. The shape declares no mParent and thereby claims global
+- `:root`, absent by default. The shape declares no mParent and thereby claims global
   comparability. It is equivalent to `:guarantees-unique-referent` over the whole world. A
   mToken duplicable across instances of its would-be mParent must be scoped in something
   smaller, or left un-warranted.
@@ -463,10 +463,10 @@ different mTokens.
 - Default: none. The floor of 1.3-scheme-a-way-of-writing supplies an unwarranted identity
   primary mScheme.
 - Consumer: identity (3.1-identity-of-a-key).
-- Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:rootness`, per matched
+- Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:root`, per matched
   shape.
 
-> `:rootness` fails for cloned identifiers. The mParent's type varies per shape: an ext4
+> `:root` fails for cloned identifiers. The mParent's type varies per shape: an ext4
 > filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
 
 ### § 2.3-aliases-nothing-else-the-store-warrant
@@ -646,7 +646,7 @@ observing process. Only the mScheme owner can say which, in the lookup that meet
 undeclared indexical component reads unknown.
 
 By default an mScheme is flat. The mTraversal is then the mParent-Catalog as a whole, and any
-touch on it perishes every mResolution through it. That is the coarse, safe floor. Containment
+touch on it invalidates every mResolution through it. That is the coarse, safe floor. Containment
 is membership in a mTraversal.
 
 An entry names the mReferent of its mKey. The walk of 3.2-compare-one-chokepoint-four-answers
@@ -686,8 +686,8 @@ the level resolved to.
 - Declared by: read off the mScheme's lookups. They name catalogs of their own mScheme or of
   mSchemes feeding it.
 - Default: flat, so the mTraversal is the whole mParent-Catalog.
-- Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence perishing
-  (3.3-perishing-three-mutator-species), and the region test.
+- Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence invalidation
+  (3.3-invalidation-three-mutator-species), and the region test.
 - Danger: none. Finer buys sparing. Coarse is safe.
 
 > Examples of a `:hierarchical` mScheme: a path yields a directory entry looked up in a shorter
@@ -706,8 +706,8 @@ scoped to routes of mSort G. These are the records any lookup emits. Membership 
 between two mReferents, never a spelling of one, so the placing lookup is not an mScheme of T.
 
 The route so recorded is a mTraversal of the mKey for the region test
-(2.9-hierarchical-and-the-region-test). It perishes as any mResolution does
-(3.3-perishing-three-mutator-species). It is never the mKey's mParent, which is the route the
+(2.9-hierarchical-and-the-region-test). A mutator invalidates it as it invalidates any
+mResolution (3.3-invalidation-three-mutator-species). It is never the mKey's mParent, which is the route the
 mKey's own lookup supplied (1.6-parent-one-per-key).
 
 The engine invokes G's lookup only when all three hold:
@@ -733,7 +733,7 @@ reads UNKNOWN.
 - Declared by: G's owner.
 - Default: absent. T's mKeys then have no route of mSort G, and the pair reads as
   3.2-compare-one-chokepoint-four-answers decides it.
-- Consumer: the region test (2.9-hierarchical-and-the-region-test), and perishing.
+- Consumer: the region test (2.9-hierarchical-and-the-region-test), and invalidation.
 - Danger: a false `looked-up-in nothing-else` is G's owner's wrong DISJOINT.
 
 > Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
@@ -796,7 +796,7 @@ Two mFullyQualifiedKeys. Levels are numbered from the leaf, level 0, upward thro
 1. If either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN. If one
    terminates at a mRoute the other does not share, the pair reads UNKNOWN. That covers one at
    the mRoute and one at a mRoot, and two mRoutes across a wrapper. A mRoot shape is one mWorld,
-   SAME by `:rootness`. Two mKeys of that shape meet there and compare as siblings. mRoots of
+   SAME by `:root`. Two mKeys of that shape meet there and compare as siblings. mRoots of
    two shapes are two mWorlds. A mRoute is another. No mFullyQualifiedKey speaks across mWorlds.
    The finished definition does not speak across mWorlds, because its sentence is within-mWorld
    (2.6-may-write-the-writeset). A mCorrespondence is the one mDerivation that may speak across
@@ -843,24 +843,25 @@ mTopic, reconciled by coherence, never a second mKey inside one mParent.
 > filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the
 > server's inode, or a machine-id and a cloud instance-id.
 
-### § 3.3-perishing-three-mutator-species
+### § 3.3-invalidation-three-mutator-species
 
 Three mutator species invalidate three kinds of fact. In all three, the engine withdraws
 authority. It never computes the successor identity.
 
 - A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
-  read. A mResolution perishes when its mTraversal includes a touched mKey. It also perishes
-  when the written mKey is in the read set of the lookup body that produced it
-  (1.7-resolution-and-its-traversal). An open read set perishes it under any routing mutation.
-  Under the flat default, it also perishes when its mParent-Catalog was touched at all. Every
-  mFullyQualifiedKey built on a perished mResolution reads unknown below the line. Dependent
+  read. A routing mutation invalidates a mResolution when its mTraversal includes a touched
+  mKey. It also invalidates the mResolution when the written mKey is in the read set of the
+  lookup body that produced it (1.7-resolution-and-its-traversal). Any routing mutation
+  invalidates a mResolution whose read set is open. Under the flat default, a routing mutation
+  also invalidates the mResolution when its mParent-Catalog was touched at all. Every
+  mFullyQualifiedKey built on an invalidated mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
   conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
   an mKey are routing writes to its mParent-Catalog entry, its existence cell. A writeset that
   omits the entry is the ordinary at-most omission knife, now visibly covering routing mKeys.
 - A state mutation reaches a cell through the cell's may-read entries: ordinary kill-reach. A
   first write can also change an mKey-Primary. So a state mutation whose writeset touches a
-  mParent-Store perishes the mTokens scoped in it.
+  mParent-Store invalidates the mTokens scoped in it.
 - A lifecycle mutation writes a mRoot-adjacent mKey, such as a boot or a tenure. Every
   mKey-Primary scoped in it names a new mReferent afterward. Cells whose mFullyQualifiedKeys
   pass through it are new and unmeasured. Cells whose mFullyQualifiedKeys do not are untouched.
@@ -869,7 +870,7 @@ authority. It never computes the successor identity.
 
 > Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change,
 > a write to any environment variable, cwd, or configuration a lookup reads.
-> `userdel alice; useradd alice` perishes every mResolution of the old mKey. Lifecycle
+> `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle
 > mutations: a reboot, a re-provision.
 
 ### § 3.4-entry-and-lends
@@ -926,10 +927,10 @@ Attribution:
   2.10-places-the-upward-lookup), and the may-read sets that bounded it.
 - Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that
   made instances one, and the mCorrespondences.
-- Every perished conclusion names the writeset that perished it.
+- Every invalidated conclusion names the writeset that invalidated it.
 
-> A granting composite: "these two accounts are one". A withholding composite: a mount perishing
-> an account's mResolution.
+> A granting composite: "these two accounts are one". A withholding composite: a mount
+> invalidating an account's mResolution.
 
 ## § 4-relation-to-other-documents
 
@@ -980,7 +981,7 @@ became untrue. The human refreshes root documents.
   kind referent-transparent, one grade under which token equality gives same and token
   inequality gives disjoint. Here: a lookup carries two independent warrants per matched shape,
   `:guarantees-unique-referent` and `:guarantees-unique-name`, each absent by default
-  (1.5-token-and-the-two-warrants, 2.2-primary-of-and-identified-in). `:rootness` is the
+  (1.5-token-and-the-two-warrants, 2.2-primary-of-and-identified-in). `:root` is the
   separate per-shape claim of global comparability (§2.2).
 - `plans/30W` §1 index-kinds and §10 build item 1, with
   `26Ob:res-worlds-compare-through-the-chokepoint`: the context slot is a product over
@@ -1003,7 +1004,7 @@ became untrue. The human refreshes root documents.
   across an index or an axis, and the store member yields invariant, keyed, or ⊤ per (kind,
   selector, index-kind). Here: there is no invariance line and no per-kind table against axes
   (4.1-boundary-of-this-model). Whether a lifecycle write or a lent instance reaches a cell is
-  the shape of its mFullyQualifiedKey, not a declaration (3.3-perishing-three-mutator-species,
+  the shape of its mFullyQualifiedKey, not a declaration (3.3-invalidation-three-mutator-species,
   3.4-entry-and-lends). Leaf mKeys inherit across a wrapper with no further speech, under the flag (§3.4).
   The observer half of the line is `:observer-independence` of O, declared per mSort and absent
   by default (2.8-observer-dependence-and-independence). The store half is displaced by
@@ -1013,7 +1014,7 @@ became untrue. The human refreshes root documents.
   (the who-am-I derivation as contradiction-checker): an engine-owned substrate-by-axis table
   and a taint over who-am-I ingredients derive keying and check declarations. Here: the engine
   holds no table that generates SAME (4.1-boundary-of-this-model). Keying is the
-  mFullyQualifiedKey's shape (3.3-perishing-three-mutator-species). No `resolve()` can measure
+  mFullyQualifiedKey's shape (3.3-invalidation-three-mutator-species). No `resolve()` can measure
   observer-dependence, so it remains speech (2.8-observer-dependence-and-independence). The
   contradictions the engine refuses are two seats disagreeing on an mParent instance
   (1.6-parent-one-per-key), a warranted SAME against a warranted DISJOINT
@@ -1028,12 +1029,12 @@ became untrue. The human refreshes root documents.
   species (4.1-boundary-of-this-model). Each aspect is a cell, a singleton mSort with its own
   may-read set and its own `:observer-dependence` (1.9-cell-a-singleton-sort).
   Same-for-existence is the mParent-Catalog entry, which creation, deletion, and rename write
-  (3.3-perishing-three-mutator-species). Same-for-contents is the inode's mReferent, reached
+  (3.3-invalidation-three-mutator-species). Same-for-contents is the inode's mReferent, reached
   when the path mScheme yields the inode (2.3-aliases-nothing-else-the-store-warrant).
 - `30T:file-identity` the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
   path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey are
   routing writes to its mParent-Catalog entry, and a writeset may name them
-  (3.3-perishing-three-mutator-species). Path-distinct mKeys separate under
+  (3.3-invalidation-three-mutator-species). Path-distinct mKeys separate under
   `:guarantees-unique-name` and `:aliases-nothing-else`
   (3.2-compare-one-chokepoint-four-answers).
 - `plans/30W` §4 "Containment among index-kinds": containment among stores is a `reaches`

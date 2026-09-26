@@ -112,7 +112,7 @@ Host", with a referent-transparent Host, spares a fact on a shared volume
 (`a-host-is-not-a-partition`).
 **Survivor.** A cell's identity is a property of what its mKey denotes, the mFullyQualifiedKey,
 and not of the mScheme that the author wrote the mKey in
-(1.8-fully-qualified-key-topic-and-derivation, 3.3-perishing-three-mutator-species).
+(1.8-fully-qualified-key-topic-and-derivation, 3.3-invalidation-three-mutator-species).
 
 ### refuted-context-inside-the-key
 
@@ -129,7 +129,7 @@ engine compares tokens.
 **Case.** NFS, and the mParent question. An inode is an mKey in a filesystem, and a filesystem
 identifier is an mKey in whatever minted it. The File owner never learns NFS, because the
 mParent mSort's primary mScheme classifies one level up.
-**Survivor.** `:rootness` as an explicit claim, and every mToken scoped in an mParent
+**Survivor.** `:root` as an explicit claim, and every mToken scoped in an mParent
 (1.5-token-and-the-two-warrants, 2.2-primary-of-and-identified-in).
 
 ### refuted-one-grade-per-lookup

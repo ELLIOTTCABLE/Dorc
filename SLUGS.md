@@ -484,6 +484,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30N 30Q 30Qd ANALYZER-NEEDS (8)
 
+## an-insert-renumbers-every-later-key
+- defined: —
+- cited: 312cg Research/GOTCHAS (2)
+
 ## an-invariance-speech-act
 - defined: —
 - cited: 311 ANALYZER-NEEDS (3)
