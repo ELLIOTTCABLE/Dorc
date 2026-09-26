@@ -985,3 +985,50 @@ section; its retractions and the picture that replaced it are banked.
   holds. Recommended: take it whole under a new name, with or without a rewind.
 - State: nothing applied to 311. The hold stands under the widened reading. The human offered
   to rewind and take the widened item as one unified topic; not yet decided.
+
+## § 21-the-entry-edit-applied
+
+**[TYPED]** 2026-09-26: proceed on the item without a rewind; make the narrowest 311 edits that
+close the actual holes; keep the stdlib resolution mechanism (the three sorts, the two depths,
+the absent arm) as ledger findings, one use of the model and not native to it, with at most a
+very brief line in a non-normative footer.
+
+The holes re-derived narrowly (conductor): the model uses a catalog entry as a thing a write
+hits and a fact is about (`311:3.3-invalidation-three-mutator-species`; the `30T` entry of § 4.2)
+and defines it nowhere; and a name a catalog does not hold has no mKey, so an absence fact has
+no topic. Everything else raised in § 19 and § 20 follows from existing rules once an entry is
+an mReferent keyed by its name: a future entry's primary key is its name, so it needs no
+mPlaceholder (`311:2.2-primary-of-and-identified-in`, the primary `resolve()` is the identity);
+a future parent is a per-shape `:identified-in` into the entry sort itself, which § 2.2 permits;
+a traversal level's invalidation key (the entry) and containment key (what it leads to) are
+both defined (§ 18's residue closes); DISJOINT between two entries is the two-tops way under the
+entry scheme's unique-name; an entry against the inode it leads to separates at the filesystem,
+their dependence being routing. So T1's widened mPlaceholder and T2's general natural-key
+comparison are not this item's and stay as § 19 findings.
+
+Applied, `dfc1f950`:
+
+- `311:1.6-parent-one-per-key` gains one paragraph after the two mParent bullets: an entry of a
+  mParent-Catalog is an mReferent; whoever describes the catalog declares its mSort,
+  `:identified-in` the catalog's mSort; that mSort's primary mScheme keys an entry by its name
+  in the catalog and carries its warrants per matched shape; the catalog holds the entry or does
+  not, and the mKey names the entry in both cases; the entry's existence is a cell; a read of a
+  name the catalog does not hold reads that cell; a lookup that crosses the entry emits its mKey
+  as a mTraversal member.
+- The § 1.6 footer gains one example: a future entry under a future directory has the
+  directory's own entry as its mParent, and the chain ends at the deepest directory that exists.
+- The § 2.1 footer gains one example, the footer line the human allowed: two mSchemes over one
+  spelling into two mSorts, a path yielding the directory entry or the inode it leads to, and a
+  bind naming the mScheme whose mReferent the tool acts on.
+- Untouched by choice: § 3.3's "its mParent-Catalog entry, its existence cell" and § 4.2's
+  same-for-existence line, both now grounded by the paragraph; § 1.1's referent examples.
+- Linter: the three snippets carry zero violations; the whole file keeps its one pre-existing
+  hard flag (`terminates` against `stop`) and the same total as before the edit, sixty-five.
+
+Resolved: `hold-catalog-entries-as-referents`. Findings that stay ledger-only, not owed by 311:
+the stdlib chain of § 20 (`sm.Directory -> sm.DirectoryEntry -> sm.Inode`, two path schemes,
+the absent arm); § 19's T1 for keys unresolvable at probe time (a remote name), a different
+hole; § 19's T2 as a general question about natural keys with no resolvable primary. State: tip
+`dfc1f950` before this ledger commit. Four holds of § 3 remain: `hold-region-against-region-floor`,
+`hold-terminus-closure-and-engine-vouch`, `hold-stdlib-key-space-over-the-boots-children`,
+`hold-cells-sparing-or-freshness`.
