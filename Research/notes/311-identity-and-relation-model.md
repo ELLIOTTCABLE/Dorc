@@ -36,6 +36,8 @@
 - A blockquote under a heading is non-normative. It names a false friend from a neighbouring
   field, a name the object carried before this document, or a refuted shape (`notes/311u`).
 - A blockquote at the end of a section is non-normative. It holds the section's examples.
+- § 5 is non-normative in its entirety (5-the-relations-indexed-two-ways). It indexes § 1 to
+  § 3 and defines nothing.
 
 ## § 0-the-problem-and-the-law
 
@@ -1061,3 +1063,163 @@ became untrue. The human refreshes root documents.
 - `USER_STORY.md`, the bought-unsoundness section: past the flag the admin trusts named authors'
   at-most claims, and everywhere else only measurements. Here: past the flag the admin also
   trusts wrappers' sentinels (3.4-entry-and-lends).
+
+## § 5-the-relations-indexed-two-ways
+
+This section is non-normative. It indexes the statements that § 1 to § 3 define, and it
+defines nothing of its own. Where this section and § 1 to § 3 disagree, § 1 to § 3 govern.
+The first index (5.1-by-what-is-true-in-the-world) orders the statements by the fact about the
+world that each statement is about. It is the table of `311t` § 11, with the route row of
+`311t` § 14 and the two levels of `311t` § 15. The second index
+(5.2-by-what-a-false-statement-costs) orders the statements by the wrong answer that a false
+statement yields. It collects the Danger lines of § 2 in one place, with the vouches and the
+routing statements beside them.
+
+### § 5.1-by-what-is-true-in-the-world
+
+Each row is one fact about the world, about a thing T and a container P. Each fact has two
+ends: the party who describes T, and the party who describes P. Each end can make two
+statements. An entry adds collisions. A closure removes them. The closure is the knife.
+
+The rows:
+
+- ADDR: T's mKey means something only relative to P.
+- WRITE: a write to P can change T, and P is not on T's chain.
+- ROUTE: T is reachable through P.
+- VANT: an answer about T depends on where the read ran.
+- ATTEST: an answer about T is A's word.
+
+The levels of ADDR and ROUTE:
+
+- KEY: one mReferent, one mKey, inside one store.
+- STORE: one mReferent, one store, across stores.
+- CAT: inside one catalog instance.
+- XCAT: across catalogs.
+
+The ends:
+
+- T: the describer of the thing.
+- P: the describer of the container, or of the written thing.
+- W: the author of the wrapper.
+- X: the owner of the transition.
+- E: the engine.
+
+A grain in brackets says what one statement covers. The licenses column names the consumer that
+reads the closure:
+
+- SAME.
+- DISJ: DISJOINT.
+- SPARE: the write-path question, step 2 of 2.6-may-write-the-writeset.
+- INVAL: invalidation (3.3-invalidation-three-mutator-species).
+
+OPEN marks a cell with no statement in the model. The root naming file holds its candidate
+names. TABLED marks a row that the ledgers set aside (`311t` § 13). A dash marks a cell with no
+statement, where the default does the work.
+
+| row    | level | end  | entry                                                            | closure                                                                  | licenses     | §             |
+| ------ | ----- | ---- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | ------------- |
+| ADDR   | KEY   | P    | the lookup yields the canonical mKey [shape]                     | `:guarantees-unique-name` [shape] · `:guarantees-unique-referent` [shape] | DISJ · SAME  | 1.5, 2.1, 3.2 |
+| ADDR   | KEY   | T    | `alias k'` [key]                                                 | `alias nothing-else` [key, level]                                        | DISJ         | 1.5, 2.9      |
+| ADDR   | STORE | P    | `:corresponds`[^corr]                                            | `:aliases-nothing-else` [store]                                          | DISJ         | 2.3, 2.7, 3.2 |
+| ADDR   | STORE | T    | `:identified-in` [shape] · `:corresponds`[^corr]                 | OPEN[^open] · `:root` [shape]                                            | — · SAME     | 1.6, 2.2      |
+| WRITE  | —     | T    | `may-read` [sort] · the marked reads [body]                      | `may-read nothing-else` [sort] · the vouch [body]                        | SPARE        | 2.5           |
+| WRITE  | —     | P    | the entailment [sort, shape] · the at-most set [verb, shape]     | the finished record [sort, shape] · the completion record [verb, path]   | SPARE        | 2.6           |
+| ROUTE  | CAT   | T    | the emitted mTraversal [lookup, shape]                           | the closing act[^act] · `alias nothing-else` [level]                     | INVAL · DISJ | 1.7, 2.9      |
+| ROUTE  | CAT   | P    | —                                                                | —[^floor]                                                                | —            | 2.9           |
+| ROUTE  | XCAT  | T    | `looked-up-in G:key` [key][^placing]                             | `looked-up-in nothing-else` [key, route-sort]                            | DISJ · INVAL | 2.10          |
+| ROUTE  | XCAT  | P    | `:places` [G, T] · the finished entailment's members[^shared]    | the finished record[^shared]                                             | SPARE        | 2.10          |
+| VANT   | —     | T    | —[^dep]                                                          | `:observer-independence` of O [sort, O]                                  | SAME         | 2.8           |
+| VANT   | —     | W    | `:lends` [wrapper, sort] · `:corresponds` [lent catalogs]        | the completion sentinel [wrapper]                                        | SAME         | 3.4           |
+| VANT   | —     | E    | —                                                                | the local-route vouch [span]                                             | SAME         | 1.5, 1.10     |
+| ATTEST | —     | T, A | TABLED                                                           | TABLED                                                                   | —            | `311t` § 12   |
+
+[^corr]:
+    `:corresponds` is the transition owner's statement (2.7-corresponds-across-a-transition).
+    The table files it at both ends of the STORE level, as the positive twin of each closure
+    (`311t` § 15). It generates SAME, so this entry is itself a knife (5.2).
+
+[^open]:
+    The thing's end has no closure at the STORE level: "this mReferent has no other home".
+    `311t` § 15 argues that the cell may stay empty, because the cases that need it decline and
+    read UNKNOWN.
+
+[^act]:
+    The model gives the closing act no spelling. The `looked-up-in` records of
+    2.10-places-the-upward-lookup are its natural form (`312cg` § 18).
+
+[^floor]:
+    A catalog makes no statement about its own entries. A writeset entry that names the catalog
+    whole covers every mResolution through it (2.9-the-traversal-and-the-region-test).
+
+[^placing]:
+    G's owner publishes the placing lookup (2.10-places-the-upward-lookup). The record it emits
+    is about T, so the table files it at T's end.
+
+[^shared]:
+    One statement in two rows. The finished entailment is the store's end of WRITE and of ROUTE
+    (2.10-places-the-upward-lookup).
+
+[^dep]: Dependence is the default and has no spelling (2.8-observer-dependence-and-independence).
+
+### § 5.2-by-what-a-false-statement-costs
+
+Each row is one statement whose falsity yields a wrong answer. A false entry adds a collision
+and costs sparing only, so entries are absent from this table. An omitted entry is a false
+closure, and the closure's row prices it. Four routing statements are present although they are
+entries. Each picks which mReferent or which instance is meant, so a false one keys a fact to
+the wrong thing.
+
+The kinds:
+
+- route: picks a thing or an instance.
+- warrant: a per-shape grade on a lookup.
+- closure: a per-key statement, made on the path that measured the mKey.
+- sentinel: the closing act on a declared set.
+- record: the closing act on an emitted set, at a body's tail.
+- vouch: one party's statement that stands for a set of measurements.
+
+The built column says when the statement comes into being:
+
+- decl: declared, before any lookup runs.
+- eval: constructed on the path that measured the mKey.
+
+The if-false column names the wrong answer:
+
+- wSAME: one fact stands for another thing's fact.
+- wDISJ: a license survives a write that destroyed it.
+- wSPARE: the same survival, reached through the write-path question.
+- stale: a mResolution stands after a write that should have invalidated it, and every
+  conclusion built on it stands with it.
+- vantage: the engine keys a fact at the wrong instance.
+
+The flag column says whether the engine consumes the answer only under `--risk-faultless-skips`
+(3.2-compare-one-chokepoint-four-answers, 3.4-entry-and-lends). The consumer column orders
+the rows. Within one consumer, the unflagged rows come first.
+
+| statement                              | kind     | speaker              | grain           | built      | consumer     | if-false        | flag     | §             |
+| -------------------------------------- | -------- | -------------------- | --------------- | ---------- | ------------ | --------------- | -------- | ------------- |
+| `:guarantees-unique-referent`          | warrant  | the lookup's owner   | shape           | decl, eval | SAME         | wSAME           | no       | 1.5, 2.2      |
+| `:root`                                | warrant  | T's owner            | shape           | decl       | SAME         | wSAME           | no       | 2.2, 3.2      |
+| `:corresponds`                         | route    | the transition owner | pair            | decl       | SAME         | wSAME           | no       | 2.7           |
+| `:observer-independence` of O          | warrant  | T's owner            | sort, O         | decl       | SAME         | wSAME           | no       | 2.8           |
+| the local-route vouch                  | vouch    | the engine           | span            | —          | SAME         | wSAME           | no       | 1.5, 1.10     |
+| `:lends`                               | route    | the wrapper's author | wrapper, sort   | decl       | SAME         | vantage         | no       | 3.4           |
+| `:yields` with the supplied instance   | route    | the lookup's owner   | shape           | decl, eval | SAME · DISJ  | wSAME · wDISJ   | no · yes | 1.6, 2.1      |
+| `:identified-in`                       | route    | T's owner            | shape           | decl       | SAME · DISJ  | wSAME · wDISJ   | no · yes | 1.6, 2.2, 3.2 |
+| the completion sentinel                | sentinel | the wrapper's author | wrapper         | eval       | SAME         | wSAME           | yes      | 3.4           |
+| `:guarantees-unique-name`              | warrant  | the lookup's owner   | shape           | decl, eval | DISJ         | wDISJ           | yes      | 1.5, 3.2      |
+| `:aliases-nothing-else`                | warrant  | the store's describer | store          | decl       | DISJ         | wDISJ           | yes      | 2.3, 3.2      |
+| `alias nothing-else`                   | closure  | the lookup           | key, level      | eval       | DISJ         | wDISJ           | yes      | 1.5, 2.9      |
+| `looked-up-in nothing-else`            | closure  | G's placing lookup   | key, route-sort | eval       | DISJ · INVAL | wDISJ · stale   | yes · no | 2.10          |
+| `may-read nothing-else`                | sentinel | T's owner            | sort            | decl       | SPARE        | wSPARE          | yes      | 2.5           |
+| the vouch over the marked reads        | vouch    | the oracle's author  | body            | decl       | SPARE[^vouch] | wSPARE         | yes      | 2.5           |
+| the completion record                  | record   | the verb's author    | path            | eval       | SPARE        | wSPARE          | yes      | 2.6           |
+| the finished record                    | record   | the written sort's owner | sort, shape | decl       | SPARE        | wSPARE          | yes      | 2.6, 2.10     |
+| the deep mark on an entry              | —        | the entry's author   | entry           | decl       | SPARE        | omitted: wSPARE | yes      | 2.9           |
+| the traversal's closing act            | closure  | the lookup's owner   | lookup, shape   | eval       | INVAL · DISJ | stale · wDISJ   | no · yes | 1.7, 2.9      |
+| a command's read-set closure           | closure  | the command's describer | command      | decl       | INVAL        | stale           | no       | 1.7, 3.3      |
+
+[^vouch]:
+    The vouch licenses the vouched line's own elision at the verdict tier, with no flag
+    (`KNOBS:kCONTRACT-RUNGS`). Its closure of the readset feeds the write-path question, under
+    the flag.
