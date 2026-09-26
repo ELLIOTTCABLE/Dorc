@@ -917,3 +917,71 @@ Takeaways (**[HUMAN]**, explicitly in the oven, not ruled):
 - State: nothing applied to 311. `hold-catalog-entries-as-referents` stays held, widened by T1
   and T2 into one question about placeholders and natural-key comparison. The other four holds
   of § 18 stand.
+
+## § 20-the-two-depths-sitting
+
+The dangling-symlink case of § 19 was put as two options for a ruling: one scheme with a
+consumer-supplied selector, or two schemes with one spelling. The human leaned to the second as
+the more generic and the more awkward. The conductor's first comparison is superseded by this
+section; its retractions and the picture that replaced it are banked.
+
+- **[HUMAN]** the framing corrected: "break referential agnosticism" meant overfitting the model
+  to the filesystem, never naming symlinks in the model. Question: why would a lookup take two
+  arguments in the general case, and what is the abstract meaning of each. Conductor, RETRACTED:
+  there is no second argument. Across every case found (a symlink, a CNAME, a systemd alias, a
+  docker tag, a git symbolic ref) the choice is "stop at the entry, or continue through what it
+  points at", which is a choice of the operand's sort, and a bind makes that choice by naming
+  the scheme. The lookup takes bytes.
+- **[HUMAN]** lean: verbosity that an abstract model forces is an argument for sugar and
+  ergonomics over a conceptually simple, globally consistent model, not for enriching the model
+  (the positional emission of § 17 is the sibling case). Conductor: the combinatorial argument is
+  WITHDRAWN as a model argument, and under the picture below it does not arise.
+- **[HUMAN]** nack of "a family evolves additively": novel mSorts and mSchemes are the only
+  collaboration mechanism today. There is no arm-level collaboration story, and what is hardcoded
+  in one body no stranger can additively affect, beyond sh load order and naming override.
+  Neither route is investigated or ergonomic yet. Conductor: WITHDRAWN, and it cuts the other
+  way, since a scheme family is one owner's body and a new scheme yielding into the sort is the
+  one move that exists.
+- **[HUMAN]**: no lint discussion for now, U-shaped. Conductor: every lint mention of § 19 and of
+  the comparison is set aside.
+- **[HUMAN]** question: why must the thing under discussion be a first-class model object, rather
+  than a catalog with intermediate referents between it and each actual referent, as
+  `sm.Directory -> sm.DirectoryEntry -> sm.Inode` (a random strawman, no spelling proposed).
+  Conductor: that is the whole of it, and no new species is needed. The picture, as walked in
+  chat:
+  1. three ordinary sorts: an inode, keyed by number in a filesystem; a directory, an inode of
+     one shape; a directory entry, a record with state (the inode it points at, and for a link
+     the target text), keyed by name in its directory, with both lookup warrants from the
+     directory's construction up to the folding the lookup canonicalizes, and the store warrant
+     since an entry of one directory is an entry of no other;
+  2. two path schemes over one spelling, one yielding the entry and one yielding the inode the
+     entry leads to, both crossing the same entries as traversal members with identity (the
+     § 18 residue closes), the second reading a link inode's contents into its read set and
+     continuing;
+  3. the bind names the scheme whose referent the tool acts on: the entry (`mkdir`, `rm`, `mv`,
+     `ln`, `[ -L ]`) or what it leads to (`touch`, `cat`, `chmod`, `[ -e ]`); the slot against the
+     object, a link being a slot whose state is a reference; no new seat;
+  4. the relations come free: a write to an entry is a routing mutation and invalidates every
+     resolution that crossed it (`311:3.3-invalidation-three-mutator-species`); a write to the
+     inode leaves the entry alone; two entries in one directory separate under unique-name; an
+     entry and the inode it leads to are two referents whose chains meet at the filesystem and
+     separate there, their dependence being routing (`311:1.7-resolution-and-its-traversal`); no
+     correspondence is declared;
+  5. the uncreated case is the deeper scheme's absent arm: with no entry to dereference, the
+     arm yields the future entry, so `[ ! -e x ]`, `touch x`, and `mkdir x` key on one future
+     entry and are SAME by the entry scheme's unique-referent; the allocated inode is unnamed
+     and need not be named; a dangling link at probe time parts the two schemes, and `mkdir`
+     then fails on the host and writes nothing, so the target's absence fact is rightly spared;
+     this restates § 19's T2 (the natural key is the primary key of an uncreated thing) as the
+     absent arm yielding into the entry sort;
+  6. not filesystem-shaped: an entry whose state is a name is a link, and a consumer's operand
+     is the entry or the referent the link leads to (a docker tag against its image; a CNAME
+     against the address behind it);
+  7. residue outside the picture: the shell's lexical `..`, the engine's by parity; refuse-symlink
+     flags, ~SUSPECT absent from book-visible argv, and a new scheme by whoever needs one.
+- Conductor's read on entanglement: one item, wider than the hold's name (entries as referents;
+  the deeper scheme's absent arm; the widened placeholder for an unresolved key; natural-key
+  comparison at the leaf). Touches the region test additively only, and none of the other four
+  holds. Recommended: take it whole under a new name, with or without a rewind.
+- State: nothing applied to 311. The hold stands under the widened reading. The human offered
+  to rewind and take the widened item as one unified topic; not yet decided.
