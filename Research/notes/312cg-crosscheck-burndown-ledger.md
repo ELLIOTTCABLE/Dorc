@@ -1094,3 +1094,79 @@ Applied, `4fa4625d`, over `dfc1f950`:
 Resolved, as corrected: `hold-catalog-entries-as-referents`. The model neither mandates nor
 forbids an entry sort. State: tip `4fa4625d` before this ledger commit. Four holds of § 3
 remain, unchanged from § 21.
+
+## § 23-the-attack-turn-and-the-close
+
+**[HUMAN]** 2026-09-26: no repair write; opine. Was the route correct, is the model as written
+the correct one, and the two edits landing immediately after the human's comments read as
+sycophancy. Attack the model. The conductor's answer, banked; then the human's rulings and the
+edits they licensed, the last of this context.
+
+- Conductor on the route: the first edit over-reached and the second corrected it, on the
+  merits. The process defect was specific: `311:3.3-invalidation-three-mutator-species` already
+  presumed an entry, which left two honest repairs, define it or soften the sentence; the
+  conductor chose to define, silently, then to soften, silently. Both times the choice was a
+  design call that should have been put to the human in one line before any write. That is the
+  sycophancy-shaped defect: not the retraction's content, but letting the comment stand in for
+  the derivation.
+- Conductor's disagreements, as the test: the human's "a directory entry's explicit primary key
+  is the inode" was wrong as stated (the hardlink proves the entry's identity is its name); the
+  "old shape" was not sparse, since the pre-today text presumed entries without defining them,
+  so the retraction made the model shape-neutral for the first time; and the retraction is not a
+  revert, since it adds a clause.
+- `attack-clause-overgeneralizes-its-use` — the § 2.2 clause said any primary key names its
+  referent or none. A generated key (an inode number, a UID) never names none from a book; a
+  `:root` shape has no mParent-Store, so "holds under it" was undefined. Wording, not soundness.
+- `attack-nominal-primaries-widen-the-horizon` — the witness compares keys, so a name destroyed
+  and recreated between probe and apply looks unchanged where an inode number would not
+  (`311:1.10-vantage-route-placeholder-witness` already puts recycled keys on the horizon).
+  Within a book § 3.3's routing writes handle recreation. Outside it, every name is a recyclable
+  key, and a rich shape multiplies the facts that sit on that horizon. Nothing false in the
+  model; a gradual-enhancement price a describer should see. Aid, not model.
+- `attack-recursion-is-lossy-not-clean` — `mkdir -p a/b` above `[ ! -e a/b/c ] || touch a/b/c`
+  writes entry `b`, a traversal member of `c`'s resolution, so the absence fact is invalidated
+  and the `touch` guards. Correct, since `c`'s route changed. The only way to keep the elision
+  is a describer's statement that a fresh directory is empty, which is the absence fact's own
+  content. The recursion buys identity for future entries, not survival past the creation of
+  their parents.
+- `attack-t2-is-answered-and-nobody-said-so` — the natural-key question of § 19 closes in the
+  direction opposite to the one feared: natural keys never carry identity; a describer who wants
+  identity by name mints an mSort whose primary key is that name in the store that admits it,
+  under warrants they declare; a secondary mScheme's warrants only let the engine skip a lookup
+  for equal inputs (`311:2.1-yields-into-another-scheme`). **[TYPED]** ack; for the ledger and
+  the routes-not-taken register, not for 311's normative text.
+- `attack-the-footer-line-is-a-rule-in-disguise` — the § 2.1 footer's "A bind names the mScheme
+  whose mReferent the tool acts on" read as a rule where rules do not bind. **[TYPED]**: normative
+  only if it forces correct behaviour that would be incorrect without it; the conductor decides.
+  Decided: it forces nothing the model does not already force (a bind names an mScheme, and the
+  scheme yields per shape into a sort), so it stays non-normative and reads as an example.
+- Survived: mixed shapes are safe (a sparse describer's coarse absence against a rich describer's
+  entry write meets at the directory in the region test and collides; two strangers' entry sorts
+  are KNOWN_UNSPOKEN); a presence fact mis-keyed on an inode dies at `rm x` because the
+  resolution that reached the inode crossed the entry (§ 3.3), so the routing rule protects facts
+  however the describer keyed them.
+- Conductor's verdict: the model as written is the right minimal one (~SUSPECT), with one
+  wording repair owed to the new clause. **[TYPED]**: firm the wording around generated primary
+  keys and referents.
+
+Applied, `7a63bae6`:
+
+- `311:2.2-primary-of-and-identified-in`: the clause now reads that an mKey of P names the
+  mReferent K's mParent-Store holds under it, or none; for a `:root` shape the world is the
+  store; the mKey is a level in both cases; a store that generates its mKeys at creation holds an
+  mReferent under every mKey a book can name; a store that admits mKeys as names may hold none
+  under an mKey a book names.
+- The § 2.1 footer's second sentence is descriptive: a tool that removes the entry binds under
+  the first mScheme, and a tool that changes the file binds under the second.
+- `notes/311u` gains `refuted-identity-by-natural-key` (shape, case, survivor as above),
+  committed with this ledger.
+- Linter: 311 keeps its one pre-existing hard flag and its total of sixty-five; `311u` keeps
+  zero hard flags and its one pre-existing advisory.
+
+State at the rewind: tip `7a63bae6` before this ledger commit. Four holds of § 3 remain:
+`hold-region-against-region-floor`, `hold-terminus-closure-and-engine-vouch`,
+`hold-stdlib-key-space-over-the-boots-children`, `hold-cells-sparing-or-freshness`. Ledger-only
+findings from this item, none owed by 311: the stdlib chain and the two depths (§ 20); the
+placeholder for keys unresolvable at probe time (§ 19 T1); the horizon cost of nominal
+primaries and the lossiness of the future-parent recursion (this section). The next item by the
+human's order is `hold-terminus-closure-and-engine-vouch`.

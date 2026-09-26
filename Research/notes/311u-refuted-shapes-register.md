@@ -328,3 +328,15 @@ thing's mSort.
 strings are meant to conflict safely and never to cohere. Membership is a relation between two
 mReferents, never a spelling of one.
 **Survivor.** `:places` and its lookup (2.10-places-the-upward-lookup).
+
+### refuted-identity-by-natural-key
+
+**Shape.** A natural key with no resolvable primary key compares by its own mScheme's warrants,
+so identity extends to every natural key.
+**Case.** A name a store does not hold yet: a file before `touch`, a user before `useradd`. The
+name needs identity, and the same reasoning would give every natural key identity. Natural keys
+alias: a path through symlinks and hardlinks, a package `provides`.
+**Survivor.** Natural keys never carry identity. A describer who wants identity by name mints an
+mSort whose primary mScheme is that name in the store that admits it, under warrants the
+describer declares (2.2-primary-of-and-identified-in). A secondary mScheme's warrants license
+the engine to skip a lookup for equal inputs and nothing more (2.1-yields-into-another-scheme).
