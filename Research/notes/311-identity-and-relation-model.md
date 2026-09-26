@@ -280,8 +280,11 @@ Cloned identifiers are the standing witness.
 
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
 p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
-chain of routing mKeys the lookup crossed. A `:hierarchical` mScheme's lookups produce the
-mTraversal, one level per lookup (2.9-hierarchical-and-the-region-test).
+chain of routing mKeys the lookup crossed. The lookup emits that chain, one member per routing
+mKey, in the order it crossed them (2.9-hierarchical-and-the-region-test). The emission is an
+at-most set. The lookup's owner closes it by an explicit act. A lookup that emits no member has
+its mParent-Catalog, given whole, as its mTraversal. A lookup that emits members without the
+closing act has those members and its mParent-Catalog, given whole.
 
 Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member
 invalidates the mResolution. Its target object is not its backing. An mKey can stop reaching an
@@ -645,9 +648,9 @@ an mKey's syntax. Whatever splitting an mKey needs happens inside a lookup's bod
 observing process. Only the mScheme owner can say which, in the lookup that meets them. An
 undeclared indexical component reads unknown.
 
-By default an mScheme is flat. The mTraversal is then the mParent-Catalog as a whole, and any
-touch on it invalidates every mResolution through it. That is the coarse, safe floor. Containment
-is membership in a mTraversal.
+A lookup that emits no member has its mParent-Catalog, given whole, as its mTraversal
+(1.7-resolution-and-its-traversal). Any touch on that catalog then invalidates every mResolution
+through it. That is the coarse, safe floor. Containment is membership in a mTraversal.
 
 An entry names the mReferent of its mKey. The walk of 3.2-compare-one-chokepoint-four-answers
 collides a write to that mReferent with everything identified in it. An entry given whole also
@@ -685,7 +688,7 @@ the level resolved to.
 - Arity: per mScheme.
 - Declared by: read off the mScheme's lookups. They name catalogs of their own mScheme or of
   mSchemes feeding it.
-- Default: flat, so the mTraversal is the whole mParent-Catalog.
+- Default: no emission, so the mTraversal is the mParent-Catalog given whole.
 - Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence invalidation
   (3.3-invalidation-three-mutator-species), and the region test.
 - Danger: none. Finer buys sparing. Coarse is safe.
@@ -852,9 +855,8 @@ authority. It never computes the successor identity.
   read. A routing mutation invalidates a mResolution when its mTraversal includes a touched
   mKey. It also invalidates the mResolution when the written mKey is in the read set of the
   lookup body that produced it (1.7-resolution-and-its-traversal). Any routing mutation
-  invalidates a mResolution whose read set is open. Under the flat default, a routing mutation
-  also invalidates the mResolution when its mParent-Catalog was touched at all. Every
-  mFullyQualifiedKey built on an invalidated mResolution reads unknown below the line. Dependent
+  invalidates a mResolution whose read set is open. Every mFullyQualifiedKey built on an
+  invalidated mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
   conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
   an mKey are routing writes to its mParent-Catalog entry, its existence cell. A writeset that
