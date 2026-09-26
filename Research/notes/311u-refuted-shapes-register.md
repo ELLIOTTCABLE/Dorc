@@ -122,6 +122,17 @@ inference lived in the meet's generators, not in the key.
 **Survivor.** The mVantage is an address, and it keys the `witness()`
 (1.10-vantage-route-placeholder-witness).
 
+### refuted-vantage-root-as-a-machine
+
+**Shape.** The mRoute is the machine: a store with children and a may-read set of its own.
+**Case.** A view over NFS, a tunnel, and a guest whose disk is a file on a host. The place a
+probe stood holds no state, and "the machine" names several things that boot, mount, and clone
+apart (`identity-tokens-have-clone-horizons`, `a-host-is-not-a-partition`).
+**Survivor.** The mRoute is an address with no may-read set, and a chain that ends there yields
+no survival. A boot, a volume, and an instance are `:root` shapes that their issuers' describers
+declare, each with its horizon (1.10-vantage-route-placeholder-witness,
+2.2-primary-of-and-identified-in).
+
 ### refuted-terminal-tokens
 
 **Shape.** A `resolve()` returns a terminal token, such as a filesystem id with an inode, and the
@@ -300,6 +311,29 @@ collide with a fact on that file, and the model could not say that the cache is 
 file.
 **Survivor.** A write inside a container is a write to it, so the container's own may-write
 entailment applies (2.6-may-write-the-writeset).
+
+### refuted-read-side-shared-level-exclusion
+
+**Shape.** A may-read entry that a container declares, at or above the deepest level the
+written mKey shares with the read mKey, contributes nothing to the test against that write, by
+an engine rule. The write side's exclusion, mirrored.
+**Case.** An honest filesystem describer names the block device as a may-read entry. A sibling
+inode write then collides every file fact in that filesystem, because nobody has said the device
+and a file are different things. The rule removed that collision with no speech behind it.
+**Survivor.** The collision is the default. The stdlib keys the device and the filesystem in one
+mScheme under a root, and the walk separates them (3.2-compare-one-chokepoint-four-answers). The
+write side keeps its exclusion (2.6-may-write-the-writeset).
+
+### refuted-one-hop-dependency-inheritance
+
+**Shape.** A fact's readset is its marked reads and the may-read entries of its own
+mFullyQualifiedKey's members, and no more.
+**Case.** A loop filesystem whose image lives in another loop filesystem
+(`backing-is-not-presenting`). A write to the outer image compares DISJOINT with the inner
+fact's inode and with the inner filesystem's image, and the fact is spared. The outer write
+rewrote both.
+**Survivor.** Each entry adds the entries of its own mFullyQualifiedKey's members until no entry
+joins (2.5-may-read-the-readset).
 
 ## § 4-routing-and-regions
 

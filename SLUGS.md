@@ -5492,10 +5492,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311u-refuted-shapes-register.md:80
 
 ## 311u:refuted-authored-region-predicates
-- defined: Research/notes/311u-refuted-shapes-register.md:306
+- defined: Research/notes/311u-refuted-shapes-register.md:340
 
 ## 311u:refuted-closure-as-reachable-only-through-me
-- defined: Research/notes/311u-refuted-shapes-register.md:259
+- defined: Research/notes/311u-refuted-shapes-register.md:270
 
 ## 311u:refuted-context-inside-the-key
 - defined: Research/notes/311u-refuted-shapes-register.md:117
@@ -5507,92 +5507,104 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311u-refuted-shapes-register.md:72
 
 ## 311u:refuted-equal-keys-reach-one-referent-by-default
-- defined: Research/notes/311u-refuted-shapes-register.md:143
+- defined: Research/notes/311u-refuted-shapes-register.md:154
 
 ## 311u:refuted-finished-definition-generates-disjoint
-- defined: Research/notes/311u-refuted-shapes-register.md:268
+- defined: Research/notes/311u-refuted-shapes-register.md:279
 
 ## 311u:refuted-identity-as-a-table-against-axes
 - defined: Research/notes/311u-refuted-shapes-register.md:106
 
 ## 311u:refuted-identity-by-natural-key
-- defined: Research/notes/311u-refuted-shapes-register.md:332
+- defined: Research/notes/311u-refuted-shapes-register.md:366
 - cited: 312cg (1)
 
 ## 311u:refuted-identity-carries-every-observation
-- defined: Research/notes/311u-refuted-shapes-register.md:252
+- defined: Research/notes/311u-refuted-shapes-register.md:263
 
 ## 311u:refuted-measurement-replaces-declarations
-- defined: Research/notes/311u-refuted-shapes-register.md:214
+- defined: Research/notes/311u-refuted-shapes-register.md:225
 
 ## 311u:refuted-mirror-rule-over-may-read
-- defined: Research/notes/311u-refuted-shapes-register.md:295
+- defined: Research/notes/311u-refuted-shapes-register.md:306
 
 ## 311u:refuted-one-declared-species
 - defined: Research/notes/311u-refuted-shapes-register.md:20
 
 ## 311u:refuted-one-grade-per-lookup
-- defined: Research/notes/311u-refuted-shapes-register.md:135
+- defined: Research/notes/311u-refuted-shapes-register.md:146
+
+## 311u:refuted-one-hop-dependency-inheritance
+- defined: Research/notes/311u-refuted-shapes-register.md:327
+- cited: 312cg (1)
 
 ## 311u:refuted-one-parent-sort-per-scheme
 - defined: Research/notes/311u-refuted-shapes-register.md:55
 
 ## 311u:refuted-only-same-entries-overlap
-- defined: Research/notes/311u-refuted-shapes-register.md:276
+- defined: Research/notes/311u-refuted-shapes-register.md:287
 - cited: 311 312cg (2)
 
 ## 311u:refuted-parent-as-an-implicit-read-entry
-- defined: Research/notes/311u-refuted-shapes-register.md:284
+- defined: Research/notes/311u-refuted-shapes-register.md:295
 - cited: 312cg (1)
 
 ## 311u:refuted-parent-partitions-its-children
-- defined: Research/notes/311u-refuted-shapes-register.md:193
+- defined: Research/notes/311u-refuted-shapes-register.md:204
 - cited: 311 312cg (2)
 
+## 311u:refuted-read-side-shared-level-exclusion
+- defined: Research/notes/311u-refuted-shapes-register.md:315
+- cited: 312cg (1)
+
 ## 311u:refuted-resolution-backed-by-its-target
-- defined: Research/notes/311u-refuted-shapes-register.md:316
+- defined: Research/notes/311u-refuted-shapes-register.md:350
 
 ## 311u:refuted-route-versus-root-as-known-unspoken
-- defined: Research/notes/311u-refuted-shapes-register.md:174
+- defined: Research/notes/311u-refuted-shapes-register.md:185
 
 ## 30O:refuted-scout-claims
 - defined: Research/notes/30O-owed-kernel-work-and-schedule.md:127 — — verified stale, so nobody re-chases them
 
 ## 311u:refuted-separation-from-two-definitions
-- defined: Research/notes/311u-refuted-shapes-register.md:184
+- defined: Research/notes/311u-refuted-shapes-register.md:195
 
 ## 311u:refuted-shared-ancestors-as-collisions
-- defined: Research/notes/311u-refuted-shapes-register.md:166
+- defined: Research/notes/311u-refuted-shapes-register.md:177
 
 ## 311u:refuted-sort-as-a-world-category
 - defined: Research/notes/311u-refuted-shapes-register.md:31
 
 ## 311u:refuted-store-sets-compared-as-bags
-- defined: Research/notes/311u-refuted-shapes-register.md:225
+- defined: Research/notes/311u-refuted-shapes-register.md:236
 
 ## 311u:refuted-stored-in-as-one-relation
-- defined: Research/notes/311u-refuted-shapes-register.md:235
+- defined: Research/notes/311u-refuted-shapes-register.md:246
 
 ## 311u:refuted-subsorts-or-a-type-menu
 - defined: Research/notes/311u-refuted-shapes-register.md:64
 
 ## 311u:refuted-terminal-tokens
-- defined: Research/notes/311u-refuted-shapes-register.md:125
+- defined: Research/notes/311u-refuted-shapes-register.md:136
 
 ## 311u:refuted-the-disclosed-weak-name-floor
-- defined: Research/notes/311u-refuted-shapes-register.md:156
+- defined: Research/notes/311u-refuted-shapes-register.md:167
 
 ## 311u:refuted-the-two-schemes-disagreement-canary
-- defined: Research/notes/311u-refuted-shapes-register.md:203
+- defined: Research/notes/311u-refuted-shapes-register.md:214
 
 ## 311u:refuted-two-parent-edges-per-key
 - defined: Research/notes/311u-refuted-shapes-register.md:47
 
 ## 311u:refuted-union-totality-with-no-author
-- defined: Research/notes/311u-refuted-shapes-register.md:244
+- defined: Research/notes/311u-refuted-shapes-register.md:255
 
 ## 311u:refuted-upward-lookup-as-a-second-scheme
-- defined: Research/notes/311u-refuted-shapes-register.md:323
+- defined: Research/notes/311u-refuted-shapes-register.md:357
+
+## 311u:refuted-vantage-root-as-a-machine
+- defined: Research/notes/311u-refuted-shapes-register.md:125
+- cited: 312cg (1)
 
 ## plan/CLAUDE:region-decisions-meet-universally
 - defined: spike/crates/plan/CLAUDE.md:311 — (`plans/30L` §5) — `plan::region` groups per-instance

@@ -360,6 +360,9 @@ any mKey's identity. It does three things:
   mParent-Catalog mSort.
 - For a shape with no `:identified-in`, it is the mRoute: the last-resort mParent.
 
+The mRoute is an address. It holds no mState and declares no may-read set. A readset that
+reaches the mRoute is open (2.5-may-read-the-readset).
+
 For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
 instances within one unwalled span. Under a wrapper, it vouches the inherited instances that
 3.4-entry-and-lends admits. Each is resolved once per mEntryChain and shared: one mPlaceholder.
@@ -523,12 +526,16 @@ the engine composes. A mVantage supplies instances and is never an mParent.
 K `:may-read` these mKeys: K's mState is affected by writes to them. The relation is
 many-valued. It is an edge type from an mSort to mKeys of other mSorts, a template the mSite or
 environment fills. K's owner declares it, with a completion sentinel closing the set. Every
-mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves.
+mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves. An entry may name
+an mKey of another mWorld. `compare()` decides that pair as
+3.2-compare-one-chokepoint-four-answers decides any pair.
 
 A fact's readset is the marked reads of the body that answered it, together with the may-read
-entries declared by every member of the mKey's mFullyQualifiedKey. It is closed only when every
-declared set is closed. For a verdict fact, the vouch closes the marked reads of the body that
-answered it (`KNOBS:kCONTRACT-RUNGS`).
+entries declared by every member of the mKey's mFullyQualifiedKey. A member that declares no
+set contributes ⊤. Each entry adds the may-read entries of every member of its own
+mFullyQualifiedKey. That repeats until no entry joins. The readset is closed only when every
+set that joined is closed. For a verdict fact, the vouch closes the marked reads of the body
+that answered it (`KNOBS:kCONTRACT-RUNGS`).
 
 An mKey's mParent instance is no may-read entry and needs no declaration. The walk of
 3.2-compare-one-chokepoint-four-answers collides a write at or above it. A may-read entry naming
