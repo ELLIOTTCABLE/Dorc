@@ -329,9 +329,9 @@ mParent is not itself scoped in the boot (§3.3).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
 3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
-writeset entry naming the mParent whole covers its cells (2.9-hierarchical-and-the-region-test,
-§3.2). The marked line that answers a cell is a read of the cell's mKey. The fact's identity is
-the mTopic (1.8-fully-qualified-key-topic-and-derivation).
+writeset entry naming the mParent covers its cells (§3.2, step 2). The marked line that answers
+a cell is a read of the cell's mKey. The fact's identity is the mTopic
+(1.8-fully-qualified-key-topic-and-derivation).
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -556,9 +556,9 @@ of a writeset entry and the mKey a fact reads, of one mSort or of two:
    2.9-hierarchical-and-the-region-test where an mKey is given whole).
 2. No write path joins them. The writeset's definition is finished. The at-most set is closed.
    Where the body emits at runtime, the verb author's completion record closes it. For each
-   origin cell whose entailment widened the set, a reached finished record exists for that
-   cell's mSort and shape (`plans/30U`). The fact's readset (2.5-may-read-the-readset) is
-   closed. Every writeset entry `compare()`s DISJOINT with every entry of that readset.
+   origin cell in the writeset, a reached finished record exists for that cell's mSort and
+   shape (`plans/30U`). The fact's readset (2.5-may-read-the-readset) is closed. Every writeset
+   entry `compare()`s DISJOINT with every entry of that readset.
 
 The test spares narrowly and collides widely. Whatever is not DISJOINT collides, and so does an
 undeclared may-read entry. The finished definition is a within-mWorld sentence. It never speaks
@@ -628,6 +628,11 @@ touch on it perishes every mResolution through it. That is the coarse, safe floo
 is membership in a mTraversal. A path prefix is not a store. A mutator that touches a directory
 needs to know nothing about files.
 
+An entry names the mReferent of its mKey. The walk of 3.2-compare-one-chokepoint-four-answers
+collides a write to that mReferent with everything identified in it. An entry given whole also
+names every mReferent reached beneath that mKey, through the mScheme's lookups or through a
+placing route (2.10-places-the-upward-lookup). The entry's author marks it given whole.
+
 A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its
 mScheme reaches beneath it. In the test of 2.6-may-write-the-writeset it reads UNKNOWN against
 every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
@@ -635,15 +640,20 @@ every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
 that the thing is not the routing mKey itself. That is the floor.
 
 The region test refines the floor. For an mKey D given whole against an mKey x, walk each
-mTraversal of x as its lookups produced it (1.7-resolution-and-its-traversal), including the
-routes of 2.10-places-the-upward-lookup, leaf first:
+mTraversal that `identity(x)` produced at every level of x's mFullyQualifiedKey
+(1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), including the routes of
+2.10-places-the-upward-lookup, leaf first:
 
 1. If x's leaf compares SAME with D: SAME.
 2. Else if any level of a mTraversal compares SAME with D: D's region covers x, and the pair
    reads UNKNOWN.
-3. Else if, on every mTraversal of D's mSort, every level compares DISJOINT with D and every
-   level emitted its closure, `alias nothing-else` (1.5-token-and-the-two-warrants) or
-   `looked-up-in nothing-else` (2.10-places-the-upward-lookup): DISJOINT.
+3. Else if x carries a closure for D's mSort, in one of two forms: DISJOINT.
+   - x has at least one mTraversal of D's mSort. On every such mTraversal, every level compares
+     DISJOINT with D and every level emitted its closure, `alias nothing-else`
+     (1.5-token-and-the-two-warrants) or `looked-up-in nothing-else`
+     (2.10-places-the-upward-lookup).
+   - The placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no
+     `looked-up-in` record. Then x is in no region of that mSort.
 4. Otherwise: UNKNOWN.
 
 Only x's mTraversals are walked. D needs no closure of its own. Every level is asked, never only
@@ -687,7 +697,11 @@ contradict a record from another invocation. The engine then refuses both answer
 attributes the refusal to G's owner.
 
 The store's end of the same relation is G's enumeration of its members. The may-write entailment
-of 2.6-may-write-the-writeset already carries that as write reach.
+of 2.6-may-write-the-writeset already carries that as write reach. When that entailment is
+finished for P (§2.6), its emitted members stand in for P given whole in the test of §2.6. Each
+member is an entry of that test. An unfinished entailment widens the writeset only. Where a
+placing route places x in P and a finished enumeration of P has no member SAME with x, the pair
+reads UNKNOWN.
 
 - Arity: per (G, T).
 - Declared by: G's owner.
