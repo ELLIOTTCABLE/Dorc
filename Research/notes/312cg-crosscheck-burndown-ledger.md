@@ -420,7 +420,7 @@ sparing that the acked floor denies elsewhere (`311t` § 14: a sort hung on noth
 stays guard-only), so the ruling is about the text's consistency. Nothing applied to 311.
 
 - As put: step 3 of the region test quantifies over "every mTraversal of D's mSort"
-  (`311:2.9-hierarchical-and-the-region-test`). A universal over zero traversals is true, so an x
+  (`311:2.9-the-traversal-and-the-region-test`). A universal over zero traversals is true, so an x
   with no traversal of D's sort reads DISJOINT. Three cases: x's own scheme is of D's sort (the
   set is never empty); D's sort declares no `:places` for x's sort (§ 2.10's default sends the
   pair to the ordinary walk); D's sort declares `:places`, the lookup runs on x's bytes and
@@ -482,7 +482,7 @@ Nothing applied to 311.
   `dpkg -S`) and the store's end (a grouping names its members: `dpkg -L`). Each end has positive
   entries that add collisions and a closure that is the knife.
 - What 311 consumes today. The region test consumes the thing's end only
-  (`311:2.9-hierarchical-and-the-region-test`). The store's end widens the writeset with points
+  (`311:2.9-the-traversal-and-the-region-test`). The store's end widens the writeset with points
   that collide pairwise where SAME and separate nothing. Two consequences: with a deep entry
   present, enumeration adds collisions only, and precision comes from narrowing the entry; and the
   store's end's closure has no consumer for "outside".
@@ -590,7 +590,7 @@ Conductor's acks, each re-walked against 311's text before the edit:
   region against region: refuse to separate two deep entries at all, which is
   `hold-region-against-region-floor`.
 - Applied to 311, each edit STE Strict and as narrow as the meaning allowed:
-  `311:2.9-hierarchical-and-the-region-test` gains the entry paragraph (an entry names its
+  `311:2.9-the-traversal-and-the-region-test` gains the entry paragraph (an entry names its
   referent; §3.2 collides a write to it with everything identified in it; an entry given whole
   also names what is reached beneath by lookups or a placing route; the author marks it), the
   test walks the mTraversals `identity(x)` produced at every level, and step 3 answers DISJOINT

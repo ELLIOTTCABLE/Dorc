@@ -75,7 +75,7 @@ An mReferent is a persisting piece of the world that has state.
 - It is not an mKey (an mKey names it), not an mState (it has one), and not an mValue (a read
   yields one from it). It is not an mTopic (1.8-fully-qualified-key-topic-and-derivation). It is
   not the set an mKey given whole denotes: the container is the mReferent, and the set is a set
-  (2.9-hierarchical-and-the-region-test).
+  (2.9-the-traversal-and-the-region-test).
 
 The engine never holds an mReferent. It reaches mReferents only through mKeys, mTokens, and
 mDerivations. Every identity question is ultimately "do these two mKeys reach one mReferent".
@@ -147,7 +147,6 @@ mScheme fixes:
   (2.1-yields-into-another-scheme)
 - where its mKeys are looked up, when it is a secondary mScheme (2.1-yields-into-another-scheme)
 - its lookup warrants (1.5-token-and-the-two-warrants)
-- whether it is `:hierarchical` (2.9-hierarchical-and-the-region-test)
 
 An mSort has at most one primary mScheme. Where it has one, that mScheme yields into the mSort
 for at least one shape. Nothing else constrains where an mScheme yields. An mSort may have no
@@ -227,7 +226,7 @@ exactly this one entry anywhere in the instance the lookup ran in, not only in t
 mParent-Catalog the entry was found in. It is a statement about one mKey, from the thing's end,
 made on the path that measured it. Where the lookup knows other entries, it emits them first,
 and a listed alias is checked as the first entry is. The closure and the per-shape warrant are
-two statements. The region test (2.9-hierarchical-and-the-region-test) consumes the closure.
+two statements. The region test (2.9-the-traversal-and-the-region-test) consumes the closure.
 
 > `:guarantees-unique-referent` fails for round-robin lookups, recycled mKeys, and cloned
 > identifiers presented as mRoots. `:guarantees-unique-name` fails for symlinks and hardlinks,
@@ -281,7 +280,7 @@ Cloned identifiers are the standing witness.
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
 p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
 chain of routing mKeys the lookup crossed. The lookup emits that chain, one member per routing
-mKey, in the order it crossed them (2.9-hierarchical-and-the-region-test). The emission is an
+mKey, in the order it crossed them (2.9-the-traversal-and-the-region-test). The emission is an
 at-most set. The lookup's owner closes it by an explicit act. A lookup that emits no member has
 its mParent-Catalog, given whole, as its mTraversal. A lookup that emits members without the
 closing act has those members and its mParent-Catalog, given whole.
@@ -336,7 +335,7 @@ cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key).
 A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
 diffuse. The cell's may-read set (2.5-may-read-the-readset) says where that mState is held. The
 freshness of a fact about the cell follows that set, together with any write that covers the
-mParent (2.9-hierarchical-and-the-region-test, 3.3-invalidation-three-mutator-species).
+mParent (2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species).
 
 Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
 3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
@@ -387,7 +386,7 @@ about a mSite has one author per claim. The claim species are:
 - a may-write entailment (2.6-may-write-the-writeset), by the mSort owner.
 - a mCorrespondence (2.7-corresponds-across-a-transition), by the transition owner.
 - the per-mScheme declarations (2.1-yields-into-another-scheme,
-  2.2-primary-of-and-identified-in, 2.9-hierarchical-and-the-region-test).
+  2.2-primary-of-and-identified-in, 2.9-the-traversal-and-the-region-test).
 - the per-mSort declarations (2.5-may-read-the-readset,
   2.8-observer-dependence-and-independence, 1.9-cell-a-singleton-sort, and `:places` with its
   lookup, 2.10-places-the-upward-lookup).
@@ -574,7 +573,7 @@ An elision is spared past a write only when two questions are answered, in order
 of a writeset entry and the mKey a fact reads, of one mSort or of two:
 
 1. `compare()` answers DISJOINT (3.2-compare-one-chokepoint-four-answers, or
-   2.9-hierarchical-and-the-region-test where an mKey is given whole).
+   2.9-the-traversal-and-the-region-test where an mKey is given whole).
 2. No write path joins them. The writeset's definition is finished. The at-most set is closed.
    Where the body emits at runtime, the verb author's completion record closes it. For each
    origin cell in the writeset, a reached finished record exists for that cell's mSort and
@@ -636,17 +635,14 @@ It must remain speech. Measurement in the denoted context (`plans/27C`) stays th
 - Consumer: the SAME consumer, as a qualifier on the claim's mTopic.
 - Danger: a false independence.
 
-### § 2.9-hierarchical-and-the-region-test
+### § 2.9-the-traversal-and-the-region-test
 
-An mScheme is `:hierarchical` when its lookups name, as the mParent-Catalog of what they yield,
-an mKey of the same mScheme or of an mScheme that in turn feeds it. Otherwise the mScheme is
-flat.
-
-The mTraversal is the chain those lookups produced, one level per lookup. The engine never reads
-an mKey's syntax. Whatever splitting an mKey needs happens inside a lookup's body. A
-`:hierarchical` mScheme may contain indexical components, whose mResolution depends on the
-observing process. Only the mScheme owner can say which, in the lookup that meets them. An
-undeclared indexical component reads unknown.
+A lookup emits its mTraversal, one member per routing mKey it crossed
+(1.7-resolution-and-its-traversal). A lookup may cross several levels, each looked up in a
+catalog that the previous level named. The engine never reads an mKey's syntax. Whatever
+splitting an mKey needs happens inside a lookup's body. A lookup may cross an indexical routing
+mKey, whose mResolution depends on the observing process. Only the lookup's owner can say which,
+in the body that meets it. An undeclared indexical routing mKey reads unknown.
 
 A lookup that emits no member has its mParent-Catalog, given whole, as its mTraversal
 (1.7-resolution-and-its-traversal). Any touch on that catalog then invalidates every mResolution
@@ -685,18 +681,17 @@ the leaf, because an alias may sit at any level. A leaf's own closure cannot see
 (3.2-compare-one-chokepoint-four-answers) compares a level by the identity of the mReferent that
 the level resolved to.
 
-- Arity: per mScheme.
-- Declared by: read off the mScheme's lookups. They name catalogs of their own mScheme or of
-  mSchemes feeding it.
+- Arity: per lookup, per matched shape.
+- Declared by: the lookup's owner, through what the lookup emits.
 - Default: no emission, so the mTraversal is the mParent-Catalog given whole.
 - Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence invalidation
   (3.3-invalidation-three-mutator-species), and the region test.
 - Danger: none. Finer buys sparing. Coarse is safe.
 
-> Examples of a `:hierarchical` mScheme: a path yields a directory entry looked up in a shorter
+> Lookups that cross several levels: a path yields a directory entry looked up in a shorter
 > path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in
-> its instance table. Flat mSchemes: an inode number, a uid. An indexical component:
-> `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know
+> its instance table. Lookups that cross one level: an inode number, a uid. An indexical routing
+> mKey: `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know
 > nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an
 > alias entry above a leaf.
 
@@ -709,7 +704,7 @@ scoped to routes of mSort G. These are the records any lookup emits. Membership 
 between two mReferents, never a spelling of one, so the placing lookup is not an mScheme of T.
 
 The route so recorded is a mTraversal of the mKey for the region test
-(2.9-hierarchical-and-the-region-test). A mutator invalidates it as it invalidates any
+(2.9-the-traversal-and-the-region-test). A mutator invalidates it as it invalidates any
 mResolution (3.3-invalidation-three-mutator-species). It is never the mKey's mParent, which is the route the
 mKey's own lookup supplied (1.6-parent-one-per-key).
 
@@ -736,7 +731,7 @@ reads UNKNOWN.
 - Declared by: G's owner.
 - Default: absent. T's mKeys then have no route of mSort G, and the pair reads as
   3.2-compare-one-chokepoint-four-answers decides it.
-- Consumer: the region test (2.9-hierarchical-and-the-region-test), and invalidation.
+- Consumer: the region test (2.9-the-traversal-and-the-region-test), and invalidation.
 - Danger: a false `looked-up-in nothing-else` is G's owner's wrong DISJOINT.
 
 > Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
@@ -997,7 +992,7 @@ became untrue. The human refreshes root documents.
   and `30T:file-identity` on the region predicate: an owner-authored region predicate generates
   disjointness between regions. Here: there is no authored region predicate
   (4.1-boundary-of-this-model). Containment is membership in a mTraversal. The region test over
-  `:hierarchical` mSchemes (2.9-hierarchical-and-the-region-test) and the `:places` lookup
+  emitted mTraversals (2.9-the-traversal-and-the-region-test) and the `:places` lookup
   (2.10-places-the-upward-lookup) decide it.
 - `plans/30W` §2 to §4, `26Ob:res-cell-level-relation-is-the-filtered-meet` and
   `26Ob:10f-the-target-pin`, `plans/27C` §4(A), `ANALYZER-NEEDS:an-invariance-speech-act`, and

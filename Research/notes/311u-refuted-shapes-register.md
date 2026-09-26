@@ -310,8 +310,8 @@ selector names a region.
 **Case.** A symlink retarget. Separation of two objects says nothing about whether a change to
 one retargets an mKey for the other. The natural unit of description is the one that a write
 disturbs atomically.
-**Survivor.** `:hierarchical` mSchemes, mTraversals, and the region test
-(2.9-hierarchical-and-the-region-test).
+**Survivor.** Emitted mTraversals and the region test
+(2.9-the-traversal-and-the-region-test).
 
 ### refuted-resolution-backed-by-its-target
 
