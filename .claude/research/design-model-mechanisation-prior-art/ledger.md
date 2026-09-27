@@ -429,6 +429,40 @@ they sit alongside the Alloy spec rather than only as e2e.
   is the substrate and never a first-class concept of the tooling. **[HUMAN]** "largely
   overengineered, but that's what I expected."
 
+## The inversion and the human's leans (2026-09-27, human-typed)
+
+- **[HUMAN]** the JSON strawman is backwards: it authors awkward forms of what Kani, Alloy,
+  and the readable specification each need. The inverted shape: a literate-Markdown
+  specification as the primary product, with inline Alloy fences and inline NGO/speaker
+  identifier fences, and tools that strip or generate the checker inputs. Its cost is losing
+  a generated one-to-one mapping of shared things across representations. Conductor's
+  reconciliation, presented and not objected to: logic hand-written in the target language
+  and tied by name lints; data (objects, speech, filings, books) kept structured inside the
+  document and generated into every target; Alloy's Markdown mode runs the document directly.
+  JSON was over-tuned: structured data and tool output only; never sentence-shaped content
+  inside a tool artifact except an explicit `md` endpoint that builds prose from facts.
+- **[HUMAN] lean, "by law":** mechanical trumps prose when the two disagree, in any analysis
+  where both can be present; a disagreement is a design question to sit and burn down into
+  more mechanical clarity. The burn-down: the two disagree (most often the prose implies
+  something the model does not encode); a reviewer notices; additive constraints go into the
+  checker and the prose is tuned; a wrong prose tune can only be walked back by further
+  additive narrowing. The checker's job is to force explicitness over time.
+- **[HUMAN] lean, firewall:** mechanizable and unmechanizable rules cannot coexist in prose.
+  Only sections that are entirely unmechanizable may carry normative prose; anything
+  mechanizable is extracted to its own section containing no normative prose, fully normative
+  by mechanization, so that commentary beside mechanical law never smuggles in normative bits
+  licensed by inexpressibility.
+- **[HUMAN] ack:** name lints are probably a large part of the actual build-out: `simon-1` is
+  one identifier everywhere; its Alloy form exists; that form mentions Alloy `Store` iff the
+  claim relates to NGO `Store`; and so on.
+- **[HUMAN] lean:** instances and classes are global across the product, not per document;
+  an id means one thing everywhere and must cohere where repeated; a local variant is
+  reminted under a new id with its own associations, never modified in place for one consumer.
+- **[HUMAN]** attribution stays inside the model and the system; attribution is the product.
+  Refag will be broken slowly downhill from 311 for product value; things must stay true
+  regardless. A GOTCHA in classic form is one or more speaker statements plus a world and an
+  outcome, one step below a speaker column. The answer-lattice observation is held for later.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
