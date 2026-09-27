@@ -524,6 +524,45 @@ they sit alongside the Alloy spec rather than only as e2e.
   order because Dorc does.
 - **[HUMAN]** the oracle/speech-claim corner is the least baked; the rest is coming together.
 
+## The collapse, the churn walk, and derived ownership (2026-09-27; conductor findings the human read and reacted to)
+
+- A claim collapses to one Alloy atom: a speaker, a species sig, and world-name parameters,
+  written directly under the sig whose `fact` says what it means when true. The `claims` and
+  `filed` fences and the proposition prose are gone; the claim's long name carries the
+  world-intent; commentary about why the speaker can say it sits outside the fence. Coherence
+  is structural: parameters are typed by the sig's fields. **[HUMAN]** agreed that `filed`,
+  `alloy`, and `claims` were one thing and that the proposition prose was a restatement that
+  could drift.
+- `danger` is never authored: it is the inverse of `restsOn` per claim, mapped through the
+  consumer map to the wrong answer a false claim would cause; a lock column.
+- Static versus derived is structural: class sigs as parameters versus instance atoms. A
+  measure is one tuple of one model relation, witnessed by a `#}=` line in the book whose
+  `#=>` carries the tuple; the Alloy fact is lifted from it, never hand-written. Loads are set
+  expressions in a run at the design tier and `.` lines in sh at the spelling tier. Both
+  "least-baked" corners dissolve into the model; the harness holds only the welded verdict
+  vocabulary, `MDecl` with a speaker, an ordered answer set, `Query`, and three predicates.
+  **[HUMAN]** any declaration the harness holds must be a universal truth that cannot range
+  over values as the product evolves; fine to try measures entirely in the book; it may come to
+  resemble errorloom. Conductor: a book is a transcript case; -GUESS the loom case format can
+  be reused outright.
+- The churn walk over four of 311's own changes (one species to two; the aspect, cell,
+  per-cell-store, and parent-declares generations; the closure rewrite; the re-seated store
+  closure): the document changes (sigs, meaning facts, one line per claim under a touched
+  species), the lock changes (verdict rows move; the reboot book fails a law at the
+  singleton-sort generation, which was `311p` thread 2; the start-then-enable row's elide,
+  guard, guard, elide is `312c` thread 4 as a diff), and the harness does not. Cost of a
+  rewrite is countable as diff lines per claim.
+- "Who can know" is not speaker metadata: 311 § 1.2 makes a sort one owner's vocabulary and
+  § 3.5 lists per species whose line a statement must be. Ownership is derived: the speaker of
+  a sort's identity claims owns it; a per-species owner-role table in the coordinate makes
+  the seat rule a check, and `311p` thread 4 fails it. Strangers and cooperative cases fall
+  out. A speaker needs a stable id and a prosodic line only. **[HUMAN]** the claim is the
+  atomic unit of collaboration; a region of knowledge is the sort, principled because it is
+  the engine's own unit; lean to name speakers by expertise and unification
+  (`expert-docker-1`) with the mint-a-new-id praxis. Consequence: the identity claim is always
+  the first line of any speaker's speech about a thing; an unowned sort's sort-level claims
+  cannot pass the seat check, and its sites guard.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
