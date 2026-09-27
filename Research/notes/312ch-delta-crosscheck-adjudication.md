@@ -220,6 +220,24 @@ Changes to what the model answers (the human's, each a ruling):
   shape; or carry cross-world dependency as the transition owner's speech with its own consumer;
   or accept the cost in writing.
 
+### § 1.7-applied-and-held
+
+**[TYPED]** 2026-09-27, the human's rule: apply the clear and obvious fixes the human wants no say
+in, where the edit licenses no new sparing (undiscussed sparing; restoring a sparing the ledger
+made precise is not new) or was found by several lanes independently before step 5.
+
+Applied to 311, one commit per theme (`312cg` § 29 carries the mapping): items 5 and 3
+(`1a5fe87a`), 2 (`55697925`), 4 and the § 3.3 membership wording of 12 (`d2a548c5`), 7 and 10
+(`b6253e4d`), 9 (`c20bbf4d`), the § 1.10 and § 3.4 wording of 12 (`47ca5ead`), the § 4.2
+index-kinds and v0-floor entries and the § 5 cells of 13 (`64feb9f0`).
+
+Held for the human: `rule-exclude-by-the-entailed-member` (item 1 and § 2.1's two-level leak; a
+lone finding on a cut the human defended, `312cg` § 24 and § 25); `rule-cross-world-entry-cost`
+(item 6); item 8 (the `30U` gloss against the within-sort demand; which is meant was not
+discussed); item 11's construction-against-test clause (entangled with item 1); item 13's two
+`spike/CLAUDE.md` register entries and the USER_STORY stage 5 and 7 lines (the latter pre-empt
+`312cg:hold-stdlib-key-space-over-the-boots-children`).
+
 ### § 1.6-process-notes
 
 - Mechanics: both Astra lanes ran `-s workspace-write` in scratch copies at the first attempt,

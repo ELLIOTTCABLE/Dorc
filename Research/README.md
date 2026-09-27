@@ -291,7 +291,11 @@ the license-contamination map. Cross-references are `docID:slug`.
   re-verify, the unknowability classes, the seat gaps) · **`notes/312b`** (its LIVING
   sittings ledger: typed conduct, exercise takeaways, the time and naming sittings, the shape
   sitting and its unacked refinements; §-last is the state for a rewound successor) ·
-  `notes/312b-exercises/` (one record per exercise, not durable). The bare `312` is reserved
+  `notes/312b-exercises/` (one record per exercise, not durable). The crosscheck over 311 at
+  `6b7108b4`: reports `notes/312ca`–`312cd` (Fable and Astra, neutral and adversarial), the
+  adjudication **`notes/312c`**, and its LIVING burndown ledger **`notes/312cg`** (what was
+  applied, what is held, the human's rulings); the delta crosscheck over the changes since, with
+  the conductor's own review beside three lanes, **`notes/312ch`**. The bare `312` is reserved
   for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the

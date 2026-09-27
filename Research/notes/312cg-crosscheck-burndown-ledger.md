@@ -1412,3 +1412,50 @@ the `311u` entries first, in the backward form, minimal; then the forward rewrit
 - Resolved: `hold-terminus-closure-and-engine-vouch`. Three holds of § 3 remain:
   `hold-region-against-region-floor`, `hold-stdlib-key-space-over-the-boots-children`,
   `hold-cells-sparing-or-freshness`.
+
+## § 29-the-delta-crosscheck-and-the-edits-it-licensed
+
+A focused crosscheck over the changes to 311 between `6b7108b4` and `fc56941e` ran 2026-09-26
+(one Fable lane adversarial, two Astra lanes neutral and adversarial, the human's six-step
+process, nothing from the ledgers in their read-in). Its record, with the conductor's own review
+written before any lane returned, is `notes/312ch`; § 1.3 there ranks what survived and § 1.5
+sorts the candidate edits by what each does to the model.
+
+- **[TYPED]** 2026-09-27, the rule for edits from the record: apply what is completely clear and
+  obvious by the conductor's estimation, such that the human wants no say in it, and that either
+  licenses no new sparing (new meaning undiscussed: where the ledger makes the intended sparing
+  precise and a poor phrasing blocks it, restoring it is not new) or was found by several lanes
+  independently before their comparison pass. Tighten and save attention where lanes agreed.
+- Applied to 311 under that rule, one commit per theme, each STE Strict, the linter at 58
+  findings after (60 before), the one pre-existing hard flag untouched:
+  `1a5fe87a`, ⊤ back on the read side (`312ch:srv-injection-sentences-collide-every-fact`,
+  three views independently; the ledger's own § 28 intended answer-equivalence with the
+  backward form, which the three injection sentences broke): `311:2.5-may-read-the-readset`
+  states when a readset member is ⊤ (its mSort, an mSort on its chain, or the same of an entry
+  rule 4 reaches it through, transitively, has no closed set; or the chain ends at the mRoute);
+  rule 4's last sentence and § 1.10's "in every line's writeset" are gone; a body that marks no
+  read has readset ⊤ (`312ch:srv-unmarked-verdict-readset-closed-empty`, the human's § 12
+  principle applied). `55697925`, the stand-in keeps P
+  (`312ch:srv-stand-in-drops-p`, all three lanes): a finished enumeration stands in for the
+  reach beneath P, and P stays an entry. `d2a548c5`, any write invalidates an open-read-set
+  resolution, and read-set membership is by overlap (`312ch:srv-open-read-set-any-routing-mutation`;
+  the § 10 intent). `b6253e4d`, the alias closure is per level and § 2.9's danger line names the
+  closing act's knife (`312ch:srv-closure-count-one-level-against-every-level`,
+  `312ch:srv-danger-none-against-the-closing-act`). `c20bbf4d`, the generated-key sentence is
+  bounded to keys the store generated and still holds (`312ch:srv-generated-key-totality`).
+  `47ca5ead`, § 1.10 attributes inherited instances to the sentinel under the flag, matching
+  § 1.5, and § 3.4's at-most claim names the mRoute. `64feb9f0`, two § 4.2 entries and two § 5
+  cells brought to the current text.
+- Held for the human, from the record: `hold-exclusion-keyed-on-the-container` (`312ch` items 1
+  and § 2.1's two-level leak: the write-side exclusion keys on the entailing container and so
+  discards a store owner's interior entailment; one re-keying on the entailed member's position
+  fixes a wrong spare and an over-collision, but the exclusion is a cut the human defended, § 24,
+  § 25); `hold-cross-world-entry-cost` (`312ch` item 6); `hold-within-sort-finished-record-gloss`
+  (`312ch` item 8: the text demands the record for every written shape, the `30U` register entry
+  says "across mSorts"; which is meant was not discussed); the exclusion's construction-against-
+  test clause (`312ch` item 11, safe either way, entangled with the first hold); two register
+  entries on `spike/CLAUDE.md` rules the conductor did not re-read (`rul-flag-is-razor-residue`,
+  `pure-predicate-carry`); USER_STORY stage 5 and 7 register lines, which pre-empt
+  `hold-stdlib-key-space-over-the-boots-children`.
+- State: tip `64feb9f0` before this ledger commit. The three holds of § 28 stand, plus the
+  three named here.
