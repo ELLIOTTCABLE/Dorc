@@ -1025,8 +1025,8 @@ became untrue. The human refreshes root documents.
   and nothing else, an address that is part of no mKey's identity
   (1.10-vantage-route-placeholder-witness, 4.1-boundary-of-this-model). Identity is the
   mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation). A world is an mWorld, a
-  terminus of a mFullyQualifiedKey, and nothing speaks across mWorlds (§1.8,
-  3.2-compare-one-chokepoint-four-answers).
+  terminus of a mFullyQualifiedKey. No mFullyQualifiedKey and no finished definition speaks
+  across mWorlds. A mCorrespondence may (§1.8, 3.2-compare-one-chokepoint-four-answers).
 - `plans/30W` §2 and §3 `kind__disjoint()`, its `30W:rul-disjoint-is-an-rc-predicate` [TYPED],
   and `30T:file-identity` on the region predicate: an owner-authored region predicate generates
   disjointness between regions. Here: there is no authored region predicate
@@ -1071,7 +1071,7 @@ became untrue. The human refreshes root documents.
   rename write the one the describer named (3.3-invalidation-three-mutator-species).
 - `30T:file-identity` the v0 floor: entry-mutating verbs make no at-most claims, and same-kind
   path-distinct comparisons answer unknown. Here: creation, deletion, and rename of an mKey are
-  routing writes to its mParent-Catalog entry, and a writeset may name them
+  routing writes, and the mKeys they write are the verb author's at-most claim
   (3.3-invalidation-three-mutator-species). Path-distinct mKeys separate under
   `:guarantees-unique-name` and `:aliases-nothing-else`
   (3.2-compare-one-chokepoint-four-answers).
@@ -1226,8 +1226,10 @@ The if-false column names the wrong answer:
 - vantage: the engine keys a fact at the wrong instance.
 
 The flag column says whether the engine consumes the answer only under `--risk-faultless-skips`
-(3.2-compare-one-chokepoint-four-answers, 3.4-entry-and-lends). The consumer column orders
-the rows. Within one consumer, the unflagged rows come first.
+(3.2-compare-one-chokepoint-four-answers, 3.4-entry-and-lends). An INVAL cell marked "no"
+inherits the flag of the consumer that a kept mResolution feeds, since a stale mResolution
+reaches a decision only past a running line. The consumer column orders the rows. Within one
+consumer, the unflagged rows come first.
 
 | statement                              | kind     | speaker              | grain           | built      | consumer     | if-false        | flag     | §             |
 | -------------------------------------- | -------- | -------------------- | --------------- | ---------- | ------------ | --------------- | -------- | ------------- |
@@ -1247,7 +1249,7 @@ the rows. Within one consumer, the unflagged rows come first.
 | `may-read nothing-else`                | sentinel | T's owner            | sort            | decl       | SPARE        | wSPARE          | yes      | 2.5           |
 | the vouch over the marked reads        | vouch    | the oracle's author  | body            | decl       | SPARE[^vouch] | wSPARE         | yes      | 2.5           |
 | the completion record                  | record   | the verb's author    | path            | eval       | SPARE        | wSPARE          | yes      | 2.6           |
-| the finished record                    | record   | the written sort's owner | sort, shape | decl       | SPARE        | wSPARE          | yes      | 2.6, 2.10     |
+| the finished record                    | record   | the written sort's owner | sort, shape | decl, eval | SPARE        | wSPARE          | yes      | 2.6, 2.10     |
 | the deep mark on an entry              | —        | the entry's author   | entry           | decl       | SPARE        | omitted: wSPARE | yes      | 2.9           |
 | the traversal's closing act            | closure  | the lookup's owner   | lookup, shape   | eval       | INVAL · DISJ | stale · wDISJ   | no · yes | 1.7, 2.9      |
 | a command's read-set closure           | closure  | the command's describer | command      | decl       | INVAL        | stale           | no       | 1.7, 3.3      |
