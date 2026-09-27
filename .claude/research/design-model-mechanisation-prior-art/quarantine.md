@@ -6,3 +6,7 @@
 - turn03: lrat-catcher reports that OEIS A002563 still lists a queen-domination count the SAT work corrected (43 vs 371 for n=16); unrelated to this phase.
 - turn03: a Kani paper (arXiv 2607.01504, ASE 2026 industry showcase) claims bounded model checking "beyond bug-finding to provide correctness guarantees"; not read, may bear on the Kani rung's epistemics.
 - turn03: Cedar's paper names "grammar-based mutation testing" as the remedy for the generator-scope blind spot; not chased.
+- turn04: SibylFS reports mounting a determinized version of its oracle model as a prototype FUSE file system (a reference implementation derived from a loose spec); not chased.
+- turn04: Sail's asl_to_sail remembers interactive patches and re-applies them on re-translation of the vendor ASL (a drift-control mechanism for a derived artifact); not chased.
+- turn04: Nix gates checks a fuzzer can never satisfy (hash preimages) behind FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION and requires a unit test for each gated check; not chased.
+- turn04: Csmith found adding 10,000 random programs barely moved GCC/LLVM line/branch coverage while finding many bugs (coverage as a weak adequacy metric); not chased.
