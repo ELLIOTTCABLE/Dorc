@@ -33,10 +33,211 @@
 
 ## § 1-synthesis-and-adjudication
 
-[RESERVED. Written after all three lanes return: the convergence matrix over § 2 to § 5, what
-survives ranked by consequence (a wrong SAME or DISJOINT with no false statement behind it; a
-lost elision or an unreachable true answer; text a builder must guess at), what was raised and
-died, and the decisions the human owns. Lone adversarial findings are re-walked before credit.]
+Written after all three lanes returned, over § 2 to § 5. Every credited item was re-walked
+against 311's text in § 2 to § 5; a lone finding is credited only where the re-walk holds.
+Convergence across lineages weighs above eloquence, with one correction to that rule below:
+the two Astra lanes are one lineage, and Fable's post-hoc agreements are not finds.
+
+### § 1.1-the-answer-to-the-question-asked
+
+**[HUMAN]** asked whether the tunes since the last panel broke anything new. They did, in five
+places, and they surfaced one older hole the last panel missed. None of the six is a wrong answer
+on the text's only reading; one is a wrong answer on the text's only reading and predates the
+freeze; three are wrong answers on a reading the text permits and does not exclude; two are
+losses of value, one of them large enough to be the round's headline. The four open holds of
+`312cg` § 3 were not touched by any lane and stand as held.
+
+### § 1.2-the-convergence-matrix
+
+Rows are the threads of § 1.3 and § 1.4; a cell says what that view did. "found" is an
+independent finding; "nit" a low-graded independent note; "agreed" a post-hoc agreement after
+reading another view; "dead" a considered-and-killed entry; blank is untouched.
+
+| thread | conductor § 2 | fable-a § 3 | astra-n § 4 | astra-a § 5 |
+|---|---|---|---|---|
+| exclusion keyed on the container drops interior effects | | found | | |
+| stand-in drops P | nit (additive reading) | found (non-empty witness) | found (empty witness) | found (empty witness) |
+| unmarked verdict readset closed-empty | found | agreed | | |
+| open read set: "any routing mutation" undecidable | | found | | |
+| injection sentences collide every fact | found | passed, rescinded on reading | found | found |
+| cross-world entry collides its own world | found | agreed | | |
+| entailment naming the parent leaks two levels | found | | | |
+| closure count, § 1.5 against § 2.9 | | found | | |
+| within-sort finished record against the register gloss | found | agreed | | |
+| generated-key totality sentence | nit | agreed | found | found |
+| § 2.9 "Danger: none" against the closing act | | agreed | found | found |
+| least-set with a pair-relative exclusion | nit | nit | found (witness unconfirmed) | found (witness unconfirmed) |
+| § 1.10 "vouches"; § 3.4 danger line omits the mRoute | | found | nit (mRoute) | |
+| § 3.3 "is in the read set" literal | | found | found | |
+| register and index cells | nit | found | found | |
+
+### § 1.3-survivors-ranked
+
+A wrong SAME or DISJOINT reachable with every statement true:
+
+1. `srv-exclusion-keyed-on-the-container` (§ 3, Fable; lone; conductor CONFIRMED; +SURE of the
+   text, ~SUSPECT of frequency) — the write-side exclusion in `311:2.6-may-write-the-writeset`
+   discards a store owner's true entailment naming an interior sibling, for every pair inside
+   that store, because it is keyed on the entailing container and not on the entailed member's
+   position relative to the shared level. The quota-file witness spares a fact past a write
+   that changed it with no false statement behind it. Not a reading: the sentence is
+   unambiguous. Predates the freeze in substance; the last panel killed a neighbouring
+   construction (`312cb` § 4, the free-space cell) and missed this shape. The same keying is
+   the root of § 2.1's `fnd-entailment-naming-the-parent-leaks-two-levels-up` (over-collision two
+   levels up), so one re-keying fixes a wrong spare and an over-collision at once.
+2. `srv-stand-in-drops-p` (§ 2 nit, § 3, § 4, § 5; four views; CONFIRMED; +SURE the literal
+   reading is unsafe) — `311:2.10-places-the-upward-lookup`'s "its emitted members stand in for
+   P given whole" reads literally as replacing P, so P's own cells and aliases leave the sparing
+   test. The Astra lanes' empty-enumeration witness and the conductor's and Fable's non-empty one
+   (`dpkg -s nginx` spared past `apt-get remove nginx` with the dpkg store keyed as an inode)
+   both reach a wrong spare with every statement true. The intended reading (the members stand
+   in for the reach beneath P, rule 3; P stays) is what `312cg` § 15 recorded and the text does
+   not say. New text.
+3. `srv-unmarked-verdict-readset-closed-empty` (§ 2; Fable agreed; CONFIRMED on the text;
+   ~SUSPECT it is 311's to close) — § 2.5's "A fact's readset is the marked reads of the body
+   that answered it. For a verdict fact, the vouch closes them" gives an unmarked in-book
+   verdict a closed empty readset, and "only when every pair is DISJOINT" is vacuous over zero
+   pairs. The inherited pin (⊤ is never the empty set) forbids the reading from outside 311;
+   § 1.11's definition of a verdict fact as a read of a cell arguably keeps unmarked bodies out
+   of the model; the sentence a builder reads says neither. New text (`fc34936b`, `fc56941e`).
+4. `srv-open-read-set-any-routing-mutation` (§ 3, Fable; lone; conductor CONFIRMED the
+   ambiguity, PLAUSIBLE the wrong SAME) — `311:1.7-resolution-and-its-traversal`'s "Any routing
+   mutation invalidates a mResolution whose read set is open" names a category the engine cannot
+   decide for an open set (the third clause of what a routing mutation touches is knowable only
+   through that set); under the decidable clauses a modelled content write to what an
+   undescribed tool read leaves the mResolution standing and the warrant licenses a wrong SAME,
+   flag-gated. The ledger's intent is ⊤ (`312cg` § 10); § 2.5's fact-side twin already says
+   "every write". New text.
+
+A lost elision or a monotonicity break:
+
+5. `srv-injection-sentences-collide-every-fact` (§ 2, § 4, § 5 independently; Fable passed then
+   rescinded; CONFIRMED; +SURE) — the round's headline by convergence and by scale. § 2.5's
+   "every mKey of that mSort is in every line's writeset", rule 4's last sentence, and § 1.10's
+   "Every mKey scoped in it is in every line's writeset" put every stranger's and every unrooted
+   key into every line's writeset, where each compares UNKNOWN or KNOWN_UNSPOKEN against every
+   rooted fact and fails every universal. Installing USER_STORY's own stage-4 `foobar` oracle
+   kills stage 5's survivals. The backward form (`c5e8f434`) put ⊤ on the read side and did not
+   do this; `312cg` § 28's "no object, relation, or answer changed" is contradicted;
+   `26M:law-monotone-enhancement` is broken. Never a wrong spare. New text (`fc56941e`).
+6. `srv-cross-world-entry-collides-its-own-world` (§ 2; Fable agreed; CONFIRMED; ~SUSPECT of
+   weight) — § 2.5's new permission for a may-read entry keyed in another mWorld, under rule 4's
+   non-DISJOINT trigger, pulls the declaring key into the writeset of every write in its own
+   mWorld whenever the two mWorlds' mRoots are of different shapes; one honest additive entry
+   ends intra-world sparing for its sort. Harmless where both worlds share one mRoot shape. New
+   permission; the mechanism predates.
+7. `srv-closure-count-one-level-against-every-level` (§ 3, Fable; lone; CONFIRMED textual) —
+   § 1.5's "for the one level it resolved" against § 2.9's "every level emitted its closure"; the
+   narrow count denies every multi-level path region its DISJOINT.
+8. `srv-within-sort-finished-record-against-the-gloss` (§ 2; Fable agreed; CONFIRMED) —
+   § 2.6 demands a reached finished record for every written shape, within a sort as well; the
+   `30U` register entry says "across mSorts". The text is safe and deliberate (`312cg` § 15); the
+   register misdescribes it.
+
+Text a builder must guess at, and register:
+
+9. `srv-generated-key-totality` (§ 4, § 5; conductor nit; Fable agreed; CONFIRMED) — § 2.2's
+   "holds an mReferent under every mKey a book can name" is false for a deleted or stale
+   generated key; the "or none" sentence is the rule.
+10. `srv-danger-none-against-the-closing-act` (§ 4, § 5; Fable agreed; CONFIRMED) — § 2.9's
+    retained "Danger: none" beside § 1.7's new authored closing act, whose falsity § 5.2 prices
+    as stale.
+11. `srv-least-set-with-a-pair-relative-exclusion` (all four views; ambiguity CONFIRMED; no
+    witness in hand) — the line-global least set against the pair-relative carve; both Astra
+    witnesses fail because rule 4 fires on the written key against the disk directly under either
+    order; the conductor's free-space walk collides under both readings. A definitional
+    clarification, safe either way.
+12. `srv-tier-and-membership-wording` (§ 3, § 4) — § 1.10's "vouches" for the inherited instances
+    (the engine named as voucher of a sentinel-and-flag claim); § 3.4's danger line naming catalog
+    sorts and not the mRoute the inheritance sentence also inherits; § 3.3's "is in the read set"
+    where the traversal clause says "other than DISJOINT".
+13. `srv-register-and-index-cells` (all views) — § 4.2: the `plans/30W` index-kinds entry still
+    says "nothing speaks across mWorlds"; the `30T` v0-floor entry still says "routing writes to
+    its mParent-Catalog entry"; `rul-flag-is-razor-residue` and the human-opted
+    `pure-predicate-carry` now read false and are unnamed; USER_STORY's stage 5 and stage 7
+    renders are contradicted and unnamed. § 5.2: the finished record's "decl"; the three INVAL
+    cells' "no"; § 5.1's sentinel row without a flag.
+
+### § 1.4-raised-and-dead
+
+Killed by at least one view and checked by the conductor: wrapper inheritance as an all-true
+wrong SAME (§ 2.8's default observer dependence; every lane); the accepted floor that a chain
+ending at the mRoute spares nothing (all lanes withdrew it as a defect after `311u` and `312cg`
+§ 24); the empty traversal proving separation (the spoken-closure requirement blocks it); two
+partial placing answers wrongly refused (records accumulate); cross-world correspondence
+manufacturing equality or spurious contradiction (an explicit vouch-tier premise; the strongest
+warranted answer stands); laundering a flagged SAME through an unflagged chain ("rests on" covers
+the composed derivation); invalidation's DISJOINT step unflagged (no unflagged consumer can act on
+a kept mResolution); missing lookup dependencies (the body-read closure and open-set invalidation
+cover the `cat`-selected-target case); negative existence inexpressible (a directory fact or a
+minted name-keyed referent); the example demotions as soundness loss (none; two lose guidance);
+routing writes as the verb author's at-most claim (every honest combination collides); the
+nested-backing case under the forward rules (collides through step 2, § 2.2's first check).
+
+### § 1.5-candidate-edits-held-for-the-human
+
+Per `312cg` § 1, no edit in this sitting; **[HUMAN]** "no new items taken". Listed by what each
+does to the model, so the human can take them by class.
+
+Clarifications that withhold no sparing (the `312cg` § 1 class, applicable on a word):
+
+- `edit-stand-in-keeps-p` (item 2): § 2.10, "its emitted members stand in for the mKeys reached
+  beneath P (§ 2.6, rule 3); P remains an entry of the test."
+- `edit-any-write-invalidates-an-open-set` (item 4): § 1.7 and § 3.3, "Any write invalidates a
+  mResolution whose read set is open"; § 3.3's read-set clause takes the traversal clause's
+  "other than DISJOINT".
+- `edit-closure-per-level` (item 7): § 1.5, "for each level it resolved".
+- `edit-strike-the-totality-sentence` (item 9): § 2.2, strike "A store that generates its mKeys
+  at creation holds an mReferent under every mKey a book can name", or read "under every mKey it
+  has generated".
+- `edit-danger-line-names-the-closing-act` (item 10): § 2.9, "Danger: a false closing act keeps a
+  stale mResolution and every conclusion on it. An open or coarse emission is safe."
+- `edit-tier-wording` (item 12): § 1.10 "supplies" for "vouches"; § 3.4 "over every
+  mParent-Catalog mSort and the mRoute"; § 2.6 one sentence on whether the exclusion applies at
+  construction or at the test (item 11).
+- `edit-register-and-index` (items 8, 13): the six § 4.2 entries and three § 5 cells named above.
+
+Changes to what the model answers (the human's, each a ruling):
+
+- `rule-top-on-the-read-side` (item 5): drop the three injection sentences; state on the read
+  side that a readset member is ⊤ when any mSort on its mFullyQualifiedKey, or on the
+  mFullyQualifiedKey of any may-read entry rule 4 reached it through, has no closed may-read
+  set, or when that chain ends at the mRoute. The leaf's sort alone is not enough: the
+  backward form's "closed only when every set that joined is closed" is what the condition must
+  reproduce, and rule 4's first sentence keeps the transitive propagation. Restores the
+  backward form's answers and monotonicity; withholds nothing the backward form spared.
+- `rule-exclude-by-the-entailed-member` (items 1 and § 2.1's two-level leak): § 2.6, "An
+  entailed mKey at or above the deepest level that the written mKey shares with the read mKey
+  contributes nothing to the test against that fact; an entailed mKey below that level is a
+  member." Keeps the disk case the exclusion was written for; restores the quota collision;
+  removes the two-level over-collision; makes the footer's parent-naming pattern harmless at
+  any depth. Removes a sparing the text grants, so it is the human's under `312cg` § 1.
+- `rule-unmarked-body-readset-is-top` (item 3): § 2.5, "A body that marks no read has readset
+  ⊤", or an explicit sentence that an unmarked verdict is outside this model and the universal
+  meet's pin governs it. Removes a sparing the text grants on one reading.
+- `rule-cross-world-entry-cost` (item 6): state beside the permission that an entry keyed in
+  another mWorld collides with every write in its own mWorld unless both mWorlds are one mRoot
+  shape; or carry cross-world dependency as the transition owner's speech with its own consumer;
+  or accept the cost in writing.
+
+### § 1.6-process-notes
+
+- Mechanics: both Astra lanes ran `-s workspace-write` in scratch copies at the first attempt,
+  no ACL repair needed, 16 and 21 minutes; the Fable lane took 57 minutes and about 485k tokens
+  over 41 tool calls. The six-step process held in all three: every report shows its skeleton,
+  its per-front conclusions before comparison, and its comparison-pass dispositions with
+  rescissions kept.
+- The Fable lane read this document at step 5, as the process allows. Its ten fronts are
+  independent; its agreements are not. It found the round's three lone survivors that carry
+  danger (items 1, 4, 7) and missed the round's headline (item 5) by checking only the cases the
+  rewrite was built for; it says so itself. The calibration datum stands: a single lane confirming
+  an equivalence is weak evidence; three views on one sentence is the signal.
+- Astra over-flagged nothing this round; both lanes rescinded their route-floor variant on
+  reading the register and graded their unsafe-reading findings ~SUSPECT with the safe reading
+  named. Their least-set witnesses did not survive the conductor's re-walk; their ambiguity did.
+- The conductor's § 2, written blind, agreed with the lanes on the headline and on two textual
+  items, under-graded two items the lanes ranked higher (the stand-in, the totality sentence),
+  and missed items 1, 4, 7, 10, and the § 3.3 membership wording.
 
 ## § 2-the-conductor-review
 
@@ -322,9 +523,117 @@ Not holes. Stated so their scale is visible beside the holds.
 
 ## § 3-lane-fable-adversarial
 
-[RESERVED. Provenance line (Claude Fable 5.1, in-lineage, adversarial stance), then each of the
-lane's findings restated by the conductor with its re-walk against 311's text and a verdict, then
-the lane's raised-and-dead items in one line each. Raw output is not pasted.]
+Provenance: Claude Fable 5.1, in-lineage, adversarial stance; native, over the real tree,
+read-only; ten fronts written and locked before its comparison pass. At step 5 it read `311u`,
+`312cg`, `312c`, and this document as it then stood (§ 2, § 4, § 5), so every "agreed on
+reading" below is post-hoc agreement, not an independent find; its ten fronts are independent.
+It returned last. Findings restated by the conductor with re-walk and verdict.
+
+Surviving in the lane's own ranking, with the conductor's verdict:
+
+- `fa-stand-in-drops-p-non-empty-witness` (lane: ~SUSPECT leaning +SURE) — the § 2.10 stand-in
+  sentence, reading (A) "the members replace the entry P given whole" against reading (B) "the
+  members replace only the reach beneath P, P stays". Witness: `apt-get remove -y nginx` with
+  at-most `{sm.Package:nginx given whole}` closed and the Package sort finished (files, unit,
+  nothing else), above a converged `dpkg -s nginx` reading `nginx@installed`. Under (A) the
+  members stand in; the cell is P's own and has no placing route; whether a member file and the
+  cell collide then depends on how the dpkg store's chain is modelled. The lane's walk runs the
+  dpkg store's identity through directory levels (`/usr` against `/var` as tops), which 311
+  does not license: a directory is a routing catalog, not an identity parent. The conductor's
+  variant reaches the same wrong spare cleanly: with the dpkg store keyed as its status file's
+  inode in the root filesystem, a member inode and the cell's chain meet at the filesystem as
+  two inodes of one mScheme under `:guarantees-unique-name`, DISJOINT, and the `dpkg -s` fact
+  survives the removal of the package it measures. Under (B) the cell collides at once by
+  § 3.2 step 2, as § 1.9 promises. Every statement is true under (A): the finished record is
+  about other things by § 2.6's own words ("never no other mKey for the thing written"), so its
+  silence about P's cells is no false closure. Verdict: CONFIRMED; four-way convergence on the
+  ambiguity (§ 2.1 nit, § 4, § 5, here); the unsafe reading is the literal one; the witness
+  stands with the conductor's stdlib shape in place of the lane's directory walk.
+- `fa-open-read-set-any-routing-mutation-is-undecidable` (lane: ~SUSPECT; lone) —
+  `311:1.7-resolution-and-its-traversal` and `311:3.3-invalidation-three-mutator-species`,
+  "Any routing mutation invalidates a mResolution whose read set is open." A routing mutation
+  is defined by what a write touches; its third clause, "shell state a `resolve()` read", is
+  knowable only through the read set, which is open. A builder classifies by the two decidable
+  clauses. Witness: `myhost__resolve() { mytool lookup "$1"; }` with `mytool` undescribed;
+  `curl "http://$(myhost web)/health"`, then `cp new.conf /etc/mytool.conf` (at-most the content
+  cell, closed, true), then a second `curl` through `myhost web`. The `cp` names no routing key
+  and no catalog, and whether the config is state the lookup read is what the open set hides;
+  under the decidable reading the mResolution of `web` stands, the warrant's condition ("while
+  that mKey's mResolution or mToken stands") holds, the two sites read SAME by
+  `:guarantees-unique-referent`, and under the flag the second site's elision survives a write
+  that changed what `web` reaches. Conductor's re-walk: the ledger's stated intent is a ⊤
+  perish set (`312cg` § 10, "open (⊤ perish set, fail-safe)"), and § 2.5's own fact-side
+  sentence says "affected by every write"; the lookup-side sentence says "routing mutation"
+  instead. Verdict: the ambiguity is CONFIRMED (+SURE the category is undecidable for an open
+  set as written); the wrong SAME is PLAUSIBLE under the decidable reading, flag-gated. One
+  word repairs it: any write.
+- `fa-exclusion-keyed-on-the-container-drops-interior-effects` (lane: ~SUSPECT; lone;
+  pre-existing in substance) — § 2.6's exclusion, "A container at or above the deepest level
+  that the written mKey shares with the read mKey contributes no entailment to the test against
+  that fact", is keyed on the entailing container, not on where the entailed mKey sits.
+  Witness, every statement true: the filesystem's owner declares that writing any inode entails
+  may-write of the quota accounting file's inode (an interior sibling); `cp payload
+  /srv/data/blob` above a converged `repquota /srv | grep -q alice`, whose fact reads the quota
+  inode. A is the filesystem; the filesystem is at A; its entire entailment is excluded; the
+  quota inode never enters; `compare(blob inode, quota inode)` is two tops of one mScheme under
+  `:guarantees-unique-name`, DISJOINT; the fact is spared past a write that changed it. The
+  exclusion was written for entailed members above A (the disk), which step 2 collides anyway.
+  Conductor's re-walk: the sentence is unambiguous, so this is not a reading; the declaration
+  fits rule 2's shape (a write beneath an mKey of Filesystem fires the entailment, which names
+  an mKey of another mSort); the prior panel tried and killed a neighbouring construction (the
+  free-space cell, `312cb` § 4), and the separable-sibling shape is the one that survives. The
+  substance predates the freeze ("contributes nothing" became "contributes no entailment"), so
+  scope is borderline as with § 2.1's two-level leak, and the two are one defect from two
+  sides: the exclusion keys on the container where it should key on the entailed member's
+  position relative to A. Verdict: CONFIRMED, cardinal class on a narrow shape (store-level
+  entailments naming separable interior siblings: a quota file, a journal exposed as an inode,
+  an index beside its rows). One re-keying fixes both.
+- `fa-closure-count-one-level-against-every-level` (lane: ~SUSPECT; lone) — § 1.5 says a lookup
+  may emit `alias nothing-else` "for the one level it resolved"; § 2.9 step 3 needs "every level
+  emitted its closure". Read narrowly a multi-level path lookup emits one closure and no path
+  region ever reads DISJOINT; read per crossed level (as `311t` § 15 intended and § 5.1's grain
+  "[key, level]" suggests) it works. Verdict: CONFIRMED textual, lost-elision direction; one
+  phrase in § 1.5.
+- `fa-engine-vouches-the-inherited-instances` (lane: ~SUSPECT) — § 1.10's "Under a wrapper, it
+  vouches the inherited instances that 3.4-entry-and-lends admits" names the engine as voucher
+  of something that rests on the sentinel and the flag, beside the genuinely engine-vouched
+  local mRoute; § 3.5 and § 3.4's danger line have the tier right. Verdict: PLAUSIBLE textual;
+  a builder can mint that SAME unflagged from § 1.10 alone; "supplies" or "chains" in place of
+  "vouches". Two register gaps the lane adds (-GUESS): `spike/CLAUDE.md`
+  `rul-flag-is-razor-residue` ("permits acting on separation claims") now also covers a
+  sameness; the human-opted `pure-predicate-carry` as the one unflagged cross-boundary carry
+  reads false under § 3.4. Verdict: CONFIRMED omissions, register.
+- `fa-v0-floor-entry-keeps-the-catalog-entry` (lane: -GUESS) — the `30T` v0-floor entry of § 4.2
+  still says "routing writes to its mParent-Catalog entry", a leftover of the retracted
+  `dfc1f950` mandate; § 3.3 now leaves the written mKey to the verb author. Verdict: CONFIRMED,
+  register.
+- `fa-index-corrections` (lane: -GUESS) — § 5.2's three INVAL cells marked flag "no" (a stale
+  mResolution reaches a decision only under the flag, since nothing outlives a running line
+  unflagged); the finished record built "decl" where § 2.6 says "reached" (eval); § 5.1's
+  sentinel row reading as an unflagged SAME for want of a flag column. Verdict: CONFIRMED,
+  non-normative; the "decl" cell converges with § 2.1.
+
+Raised and dead, the lane's own dispositions, each checked: the example demotions (no soundness
+loss; two lose guidance, "a path prefix is not a store" and "state spanning several files is a
+may-read matter"; the § 2.1 footer's rm/cp binding pair does normative-shaped work with no
+normative home, which `312cg` § 23 judged acceptable); rule 4's forward propagation as a break
+(the lane passed the injection sentences, then RESCINDED on reading this document; its
+transitive-chain, leaf, and ancestor equivalences stand); invalidation's DISJOINT not
+flag-gated (no unflagged consumer can act on a mResolution kept past a running line);
+correspondence across mWorlds (sound, and the composition rules stay sound); routing writes as
+the verb author's at-most claim (every honest combination collides; the register nit above is
+what remains).
+
+Not raised by this lane, from § 2.1: the two-level entailment leak (not considered; it shares a
+root and a fix with the lane's quota finding, see § 1). Agreed on reading, post-hoc: the
+unmarked verdict's closed-empty readset; the cross-world entry collapsing its own world; the
+generated-key totality sentence; § 2.9's "Danger: none"; the `plans/30W` index-kinds entry; the
+within-sort finished-record demand against the register gloss.
+
+Process note the lane wrote against itself, kept because it is the round's calibration datum:
+its rule-4 front confirmed the forward rewrite's equivalence by checking the cases the rewrite
+was designed for (chain members) and asserted the rest harmless without walking a stranger's key
+through the universal; three other views found the break on the same sentences it passed.
 
 ## § 4-lane-astra-neutral
 

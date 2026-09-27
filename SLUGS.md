@@ -2794,7 +2794,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 311p (1)
 
 ## 312ch:fnd-cross-world-entry-collides-its-own-world
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:142
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:343
 
 ## fnd-current-source-is-user-named-only
 - defined: —
@@ -2865,7 +2865,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30P 30Pb (2)
 
 ## 312ch:fnd-entailment-naming-the-parent-leaks-two-levels-up
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:173
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:374
 
 ## 30Qc:fnd-errexit-coarse-rule-cost-a-guard
 - defined: Research/notes/30Qc-load-plane-lane-report.md:805 — — why D3 is lexical
@@ -2881,7 +2881,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/30Ba-minispec-review-neutral.md:474 — (+SURE)
 
 ## 312ch:fnd-finished-record-demanded-within-one-sort
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:200
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:401
 
 ## 312ca:fnd-finished-writeset-needs-both-records-unstated
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:520
@@ -3013,7 +3013,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Nd (1)
 
 ## 312ch:fnd-open-sort-keys-in-every-writeset-collide-every-fact
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:50
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:251
 
 ## 28O:fnd-oracle-only-vectors-truncate-the-book-silently
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:513
@@ -3299,7 +3299,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30P 30Pb (2)
 
 ## 312ch:fnd-unmarked-verdict-readset-reads-closed-empty
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:103
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:304
 
 ## 28O:fnd-unresolved-bind-value-tops-the-whole-check
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:212 — (NON-precedence; exit criterion tripped)
@@ -4185,7 +4185,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## law-monotone-enhancement
 - defined: —
-- cited: 312a 312ch (2)
+- cited: 312a 312ch (3)
 
 ## 28T:law-never-weaken-the-question
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:184 — — the anti-gaming law, verbatim in the skill: no
@@ -4696,19 +4696,19 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 26Ob 311a (2)
 
 ## 312ch:nit-generated-store-holds-every-key-a-book-can-name
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:238
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:439
 
 ## 312ch:nit-least-set-with-a-pair-relative-exclusion
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:228
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:429
 
 ## 288:nit-needles-rot
 - defined: Research/plans/288-aid-loom-unification-plan.md:53 — — hand-authored must-contain assertions cargo-cult and rot; a
 
 ## 312ch:nit-register-and-index-hygiene
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:246
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:447
 
 ## 312ch:nit-rule-three-and-the-finished-stand-in-both-apply
-- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:220
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:421
 
 ## 28E:nit-why-steps-are-a-dag
 - defined: Research/notes/28E-why-surface-design-sitting.md:121 — — the numbering must express join shape
@@ -5362,7 +5362,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:pure-predicate-carry
 - defined: spike/CLAUDE.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
-- cited: 27Xf 300 308 (5)
+- cited: 27Xf 300 308 312ch (7)
 
 ## q-entry-economics
 - defined: —
@@ -6731,7 +6731,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca (20)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312ch (22)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
