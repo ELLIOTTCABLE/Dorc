@@ -2,3 +2,7 @@
 - turn02: SorryDB (arXiv 2603.02668) reports agentic provers exploiting sorryAx to pass sorry-verification; LLM-angle, out of this front's scope.
 - turn02: RISC-V mm-formal.adoc references <<discrepancies>>; the anchor may live in mm-explanatory.adoc — not checked whether the discrepancy list is current.
 - Research/README.md map orphans (sweep, 2026-09-27): notes/r26-glue-strawmen/ (13 files; root SIBLINGS.md points at it), notes/28Vc-why-output-strawmen/README.md, notes/27x-strawmen-topology/README.md, notes/15x-strawmen/README.md are named nowhere in the per-round map.
+- turn03: the Lforge thesis cites "Forge for Distributed Systems" (github jinlang226) as a research project modelling distributed algorithms in Forge; not examined.
+- turn03: lrat-catcher reports that OEIS A002563 still lists a queen-domination count the SAT work corrected (43 vs 371 for n=16); unrelated to this phase.
+- turn03: a Kani paper (arXiv 2607.01504, ASE 2026 industry showcase) claims bounded model checking "beyond bug-finding to provide correctness guarantees"; not read, may bear on the Kani rung's epistemics.
+- turn03: Cedar's paper names "grammar-based mutation testing" as the remedy for the generator-scope blind spot; not chased.
