@@ -365,8 +365,9 @@ The mRoute is an address. It holds no mState and declares no may-read set. A rea
 whose mFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset).
 
 For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
-instances within one unwalled span. Under a wrapper, it vouches the inherited instances that
-3.4-entry-and-lends admits. Each is resolved once per mEntryChain and shared: one mPlaceholder.
+instances within one unwalled span. Under a wrapper, the wrapper's sentinel supplies the
+inherited instances that 3.4-entry-and-lends admits, under `--risk-faultless-skips`. Each is
+resolved once per mEntryChain and shared: one mPlaceholder.
 Two same-spelled leaf mKeys are two mPlaceholders, SAME only by warrant
 (3.2-compare-one-chokepoint-four-answers). Two mVantages share the mRoute and the ambient
 instances through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends).
@@ -929,7 +930,7 @@ that declines on departure.
 - Default: ⊤, which walls.
 - Consumer: ambient mParent supply.
 - Danger: a wrong lend measures the wrong mVantage. The sentinel is an at-most claim over every
-  mParent-Catalog mSort. A wrong sentinel is a wrong SAME. The flag prices it.
+  mParent-Catalog mSort and the mRoute. A wrong sentinel is a wrong SAME. The flag prices it.
 
 > Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a
 > network namespace. A lend that depends on the guest: sudoers matches the guest command.
