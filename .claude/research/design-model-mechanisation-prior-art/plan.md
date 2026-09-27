@@ -170,6 +170,63 @@ fences, and the discharge table; or prose in `Research/` plus a model file plus 
 seam register. Front 2 bears on which, since a proof-assistant terminal home favours the
 second.
 
+## front-structural-ties-between-instruments: established (turn03, subagent-graded; conductor read the notes, not the archived copies)
+
+- No tie from an Alloy-family model to Kani, CBMC, or Rust code exists anywhere found; every
+  tie found goes model-to-prover, model-to-generated-tests, or trace-to-spec. Absence is
+  ~SUSPECT (small result sets), not +SURE.
+- A finder and a prover share literally one statement only when the finder runs inside the
+  prover's logic or both read one language: Nitpick translating Isabelle goals into Kodkod
+  under a scope, with "genuine" versus "potential" counterexamples and an unsound mode
+  [A-blanchette-nitpick-kodkod-isabelle-2010]; ProB running on Rodin's own proof obligations
+  as disprover and prover [A-krings-prob-disprover-rodin-2015]; TLC, Apalache, and TLAPS over
+  one TLA+ spec, each rejecting a different fragment, first combined on one spec in 2022
+  [A-konnov-tla-trifecta-tlc-apalache-tlaps-2022]. Lean's counterparts are weaker: Plausible
+  is random testing on the goal [A-lean-plausible-readme-2026]; Nunchaku's Lean frontend was a
+  plan [A-cruanes-nunchaku-dependent-types-2016].
+- A bounded check becomes a theorem only when the search is provably exhaustive and the
+  encoding is itself proved: ProB accepts exhaustive no-counterexample as proof; Lean's
+  `bv_decide` checks an LRAT certificate with a verified checker [A-lean-bvdecide-api-docs-2026];
+  the general form yields "a true theorem about the wrong formula" unless the statement-to-CNF
+  encoding is written and proved in Lean [B-szeider-lrat-catcher-lean-theorems-2026]. Nothing
+  found puts Kodkod's translation under such a certificate.
+- Alloy has been translated into provers five times, each a one-off (PVS 2007, KeY 2012, B
+  2018, Coq 2019, Lean 4 via Forge 2024) [A-frias-dynamite-alloy-pvs-2007]
+  [A-ulbrich-kelloy-alloy-proof-assistant-2012] [A-krings-alloy-to-b-translation-2018]
+  [A-souaf-alloy-to-coq-translation-2019] [B-chen-lforge-forge-in-lean-2024]. The mismatches
+  land in three places every time: bounded integers, finiteness (Lforge needs `Fintype` and
+  `Inhabited` axioms per sig), and multiplicities dropped or hand-axiomatised. +SURE those are
+  exactly the features 311 leans on (`lone`, `one`, per-shape arity, finite chains).
+- Design specs and conformance specs pull in opposite directions: MongoDB abandoned trace
+  checking against a 345-line design spec after ten engineer-weeks with 252 lines changed,
+  while test generation from a spec transcribed from code gave full branch coverage
+  [A-davis-extreme-modelling-mongodb-2020]. TLA+ trace validation is the strongest production
+  seam discipline found: it checks the trace shares a behaviour with the spec, not refinement,
+  and runs in CCF's CI [A-cirstea-tla-trace-validation-2024].
+- Seams fail at interfaces, empirically: 16 bugs across three verified distributed systems,
+  none in verified code; a specification omission that let a deduplication-disabling patch
+  verify; a client assertion that restated its own branch condition and could never fail; a
+  build tool that reported success when the prover crashed
+  [A-fonseca-verified-distsys-bug-study-2017]. ProB found never-firing events in fully proven
+  Event-B models; Nitpick refuted five formulas two provers had "proved"
+  [A-blanchette-nitpick-kodkod-isabelle-2010] [A-krings-prob-disprover-rodin-2015].
+- Agreement between independent toolchains is itself treated as evidence by the ProB,
+  Alloy2B, and Nunchaku authors; relying on one counterexample strategy is "a mistake"
+  [A-cruanes-nunchaku-dependent-types-2016]. The kimberlite specimen runs six instruments with
+  no tie and a hand matrix that misdescribes its own CI [C-kimberlite-fv-traceability-matrix-2026].
+
+Second-half inventory additions (the 17 unread ranges, read in full): seven small closed
+vocabularies surfaced, none large: the ρ-claim grammar over predict bodies (`271`, four rungs,
+TYPED), the decidable-condition fold (`28M` § 9, ACKED), cross-family registration (`28M` § 11,
+UNRULED), monologue-versus-dialogue licenses (`28M` § 8, landed by construction), the transit
+classes A to D (`26M`, superseded into `30W`), the `$0` authority spelling and the
+withhold framing (`26N` § 5–6, ACKED). The one material correction: `26N` § 4, the capability
+system, is design-complete and build-deferred, a keyword-by-context lattice with a join
+`required(chunk) ⊑ measured(context)` and six invariants; it moves from cluster 4 to cluster 2.
+Also: `28Q` has five of six stages built; `30J`'s dialect key is three-part and dissolves
+`28M`'s committee fence; `rul-flag-is-razor-residue` is cited as load-bearing in three ranges
+and was defined in none of them.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
