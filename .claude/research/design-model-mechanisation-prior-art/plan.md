@@ -227,6 +227,27 @@ Also: `28Q` has five of six stages built; `30J`'s dialect key is three-part and 
 `28M`'s committee fence; `rul-flag-is-razor-residue` is cited as load-bearing in three ranges
 and was defined in none of them.
 
+## The unit, as reasoned with the human (2026-09-27; read and not objected to; nothing ruled)
+
+- Claims do not cross tiers; witnesses do. The model tier's claims are conditionals over
+  speech ("given true declarations, `compare()` never lies"), whose truth-maker is
+  consistency; the field tier's claims are about the truth of speech, whose truth-maker is
+  correspondence with a host. § 0 and § 3.5 build the split in. So there is no consistent unit
+  of claim across tiers, and there is a consistent unit of refutation for behavioural claims:
+  the book, a few lines of sh with an expected verdict per line, which the panels already used
+  against the abstract model and which is the product's own input at the field tier.
+- Three kinds of claim: behavioural (share the book across tiers); structural (refag itself,
+  complexity bounds; tier-local witnesses such as types, fences, counts; no book);
+  correspondence (books, but only at the field tier). **[HUMAN]** ack that some concepts have
+  no meaningful book and still deserve rigor.
+- Vocabulary, the panels' own: book, rule (a slugged law restated per tier), walk (one tier's
+  derivation of a verdict for a book), falsifier. Badges attach to rules; books never graduate,
+  they accrue renderers. Engine nouns (mSort, mScheme) never appear in a book.
+- The ratchet's content is the verdict-set over the book corpus, monotone except by human
+  retirement; encodings churn beneath it. Seed corpus: `Research/GOTCHAS.md` (64), `311u`'s
+  cases, the panels' witnesses. **[HUMAN]** hard ack on negative verification and mutation
+  testing as a required guard.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
