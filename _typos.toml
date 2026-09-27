@@ -81,6 +81,8 @@ extend-ignore-re = [
    "\\bScriptGard\\b",  # ScriptGard (Saxena-Molnar-Livshits, CCS 2011)
    "\\bHeros\\b",       # Heros, the IFDS/IDE analysis library
    "\\bJusDB\\b",       # JusDB (auto_explain blog cited)
+   "\\b(?:Open)?SCAP\\b", # SCAP, the NIST security-content standard, and OpenSCAP its reference interpreter
+   "\\bFacter\\b",      # Facter, Puppet's fact-collection tool
    # Real Unix commands/fields whose names typos disputes:
    "\\brestat\\b",      # Ninja/Make build-system `restat` keyword
    "\\bstap\\b",        # SystemTap `stap` command
