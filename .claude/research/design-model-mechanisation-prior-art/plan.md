@@ -217,6 +217,29 @@ already closed algebras with typed cuts.
   the pre-311 compare chokepoint (`notes/277` § 1–2; 311 § 3.2 replaces it).
 - Not components: `notes/301`, `notes/30X`, `plans/128` are instruments and postures.
 
+Sweep additions (a second Sonnet, open remit over everything the inventory excluded; root
+documents and orphans were the misses, not old rounds):
+
+- `Research/GOTCHAS.md`: 64 named forcing-functions, each a one-line counterexample. This is
+  the corpus-wide refuted-shapes register, `311u`'s pattern at corpus scale; ~SUSPECT its
+  entries are the first `run` cases for any model in cluster 1, and most of them are about
+  identity (`a-host-is-not-a-partition`, `address-inequality-is-not-referent-inequality`).
+- `ORACLE_PROVIDES.md`: 22 `provides-*` shapes with two closed answer sets, a four-value
+  STATUS and a four-rung TRUST lattice (`271:rul-sin-ordering`). A cluster-2 shape (small
+  closed algebra with a typed cut) that no inventory row carried.
+- `plans/24S` (impossibility ledger `imp-1` to `imp-7`, mostly superseded) and `plans/28M`
+  (seven "walls, each provably ∅"): impossibility claims are the cheapest model-finder
+  checks of all, a `check` that must find no instance. Cluster 3.
+- `FORFEITS.md`: 14 records on a fixed six-field schema, each a ⊤-narrowing claim with a
+  back-out. Not a model; a register whose RULE fields are monotonicity statements a model
+  could carry as assertions. Cluster 3, low.
+- `plans/281`, the annotation mark grammar: a closed verb vocabulary and ~25 laws, but it is
+  syntax. Different instrument (grammar and property tests), out of the design-model region.
+- `plans/17N` (named-kinds discipline, F/inc/kill/fw registers) and `plans/102` (threat model):
+  the first is pre-311 vocabulary now dissolving into cluster 1; the second is not modelable.
+- Not opened by either pass, by density: `plans/282`, `288`, `24L`, `24R`, `310`, `233`,
+  `16P`, `191`, `22W`, `24T`, and the `311a` to `311v` ledgers of the identity model.
+
 Gaps in the inventory's read: `plans/28Q` from its fourth section on, `notes/26N` § 4 (the
 capability census, the document's own central ask), `notes/306b` § 4b on, `plans/28M` § 8 on,
 and the tails of `30J`, `28K`, `260`–`262`, `26K`, `26O`, `128`, `26M`, `30X`. The inventory
