@@ -109,6 +109,67 @@ corpus-shaped ones.
 - Grades to re-check later: the 2026 adopters (kimberlite, pta-standards, emilia, kiri, fspec)
   carry LLM-era signals and are graded C for that reason; their mechanisms are real files.
 
+## front-single-artifact-prose-and-checks: established (turn02, subagent-graded; conductor read the notes' citations, not the archived copies, to preserve context)
+
+- No standard single-artifact format exists that is both mechanically analysable and carries
+  a typed notion of evidence for claims no tool can check. A 2015 survey states the gap
+  directly and nothing found since closes it in a maintained tool
+  [A-ernst-dependability-case-language-2015]. +SURE the gap is real, not a search failure.
+- The nearest thing is a research artifact: an Alloy model in which every component property
+  is guarded by an uninterpreted `evidence[tool, args, kind]` predicate, the checker runs the
+  named tool to discharge it, and an "expert evidence" kind (a prose document with author and
+  date) covers claims only a human can make, with sufficiency left to audit
+  [A-pernsteiner-safety-case-pluggable-checkers-2016]. Forcing evidence onto every claim
+  exposed a modelling error. Never mainlined [C-alloy-discourse-dependability-cases-2024].
+  ~SUSPECT this is the shape to copy: the checkable part and the residue live in one
+  artifact, and the residue is typed, attributed, and dated rather than merely prose.
+- Standards bodies converge on one pattern: a stable in-prose ID per normative sentence
+  (Vulkan VUIDs, RISC-V `norm:` anchors), the check or the recorded refusal to check kept in a
+  separate artifact keyed by that ID, a reasoned register of IDs declared uncheckable, and a
+  drift rule that a semantic change retires the ID [A-khronos-vulkan-vuid-style-guide-2026]
+  [A-khronos-vvl-unimplementable-validation-2026] [A-riscv-normative-rules-tagging-2026]. The
+  corpus's `docID:slug` discipline already is the ID half; the drift rule and the register are
+  what it lacks.
+- Literate containers exist and none reads the prose: Alloy Markdown runs the fences and
+  ignores the text [B-alloy-docs-markdown-2023]; Quint and the Ethereum executable spec work
+  the same way [A-quint-literate-specifications-2026] [A-ethereum-consensus-specs-md-to-spec-2026].
+  No production literate-Alloy artifact was found. A container, not a tie.
+- Proof-assistant documents are the one family where prose references are type-checked
+  against formal entities and the unproved residue is a machine census
+  [A-isabelle-isar-reference-manual-2026] [A-lean-reference-axioms-2026]. The Lean blueprint is
+  the closest living practice: prose statements carry links to declarations, dependency
+  edges, and author-asserted `leanok` claims; only the existence check is mechanical, the
+  claim of completeness is by hand, and a lint for "sorry but marked done" was proposed and
+  not built [A-massot-leanblueprint-readme-2026] [B-tao-pfr-blueprint-tour-2023]
+  [B-leanblueprint-issue-absorb-functionality-2023].
+- Requirements tooling keeps prose authoritative with stable IDs and adds three things worth
+  copying: a per-item declaration of what coverage it owes, with "none owed" explicit
+  [A-openfasttrace-writing-a-specification-2026]; a revision or fingerprint that voids links on
+  semantic change [A-openfasttrace-concepts-and-terms-2026] [A-doorstop-item-reference-2026];
+  and a typed discharge kind per sentence (implementation, test, implication, exception with
+  reason, todo with issue) with a checked-in coverage snapshot that CI diffs
+  [A-awslabs-duvet-annotations-2026] [A-awslabs-duvet-reports-2026]. The systems-engineering
+  form of the same idea is a per-requirement verification method (analysis, demonstration,
+  inspection, test) [A-nasa-se-handbook-product-verification-2023].
+- Field evidence on the seam: links go stale and matrices fill with suspect links; human link
+  vetting is wrong about a quarter of the time; links get minted at certification time
+  [A-cleland-huang-traceability-trends-2014]. Two cautionary specimens from turn01: silo's
+  sigil check is exact string-set equality and nothing more [B-gadget-silo-sigil-validator-2026];
+  emilia's fact labels are decoration, and several of its checks restate a fact verbatim and
+  cannot fail [C-emilia-protocol-relations-model-2026].
+- Counter-thesis at scale: Cedar keeps the Lean model as the spec and differential-tests Rust
+  against it, and publishes the bugs the seam missed [A-disselkoen-cedar-verification-guided-2024].
+
+Conductor's read, ~SUSPECT, for the human's gate: the answer is a composable pattern, not a
+product. Slugs are the IDs (already have). Add a typed discharge record per normative slug
+(the duvet kinds plus Pernsteiner's attributed, dated expert-evidence kind for committee
+speech), a drift rule (semantic change retires or re-revisions the slug), a generated
+register like `SLUGS.md` that reports the residue by kind, and a CI-diffed snapshot. The
+real fork is container shape: one literate Alloy-Markdown file per component holding prose,
+fences, and the discharge table; or prose in `Research/` plus a model file plus a generated
+seam register. Front 2 bears on which, since a proof-assistant terminal home favours the
+second.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
