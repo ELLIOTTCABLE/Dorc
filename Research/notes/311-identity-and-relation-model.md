@@ -361,8 +361,8 @@ any mKey's identity. It does three things:
   mParent-Catalog mSort.
 - For a shape with no `:identified-in`, it is the mRoute: the last-resort mParent.
 
-The mRoute is an address. It holds no mState and declares no may-read set. Every mKey scoped
-in it is in every line's writeset (2.6-may-write-the-writeset).
+The mRoute is an address. It holds no mState and declares no may-read set. A readset member
+whose mFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset).
 
 For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
 instances within one unwalled span. Under a wrapper, it vouches the inherited instances that
@@ -532,11 +532,18 @@ an mKey of another mWorld. `compare()` decides that pair as
 3.2-compare-one-chokepoint-four-answers decides any pair.
 
 A fact's readset is the marked reads of the body that answered it. For a verdict fact, the
-vouch closes them (`KNOBS:kCONTRACT-RUNGS`). May-read entries are not in a readset. A write
-reaches K through them (2.6-may-write-the-writeset, rule 4). An mSort that declares no may-read
-set, or declares one and does not close it, is affected by every write: every mKey of that
-mSort is in every line's writeset. The mRoute declares no set
-(1.10-vantage-route-placeholder-witness).
+vouch closes them (`KNOBS:kCONTRACT-RUNGS`). A body that marks no read has readset ⊤. May-read
+entries are not in a readset. A write reaches K through them (2.6-may-write-the-writeset,
+rule 4). An mSort that declares no may-read set, or declares one and does not close it, is
+affected by every write. A readset member is ⊤ where any of these holds:
+
+- its mSort has no closed may-read set
+- an mSort on its mFullyQualifiedKey has no closed may-read set
+- a may-read entry through which rule 4 reaches it fails either test above, or an entry
+  through which rule 4 reaches that entry, transitively
+- its mFullyQualifiedKey, or the mFullyQualifiedKey of such an entry, ends at the mRoute
+
+⊤ is DISJOINT from nothing. The mRoute declares no set (1.10-vantage-route-placeholder-witness).
 
 An mKey's mParent instance is no may-read entry and needs no declaration. The walk of
 3.2-compare-one-chokepoint-four-answers collides a write at or above it. A may-read entry naming
@@ -554,7 +561,7 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 
 - Arity: many per mSort, with a sentinel.
 - Declared by: the mSort owner.
-- Default: ⊤. Every mKey of the mSort is then in every line's writeset.
+- Default: ⊤. A readset member of the mSort, or one reached through it, is then ⊤.
 - Consumer: the writeset of a line (2.6-may-write-the-writeset).
 - Danger: none positive. Omission is the silent channel. The closed set is one of sparing's two
   closures.
@@ -582,11 +589,10 @@ that four rules close:
    writeset (2.9-the-traversal-and-the-region-test).
 4. Where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared
    for an mKey k of mSort M, k is in the writeset (2.5-may-read-the-readset,
-   3.2-compare-one-chokepoint-four-answers). Every mKey of an mSort with no closed may-read set
-   is in every writeset.
+   3.2-compare-one-chokepoint-four-answers).
 
-An unclosed at-most set or an unfinished entailment puts ⊤ in the writeset. ⊤ is DISJOINT from
-nothing. A container at or above the deepest level that the written mKey shares with the read
+An unclosed at-most set or an unfinished entailment puts ⊤ in the writeset. An unclosed may-read
+set puts ⊤ in the readset (2.5-may-read-the-readset). ⊤ is DISJOINT from nothing. A container at or above the deepest level that the written mKey shares with the read
 mKey contributes no entailment to the test against that fact. May-read entries feed rule 4 and
 no other rule.
 
