@@ -452,6 +452,10 @@ they sit alongside the Alloy spec rather than only as e2e.
   mechanizable is extracted to its own section containing no normative prose, fully normative
   by mechanization, so that commentary beside mechanical law never smuggles in normative bits
   licensed by inexpressibility.
+- **[HUMAN]** refinements to the firewall: no section tag; a section is mechanized iff it has
+  an Alloy fence. Inverted convention: all prose outside backticks is non-normative;
+  normative content always sits in a fence, ```alloy or ```normative or similar. 311's
+  reshaping is not urgent.
 - **[HUMAN] ack:** name lints are probably a large part of the actual build-out: `simon-1` is
   one identifier everywhere; its Alloy form exists; that form mentions Alloy `Store` iff the
   claim relates to NGO `Store`; and so on.
