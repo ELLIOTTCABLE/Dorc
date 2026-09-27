@@ -298,7 +298,7 @@ the reads of that command.
 
 The read set is closed only when the read set of every external command in the body is closed.
 The author of the speech that describes an external command closes that command's read set by
-an explicit act. Any routing mutation invalidates a mResolution whose read set is open
+an explicit act. Any write invalidates a mResolution whose read set is open
 (3.3-invalidation-three-mutator-species).
 
 > Examples of a mTraversal: each directory entry and symlink for a path, the resolver
@@ -882,9 +882,9 @@ authority. It never computes the successor identity.
 - A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
   read. A routing mutation invalidates a mResolution when its mTraversal includes a touched
   mKey. A writeset entry touches a mTraversal member when `compare()` answers other than
-  DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers). It also invalidates the
-  mResolution when the written mKey is in the read set of the
-  lookup body that produced it (1.7-resolution-and-its-traversal). Any routing mutation
+  DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers). A write also invalidates the
+  mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the read
+  set of the lookup body that produced it (1.7-resolution-and-its-traversal). Any write
   invalidates a mResolution whose read set is open. Every mFullyQualifiedKey built on an
   invalidated mResolution reads unknown below the line. Dependent
   SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
