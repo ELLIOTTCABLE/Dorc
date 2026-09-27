@@ -450,8 +450,8 @@ P's mKeys mean something only relative to K's mParent-Store. P's `resolve()` is 
 the mKey. An mKey of P names the mReferent that K's mParent-Store holds under it, or none. For a
 `:root` shape, the world is the store. The mKey is a level of a mFullyQualifiedKey in both cases
 (1.8-fully-qualified-key-topic-and-derivation). A store that generates its mKeys at creation
-holds an mReferent under every mKey a book can name. A store that admits mKeys as names may
-hold none under an mKey a book names.
+holds an mReferent under a generated mKey while that mReferent exists. A store that admits mKeys
+as names may hold none under an mKey a book names.
 
 P's owner declares, per matched shape of the mKey's mValue:
 
