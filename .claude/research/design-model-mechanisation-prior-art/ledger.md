@@ -484,6 +484,20 @@ they sit alongside the Alloy spec rather than only as e2e.
   /etc/file.conf`. The checker then checks the ```sh content against the Alloy claims, that
   the classes the book mentions are the ones the claims are about.
 
+- **[HUMAN]** refinements, same day: nack bindings, the tool is a shell tool and can deal with
+  shell syntax; `{class}` is the inline forall syntax (braces are the least-overloaded
+  choice); nack free text, it leads LLMs down refag roads, so a book is pure (normative,
+  mechanized) and concrete only; nack duplicating the book, use inline comments instead. The
+  sketch: a ```claims fence describing the claims in terms of users (a pared-down form of
+  `sm.Path`, `sm.Inode`), then one ```sh fence in which each normative line is a `#}` comment
+  over names (`#} cmd-chmod chmod-recursive <a-path>`) followed by the concrete line that
+  inhabits it (`chmod -R g-w /srv/a`). A global table holds the names (`cmd-chmod: "chmod"`,
+  `chmod-recursive: ["-R","g-w"]`, `a-path: Instance<sm.Path, "/srv/a">`). The normative
+  lines are checked against the Alloy; the concrete lines are run someday and discussed; the
+  tool enforces that each concrete line inhabits its normative line. Names are global and
+  fixed project-wide (`/srv/a` is always `a-path`); a new constraint mints a new name
+  (`an-etc-path`, `a-path-under-bind-mount`).
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
