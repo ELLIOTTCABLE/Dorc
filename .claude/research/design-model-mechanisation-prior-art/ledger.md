@@ -467,6 +467,23 @@ they sit alongside the Alloy spec rather than only as e2e.
   regardless. A GOTCHA in classic form is one or more speaker statements plus a world and an
   outcome, one step below a speaker column. The answer-lattice observation is held for later.
 
+## Corpus, inlining, and the book form (2026-09-27, human-typed leans)
+
+- **[HUMAN] lean:** a new corpus tier for normative documents, something like
+  `spec/311-identity-and-relations.md` at the project root; `Research/` is not built to hold
+  very churny extra-normative documents. Most design documents will not reach that tier soon;
+  the tier must be ready when they do.
+- **[HUMAN] lean, convincible:** everything inline, no intended-to-be-edited global registry
+  (a generated lockfile at most); duplication across documents is acceptable so context sits
+  beside its subject for LLM and human reading; exact reuse of a book or an NGO across
+  documents is expected to be rare; speakers will duplicate most, and opening each spec
+  document with a fixed speaker list is fine.
+- **[HUMAN] strawman, books:** every word of a book is a literal entity (`exists`) or a
+  `<class>` (`forall`): `<cmd-any> arbitrary-arg <file-path>`. The book appears twice, the
+  normative class form and a non-normative instance rendering, `chmod arbitrary-arg
+  /etc/file.conf`. The checker then checks the ```sh content against the Alloy claims, that
+  the classes the book mentions are the ones the claims are about.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
