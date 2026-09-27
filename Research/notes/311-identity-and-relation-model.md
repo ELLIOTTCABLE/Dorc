@@ -755,10 +755,10 @@ attributes the refusal to G's owner.
 
 The store's end of the same relation is G's enumeration of its members. The may-write entailment
 of 2.6-may-write-the-writeset already carries that as write reach. When that entailment is
-finished for P (§2.6), its emitted members stand in for P given whole in the test of §2.6. Each
-member is an entry of that test. An unfinished entailment widens the writeset only. Where a
-placing route places x in P and a finished enumeration of P has no member SAME with x, the pair
-reads UNKNOWN.
+finished for P (§2.6), its emitted members stand in, in the test of §2.6, for the mKeys reached
+beneath P (§2.6, rule 3). Each member is an entry of that test. P itself stays an entry of that
+test. An unfinished entailment widens the writeset only. Where a placing route places x in P and
+a finished enumeration of P has no member SAME with x, the pair reads UNKNOWN.
 
 - Arity: per (G, T).
 - Declared by: G's owner.
