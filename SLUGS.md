@@ -454,7 +454,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-backing-selfframing
 - defined: —
-- cited: 30Mb 30Q 30T 311c 311t 312cg ANALYZER-NEEDS _tmp-naming-rewrite-owed (11)
+- cited: 30Mb 30Q 30T 311c 311t 312cg 312ch ANALYZER-NEEDS _tmp-naming-rewrite-owed (12)
 
 ## an-claim-tier
 - defined: —
@@ -2793,6 +2793,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:82
 - cited: 311p (1)
 
+## 312ch:fnd-cross-world-entry-collides-its-own-world
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:142
+
 ## fnd-current-source-is-user-named-only
 - defined: —
 - cited: 30Vd (1)
@@ -2861,6 +2864,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30P 30Pb (2)
 
+## 312ch:fnd-entailment-naming-the-parent-leaks-two-levels-up
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:173
+
 ## 30Qc:fnd-errexit-coarse-rule-cost-a-guard
 - defined: Research/notes/30Qc-load-plane-lane-report.md:805 — — why D3 is lexical
 
@@ -2873,6 +2879,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-fence-pointer-explains-half-the-axioms
 - defined: Research/notes/30Ba-minispec-review-neutral.md:474 — (+SURE)
+
+## 312ch:fnd-finished-record-demanded-within-one-sort
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:200
 
 ## 312ca:fnd-finished-writeset-needs-both-records-unstated
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:520
@@ -3002,6 +3011,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-oob-astids-reached-a-panicking-read
 - defined: —
 - cited: 30Nd (1)
+
+## 312ch:fnd-open-sort-keys-in-every-writeset-collide-every-fact
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:50
 
 ## 28O:fnd-oracle-only-vectors-truncate-the-book-silently
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:513
@@ -3285,6 +3297,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-unknown-source-recovery-is-domain-specific
 - defined: —
 - cited: 30P 30Pb (2)
+
+## 312ch:fnd-unmarked-verdict-readset-reads-closed-empty
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:103
 
 ## 28O:fnd-unresolved-bind-value-tops-the-whole-check
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:212 — (NON-precedence; exit criterion tripped)
@@ -3585,6 +3600,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:hk-drives-the-hooks
 - defined: spike/CLAUDE.md:1152 — — `hk.pkl` is the one home for every hook step; `mise run
+
+## hold-region-against-region-floor
+- defined: —
+- cited: 312cg 312ch (12)
 
 ## hole-app-auth
 - defined: —
@@ -4166,7 +4185,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## law-monotone-enhancement
 - defined: —
-- cited: 312a (1)
+- cited: 312a 312ch (2)
 
 ## 28T:law-never-weaken-the-question
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:184 — — the anti-gaming law, verbatim in the skill: no
@@ -4676,8 +4695,20 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26Ob 311a (2)
 
+## 312ch:nit-generated-store-holds-every-key-a-book-can-name
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:238
+
+## 312ch:nit-least-set-with-a-pair-relative-exclusion
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:228
+
 ## 288:nit-needles-rot
 - defined: Research/plans/288-aid-loom-unification-plan.md:53 — — hand-authored must-contain assertions cargo-cult and rot; a
+
+## 312ch:nit-register-and-index-hygiene
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:246
+
+## 312ch:nit-rule-three-and-the-finished-stand-in-both-apply
+- defined: Research/notes/312ch-delta-crosscheck-adjudication.md:220
 
 ## 28E:nit-why-steps-are-a-dag
 - defined: Research/notes/28E-why-surface-design-sitting.md:121 — — the numbering must express join shape
@@ -5612,7 +5643,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-vantage-root-as-a-machine
 - defined: Research/notes/311u-refuted-shapes-register.md:125
-- cited: 312cg (2)
+- cited: 312cg 312ch (3)
 
 ## plan/CLAUDE:region-decisions-meet-universally
 - defined: spike/crates/plan/CLAUDE.md:311 — (`plans/30L` §5) — `plan::region` groups per-instance
@@ -8239,7 +8270,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:set-lifting-universal-meet
 - defined: spike/CLAUDE.md:237 — (`277` §5) — consumers quantify UNIVERSALLY over
-- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312c 312ca 312cb 312cc (12)
+- cited: 26Ob 27Xf 28M 28Q 300 300e 30Kb 30T 312c 312ca 312cb 312cc 312ch (13)
 
 ## analysis/CLAUDE:shadow-refusal-is-provable-at-both-ends
 - defined: spike/crates/analysis/CLAUDE.md:102 — (`28K` §1 `rul-silent-shadowing-refuses`) —
