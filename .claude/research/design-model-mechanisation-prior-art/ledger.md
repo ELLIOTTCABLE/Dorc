@@ -227,6 +227,49 @@ Also: `28Q` has five of six stages built; `30J`'s dialect key is three-part and 
 `28M`'s committee fence; `rul-flag-is-razor-residue` is cited as load-bearing in three ranges
 and was defined in none of them.
 
+## front-shared-unit-in-referent-projects: established (turn04, subagent-graded; conductor read the notes)
+
+- Where a proof tier consumes an example suite, it does so one way every time: an executable
+  is extracted from the proof-side definitions and run under the ordinary test runner; the
+  theorems never consume the examples, and the suite validates the *definitions* the proofs
+  are about, not the proofs [A-wasmcert-coq-readme-2026] [A-wasmcert-isabelle-readme-2026]
+  [A-armstrong-sail-isa-semantics-2019].
+- Refinement lineages hold no example unit across tiers; their constant is an abstract state
+  machine plus a state relation (seL4, KEVM's symbolic backend)
+  [A-klein-sel4-formal-verification-2009] [A-kevm-evm-semantics-readme-2026].
+- The held-constant input splits by where its verdict lives: stored in the unit (wast, Oils,
+  goblint, SV-COMP, smoosh); computed by an executable reference per configuration (RISC-V
+  ACT via Sail, Ethereum's pyspec, SibylFS as oracle); or absent, with majority vote across
+  implementations (Csmith) [A-sv-benchmarks-readme-2026] [A-riscv-arch-test-readme-2026]
+  [A-ridge-sibylfs-oracle-testing-posix-fs-2015] [A-yang-csmith-finding-bugs-c-compilers-2011].
+- Stored verdicts carry per-implementation qualifications: Oils' OK / N-I / BUG overrides;
+  goblint's `UNKNOWN!` (soundness) versus `UNKNOWN` (intended imprecision) versus `TODO`
+  (precision owed) [A-oils-var-op-test-spec-file-2026] [A-goblint-developer-testing-guide-2026].
+- Shell lineage: smoosh's unit is a script plus expected output and status run unchanged
+  against the semantics and seven shells, written in Lem to extract to OCaml and Coq, with no
+  proof consuming the suite; CoLiS's interpreter passed 8 of its 161
+  [A-greenberg-smoosh-executable-posix-semantics-2020]. Oils requires a case green on other
+  shells before OSH implements it [B-oils-spec-tests-wiki-2026]. CoLiS gives every seam its
+  own unit and oracle, no cross-tier artifact [A-becker-colis-platform-maintainer-scripts-2022].
+  SibylFS stores no verdicts, uses the model as oracle, and mechanically checks that every
+  logically possible combination has a test [A-ridge-sibylfs-oracle-testing-posix-fs-2015].
+- Drift control found: regeneration of stored verdicts from implementation output is
+  characterisation (tree-sitter, Nix, goblint cram) [A-tree-sitter-writing-tests-2026]
+  [A-nix-manual-running-tests-2026]; SV-COMP's rule that maintenance edits must not change the
+  intended verdict; generation from an executable spec; per-release versioning with a review
+  board [A-kubernetes-conformance-tests-guide-2026]; a manifest carrying identity
+  [A-ethereum-consensus-test-formats-2026].
+- Units accrue renderers (wast to JS to WPT; SV-COMP to Horn clauses; Sail to emulators and
+  provers) [A-webassembly-test-suite-readme-2026]. Disagreement across consumers is triaged,
+  not auto-resolved: RISC-V ACT's five-way triage (device, test, configuration, reference
+  model, specification ambiguity) [A-riscv-arch-test-readme-2026]. Validation surfaced defects
+  in the specs and suites themselves (POSIX suite bugs, Austin Group issues, a dash
+  nonconformity).
+- Product siblings have no cross-tier unit; the field is their only tier
+  [A-hashicorp-terraform-acceptance-tests-2025] [A-ansible-integration-tests-guide-2026].
+  Kubernetes is the exception, with a unit that graduates and demotes, the opposite of a
+  never-graduating witness.
+
 ## The unit, as reasoned with the human (2026-09-27; read and not objected to; nothing ruled)
 
 - Claims do not cross tiers; witnesses do. The model tier's claims are conditionals over
