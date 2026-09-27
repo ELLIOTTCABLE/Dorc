@@ -223,7 +223,7 @@ The engine vouches for one lookup itself: the local mRoute under no wrapper
 (3.4-entry-and-lends), and everything else is measured and witnessed.
 
 Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for
-the one level it resolved. The closure states that the mReferent at that level is reachable by
+each level it resolved. The closure states that the mReferent at that level is reachable by
 exactly this one entry anywhere in the instance the lookup ran in, not only in the
 mParent-Catalog the entry was found in. It is a statement about one mKey, from the thing's end,
 made on the path that measured it. Where the lookup knows other entries, it emits them first,
@@ -715,7 +715,8 @@ the level resolved to.
 - Default: no emission, so the mTraversal is the mParent-Catalog given whole.
 - Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence invalidation
   (3.3-invalidation-three-mutator-species), and the region test.
-- Danger: none. Finer buys sparing. Coarse is safe.
+- Danger: a false closing act keeps a stale mResolution and every conclusion built on it. A
+  false `alias nothing-else` is a wrong DISJOINT. An open or coarse emission is safe.
 
 > Lookups that cross several levels: a path yields a directory entry looked up in a shorter
 > path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in
