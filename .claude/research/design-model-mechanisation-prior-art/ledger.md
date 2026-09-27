@@ -291,6 +291,58 @@ and was defined in none of them.
   cases, the panels' witnesses. **[HUMAN]** hard ack on negative verification and mutation
   testing as a required guard.
 
+## The proposed shape (conductor's synthesis, presented 2026-09-27; the human's reactions beside it)
+
+One corpus of witnesses, one register of claims, one lock over both; every instrument reads
+the corpus and writes to the register. Alignment of pieces that exist, not invention.
+
+- Book corpus: a scenario as a speech record (declarations in force by owner and fingerprint;
+  measurements with traversals and closures), sh lines, an expected verdict per line with the
+  attribution set where the aid plane depends on it, and at least one falsifier. Books pin
+  x1 and x2 only, never graduate, accrue renderers. Seed: `GOTCHAS.md`, `311u`, the panels'
+  witnesses, `USER_STORY` stages as value books. A finding enters as a book that fails on the
+  current model before its repair.
+- Rule register: slug, quantifier prefix over (world, speech, design, implementation),
+  dependency slugs fingerprinted as the x3 key, and discharges per instrument: `attributed`,
+  `cased`, `model-checked(scope)`, `pinned`, `proved`, `demonstrated`, `kill-tested`, and
+  `fenced` or `measured` for structural rules. Every ∃-witness travels with its ∀¬-fence; every
+  fence with its un-fencing mutant. Ergonomics glosses that are checkable (add-one-true-
+  statement-never-harms; gradual enhancement monotone) are two-speech-set rules, S ⊆ S′.
+- Lock: computed-versus-committed mismatch fails in either direction; moves only by a human
+  commit; the minispec catalogue lock extended downward, not a second lock. The residue report
+  is one query: rules whose only discharge is `attributed`, by component.
+  **[HUMAN] nack** on a generated index in the `SLUGS.md` style: "it's gotten large and
+  unwieldy"; leaning to pull-generation (`internal-tooling md <something>` producing
+  model-friendly, fully current output for a named form) or plain JSON, since models read
+  JSON fine. So: the lock is a queryable artifact, its views generated on demand.
+- Instruments: Alloy is the design tier's checker only (one module per component over a
+  shared identity core; laws as `check`, books as exact-bound `run`, every `check` paired with
+  a satisfiable `run`, a mutation lane, an equivalence check on every reword commit, pinned
+  jar, small scope in CI and larger nightly). The speech record is the seam, schema from
+  `311` § 5, hand-written and marked `hand` until the analyzer's front half produces it, then
+  graduated by diff. `sparing-reference` and the `compare` chokepoint with Kani restate laws
+  at bounds over the same records. minispec restates laws as `Prop`s with the records as the
+  instance battery. DST renders books as simulated worlds; e2e runs them on hosts and is the
+  only correspondence tier. Types and fences discharge structural rules. Panels are
+  retargeted to attack encodings and mint falsifiers; their output is corpus entries.
+- Container: prose stays in `Research/` with one discharge line per normative slug; models,
+  books, and records under `spike/verify/` beside the harnesses. A weak lean, open.
+- Flow: a 311 edit changes prose and module in one commit and runs the corpus; a flip is a
+  finding, resolved by a human retiring a verdict in the lock commit or by repair. Graduation
+  never rewrites a book.
+- Front-3 corrections, conductor's read, presented 2026-09-27: `proved` is discharged over
+  definitions the corpus validated (an executable extracted from the proof-side definitions
+  runs the books; the theorems never see them); verdicts are stored intent, qualified in
+  goblint's manner (`UNKNOWN!` soundness, `UNKNOWN` intended imprecision, `TODO` precision
+  owed), never regenerated from implementation output; disagreement across instruments is
+  triaged five ways (implementation, book, record, model, prose), named in the lock's failure
+  output; SibylFS-style coverage (every matched shape times every answer has a book) is a
+  candidate metric, cost unknown until the model's size is known.
+- **[HUMAN]** 2026-09-27: "we're headed in a productive direction." No code proceeds under
+  this conductor; the shape, if pursued, gets a fresh context and a concrete plan. The phase's
+  final output is one `30Y` document extending `notes/301` and kin to cover design-tier
+  theorems and Alloy; no separate synthesis document.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
