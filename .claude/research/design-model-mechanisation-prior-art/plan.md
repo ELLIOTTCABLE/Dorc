@@ -109,6 +109,51 @@ corpus-shaped ones.
 - Grades to re-check later: the 2026 adopters (kimberlite, pta-standards, emilia, kiri, fspec)
   carry LLM-era signals and are graded C for that reason; their mechanisms are real files.
 
+## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
+
+Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
+answer set plus ∀-shaped laws; a typed cut (design-of-record or ruled, not TABLED or DRAFT);
+no as-built counterpart yet (once built, the instrument is Kani or minispec, not a design
+model); a supersession list or several consumers (blast radius); crosscheck or refutation
+history (bug density). Anti-signals: TABLED, "nothing welded", superseded-in-part by a newer
+document (model the newer one), or a component the newer model is dissolving.
+
+- Cluster 1, identity and sparing, the region where modelling pays now and is wider than
+  311: `311` plus what its § 4.2 supersedes and what its § 2.5, 2.6, 3.4 consume: the
+  finished-definition record and entailment (`plans/30U`, unbuilt, "pending successor
+  rewrite"), index-kinds and the pivot algebra (`plans/30W`, "nothing welded", six owed
+  rulings), the filesystem binder's per-aspect identity (`plans/30T`, the stdlib File instance
+  of 311), the residue of address-derived topology (`notes/272`, superseded-in-part), the
+  wrapper lend algebra (`plans/27C` § 3 and `notes/273`, built with DST pins; 311 § 3.4 is its
+  identity-side twin). One model family, several modules over a shared identity core; the
+  only cluster with three crosscheck rounds behind it.
+- Cluster 2, small closed algebras already built: the ternary verdict (`plans/239`, SIGNED,
+  25 citing docs), the claim tier, the region-decision meet (`plans/30L`), the solve-certifier
+  (`plans/302`), the value-grade lattice (`notes/275`), influence grades (`notes/306b` FIRM
+  rules), ⊤-propagation (`plans/27C` § 3). Their instrument is Kani and minispec, already in
+  place or owed there; a design model would be a retro-fit. Exception worth one tiny shared
+  module: the verdict and claim tier as the vocabulary every other model's outcomes map onto,
+  so consumer maps ("KNOWN_UNSPOKEN never spares") can be checked across modules.
+- Cluster 3, decision tables and matrices never crosschecked, the cheapest wins: the
+  prediction-channel contract's five-row table (`plans/30D`), the channel capability matrix
+  (`plans/26O`), static loading's four-case cross-custody classification (`plans/30I`), the
+  disjointness rc-predicate (`plans/30W` § 2). Completeness and disjointness of a table is a
+  one-line check and catches the "text a builder must guess at" class. -GUESS an hour each.
+- Cluster 4, temporal or state-machine shapes that are tabled or unruled: `HostPhase` and the
+  failure taxonomy (`plans/260`, TABLED), the availability domain (`plans/28Q`, "no more
+  piecemeal", 44 percent read), the emission planner (`plans/30P`), receipt typestates
+  (`plans/30R`), the host-capability census (`notes/26N`, 31 percent read). Different
+  instrument (Alloy 6 temporal, TLA+, P) and premature: modelling before the human has typed
+  the cut reproduces the `312cg` § 21/22 apply-then-retract shape. Note the shape; defer.
+- Dissolving, do not model: the selector dialect (`notes/277` § 3; 311 § 4.1 excludes it) and
+  the pre-311 compare chokepoint (`notes/277` § 1–2; 311 § 3.2 replaces it).
+- Not components: `notes/301`, `notes/30X`, `plans/128` are instruments and postures.
+
+Gaps in the inventory's read: `plans/28Q` from its fourth section on, `notes/26N` § 4 (the
+capability census, the document's own central ask), `notes/306b` § 4b on, `plans/28M` § 8 on,
+and the tails of `30J`, `28K`, `260`–`262`, `26K`, `26O`, `128`, `26M`, `30X`. The inventory
+records exact unread line-ranges; a follow-up pass can start there.
+
 ## Provisional findings (corpus-internal, from the in-chat analysis the human has read)
 
 - The three crosscheck rounds over 311 (`311p`, `312c`, `312ch`) split into two populations:
