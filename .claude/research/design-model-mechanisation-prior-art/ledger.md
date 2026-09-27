@@ -498,6 +498,32 @@ they sit alongside the Alloy spec rather than only as e2e.
   fixed project-wide (`/srv/a` is always `a-path`); a new constraint mints a new name
   (`an-etc-path`, `a-path-under-bind-mount`).
 
+## Rules for the spec form, from the first drafted specification (2026-09-27, human-typed; `strawman-2/spec/two-paths-one-inode.md` stands unrevised until the rewrite)
+
+- A normative shell word is either bare, an `exists`, a literal name lifted into the corpus
+  and required to inhabit the same value in that word position everywhere (`#} chmod` over
+  `chmod` lifts `chmod: "chmod"`); or braced, a `forall`, a class whose agreement across the
+  corpus is about who uses it and what instances it gathers. Class names and instance names
+  are unrelated unless expressed otherwise; the name space is one slugged space, so `path`
+  cannot appear bare where `{path}` exists. Unambiguous words are typed as themselves;
+  disambiguation is needed only where Dorc-visible claims tie names together.
+- No `names` list: names are lifted where used; the only check is a lazy net for
+  incoherence. The exception is a thing with underivable attributes, a speaker defined once
+  for prosodic reasons, which has no other metadata. No `describes` per speaker (who spoke
+  is an attribute of the claim); no declared classes; no declared instances.
+- No prosodic notes inside any fence; fences are purely mechanical and carry their own
+  meaning entire; commentary is allowed only outside, explicitly non-normative. Rule, possibly
+  linted: no comment syntax at all in `sh` or Alloy fences; `#` only for machine-checked
+  siblings; pure code. The one intentional hole: names are implicit claims about the world,
+  so a long explicit name is the correct carrier of intent the code cannot hold, and names
+  are correctness-sensitive. Lean: Alloy names match the model's names exactly (`MReferent`).
+- Normative Markdown: one sentence per line, no hard wraps, in `> blockquote` marked
+  `<!-- normative: -->`, so renderers wrap it; inverting 311's blockquote convention.
+- Lean: drop the `#>` directives and let books repeat; `loads` spelled as sh, stilted if need
+  be, compiled later; ideally few loads; specifications will eventually use shell loading
+  order because Dorc does.
+- **[HUMAN]** the oracle/speech-claim corner is the least baked; the rest is coming together.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
