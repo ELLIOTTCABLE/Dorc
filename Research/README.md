@@ -282,7 +282,11 @@ the license-contamination map. Cross-references are `docID:slug`.
   resource, never a goal) and `notes/311s` (its synthesis: thirteen behavioural clusters) ·
   **`notes/311t`** (the cross-root identity ledger: the web, DNS, and sparing across roots;
   § 3 is the working set of killers; § 14 the sitting that folded the panel's residue and
-  promoted the model). The epistemics-and-assignment phase that ran beside it: **`notes/312a`** (the corpus
+  promoted the model) · **`notes/311v`** (the prior-art survey synthesis over the model,
+  2026-09-26: what convergent evolution corroborates, what has no precedent, the
+  mutually-unaware-collaboration and aid siblings to mine, the contradictions disposed, the
+  bad news; evidence base `.claude/research/ops-extern-model-prior-art/`, ten lanes, every grade
+  a subagent's). The epistemics-and-assignment phase that ran beside it: **`notes/312a`** (the corpus
   import, FROZEN: which typed rulings the model modifies, the prior seat assignments to
   re-verify, the unknowability classes, the seat gaps) · **`notes/312b`** (its LIVING
   sittings ledger: typed conduct, exercise takeaways, the time and naming sittings, the shape
