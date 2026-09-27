@@ -1,0 +1,3 @@
+- turn02: the harness Bash tool appears to collapse `\` inside single-quoted strings to `\`, breaking JSON passed to new-source.sh (backslash-bearing descriptions failed with "Invalid escape"); worked around by avoiding backslashes.
+- turn02: SorryDB (arXiv 2603.02668) reports agentic provers exploiting sorryAx to pass sorry-verification; LLM-angle, out of this front's scope.
+- turn02: RISC-V mm-formal.adoc references <<discrepancies>>; the anchor may live in mm-explanatory.adoc — not checked whether the discrepancy list is current.
