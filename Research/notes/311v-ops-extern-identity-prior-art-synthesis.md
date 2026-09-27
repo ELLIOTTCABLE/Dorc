@@ -197,9 +197,8 @@ system that has a live host.
 The naming-theory lane built a term-for-term mapping from the classical systems vocabulary to
 the model's objects (`gather-naming-theory-classics.md`, its mapping table). It is reproduced
 here in compressed form as a reading aid for anyone arriving from that literature, and for the
-record that the model's naming half has fifty years of teaching behind it. It proposes no
-renaming; "context", the widest classical term, is already overloaded in this corpus, and every
-retained name has survived several deliberate passes.
+record that the model's naming half has fifty years of teaching behind it. The finding built on
+it, the human's response, and the conductor's own counter are all in 6-the-bad-news.
 
 | classical term | model object | fit |
 | --- | --- | --- |
@@ -772,15 +771,13 @@ is the structural answer; the survey shows no CM tool takes it.
 
 ### § 4.8-validators-beside-contracts
 
-For the record and not as a recommendation: every survey system that placed obligations on
-describers shipped a validator with the obligation. Puppet's `--strict` checks the
-`canonicalize` fixpoint [A-puppet-resource-api-specification-2023]; Windows Installer's component
-rules are ICE-enforced at build [A-msi-organizing-applications-into-components-2021]; Terraform
-errors on an identity change [A-terraform-plugin-framework-resource-identity-2025]; OVAL content
-validates against its schemas. Dorc's posture (the human, typed 2026-09-26) is U-shaped: the tool
-must behave well in the complete absence of tooling, on pathological targets, before any
-engineering effort goes to behaving better on sane ones. `dorc lint` is the existing home when
-that turn comes.
+Every survey system that placed obligations on describers shipped a validator with the
+obligation. Puppet's `--strict` checks the `canonicalize` fixpoint
+[A-puppet-resource-api-specification-2023]; Windows Installer's component rules are ICE-enforced
+at build [A-msi-organizing-applications-into-components-2021]; Terraform errors on an identity
+change [A-terraform-plugin-framework-resource-identity-2025]; OVAL content validates against its
+schemas. The finding this record supports, and the human's ruling against it, are both in
+6-the-bad-news. `dorc lint` is the existing home if that turn ever comes.
 
 ## § 5-contradictions-and-tensions
 
@@ -826,80 +823,217 @@ model. Each is disposed here; none needs a sitting.
 
 ## § 6-the-bad-news
 
-The in-chat synthesis carried a longer list; the human's typed responses (banked in the research
-dir's turn 2 log) pruned it and corrected its framing. What survives is recorded here with the
-ruling or lean beside it. Nothing here is owed work.
+The clean-context conductor's findings, as delivered in chat and before the human's responses.
+They stand here unmollified on purpose: the point of a clean context is to fight the human's
+leans and habits, so where the human's typed response (2026-09-26, paraphrased) diverges from a
+finding, the divergence stays on the page as an adjacent `**[HUMAN]**` sub-bullet and is not
+resolved toward either side. An item leaves this section only if it is logically flawed, and
+none has been. Where the conductor later found a counter to its own claim, that is a third
+bullet, never a silent edit. Each finding carries the conductor's certainty. Nothing here is
+owed work.
 
-- `bad-no-registry-is-the-price-carrying-constraint` (+SURE of the survey). Every system that
-  achieved breadth has a registry, a single minting authority, or a curator (1-what-the-survey-corroborates,
-  3.2-consensus-by-accretion). The model requires a stranger to identify into a shared key space
-  before anything of theirs spares, so the stdlib's key spaces are the de-facto registry and
-  filing into them is the price of survival. The human's ruling: no registry is welded out, for
-  the short term, for base-case correctness, for the model's flexibility, against scope creep,
-  and above all for security; a registry can be added and never removed; the model's rooting
-  behaviour is the fail-safe that makes the weld livable (a describer may live in their own
-  corner and collide with everything). The survey adds only that the price is real and that
-  nobody has written down who pays it.
-- `bad-the-ramp-has-a-cliff` (+SURE of the texts). Every system in the survey has a cliff
-  between the local user and the shared library (local manifests versus the Forge, a flake
-  versus nixpkgs, a shell task versus a module) and none pretends otherwise. Under the model the
-  step from an in-book verdict function to any cross-vocabulary survival is learning the model.
-  `KNOBS:kBURDEN`'s no-cliff principle survives only if the concretization hides the structure
-  behind stdlib defaults, and no such defaults exist. The human: acked; owed to the spelling
-  sittings; "how to extract value at low authorship quantities" is unsolved and may be
-  unsolvable under the model.
-- `bad-theory-unvalidated-and-failures-unmodelled` (+SURE of both halves). The validated
-  systems carry the flattest identity models and the rich theories were never validated
-  (`gather-academic-theory-of-system-administration.md`); and the litigation record
-  (3.3-the-litigation-record) is a catalogue of real failures from a poor or forgotten identity
-  model. The human's read is the second half: most of the world's failures are identity
-  failures, and a rich model is suspected to be a net win for usability and stability, modulo
-  the cliff. The honest picture is that the field has oscillated between no model and paying in
-  bugs, and a rich model that never shipped; nobody has shipped one. The model's refutations so
-  far are thought experiments; its next refutation must come from outside, and nothing outside
-  exists yet (zero stdlib oracles; the adequacy bite open). The lanes' breadth tables against the
-  forty-seven items of `notes/311r` show sysctls, containers, firewall rules, cron, certificates,
-  SQL, and LVM uncovered by nearly all prior art: a free, unwalked falsification set.
+- `bad-no-registry-is-the-constraint-nobody-shares` (+SURE of the survey, ~SUSPECT of the
+  diagnosis). Every system in the survey that achieved breadth has a registry, a single minting
+  authority, or a curator. Prodspec "requires clean resource naming from the infrastructure
+  provider" [B-palatin-prodspec-annealing-intent-based-actuation-2021]; LCFG keys everything
+  `host.subsystem.attribute` [B-anderson-towards-high-level-machine-configuration-1994];
+  Kubernetes mints `uid` server-side, Nix owns its store, NVD owns CPE, DMTF owns the schema,
+  Puppet's master compiles one catalog per node. The model says "reverse-DNS naming, no
+  registry, and owner-adjudication" and then requires strangers to identify into a shared key
+  space before anything of theirs spares. That is the burden of a registry without its benefit:
+  you must file, and there is nothing to file into. Reverse-DNS solves minting, which was never
+  the hard part, and does nothing for reconciling two names for one thing, which the model hands
+  to "a human act" with no home. The stdlib's key spaces are the de-facto registry, and the
+  stdlib has zero non-fixture members. Actionable phrasing: say that the stdlib is the registry,
+  that filing into its key spaces is the price of survival, and that a kind hung on nothing
+  comparable is guard-only forever. The last clause is already typed; the first two are its
+  consequences and nobody has written them down.
+  - **[HUMAN]** No registry is welded out: for the short term, for base-case correctness, for
+    the model's flexibility, against scope creep, and above all for security. A registry can
+    always be added and never removed, so maybe-someday, behind the appropriate security review,
+    if there are ever users and they chafe over collaboration. The model's rooting behaviour is
+    part of the point: one can always live off in one's own corner and collide with everything
+    stdlib, and it must fail safe for exactly that reason. That is allowed and expected.
+
+- `bad-the-ramp-has-a-cliff-and-a-settled-principle-denies-it` (+SURE of the texts).
+  `KNOBS:kBURDEN` says the gradient "must have no cliff (settled principle 5)", and
+  `USER_STORY.md` paints stages 3 through 7 as a ramp. Under the model, the step from an in-book
+  verdict function to any cross-vocabulary survival requires an mScheme at every bind,
+  `:identified-in` per shape into a store somebody else described, two warrants, a closed
+  may-read set, a finished entailment, and the store describer's closure. That is not a step; it
+  is learning the model. Every system in the survey has the same cliff and does not pretend
+  otherwise: local manifests versus the Forge, a flake versus nixpkgs, a shell task versus a
+  module. `USER_STORY.md` already says stage 3 "is where most Dorc use is meant to stop".
+  Actionable phrasing: two products with a named cliff between them. Dorc-lite is guards and
+  own-site elision, no identity speech, no survival: the admin's product and the off-ramp's.
+  Dorc-full is survival, and its entry fee is filing into the stdlib's key spaces. The no-cliff
+  principle and the model cannot both stand as written: one yields, or the concretization hides
+  the model's structure behind stdlib defaults that do not yet exist.
+  - **[HUMAN]** Acked; the model is quickly building a massive cliff. Owed in the spelling
+    sittings: how much of it can be spread out over the gradual-enhancement curve. "How to
+    extract value at low authorship quantities" is unsolved, and maybe unsolvable under the
+    model.
+
+- `bad-a-composing-model-with-nothing-to-compose` (+SURE of the state, ~SUSPECT of the lesson).
+  Lane 5b's finding is the sharpest in the survey and the least comfortable: the validated
+  systems (LCFG at four hundred hosts, Traugott's fifteen thousand, Prodspec at Google) carry the
+  flattest identity models, and the rich theories (Couch, Burgess, closures, promise algebra)
+  were never validated and never will be; the field's own comparison framework has no row for
+  identity [B-delaet-joosen-vanbrabant-survey-system-configuration-tools-2010]. The model is the
+  richest identity model anyone has proposed for ops. It is the fourth cut at identity since
+  `plans/17N`, refined through some thirty refuted shapes and two crosscheck panels, against
+  strawmen, with zero stdlib oracles, one live run on scrappy hand-written ones, and the adequacy
+  bite still "the largest single open risk carried forward"
+  (`ANALYZER-NEEDS:an-adequacy-bite`). Every real identity model in the survey was shaped by a
+  bug with a reporter (3.3-the-litigation-record). The model's refuted-shapes register is
+  falsification by thought experiment, which finds only what its author imagined; the lanes'
+  breadth tables against the forty-seven items of `notes/311r` show sysctls, containers,
+  firewall rules, cron, certificates, SQL, and LVM uncovered by nearly all prior art, a free and
+  unwalked falsification set. Lesson: the next refutation has to come from outside, and nothing
+  outside exists. The stdlib arc is unscheduled and gates on r31's tracer lane (`ROADMAP.md`);
+  that ordering is backwards relative to where the risk sits.
+  - **[HUMAN]** Gentle nack, unless something is being missed: many, many of the failures in
+    the world are the result of a poor or forgotten identity model, and 3.3-the-litigation-record
+    is the evidence. Glad to have run into the bugs that forced the model, having been about to
+    make the same mistake. Modulo the cliff above, a net win for usability and stability from
+    having a rich and exacting model behind everything is strongly suspected.
+  - Conductor, on the two positions together: both halves are true and the survey supports
+    both. The field has oscillated between no model and paying in bugs, and a rich model that
+    never shipped; nobody has shipped a rich one. The finding is about validation order, not
+    about whether the model is wrong, and the two positions do not meet.
+
 - `bad-reconciliation-labor-has-no-home` (+SURE of the survey, -GUESS of the size). Where
-  strangers' vocabularies met at scale, reconciliation was human curation at scale
-  (3.2-consensus-by-accretion). The model's mechanism, one stranger's scheme yielding into
-  another's, is the same one, per tool, per pair, with no curator. The human: acked; a
-  collaboration-inside-the-model discussion is pending.
-- `bad-one-ruling-generates-the-weight` (+SURE). The typed ruling that mutually unaware speakers
-  doing ordinary things must never yield a wrong elision is what the walk and both closures
-  serve. Every battle-tested system assumed strangers' things disjoint by default and paid
-  occasionally and visibly (3.3-the-litigation-record). Nobody has paid the model's price, so
-  nobody knows if it can be paid. Its cost lands on the flagged tier, which `USER_STORY.md`
-  admits nearly everyone will turn on and forget; the product's real mode is the heavy one.
-- `bad-the-flag-absorbs-unsolved-corners` (+SURE of the accretion). The consent flag now gates
-  more than survival. The survey's opt-in-to-risk flags all became defaults in practice
-  (cloud-init's trust mode [A-cloud-init-first-boot-determination-2026]; Puppet's non-isomorphic
-  types [A-puppet-type-rb-isomorphism-autorelation-code-2026]). The human: known; "flagged" now
-  often glosses somehow-configurable and the grain is open; the lean stays toward one flag,
-  because the dangers are subtle and no accessible split is expected to help a mid-experienced
-  admin. An inventory of what the flag gates, in one place, is the cheap record.
-- `bad-the-admin-seat-is-unexplored` (~SUSPECT). Every real identity bug in the survey was
-  reported from the operator's end, by someone with the world in front of them
-  (3.3-the-litigation-record). The human: admin versus oracle author is a gradient, treated as a
-  binary only for design-forcing reasons; the admin's identity seat is a tiny oracle, a
-  load-path override, and the like; how they use it and how ergonomic it is are unexplored.
-- `bad-deletes-were-never-sat` (+SURE). The survey's destruction cases are both wrong-DISJOINT
-  on a delete (DEP-17, the MSI component rules), and the most-litigated CM tool's cross-type
-  table is ensure-blind with delete cycles open for a decade. The model files deletion as a
-  routing write; the product half (what a plan with a delete in it looks like, whether absence is
-  ever converged) is `TODO-ADDTL.md`'s "deletes-are-hard, sitting-visible, never sat".
+  strangers' vocabularies met at scale, reconciliation was human curation at scale: Repology's
+  fifteen thousand merge and split rules with a maintainer community, in one domain; CMDBf's
+  "any combination of automated analysis and manual input"; DEP-17 as a multi-year transition
+  with a moratorium (3.2-consensus-by-accretion, 3.3-the-litigation-record). The model's
+  mechanism, one stranger's scheme yielding into another's, is the same one, per tool, per
+  stranger pair, with no curator, no venue, and no budget. The reverse-DNS choice guarantees the
+  collisions happen; nothing says who resolves them. Actionable phrasing: the stdlib maintainer
+  is that curator, and a third party's `:yields` into a stdlib mSort is the unit of curation.
+  Budget for it as Repology did, or accept that third-party mSorts read KNOWN_UNSPOKEN against
+  everything forever, which is guard-only.
+  - **[HUMAN]** Acked; this has come up at a brush a couple of times in the model's sittings. A
+    discussion about collaboration inside the model is pending.
+
+- `bad-one-ruling-generates-all-the-weight` (+SURE). The typed ruling of `notes/311t` § 14, that
+  mutually unaware speakers doing ordinary things must never yield a wrong elision, is what the
+  whole of the walk and both closures serve. The survey says it is unprecedented: every
+  battle-tested system assumed strangers' things disjoint by default and paid for it
+  occasionally and visibly (Puppet reverted an autorequire and moved on; Windows Installer
+  documents "damage" and blames the vendor; Debian imposed a moratorium). Nobody has paid the
+  model's price, so nobody knows if it can be paid. This is not a request to relitigate the
+  ruling. It is the observation that the ruling's cost lands entirely on the flagged tier, which
+  `USER_STORY.md` admits nearly everyone will turn on and forget; so the product's real mode is
+  the heavy one and the light mode is the demo, and the documents say the inverse. That belongs
+  in the product statement.
+
+- `bad-the-flag-absorbs-every-unsolved-corner` (+SURE of the accretion, ~SUSPECT of the
+  outcome). `--risk-faultless-skips` began as consent to the survival tier. The model now has it
+  also gating a sentinel-inherited SAME, the route closures, and the read-set closure's feed into
+  the write-path question. Each accretion is a decision not to solve something, filed under
+  consent. The survey's precedent for opt-in-to-risk flags is uniform: cloud-init's trust mode
+  silently breaks clones [A-cloud-init-first-boot-determination-2026]; Puppet's non-isomorphic
+  flag is where collision checking goes to die
+  [A-puppet-type-rb-isomorphism-autorelation-code-2026]; both became defaults in practice.
+  Actionable phrasing: inventory what the flag now gates, in one place, and decide whether one
+  flag is honest for that inventory or whether the flag has become the product mode and should
+  be named as such.
+  - **[HUMAN]** Ack, and well known: "flagged" is now often a gloss for somehow-configurable,
+    and the exact grain of that configuration is an open question. The lean nonetheless stays
+    toward arriving at about one flag anyway. The complex and dangerous interactions of the
+    model, because they are true of the ops world itself, are subtle and difficult to mentally
+    model; there is no expectation of a meaningful, accessible split that a mid-experienced admin
+    would jump to understanding and using to their benefit, where one category of
+    unsound-for-complex-reasons behaviour is desirable with its dangers well understood while
+    another is not. Open question, lean present.
+
+- `bad-requirements-outrun-tooling` (+SURE). Every system in the survey that placed requirements
+  on describers shipped the validator with the requirement (4.8-validators-beside-contracts):
+  Puppet's `--strict` checks the canonicalize fixpoint
+  [A-puppet-resource-api-specification-2023]; Windows Installer's component rules are
+  ICE-enforced [A-msi-organizing-applications-into-components-2021]; Terraform errors on an
+  unexpected identity change [A-terraform-plugin-framework-resource-identity-2025]; Debian pairs
+  Policy 10.4 with `checkbashisms` (`KNOBS:kWHICHSH`). The project's own repeated answer to
+  unsoundness has been more requirements on the oracle author.
+  `AID-NEEDS:aid-lint-kind-adjudicability-bar` is marked required before kinds go
+  community-shared and is unowned. The model adds a closing act, a finished record, per-shape
+  warrants, and a sentinel, none with a lint. Actionable phrasing, weldable: no new obligation on
+  a describer lands without the lint that catches its omission, in the same commit.
+  - **[HUMAN]** Hard nack. U-shape: build a tool that behaves well in the complete absence of
+    tooling, on pathological systems, and then and only then spend engineering effort on
+    behaving even better on real, sane, modern systems with real levels of support. Dorc's entire
+    niche is the weird glue around the edges, and it cannot fall into the hole of having wanted
+    to support weird pipe-to-serial targets while forgetting that the product is worthless
+    without the kernel-extension-level support tooling it was built alongside.
+
+- `bad-the-admin-has-no-identity-seat` (+SURE of the model's text, ~SUSPECT of the
+  consequence). The model's speakers are the thing's describer, the container's describer, the
+  wrapper author, the transition owner, and the engine. The admin appears only as the person who
+  types the flag. Every real identity bug in the survey was reported by someone with the world
+  in front of them: the mount in PUP-6397, the two timezone blocks in DSC, the name collision in
+  Salt, the symlinked motd in OVAL (3.3-the-litigation-record). Under the model that person's
+  only recourse is to become a describer. `AGENTS.md` says to design the two users toward each
+  other; the model designs one of them out. Actionable phrasing: what is the admin's identity
+  speech, in sh? Today the answer is nothing, and that is a design hole rather than a deferral.
+  - **[HUMAN]** Possible nack; known and unresolved. The lean: admin versus oracle author is a
+    gradient, treated as a binary only for design-forcing reasons. Here the admin's seat is a
+    tiny, low-effort oracle, a shell-load-path override, and so on. How exactly they use that
+    and how ergonomic it is are unexplored, so not a hard nack; a tune.
+
+- `bad-deletes-were-never-sat` (+SURE). The survey's two destruction cases are both
+  wrong-DISJOINT on a delete: Windows Installer's shared key path, where removing either
+  component removes the file [A-msi-component-rules-broken-2021]; DEP-17's file loss
+  [A-debian-dep17-usrmerge-aliasing-2023]. Puppet's autorequire is ensure-blind and its delete
+  cycles have been open since 2014 [B-puppet-pup2451-autorequire-absent-cycle-2014]. The model
+  files creation, deletion, and rename as routing writes, which is the invalidation half. The
+  product half, what a plan with a delete in it looks like and whether absence is ever
+  converged, is `TODO-ADDTL.md`'s "deletes-are-hard, sitting-visible, never sat". The survey
+  says this is where identity models break worst, and it is the one mutator species the corpus
+  has not walked.
+
+- `bad-half-the-vocabulary-is-renamed-classics` (+SURE per lane 9's table). The model mints over
+  twenty species. Lane 9 maps roughly half onto the classical systems vocabulary, fifty years old
+  and taught for thirty (1.6-a-bridge-from-the-classics): naming scheme, context, resolve,
+  closure, synonym, indirect name, unique-identifier name space, limited context. The other half
+  (the warrants split, the traversal as backing, the store's closure, the placing lookup, the
+  walk) is genuinely new and has no teaching behind it. The project's own rule is to find the
+  idiomatic spelling before minting one. Actionable phrasing for the concretization series:
+  borrow the taught names for the taught half and spend minted names only on the novel half;
+  that halves the concept burden a describer meets with nothing to lean on.
+  - **[HUMAN]** Very concerning that a fresh read still lands on "renamed classics": there have
+    been three rounds of renaming everything to be more generic and dropping the weird names,
+    and every remaining name was fought over. Hesitant to churn yet again. Suspects LLMs are
+    simply incapable of telling in either direction, since the direction has switched several
+    times on some of these.
+  - Conductor, on reflection: the one classical term with the widest reach, "context", is
+    already overloaded four ways in this corpus (`KNOBS:kCONTEXT`, the context slot,
+    measure-in-context, the entry chain), so borrowing it would be a net loss; and the pair the
+    conductor misread twice on a careful pass is mRoute against mRoot, one letter apart and
+    nearly opposite in meaning, a legibility hazard rather than a naming-quality one. The
+    finding's premise stands (the naming half has precedent, the novel half has none); its
+    actionable half is weaker than stated.
+
 - Leans, each a lean and not a finding. `bad-time-is-a-horizon` (--WONDER): every survey system
   with a live host made time a first-class axis of identity (4.5-witnesses-and-freshness), and
-  the systems that ignored it were verification tools; the model puts time on the outside-churn
-  horizon and re-measures, consistent with `KNOBS:kSTATE`. `bad-versioning-looks-less-deferrable`
-  (-GUESS): Solaris's package scheme is universal only under version conventions, Terraform
-  treats a version mismatch as inequal, and half the package-domain litigation is versions
-  (`ROADMAP.md`'s `design-mh2-version-layer`). `bad-observer-dependence-will-cargo-cult`
-  (~SUSPECT): dependent-by-default is the honest choice, User is the one observer every describer
-  meets, and independence-of-User will be declared reflexively until it is wrong once.
-- A process lesson. The research question was scoped to identity. The finding the human acked
-  hardest, that the best-matched academic project went declarative, arrived as an unseeded find
-  in a lane briefed on verification tooling. Next time, ask the product question directly.
+  the systems that ignored it were verification tools with no live host; the model puts time on
+  the outside-churn horizon and re-measures, consistent with `KNOBS:kSTATE` and the WONTFIX on
+  the TOCTOU window. `bad-versioning-looks-less-deferrable` (-GUESS): Solaris's package scheme is
+  universal only under version conventions [A-solaris-fmri-man-2011], Terraform treats a version
+  mismatch as inequal [A-terraform-tfplugin6-protocol-identity-2026], and half the package-domain
+  litigation is versions; the model's warrants are per shape of the key, so a warrant declared
+  against one dpkg holds for the next (`ROADMAP.md`'s `design-mh2-version-layer`).
+  `bad-observer-dependence-will-cargo-cult` (~SUSPECT): dependent-by-default is the honest
+  choice and the survey supports it, but User is the one observer every describer meets, sudo
+  threads through half the lines of real books (`Research/GOTCHAS.md`'s `sudo-is-a-variable`),
+  and independence-of-User will be declared reflexively on every sort until it is wrong once for
+  `test -w`; that is the architect skill's ceremony failure mode by construction.
+
+- A process lesson. The research question was scoped to identity and answered at that scope.
+  The finding the human acked hardest, that the best-matched academic project went declarative,
+  arrived as an unseeded find in a lane briefed on verification tooling. The survey spent most of
+  its budget confirming things, and the part that moved the human came from the margins. Next
+  time, ask the product question directly and let identity be the side remark.
 
 ## § 7-what-would-change-a-conclusion
 

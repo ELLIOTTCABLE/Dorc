@@ -391,6 +391,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/aid/CLAUDE.md:16 — — `core` DECIDES, `aid` DESCRIBES. The dependency edge is
 - cited: 28W 30E 30F (3)
 
+## aid-lint-kind-adjudicability-bar
+- defined: —
+- cited: 311v AID-NEEDS (3)
+
 ## aid-loaded-oracle-inventory
 - defined: —
 - cited: 28D 28F AID-NEEDS (3)
@@ -432,6 +436,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28L:amendment-width-is-a-render-parameter
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:161 — (human-typed 2026-07-29) — production output
+
+## an-adequacy-bite
+- defined: —
+- cited: 311t 311v ANALYZER-NEEDS ORACLE_PROVIDES (6)
 
 ## cli/CLAUDE:an-artifact-set-runs-from-its-own-generation
 - defined: spike/crates/cli/CLAUDE.md:396 — (`30Nf` §4) — an artifact-producing block carrying
