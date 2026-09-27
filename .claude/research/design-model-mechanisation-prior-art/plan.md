@@ -113,10 +113,17 @@ corpus-shaped ones.
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
 answer set plus ∀-shaped laws; a typed cut (design-of-record or ruled, not TABLED or DRAFT);
-no as-built counterpart yet (once built, the instrument is Kani or minispec, not a design
-model); a supersession list or several consumers (blast radius); crosscheck or refutation
-history (bug density). Anti-signals: TABLED, "nothing welded", superseded-in-part by a newer
-document (model the newer one), or a component the newer model is dissolving.
+a supersession list or several consumers (blast radius); crosscheck or refutation history
+(bug density). Anti-signals: TABLED, "nothing welded", superseded-in-part by a newer document
+(model the newer one), or a component the newer model is dissolving.
+
+**[HUMAN]** 2026-09-27: whether a component has code is not the inflection. The spike is a
+meta-spike, proving how the tooling ties together and how LLMs work with it; most of the
+design will fall short of the Kani and Lean line for a long time. The design-model
+instrument may be the realistic, productive one for almost all of the spike and design.
+Consequence for cluster 2 below: built-ness does not move a component out of design-model
+territory; the small built algebras are candidates too, and cheap ones, since they are
+already closed algebras with typed cuts.
 
 - Cluster 1, identity and sparing, the region where modelling pays now and is wider than
   311: `311` plus what its § 4.2 supersedes and what its § 2.5, 2.6, 3.4 consume: the
