@@ -1459,3 +1459,33 @@ sorts the candidate edits by what each does to the model.
   `hold-stdlib-key-space-over-the-boots-children`.
 - State: tip `64feb9f0` before this ledger commit. The three holds of § 28 stand, plus the
   three named here.
+
+## § 30-the-flag-shape-aside
+
+**[TYPED]** 2026-09-27, sent during the conductor's dig into `hold-exclusion-keyed-on-the-container`
+and before the human read that dig. On the `spike/CLAUDE.md` steering rule
+`rul-flag-is-razor-residue` ("claims own what lines can say; the admin flag owns what no line
+can say, the open-world at-most residue; the flag permits acting on separation claims, never
+manufactures them"): it is not yet superseded by, and does not supersede, 311's new flagged
+material (the sentinel-inherited SAME of `311:3.4-entry-and-lends`). "Flagged" has briefly
+become a gloss for user-configurable danger, and the shape of user-configurable danger has
+started to change. No action now, ledger only. The direction is open in the human's head, with
+the human's own weighting:
+
+1. Likely: everything stays behind one danger flag, these and future flavours of associated
+   risk included. The types of risk are not well-defined core ops concepts. They are a variety
+   of epistemic outcomes of Dorc's internal modelling, so an admin is unlikely to hold a mental
+   model of one type of danger against another that lets them meaningfully accept one while
+   meaningfully rejecting the other.
+2. Less likely, now possible: two or more risk flags, subdivided along user-visible risk seams,
+   all under a `--yolo` global-config preset, so that flavours of risk are opted into
+   granularly.
+
+Disposition: of § 29's held pair of `spike/CLAUDE.md` register entries, the
+`rul-flag-is-razor-residue` half takes no § 4.2 entry and is not owed. The
+`pure-predicate-carry` half stays held, unaddressed by the aside. The item-1 dig of the same
+sitting is not banked here: the human had not read it when this section was written.
+
+- State: tip `e9ece238` before this ledger commit. The three holds of § 28 stand; of § 29's
+  three, `hold-exclusion-keyed-on-the-container` and `hold-cross-world-entry-cost` and the
+  within-sort gloss stand, with the razor-rule register half released as above.

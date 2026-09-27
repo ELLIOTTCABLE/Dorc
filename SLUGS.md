@@ -5366,7 +5366,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:pure-predicate-carry
 - defined: spike/CLAUDE.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
-- cited: 27Xf 300 308 312cg 312ch (8)
+- cited: 27Xf 300 308 312cg 312ch (9)
 
 ## q-entry-economics
 - defined: —
@@ -6735,7 +6735,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (23)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (25)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
