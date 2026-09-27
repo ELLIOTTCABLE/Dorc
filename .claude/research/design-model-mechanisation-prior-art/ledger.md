@@ -406,6 +406,29 @@ they sit alongside the Alloy spec rather than only as e2e.
   was not visible. **[HUMAN]** an unexpected finding: speakers may be static world facts
   ("ops distributes unevenly over speakers"), which is not how ops realities had been treated.
 
+## The strawman (2026-09-27; `strawman.md` in this directory holds it verbatim, written by the human from the conductor's output)
+
+- Shape shown: `world/objects.json` (named grammatical objects, NGOs, each `forall` or
+  `exists`); `speech/<speaker>.json` (L0: one speaker, one claim, one object); per-coordinate
+  `vocab.json` (species, relations, answers, `weaker` order, safe set, dangers, consumer map, as
+  data), `rules.als` (hand-written beside the prose), `file.json` (L1: every L0 claim filed or
+  explicitly unfiled), `measure.json` (each book's world read into the coordinate's species);
+  books as `book.sh` + `world.json` + `expect.json` (intent in L0 ids and product verdicts);
+  `laws/generic.als` (tool-owned: `Decl`, `Speaker`, `Danger`, `Ans` with declared order,
+  `Query`, `True`, `answer`, `wrong`, `restsOn`; six checks: never wrong when all true,
+  monotone in speech, stranger-safe, attribution honest, sufficient, minimal); generated
+  instances with atoms named by L1 id; `lock.json`; later tiers (`spell.json` spans and a
+  one-syllable count, loader recovery by content, a Kani harness built from the same ids,
+  hostsim and e2e runs).
+- **[HUMAN]** objects are `exists` or `forall`, meaningless except as objects of speech; the
+  shape is yielded by 311 itself; the world's behaviour enters only at the very end, on a
+  host. No `world/same.json`: declared once, a thing is one thing; two things get two names.
+  **[HUMAN] nack** any proposal form: a proposal is edits to the spec; the whole is one
+  specification summed across files and vocabularies, mechanically checkable in its totality;
+  checking is running it and seeing green; acceptance is merging the diff or a human ack; git
+  is the substrate and never a first-class concept of the tooling. **[HUMAN]** "largely
+  overengineered, but that's what I expected."
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
