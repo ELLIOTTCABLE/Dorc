@@ -343,6 +343,35 @@ the corpus and writes to the register. Alignment of pieces that exist, not inven
   final output is one `30Y` document extending `notes/301` and kin to cover design-tier
   theorems and Alloy; no separate synthesis document.
 
+## Meta-test cases for the 30Y system (conductor's set, presented 2026-09-27; read by the human)
+
+Twelve elements, each chosen to stress a different mechanism; names from the tree, no code
+read. Forward from design: `311:3.2` two-tops (the full chain, x3 fingerprinting; three panel
+books exist); `311:3.5` committee law (attributed, with the checkable fragment that every
+verdict's attribution set is nonempty and names only declared speakers); `311:1.1` "the engine
+never holds an mReferent" with `30T:inv-no-world-facts-in-engine` (structural; fenced;
+human-acked fences only); `311:3.3` lifecycle mutation (a two-phase book with a reboot; the
+temporal module). Backward from code: the Kani harness
+`the_consumer_map_is_exhaustive_and_exclusive` (pins a consumer map `311:4.2` supersedes;
+-GUESS it is green against the old map: the seam failure made visible); the minispec units
+`JoinIsCommutative` and kin with their Kani twins (two instruments, no link; `proved` resting
+on unvalidated definitions); the `sparing-reference` unit test
+`provably_disjoint_feeds_survival_sparing` (a code-tier book already; register one row citing
+both; rename in place); the DST pin `permuting_edge_insertion_moves_no_set_and_no_summary`
+(a family-witness law). Lateral and value: `spike/fixtures/pi-webhost.book.sh` with
+`package.oracle.sh` (stage 5's line 9 as `collide, TODO: spare once the stdlib keys the boot's
+children`); `GOTCHAS:a-host-is-not-a-partition` (∀ over x3, fence and mutant, an NFS fixture
+at the field tier). Non-311: `28M`'s withhold-only wall (∀¬ over composites, multi-author
+book); `30D`'s decision table and `ORACLE_PROVIDES:provides-finished-definition` (table
+completeness; a cardinality rule that is also an oracle lint). Left out by choice:
+`kBACKFLIPS` (a weld; breach discipline is a different meta-test) and
+`inv-known-held-never-convert` (types suffice; the system must allow "no design-tier
+discharge, by decision" without reading it as residue).
+
+**[HUMAN]** 2026-09-27: "extraction" overstates it; no complex mechanism is aspired to beyond
+collation and monotonicity assertion. Some existing tests may deserve moving or enrichment so
+they sit alongside the Alloy spec rather than only as e2e.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
