@@ -523,6 +523,13 @@ they sit alongside the Alloy spec rather than only as e2e.
   be, compiled later; ideally few loads; specifications will eventually use shell loading
   order because Dorc does.
 - **[HUMAN]** the oracle/speech-claim corner is the least baked; the rest is coming together.
+- **[HUMAN]** style nits after the rewrite (`020d25fc`), for the next mechanical pass: indent
+  the concrete shell line four spaces so it aligns with the mapping line; no long padded
+  lines; invert to a three-line cadence, shell, then `#}` map, then `#>=` outcome, wrappable
+  because each has its own introducer; fold repeated `.` load lines into a named fake oracle
+  set, a block headed `# tessa-fs.sh` that other blocks source; reintroduce `# filename.sh`
+  at the top of every code block, optional but favoured, since explicit slugs and permanence
+  have served the project.
 
 ## The collapse, the churn walk, and derived ownership (2026-09-27; conductor findings the human read and reacted to)
 
