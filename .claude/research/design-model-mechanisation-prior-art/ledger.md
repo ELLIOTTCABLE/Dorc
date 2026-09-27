@@ -372,6 +372,40 @@ discharge, by decision" without reading it as residue).
 collation and monotonicity assertion. Some existing tests may deserve moving or enrichment so
 they sit alongside the Alloy spec rather than only as e2e.
 
+## The narrowing to two concerns, and speech as the crux (2026-09-27, human-typed and reacted)
+
+- **[HUMAN]** the remit is two concerns and most else is noise: (1) LLM-driven design
+  regression, a thing stated imprecisely and read wrong by a later rewrite, composition, or
+  assumption; (2) correspondence between firmed claims and the implementation: the *same*
+  cases run against the product, one-to-one greening, a single-source input that cannot be
+  rewritten between checkers (an sh book with outcomes). Loader facts, sh behaviour, and host
+  faithfulness are not concerns. The tool is tracked-not-proved: a pre-commit or CI gate an
+  LLM runs before showing a claim to a human, as an alternative to a full adversarial review.
+- **[HUMAN]** "no ruling without a book" is fine but vastly insufficient: books are small and
+  stay green across design churn; what churns is a *statement* of user speech, from its
+  spelling to its fundamental objects. Two claim classes beyond book-with-outcomes: same book
+  and outcomes but the speech path is gradual and risk-monotonic; same book, outcomes, and
+  single-user experience but collaboration carries less risk. Both require the speech slice
+  in the claim. How user speech is encoded into the Alloy, and how that reaches tests, Kani,
+  and Lean, is the whole game.
+- Conductor's reply, acked in part: three layers of speech. L0, the ops proposition with its
+  speaker, stable across design churn (`GOTCHAS.md` minus the speaker); L1, its
+  classification under a design coordinate (species, relation, grain, danger), churns with
+  311, is the record; L2, the spelling, churns with 312. Speech is an input relation with
+  `speaker`, `kind`, `danger` labels, never a fact; `compare` is a predicate of the
+  declaration set; the generic laws (never wrong when all true; monotone in speech;
+  stranger-safe; attributed to the speaker only) are species-free and survive rewrites
+  verbatim; per-species checks are the churny layer. **[HUMAN] ack** the three classes as
+  spelled (run over the full set; check over prefixes with danger order; check over
+  multi-speaker unions with attribution; cross-coordinate risk reduction as a lock diff,
+  tracked not proved) as goals of `30Y`.
+- **[HUMAN]** two corrections: L2 must enter at later stages, since the chartered evolution is
+  abstract model, then spelling, then implementation, each keeping the old checkable truths
+  and gaining ones unrepresentable before; and the L0/L1/L2 strawman as first shown carried
+  no identifiers or spans linking an L0 proposition to its L1 line to the Alloy, so its value
+  was not visible. **[HUMAN]** an unexpected finding: speakers may be static world facts
+  ("ops distributes unevenly over speakers"), which is not how ops realities had been treated.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
