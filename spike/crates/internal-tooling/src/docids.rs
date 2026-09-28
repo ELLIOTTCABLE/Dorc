@@ -67,11 +67,13 @@ const RETIRED: &[&str] = &[
     "30C",
 ];
 
-/// Where the corpus keeps documents whose filename encodes their ID. Walked RECURSIVELY, and
-/// directory names count: `plans/deferred/078-…` and `notes/28G-why-strawmen-v2/` are both real
-/// targets, and missing the subdirectories reported fourteen live documents as dangling. The
-/// `specs/` tier keeps a mechanised note's ID (`Research/README.md`), so it is a target too.
-const DOC_DIRS: [&str; 3] = ["Research/notes", "Research/plans", "specs"];
+/// Where the corpus keeps documents whose filename encodes their ID. The whole of `Research/` is
+/// walked RECURSIVELY, by NAME only (a quarantine's filenames answer existence and its content is
+/// never opened), and directory names count: `plans/deferred/078-…`, `notes/28G-why-strawmen-v2/`,
+/// and a quarantined `311k-…` are all real targets, and missing the subdirectories once reported
+/// fourteen live documents as dangling. The `specs/` tier keeps a mechanised note's ID
+/// (`Research/README.md`), so it is a target too.
+const DOC_DIRS: [&str; 2] = ["Research", "specs"];
 
 /// Which spelling produced a citation. Only the bare form needs the corpus-shaped guard below —
 /// a `notes/` path and a `:slug` tail each disambiguate themselves.
