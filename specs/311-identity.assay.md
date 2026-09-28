@@ -78,13 +78,13 @@ No single author knows the whole path from a tool's argument to a measurable mRe
 Viewpoint transitions, authored by yet other people, change which mReferent an mKey reaches
 mid-book. What the engine can and cannot hold is 0.1-the-two-strata.
 
-The laws that state this for `compare()` are the checks of 3.2-compare-one-chokepoint-four-answers;
-who must say what is 3.5-committee-law-and-attribution. The law itself:
+Two of the law's four sentences are the checks of 3.2-compare-one-chokepoint-four-answers:
+where nobody has spoken the walk declines, and the walk never reaches a false SAME or DISJOINT
+while every statement in force is true. Who must say what is 3.5-committee-law-and-attribution.
+The other two sentences are the law's own terms of refutation, and stay prose:
 
 <!-- normative -->
 > The true answer is reachable once those who can know have spoken.
-> Where nobody has spoken, the model declines to answer.
-> The model never reaches a false answer while every statement behind it is true.
 > A wrong answer with no false statement behind it refutes the model.
 
 ### § 0.1-the-two-strata
@@ -374,8 +374,9 @@ pred true_DeclaresUniqueReferent[d: DeclaresUniqueReferent] {
 }
 
 pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
-   all a, b: keysOfShape[d.nameShape] |
-      withinOneParent[a, b] and some a.reaches and a.reaches = b.reaches implies a.value = b.value
+   all a: keysOfShape[d.nameShape], b: mKey |
+      b.scheme = a.scheme and withinOneParent[a, b] and some a.reaches and a.reaches = b.reaches
+         implies a.value = b.value
 }
 ```
 
@@ -386,7 +387,7 @@ pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
 > A warrant holds for every mKey of that shape inside any one mParent; a path that does not reach a warrant has not given it, so an mKey has a warrant when the shape it matched carries it.
 > Two mKeys are within one mParent when they have one mParent, or when their mParents reach one mReferent.
 > `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent: the lookup is a function.
-> `:guarantees-unique-name` is true when, within one mParent, one mReferent has one mKey of the shape.
+> `:guarantees-unique-name` is true when, within one mParent, one mReferent reached by an mKey of the shape has one mKey of the lookup.
 
 #### § 1.5.1-the-token-over-time-and-the-per-level-closure
 
@@ -1099,64 +1100,175 @@ observers, and the mVantage are 2.11-composite-sorts-and-roles's, 1.9-cell-a-sin
 > (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own
 > distinctions.
 
-`compare(x, y)` answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN. SAME means the fact
-is about this mKey. The engine consumes a SAME that rests on a wrapper's sentinel under
-`--risk-faultless-skips` (3.4-entry-and-lends). DISJOINT licenses sparing under the same flag.
-UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
+`compare(x, y)` combines mDerivations (3.2.1-derivations-consumers-and-the-flag); the walk
+below is the mFullyQualifiedKey mDerivation, and the laws of § 0 are stated over it here. Levels
+are numbered from the leaf, level 0, upward through mParents; the walk aligns two chains by
+height from the terminus (1.8-fully-qualified-key-topic-and-derivation). "One instance" is one
+atom until 1.10-vantage-route-placeholder-witness is mechanized: the mPlaceholder inherited
+through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends), or resolved
+once in one unwalled span under no wrapper, will widen `oneInstance` and nothing else. Step 1's
+reasons (a mRoot shape is one mWorld, SAME by `:root`; two mKeys of that shape meet there and
+compare as siblings; mRoots of two shapes are two mWorlds, and a mRoute is another) are how
+1.8-fully-qualified-key-topic-and-derivation declares the termini. mKeys of different mSorts
+share no primary mScheme, so their mFullyQualifiedKeys meet, if at all, only at a common
+ancestor, and that meeting is not a claim about the leaves; Dorc equates mKeys and never merges
+mSorts. The laws take every statement in force as true, since the support of one answer is
+3.5-committee-law-and-attribution's; "a store is never among its own contents", which the
+one-top way rests on, is a premise of the DISJOINT law and never a fact.
 
-One level. Two mKeys at one level are SAME iff they are one instance, or they are equal mValues
-whose shape carries `:guarantees-unique-referent`. One instance means one mPlaceholder:
-inherited through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends), or
-one ambient instance resolved once in one unwalled span under no wrapper
-(1.10-vantage-route-placeholder-witness).
+```alloy
+abstract sig Answer {}
 
-Two mFullyQualifiedKeys. Levels are numbered from the leaf, level 0, upward through mParents.
+one sig SAME, DISJOINT, KNOWN_UNSPOKEN, UNKNOWN extends Answer {}
 
-1. If either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN. If one
-   terminates at a mRoute the other does not share, the pair reads UNKNOWN. That covers one at
-   the mRoute and one at a mRoot, and two mRoutes across a wrapper. A mRoot shape is one mWorld,
-   SAME by `:root`. Two mKeys of that shape meet there and compare as siblings. mRoots of
-   two shapes are two mWorlds. A mRoute is another. No mFullyQualifiedKey speaks across mWorlds.
-   The finished definition does not speak across mWorlds, because its sentence is within-mWorld
-   (2.6-may-write-the-writeset). A mCorrespondence is the one mDerivation that may speak across
-   mWorlds (2.7-corresponds-across-a-transition).
-2. Otherwise walk downward from the top to the deepest level at which the two chains are SAME by
-   the one-level rule. Call that level A. If either mKey is A itself, the pair reads UNKNOWN: a
-   write to a container collides with everything inside it.
-3. Otherwise call the child of A on each side that side's top. The top is the mKey itself when
-   its mParent is A. Separation is only ever concluded from a single definition's own
-   distinctions, in one of two ways.
-   - Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with
-     differing mValues.
-   - One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme
-     declares, for some other shape, `:identified-in` the mSort of the other side's top. An
-     omission is a distinction only inside the body that made it. This way rests also on a store
-     never being among its own contents.
-4. The pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down
-   to either leaf's mParent, is `:aliases-nothing-else`
-   (2.3-aliases-nothing-else-the-store-warrant). Otherwise it reads UNKNOWN. Separation is
-   decided once, at A.
+pred oneInstance[a, b: mLevel] { a = b }
 
-Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
+pred sameAtOneLevel[a, b: mLevel] {
+   oneInstance[a, b]
+   or (a + b in mKey and a.value = b.value and a.shape = b.shape and guaranteesUniqueReferent[a.shape])
+}
 
-Different mSorts. mKeys of different mSorts share no primary mScheme. Their mFullyQualifiedKeys
-meet, if at all, only at a common ancestor, and that meeting is not a claim about the leaves.
-The walk decides such a pair as it decides any other: DISJOINT where it separates them, and
-otherwise KNOWN_UNSPOKEN. KNOWN_UNSPOKEN never spares and never transports, whatever either
-side has declared finished (2.6-may-write-the-writeset). Two mSchemes yielding one mKey-Primary
-is the sole same-referent generator across ways of naming. Dorc equates mKeys and never merges
-mSorts.
+pred alignedSame[a, b: mLevel] {
+   height[a] = height[b]
+   all a2: a.*parent, b2: b.*parent | height[a2] = height[b2] implies sameAtOneLevel[a2, b2]
+}
 
-Partial measurement never widens. A mDerivation with an unmeasured or mRoute-terminated link
-yields at most what it would yield with the link measured.
+pred sameChains[x, y: mKey] { alignedSame[x, y] }
 
-mDerivation sets. SAME is "or" across mDerivations (the mFullyQualifiedKey, a mCorrespondence, a
-provider-supplied identifier) and "and" within one mFullyQualifiedKey. A warranted SAME and a
-warranted DISJOINT on one pair is a contradiction: refuse both and attribute both authors.
-Otherwise the strongest warranted answer stands. SAME composes transitively. SAME then DISJOINT
-composes to DISJOINT. DISJOINT then DISJOINT never chains. The universal meet over backing sets
-is unchanged. Genuinely different mKey-Primaries for one mReferent are two mDerivations for one
-mTopic, reconciled by coherence, never a second mKey inside one mParent.
+fun meet[x, y: mKey]: mLevel -> mLevel {
+   {a: x.*parent, b: y.*parent |
+      alignedSame[a, b]
+      no a2: x.*parent, b2: y.*parent | alignedSame[a2, b2] and a in a2.^parent}
+}
+
+fun topBelow[x: mKey, a: mLevel]: lone mLevel { {t: x.*parent | t.parent = a} }
+
+fun legStores[x: mKey, a: mLevel]: set mLevel { (x.^parent & mKey) - a.*parent }
+
+pred twoTopsWay[tx, ty: mLevel] {
+   tx + ty in mKey
+   tx.scheme = ty.scheme
+   guaranteesUniqueName[tx.shape] and guaranteesUniqueName[ty.shape]
+   tx.value != ty.value
+}
+
+pred oneTopWay[x, y: mKey, tx, ty: mLevel] {
+   x = tx and y != ty
+   some primaryOf[ty.scheme]
+   some s: ofScheme.(x.scheme) - x.shape | identifiedIn[s] = primaryOf[ty.scheme]
+}
+
+pred separatedAt[x, y: mKey, a, b: mLevel] {
+   x != a and y != b
+   let tx = topBelow[x, a], ty = topBelow[y, b] |
+      twoTopsWay[tx, ty] or oneTopWay[x, y, tx, ty] or oneTopWay[y, x, ty, tx]
+   all s: legStores[x, a] + legStores[y, b] | aliasesNothingElse[s]
+}
+
+fun walk[x, y: mKey]: one Answer {
+   (not knownChain[x] or not knownChain[y] or worldOf[x] != worldOf[y]) implies UNKNOWN
+   else sameChains[x, y] implies SAME
+   else (some a: meet[x, y].mLevel, b: mLevel.(meet[x, y]) | x = a or y = b) implies UNKNOWN
+   else (some a: meet[x, y].mLevel, b: mLevel.(meet[x, y]) | separatedAt[x, y, a, b]) implies DISJOINT
+   else x.scheme != y.scheme implies KNOWN_UNSPOKEN
+   else UNKNOWN
+}
+
+pred everyStatementInForceIsTrue {
+   all d: DeclaresPrimaryOf & InForce | true_DeclaresPrimaryOf[d]
+   all d: DeclaresIdentifiedIn & InForce | true_DeclaresIdentifiedIn[d]
+   all d: DeclaresRoot & InForce | true_DeclaresRoot[d]
+   all d: SuppliesParent & InForce | true_SuppliesParent[d]
+   all d: DeclaresUniqueReferent & InForce | true_DeclaresUniqueReferent[d]
+   all d: DeclaresUniqueName & InForce | true_DeclaresUniqueName[d]
+   all d: DeclaresAliasesNothingElse & InForce | true_DeclaresAliasesNothingElse[d]
+}
+
+pred storesAreWellFounded { no r: mReferent | r in r.^holds }
+
+check law_same_is_sound {
+   everyStatementInForceIsTrue implies
+      all x, y: mKey | walk[x, y] = SAME implies x.reaches = y.reaches
+} for 6 but 4 Int
+
+run law_same_is_sound_premise {
+   everyStatementInForceIsTrue
+   some disj x, y: mKey | walk[x, y] = SAME and some x.reaches
+}
+
+check law_disjoint_is_sound {
+   everyStatementInForceIsTrue and storesAreWellFounded implies
+      all x, y: mKey | walk[x, y] = DISJOINT implies no x.reaches & y.reaches
+} for 6 but 4 Int
+
+run law_disjoint_is_sound_premise {
+   everyStatementInForceIsTrue and storesAreWellFounded
+   some x, y: mKey | walk[x, y] = DISJOINT and some x.reaches and some y.reaches
+      and some (x.^parent + y.^parent) & mKey
+}
+
+check law_nobody_spoke_declines {
+   no InForce & (DeclaresUniqueReferent + DeclaresUniqueName + DeclaresRoot + DeclaresAliasesNothingElse)
+      implies all disj x, y: mKey | walk[x, y] not in SAME + DISJOINT
+} for 6 but 4 Int
+
+run law_nobody_spoke_declines_premise {
+   no InForce & (DeclaresUniqueReferent + DeclaresUniqueName + DeclaresRoot + DeclaresAliasesNothingElse)
+   some disj x, y: mKey | knownChain[x] and knownChain[y] and worldOf[x] = worldOf[y]
+}
+
+check law_different_sorts_never_same {
+   all x, y: mKey | x.scheme != y.scheme implies walk[x, y] != SAME
+} for 6 but 4 Int
+
+run law_different_sorts_never_same_premise {
+   some x, y: mKey | x.scheme != y.scheme and knownChain[x] and knownChain[y] and worldOf[x] = worldOf[y]
+}
+```
+
+<!-- prose-translation -->
+> The walk answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN.
+> One level: two levels are SAME iff they are one instance, or they are two mKeys with equal mValues whose shape carries `:guarantees-unique-referent`.
+> Two chains are aligned-SAME at a pair of levels when the two levels have one height and every pair of levels above them of one height is SAME by the one-level rule.
+> Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
+> Step 1: if either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN; if one terminates at an mWorld the other does not share, the pair reads UNKNOWN.
+> Step 2: otherwise walk downward from the top to the deepest level at which the two chains are SAME by the one-level rule, and call that level A; if either mKey is A itself, the pair reads UNKNOWN, since a write to a container collides with everything inside it.
+> Step 3: otherwise call the child of A on each side that side's top, the top being the mKey itself when its mParent is A; separation is concluded in one of two ways.
+> Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with differing mValues.
+> One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some other shape, `:identified-in` the mSort of the other side's top.
+> Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
+> Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
+> Every statement in force is true when each statement in force satisfies its species' truth predicate.
+> A store is never among its own contents when no mReferent holds itself, directly or through others.
+> The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
+> The model never reaches a false DISJOINT while every statement in force is true and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
+> Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
+> mKeys of different mSorts never read SAME.
+
+#### § 3.2.1-derivations-consumers-and-the-flag
+
+`compare()` over several mDerivations, the consumer map, and the flag are
+1.10-vantage-route-placeholder-witness's, 2.7-corresponds-across-a-transition's, and
+3.4-entry-and-lends's to mechanize; until then these sentences are prose. Partial measurement
+never widening is a statement about two measurements of one chain, which the fences do not yet
+hold.
+
+<!-- normative -->
+> SAME means the fact is about this mKey.
+> The engine consumes a SAME that rests on a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends).
+> DISJOINT licenses sparing under the same flag.
+> UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
+> An omission is a distinction only inside the body that made it.
+> No mFullyQualifiedKey speaks across mWorlds; the finished definition does not speak across mWorlds, because its sentence is within-mWorld (2.6-may-write-the-writeset); a mCorrespondence is the one mDerivation that may speak across mWorlds (2.7-corresponds-across-a-transition).
+> KNOWN_UNSPOKEN never spares and never transports, whatever either side has declared finished (2.6-may-write-the-writeset).
+> Two mSchemes yielding one mKey-Primary is the sole same-referent generator across ways of naming.
+> Partial measurement never widens: a mDerivation with an unmeasured or mRoute-terminated link yields at most what it would yield with the link measured.
+> SAME is "or" across mDerivations (the mFullyQualifiedKey, a mCorrespondence, a provider-supplied identifier) and "and" within one mFullyQualifiedKey.
+> A warranted SAME and a warranted DISJOINT on one pair is a contradiction: refuse both and attribute both authors.
+> Otherwise the strongest warranted answer stands.
+> SAME composes transitively; SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
+> The universal meet over backing sets is unchanged.
+> Genuinely different mKey-Primaries for one mReferent are two mDerivations for one mTopic, reconciled by coherence, never a second mKey inside one mParent.
 
 > Two mSorts meeting at a common ancestor: a package status file and a unit file share a
 > filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the
