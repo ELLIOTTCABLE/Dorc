@@ -111,7 +111,8 @@ The two comment forms, precisely:
   bound to the line's atom. A `#=` that mentions `this` makes the line a `Line` and a `run`; one
   that does not is a fact about the world, and its line generates no atom. Free names in a `#=`
   are atoms assay knows: the map's names, claim atoms, and names the `#=` introduces, which assay
-  mints. A trailing `for` clause on a `#=` is the run's scope (§ 2.4).
+  mints. A `#=` that is a declaration (`one sig …`) is emitted at module level; any other is a
+  constraint. A trailing `for` clause on a `#=` is the run's scope (§ 2.4).
 
 ### § 2.2-the-harness-and-the-unit
 
@@ -153,8 +154,12 @@ anything less than tree-global is opened explicitly by the spec that wants it.
 One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN layout]:
 
 - `species.als` — opens `assay` and `shared`; every `alloy` fence line that is not a claim atom.
-- `claims.als` — opens `species`; every `one sig … extends <sig under Claim>` atom, and one
-  named set per load file, so a book's loads are set expressions.
+- `words.als` — opens `shared`; one atom per distinct literal on any map line in the document,
+  per braced class, and per name a `#=` introduces, with the class memberships the map lines
+  state and no others. Nothing else declares a literal: a claim may say `verb = chmod` because
+  some book spelled `chmod`, and one naming a word no book spells gets Alloy's own name error.
+- `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom,
+  and one named set per load file, so a book's loads are set expressions.
 - `laws.als` — opens `species` only, so the claim universe is free; every spec-authored `check`
   that carries a scope clause.
 - `corpus.als` — opens `claims`; every spec-authored `check` written without a scope clause,
@@ -171,8 +176,8 @@ scope is the corpus.
 
 A book fence compiles as follows.
 
-- Every distinct literal on a map line, every braced class, and every name a `#=` introduces
-  becomes a `one sig` atom. Each braced component adds a class membership fact for its literal.
+- Literals, classes, introduced names, and class memberships are `words.als`'s, shared by every
+  book in the document; a book module declares none.
 - Each line whose `#=` mentions `this` is a `Line` atom with `cmd`, `argv`, and `before` (the
   lines above it). Each `#=` without `this` is emitted as a fact, verbatim.
 - **`mech-speech-is-per-line-data`** [ACKED] — each line's `speech` is the set of claims the
@@ -181,8 +186,10 @@ A book fence compiles as follows.
   rule and by the analyzer's own load model later; nothing in a spec learns how it was assembled.
   Claims are atomic [TYPED]: a load brings a set of them and there is no partial override to
   model, since an oracle either handles an input shape or declines it whole.
-- Each `Line` becomes a `run` asserting its `#=` body with `this` substituted, at exact bounds
-  on `Shword`, `Class`, `Line`, and `Claim`, and at the default scope for everything else unless
+- Each `Line` becomes a `run` asserting its `#=` body with `this` substituted, conjoined with
+  the bodies of every line above it, so the first red run names the line (a run for one line
+  alone would let the solver choose an earlier line's convergence and dissolve the query). Exact
+  bounds on `Shword`, `Class`, `Line`, and `Claim`; the default scope for everything else unless
   the `#=` ends in a `for` clause, which is passed through as written. A run that finds no
   instance is red.
 
@@ -251,6 +258,7 @@ the same literals in a class; the fixture states only what is true of the world:
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
+#= inode_x.scheme = Inode and inode_z.scheme = Inode
 #= a_path.reaches = inode_x.reaches and d_path.reaches = inode_z.reaches
 #= inode_x.worldParent = fs_1 and inode_z.worldParent = fs_2 and fs_1.worldParent = boot_1 and fs_2.worldParent = boot_1
 
@@ -263,32 +271,40 @@ the same literals in a class; the fixture states only what is true of the world:
 #= this in Elided
 ```
 
-Its generated module, abridged:
+The document's words module and the book's generated module, abridged:
+
+```alloy
+module words
+open shared
+
+one sig stat, dash_c, fmt_i_d, cat, proc_boot_id, chmod, g_minus_w, g_plus_w, a_path, d_path, inode_x, inode_z, fs_1, fs_2, boot_1, … extends Shword {}
+one sig slash_path, bare_word extends Class {}
+fact { class = a_path->slash_path + d_path->slash_path + … }
+```
 
 ```alloy
 module books/siblings_across_filesystems
 open claims
 
-one sig stat, c_flag, fmt_i_d, a_path, d_path, chmod, g_minus_w, g_plus_w, inode_x, inode_z, fs_1, fs_2, boot_1 extends Shword {}
-fact { a_path.class = slash_path  d_path.class = slash_path }
-fact { a_path.reaches = inode_x.reaches and d_path.reaches = inode_z.reaches
-       inode_x.worldParent = fs_1 and inode_z.worldParent = fs_2 and fs_1.worldParent = boot_1 and fs_2.worldParent = boot_1 }
+fact { inode_x.scheme = Inode and inode_z.scheme = Inode }
+fact { a_path.reaches = inode_x.reaches and d_path.reaches = inode_z.reaches }
+fact { inode_x.worldParent = fs_1 and inode_z.worldParent = fs_2 and fs_1.worldParent = boot_1 and fs_2.worldParent = boot_1 }
 
 one sig line_3, line_4 extends Line {}
 fact { line_3.cmd = chmod  line_3.argv = 0->g_minus_w + 1->a_path  no line_3.before }
 fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.before = line_3 }
 fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod  line_4.speech = line_3.speech }
 
-run line_3 { line_3 in Ran }    for 4 but exactly 13 Shword, exactly 1 Class, exactly 2 Line, exactly 19 Claim
-run line_4 { line_4 in Elided } for 4 but exactly 13 Shword, exactly 1 Class, exactly 2 Line, exactly 19 Claim
+run line_3 { line_3 in Ran }                  for 4 but exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 16 Claim
+run line_4 { line_3 in Ran and line_4 in Elided } for 4 but exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 16 Claim
 ```
 
 Everything that makes `line_4` elide is the spec's: Carl's claim that chmod reads its operand
-under `Path` when the operand is a `slash_path`, Tessa's claim that a slash path under `Path`
-yields an entry, the shared module's derivation of the resolution from those, and its definition
-of `Elided`. Hand the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second
-claim declines, and the same site guards. Assay saw two literals, one class, two lines, and a
-set of claims.
+under `Path`, Tessa's claim that a `slash_path` under `Path` yields an inode, the spec's
+derivation of the resolution from those, and the shared module's definition of `Elided`. Hand
+the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second claim declines, and
+the same site guards. Assay saw literals, two classes, two lines, and a set of claims. The
+worked version of this, with all its books, is `strawman-2/` in the evidence base.
 
 ## § 3-implementation-sketch
 
@@ -309,7 +325,11 @@ Light on purpose; the builder has latitude on everything not marked.
   the strawman-2 document on this harness, in place, as the tool's own fixture, and replace its
   expected report with an observed one. The bites to expect are the experiment's first findings:
   the subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech;
-  the default scope for spec-owned sigs in book runs. The strawman is not promoted to the spec
+  the default scope for spec-owned sigs in book runs; and whether a `run` over the open world a
+  fixture leaves is too permissive, since a run passes when any admitted world gives the verdict,
+  so a book must pin what the solver would otherwise choose (the strawman pins each printed
+  token's scheme), and a `check` with the line's convergence taken as given is the alternative
+  to price. The strawman is not promoted to the spec
   tier [TYPED nack]; turning 311 into a specification is separate, clean-context, product-focused
   frontier work.
 
