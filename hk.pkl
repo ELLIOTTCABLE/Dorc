@@ -114,7 +114,9 @@ local linters = new Mapping<String, Step> {
     // A shared half stands for every document beside it, so editing one re-lints them all.
     // Through `mise run` so relative paths resolve from hk's cwd, not wherever mise was started.
     ["assay"] {
-        glob = List("spec/**/*.md")
+        glob = List("specs/**/*.md")
+        // The tier's steering files are prose, not documents assay reads.
+        exclude = List("specs/**/AGENTS.md", "specs/**/CLAUDE.md")
         check = "mise run assay -- {{files}}"
     }
     // Spelling, over `spike/**` AND the prose corpus (`Research/**/*.md`) AND the LLM-maintained
@@ -222,7 +224,8 @@ local gates = new Mapping<String, Step> {
     // directions. Builder-completion tier, never pre-commit: it runs a solver.
     ["assay-lock"] {
         profiles = List("slow")
-        glob = List("spec/**/*.md", "spec/**/*.lock.json")
+        glob = List("specs/**/*.md", "specs/**/*.lock.json")
+        exclude = List("specs/**/AGENTS.md", "specs/**/CLAUDE.md")
         check = "mise run assay -- --check {{files}}"
         output_summary = "combined"
     }

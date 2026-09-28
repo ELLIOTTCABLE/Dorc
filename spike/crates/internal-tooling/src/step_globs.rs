@@ -82,13 +82,19 @@ const REACH: &[Reach] = &[
     Reach {
         name: "sees-a-specification-document",
         step: "assay",
-        path: "spec/identity/model.md",
+        path: "specs/identity/model.md",
         want_seen: true,
     },
     Reach {
         name: "leaves-a-design-note-alone",
         step: "assay",
         path: "Research/notes/30Y-assay-design-tier-models-in-alloy.md",
+        want_seen: false,
+    },
+    Reach {
+        name: "leaves-the-tier-steering-alone",
+        step: "assay",
+        path: "specs/AGENTS.md",
         want_seen: false,
     },
 ];
