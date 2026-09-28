@@ -28,17 +28,18 @@
 
 ---
 
-## IN FLIGHT — the assay build, between its two halves (2026-09-28)
+## IN FLIGHT — the assay build, both halves folded, three human items open (2026-09-28)
 
-The design-tier checker of `notes/30Y` is half built. Lane 1 (the compiler, the fixture, the
-bounded runner, the heavy-work lock) folded into `ai/main` on 2026-09-28; its account is
-`notes/30Yd`, its conductor ledger `notes/30Yc` (§ 3 carries the second half's remit, § 5 what
-`plans/30Z` § 6 will say). Lane 2 (the lock, gate placement, the `exclusive` lock on the other
-heavy tasks, the `both` gate back on) is NOT briefed: the human ruled a fresh conductor context
-between the halves. The midpoint the human asked for holds and is theirs to use now: `mise run
-assay -- <spec.md>` compiles a specification into `target/alloy/<stem>/`, and `mise run alloy --
---timeout <s> <that directory>` runs it bounded. `plans/30Z` is the praxis for writing against it;
-its § 6 waits on lane 2. Windows leg only until lane 2; strawmen under `notes/30Ya-*` are frozen.
+The design-tier checker of `notes/30Y` is built: `mise run assay -- <spec.md> [--parse | --check |
+--write]` compiles a specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it
+and locks `<stem>.lock.json` beside the spec; `mise run alloy -- --timeout <s> <dir>` runs a
+directory bounded; hk steps `assay` (pre-commit lints) and `assay-lock` (completion) are wired to
+`spec/**`, which does not exist yet. The machine-global heavy-work lock wraps `alloy`, `gate:full`,
+`gate:full-quiet`, and `gate:arc`; exit 75 is contention, do other work. Ledger `notes/30Yc`
+(§ 7 the close); as built `notes/30Yd`, `notes/30Ye`; praxis `plans/30Z`. No builder in flight.
+Open, the human's: seven heavy tasks left unwrapped by a permission denial; the ruling on whether
+a red the lock already records exits 1; `plans/30Z` § 6 once that is ruled. Strawmen under
+`notes/30Ya-*` are frozen.
 
 The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
 `Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of

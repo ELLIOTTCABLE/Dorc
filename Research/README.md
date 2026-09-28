@@ -234,7 +234,9 @@ the license-contamination map. Cross-references are `docID:slug`.
   `notes/30Yc` (the assay build's conductor ledger: the dispatch rulings, the lane adjudications,
   the chafe register sorted A/B/C) · `notes/30Yd` (the compiler lane as built: the `mise run
   assay` compiler, the fixture, the runner's bounds and the heavy-work lock, the strawman-3
-  smoke) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
+  smoke) · `notes/30Ye` (the lock-and-gates lane as built: self-naming words, `--parse`,
+  `--check`/`--write` and the lock beside the spec, the hk steps over `spec/**`, the re-entrant
+  heavy-work lock around the gates) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
   with held-open holes, the soundness habits, the document form; generic to any Alloy-checked
   specification, with assay's own vocabulary confined to one section; § 6 awaits the lock).
   The research evidence base (the four fronts' sources and turn notes, and its `plan.md`: the

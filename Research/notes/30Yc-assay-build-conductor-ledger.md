@@ -223,3 +223,43 @@ here what it thinks belongs there. All [CONDUCTOR]:
   is a name for the literal beneath it, munged when it is not an identifier, self-named when equal;
   every word trivially has a name; the only refusal is one name over two literals or one literal
   under two names. `30Y` § 2.1, § 2.6 and `30Z` § 5 corrected.
+
+## § 7-the-second-half-close (2026-09-28)
+
+- **Lane 2 — CLOSED**, folded to `ai/main` by rebase onto the moved tip (only the generated slug
+  index overlapped) and fast-forward at `(AI dsn new) Report the lock-and-gates lane as built`;
+  worktree and branch removed. As built: `notes/30Ye`. Both gates green on both legs, run through
+  the wrapped tasks. Strawman-2 compiles (zero refusals, six literals self-named); its frozen
+  shared half still spells the pre-rename harness field `before`, so its laws error under Alloy
+  and stay unrecorded; frozen, no action.
+- Adjudication of the thirteen disclosed deviations: twelve endorsed, none reversed, one held for
+  the human (`30Ye:dev-exclusive-wrapping-partly-denied`). Conductor mistakes named: the brief
+  never said what hk hands a step (`{{files}}`, several documents, halves and locks standing for
+  their documents); the `test` task's one-filter limit was unknown to the brief; the hidden
+  `<task>:held` twin was the only shell-free way to wrap a multi-step task, and its visible bypass
+  is accepted as such. The hand-rolled JSON module (`json.rs`, now shared by the lock and the lock
+  reader) was a lane-1 choice made without asking about a dependency; it works and is small; a
+  review point, not a defect.
+- Chafe, sorted. **A**: `30Ye:chafe-scope-error-surfaces-at-solve` (a missing `bookScope` parses
+  clean and errors only at solve, so the parse lint cannot see it; an `error` row under `--check`
+  is where it lands) · `30Ye:chafe-scope-renders-int-lowercase` (cosmetic). **B**:
+  `30Ye:chafe-main-slug-index-stale`, whose root cause is the conductor's: the `slugs` check reads
+  the WORKING TREE, so the regeneration at the lane-2 dispatch indexed the sibling conductor's
+  uncommitted edits and every other worktree then refused any Markdown commit; the tooling should
+  index committed or staged content, a fix the human schedules ·
+  `30Ye:chafe-test-task-takes-one-filter` (`mise run test -- a b` dies in the doctest half) ·
+  `30Ye:chafe-too-many-lines` · `30Ye:chafe-out-of-repo-paths-verbatim`. **C**: none; no
+  specification content changed in either lane.
+- Open for the human, in order of weight: (1) the seven heavy tasks the classifier left unwrapped
+  (`bless`, `bless:dry`, `bless:case`, `bless:floor`, `verify:kani`, `verify:lean`,
+  `verify:translate`), theirs to apply or authorise, following the three `:held` twins that
+  landed. (2) `30Ye:disagree-locked-red-still-exits-one`: `--check` exits 1 on any red row even
+  when the committed lock records it red, so a document carrying an expected red can never pass
+  the `assay-lock` step, against `30Z` 2.6-hold-a-question-open's recorded-red form. Conductor's
+  recommendation: `--check` exits 0 iff computed matches committed, reds included, and the report
+  lists every red as residue; a NEW red is a mismatch and exits 1; committing the lock is the
+  ceremony that accepts a red. (3) `30Ye:disagree-book-checks-premise-absent`: a book line's
+  witness is its book's run; the lock records `absent` today and should record the run's result;
+  `30Y` § 2.5 now says so; a small follow-up when assay is next touched.
+- Nothing else builds in this arc. `30Z` § 6 is written once (2) is ruled and the lock's gate
+  behaviour is what the section describes.
