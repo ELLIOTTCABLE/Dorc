@@ -305,12 +305,17 @@ abstract sig mLevel {}
 
 sig mKey extends mLevel {
    value: one Shword,
-   scheme: one mScheme,
+   scheme: lone mScheme,
+   cellSort: lone mSort,
    shape: lone mShape,
    parent: lone mLevel,
    yielded: lone mKey,
    reaches: lone mReferent
 }
+
+fact { all k: mKey | some k.scheme iff no k.cellSort }
+
+fact { all k: mKey | some k.cellSort implies no k.shape }
 
 fact { all k: mKey | k.shape.ofScheme in k.scheme }
 
@@ -324,16 +329,16 @@ fact { no k: mKey | k in k.^yielded }
 
 fun keysOfShape[s: mShape]: set mKey { shape.s }
 
-fun keysOfSort[k: mSort]: set mKey { {x: mKey | primaryOf[x.scheme] = k} }
+fun keysOfSort[k: mSort]: set mKey { {x: mKey | primaryOf[x.scheme] = k or x.cellSort = k} }
 
-pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] and no yieldsTo[k.shape] }
+pred isPrimaryKey[k: mKey] { (isPrimary[k.scheme] and no yieldsTo[k.shape]) or some k.cellSort }
 
 pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 ```
 
 <!-- prose-translation -->
 > An mKey has three parts: an mValue, its mScheme, and its mParent (1.6-parent-one-per-key).
-> The mScheme is always declared; there is no default mScheme, and a bind or a mark always names one.
+> The mScheme is always declared, except that a cell's mKey has its cell mSort in place of an mScheme and matches no shape (1.9-cell-a-singleton-sort); there is no default mScheme, and a bind or a mark always names one.
 > The mValue is a literal: the shell word bound at the bind.
 > The mParent is the instance one of the seats of 1.6-parent-one-per-key supplies, or none, which leaves the mFullyQualifiedKey unknown from that level.
 > A lookup chooses among the shapes its mScheme declares, never outside them: the shape an mKey matches is a shape of its own mScheme.
@@ -455,11 +460,13 @@ pred parentRefused[k: mKey] { some disj p, q: supplies[k] }
 pred supplyFits[k: mKey] {
    one supplies[k]
    some identifiedIn[k.shape] implies primaryOf[supplies[k].scheme] = identifiedIn[k.shape]
+   some k.cellSort implies sortOfKey[supplies[k]] = cellParentSort[k.cellSort]
 }
 
 fact {
    all k: mKey {
-      no k.shape implies no k.parent
+      (no k.shape and no k.cellSort) implies no k.parent
+      some k.cellSort implies k.parent = (supplyFits[k] implies supplies[k] else none)
       isRoot[k.shape] implies k.parent = rootShape.(k.shape)
       (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape] and no yieldsTo[k.shape])
          implies (one k.parent and k.parent in mRoute)
@@ -476,6 +483,7 @@ pred true_SuppliesParent[s: SuppliesParent] {
 <!-- prose-translation -->
 > Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
 > An mKey matching no shape has no mParent.
+> A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
 > A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute (1.10-vantage-route-placeholder-witness).
 > The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
@@ -613,24 +621,42 @@ their combination is 3.2-compare-one-chokepoint-four-answers's.
 
 > Pre-311 documents write _aspect_.
 
-A cell is a singleton mSort identified in its mParent. Its owner declares it `:identified-in`
-the mParent's mSort (2.2-primary-of-and-identified-in). Under any one mParent instance it has
-exactly one mKey, written `parent-key@sm.Sort`, with the mSort's name in full reverse-DNS. That
-mKey is minted at the mark that names it (1.4-key-and-its-two-views, 1.6-parent-one-per-key).
-The singleton mSort has no mScheme of its own. The mScheme left of `@` is the mParent's. A
-cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key).
+A cell's mKey is written `parent-key@sm.Sort`, with the mSort's name in full reverse-DNS, and is
+minted at the mark that names it (1.4-key-and-its-two-views, 1.6-parent-one-per-key); the
+mScheme left of `@` is the mParent's. A cell's mReferent may hold its mState elsewhere than in
+its mParent, and the mState may be diffuse: the cell's may-read set (2.5-may-read-the-readset)
+says where, and the freshness of a fact about the cell follows the writesets that reach the cell
+through that set (2.6-may-write-the-writeset), together with any write that covers the mParent
+(2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species). Two cells of
+one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s, and
+3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts; a
+writeset entry naming the mParent covers its cells (step 2 of the walk). The marked line that
+answers a cell is a read of the cell's mKey, and the fact's identity is the mTopic
+(1.8-fully-qualified-key-topic-and-derivation). An mSort with no mScheme at all has only such
+mKeys (1.3-scheme-a-way-of-writing).
 
-A cell's mReferent may hold its mState elsewhere than in its mParent, and the mState may be
-diffuse. The cell's may-read set (2.5-may-read-the-readset) says where that mState is held. The
-freshness of a fact about the cell follows the writesets that reach the cell through that set
-(2.6-may-write-the-writeset), together with any write that covers the mParent
-(2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species).
+```alloy
+sig DeclaresCell extends Statement { theCell: one mSort, cellParent: one mSort }
 
-Two cells of one mParent are two mSorts, with two may-read sets and two `:observer-dependence`s.
-3.2-compare-one-chokepoint-four-answers decides between them as between any two mSorts. A
-writeset entry naming the mParent covers its cells (§3.2, step 2). The marked line that answers
-a cell is a read of the cell's mKey. The fact's identity is the mTopic
-(1.8-fully-qualified-key-topic-and-derivation).
+fact { all d: DeclaresCell | d.speaker = d.theCell.sortOwner }
+
+fun cellParentSort[c: mSort]: lone mSort { (DeclaresCell & InForce & theCell.c).cellParent }
+
+fact { all c: mSort | lone cellParentSort[c] }
+
+fact { all k: mKey | some k.cellSort implies some cellParentSort[k.cellSort] }
+
+fact { all disj a, b: mKey | a.cellSort = b.cellSort and some a.parent and a.parent = b.parent implies a = b }
+
+pred true_DeclaresCell[d: DeclaresCell] {}
+```
+
+<!-- prose-translation -->
+> A cell is a singleton mSort identified in its mParent: its owner declares it `:identified-in` the mParent's mSort (2.2-primary-of-and-identified-in), one mParent mSort per cell.
+> The singleton mSort has no mScheme of its own; its mKeys carry the cell mSort in place of an mScheme (1.4-key-and-its-two-views).
+> Under any one mParent instance it has exactly one mKey.
+> A cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key, 3.2-compare-one-chokepoint-four-answers).
+> Declaring a cell claims nothing about the world.
 
 > Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it
 > through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot
@@ -688,12 +714,13 @@ sig VerdictFact extends Statement {
    topic: one mKey,
    atLine: one Line,
    markedReads: set mKey,
+   underObservers: set mKey,
    dependsOn: set mReferent
 }
 ```
 
 <!-- prose-translation -->
-> A verdict fact is the measured answer to a read of a cell, taken at a mSite.
+> A verdict fact is the measured answer to a read of a cell, taken at a mSite, under the instances its mEntryChain lent (3.4-entry-and-lends).
 > Its readset is the body's marked reads (2.5-may-read-the-readset).
 > The tool-oracle author vouches it: the vouch is the fact's speaker.
 
@@ -933,7 +960,7 @@ sig DeclaresMayRead extends Statement { ofKey: one mKey, readEntry: one mKey }
 
 sig ClosesMayRead extends Statement { readSort: one mSort }
 
-fact { all d: DeclaresMayRead | d.speaker = primaryOf[d.ofKey.scheme].sortOwner }
+fact { all d: DeclaresMayRead | d.speaker = sortOfKey[d.ofKey].sortOwner }
 
 fact { all d: ClosesMayRead | d.speaker = d.readSort.sortOwner }
 
@@ -943,7 +970,7 @@ fun mayReadEdge: mKey -> mKey { {k, e: mKey | e in mayReadEntries[k]} }
 
 pred mayReadClosed[s: mSort] { some ClosesMayRead & InForce & readSort.s }
 
-pred sortClosed[k: mKey] { mayReadClosed[primaryOf[k.scheme]] }
+pred sortClosed[k: mKey] { mayReadClosed[sortOfKey[k]] }
 
 pred readsetMemberIsTop[k: mKey] {
    some m: k.*mayReadEdge |
@@ -1011,11 +1038,11 @@ sig ClosesMayWrite extends Statement { closedLine: one Line }
 
 sig DeclaresEntails extends Statement { fromKey: one mKey, entailedEntry: one mKey }
 
-sig FinishesEntailment extends Statement { finishedShape: one mShape }
+sig FinishesEntailment extends Statement { finishedSort: one mSort, finishedShape: lone mShape }
 
-fact { all d: DeclaresEntails | d.speaker = primaryOf[d.fromKey.scheme].sortOwner }
+fact { all d: DeclaresEntails | d.speaker = sortOfKey[d.fromKey].sortOwner }
 
-fact { all d: FinishesEntailment | d.speaker = primaryOf[d.finishedShape.ofScheme].sortOwner }
+fact { all d: FinishesEntailment | d.speaker = d.finishedSort.sortOwner }
 
 fun atMostEntries[l: Line]: set mKey { (DeclaresMayWrite & InForce & writeLine.l).writeEntry }
 
@@ -1023,7 +1050,9 @@ pred atMostClosed[l: Line] { some ClosesMayWrite & InForce & closedLine.l }
 
 fun entailed[k: mKey]: set mKey { (DeclaresEntails & InForce & fromKey.k).entailedEntry }
 
-pred entailmentFinished[k: mKey] { some FinishesEntailment & InForce & finishedShape.(k.shape) }
+pred entailmentFinished[k: mKey] {
+   some d: FinishesEntailment & InForce | d.finishedSort = sortOfKey[k] and d.finishedShape = k.shape
+}
 
 fun wholeWriteEntries[l: Line]: set mKey { (DeclaresMayWrite & GivenWhole & InForce & writeLine.l).writeEntry }
 
@@ -1089,7 +1118,7 @@ pred true_ClosesMayWrite[d: ClosesMayWrite] {
 pred true_DeclaresEntails[d: DeclaresEntails] {}
 
 pred true_FinishesEntailment[d: FinishesEntailment] {
-   all k: keysOfShape[d.finishedShape] | some k.reaches implies
+   all k: keysOfSort[d.finishedSort] | k.shape = d.finishedShape and some k.reaches implies
       (k.reaches).affects in k.reaches.*holds + entailed[k].reaches
 }
 
@@ -1147,20 +1176,29 @@ run law_exclusion_readings_agree_premise {
 > A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is
 > not it.
 
-mKey X inside mParent A `:corresponds` to mKey Y inside mParent B: they denote the same
-mReferent. The owner of the transition between A and B declares it. That owner is neither mKey's
-mScheme owner.
-
 Absent a mCorrespondence, mKeys across a transition `compare()` UNKNOWN unless a
-mFullyQualifiedKey binds mTokens on both sides. The mCorrespondence is the model's only declared
-sameness generator besides mToken equality.
+mFullyQualifiedKey binds mTokens on both sides, which is the walk's step 1; the mCorrespondence
+is the model's only declared sameness generator besides mToken equality, and it is consumed as
+one SAME mDerivation by `compare()` (3.2-compare-one-chokepoint-four-answers), vouch-tier,
+attributed to the transition author. Arity: per transition pair. Declared by: the transition
+owner. Default: absent, so UNKNOWN. Danger: a wrong mCorrespondence is a wrong SAME.
 
-- Arity: per transition pair.
-- Declared by: the transition owner.
-- Default: absent, so UNKNOWN.
-- Consumer: a SAME mDerivation (1.8-fully-qualified-key-topic-and-derivation), vouch-tier,
-  attributed to the transition author.
-- Danger: a wrong mCorrespondence is a wrong SAME.
+```alloy
+sig DeclaresCorresponds extends Statement { keyX: one mKey, keyY: one mKey }
+
+fact { all d: DeclaresCorresponds | d.speaker not in d.keyX.scheme.schemeOwner + d.keyY.scheme.schemeOwner }
+
+pred corresponds[x, y: mKey] {
+   some d: DeclaresCorresponds & InForce | (d.keyX = x and d.keyY = y) or (d.keyX = y and d.keyY = x)
+}
+
+pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.reaches = d.keyY.reaches }
+```
+
+<!-- prose-translation -->
+> mKey X inside mParent A `:corresponds` to mKey Y inside mParent B: they denote the same mReferent.
+> The owner of the transition between A and B declares it, and that owner is neither mKey's mScheme owner.
+> A mCorrespondence is true when the two mKeys reach one mReferent, or both reach none.
 
 > Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u alice` knows
 > inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint are mKeys
@@ -1168,19 +1206,42 @@ sameness generator besides mToken equality.
 
 ### § 2.8-observer-dependence-and-independence
 
-The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken
-under. K's owner declares the complement, `:observer-independence` of O, per mSort. By default,
-a cell measured under a lent mKey of O is assumed to depend on it. Its fact is then about
-(mReferent, O-instance). It never stands for the same mReferent under another O-instance.
+No `resolve()` can measure observer-dependence: the object is the same and the answer differs,
+so it must remain speech, and measurement in the denoted context (`plans/27C`) stays the default
+lane. The observers a read was taken under are the lent instances of its mEntryChain
+(3.4-entry-and-lends), held on the verdict fact. Arity: per (mSort, O). Declared by: the mSort
+owner. Default: dependent, so no carry across O-instances. Consumer: the SAME consumer, as a
+qualifier on the claim's mTopic. Danger: a false independence.
 
-No `resolve()` can measure observer-dependence: the object is the same and the answer differs.
-It must remain speech. Measurement in the denoted context (`plans/27C`) stays the default lane.
+```alloy
+sig DeclaresObserverIndependence extends Statement { independentSort: one mSort, ofObserver: one mSort }
 
-- Arity: per (mSort, O).
-- Declared by: the mSort owner.
-- Default: dependent, so no carry across O-instances.
-- Consumer: the SAME consumer, as a qualifier on the claim's mTopic.
-- Danger: a false independence.
+fact { all d: DeclaresObserverIndependence | d.speaker = d.independentSort.sortOwner }
+
+pred observerIndependent[k: mSort, o: mSort] {
+   some DeclaresObserverIndependence & InForce & independentSort.k & ofObserver.o
+}
+
+fun topicObservers[f: VerdictFact]: set mKey {
+   {o: f.underObservers | not observerIndependent[sortOfKey[f.topic], sortOfKey[o]]}
+}
+
+pred sameTopic[f, g: VerdictFact] {
+   walkOfKeys[f.topic, g.topic] = SAME
+   all o: topicObservers[f] | some p: topicObservers[g] | walkOfKeys[o, p] = SAME
+   all p: topicObservers[g] | some o: topicObservers[f] | walkOfKeys[o, p] = SAME
+}
+
+pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
+   all f: VerdictFact | sortOfKey[f.topic] = d.independentSort implies
+      no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.reaches
+}
+```
+
+<!-- prose-translation -->
+> The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken under; K's owner declares the complement, `:observer-independence` of O, per mSort.
+> By default, a cell measured under a lent mKey of O is assumed to depend on it: its fact is then about (mReferent, O-instance), and it stands for another fact only when the two are about one mReferent under O-instances that are SAME.
+> `:observer-independence` of O is true when no answer about a K-cell depended on the O-instance it was taken under.
 
 ### § 2.9-the-traversal-and-the-region-test
 
@@ -1214,7 +1275,7 @@ pred true_EmitsAliasNothingElse[d: EmitsAliasNothingElse] {
    no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.reaches and c.reaches = d.atLevel.reaches
 }
 
-fun sortOfKey[k: mKey]: lone mSort { primaryOf[identity[k].scheme] }
+fun sortOfKey[k: mKey]: lone mSort { primaryOf[identity[k].scheme] + identity[k].cellSort }
 
 fun traversalMembers[k: mKey]: set mKey {
    crossed[k] + (traversalClosed[k] implies none else k.parent & mKey)
@@ -1371,17 +1432,44 @@ Invocations are not in the fences; a record either is in force or is not.
 
 ### § 2.11-composite-sorts-and-roles
 
-A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a
-mCompositeSort. The author who knows the roles mints it, normally the tool author. That mSort's
-identity is its owner's function of its named parts. Plurality of inputs is an mSort with
-structure, never a set of mParents. The may-read set of a mCompositeSort is the union of its
-parts' may-read sets.
+The author who knows the roles mints the mCompositeSort, normally the tool author. Plurality of
+inputs is an mSort with structure, never a set of mParents: a composite mKey has one mParent as
+any mKey does, and its parts beside it. Arity: per composite. Declared by: the author holding
+the roles. Default: not applicable. Consumer: identity (3.1-identity-of-a-key), through
+`compare()`. Danger: as any mSort.
 
-- Arity: per composite.
-- Declared by: the author holding the roles.
-- Default: not applicable.
-- Consumer: identity (3.1-identity-of-a-key).
-- Danger: as any mSort.
+```alloy
+sig Role {}
+
+sig DeclaresComposite extends Statement { compositeSort: one mSort }
+
+fact { all d: DeclaresComposite | d.speaker = d.compositeSort.sortOwner }
+
+pred isComposite[s: mSort] { some DeclaresComposite & InForce & compositeSort.s }
+
+sig CompositeKey in mKey { part: Role -> lone mKey }
+
+fact { all k: CompositeKey | isComposite[sortOfKey[k]] and some k.part }
+
+fact { all k: mKey - CompositeKey | no k.part }
+
+pred compositeSame[x, y: mKey] {
+   x + y in CompositeKey
+   sortOfKey[x] = sortOfKey[y]
+   x.part.mKey = y.part.mKey
+   all r: x.part.mKey | walkOfKeys[x.part[r], y.part[r]] = SAME
+}
+
+fun compositeMayRead[k: mKey]: set mKey { mayReadEntries[k] + mayReadEntries[Role.(k.part)] }
+
+pred true_DeclaresComposite[d: DeclaresComposite] {}
+```
+
+<!-- prose-translation -->
+> A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a mCompositeSort: a composite mKey names one part per role.
+> That mSort's identity is its owner's function of its named parts: two composite mKeys of one mCompositeSort are SAME when they name the same roles and their parts are SAME role by role.
+> The may-read set of a mCompositeSort is the union of its parts' may-read sets.
+> Declaring a mCompositeSort claims nothing about the world.
 
 > Examples: a base and an overlay, or a primary and its replica set.
 
@@ -1451,6 +1539,7 @@ pred oneInstance[a, b: mLevel] { a = b }
 pred sameAtOneLevel[a, b: mLevel] {
    oneInstance[a, b]
    or (a + b in mKey and a.value = b.value and a.shape = b.shape and guaranteesUniqueReferent[a.shape])
+   or (a + b in mKey and some a.cellSort and a.cellSort = b.cellSort)
 }
 
 pred alignedSame[a, b: mLevel] {
@@ -1525,6 +1614,10 @@ pred everyStatementInForceIsTrue {
    all d: DeclaresPlaces & InForce | true_DeclaresPlaces[d]
    all d: RecordsLookedUpIn & InForce | true_RecordsLookedUpIn[d]
    all d: ClosesLookedUpIn & InForce | true_ClosesLookedUpIn[d]
+   all d: DeclaresCell & InForce | true_DeclaresCell[d]
+   all d: DeclaresCorresponds & InForce | true_DeclaresCorresponds[d]
+   all d: DeclaresObserverIndependence & InForce | true_DeclaresObserverIndependence[d]
+   all d: DeclaresComposite & InForce | true_DeclaresComposite[d]
 }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
@@ -1571,7 +1664,7 @@ run law_different_sorts_never_same_premise {
 
 <!-- prose-translation -->
 > The walk answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN.
-> One level: two levels are SAME iff they are one instance, or they are two mKeys with equal mValues whose shape carries `:guarantees-unique-referent`.
+> One level: two levels are SAME iff they are one instance, or they are two mKeys with equal mValues whose shape carries `:guarantees-unique-referent`, or they are two mKeys of one cell mSort (1.9-cell-a-singleton-sort).
 > Two chains are aligned-SAME at a pair of levels when the two levels have one height and every pair of levels above them of one height is SAME by the one-level rule.
 > Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
 > Step 1: if either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN; if one terminates at an mWorld the other does not share, the pair reads UNKNOWN.
