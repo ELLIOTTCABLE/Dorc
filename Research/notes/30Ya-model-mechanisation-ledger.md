@@ -608,7 +608,7 @@ they sit alongside the Alloy spec rather than only as e2e.
   a generator convention, soft.
 - 311 § 1.3 added as a fact: a scheme yields or is primary, never both; without it the laws
   module admits an instance where a stranger's primary claim on `Path` breaks monotonicity.
-- State: `strawman-2/spec/two-paths-one-inode.md` and `strawman-2/build/` at the commit that
+- State: `notes/30Ya-strawman-2/spec/two-paths-one-inode.md` and its `build/` at the commit that
   follows this entry hold the final shape. Everything is unrun; every result in `report.json`
   is expected, not observed. Soft spots an implementer inherits: braced class words appear in
   no book, so `{class}` may be unnecessary in books; the `#=` verdict forms are the only
@@ -688,7 +688,7 @@ they sit alongside the Alloy spec rather than only as e2e.
   the verdict, so the book must pin what the solver would otherwise choose, and a `check` with
   convergence taken as given is the alternative to price in the first experiment; `Key in
   Shword` makes one value under two parents unrepresentable, a modelling choice for the 311 work.
-- State: `strawman-2/` rewritten on this harness (`harness/assay.als`, `spec/shared.md`, the
+- State: `notes/30Ya-strawman-2/` rewritten on this harness (`harness/assay.als`, `spec/shared.md`, the
   spec, `build/`); everything unrun; `report.json` is expected, not observed. Next: rewind and
   dispatch the implementation of `30Y`.
 
@@ -770,7 +770,7 @@ they sit alongside the Alloy spec rather than only as e2e.
 - Conductor's choice of subject: the per-line outcome algebra past a wall (elide, guard, run,
   survive under the flag; footprints, backings, withholds; the identity tier's answers as
   opaque claims), the vocabulary assay is meant to own one day and the region `USER_STORY`
-  stages 2 and 5 narrate. `30Ya-strawman-3/` in the evidence base: nine books, ten laws, four
+  stages 2 and 5 narrate. `notes/30Ya-strawman-3/`: nine books, ten laws, four
   corpus checks; `FINDINGS.md` there is the fight record and carries the final division.
 - The runs (`notes/30Yb`; the lane folded into `ai/main` 2026-09-28, worktree and branch
   removed). Strawman-2: five mechanical fights; three law premises vacuous at the default

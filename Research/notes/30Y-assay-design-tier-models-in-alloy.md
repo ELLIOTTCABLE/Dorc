@@ -5,7 +5,8 @@
 > code-tier instrument this extends downward to the design tier) and of `notes/30X` (the testing
 > architecture the correspondence half will eventually ride). Its ledger is `notes/30Ya`; its
 > evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
-> source graded; the worked fixture is `strawman-2/` there). Grades: **[TYPED]** the human typed
+> source graded); the worked fixtures are `notes/30Ya-strawman-2/` and `notes/30Ya-strawman-3/`,
+> both run (`notes/30Yb`). Grades: **[TYPED]** the human typed
 > it · **[ACKED]** confirmed in dialogue · **[CONDUCTOR]** conductor-derived, unratified. Every
 > name here is STRAWMAN and renames freely (`rul-strawman-formats-no-compat`). This document is
 > about the tooling only: what assay reads, what it builds, what it runs, and what it reports.
@@ -347,8 +348,7 @@ because a claim in force is true; it may not revisit line 3, because that is a p
 only hunt for a world the fixture admits in which the questions about line 4 do not all spare.
 Hand the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second claim declines,
 and the same site is forced to guard. Assay saw literals, two classes, two lines, a declaration,
-and a set of claims. The worked version of this, with all its books, is `strawman-2/` in the
-evidence base.
+and a set of claims. The worked version of this, with all its books, is `notes/30Ya-strawman-2/`.
 
 ## § 3-implementation-sketch
 
@@ -367,7 +367,7 @@ Light on purpose; the builder has latitude on everything not marked.
   pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
   path-filtered the same way; larger scopes in an opt-in lane.
 - **First experiment** [ACKED: minimal harness first, then back to 311 to use it]: point assay at
-  the strawman-2 document where it sits, as the tool's own fixture, and replace its expected
+  the `notes/30Ya-strawman-2` document where it sits, as the tool's own fixture, and replace its expected
   report with an observed one. The bites to expect are the experiment's first findings: the
   subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech; the
   ceilings the shared `bookScope` should carry; and how far the strawman's fixtures under-pin

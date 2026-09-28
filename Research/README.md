@@ -227,9 +227,12 @@ the license-contamination map. Cross-references are `docID:slug`.
   ledger: the research fronts, every human-typed lean and ruling of the design sittings, the
   scope map of what in the corpus is modelable) · `notes/30Yb` (the Alloy runner lane: the
   `mise run alloy` task, module resolution as observed, and both strawmen run for real, every
-  fight recorded); the strawmen and the fight division live in
-  `.claude/research/design-model-mechanisation-prior-art/` (`strawman-2/`, the identity model's
-  first cut; `30Ya-strawman-3/`, the outcome algebra past a wall, with its `FINDINGS.md`).
+  fight recorded) · `notes/30Ya-strawman-2/` (the identity model's first cut as a
+  specification: harness, shared module, spec, hand-generated build, observed results) ·
+  `notes/30Ya-strawman-3/` (the outcome algebra past a wall, the same shape, plus `FINDINGS.md`,
+  the fight record and its division into correctness-chafe, tooling-tune, and encoding cost).
+  The research evidence base (the four fronts' sources and turn notes) stays in
+  `.claude/research/design-model-mechanisation-prior-art/`.
   Current state: `LIVING_STATUS.md`; what follows: `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
   against a real machine: the ssh executor (`dorc apply host <plan.sh` does its own ssh'ing),
