@@ -190,14 +190,11 @@ Answered by default as stated; a word from the human overrides.
   `Research/README.md`'s rule that a mechanised note moves under its own ID. Fixed in the shared
   corpus walk (`spike/crates/internal-tooling/src/corpus.rs`, `docids.rs`), two lines, committed
   with the move. The lint is silent over the whole tree afterward.
-- **[TYPED]** 2026-09-28: every document in the `30Z` format is spelled `<stem>.assay.md`.
-  Applied: assay finds the shared halves as `shared.assay.md` and `shared-laws.assay.md`, no
-  compat; the fixture, its expected modules, the task text, `specs/AGENTS.md`, and `plans/30Z`
-  § 5 follow. Consequence, unruled: the lock and the out directory take the stem
-  `311-identity.assay` (`specs/311-identity.assay.lock.json`; `target/alloy/311-identity.assay/`).
-- `fnd-pipeline-stands-on-the-empty-document` — `mise run assay -- specs/311-identity.assay.md
-  --parse` compiles and parses the fence-less document with the shared halves beside it; the
-  default book scope reads `5 but 4 Int, 7 seq` plus assay's exact bounds.
+- **[TYPED]** 2026-09-28, tooling settled and working: every `30Z` document is spelled
+  `<stem>.assay.md` (the shared halves included; assay refuses any other name); the lock is
+  `<stem>.lock.json` and the out directory `target/alloy/<stem>/`; the docID lint knows
+  `specs/` and walks all of `Research/` by filename, the quarantine included.
+  `mise run assay -- specs/311-identity.assay.md --parse` is green on the fence-less document.
 
 ## § 5-state-at-the-rewind
 
