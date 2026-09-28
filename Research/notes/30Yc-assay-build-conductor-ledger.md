@@ -263,3 +263,25 @@ here what it thinks belongs there. All [CONDUCTOR]:
   `30Y` § 2.5 now says so; a small follow-up when assay is next touched.
 - Nothing else builds in this arc. `30Z` § 6 is written once (2) is ruled and the lock's gate
   behaviour is what the section describes.
+
+### § 7.1-the-third-round (2026-09-28, same lane, same builder)
+
+- **[HUMAN]** rulings: a set of reds fully acked by the committed lock is a PASS; the seven denied
+  wrappings are applied under the human's manual approval, first thing; names need no further
+  injectivity work, since a spec author has the `#}` line to write a readable name; the passing
+  slug-index incoherence between sibling commits is accepted, fix optional.
+- Built and folded by fast-forward at `(AI dsn re) Report the wrapped lanes, accepted reds, and
+  book witnesses`: the seven wrappings landed in one edit with no denial (`bless`, `bless:dry`,
+  `bless:case`, `bless:floor`, `verify:kani`, `verify:lean`, `verify:translate`; `bless:dry` ran
+  under the lock in 177 seconds and released it); `--check` exits 0 iff the run matches the lock
+  row for row, reds included, and the report lists `accepted_reds`; a book line's and the corpus
+  book's checks take their premise from the book's run. `30Y` § 2.7 now states the ruling. Items
+  (1), (2), and (3) of § 7 are closed.
+- Deviations, both endorsed: on Windows the three `verify:*` tasks hand off to WSL and the
+  hand-off itself takes no Windows lock, the WSL run taking WSL's own (the heavy work is where the
+  lock is); `bless:case`'s environment moved onto its hidden twin with the body it applies to. One
+  praxis note: the builder folded a non-compiling intermediate commit into its successor by soft
+  reset rather than committing it under `DORC_KNOWN_BROKEN`; allowed surgery, and the honest
+  history the commit skill prefers would have kept it.
+- Remaining in this arc: `plans/30Z` § 6, which now waits only on the ruling of what an author
+  owes and when (§ 5 of this ledger is the conductor's draft of it).

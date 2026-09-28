@@ -28,18 +28,19 @@
 
 ---
 
-## IN FLIGHT — the assay build, both halves folded, three human items open (2026-09-28)
+## IN FLIGHT — nothing (2026-09-28)
 
-The design-tier checker of `notes/30Y` is built: `mise run assay -- <spec.md> [--parse | --check |
---write]` compiles a specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it
-and locks `<stem>.lock.json` beside the spec; `mise run alloy -- --timeout <s> <dir>` runs a
-directory bounded; hk steps `assay` (pre-commit lints) and `assay-lock` (completion) are wired to
-`spec/**`, which does not exist yet. The machine-global heavy-work lock wraps `alloy`, `gate:full`,
-`gate:full-quiet`, and `gate:arc`; exit 75 is contention, do other work. Ledger `notes/30Yc`
-(§ 7 the close); as built `notes/30Yd`, `notes/30Ye`; praxis `plans/30Z`. No builder in flight.
-Open, the human's: seven heavy tasks left unwrapped by a permission denial; the ruling on whether
-a red the lock already records exits 1; `plans/30Z` § 6 once that is ruled. Strawmen under
-`notes/30Ya-*` are frozen.
+The assay build closed 2026-09-28, both lanes folded (ledger `notes/30Yc`, § 7 the close; as
+built `notes/30Yd`, `notes/30Ye`; the plan `notes/30Y`; the praxis `plans/30Z`). The design-tier
+checker exists: `mise run assay -- <spec.md> [--parse | --check | --write]` compiles a
+specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it and locks
+`<stem>.lock.json` beside the spec, a set of reds the lock records being a pass; `mise run alloy
+-- --timeout <s> <dir>` runs a directory bounded; hk steps `assay` (pre-commit lints) and
+`assay-lock` (completion) are wired to `spec/**`, which does not exist yet. Every heavy task
+(`alloy`, the three gates, the four `bless` tasks, the three `verify:*` lanes) runs under the
+machine-global heavy-work lock; **exit 75 is contention, do other work**. The one open design
+item, what an author owes and when, decides `plans/30Z` § 6 and sits in `notes/30Yc` § 5 as the
+conductor's draft. Strawmen under `notes/30Ya-*` are frozen.
 
 The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
 `Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of
