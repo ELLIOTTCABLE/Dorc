@@ -640,7 +640,7 @@ raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks.alloy]
-description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, or timeout. `-- --timeout <seconds>` overrides the per-command cap (default 300). Relative paths resolve against the directory you ran mise from."
+description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, or timeout. `-- --timeout <seconds>` overrides the per-command cap (default 300). Alloy resolves every `open X` to `X.als` beside the ROOT file (minus the root's own `module a/b` path); `-- --open X=<file.als>` serves a file living elsewhere at that spot, and Alloy's messages then name the spot, not the file. Relative paths resolve against the directory you ran mise from."
 raw = true
 run = "java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
 
