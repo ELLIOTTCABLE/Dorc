@@ -233,11 +233,11 @@ A book fence compiles as follows.
 - Each line whose `#=` holds an outcome is a `Line` atom with `cmd`, `argv`, and `above` (the
   lines above it). Every `#=` declaration is emitted at module level. Every `#=` world fact is
   emitted as a fact, verbatim.
-- **`mech-speech-is-per-line-data`** [ACKED] — each line's `speech` is the set of claims the
-  `.` lines above it load, in order, a later load displacing an earlier one that answers the
-  same thing (by file stem, at v0), plus every claim declared on a line at or above it. It is
-  data the book module states, computed today by that rule and by the analyzer's own load model
-  later; nothing in a spec learns how it was assembled. Claims are atomic [TYPED]: a load brings
+- **`mech-speech-is-per-line-data`** [ACKED] — each line's `speech` is the union of the claims
+  the `.` lines above it load plus every claim declared on a line at or above it. A later load
+  displacing an earlier one is the analyzer's load model's to define and is not modelled at v0;
+  claims are a set. It is data the book module states, computed today by that rule and by the
+  analyzer's own load model later; nothing in a spec learns how it was assembled. Claims are atomic [TYPED]: a load brings
   a set of them and there is no partial override to model, since an oracle either handles an
   input shape or declines it whole.
 - **`mech-outcomes-are-checked`** [ACKED 2026-09-27] — each `Line` becomes a `check` whose
@@ -252,7 +252,8 @@ A book fence compiles as follows.
   and Alloy offers no document-wide scope, only a clause per command. So the spec spells it as a
   command with an agreed name and an empty body whose only content is its scope clause, and
   assay copies that clause onto the commands it generates (book outcomes, book runs, corpus
-  checks): `run bookScope {} for 12 but 4 Int` in `spec/shared` is every book's default;
+  checks): `run bookScope {} for 12 but 4 Int` in `spec/shared` is every book's default; a
+  document's own `run bookScope {}` overrides it for every book in that document;
   `run bookScope_<book> {}` in the owning document overrides one book; a trailing `for` on an
   outcome line overrides one command. Most specific wins. A scope is paid per command, so a
   large book's ceiling costs only that book's commands and never the small ones beside it. The
@@ -333,7 +334,7 @@ measurement its verdict rests on, as a claim, and then states its outcome:
 . ./carl_chmod.sh
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
-#} stat -c '%i %d' a_path d_path
+#} stat dash_c fmt_i_d a_path d_path
 #= w.inode_x.scheme = Inode and w.inode_z.scheme = Inode
 #= w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches
 #= w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 and w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1
@@ -408,7 +409,12 @@ Light on purpose; the builder has latitude on everything not marked.
   command that never returns puts an LLM to sleep for hours]: a wall-clock cap per command, a
   CPU-time cap per command, a heap cap on the child JVM, a processor count the child may use,
   and a cap on the whole batch after which remaining commands are reported as not run; every
-  cap is a flag with a default. The task rides `mise run preflight alloy` for disk and RAM, and
+  cap is a flag with a default, and the defaults (120 seconds per command, 540 per batch) sit
+  under the 600-second ceiling an agent harness puts on a foreground command, so a harness kill
+  never orphans a solver; a shutdown hook destroys whichever child is live when the runner
+  exits. The runner takes a directory as well as files, and skips a module whose only command is
+  the `Default` Alloy synthesizes for a command-less module (recognisable by its unknown source
+  position). The task rides `mise run preflight alloy` for disk and RAM, and
   runs under the repository's global heavy-work lock (`internal-tooling exclusive`), a file in
   the user's cache directory that names its holder, so a second heavy task on the same machine
   is refused with the holder's name and told to do other work rather than wait.
@@ -425,16 +431,18 @@ Light on purpose; the builder has latitude on everything not marked.
 - **Lock and report.** JSON in, JSON out; `--check` writes nothing. Gate placement: lints in the
   pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
   path-filtered the same way; larger scopes in an opt-in lane.
-- **Fixtures** [ACKED: minimal harness first, then back to 311 to use it]: assay's own fixtures
-  are the two strawmen where they sit, `notes/30Ya-strawman-3` (the outcome algebra past a
-  wall; every command finishes in seconds at the shared ceiling of twelve) and
-  `notes/30Ya-strawman-2` (the identity model's first cut; its per-line checks reach millions
-  of clauses at the same ceiling, through the transitive closures in its separation predicate,
-  and are the timeout path's fixture). Assay's report for each replaces the hand-written
-  `report.json` beside it; the fight record and its division in the third strawman's
-  `FINDINGS.md` is what the generator is measured against. Neither strawman is promoted to the
-  spec tier [TYPED nack]; turning 311 into a specification is separate, clean-context,
-  product-focused frontier work.
+- **Fixtures** [TYPED 2026-09-28]: assay's own fixture is a meaningless, Dorc-agnostic document
+  under `internal-tooling`'s tests, compiled byte-for-byte against committed expected modules,
+  with one negative document for a lint refusal; no committed test runs a JVM. The two strawmen,
+  `notes/30Ya-strawman-3` (the outcome algebra past a wall; every command finishes in seconds at
+  the shared ceiling of twelve) and `notes/30Ya-strawman-2` (the identity model's first cut;
+  its per-line checks reach millions of clauses at the same ceiling, through the transitive
+  closures in its separation predicate), are frozen exploration artifacts, never fixtures: their
+  content about Dorc is apparently normative and partly wrong. Strawman-3 was compiled and run
+  once by hand as the compiler's smoke (`notes/30Yd`: every verdict as the hand build's);
+  strawman-2 refuses under the identifier rule for map components and stays as it is. Neither is
+  promoted to the spec tier [TYPED nack]; turning 311 into a specification is separate,
+  clean-context, product-focused frontier work.
 
 ### § 3.1-later-and-maybe
 
