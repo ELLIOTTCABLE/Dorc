@@ -369,6 +369,11 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
 - Modules resolve by file name relative to the main file's directory, then the library directory.
   On Windows the pinned jar refuses to parse `util/natural` (an alias clash inside the library
   file); run such a model under WSL.
+- In this repository a model runs with `mise run alloy -- <file.als>`: one bounded JVM per
+  command, `--command <name>` for one command, `--instances` to carry the counterexample in the
+  row. A command carrying an `expect` is red only when its verdict disagrees; one without is red
+  when a run is unsatisfiable or a check finds a counterexample; exit 75 is the machine-wide
+  heavy-work lock, so do other work and retry.
 - Higher-order quantification is accepted by the grammar and solved only where Skolemization
   applies; anything else is an error, not a slow run.
 - Rare shapes worth copying (hand-written order without `util/ordering`, generator and uniqueness
