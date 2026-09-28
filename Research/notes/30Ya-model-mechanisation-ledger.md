@@ -692,6 +692,37 @@ they sit alongside the Alloy spec rather than only as e2e.
   spec, `build/`); everything unrun; `report.json` is expected, not observed. Next: rewind and
   dispatch the implementation of `30Y`.
 
+## Checker as adversary, and convergence as a claim (2026-09-27; human-typed leans, and the consequences the human acked)
+
+- **[HUMAN]** the first purpose of assay, ahead of the two payoffs `30Y` listed, is to enforce
+  rigor: make it hard for the design process to write a wishy-washy line into the spec. Strong
+  lean: checker as adversary. Conductor: that is `check` semantics. A `run` passes when any
+  world the fixture admits gives the verdict (the solver fills every gap in your favour); a
+  `check` passes only when the verdict is forced (the solver fills every gap against you), and
+  its counterexample is the sentence you forgot to write. The laws and corpus checks already
+  were checks; only book outcomes were runs, inherited from a strawman whose generator pinned
+  the world tightly enough that a run was as good as a check.
+- **[HUMAN]** "the key whose word is `a_path`" is good, not a cost: a key is a first-class thing
+  a line takes, and the spec should be explicit about it. What stays out of a spec is assay and
+  Alloy minutiae (scopes, bounds, munged names). `Key` becomes its own sig carrying a word.
+- **[HUMAN]** the engine's final decision, which lines elide, guard, and run, is as a whole what
+  the model concludes; the outcome is always the checked statement, `Ran` included.
+- **[HUMAN]** two characters at most for any new introducer, and suspicious that one is needed.
+  It is not. The given the adversary must not flip is "this line converged", and **[HUMAN]**
+  convergence is not a measurement-as-given: a measurement is a claim; only abstract world facts
+  exist outside claims. Consequence, **[HUMAN]** "nearly ideal": a verdict claim
+  `Verdict { of: one Line }` is declared on the site line (`one sig carl__… extends Verdict {}
+  { of = this }`), its speaker derived from the verb's check owner, true by the static default
+  until a spec models the state it measures; `Converged` is derived as the lines whose verdict
+  claim is in force and true; a claim cannot be flipped. The static lift: on a site line a
+  declaration is a claim and a formula is the outcome; world facts never need `this`. assay
+  emits a `check` per line with the earlier lines' outcomes as premises and one `run` per book
+  that all outcomes hold together. A line that runs writes only its outcome. **[HUMAN]** this
+  makes "a convergence claim is fallible human speech" visible and atomic in the spec.
+- Conductor, unreacted: with a first-class `Key`, Alloy's default scope no longer fits a book,
+  so the default scope for spec-owned sigs is the live bite; a per-invocation default plus the
+  `for` passthrough is the MVP answer.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
