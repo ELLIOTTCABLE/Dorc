@@ -3,7 +3,7 @@
   "shared": "spec/shared.md",
   "alloy": "6.2.0",
   "status": "expected, never observed: nothing here has been run",
-  "scope_default": 8,
+  "book_scope": "bookScope in shared: 12 but 4 Int",
   "lints": {
     "one_literal_one_name": "ok",
     "free_names_are_known": "ok",
@@ -25,7 +25,7 @@
     {"module": "laws", "name": "attributionHonest", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
     {"module": "laws", "name": "attributionSufficient", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
     {"module": "laws", "name": "attributionMinimal", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
-    {"module": "corpus", "name": "seatCanKnow", "kind": "check", "scope": "8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 17 Claim, exactly 0 Line", "result": "no-counterexample", "premise": "absent"},
+    {"module": "corpus", "name": "seatCanKnow", "kind": "check", "scope": "12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 17 Claim, exactly 0 Line", "result": "no-counterexample", "premise": "absent"},
     {"module": "books/two_paths_one_inode", "name": "line_3", "kind": "check", "result": "no-counterexample"},
     {"module": "books/two_paths_one_inode", "name": "line_4", "kind": "check", "result": "no-counterexample"},
     {"module": "books/two_paths_one_inode", "name": "two_paths_one_inode", "kind": "run", "result": "sat"},
@@ -51,7 +51,7 @@
     {"module": "books/two_paths_one_inode_under_a_singly_linked_path_scheme", "name": "line_4", "kind": "check", "result": "no-counterexample"},
     {"module": "books/two_paths_one_inode_under_a_singly_linked_path_scheme", "name": "two_paths_one_inode_under_a_singly_linked_path_scheme", "kind": "run", "result": "sat"}
   ],
-  "book_command_scope": "8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim (20 where a book also writes two declines)",
+  "book_command_scope": "12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim (20 where a book also writes two declines)",
   "lock": {"against": null, "diff": "initial"},
   "exit": 0
 }

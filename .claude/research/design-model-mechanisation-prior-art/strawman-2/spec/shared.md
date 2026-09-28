@@ -28,6 +28,8 @@ sig Ran, Elided, Guarded in Line {}
 fact { Ran = Line - Converged }
 fact { Elided = { l: Converged | all q: reader.l | q.ans in Spares } }
 fact { Guarded = Converged - Elided }
+
+run bookScope {} for 12 but 4 Int
 ```
 
-A claim whose truth nothing computes is true exactly where some line has it in force; a specification names the claims whose truth it computes against the world. A line is converged when a verdict claim about it is in force and true; the verdict is a measurement, so it is speech, with a speaker and the possibility of being false, and its truth is computed once a specification models the state the check reads. A converged line is elided only when every question about it, one per earlier line that ran, answers in `Spares`. What answers a question is each specification's own law over the speech in force at the converged line.
+The world a book's commands are checked in holds at most twelve of any kind of thing assay does not size itself; a document overrides that for one of its books with `bookScope_<book>`, and an outcome line overrides it for one command with its own `for`. A claim whose truth nothing computes is true exactly where some line has it in force; a specification names the claims whose truth it computes against the world. A line is converged when a verdict claim about it is in force and true; the verdict is a measurement, so it is speech, with a speaker and the possibility of being false, and its truth is computed once a specification models the state the check reads. A converged line is elided only when every question about it, one per earlier line that ran, answers in `Spares`. What answers a question is each specification's own law over the speech in force at the converged line.

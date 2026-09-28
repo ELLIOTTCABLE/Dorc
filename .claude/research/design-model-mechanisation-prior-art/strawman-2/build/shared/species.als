@@ -26,3 +26,5 @@ sig Ran, Elided, Guarded in Line {}
 fact { Ran = Line - Converged }
 fact { Elided = { l: Converged | all q: reader.l | q.ans in Spares } }
 fact { Guarded = Converged - Elided }
+
+run bookScope {} for 12 but 4 Int
