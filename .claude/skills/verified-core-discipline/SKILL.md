@@ -44,7 +44,9 @@ You are near the verified core if any of these is true:
   laws) or `spike/verify/` (the binder, the Kani harnesses, the Aeneas pipeline);
   a `*_covers`/`compare`/`classify_*`-style chokepoint; a checker or reference
   implementation; `#[kani::proof]` harnesses; DST pin/seed machinery; the
-  catalogue lock.
+  catalogue lock; anything under root `specs/` (the design-tier specifications
+  assay checks — content is a design act with the human, never a builder's;
+  `specs/AGENTS.md` and `Research/plans/30Z`) or a `<spec>.lock.json` beside one.
 - A check failed that you did not write: a Kani counterexample, a
   `SolveConsistency::Inconsistent`, a re-derivation demotion, a failing property
   or DST seed, a broken lake build, a `dorc-verify` refusal, a lexical-fence test
@@ -108,6 +110,7 @@ fully expresses the property; escalate only for reach, never for prestige.
 | a data-shape rule at an intake boundary | a smart constructor (possession proves the check ran) | a runtime assert |
 | an equational/∀-law over small algebra values (lattice laws, facade canonicality, meet/compare) | a **Kani harness**, added in the SAME change as the operation; a property-test twin if the universe is large | a hand-picked example test |
 | an algebra-SEMANTICS statement other components lean on (what compare/join/sparing MEAN) | a **minispec law unit** — the expensive, human-gated lane; see below | a comment, or a Kani harness pretending to be a spec |
+| a design-tier law over objects that have no code yet (a relational model of the prose: identity, speech, sparing, outcomes) | an Alloy `check` in the specification that owns it, run by **assay** (`Research/notes/30Y`; praxis `Research/plans/30Z`; the `using-alloy` skill for the language): bounded, tracked not proved, every red a design finding | Kani or minispec, which need the code and its derived definitions; or a prose-only ruling nothing re-runs |
 | a churny engine-tier numeric/structural invariant (byte budgets, span arithmetic, weft numerics) | today: checked arithmetic + ONE named seat + a property test; **Flux** is the penciled mid-r30 future here — keep the invariant at one seat so refinement lands mechanically | Kani or Lean (the algebra instruments do not reach the churny tier, by design — triple-covering was rejected) |
 | "is this computed production answer safe?" | the EXISTING certification instruments only: the solve-certifier (every solver answer) and the sparing re-derivation (every survival). Adding a NEW runtime checker requires the admission tests: T1 a large find/check asymmetry in the producer (only fixpoints qualify), or T2 maximal severity × invisibility (only the survival lane qualified) | a checker added by symmetry — N-version programming with correlated blind spots |
 | ordering/permutation/fault/whole-system behavior, incl. narrative-record multisets | **DST pins** (seeds are replay handles; permutation pins protect explanation stability, which convergence checks cannot see) | unit tests with hand-ordered inputs |
