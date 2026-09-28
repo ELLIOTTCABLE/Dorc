@@ -542,6 +542,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## cli/CLAUDE:apply-outcome-unwritten-is-a-sibling-code
 - defined: spike/crates/cli/CLAUDE.md:312 — (`30Xa:rul-post-dispatch-durable-failure-is-a-sibling-code`;
 
+## apt-get-update-can-install-packages
+- defined: —
+- cited: 312ca Research/GOTCHAS Research/notes/30Ya-strawman-3/spec/outcomes-past-a-wall (3)
+
 ## arc-identity-tier
 - defined: —
 - cited: 311c ROADMAP (2)
