@@ -57,7 +57,7 @@ struct Profile {
 /// The bounds. Every figure is a conservative round number over a measurement taken on
 /// 2026-08-15; false precision here buys nothing, and a bound that fires spuriously is a
 /// bound people learn to skip.
-const PROFILES: [Profile; 4] = [
+const PROFILES: [Profile; 5] = [
     Profile {
         name: "gate",
         cache: Cache::Workspace,
@@ -100,6 +100,19 @@ const PROFILES: [Profile; 4] = [
         disk_cold: 12 * GIB,
         disk_warm: 3 * GIB,
         ram: 4 * GIB,
+    },
+    Profile {
+        name: "alloy",
+        cache: Cache::Workspace,
+        // Not a cache at all: the jar and JDK sit in mise's store, `assay` writes kilobytes of
+        // `.als`, and each command's child JVM spills two temp files. The figure is headroom for
+        // JVM temp and crash dumps, identical warm or cold (2026-09-28: assay's fixture modules
+        // total ~20 KiB on disk).
+        disk_cold: GIB,
+        disk_warm: GIB,
+        // The runner's default child heap cap (`AlloyRunner.java` `--heap 2048`) plus the parent
+        // JVM and the child's non-heap: a cap the machine cannot grant is not a cap.
+        ram: 3 * GIB,
     },
 ];
 

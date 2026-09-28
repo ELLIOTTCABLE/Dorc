@@ -442,10 +442,10 @@ dir = "spike"
 run = "cargo run -q -p internal-tooling -- hook-selftest"
 
 [tasks.preflight]
-description = "Bounds-check this machine against a profile's expected disk and RAM usage BEFORE spending either: `mise run preflight gate|bless|kani|lean`. One line on pass, one LOUD line and a nonzero exit on refusal. Rides the heavy tasks automatically (gate:full*, bless*, verify:kani, verify:lean, verify:translate); the hot loop is deliberately unburdened. Each leg checks its OWN environment, so `mise run both preflight gate` is what covers the WSL VM's separate memory cap. DORC_PREFLIGHT=skip bypasses it — emergencies only, and it says so in the output."
+description = "Bounds-check this machine against a profile's expected disk and RAM usage BEFORE spending either: `mise run preflight gate|bless|kani|lean|alloy`. One line on pass, one LOUD line and a nonzero exit on refusal. Rides the heavy tasks automatically (gate:full*, bless*, verify:kani, verify:lean, verify:translate, alloy); the hot loop is deliberately unburdened. Each leg checks its OWN environment, so `mise run both preflight gate` is what covers the WSL VM's separate memory cap. DORC_PREFLIGHT=skip bypasses it — emergencies only, and it says so in the output."
 raw = true
 dir = "spike"
-usage = 'arg "<profile>" help="gate, bless, kani, or lean"'
+usage = 'arg "<profile>" help="gate, bless, kani, lean, or alloy"'
 run = "cargo run -q -p internal-tooling -- preflight {{ usage.profile }}"
 
 [tasks.doctor]
@@ -640,11 +640,17 @@ raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
 
 [tasks.alloy]
-description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, or timeout. `-- --timeout <seconds>` overrides the per-command cap (default 300); `-- --command <name>` runs one command; `-- --instances` adds Alloy's instance (the counterexample, for a check) to each row that has one; `-- --solver <id>` picks the SAT solver (default sat4j; the jar also carries glucose and minisat natives). Alloy resolves every `open X` to `X.als` beside the ROOT file (minus the root's own `module a/b` path); `-- --open X=<file.als>` serves a file living elsewhere at that spot, and Alloy's messages then name the spot, not the file. Relative paths resolve against the directory you ran mise from."
+description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, timeout, or command left unrun. Every solver is bounded: `-- --timeout <seconds>` caps each command's wall-clock (default 300), `-- --cpu <seconds>` its CPU time (default the wall cap), `-- --heap <MB>` the child JVM's heap (default 2048), `-- --procs <n>` the processors it may use (default 2), and `-- --batch-timeout <seconds>` the whole run (default 1800; commands not started by then report `not-run`); the caps in force print on stderr first. Rides `preflight alloy` and the machine-global heavy-work lock (`internal-tooling exclusive`, exit 75 while another heavy task holds it: do other work, never wait in a loop). `-- --command <name>` runs one command; `-- --instances` adds Alloy's instance (the counterexample, for a check) to each row that has one; `-- --solver <id>` picks the SAT solver (default sat4j; the jar also carries glucose and minisat natives). Alloy resolves every `open X` to `X.als` beside the ROOT file (minus the root's own `module a/b` path); `-- --open X=<file.als>` serves a file living elsewhere at that spot, and Alloy's messages then name the spot, not the file. Relative paths resolve against the directory you ran mise from."
 raw = true
 # The JDK is spelled by its install path: a bare `java` resolves by PATH order inside the task
 # shell, and a machine-global JDK earlier on PATH silently wins over the pin (measured, Windows).
-run = "{{ exec(command='mise where java') }}/bin/java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
+#
+# `exclusive` holds the machine-global heavy-work lock for the run, refusing (exit 75) while
+# another heavy task holds it; `notes/30Y` § 3.
+run = [
+   "mise run preflight alloy",
+   "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task alloy -- {{ exec(command='mise where java') }}/bin/java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java",
+]
 
 [tasks.assay]
 description = "Compile a spec document into Alloy modules (`notes/30Y` § 2): `-- <spec.md> [--out <dir>]`. Reads the document's `alloy` and `sh` fences plus `shared.md` and `shared-laws.md` beside it, writes one flat directory of `.als` modules (default `<cargo target dir>/alloy/<spec-stem>/`), and prints one JSON report. Exit 2 on a lint refusal, writing nothing. Compile only: it runs no solver and takes no lock; run the modules with `mise run alloy` from the out dir. Relative paths resolve against the directory you ran mise from."
