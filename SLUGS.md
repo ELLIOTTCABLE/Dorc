@@ -458,7 +458,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-backing-selfframing
 - defined: —
-- cited: 30Mb 30Q 30T 311c 311t 312cg 312ch ANALYZER-NEEDS _tmp-naming-rewrite-owed (12)
+- cited: 30Mb 30Q 30T 311c 311t 312cg 312ch ANALYZER-NEEDS (11)
 
 ## an-claim-tier
 - defined: —
@@ -466,7 +466,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-compare-chokepoint
 - defined: —
-- cited: 310 311 311a ANALYZER-NEEDS _tmp-311-held-work-reference _tmp-naming-rewrite-owed (6)
+- cited: 310 311 311a ANALYZER-NEEDS (4)
 
 ## an-cross-host-kind
 - defined: —
@@ -502,11 +502,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-invariance-speech-act
 - defined: —
-- cited: 311 ANALYZER-NEEDS _tmp-311-held-work-reference (4)
+- cited: 311 ANALYZER-NEEDS (3)
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS _tmp-311-held-work-reference (7)
+- cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -514,7 +514,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-mode-gate
 - defined: —
-- cited: 311 312cg ANALYZER-NEEDS _tmp-311-held-work-reference (4)
+- cited: 311 312cg ANALYZER-NEEDS (3)
 
 ## an-oracle-ref-sha
 - defined: —
@@ -1046,7 +1046,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 312cb 312cg _tmp-311-held-work-reference _tmp-naming-rewrite-owed (8)
+- cited: 26Ob 311 311a 311c 312cb 312cg (6)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting
