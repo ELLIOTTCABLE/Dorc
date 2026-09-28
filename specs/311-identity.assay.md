@@ -16,11 +16,11 @@ spellings are proposed.
 How to read this document (`plans/30Z`): the fences are the law. A section that holds a fence is
 mechanical, and its `<!-- prose-translation -->` block says exactly what its fences say. A
 section with no fence is normative only through a `<!-- normative -->` block, and such a block
-is residue the checker cannot reach. Everything else, this running text included, is commentary.
-An un-headed blockquote is commentary: under a heading it names a false friend from a
-neighbouring field, a name the object carried before this document, or a refuted shape
-(`notes/311u`); at the end of a section it holds the section's examples, illustrative and not
-fully worked. The results of every command are in `311-identity.lock.json` beside this file;
+is residue the checker cannot reach. Everything else, this running text included, is commentary:
+the false friends from neighbouring fields, the names an object carried before this document,
+the refuted shapes (`notes/311u`), and each section's examples, illustrative and not fully
+worked, all run as plain prose, so that only the two headed forms ever render as quotes. The
+results of every command are in `311-identity.lock.json` beside this file;
 what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 
 ## Conventions
@@ -40,9 +40,8 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
   (3.2-compare-one-chokepoint-four-answers).
 - A section is cited by its slug, as 2.6-may-write-the-writeset. Within the same paragraph or
   list item, a second citation of that section uses its number alone, as §2.6.
-- A blockquote under a heading is non-normative. It names a false friend from a neighbouring
-  field, a name the object carried before this document, or a refuted shape (`notes/311u`).
-- A blockquote at the end of a section is non-normative. It holds the section's examples.
+- A blockquote is one of the two headed forms of `plans/30Z` and nothing else; a false friend,
+  a prior name, a refuted shape (`notes/311u`), or an example is plain prose.
 - § 5 is non-normative in its entirety (5-the-relations-indexed-two-ways). It indexes § 1 to
   § 3 and defines nothing.
 
@@ -159,8 +158,7 @@ not an mTopic (1.8-fully-qualified-key-topic-and-derivation), and not the set an
 whole denotes: the container is the mReferent, and the set is a set
 (2.9-the-traversal-and-the-region-test).
 
-> Examples of an mReferent: an inode, a database row, a package record, a kernel parameter, a
-> running process, a machine, a mount table.
+Examples of an mReferent: an inode, a database row, a package record, a kernel parameter, a running process, a machine, a mount table.
 
 #### § 1.1.1-state-and-value
 
@@ -185,8 +183,7 @@ this model. What is normative here is normative as prose.
 
 ### § 1.2-sort-the-declared-carrier
 
-> Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents
-> write _kind_.
+Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents write _kind_.
 
 A carrier in the logician's sense, a domain of discourse someone chose to speak in. It has
 reverse-DNS naming, no registry, and owner-adjudication as its social contract. An mSort fixes
@@ -223,12 +220,11 @@ mSort's side; they stay prose until that section's checks carry them.
 > Only a human act merges it, by making one mSort's mSchemes yield into the other's.
 > The owner speaks only about the mSort's relations to its immediate neighbours.
 
-> The strangers case: two vendors describe one tool, or two vocabularies reach one cell under
-> `/proc/sys`.
+The strangers case: two vendors describe one tool, or two vocabularies reach one cell under `/proc/sys`.
 
 ### § 1.3-scheme-a-way-of-writing
 
-> A term language over a carrier. Never itself an mSort.
+A term language over a carrier. Never itself an mSort.
 
 An mScheme fixes its `resolve()` (3.1-identity-of-a-key), whether it is `:primary-of` an mSort
 with its declarations per matched shape (2.2-primary-of-and-identified-in), what it `:yields`
@@ -285,9 +281,7 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 
 ### § 1.4-key-and-its-two-views
 
-> RDBMS primary key and natural key, with their culture: the natural key is user-typed, may
-> alias, and is never identity. The primary key is what the store answers with. Pre-311
-> documents write _entity_.
+RDBMS primary key and natural key, with their culture: the natural key is user-typed, may alias, and is never identity. The primary key is what the store answers with. Pre-311 documents write _entity_.
 
 An mKey is a plan-time object that models what a runtime string will denote. It is minted at a
 bind, or at an emission point a `resolve()` declares (2.1-yields-into-another-scheme), before
@@ -352,7 +346,7 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 
 ### § 1.5-token-and-the-two-warrants
 
-> OWL's inverse-functional and functional properties, spelled out by direction.
+OWL's inverse-functional and functional properties, spelled out by direction.
 
 What each warrant licenses, SAME from equality and DISJOINT from inequality, is the walk of
 3.2-compare-one-chokepoint-four-answers; here is what each means when true. "Within one
@@ -427,12 +421,7 @@ scoped in an mParent (1.6-parent-one-per-key). How long a warrant holds is
 > A grade governs every consumer of the answer it grades, corroboration and contradiction included.
 > A lookup without `:guarantees-unique-name` cannot contradict anything by returning two different mTokens.
 
-> `:guarantees-unique-referent` fails for round-robin lookups, recycled mKeys, and cloned
-> identifiers presented as mRoots. `:guarantees-unique-name` fails for symlinks and hardlinks,
-> package `provides`, and route-qualified handles. For a path the closure's instance is the
-> whole mount namespace. For a file, the evidence is a link count of one. For a directory, the
-> evidence is that no other mount exposes it. A hardlink or a bind mount is where the closure is
-> withheld.
+`:guarantees-unique-referent` fails for round-robin lookups, recycled mKeys, and cloned identifiers presented as mRoots. `:guarantees-unique-name` fails for symlinks and hardlinks, package `provides`, and route-qualified handles. For a path the closure's instance is the whole mount namespace. For a file, the evidence is a link count of one. For a directory, the evidence is that no other mount exposes it. A hardlink or a bind mount is where the closure is withheld.
 
 ### § 1.6-parent-one-per-key
 
@@ -509,10 +498,7 @@ mParent are 2.10-places-the-upward-lookup's.
 > An emitter (a secondary mScheme, possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat that supplied it.
 > An mKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup); none of them is its mParent.
 
-> Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login
-> name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner
-> name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a
-> mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
+Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
 
 ### § 1.7-resolution-and-its-traversal
 
@@ -567,8 +553,7 @@ that describes an external command the reads of that command.
 > The author of the speech that describes an external command closes that command's read set by an explicit act.
 > Any write invalidates a mResolution whose read set is open (3.3-invalidation-three-mutator-species).
 
-> Examples of a mTraversal: each directory entry and symlink for a path, the resolver
-> configuration and mVantage for a hostname, the unit table for a service name.
+Examples of a mTraversal: each directory entry and symlink for a path, the resolver configuration and mVantage for a hostname, the unit table for a service name.
 
 ### § 1.8-fully-qualified-key-topic-and-derivation
 
@@ -625,7 +610,7 @@ their combination is 3.2-compare-one-chokepoint-four-answers's.
 
 ### § 1.9-cell-a-singleton-sort
 
-> Pre-311 documents write _aspect_.
+Pre-311 documents write _aspect_.
 
 A cell's mKey is written `parent-key@sm.Sort`, with the mSort's name in full reverse-DNS, and is
 minted at the mark that names it (1.4-key-and-its-two-views, 1.6-parent-one-per-key); the
@@ -664,9 +649,7 @@ pred true_DeclaresCell[d: DeclaresCell] {}
 > A cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key, 3.2-compare-one-chokepoint-four-answers).
 > Declaring a cell claims nothing about the world.
 
-> Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it
-> through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot
-> only where its mParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
+Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot only where its mParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -726,7 +709,7 @@ pred engineVouchIsTrue {
 > A mismatch is integrity, never a verdict input.
 > The `witness()` cannot see a recycled mKey; that stays on the outside-churn horizon.
 
-> A recycled mKey the `witness()` cannot see: a reissued pid or inode.
+A recycled mKey the `witness()` cannot see: a reissued pid or inode.
 
 ### § 1.11-site-and-claim-species
 
@@ -859,14 +842,11 @@ strangers write; the fences read a chain that reaches no primary mKey as an unkn
 > An unknown input makes the instance unknown.
 > A `resolve()` declines on mReferents its mSort does not describe; this is the mechanical net against lazy borrowing.
 
-> A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket,
-> under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the
-> directory entry, or the inode that the entry leads to. A tool that removes the entry binds under
-> the first, and a tool that changes the file binds under the second.
+A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket, under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the directory entry, or the inode that the entry leads to. A tool that removes the entry binds under the first, and a tool that changes the file binds under the second.
 
 ### § 2.2-primary-of-and-identified-in
 
-> ER's identifying relationship. Identifying is not containing.
+ER's identifying relationship. Identifying is not containing.
 
 A second name is a second mScheme. P's mKeys mean something only relative to K's mParent-Store;
 `:primary-of` itself is 1.3-scheme-a-way-of-writing's, P's `resolve()` being the identity is
@@ -922,8 +902,7 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 > `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent.
 > For a `:root` shape, the world is the store: the shape's mWorld (1.8-fully-qualified-key-topic-and-derivation).
 
-> `:root` fails for cloned identifiers. The mParent's type varies per shape: an ext4
-> filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
+`:root` fails for cloned identifiers. The mParent's type varies per shape: an ext4 filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
 
 ### § 2.3-aliases-nothing-else-the-store-warrant
 
@@ -952,13 +931,7 @@ pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
 > The store gives its own mKeys to no other store's mReferents.
 > The warrant is declared per store, on the mKey that names it, and is absent by default.
 
-> Examples where it holds: a DNS zone for its records, a dpkg database for its packages, a
-> network namespace for its `net/*` knobs, a disk filesystem for its inodes. Examples where it
-> never holds: a client NFS mount, an NSS view of LDAP, a chroot, a nested pid namespace, an
-> overlay, a front over another daemon, a relabelling of part of its mParent's state. State
-> spanning several files is a may-read matter (2.5-may-read-the-readset). A hardlink is a
-> `:guarantees-unique-name` failure on the path mScheme. The path mScheme yielding the inode
-> dissolves it.
+Examples where it holds: a DNS zone for its records, a dpkg database for its packages, a network namespace for its `net/*` knobs, a disk filesystem for its inodes. Examples where it never holds: a client NFS mount, an NSS view of LDAP, a chroot, a nested pid namespace, an overlay, a front over another daemon, a relabelling of part of its mParent's state. State spanning several files is a may-read matter (2.5-may-read-the-readset). A hardlink is a `:guarantees-unique-name` failure on the path mScheme. The path mScheme yielding the inode dissolves it.
 
 ### § 2.4-parent-as-a-relation
 
@@ -983,7 +956,7 @@ fun parentCatalog[k: mKey]: lone mLevel { isNaturalKey[k] implies k.parent else 
 
 ### § 2.5-may-read-the-readset
 
-> Separation logic's footprint, at the read side: the mReferents an answer may depend on.
+Separation logic's footprint, at the read side: the mReferents an answer may depend on.
 
 The relation is many-valued: an edge type from an mSort to mKeys of other mSorts, a template
 the mSite or environment fills; the fences hold the filled form, one entry per mKey of the
@@ -1049,14 +1022,11 @@ pred true_VerdictFact[f: VerdictFact] {
 > A readset member is ⊤ where its mSort has no closed may-read set, where an mSort on its mFullyQualifiedKey has no closed may-read set, where a may-read entry through which rule 4 reaches it fails either test, transitively, or where its mFullyQualifiedKey, or that of such an entry, ends at the mRoute.
 > A readset is ⊤ where the body marked no read or where any member is ⊤.
 
-> A may-read entry above the leaf: a loop-backed filesystem's state lives in a file of the outer
-> filesystem, and `dd` over the image rewrites every inner fact. A shared entry: two observers'
-> writability cells share the file's mode.
+A may-read entry above the leaf: a loop-backed filesystem's state lives in a file of the outer filesystem, and `dd` over the image rewrites every inner fact. A shared entry: two observers' writability cells share the file's mode.
 
 ### § 2.6-may-write-the-writeset
 
-> A refuted shape: two entries overlap only when they are one place
-> (`311u:refuted-only-same-entries-overlap`). The model collides whatever is not DISJOINT.
+A refuted shape: two entries overlap only when they are one place (`311u:refuted-only-same-entries-overlap`). The model collides whatever is not DISJOINT.
 
 The at-most set is the footprint of `plans/30U`, declared by the verb's author per matched
 shape and closed by the completion record; where the body emits at runtime, the verb author's
@@ -1214,14 +1184,11 @@ run law_exclusion_readings_agree_premise {
 > The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
 > A may-read entry that names an mKey of another mWorld enters rule 4 where a write in that mWorld reaches it (2.5-may-read-the-readset).
 
-> Without the exclusion of containers at or above the shared level, a filesystem's entailment,
-> which names its disk, would make two files in one filesystem collide through it. Examples of
-> the entailment: a package's postinst enabling its unit, a restart killing a main process.
+Without the exclusion of containers at or above the shared level, a filesystem's entailment, which names its disk, would make two files in one filesystem collide through it. Examples of the entailment: a package's postinst enabling its unit, a restart killing a main process.
 
 ### § 2.7-corresponds-across-a-transition
 
-> A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is
-> not it.
+A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is not it.
 
 Absent a mCorrespondence, mKeys across a transition `compare()` UNKNOWN unless a
 mFullyQualifiedKey binds mTokens on both sides, which is the walk's step 1; the mCorrespondence
@@ -1247,9 +1214,7 @@ pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.reaches = d.keyY.
 > The owner of the transition between A and B declares it, and that owner is neither mKey's mScheme owner.
 > A mCorrespondence is true when the two mKeys reach one mReferent, or both reach none.
 
-> Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u alice` knows
-> inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint are mKeys
-> under the export on the named server, from this mVantage.
+Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u alice` knows inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint are mKeys under the export on the named server, from this mVantage.
 
 ### § 2.8-observer-dependence-and-independence
 
@@ -1396,16 +1361,7 @@ run law_region_disjoint_is_sound_premise {
 > Containment is membership in a mTraversal.
 > A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it; in the test of 2.6-may-write-the-writeset it reads UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings; that is the floor, which the region test refines.
 
-> Lookups that cross several levels: a path yields a directory entry looked up in a shorter
-> path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in
-> its instance table. Lookups that cross one level: an inode number, a uid. An indexical routing
-> mKey: `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know
-> nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an
-> alias entry above a leaf. A positional catalog: the resolution of position N depends on every
-> position at or before it, and `ufw insert 1` gives every later rule a new number. The lookup
-> emits positions 1 to N as its mTraversal, one line per member. A rowid table renumbered after
-> ten thousand rows makes that emission large. A single emission that describes the set, spelled
-> as sh, is work for the 312 series.
+Lookups that cross several levels: a path yields a directory entry looked up in a shorter path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in its instance table. Lookups that cross one level: an inode number, a uid. An indexical routing mKey: `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an alias entry above a leaf. A positional catalog: the resolution of position N depends on every position at or before it, and `ufw insert 1` gives every later rule a new number. The lookup emits positions 1 to N as its mTraversal, one line per member. A rowid table renumbered after ten thousand rows makes that emission large. A single emission that describes the set, spelled as sh, is work for the 312 series.
 
 ### § 2.10-places-the-upward-lookup
 
@@ -1475,7 +1431,7 @@ Invocations are not in the fences; a record either is in force or is not.
 > Each member of a finished enumeration is an entry of the test of 2.6-may-write-the-writeset, and P itself stays an entry of that test.
 > Where a placing route places x in P and a finished enumeration of P has no member SAME with x, the pair reads UNKNOWN.
 
-> Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
+Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
 
 ### § 2.11-composite-sorts-and-roles
 
@@ -1518,7 +1474,7 @@ pred true_DeclaresComposite[d: DeclaresComposite] {}
 > The may-read set of a mCompositeSort is the union of its parts' may-read sets.
 > Declaring a mCompositeSort claims nothing about the world.
 
-> Examples: a base and an overlay, or a primary and its replica set.
+Examples: a base and an overlay, or a primary and its replica set.
 
 ## § 3-composition-and-laws
 
@@ -1554,11 +1510,9 @@ observers are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's, and
 
 ### § 3.2-compare-one-chokepoint-four-answers
 
-> Alias analysis's may/must trichotomy, plus KNOWN_UNSPOKEN for "no generator applies".
+Alias analysis's may/must trichotomy, plus KNOWN_UNSPOKEN for "no generator applies".
 
-> A refuted shape: a parent partitions its children's mSorts
-> (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own
-> distinctions.
+A refuted shape: a parent partitions its children's mSorts (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own distinctions.
 
 The walk below is the mFullyQualifiedKey mDerivation; `compare(x, y)` combines it with the
 others, and the laws of § 0 are stated over both here; what each answer licenses is
@@ -1798,9 +1752,7 @@ an mKey of a `:root` shape in this model.
 > The universal meet over backing sets is unchanged.
 > Genuinely different mKey-Primaries for one mReferent are two mDerivations for one mTopic, reconciled by coherence, never a second mKey inside one mParent.
 
-> Two mSorts meeting at a common ancestor: a package status file and a unit file share a
-> filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the
-> server's inode, or a machine-id and a cloud instance-id.
+Two mSorts meeting at a common ancestor: a package status file and a unit file share a filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the server's inode, or a machine-id and a cloud instance-id.
 
 ### § 3.3-invalidation-three-mutator-species
 
@@ -1883,14 +1835,11 @@ run law_unstale_route_is_untouched_premise {
 > Cells whose mFullyQualifiedKeys pass through a lifecycle-written mKey are new and unmeasured; cells whose mFullyQualifiedKeys do not are untouched.
 > "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not declarations.
 
-> Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change,
-> a write to any environment variable, cwd, or configuration a lookup reads.
-> `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle
-> mutations: a reboot, a re-provision.
+Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change, a write to any environment variable, cwd, or configuration a lookup reads. `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle mutations: a reboot, a re-provision.
 
 ### § 3.4-entry-and-lends
 
-> Dynamic binding: `parameterize`, `fluid-let`.
+Dynamic binding: `parameterize`, `fluid-let`.
 
 The lent instance becomes the ambient mParent for every mKey of a secondary mScheme looked up
 in that mParent-Catalog mSort (1.10-vantage-route-placeholder-witness, 1.6-parent-one-per-key),
@@ -1970,8 +1919,7 @@ pred true_ClosesLends[d: ClosesLends] {
 <!-- normative -->
 > A lend may depend on the guest; the wrapper author then declares the guest-insensitive default and supplies a policy read that declines on departure.
 
-> Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a
-> network namespace. A lend that depends on the guest: sudoers matches the guest command.
+Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a network namespace. A lend that depends on the guest: sudoers matches the guest command.
 
 ### § 3.5-committee-law-and-attribution
 
@@ -2024,36 +1972,23 @@ run law_disjoint_by_two_tops_rests_on_one_scheme_owner_premise {
          and twoTopsWay[topBelow[identity[x], a], topBelow[identity[y], b]]
 }
 
-check law_declining_names_nobody {
-   all x, y: mKey | compare[x, y] in UNKNOWN + KNOWN_UNSPOKEN implies
-      compare[x, y] = compare[x, y]
-} for 3 but 4 Int expect 0
-
-check law_speech_grows_with_authors_not_pairs {
-   all d: DeclaresIdentifiedIn + DeclaresYields + DeclaresMayRead + DeclaresEntails + DeclaresLends |
-      d in DeclaresIdentifiedIn implies d.speaker = d.onShape.ofScheme.schemeOwner
-      else d in DeclaresYields implies d.speaker = d.fromShape.ofScheme.schemeOwner
-      else d in DeclaresMayRead implies d.speaker = sortOfKey[d.ofKey].sortOwner
-      else d in DeclaresEntails implies d.speaker = sortOfKey[d.fromKey].sortOwner
-      else d.speaker = d.lendingWrapper.wrapperOwner
-} for 6 but 4 Int
 ```
 
 <!-- prose-translation -->
-> Every positive step is one author's line: a `:yields` and its lookup warrants, a shape's `:identified-in` and its warrants, a may-read set and its sentinel, a may-write entailment and its finished record, a mCorrespondence, an `:observer-independence`, a `:lends`; each names its own tool, store, or machine and no other author.
 > The support of a SAME is the warrants at every level of the chains it rests on, the yields that reached them, the lends and sentinels that made instances one, and the mCorrespondences.
 > The support of a DISJOINT is the warrants at every level of the two chains.
 > A DISJOINT by the two-tops way rests on one mScheme's owner's `:guarantees-unique-name` declarations.
-> The speech an answer needs grows with the number of authors, never with the number of pairs of them: each declaration is the line of the one party that owns the thing it is about.
 
 #### § 3.5.1-composites-and-attribution
 
-The check `law_declining_names_nobody` above is deliberately an empty claim marked `expect 0`
-so that it can never be mistaken for a green: that an UNKNOWN or a KNOWN_UNSPOKEN names nobody
-is the absence of a support function, which no check can state; a reviewer reads that no
-definition in this document builds a support for either answer.
+That every positive step is one author's line is carried, species by species, by the speaker
+fact beside each species and its translation; that a withholding answer names nobody is the
+absence of a support function for UNKNOWN and KNOWN_UNSPOKEN, which a reviewer reads off the
+definitions and no check can state.
 
 <!-- normative -->
+> Every positive step is one author's line: a `:yields` and its lookup warrants, a shape's `:identified-in` and its warrants, a may-read set and its sentinel, a may-write entailment and its finished record, a mCorrespondence, an `:observer-independence`, a `:lends`.
+> So the speech needed grows with the number of authors, never with the number of pairs of them.
 > The engine only chains and meets.
 > Every statement an answer rests on is something one party can know about their own tool, store, or machine; that party says it alone, describes nothing they cannot see, and names no other author.
 > A granting composite is entailed jointly by one mScheme's `:yields` and the primary mScheme's declaration for that shape; each author speaks about their own lookup.
@@ -2062,32 +1997,19 @@ definition in this document builds a support for either answer.
 > Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that made instances one, and the mCorrespondences.
 > Every invalidated conclusion names the writeset that invalidated it.
 
-> A granting composite: "these two accounts are one". A withholding composite: a mount
-> invalidating an account's mResolution.
+A granting composite: "these two accounts are one". A withholding composite: a mount invalidating an account's mResolution.
 
 ## § 4-relation-to-other-documents
 
 ### § 4.1-boundary-of-this-model
 
-This model uses, and does not redefine:
+The boundary is prose by nature: it names what other documents own and what this one refuses,
+and no fence can hold an absence.
 
-- the verdict, vouch, and guard tier
-- the authored may-write entries, the completion record as the witness of a finished definition,
-  and `--risk-faultless-skips`
-- the four-answer chokepoint and its consumer map, except that a sentinel-inherited SAME rides
-  the flag (3.4-entry-and-lends)
-- the universal meet
-- measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across`
-  (`plans/27C`)
-- the read-set closure as the falsification net for unmarked reads (`plans/27C` §4(a)(B))
-- binds as the mKey-minting act
-- the mPlaceholder and the standup `witness()`
-- the integrity plane
-- the committee law
-
-The model excludes a selector dialect, an aspect species, an authored region predicate, an
-engine-side name floor, and an engine table that generates SAME. The context slot is a mVantage
-and nothing else.
+<!-- normative -->
+> This model uses, and does not redefine: the verdict, vouch, and guard tier; the authored may-write entries, the completion record as the witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint and its consumer map, except that a sentinel-inherited SAME rides the flag (3.4-entry-and-lends); the universal meet; measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across` (`plans/27C`); the read-set closure as the falsification net for unmarked reads (`plans/27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the standup `witness()`; the integrity plane; the committee law.
+> The model excludes a selector dialect, an aspect species, an authored region predicate, an engine-side name floor, and an engine table that generates SAME.
+> The context slot is a mVantage and nothing else.
 
 ### § 4.2-supersessions-pending-in-prior-documents
 
@@ -2095,7 +2017,12 @@ A living register of statements in prior documents that this model contradicts. 
 until its document is rewritten. Remove an entry when its document catches up. Add an entry when
 another prior document is found to disagree. Each entry names the passage, gives its claim, then
 gives this model's claim after "Here". A root document gets one brief entry where a passage
-became untrue. The human refreshes root documents.
+became untrue. The human refreshes root documents. The register is normative as prose: each
+entry's "Here" sentence is a claim this model makes against a named passage, and the fences
+that carry the claim are the ones the entry cites.
+
+<!-- normative -->
+> Each entry below stands until its document is rewritten, and each "Here" is this model's claim against the passage the entry names.
 
 - `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator",
   and `30U:constraints-on-other-components` "The comparison", with
