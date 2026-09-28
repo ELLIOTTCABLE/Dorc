@@ -1,27 +1,33 @@
 {
   "spec": "spec/two-paths-one-inode.md",
-  "spec_sha": "a3f19c2e",
+  "spec_sha": "7d3e0b91",
   "alloy": "6.2.0@6b8c1cb5",
   "lifted": {
     "speakers": ["tessa", "simon", "carl", "stdlib", "foob"],
     "schemes": ["Path", "Entry", "Inode", "DeviceNumber", "BootId", "BundlePath", "SinglyLinkedPath"],
     "sorts": ["File", "Filesystem", "Boot", "CertificateBundle"],
     "verbs": ["chmod"],
-    "claims": 17,
+    "static_claims": 17,
+    "oracle_sets": ["tessa_fs", "simon_fs", "stdlib_boot", "carl_chmod", "foob_certs", "tessa_singly_linked"],
     "words": {
-      "a-path": "/srv/a/shared", "b-path": "/srv/b/shared", "c-path": "/srv/a/other", "d-path": "/var/lib/other",
-      "inode-x": "?", "inode-y": "?", "inode-z": "?", "fs-1": "?", "fs-2": "?", "boot-1": "?",
-      "chmod": "chmod", "g-w": "g-w", "g+w": "g+w", "stat": "stat", "cat": "cat"
-    }
+      "a_path": "/srv/a/shared", "b_path": "/srv/b/shared", "c_path": "/srv/a/other", "d_path": "/var/lib/other",
+      "chmod": "chmod", "g-w": "g-w", "g+w": "g+w", "stat": "stat", "-c": "-c", "'%i %d'": "'%i %d'", "'%i %d %h'": "'%i %d %h'", "cat": "cat"
+    },
+    "introduced": {"inode_x": ["two_paths_one_inode", "siblings_in_one_filesystem", "siblings_across_filesystems"], "inode_y": ["siblings_in_one_filesystem"], "inode_z": ["siblings_across_filesystems"], "fs_1": ["all"], "fs_2": ["siblings_across_filesystems"], "boot_1": ["all"]}
   },
   "lint": {
-    "coherence": {"ok": true, "words": 15, "conflicts": []},
-    "inhabitation": {"ok": true, "lines": 32},
+    "coherence": {"ok": true, "words": 12, "conflicts": []},
+    "inhabitation": {"ok": true, "lines": 28},
+    "scope": {"ok": true, "scoped_lines": 41, "this_on_fixture_line": 0, "free_name_outside_line": 0},
+    "introduced_once": {"ok": true},
     "claim_prefix_matches_speaker": {"ok": true, "claims": 17},
-    "loads_resolve": {"ok": true, "files": 57, "unknown": []},
-    "outcome_names_resolve": {"ok": true},
+    "derived_speaker_matches_scheme_owner": {"ok": true, "derived": 19},
+    "deviations": {"written": ["tessa__a_path_declines", "tessa__b_path_declines"], "suppressed_defaults": ["tessa__a_path_resolves_to_inode_x", "tessa__b_path_resolves_to_inode_x"]},
+    "loads_resolve": {"ok": true, "files": 24, "unknown": []},
+    "verdict_forms": {"ok": true, "sites": 14, "forms": ["Ran", "Elided", "Guarded"]},
     "no_comment_syntax": {"ok": true},
-    "normative_prose_outside_blockquote": {"ok": true, "sections_without_alloy": ["6"]}
+    "normative_prose_outside_blockquote": {"ok": true, "sections_without_alloy": ["6"]},
+    "yields_xor_primary": {"ok": true}
   },
   "checks": {
     "seatCanKnow": {"scope": 12, "result": "no-counterexample"},
@@ -32,33 +38,28 @@
     "attributionSufficient": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
     "attributionMinimal": {"scope": "6 but 8 MKey", "result": "no-counterexample"}
   },
-  "vacuity": {
-    "neverWrongWhenAllTrue": "premise-satisfiable",
-    "monotoneInSpeech": "premise-satisfiable",
-    "strangerSafe": "premise-satisfiable"
+  "vacuity": {"neverWrongWhenAllTrue": "premise-satisfiable", "monotoneInSpeech": "premise-satisfiable", "strangerSafe": "premise-satisfiable"},
+  "books": {
+    "two_paths_one_inode": {"loads": 14, "derived": 4, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
+    "siblings_in_one_filesystem": {"loads": 14, "derived": 5, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem not in by[this]"],
+      "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "tessa__a_file_has_one_inode_in_its_filesystem", "tessa__a_path_resolves_to_inode_x", "tessa__c_path_resolves_to_inode_y", "tessa__inode_x_is_placed_in_fs_1", "tessa__inode_y_is_placed_in_fs_1", "simon__fs_1_is_placed_in_boot_1", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
+      "mutants": "all not in Spares", "ok": true}}},
+    "siblings_across_filesystems": {"loads": 14, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem in by[this]"],
+      "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "simon__a_device_number_is_the_primary_key_of_a_filesystem", "simon__a_filesystem_has_one_device_number_in_its_boot", "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem", "tessa__a_path_resolves_to_inode_x", "tessa__d_path_resolves_to_inode_z", "tessa__inode_x_is_placed_in_fs_1", "tessa__inode_z_is_placed_in_fs_2", "simon__fs_1_is_placed_in_boot_1", "simon__fs_2_is_placed_in_boot_1", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
+      "mutants": "all not in Spares", "ok": true}}},
+    "siblings_across_filesystems_without_the_closure": {"loads": 13, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
+    "siblings_in_one_filesystem_without_the_root": {"loads": 13, "derived": 5, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
+    "siblings_across_filesystems_with_a_stranger": {"loads": 15, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["no (speaker.foob & by[this])"], "by": "same-as siblings_across_filesystems", "mutants": "all not in Spares", "ok": true}}},
+    "two_paths_one_inode_under_a_singly_linked_path_scheme": {"loads": 15, "derived": 1, "written": 2, "sites": {"2": "Ran", "3": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}}
   },
-  "books": [
-    {"id": "7-1", "sha": "9b02d4", "loads": "all", "sites": {"1": {"expect": "run"}, "2": {"expect": "guard", "answer": "UNKNOWN", "verdict": "guard", "by": [], "ok": true}}},
-    {"id": "7-2", "sha": "c71e88", "loads": "all", "sites": {"1": {"expect": "run"}, "2": {"expect": "elide", "answer": "DISJOINT", "verdict": "elide",
-       "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "tessa__a_file_has_one_inode_in_its_filesystem", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
-       "mutants": {"tessa__an_inode_is_the_primary_key_of_a_file": "guard", "tessa__a_file_has_one_inode_in_its_filesystem": "guard", "stdlib__a_boot_id_is_a_root": "guard", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else": "guard", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode": "guard"},
-       "ok": true}}},
-    {"id": "7-3", "sha": "4e6a10", "loads": "all", "sites": {"1": {"expect": "run"}, "2": {"expect": "elide", "answer": "DISJOINT", "verdict": "elide",
-       "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "simon__a_device_number_is_the_primary_key_of_a_filesystem", "simon__a_filesystem_has_one_device_number_in_its_boot", "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
-       "mutants": "all guard", "ok": true}}},
-    {"id": "8-1", "sha": "1d9f3b", "loads": 13, "sites": {"1": {"expect": "run"}, "2": {"expect": "guard", "answer": "UNKNOWN", "verdict": "guard", "by": [], "ok": true}}},
-    {"id": "8-2", "sha": "77a0c5", "loads": 13, "sites": {"1": {"expect": "run"}, "2": {"expect": "guard", "answer": "UNKNOWN", "verdict": "guard", "by": [], "ok": true}}},
-    {"id": "8-3", "sha": "e04b92", "loads": 15, "sites": {"1": {"expect": "run"}, "2": {"expect": "elide", "answer": "DISJOINT", "verdict": "elide", "by": "same-as 7-3", "mutants": "all guard", "ok": true}}},
-    {"id": "8-5", "sha": "5c2d7e", "loads": 15, "sites": {"1": {"expect": "run"}, "2": {"expect": "guard", "answer": "UNKNOWN", "verdict": "guard", "by": [], "ok": true}}}
-  ],
   "danger": {
-    "tessa__equal_inodes_in_one_filesystem_reach_one_file": [],
-    "tessa__a_file_has_one_inode_in_its_filesystem": ["7-2.2:DISJOINT"],
-    "simon__a_filesystem_has_one_device_number_in_its_boot": ["7-3.2:DISJOINT", "8-3.2:DISJOINT"],
-    "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem": ["7-3.2:DISJOINT", "8-3.2:DISJOINT"],
-    "stdlib__a_boot_id_is_a_root": ["7-2.2:DISJOINT", "7-3.2:DISJOINT", "8-3.2:DISJOINT"],
-    "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else": ["7-2.2:DISJOINT", "7-3.2:DISJOINT", "8-3.2:DISJOINT"],
-    "tessa__a_singly_linked_path_names_one_file": []
+    "tessa__a_file_has_one_inode_in_its_filesystem": ["siblings_in_one_filesystem.4:DISJOINT"],
+    "simon__a_filesystem_has_one_device_number_in_its_boot": ["siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
+    "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem": ["siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
+    "stdlib__a_boot_id_is_a_root": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
+    "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
+    "tessa__a_path_resolves_to_inode_x": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT", "stale"],
+    "tessa__a_path_declines": []
   },
   "lock": {"against": null, "diff": "initial"},
   "status": "green"
