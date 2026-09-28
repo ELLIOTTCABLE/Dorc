@@ -124,7 +124,7 @@ public class AlloyRunner {
          CompModule world = worlds[f];
          if (world == null) {
             red = true;
-            first = row(first, given.get(f), null, null, null, "error", -1, -1, parseErrors[f], null);
+            first = row(first, given.get(f), null, null, null, -1, "error", -1, -1, parseErrors[f], null);
             continue;
          }
          String module = world.getModuleName();
@@ -135,7 +135,7 @@ public class AlloyRunner {
             String kind = cmd.check ? "check" : "run";
             if ((System.nanoTime() - batchStart) / 1_000_000_000L >= batchSeconds) {
                red = true;
-               first = row(first, module, cmd.label, kind, scopeOf(cmd), "not-run", -1, -1, "the batch cap of " + batchSeconds + "s was reached before this command started", null);
+               first = row(first, module, cmd.label, kind, scopeOf(cmd), cmd.expects, "not-run", -1, -1, "the batch cap of " + batchSeconds + "s was reached before this command started", null);
                continue;
             }
             Outcome o = runChild(path, i, opens, instances, solver, timeoutSeconds, cpuSeconds, caps);
@@ -144,8 +144,8 @@ public class AlloyRunner {
                case "unsat" -> cmd.check ? "no-counterexample" : "unsat";
                default -> o.status;
             };
-            if (!result.equals("sat") && !result.equals("no-counterexample")) red = true;
-            first = row(first, module, cmd.label, kind, scopeOf(cmd), result, o.wallMs, o.solveMs, o.message, o.instance);
+            if (!agrees(result, cmd.expects)) red = true;
+            first = row(first, module, cmd.label, kind, scopeOf(cmd), cmd.expects, result, o.wallMs, o.solveMs, o.message, o.instance);
          }
       }
       System.out.println("]");
@@ -156,6 +156,16 @@ public class AlloyRunner {
    // position, which an authored `run Default` always does (measured).
    static boolean synthesized(CompModule world, Command cmd) {
       return world.getAllCommands().size() == 1 && cmd.pos == Pos.UNKNOWN;
+   }
+
+   // An `expect` is the author's recorded verdict, so disagreeing with it is the red; without
+   // one, a run is meant to be satisfiable and a check to hold. Errors and caps are always red.
+   static boolean agrees(String result, int expects) {
+      return switch (expects) {
+         case 1 -> result.equals("sat") || result.equals("counterexample");
+         case 0 -> result.equals("unsat") || result.equals("no-counterexample");
+         default -> result.equals("sat") || result.equals("no-counterexample");
+      };
    }
 
    // One JVM, no solver: whether each root parses and typechecks, as one row per file.
@@ -295,12 +305,13 @@ public class AlloyRunner {
       }
    }
 
-   static boolean row(boolean first, String module, String command, String kind, String scope, String result, long wallMs, long solveMs, String message, String instance) {
+   static boolean row(boolean first, String module, String command, String kind, String scope, int expects, String result, long wallMs, long solveMs, String message, String instance) {
       StringBuilder b = new StringBuilder(first ? "  {" : ", {");
       b.append("\"module\": ").append(json(module));
       b.append(", \"command\": ").append(json(command));
       b.append(", \"kind\": ").append(json(kind));
       b.append(", \"scope\": ").append(json(scope));
+      if (expects == 0 || expects == 1) b.append(", \"expect\": ").append(expects);
       b.append(", \"result\": ").append(json(result));
       b.append(", \"wall_ms\": ").append(wallMs < 0 ? "null" : Long.toString(wallMs));
       b.append(", \"solve_ms\": ").append(solveMs < 0 ? "null" : Long.toString(solveMs));
