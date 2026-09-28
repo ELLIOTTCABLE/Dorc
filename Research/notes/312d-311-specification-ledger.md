@@ -195,11 +195,3 @@ Answered by default as stated; a word from the human overrides.
   `<stem>.lock.json` and the out directory `target/alloy/<stem>/`; the docID lint knows
   `specs/` and walks all of `Research/` by filename, the quarantine included.
   `mise run assay -- specs/311-identity.assay.md --parse` is green on the fence-less document.
-
-## § 5-state-at-the-rewind
-
-Tip of `ai/main` at the human's rewind, 2026-09-28: the standup commits above, over `a08eb53c`
-(this ledger's mint). In the tree: `specs/311-identity.assay.md` is the note's text, unchanged;
-`specs/shared.assay.md` carries the minimal prepend half (§ 4's disposition), and
-`specs/shared-laws.assay.md` is commentary with no fence. No lock exists. No fence has been
-written into 311. The next act is § 3.2 step 2, under the strategy of § 3.
