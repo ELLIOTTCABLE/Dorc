@@ -19,8 +19,8 @@ sig Converged in Line {}
 fact { Converged = (Verdict & True).of }
 
 sig Query { writer, reader: one Line, ans: one Ans }
-fact { all q: Query | q.writer not in Converged and q.reader in Converged and q.writer in q.reader.before }
-fact { all w, r: Line | w not in Converged and r in Converged and w in r.before implies some q: Query | q.writer = w and q.reader = r }
+fact { all q: Query | q.writer not in Converged and q.reader in Converged and q.writer in q.reader.above }
+fact { all w, r: Line | w not in Converged and r in Converged and w in r.above implies some q: Query | q.writer = w and q.reader = r }
 
 sig Ran, Elided, Guarded in Line {}
 fact { Ran = Line - Converged }

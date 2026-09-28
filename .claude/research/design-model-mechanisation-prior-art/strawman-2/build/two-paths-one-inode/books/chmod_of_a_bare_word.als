@@ -3,8 +3,8 @@ open claims
 
 one sig line_1, line_2 extends Line {}
 one sig carl__the_file_at_shared_has_the_mode extends Verdict {} { of = line_2 }
-fact { line_1.cmd = chmod  line_1.argv = 0->g_minus_w + 1->w_shared  no line_1.before }
-fact { line_2.cmd = chmod  line_2.argv = 0->g_plus_w + 1->w_shared   line_2.before = line_1 }
+fact { line_1.cmd = chmod  line_1.argv = 0->g_minus_w + 1->w_shared  no line_1.above }
+fact { line_2.cmd = chmod  line_2.argv = 0->g_plus_w + 1->w_shared   line_2.above = line_1 }
 fact { line_1.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
 fact { line_2.speech = line_1.speech + carl__the_file_at_shared_has_the_mode }
 
