@@ -221,9 +221,10 @@ public class AlloyRunner {
       return loaded;
    }
 
-   // Command.toString() is "Check name for 6 but ..."; everything after " for " is the scope clause as Alloy read it.
+   // Command.toString() is "Check name for 6 but ... expect 1"; the scope clause is what follows " for ",
+   // less the trailing expect, which the row carries as its own field.
    static String scopeOf(Command cmd) {
-      String s = cmd.toString();
+      String s = cmd.toString().replaceFirst(" expect -?\\d+$", "");
       int at = s.indexOf(" for ");
       return at < 0 ? "" : s.substring(at + 5);
    }
