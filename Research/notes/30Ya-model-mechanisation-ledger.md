@@ -790,6 +790,35 @@ they sit alongside the Alloy spec rather than only as e2e.
   mostly correctness, and six of the eight correctness items were invisible until the solver
   handed back a world.
 
+## The `30Y` firming sitting (2026-09-28; human-typed rulings on what the runs taught)
+
+- **[HUMAN] ack**, applied to `30Y`: harness names (`Claim` abstract, `above` for `before`, no
+  field name shared across sigs, a lint on Alloy's reserved words); one flat directory per
+  document with the harness and the shared module written in; a declaration on a line binds
+  `this` whether claim or world object; a timeout is a result with its translation size, not a
+  runner failure (acked "ish"); assay sets `seq` wherever it sets `Int`.
+- **[HUMAN] nack** on "section three is stale" as framed: `30Y` is a living document that
+  describes what is, never what is built against what is to come, and must read equally current
+  when the build is done. Applied: § 3 describes the runner and the two fixtures in the present
+  tense, with no built-or-unbuilt language.
+- **[HUMAN]** praxis lives in this ledger for now; `30Y` stays tooling only.
+- **[HUMAN]** no lean on the corpus universe and neither first option liked; the alternative,
+  a generated corpus book of one null-command line whose speech is every declared claim, so
+  corpus checks are ordinary outcomes with truth-in-force defined, acked as marginally better.
+  Applied to `30Y` § 2.3, § 2.5, § 2.8; `corpus.als` is gone from the layout.
+- **[HUMAN]** the shared tier is a prepend half and an append half, both authored in `spec/`;
+  assay stays a thin preprocessor that opens the first beneath every document and splices the
+  second, as text, after each document's definitions into its laws module (Alloy resolves
+  names downward through `open` only, so a shared law over a document-defined name can be
+  shared no other way). On the human's question, clarified and **[HUMAN] acked**: no
+  assay-flavoured content lives in the append half; the names its laws use (`answer`, `wrong`,
+  `support`) are the spec tier's own convention that every document must satisfy, Alloy refuses
+  a document that leaves one undefined, and names in one part of `spec/` constraining names
+  elsewhere in it is fine as long as they all appear in `spec/`. Applied to `30Y` § 2.2.
+- Resolved by the above, no longer open: where the generic laws live (the append half; the
+  inverted law would have been written once), the corpus universe (the null-line book), and the
+  scope convention for laws (the append author sizes each generic law once).
+
 ## Praxis for writing a specification (from the strawman fights; **[HUMAN]** this ledger is the home for praxis for now, since `30Y` is tooling only)
 
 - What the solver would otherwise choose, the book must state. An unnamed object the spec

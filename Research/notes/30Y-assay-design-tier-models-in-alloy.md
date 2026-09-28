@@ -179,11 +179,13 @@ generic laws, stated over names such as `answer`, `wrong`, and `support` that ea
 defines. Alloy resolves names only downward through `open`, so a law that names a function the
 document defines can be shared only by concatenation: assay splices the append half, as text,
 after the document's own definitions into its laws module (§ 2.3). A document may use either
-half or both. The names the append half uses are the contract a document must define, and a
-document that omits one fails Alloy's own resolution in that document alone; the scope each
-generic law runs at is the append half's to spell, once, for every document. Everything either
-half says is spec-tier content and not this document's; anything less than tree-global is
-opened explicitly by the spec that wants it.
+half or both. The append half's laws name things each document defines (an `answer`, a
+`wrong`, a `support`; the names are the spec tier's own convention, chosen by whoever writes
+that half), and Alloy, not assay, refuses a document that leaves one undefined, in that
+document alone; the scope each generic law runs at is the append half's to spell, once, for
+every document. Nothing assay owns appears in either half; everything either half says is
+spec-tier content and not this document's, and anything less than tree-global is opened
+explicitly by the spec that wants it.
 
 ### § 2.3-the-generated-modules
 
