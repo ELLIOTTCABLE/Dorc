@@ -9,3 +9,6 @@ fact { line_1.speech = alice__frob_wobbles + bob__spin_wobbles + bob__twirl_wobb
 
 -- widgets.md:21
 check everySpokenWobbleIsHeard { Wobble & Line.speech in Heard } for 4 but 3 Int, 3 seq, exactly 11 Shword, exactly 1 Class, exactly 1 Line, exactly 3 Claim
+
+-- assay: the corpus book's inhabitation run
+run book_corpus {} for 4 but 3 Int, 3 seq, exactly 11 Shword, exactly 1 Class, exactly 1 Line, exactly 3 Claim

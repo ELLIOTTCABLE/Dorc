@@ -803,6 +803,12 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
         let clause = scope(own.as_deref().or(ctx.default_scope), &corpus_bounds);
         corpus_blocks.push(block(file, *line, &format!("{body} for {clause}")));
     }
+    // With every claim in force the universe may be empty, and then every corpus check greens
+    // vacuously; this run must be sat (`30Y` § 2.5 item 5).
+    corpus_blocks.push(format!(
+        "-- assay: the corpus book's inhabitation run\nrun book_corpus {{}} for {}",
+        scope(ctx.default_scope, &corpus_bounds)
+    ));
     add(
         "book_corpus.als",
         module("book_corpus", &["claims"], &corpus_blocks),
