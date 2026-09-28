@@ -771,10 +771,24 @@ they sit alongside the Alloy spec rather than only as e2e.
   survive under the flag; footprints, backings, withholds; the identity tier's answers as
   opaque claims), the vocabulary assay is meant to own one day and the region `USER_STORY`
   stages 2 and 5 narrate. `30Ya-strawman-3/` in the evidence base: nine books, ten laws, four
-  corpus checks; `FINDINGS.md` there is the running fight record; everything unrun at the
-  commit that carries it. Two design answers invented there and marked so: a guarded line is
-  a wall (it may run), and attribution is the derivation's support rather than single-removal,
-  because two independent falsehoods mask each other under removal.
+  corpus checks; `FINDINGS.md` there is the fight record and carries the final division.
+- The runs (`notes/30Yb`; the lane folded into `ai/main` 2026-09-28, worktree and branch
+  removed). Strawman-2: five mechanical fights; three law premises vacuous at the default
+  claim scope; the seat check red for want of a universe; every per-line check with a query
+  timed out (two million variables; the `separated` closures); at `8 Claim` four laws red,
+  which the strawman-3 findings now put under suspicion of the inverted-law bug below rather
+  than of the identity model. Strawman-3, first run: seventy-six of eighty-one commands as
+  expected, none over twelve seconds at the ceiling of twelve; five reds, three design catches
+  ruled and applied, marked strawman: `monotoneInSpeech` and `strangerSafe` read backwards in
+  both strawmen (`weaker` puts the stronger answer on the right), separation is irreflexive, a
+  cell a describer names is a key by the naming. Second run: ninety-one of ninety-two as
+  expected; the one-voice removal-attribution law went green, correcting the conductor's own
+  hand-reasoning (a sole footprint removed widens to every key, which includes the backing's
+  own, and nothing separates a key from itself). The division of every fight into
+  correctness-chafe, tooling-tune, and encoding cost is `FINDINGS.md` "The division"; the
+  short form: fights found while writing were mostly tooling, fights found by running were
+  mostly correctness, and six of the eight correctness items were invisible until the solver
+  handed back a world.
 
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 

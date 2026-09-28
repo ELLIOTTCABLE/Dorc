@@ -221,9 +221,16 @@ the license-contamination map. Cross-references are `docID:slug`.
   review of the pre-rewrite `30T` draft) · `30V` (why-surface state-space re-exploration;
   §6 the deferred set) + `30Va` (conduct) / `30Vb`,`30Vc` (strawmen — raw, read-optional) /
   `30Vd` (lane ledger) · `30Xa` (the rebuild's conductor ledger: every checkpoint ruling, the
-  lane table, the typed acks of the close, the post-review repair lane). Current state:
-  `LIVING_STATUS.md`; what follows:
-  `ROADMAP.md`.
+  lane table, the typed acks of the close, the post-review repair lane). The design-model
+  mechanisation work: **`notes/30Y`** (assay, the plan for a design-tier checker over literate
+  specifications in Alloy 6; tooling only, praxis deliberately excluded) · `notes/30Ya` (its
+  ledger: the research fronts, every human-typed lean and ruling of the design sittings, the
+  scope map of what in the corpus is modelable) · `notes/30Yb` (the Alloy runner lane: the
+  `mise run alloy` task, module resolution as observed, and both strawmen run for real, every
+  fight recorded); the strawmen and the fight division live in
+  `.claude/research/design-model-mechanisation-prior-art/` (`strawman-2/`, the identity model's
+  first cut; `30Ya-strawman-3/`, the outcome algebra past a wall, with its `FINDINGS.md`).
+  Current state: `LIVING_STATUS.md`; what follows: `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
   against a real machine: the ssh executor (`dorc apply host <plan.sh` does its own ssh'ing),
   the gate/bless-tier live-acceptance loop, the Vultr experimentation kit. THE seed:
