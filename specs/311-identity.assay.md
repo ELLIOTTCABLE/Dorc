@@ -132,7 +132,7 @@ its own construction against what it merely re-presents (the distinction 2.3-ali
 needs). The engine never reads these relations; the truth predicates do.
 
 ```alloy
-sig mReferent { holds: set mReferent, owns: set mReferent, affects: set mReferent }
+sig mReferent { holds: set mReferent, owns: set mReferent, affects: set mReferent, passes: set mReferent }
 
 fact { owns in holds }
 
@@ -147,6 +147,7 @@ fun partsOf[r: mReferent]: set mReferent { r.holds }
 > An mReferent is a persisting piece of the world.
 > A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
 > A write to an mReferent affects the mState of the mReferents it affects (2.5-may-read-the-readset).
+> A route to an mReferent passes through the mReferents that pass to it; what an mReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
 > An mReferent has the mSort of the mKey that reaches it, and two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
 > It has one or more mKeys.
 > It may have parts, and every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
@@ -502,26 +503,55 @@ mParent are 2.10-places-the-upward-lookup's.
 ### § 1.7-resolution-and-its-traversal
 
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
-p, reaches mReferent R. It is a fact with a backing. The backing is the mTraversal: the ordered
-chain of routing mKeys the lookup crossed. The lookup emits that chain, one member per routing
-mKey, in the order it crossed them (2.9-the-traversal-and-the-region-test). The emission is an
-at-most set. The lookup's owner closes it by an explicit act. A lookup that emits no member has
-its mParent-Catalog, given whole, as its mTraversal. A lookup that emits members without the
-closing act has those members and its mParent-Catalog, given whole.
+p, reaches mReferent R: in the fences it is the mKey's emitted mKey (1.4-key-and-its-two-views)
+with the mTraversal beside it. The order the lookup crossed the members in is not held; the
+consumers read membership. What touches a member and so invalidates the mResolution is
+3.3-invalidation-three-mutator-species's; the read set of the lookup body is
+1.7.1-the-lookup-body-and-its-reads.
 
-Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member
-invalidates the mResolution. Its target object is not its backing. An mKey can stop reaching an
-object without the object changing. An object can change without its mKey changing.
+```alloy
+sig EmitsCrossed extends Statement { crossedFor: one mKey, crossedKey: one mKey }
 
-A mResolution also depends on the read set of the lookup body that produced it. The engine
-derives that set from the body. Shell parity supplies the reads of sh constructs. The path
-mScheme supplies the reads of a path. The speech that describes an external command supplies
-the reads of that command.
+sig ClosesTraversal extends Statement { closedFor: one mKey }
 
-The read set is closed only when the read set of every external command in the body is closed.
-The author of the speech that describes an external command closes that command's read set by
-an explicit act. Any write invalidates a mResolution whose read set is open
-(3.3-invalidation-three-mutator-species).
+fact { all d: EmitsCrossed | d.speaker = d.crossedFor.scheme.schemeOwner }
+
+fact { all d: ClosesTraversal | d.speaker = d.closedFor.scheme.schemeOwner }
+
+fun crossed[k: mKey]: set mKey { (EmitsCrossed & InForce & crossedFor.k).crossedKey }
+
+pred traversalClosed[k: mKey] { some ClosesTraversal & InForce & closedFor.k }
+
+fun traversal[k: mKey]: set mLevel { crossed[k] + (traversalClosed[k] implies none else k.parent) }
+
+pred true_EmitsCrossed[d: EmitsCrossed] {}
+
+pred true_ClosesTraversal[d: ClosesTraversal] {
+   let k = d.closedFor | passes.(k.reaches) in crossed[k].reaches
+}
+```
+
+<!-- prose-translation -->
+> A mResolution is a fact with a backing, and the backing is the mTraversal: the chain of routing mKeys the lookup crossed.
+> The lookup emits that chain, one member per routing mKey (2.9-the-traversal-and-the-region-test), as the lookup owner's speech.
+> The emission is an at-most set, and an emitted member licenses nothing alone.
+> The lookup's owner closes it by an explicit act; the closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one an emitted member reaches.
+> A lookup that emits no member has its mParent-Catalog, given whole, as its mTraversal.
+> A lookup that emits members without the closing act has those members and its mParent-Catalog, given whole.
+
+#### § 1.7.1-the-lookup-body-and-its-reads
+
+The engine derives a lookup body's read set from the body, which the fences do not hold: shell
+parity supplies the reads of sh constructs, the path mScheme the reads of a path, and the speech
+that describes an external command the reads of that command.
+
+<!-- normative -->
+> Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
+> Its target object is not its backing: an mKey can stop reaching an object without the object changing, and an object can change without its mKey changing.
+> A mResolution also depends on the read set of the lookup body that produced it.
+> The read set is closed only when the read set of every external command in the body is closed.
+> The author of the speech that describes an external command closes that command's read set by an explicit act.
+> Any write invalidates a mResolution whose read set is open (3.3-invalidation-three-mutator-species).
 
 > Examples of a mTraversal: each directory entry and symlink for a path, the resolver
 > configuration and mVantage for a hostname, the unit table for a service name.
@@ -965,8 +995,8 @@ written mKey, and the record per shape. The sentence excluding containers at or 
 the written mKey shares with the read mKey admits two readings (`notes/312ch`, item 11): the
 exclusion applied as the writeset is built, or only at the test; both are mechanized, the law is
 stated over the first, which spares the more, and a check asks whether they ever disagree. Rule
-3, an mKey given whole, is 2.9-the-traversal-and-the-region-test's and is not yet mechanized;
-until it is, every entry names its mReferent and nothing beneath. Arity: per matched shape of
+3 reads what an entry given whole covers from 2.9-the-traversal-and-the-region-test and
+2.10-places-the-upward-lookup. Arity: per matched shape of
 the verb, for the at-most set; many per matched shape on the mSort, for the entailment; plus
 the finished record. Declared by: the verb's author, for the at-most set; the mSort owner, for
 the entailment. Default: unfinished, which collides. Consumer: the sparing test, within one
@@ -995,7 +1025,15 @@ fun entailed[k: mKey]: set mKey { (DeclaresEntails & InForce & fromKey.k).entail
 
 pred entailmentFinished[k: mKey] { some FinishesEntailment & InForce & finishedShape.(k.shape) }
 
-fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | walkOfKeys[m, e] != DISJOINT} }
+fun wholeWriteEntries[l: Line]: set mKey { (DeclaresMayWrite & GivenWhole & InForce & writeLine.l).writeEntry }
+
+fun wholeReadEntries: set mKey { (DeclaresMayRead & GivenWhole & InForce).readEntry }
+
+fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else walkOfKeys[m, e] }
+
+fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | entryAnswer[m, e] != DISJOINT} }
+
+fun seed[l: Line]: set mKey { atMostEntries[l] + beneathFor[wholeWriteEntries[l]] }
 
 fun contributingContainers[m, r: mKey]: set mKey {
    (identity[m].*parent & mKey) - (meet[identity[m], identity[r]].mLevel).*parent
@@ -1004,19 +1042,23 @@ fun contributingContainers[m, r: mKey]: set mKey {
 fun spreadsTo[m, r: mKey]: set mKey { entailed[contributingContainers[m, r]] + rule4[m] }
 
 fun writesetAgainst[l: Line, r: mKey]: set mKey {
-   atMostEntries[l].*({m, k: mKey | k in spreadsTo[m, r]})
+   seed[l].*({m, k: mKey | k in spreadsTo[m, r]})
 }
 
 fun writesetUnexcluded[l: Line]: set mKey {
-   atMostEntries[l].*({m, k: mKey | k in entailed[identity[m].*parent & mKey] + rule4[m]})
+   seed[l].*({m, k: mKey | k in entailed[identity[m].*parent & mKey] + rule4[m]})
 }
 
 fun writesetAtTest[l: Line, r: mKey]: set mKey {
-   atMostEntries[l] + {k: mKey | some m: writesetUnexcluded[l] | k in spreadsTo[m, r]}
+   seed[l] + {k: mKey | some m: writesetUnexcluded[l] | k in spreadsTo[m, r]}
 }
 
 pred writesetIsTop[l: Line, ws: set mKey] {
    not atMostClosed[l] or some m: ws | not entailmentFinished[m]
+}
+
+fun memberAnswer[l: Line, w, r: mKey]: one Answer {
+   w in wholeWriteEntries[l] implies regionTest[w, r] else walkOfKeys[w, r]
 }
 
 pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
@@ -1024,7 +1066,7 @@ pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
    not readsetIsTop[f]
    all r: readset[f] {
       not writesetIsTop[l, ws[r]]
-      all w: ws[r] | walkOfKeys[w, r] = DISJOINT
+      all w: ws[r] | memberAnswer[l, w, r] = DISJOINT
    }
 }
 
@@ -1039,7 +1081,8 @@ pred sparedAtTest[l: Line, f: VerdictFact] { sparedBy[l, f, writesetsAtTest[l]] 
 pred true_DeclaresMayWrite[d: DeclaresMayWrite] {}
 
 pred true_ClosesMayWrite[d: ClosesMayWrite] {
-   World.lineWrites[d.closedLine] in atMostEntries[d.closedLine].reaches
+   let l = d.closedLine |
+      World.lineWrites[l] in atMostEntries[l].reaches + wholeWriteEntries[l].reaches.passes
 }
 
 pred true_DeclaresEntails[d: DeclaresEntails] {}
@@ -1072,15 +1115,16 @@ run law_exclusion_readings_agree_premise {
 ```
 
 <!-- prose-translation -->
-> A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set closed under three of the four rules.
+> A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set that four rules close.
 > Rule 1: every may-write entry the verb's author declared per matched shape is in the writeset; the completion record closes those entries.
 > Rule 2: where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey that K's may-write entailment names is in the writeset; a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
-> Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); may-read entries feed rule 4 and no other rule.
+> Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test): its finished enumeration's members where it has one (2.10-places-the-upward-lookup), and every mKey its region covers besides where it has none.
+> Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); a may-read entry given whole is compared by the region test; may-read entries feed rule 4 and no other rule.
 > Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
 > An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
-> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two.
+> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
 > A may-write entry and an entailment entry license nothing alone.
-> A completion record is true when every mReferent the line writes is one an at-most entry reaches.
+> A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
 > A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
@@ -1088,7 +1132,6 @@ run law_exclusion_readings_agree_premise {
 #### § 2.6.1-the-finished-definition-and-the-worlds
 
 <!-- normative -->
-> Where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test), and the region test decides the pair where an mKey is given whole.
 > The test spares narrowly and collides widely: whatever is not DISJOINT collides.
 > The entailment generates no DISJOINT: "nothing else" is no other thing, never no other mKey for the thing written.
 > The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
@@ -1140,57 +1183,109 @@ It must remain speech. Measurement in the denoted context (`plans/27C`) stays th
 
 ### § 2.9-the-traversal-and-the-region-test
 
-A lookup emits its mTraversal, one member per routing mKey it crossed
-(1.7-resolution-and-its-traversal). A lookup may cross several levels, each looked up in a
-catalog that the previous level named. The engine never reads an mKey's syntax. Whatever
-splitting an mKey needs happens inside a lookup's body. A lookup may cross an indexical routing
-mKey, whose mResolution depends on the observing process. Only the lookup's owner can say which,
-in the body that meets it. An undeclared indexical routing mKey reads unknown.
+A lookup emits its mTraversal (1.7-resolution-and-its-traversal); it may cross several levels,
+each looked up in a catalog that the previous level named. The engine never reads an mKey's
+syntax: whatever splitting an mKey needs happens inside a lookup's body. A lookup that emits no
+member has its mParent-Catalog, given whole, as its mTraversal, and any touch on that catalog
+then invalidates every mResolution through it: the coarse, safe floor. The walk of
+3.2-compare-one-chokepoint-four-answers collides a write to an entry's mReferent with
+everything identified in it; what an entry given whole names beyond that is the region test.
+Only x's mTraversals are walked, and D needs no closure of its own; every level is asked, never
+only the leaf, because an alias may sit at any level and a leaf's own closure cannot see it.
+`compare()` compares a level by the identity of the mReferent that the level resolved to
+(`walkOfKeys`, § 3.2). Unequal mTokens say only that the thing is not the routing mKey itself.
+Arity: per lookup, per matched shape. Declared by: the lookup's owner, through what the lookup
+emits. Default: no emission, so the mTraversal is the mParent-Catalog given whole. Consumer:
+mResolution backings, hence invalidation (3.3-invalidation-three-mutator-species), and the
+region test. Danger: a false closing act keeps a stale mResolution and every conclusion built on
+it; a false `alias nothing-else` is a wrong DISJOINT; an open or coarse emission is safe.
 
-A lookup that emits no member has its mParent-Catalog, given whole, as its mTraversal
-(1.7-resolution-and-its-traversal). Any touch on that catalog then invalidates every mResolution
-through it. That is the coarse, safe floor. Containment is membership in a mTraversal.
+```alloy
+sig GivenWhole in DeclaresMayWrite + DeclaresMayRead {}
 
-An entry names the mReferent of its mKey. The walk of 3.2-compare-one-chokepoint-four-answers
-collides a write to that mReferent with everything identified in it. An entry given whole also
-names every mReferent reached beneath that mKey, through the mScheme's lookups or through a
-placing route (2.10-places-the-upward-lookup). The entry's author marks it given whole.
+sig EmitsAliasNothingElse extends Statement { atLevel: one mKey }
 
-A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its
-mScheme reaches beneath it. In the test of 2.6-may-write-the-writeset it reads UNKNOWN against
-every mKey that mScheme can yield in the same mParent-Catalog instance, whatever
-3.2-compare-one-chokepoint-four-answers answers of the two as siblings. Unequal mTokens say only
-that the thing is not the routing mKey itself. That is the floor.
+fact { all d: EmitsAliasNothingElse | d.speaker = d.atLevel.scheme.schemeOwner }
 
-The region test refines the floor. For an mKey D given whole against an mKey x, walk each
-mTraversal that `identity(x)` produced at every level of x's mFullyQualifiedKey
-(1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), including the routes of
-2.10-places-the-upward-lookup, leaf first:
+pred aliasClosed[m: mKey] { some EmitsAliasNothingElse & InForce & atLevel.m }
 
-1. If x's leaf compares SAME with D: SAME.
-2. Else if any level of a mTraversal compares SAME with D: D's region covers x, and the pair
-   reads UNKNOWN.
-3. Else if x carries a closure for D's mSort, in one of two forms: DISJOINT.
-   - x has at least one mTraversal of D's mSort. On every such mTraversal, every level compares
-     DISJOINT with D and every level emitted its closure, `alias nothing-else`
-     (1.5-token-and-the-two-warrants) or `looked-up-in nothing-else`
-     (2.10-places-the-upward-lookup).
-   - The placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no
-     `looked-up-in` record. Then x is in no region of that mSort.
-4. Otherwise: UNKNOWN.
+pred true_EmitsAliasNothingElse[d: EmitsAliasNothingElse] {
+   no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.reaches and c.reaches = d.atLevel.reaches
+}
 
-Only x's mTraversals are walked. D needs no closure of its own. Every level is asked, never only
-the leaf, because an alias may sit at any level. A leaf's own closure cannot see it. `compare()`
-(3.2-compare-one-chokepoint-four-answers) compares a level by the identity of the mReferent that
-the level resolved to.
+fun sortOfKey[k: mKey]: lone mSort { primaryOf[identity[k].scheme] }
 
-- Arity: per lookup, per matched shape.
-- Declared by: the lookup's owner, through what the lookup emits.
-- Default: no emission, so the mTraversal is the mParent-Catalog given whole.
-- Consumer: mResolution backings (1.7-resolution-and-its-traversal), hence invalidation
-  (3.3-invalidation-three-mutator-species), and the region test.
-- Danger: a false closing act keeps a stale mResolution and every conclusion built on it. A
-  false `alias nothing-else` is a wrong DISJOINT. An open or coarse emission is safe.
+fun traversalMembers[k: mKey]: set mKey {
+   crossed[k] + (traversalClosed[k] implies none else k.parent & mKey)
+}
+
+fun levelsOf[x: mKey]: set mKey { identity[x].*parent & mKey }
+
+pred coveredBy[D, x: mKey] {
+   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | walkOfKeys[m, D] = SAME
+}
+
+pred lookupTraversalOfSort[l: mKey, G: mSort] {
+   some traversalMembers[l] and sortOfKey[traversalMembers[l]] in G
+}
+
+pred outsideByTraversals[D, x: mKey] {
+   let G = sortOfKey[D] {
+      (some l: levelsOf[x] | lookupTraversalOfSort[l, G]) or some placedIn[x, G]
+      all l: levelsOf[x] | lookupTraversalOfSort[l, G] implies
+         traversalClosed[l] and all m: traversalMembers[l] | walkOfKeys[m, D] = DISJOINT and aliasClosed[m]
+      some placedIn[x, G] implies
+         lookedUpInClosed[x, G] and all g: placedIn[x, G] | walkOfKeys[g, D] = DISJOINT
+   }
+}
+
+pred outsideByPlacing[D, x: mKey] {
+   let G = sortOfKey[D] | lookedUpInClosed[x, G] and no placedIn[x, G]
+}
+
+fun regionTest[D, x: mKey]: one Answer {
+   walkOfKeys[x, D] = SAME implies SAME
+   else coveredBy[D, x] implies UNKNOWN
+   else (outsideByTraversals[D, x] or outsideByPlacing[D, x]) implies DISJOINT
+   else UNKNOWN
+}
+
+fun beneath[D: mKey]: set mKey { {x: mKey | coveredBy[D, x]} }
+
+check law_region_disjoint_is_sound {
+   everyStatementInForceIsTrue and storesAreWellFounded implies
+      all D, x: mKey | regionTest[D, x] = DISJOINT implies
+         no x.reaches & (D.reaches + D.reaches.passes)
+} for 6 but 4 Int
+
+run law_region_disjoint_is_sound_premise {
+   everyStatementInForceIsTrue and storesAreWellFounded
+   some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
+      and some traversalMembers[levelsOf[x]]
+}
+```
+
+<!-- prose-translation -->
+> An entry's author marks it given whole.
+> A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants); it is true when no other mKey of that level's mScheme reaches the level's mReferent.
+> A lookup's mTraversal members are the routing mKeys it emitted, and its mParent-Catalog where the emission is not closed.
+> The mTraversals of x are those `identity(x)` produced at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), and the routes of 2.10-places-the-upward-lookup.
+> A mTraversal is of D's mSort when every member of it is of that mSort, or when it is a placing route of that mSort.
+> For an mKey D given whole against an mKey x, step 1: if x's leaf compares SAME with D, SAME.
+> Step 2: else if any level of a mTraversal compares SAME with D, D's region covers x, and the pair reads UNKNOWN.
+> Step 3: else if x carries a closure for D's mSort, DISJOINT, in one of two forms.
+> First form: x has at least one mTraversal of D's mSort, and on every such mTraversal every level compares DISJOINT with D and every level emitted its closure, `alias nothing-else` for a lookup's level or `looked-up-in nothing-else` for a placing route (2.10-places-the-upward-lookup), the lookup's emission being closed.
+> Second form: the placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no `looked-up-in` record; then x is in no region of that mSort.
+> Step 4: otherwise UNKNOWN.
+> An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
+> A DISJOINT of the region test is never false while every statement in force is true and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
+
+#### § 2.9.1-indexicals-and-the-floor
+
+<!-- normative -->
+> A lookup may cross an indexical routing mKey, whose mResolution depends on the observing process; only the lookup's owner can say which, in the body that meets it, and an undeclared indexical routing mKey reads unknown.
+> Containment is membership in a mTraversal.
+> A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it; in the test of 2.6-may-write-the-writeset it reads UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings; that is the floor, which the region test refines.
 
 > Lookups that cross several levels: a path yields a directory entry looked up in a shorter
 > path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in
@@ -1205,42 +1300,71 @@ the level resolved to.
 
 ### § 2.10-places-the-upward-lookup
 
-An mSort G may declare that it `:places` another mSort T. G's owner publishes a lookup that is
-invoked with the mValue of an mKey of T. Its matched shapes decide which spellings of T it
-answers. For that mKey it emits `looked-up-in G:key` and a closure `looked-up-in nothing-else`,
-scoped to routes of mSort G. These are the records any lookup emits. Membership is a relation
-between two mReferents, never a spelling of one, so the placing lookup is not an mScheme of T.
+G's owner publishes a lookup that is invoked with the mValue of an mKey of T, its matched
+shapes deciding which spellings of T it answers; membership is a relation between two
+mReferents, never a spelling of one, so the placing lookup is not an mScheme of T. The route
+so recorded is a mTraversal of the mKey for the region test
+(2.9-the-traversal-and-the-region-test), invalidated as any mResolution is
+(3.3-invalidation-three-mutator-species), and never the mKey's mParent, which is the route the
+mKey's own lookup supplied (1.6-parent-one-per-key). When the engine invokes the lookup, and
+what it refuses when two invocations disagree, are 2.10.1-invocation-and-refusal. Arity: per
+(G, T). Declared by: G's owner. Default: absent; T's mKeys then have no route of mSort G, and
+the pair reads as 3.2-compare-one-chokepoint-four-answers decides it. Consumer: the region
+test, and invalidation. Danger: a false `looked-up-in nothing-else` is G's owner's wrong
+DISJOINT.
 
-The route so recorded is a mTraversal of the mKey for the region test
-(2.9-the-traversal-and-the-region-test). A mutator invalidates it as it invalidates any
-mResolution (3.3-invalidation-three-mutator-species). It is never the mKey's mParent, which is the route the
-mKey's own lookup supplied (1.6-parent-one-per-key).
+```alloy
+sig DeclaresPlaces extends Statement { placingSort: one mSort, placedSort: one mSort }
 
-The engine invokes G's lookup only when all three hold:
+sig RecordsLookedUpIn extends Statement { placedKey: one mKey, inKey: one mKey }
 
-- a writeset or readset entry names an mKey of G given whole
-- the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no
-  route of mSort G
-- G declares that it places T
+sig ClosesLookedUpIn extends Statement { closedKey: one mKey, routeSort: one mSort }
 
-It invokes the lookup with every mKey it holds for that mReferent. The `looked-up-in` records of
-every invocation accumulate. A closure `looked-up-in nothing-else` from one invocation can
-contradict a record from another invocation. The engine then refuses both answers and
-attributes the refusal to G's owner.
+fact { all d: DeclaresPlaces | d.speaker = d.placingSort.sortOwner }
 
-The store's end of the same relation is G's enumeration of its members. The may-write entailment
-of 2.6-may-write-the-writeset already carries that as write reach. When that entailment is
-finished for P (§2.6), its emitted members stand in, in the test of §2.6, for the mKeys reached
-beneath P (§2.6, rule 3). Each member is an entry of that test. P itself stays an entry of that
-test. An unfinished entailment widens the writeset only. Where a placing route places x in P and
-a finished enumeration of P has no member SAME with x, the pair reads UNKNOWN.
+fact { all d: RecordsLookedUpIn | d.speaker = sortOfKey[d.inKey].sortOwner }
 
-- Arity: per (G, T).
-- Declared by: G's owner.
-- Default: absent. T's mKeys then have no route of mSort G, and the pair reads as
-  3.2-compare-one-chokepoint-four-answers decides it.
-- Consumer: the region test (2.9-the-traversal-and-the-region-test), and invalidation.
-- Danger: a false `looked-up-in nothing-else` is G's owner's wrong DISJOINT.
+fact { all d: ClosesLookedUpIn | d.speaker = d.routeSort.sortOwner }
+
+pred places[G, T: mSort] { some DeclaresPlaces & InForce & placingSort.G & placedSort.T }
+
+fun placedIn[x: mKey, G: mSort]: set mKey {
+   {g: (RecordsLookedUpIn & InForce & placedKey.x).inKey | sortOfKey[g] = G}
+}
+
+pred lookedUpInClosed[x: mKey, G: mSort] { some ClosesLookedUpIn & InForce & closedKey.x & routeSort.G }
+
+fun beneathFor[P: mKey]: set mKey { entailmentFinished[P] implies entailed[P] else entailed[P] + beneath[P] }
+
+pred true_DeclaresPlaces[d: DeclaresPlaces] {}
+
+pred true_RecordsLookedUpIn[d: RecordsLookedUpIn] {
+   d.placedKey.reaches in d.inKey.reaches.passes
+}
+
+pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
+   all g: keysOfSort[d.routeSort] | d.closedKey.reaches in g.reaches.passes implies
+      some r: placedIn[d.closedKey, d.routeSort] | r.reaches = g.reaches
+}
+```
+
+<!-- prose-translation -->
+> An mSort G may declare that it `:places` another mSort T; G's owner declares it.
+> For an mKey of T the placing lookup emits `looked-up-in G:key`, a record G's owner speaks, true when the mKey's mReferent is one that a route through G:key's mReferent passes to.
+> It emits a closure `looked-up-in nothing-else`, scoped to routes of mSort G, true when every G-thing a route to the mKey's mReferent passes through is one a record names.
+> The `looked-up-in` records of every invocation accumulate: x's routes of mSort G are every G:key recorded for x.
+> The store's end of the same relation is G's enumeration of its members, which the may-write entailment of 2.6-may-write-the-writeset carries as write reach: when that entailment is finished for P, its emitted members stand in, in the test of 2.6-may-write-the-writeset, for the mKeys reached beneath P (rule 3); an unfinished entailment widens the writeset only.
+
+#### § 2.10.1-invocation-and-refusal
+
+Invocations are not in the fences; a record either is in force or is not.
+
+<!-- normative -->
+> The engine invokes G's lookup only when all three hold: a writeset or readset entry names an mKey of G given whole; the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no route of mSort G; G declares that it places T.
+> It invokes the lookup with every mKey it holds for that mReferent.
+> A closure `looked-up-in nothing-else` from one invocation can contradict a record from another invocation; the engine then refuses both answers and attributes the refusal to G's owner.
+> Each member of a finished enumeration is an entry of the test of 2.6-may-write-the-writeset, and P itself stays an entry of that test.
+> Where a placing route places x in P and a finished enumeration of P has no member SAME with x, the pair reads UNKNOWN.
 
 > Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
 
@@ -1394,6 +1518,12 @@ pred everyStatementInForceIsTrue {
    all d: ClosesMayWrite & InForce | true_ClosesMayWrite[d]
    all d: DeclaresEntails & InForce | true_DeclaresEntails[d]
    all d: FinishesEntailment & InForce | true_FinishesEntailment[d]
+   all d: EmitsCrossed & InForce | true_EmitsCrossed[d]
+   all d: ClosesTraversal & InForce | true_ClosesTraversal[d]
+   all d: EmitsAliasNothingElse & InForce | true_EmitsAliasNothingElse[d]
+   all d: DeclaresPlaces & InForce | true_DeclaresPlaces[d]
+   all d: RecordsLookedUpIn & InForce | true_RecordsLookedUpIn[d]
+   all d: ClosesLookedUpIn & InForce | true_ClosesLookedUpIn[d]
 }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
