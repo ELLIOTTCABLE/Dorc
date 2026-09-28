@@ -25,6 +25,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## oracle/CLAUDE:a-definitions-file-is-not-a-mark-fragment
 - defined: spike/crates/oracle/CLAUDE.md:165 — — `validate` runs `lint_mark_subset` only for a
 
+## a-host-is-not-a-partition
+- defined: —
+- cited: 03 04 30Y 30Ya 311u 312b 312ca 312cg Research/GOTCHAS (12)
+
 ## a-known-flag-suggests-nothing
 - defined: —
 - cited: 30Rk (1)
@@ -3456,6 +3460,18 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26N 26Ob (2)
 
+## 30Ya:front-production-alloy-users
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:78 — : established (turn01, subagent-graded; conductor re-read the load-bearing archived copies)
+
+## 30Ya:front-shared-unit-in-referent-projects
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:230 — : established (turn04, subagent-graded; conductor read the notes)
+
+## 30Ya:front-single-artifact-prose-and-checks
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:112 — : established (turn02, subagent-graded; conductor read the notes' citations, not the archived copies…
+
+## 30Ya:front-structural-ties-between-instruments
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:173 — : established (turn03, subagent-graded; conductor read the notes, not the archived copies)
+
 ## fruit-emit-hygiene-paste
 - defined: —
 - cited: 30Qe (1)
@@ -3793,6 +3809,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## why/CLAUDE:inv-known-held-never-convert
 - defined: spike/crates/why/CLAUDE.md:12 — — `Known<T>` (is this answerable/wired at all) and
+- cited: 30Ya (1)
 
 ## spike/CLAUDE:inv-leaf-seam
 - defined: spike/CLAUDE.md:530 — — executable work is a list of individually wrappable leaves
@@ -3819,6 +3836,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:inv-no-unsafe
 - defined: spike/CLAUDE.md:574 — — `unsafe` is `forbid`-den workspace-wide. No FFI. No authored
 - cited: 218a 21H 22B 22W 27V 283 (9)
+
+## inv-no-world-facts-in-engine
+- defined: —
+- cited: 26M 30T 30Ya (3)
 
 ## spike/CLAUDE:inv-one-observable
 - defined: spike/CLAUDE.md:310 — — exactly ONE concept of a command's observable: its
@@ -5334,6 +5355,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ORACLE_PROVIDES:provides-finished-definition
 - defined: ORACLE_PROVIDES.md:195 — — "…and nothing else, in any vocabulary"
+- cited: 30Ya (1)
 
 ## ORACLE_PROVIDES:provides-identity-tier
 - defined: ORACLE_PROVIDES.md:233 — — "same means THIS relation per selector; these regions overlap or not"
@@ -6735,7 +6757,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (25)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 30Ya 311b 311c 312ca 312cg 312ch (26)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7539,7 +7561,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (45)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 30Ya 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (46)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -7635,7 +7657,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-strawman-formats-no-compat
 - defined: Research/notes/28Va-aid-extraction-map.md:659 — — pre-user, EVERY versioned wire/format/env
 - defined: spike/CLAUDE.md:692 — — pre-user, EVERY versioned wire/format/env
-- cited: 26K 26N 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 310 ROADMAP aid/CLAUDE cli/CLAUDE (30)
+- cited: 26K 26N 28K 28L 28O 28P 28Q 28R 28U 301 302 307 30E 30L 30Mg 30Nb 30Ne 30Nh 30Qc 30Rk 30Y 310 ROADMAP aid/CLAUDE cli/CLAUDE (31)
 
 ## rul-strawman-tool-set
 - defined: —
@@ -8410,7 +8432,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-injection-sentences-collide-every-fact
 - defined: —
-- cited: 312cg 312ch (2)
+- cited: 30Ya 312cg 312ch (3)
 
 ## srv-open-read-set-any-routing-mutation
 - defined: —
@@ -8422,7 +8444,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-unmarked-verdict-readset-closed-empty
 - defined: —
-- cited: 312cg 312ch (2)
+- cited: 30Ya 312cg 312ch (3)
 
 ## 28Q:stage-0-ship-seam
 - defined: Research/plans/28Q-context-kernel-unification.md:539 — — **LANDED 2026-08-16** (its own lane after stage-i, per
