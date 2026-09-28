@@ -641,6 +641,57 @@ they sit alongside the Alloy spec rather than only as e2e.
 - Conductor's holds, unreacted (chat-only until reacted): the laws module opens the claim
   atoms; the correspondence half stays out of the first cut.
 
+## The agnostic recut of assay (2026-09-27; human-typed leans, and the consequences the human read and acked; the plan is `notes/30Y`)
+
+- **[HUMAN]** 30Y is tooling only: what assay reads, builds, runs, reports. No praxis in it
+  (where normativity sits, fence rules, name-correctness lints, which are not mechanically
+  checkable). The tool's name is assay.
+- **[HUMAN]** assay stays agnostic of anything 311-shaped, and as far as is reasonable of
+  anything Dorc-shaped: a generic solver over sh-spelled lines mapped to abstract claims about
+  those lines. No model-hygiene checks. It will eventually own the outcome vocabulary, for
+  mapping between tools, and nothing else Dorc-shaped; punted.
+- **[HUMAN]** Markdown in, Alloy out; JSON in, JSON out; a nonzero exit is how it speaks. No
+  prose, opinions, suspicions, or hints, in text or smuggled into JSON. Lean on the user
+  invoking Alloy directly wherever possible. Fancy reporting nacked for now; listed as later.
+- **[HUMAN]** a class is an assay-specific opaque category of strings: arbitrary, never parsed,
+  never meaningful, not a scheme; its correspondence with mScheme is accidental. It exists so two
+  claims can agree about two different literals as one kind of text; where they can share the
+  literal, they just do. Braced words are join nodes, not quantifiers (the prior conductor
+  doubted a book forall exists); a "for every inhabitant seen so far" check may come later.
+- **[HUMAN]** `#}` binds only the immediately preceding line, naming or classing each of its
+  components; never a general truth over other lines. Any component may be classed, the
+  command word included. A bounded word-set form (`{foo} rest... a_bar`, both ends bound) maybe
+  later. Conductor's join rule, acked: the literal is the join key; one literal named on one line
+  and classed on another is one atom carrying both.
+- **[HUMAN]** the unit is the logical line; assay owns shell truths and exposes decomposed
+  structure to Alloy (command and argv now; parts, redirects, substitution trees later), never
+  literals. Nack on refusal machinery: absolute MVP, least work, hand the map line to the syntax
+  crate's lexer.
+- **[HUMAN]** statements of what flavour or scheme a thing is are claims, not fixture lines;
+  `inode_x.class = inode` belongs to the oracle that mints inodes. Consequence, acked in the
+  strawman: a class on a map line and a claim about the command's argument position type a named
+  word; the fixture states world truth. Residue the strawman keeps: a book pins the scheme of
+  each token the host printed (see the open-world finding below).
+- **[HUMAN]** no declared literals in a spec: every word is minted by assay. Conductor's fix: a
+  `words.als` module per document, below claims, holding every literal, class, and introduced
+  name, with class memberships closed.
+- **[HUMAN]** assay opens the tree-global `spec/shared` into every generated module; anything
+  subtler is opened explicitly. Integers stay (argv positions; positional catalogs). Three-space
+  indentation. Claims are atomic; a load is a set of them; no partial override; the wrapping
+  concern is withdrawn; "oracle sets" are load files, since claims may later ride lines of
+  oracle sh.
+- Conductor findings the human read, unreacted beyond the ack to proceed: a line's run carries
+  the lines above it (prefix runs), else a later run can dissolve an earlier query by choosing
+  its convergence; a `#=` that is a declaration is emitted at module level; an argv word is a key
+  only where a claim in force reads it, else a described verb's empty write set spares
+  vacuously; a `run` over the open world a fixture leaves passes when any admitted world gives
+  the verdict, so the book must pin what the solver would otherwise choose, and a `check` with
+  convergence taken as given is the alternative to price in the first experiment; `Key in
+  Shword` makes one value under two parents unrepresentable, a modelling choice for the 311 work.
+- State: `strawman-2/` rewritten on this harness (`harness/assay.als`, `spec/shared.md`, the
+  spec, `build/`); everything unrun; `report.json` is expected, not observed. Next: rewind and
+  dispatch the implementation of `30Y`.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
