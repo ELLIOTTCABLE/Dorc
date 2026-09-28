@@ -3,9 +3,9 @@
 > Conductor-owned problem-space map for this research phase (the `interactive-research` skill's
 > `plan.md`). Rewritten in place as the phase narrows; per-front gathering lives in the numbered
 > turn files, each minted by its researcher. The design sittings this phase fed are ledgered in
-> `Research/notes/30Ya`; the phase's durable outputs are `Research/notes/30Y` (assay, the tooling)
-> and `Research/plans/30Z` (the praxis). Grades on claims: +SURE / ~SUSPECT / -GUESS / --WONDER.
-> Nothing here is ruled.
+> `Research/notes/30Ya`; the phase's durable outputs are `Research/notes/30Y` (assay, the tooling),
+> `Research/plans/30Z` (the specification praxis), and `.claude/skills/using-alloy/` (the Alloy
+> authorship praxis). Grades on claims: +SURE / ~SUSPECT / -GUESS / --WONDER. Nothing here is ruled.
 
 ## Question
 
@@ -272,6 +272,33 @@ and was defined in none of them.
   Kubernetes is the exception, with a unit that graduates and demotes, the opposite of a
   never-graduating witness.
 
+## front-alloy-authorship-praxis: established (turn05 subagent-graded; turn06 and turn07 conductor-read; the output is `.claude/skills/using-alloy/`)
+
+- The first-party sources teach one loop: declare, empty run, constrain from instances, re-run
+  after every fact change, then check; every source names a way a command passes for the wrong
+  reason, and the skill's vacuity catalogue is their union (turn06, all sources conductor-read).
+- The field adds what the book does not name: a `run` labelled with a predicate's name never
+  applies it [B-alloy-discourse-run-label-shadows-pred-2020]; `init; always next` leaves the first
+  transition free [B-alloy-discourse-init-semicolon-first-transition-2022]; `until` asserts its
+  right side [B-wayne-alloy6-about-time-2021]; novices are more often too permissive than too
+  strict, and the empty set is the usual hole [A-jovanovic-novices-write-alloy-models-2024]; the
+  pre-6 `sig Time` idiom persisted in half of a 2024 cohort
+  [B-padalino-alloy6-temporal-teaching-module-2024] (turn05).
+- Peer agent skills exist and are compressions of the same book [C-adzerk-alloy-skill-2026]; the
+  one with an evaluation measured near parity with no skill on quality and a token saving, and
+  corrects one blanket claim we had copied, that stutter is always mandatory
+  [C-lablambworks-alloy6-evals-2026] (turn07).
+- The testing literature supplies two mechanisms the skill lacked: the mutation-operator list as
+  the concrete kill menu, with an equivalence check per mutant
+  [B-wang-mualloy-mutation-testing-2018]; and the test as a valuation plus a command, negatable
+  and partial, with size zero as a coverage criterion [B-sullivan-aunit-test-automation-2018]
+  (turn07).
+- Measured language-model behaviour, all on toy tasks: syntax errors in up to 14 of 20 and wrong
+  formulas in up to 18 of 20, one feedback round clearing the syntax
+  [B-hong-llms-writing-alloy-formulas-2025]; repair loops stalling by the fourth round
+  [A-alhanahnah-llm-repair-alloy-specs-2025]; two agents rebuilding a helper from primitives
+  instead of reusing it [C-lablambworks-alloy6-maintenance-reference-2026].
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
@@ -367,6 +394,13 @@ records exact unread line-ranges; a follow-up pass can start there.
 
 ## Pending
 
-- Nothing in flight. The four fronts are banked as `turn01`–`turn04`; the web scout's task-1
+- Nothing in flight. The five fronts are banked as `turn01`–`turn07`; the web scout's task-1
   hits that were read only in part are listed at the tail of `turn01` and stay unregistered.
-  The next front is the human's to name.
+- Owed, not research: `examples.md` in the skill was transcribed from the book's text and has
+  never been executed against the pinned jar. Reading alone found one inconsistency (a negative
+  test with no fact to reject it, repaired in turn07); a builder lane assembling each snippet
+  into a runnable module and running it is the check that turns transcription into tested.
+- Leads not taken, judged low value for the skill: the unsat-core papers (a GUI feature the
+  headless runner does not expose), Aluminum and provenance (not in Alloy 6), the Electrum
+  papers, the `util/*.als` sources, the Alloy 4 tutorial and grammar, Software Abstractions
+  (paywalled), Wayne's remaining essays.
