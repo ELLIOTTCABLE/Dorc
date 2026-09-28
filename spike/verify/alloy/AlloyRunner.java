@@ -40,6 +40,7 @@ public class AlloyRunner {
       List<String> opens = new ArrayList<>();
       int one = -1;
       boolean instances = false;
+      boolean parseOnly = false;
       String only = null;
       String solver = "sat4j";
       for (int i = 0; i < args.length; i++) {
@@ -49,6 +50,7 @@ public class AlloyRunner {
          else if (args[i].equals("--heap") && i + 1 < args.length) caps = new Caps(Long.parseLong(args[++i]), caps.procs());
          else if (args[i].equals("--procs") && i + 1 < args.length) caps = new Caps(caps.heapMb(), Integer.parseInt(args[++i]));
          else if (args[i].equals("--instances")) instances = true;
+         else if (args[i].equals("--parse-only")) parseOnly = true;
          else if (args[i].equals("--solver") && i + 1 < args.length) solver = args[++i];
          else if (args[i].equals("--command") && i + 1 < args.length) only = args[++i];
          else if (args[i].equals("--open") && i + 1 < args.length && args[i + 1].contains("=")) opens.add(args[++i]);
@@ -75,6 +77,7 @@ public class AlloyRunner {
          solveOne(files.get(0), one, opens, instances, solver);
          return;
       }
+      if (parseOnly) System.exit(parseAll(files, given, opens) ? 0 : 1);
 
       if (cpuSeconds < 0) cpuSeconds = timeoutSeconds;
       Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -143,8 +146,32 @@ public class AlloyRunner {
       return world.getAllCommands().size() == 1 && cmd.pos == Pos.UNKNOWN;
    }
 
+   // One JVM, no solver: whether each root parses and typechecks, as one row per file.
+   static boolean parseAll(List<String> files, List<String> given, List<String> opens) throws Exception {
+      boolean ok = true;
+      System.out.println("[");
+      for (int f = 0; f < files.size(); f++) {
+         String module = given.get(f);
+         String message = null;
+         try {
+            module = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(files.get(f), opens), files.get(f)).getModuleName();
+         } catch (Err e) {
+            ok = false;
+            message = e.toString();
+         }
+         StringBuilder b = new StringBuilder(f == 0 ? "  {" : ", {");
+         b.append("\"module\": ").append(json(module));
+         b.append(", \"file\": ").append(json(given.get(f)));
+         b.append(", \"result\": ").append(json(message == null ? "parsed" : "error"));
+         if (message != null) b.append(", \"message\": ").append(json(message));
+         System.out.println(b.append("}"));
+      }
+      System.out.println("]");
+      return ok;
+   }
+
    static void usage(String why) {
-      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--cpu <seconds>] [--heap <MB>] [--procs <n>] [--batch-timeout <seconds>] [--command <name>] [--instances] [--solver <id>] [--open <module>=<file.als>]... <file.als>...");
+      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--cpu <seconds>] [--heap <MB>] [--procs <n>] [--batch-timeout <seconds>] [--parse-only] [--command <name>] [--instances] [--solver <id>] [--open <module>=<file.als>]... <file.als>...");
       System.exit(USAGE);
    }
 
