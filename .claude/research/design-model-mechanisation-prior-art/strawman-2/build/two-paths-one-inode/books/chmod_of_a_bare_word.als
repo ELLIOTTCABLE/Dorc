@@ -9,8 +9,8 @@ fact { line_1.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
 fact { line_2.speech = line_1.speech + carl__the_file_at_shared_has_the_mode }
 
 check line_1 { line_1 in Ran }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 check line_2 { line_1 in Ran implies line_2 in Guarded and no by[line_2] }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 run chmod_of_a_bare_word { line_1 in Ran and line_2 in Guarded and no by[line_2] }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim

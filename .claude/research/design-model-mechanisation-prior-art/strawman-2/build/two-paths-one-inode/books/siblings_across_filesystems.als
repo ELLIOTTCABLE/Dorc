@@ -14,8 +14,8 @@ fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
 fact { line_4.speech = line_3.speech + carl__the_file_at_d_path_has_the_mode }
 
 check line_3 { line_3 in Ran }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 check line_4 { line_3 in Ran implies line_4 in Elided and simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem in by[line_4] }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 run siblings_across_filesystems { line_3 in Ran and line_4 in Elided and simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem in by[line_4] }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim

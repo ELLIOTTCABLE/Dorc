@@ -16,8 +16,8 @@ fact { line_4.speech = line_3.speech + carl__the_file_at_b_path_has_the_mode }
 
 -- each line's outcome is checked with the outcomes above it as premises; the book's run proves the facts consistent
 check line_3 { line_3 in Ran }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 check line_4 { line_3 in Ran implies line_4 in Guarded }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
 run two_paths_one_inode { line_3 in Ran and line_4 in Guarded }
-   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
+   for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 18 Claim
