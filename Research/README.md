@@ -26,7 +26,10 @@ outranks any older document on the same topic, and a lane report only says what 
 
 Conventions: `{notes,plans}/YYx-slug.md`, where YY is the round and "x" ascends within it —
 read the highest "x" first when digging; r28+ notes are letter-suffixed (`30Qa`); never mint a
-`29x` ID (r29 is quarantined). `notes/000-source-manifest.md` grades every source and carries
+`29x` ID (r29 is quarantined). A docID names ONE document: when a note is mechanised it MOVES to
+root `specs/` under the same ID (notes → plans → specs are tiers of different purpose, not a
+ladder), and the quarantine occasionally holds a docID too, so `mise run lint:docids` is what says
+an ID is free. `notes/000-source-manifest.md` grades every source and carries
 the license-contamination map. Cross-references are `docID:slug`.
 
 ## Per-round map
@@ -235,7 +238,7 @@ the license-contamination map. Cross-references are `docID:slug`.
   the chafe register sorted A/B/C) · `notes/30Yd` (the compiler lane as built: the `mise run
   assay` compiler, the fixture, the runner's bounds and the heavy-work lock, the strawman-3
   smoke) · `notes/30Ye` (the lock-and-gates lane as built: self-naming words, `--parse`,
-  `--check`/`--write` and the lock beside the spec, the hk steps over `spec/**`, the re-entrant
+  `--check`/`--write` and the lock beside the spec, the hk steps over `specs/**`, the re-entrant
   heavy-work lock around the gates) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
   with held-open holes, the soundness habits, the document form; generic to any Alloy-checked
   specification, with assay's own vocabulary confined to one section; § 6 awaits the lock).

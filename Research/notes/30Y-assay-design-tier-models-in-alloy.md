@@ -178,10 +178,10 @@ sig Line { above: set Line, speech: set Claim, cmd: one Shword, argv: seq Shword
 
 Beside the harness, the spec tier owns two shared halves, and assay places them without reading
 either [TYPED 2026-09-28, "keeps assay a thin preprocessor"]. The **prepend** half (STRAWMAN
-`spec/shared.md`) is a module assay opens beneath every document, so no document declares the
+`specs/shared.md`) is a module assay opens beneath every document, so no document declares the
 truly global things [ACKED]: what every specification talks about, from `Speaker` and the claim
 species' base through the answer order, the verdict subsets, and the truth default. The
-**append** half (STRAWMAN `spec/shared-laws.md`) is what every specification must satisfy: the
+**append** half (STRAWMAN `specs/shared-laws.md`) is what every specification must satisfy: the
 generic laws, stated over names such as `answer`, `wrong`, and `support` that each document
 defines. Alloy resolves names only downward through `open`, so a law that names a function the
 document defines can be shared only by concatenation: assay splices the append half, as text,
@@ -259,7 +259,7 @@ A book fence compiles as follows.
   and Alloy offers no document-wide scope, only a clause per command. So the spec spells it as a
   command with an agreed name and an empty body whose only content is its scope clause, and
   assay copies that clause onto the commands it generates (book outcomes, book runs, corpus
-  checks): `run bookScope {} for 12 but 4 Int` in `spec/shared` is every book's default; a
+  checks): `run bookScope {} for 12 but 4 Int` in `specs/shared` is every book's default; a
   document's own `run bookScope {}` overrides it for every book in that document;
   `run bookScope_<book> {}` in the owning document overrides one book; a trailing `for` on an
   outcome line overrides one command. Most specific wins. A scope is paid per command, so a

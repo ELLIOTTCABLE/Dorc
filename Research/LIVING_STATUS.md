@@ -36,7 +36,8 @@ checker exists: `mise run assay -- <spec.md> [--parse | --check | --write]` comp
 specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it and locks
 `<stem>.lock.json` beside the spec, a set of reds the lock records being a pass; `mise run alloy
 -- --timeout <s> <dir>` runs a directory bounded; hk steps `assay` (pre-commit lints) and
-`assay-lock` (completion) are wired to `spec/**`, which does not exist yet. Every heavy task
+`assay-lock` (completion) are wired to `specs/**`, whose only contents so far are its steering
+files. Every heavy task
 (`alloy`, the three gates, the four `bless` tasks, the three `verify:*` lanes) runs under the
 machine-global heavy-work lock; **exit 75 is contention, do other work**. The one open design
 item, what an author owes and when, decides `plans/30Z` § 6 and sits in `notes/30Yc` § 5 as the

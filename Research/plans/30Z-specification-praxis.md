@@ -17,7 +17,9 @@
   with prose bound to that Alloy by rule (1-the-posture), maintained by one loop (2-the-loop) and a
   set of habits (3-writing-so-the-adversary-cannot-cheat), in one form
   (4-the-shape-of-a-specification). This document is how to write and maintain one. It is not a
-  tutorial in Alloy, and it names no shell command.
+  tutorial in Alloy: the language, its authoring loop at the model level, its vacuity catalogue and
+  semantic traps are the `using-alloy` skill's, assumed here and not repeated. It names no shell
+  command.
 - Why it exists: the three review rounds over the identity model found two defect populations.
   Genuine model defects narrowed with every round. Text-drift under folds and rewrites, a unit
   stated precisely once and read wrong later, did not narrow, and scaled with edit volume. The
@@ -364,6 +366,11 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
   owns and nothing else.
 - The smallest run: every book is its own generated module and every law and twin has a name, so
   the hot loop of 2.8-bounds-and-cost runs one module, or one command by name, never the document.
+- Where assay departs from the `using-alloy` skill's idioms, on purpose: a book's atoms are named
+  `one sig`s at exact bounds in a generated module of their own, where the skill's some/disj
+  instance idiom serves hand-written tests inside one shared model; and `run bookScope {}` and a
+  book's `run book_<name> {}` are the skill's own inhabitation probe, not the empty-block `check`
+  it warns against.
 - Conventions this document adds on top of `30Y`, all [CONDUCTOR]: a hole predicate is named
   `hole_<slug>` and its inhabitation run `hole_<slug>_witness`; the null outcome for a held step is
   `todo[this]`, a predicate with an empty body that the prepend half defines; a claim's long name

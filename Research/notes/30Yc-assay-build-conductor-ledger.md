@@ -36,7 +36,7 @@ fixtures wired so that assay's own output replaces the hand-written `report.json
   are read-only to the builder except for mechanical fence-form repairs needed to make them
   well-formed under `30Y` § 2.1, each reported as chafe (§ 4). No semantic edit to any Alloy
   content in them: that is a stop-and-report.
-- The spec tier proper (`spec/`) does not exist yet and is not minted by this arc.
+- The spec tier proper (`specs/`) does not exist yet and is not minted by this arc.
 - **[HUMAN]** 2026-09-28, the dispatch rulings: temporary generated products go under
   `target/alloy/<spec-stem>/` (the human floated `target/alloy/` in case assay is one of a
   stable; the conductor's lean was taken); the lock, when it exists, is the only committed
@@ -109,7 +109,7 @@ fixtures wired so that assay's own output replaces the hand-written `report.json
   ack before it lands; the `both` gate returns for this lane [HUMAN: it is necessary once gates
   are worked on]; `30Y` § 3 kept current; `plans/30Z` § 6 written once the lock and gates rule
   what an author owes and when (this ledger's § 5 holds the current thinking). The strawman
-  `build/` directories stay as they are: frozen artifacts, never fixtures. Minting `spec/` and
+  `build/` directories stay as they are: frozen artifacts, never fixtures. Minting `specs/` and
   translating 311 are NOT lane 2; that is the human's clean-context design work, which lane 1's
   midpoint exists to serve.
 - Open for the human, surfaced 2026-09-28 (`30Yd:disagree-braced-only-literals`): a literal that
@@ -205,7 +205,7 @@ here what it thinks belongs there. All [CONDUCTOR]:
   `--check`/`--write` beside the spec, timing kept out of it, the runner invoked as a subprocess
   with caps passed through; the Alloy-parse lint on `--check`/`--write` and on demand; the
   translation co-change check over staged documents; hk pre-commit lints and the
-  `gate:full-quiet` lock recomputation, path-filtered to `spec/**`, ready before the tier exists;
+  `gate:full-quiet` lock recomputation, path-filtered to `specs/**`, ready before the tier exists;
   the fixture extended for self-named and braced-only words and for the lock; a lane report at the
   next free `30Y` letter with the A/B/C division. Held for the human's typed ack, not in the brief:
   wrapping the other heavy gates in `exclusive`. Completion: `mise run gate:full-quiet` on Windows
@@ -285,3 +285,16 @@ here what it thinks belongs there. All [CONDUCTOR]:
   history the commit skill prefers would have kept it.
 - Remaining in this arc: `plans/30Z` § 6, which now waits only on the ruling of what an author
   owes and when (§ 5 of this ledger is the conductor's draft of it).
+- **[HUMAN]** corrections on the tier, same day: it is `specs/`, with the s; a docID names ONE
+  document in the corpus, so `notes/311` MOVES to `specs/311` when mechanised, it is not copied
+  and nothing outranks anything; `Research/notes/` → `Research/plans/` → `specs/` are tiers of
+  different purpose, not a promotion ladder; the docID space is shared with the quarantine, which
+  occasionally holds one. Applied: the hk globs and the wiring test, `30Y`, this ledger,
+  `LIVING_STATUS`, the map, the handoff. The conductor's earlier "a specification outranks the
+  note it was translated from" was a misreading and was never written into a durable.
+- Steering minted at the human's direction, in the human's own terse style, five bullets each at
+  most: `spike/crates/internal-tooling/AGENTS.md` (assay's code invariants: agnosticism, heads and
+  binders only, no JVM in tests, results-only lock with reds-as-pass, re-entrant lock and visible
+  bypass) and `specs/AGENTS.md` (the firewall in one line, builders never edit, holes not facts,
+  what commits and completion run, the shared halves); each with an `@AGENTS.md` pointer
+  `CLAUDE.md`. The `verified-core-discipline` skill gains assay as the design-tier instrument.
