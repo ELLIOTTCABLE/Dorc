@@ -230,7 +230,13 @@ the license-contamination map. Cross-references are `docID:slug`.
   fight recorded) · `notes/30Ya-strawman-2/` (the identity model's first cut as a
   specification: harness, shared module, spec, hand-generated build, observed results) ·
   `notes/30Ya-strawman-3/` (the outcome algebra past a wall, the same shape, plus `FINDINGS.md`,
-  the fight record and its division into correctness-chafe, tooling-tune, and encoding cost).
+  the fight record and its division into correctness-chafe, tooling-tune, and encoding cost) ·
+  `notes/30Yc` (the assay build's conductor ledger: the dispatch rulings, the lane adjudications,
+  the chafe register sorted A/B/C) · `notes/30Yd` (the compiler lane as built: the `mise run
+  assay` compiler, the fixture, the runner's bounds and the heavy-work lock, the strawman-3
+  smoke) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
+  with held-open holes, the soundness habits, the document form; generic to any Alloy-checked
+  specification, with assay's own vocabulary confined to one section; § 6 awaits the lock).
   The research evidence base (the four fronts' sources and turn notes) stays in
   `.claude/research/design-model-mechanisation-prior-art/`.
   Current state: `LIVING_STATUS.md`; what follows: `ROADMAP.md`.

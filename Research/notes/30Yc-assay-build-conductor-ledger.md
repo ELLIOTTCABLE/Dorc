@@ -77,20 +77,45 @@ fixtures wired so that assay's own output replaces the hand-written `report.json
 
 ## § 3-lanes-and-state
 
-- **Lane 1, the first half** — one Opus builder on `ai/r30-assay` at `.tmp/trees/r30-assay`,
-  Windows leg. Deliverables: the `assay` subcommand of `internal-tooling` and its `mise run
-  assay` task (compile only, `.als` into `target/alloy/<stem>/`, JSON report, exit 0 or 2); the
-  Dorc-agnostic fixture and its golden test; the runner's resource bounds (child heap cap,
-  CPU-time cap, batch cap, processor count) and a `preflight alloy` profile; the global
-  `exclusive` lock in `internal-tooling`, wrapping `mise run alloy`; strawman-3 compiled from
-  its `.md` and run through the runner as the smoke, results against `report.json`; a lane
-  report under the next free `30Y`-letter note ID with every fight classed A, B, or C.
-  Completion: `mise run
-  gate:full-quiet` on Windows. Then the fold to `ai/main` and the midpoint notification.
-- **Lane 2, the second half** — a fresh builder: the lock and `--check`/`--write`, runner
-  integration, the Alloy-parse lint, hk and gate placement path-filtered to spec files, the
-  `exclusive` lock on the other heavy tasks, `30Y` § 3 currency, the strawman `build/`
-  directories retired or left frozen, the one steering line. Brief written after lane 1 folds.
+- **Lane 1, the first half — CLOSED 2026-09-28, folded to `ai/main` by fast-forward** at the
+  builder's tip `(AI dsn re) Record the corpus inhabitation run, the reversal, and the three
+  requested fixes`; its worktree and branch removed. As built: `notes/30Yd`. The midpoint the
+  human asked for holds: `mise run assay -- <spec.md>` compiles a document into
+  `target/alloy/<stem>/`, and `mise run alloy -- --timeout <s> <that directory>` runs it, bounded,
+  under `preflight alloy` and the heavy-work lock. The Dorc-agnostic fixture and its golden test
+  are the crate's; the strawman-3 smoke matched every verdict of the hand build; strawman-2
+  refuses under the identifier rule and stays frozen.
+- Adjudication of the lane's eleven disclosed deviations, re-derived from the global picture:
+  ten endorsed, one reversed. Endorsed with the conductor's own mistake named: the out-of-remit
+  clippy fix (the baseline was red from the runner lane and the brief never had the builder
+  check it); the two extra lints (the brief's rules required them and its lint list omitted
+  them); stale-module removal (recompile semantics were unspecified); the document-level
+  `bookScope` tier (additive, and what the human's "shareable across spec files" wanted; `30Y`
+  § 2.4 now carries it); scoped non-premise runs to `laws.als`; any sig head as a `#=`
+  declaration; the smoke split into three runs under the harness ceiling; expected files carrying
+  only the generated header; a liveness check that cannot run refusing rather than admitting a
+  second solver; preflight figures derived rather than measured. The `tests` commit label was the
+  brief's error, copied from a generic table when `.gitlabels` says `test`. Reversed:
+  `dev-no-corpus-run`; an all-claims-in-force universe can be unsatisfiable and would green every
+  corpus check vacuously, so the corpus book owes the inhabitation run every book owes; built in
+  the follow-up, sat on strawman-3.
+- **Lane 2, the second half — NOT YET BRIEFED; a fresh conductor context [HUMAN].** Its remit,
+  for the successor: the lock and `--check`/`--write` (`30Y` § 2.7, timing out of the lock);
+  runner integration from assay, kept thin so an author can still invoke Alloy directly
+  [HUMAN: no leaky wrappers]; the Alloy-parse lint (`30Y` § 2.6, fourth item); hk pre-commit
+  lints and `gate:full-quiet` lock recomputation, both path-filtered to spec files; the
+  `exclusive` lock on the other heavy tasks (`gate:full*`, `bless*`, `verify:kani`,
+  `verify:lean`), which changes every lane's completion contract and so wants the human's typed
+  ack before it lands; the `both` gate returns for this lane [HUMAN: it is necessary once gates
+  are worked on]; `30Y` § 3 kept current; `plans/30Z` § 6 written once the lock and gates rule
+  what an author owes and when (this ledger's § 5 holds the current thinking). The strawman
+  `build/` directories stay as they are: frozen artifacts, never fixtures. Minting `spec/` and
+  translating 311 are NOT lane 2; that is the human's clean-context design work, which lane 1's
+  midpoint exists to serve.
+- Open for the human, surfaced 2026-09-28 (`30Yd:disagree-braced-only-literals`): a literal that
+  is only ever braced on map lines has no identifier for its atom. Built as a refusal
+  (`braced-literal-is-named`). `30Y` § 2.1 says any component may be either. Refuse, or munge?
+  Belongs in `plans/30Z` § 5 once ruled.
 
 ## § 4-chafe-register
 
@@ -103,6 +128,50 @@ fixtures wired so that assay's own output replaces the hand-written `report.json
   feels like chafe. (Expected rare in this build, since no spec is being modified.)
 
 Entries are appended as they are met; the strawman-era fights already sorted live in
-`notes/30Ya-strawman-3/FINDINGS.md` "The division" and are not repeated here.
+`notes/30Ya-strawman-3/FINDINGS.md` "The division" and are not repeated here. Lane 1's fights
+are `notes/30Yd` § 4 in the builder's words; the conductor's sort:
 
-(none yet)
+- **A** `30Yd:chafe-alloy-adds-a-default-command` — Alloy synthesizes a `Default` run for a
+  command-less module. Absorbed: the runner skips a module whose only command has Alloy's
+  unknown source position. Stays A: an Alloy quirk, not a design fact.
+- **B** `30Yd:chafe-powershell-does-not-expand-the-book-glob` — absorbed: the runner takes a
+  directory. `30Yd:chafe-foreground-ceiling-below-the-batch-cap` — absorbed: defaults 120 and
+  540 seconds plus a shutdown hook. `30Yd:chafe-typos-fix-mode-rewrites-identifiers` — a real
+  tooling hazard (fix mode rewrote a string literal and changed behaviour silently); absorbed:
+  the bare word is ignored in both typos configs. `30Yd:chafe-main-was-clippy-red` — absorbed
+  in lane; the conductor's scouting gap. `30Yd:chafe-lexer-is-private` — fine as built: words
+  come from the real parser's spans, and a redirection is already one span.
+  `30Yd:chafe-tests-label-not-in-gitlabels` — the brief's error; briefs cite `.gitlabels`, not
+  the generic table.
+- **C** none in this lane: no specification content changed. The one design-adjacent item is
+  the braced-only literal question in § 3, which is a spec-form ruling, not chafe.
+- Not chafe, corrections to `30Y` made at the fold: `30Yd:disagree-literal-components-in-maps`
+  (§ 2.8's example now names its components) and `30Yd:disagree-load-displacement` (§ 2.4 now
+  says union at v0). `30Yd:disagree-harness-claim-abstract` needs nothing: `30Y` is right and
+  strawman-3's hand harness is the stale one, frozen.
+
+## § 5-what-belongs-in-30Z-section-6
+
+**[HUMAN]** 2026-09-28: `plans/30Z` § 6 (results, locks, what an author owes) stays a TODO until
+the lock and gates are built and the ruling of what an author owes is made; the conductor notes
+here what it thinks belongs there. All [CONDUCTOR]:
+
+- The lock as the ratchet: computed versus committed, a mismatch in either direction fails, and
+  it moves only by a human commit; timing and translation size are report columns, never lock
+  columns (`30Y` § 2.7).
+- Stored verdicts are intent, qualified in goblint's manner where an instrument disagrees:
+  `UNKNOWN!` an unsoundness, `UNKNOWN` intended imprecision, `TODO` precision owed; never
+  regenerated from an implementation's output, which is characterisation, not specification.
+- An expected red is the whole-law TODO, honest and coarse (§ 2.6 of `30Z` has the fine-grained
+  form); the two are recorded differently and the report says which.
+- Disagreement across instruments (design tier, field tier, later Kani or Lean) is triaged five
+  ways, implementation, book, record, model, prose, and named in the failure output; never
+  auto-resolved.
+- The mutation lane as the mechanical form of the kill-by-hand habit: drop a fence line, re-run,
+  a law or book must go red; a mutant nothing kills is reported.
+- The standard of done for a document: every append-half law green with a witnessed premise;
+  every book's run sat; no check `premise: absent`; the hole count and the count of
+  `<!-- normative -->` sections reported as the residue.
+- What an author owes and when: every edit runs the document's corpus before the claim is shown
+  to a human; a moved result is a finding or a human-committed retirement, never silent; holes
+  only decrease between adjudications; a reword of prose or Alloy leaves the lock unmoved.
