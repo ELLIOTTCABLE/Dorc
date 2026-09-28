@@ -14,6 +14,7 @@ mod corpus;
 mod coverage;
 mod docids;
 mod doctor;
+mod exclusive;
 mod fmt_detached;
 mod gate_floor;
 mod hook_selftest;
@@ -50,6 +51,7 @@ fn main() -> ExitCode {
         Some("slugs") => slugs::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
         Some("assay") => assay::run(args.get(1..).unwrap_or_default()),
+        Some("exclusive") => exclusive::run(args.get(1..).unwrap_or_default()),
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this
         // shares its one renderer rather than re-deriving the screen.
         Some("xfail-census") => {
@@ -63,7 +65,7 @@ fn main() -> ExitCode {
             );
             eprintln!(
                 "tasks: hook-selftest, prose-census, coverage, bless, livetest, baselines, \
-                 preflight, gate-floor, doctor, xfail-census, fmt-detached, docids, slugs, assay"
+                 preflight, gate-floor, doctor, xfail-census, fmt-detached, docids, slugs, assay, exclusive"
             );
             ExitCode::from(2)
         }
