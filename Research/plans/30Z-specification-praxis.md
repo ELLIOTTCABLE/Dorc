@@ -7,24 +7,27 @@
 > code-tier instrument whose posture this inherits). Grades: **[TYPED]** the human typed it ·
 > **[ACKED]** confirmed in dialogue · **[CONDUCTOR]** conductor-derived, unratified. Generic to any
 > specification checked by a bounded model finder toward our goals: Alloy's own words are used for
-> Alloy's things, and the checker's own words are confined to § 5. "An agent" below means a
-> language model working the document; everything not so marked applies to any author.
+> Alloy's things, and the checker's own words are confined to 5-assay-vocabulary-and-forms. "An
+> agent" below means a language model working the document; everything not so marked applies to
+> any author. A section of this document is cited by its slug, as 2.4-inhabit-before-you-believe-green.
 
 ## § 0-what-this-is
 
 - A specification here is a Markdown document whose normative content is Alloy the checker runs,
-  with prose bound to that Alloy by rule (§ 1), maintained by one loop (§ 2) and a set of habits
-  (§ 3), in one form (§ 4). This document is how to write and maintain one. It is not a tutorial in
-  Alloy, and it names no shell command.
+  with prose bound to that Alloy by rule (1-the-posture), maintained by one loop (2-the-loop) and a
+  set of habits (3-writing-so-the-adversary-cannot-cheat), in one form
+  (4-the-shape-of-a-specification). This document is how to write and maintain one. It is not a
+  tutorial in Alloy, and it names no shell command.
 - Why it exists: the three review rounds over the identity model found two defect populations.
   Genuine model defects narrowed with every round. Text-drift under folds and rewrites, a unit
   stated precisely once and read wrong later, did not narrow, and scaled with edit volume. The
-  adversary finds the first population; the firewall (§ 1.2) and the recorded results (§ 6) catch
-  the second.
-- Vocabulary, kept minimal: a *unit* is the atom of concretization (§ 2.1). A *law* is a `check`
-  over a free universe. A *scenario* is a pinned world, named atoms at exact bounds, checked one
-  step at a time. A *hole* is a named, held-open design question (§ 2.6). Everything else is
-  Alloy's word for it, or the checker's, in § 5.
+  adversary finds the first population; the firewall (1.2-the-firewall) and the recorded results
+  (6-results-locks-and-what-an-author-owes) catch the second.
+- Vocabulary, kept minimal: a *unit* is the atom of concretization (2.1-choose-a-unit). A *law* is
+  a `check` over a free universe. A *scenario* is a pinned world, named atoms at exact bounds,
+  checked one step at a time. A *hole* is a named, held-open design question
+  (2.6-hold-a-question-open). Everything else is Alloy's word for it, or the checker's, in
+  5-assay-vocabulary-and-forms.
 
 ## § 1-the-posture
 
@@ -33,8 +36,8 @@
 - **`pos-checked-never-confirmed`** [TYPED] — every statement a specification makes is a `check`:
   the solver is set against it, fills every gap the specification left with the world that breaks
   it, and hands that world back. A `run` is used for one thing only, to show a set of facts has a
-  world, so that a check cannot pass by contradiction (§ 2.4). The counterexample is the unit the
-  author forgot to write.
+  world, so that a check cannot pass by contradiction (2.4-inhabit-before-you-believe-green). The
+  counterexample is the unit the author forgot to write.
 - **`pos-bounded-is-never-proved`** — "no counterexample at scope six" is a fact about scope six.
   Every result is recorded with its scope; no report says proved; the posture is tracked, not
   proved.
@@ -51,24 +54,33 @@
 
 The rule that keeps normativity from smuggling itself into commentary [TYPED 2026-09-28].
 
-- **`fw-every-section-carries-normative-prose`** — every section of a specification carries exactly
-  one normative prose block: a `>` blockquote, one sentence per line, no hard wraps, headed by an
-  HTML comment on the line above it. There is no section whose meaning lives only in a fence.
 - **`fw-a-section-is-mechanical-iff-it-holds-a-fence`** — a section is mechanical when it contains
   any fence the checker reads; otherwise it is not. No other tag decides this.
-- **`fw-translation-matches-exclusively-and-precisely`** — in a mechanical section the block is
-  headed `<!-- prose-translation -->` and says exactly what the fences say: every statement in a
-  fence has its sentence, and no sentence says anything the fences do not. Where the two disagree
-  the fence is authoritative, and the disagreement is a finding worked under § 2.7. The translation
-  is the reviewer's diff surface: a rewrite that drifts the prose is visible against a fence that
-  did not move, and a rewrite that drifts the fence moves the checks.
-- **`fw-normative-prose-alone-only-outside-mechanics`** — in a non-mechanical section the block is
-  headed `<!-- normative -->`. It is the only place normative content may exist as prose alone.
-  Such a section is residue the checker cannot reach, and is counted as such (§ 6).
+- **`fw-normative-prose-is-a-headed-blockquote`** — normative prose, wherever it appears, is a `>`
+  blockquote, one sentence per line, no hard wraps, headed by an HTML comment on the line above
+  it. Running text outside a blockquote is never normative (1.3-what-plain-prose-is-for).
+- **`fw-normative-prose-alone-only-outside-mechanics`** — a non-mechanical section either carries a
+  block headed `<!-- normative -->` or is commentary. That block is the only place normative
+  content may exist as prose alone; such a section is residue the checker cannot reach, and is
+  counted as such (6-results-locks-and-what-an-author-owes).
+- **`fw-translation-matches-exclusively-and-precisely`** — a mechanical section may carry a block
+  headed `<!-- prose-translation -->`, optional at birth and strongly recommended [TYPED]. It says
+  exactly what the fences say: every statement in a fence has its sentence, and no sentence says
+  anything the fences do not. Where the two disagree the fence is authoritative, and the
+  disagreement is a finding worked under 2.7-bank-the-answer. The translation is the reviewer's
+  diff surface: a rewrite that drifts the prose is visible against a fence that did not move, and
+  a rewrite that drifts the fence moves the checks.
+- **`fw-every-fence-change-changes-the-translation`** [TYPED 2026-09-28] — every change to a
+  mechanical section's fences includes a change to that section's translation block, and where
+  the section has none the change adds one. This cannot prove the two match; it fights drift by
+  making the author read the prose every time the law moves, and it makes the review diff show
+  both readings side by side. A change to the translation alone is legal (the prose tune of
+  1.1-checked-never-confirmed). The mechanical check of this rule lives at commit time over staged
+  documents [CONDUCTOR; a lane of `notes/30Yc`].
 - **`fw-fences-are-purely-mechanical`** [TYPED] — no comment syntax inside a fence except the
-  checker's own comment forms (§ 5); no prosodic note, no rationale. Intent rides names: a long,
-  explicit name is the one carrier of meaning the code cannot hold, which makes names
-  correctness-sensitive and worth their length.
+  checker's own comment forms (5-assay-vocabulary-and-forms); no prosodic note, no rationale.
+  Intent rides names: a long, explicit name is the one carrier of meaning the code cannot hold,
+  which makes names correctness-sensitive and worth their length.
 - [CONDUCTOR, to tune in use] the translation block immediately follows the fences it translates,
   one block per section; where a fence is a list of atoms whose names are already sentences, the
   block says what the names cannot say (who is speaking, what the list is for) and does not
@@ -91,8 +103,8 @@ The rule that keeps normativity from smuggling itself into commentary [TYPED 202
   the human, attacked adversarially and by eye, and firmed slowly into something exhaustive. An
   agent building tooling never edits it; the tier is do-not-touch during unattended builds. This is
   near `301:law-spec-touch-frontier-human-only` and not identical to it: the drift this posture
-  fights is a later rewrite reading an earlier unit wrong, and the lock (§ 6), not access control,
-  is what makes that visible.
+  fights is a later rewrite reading an earlier unit wrong, and the lock
+  (6-results-locks-and-what-an-author-owes), not access control, is what makes that visible.
 
 ## § 2-the-loop
 
@@ -119,13 +131,14 @@ One unit at a time. At every step the standing question is the same: what did th
 - What kind of statement it is decides where it goes: an object and its relations are a `sig` with
   multiplicities; a rule about every world is a `fact`; a way of speaking about the world is a sig
   under the claim base with the fact that says what it means when true; a law is a `check` with its
-  satisfiable twin (§ 2.4); a concrete situation with expected answers is a scenario.
+  satisfiable twin (2.4-inhabit-before-you-believe-green); a concrete situation with expected
+  answers is a scenario.
 - What is shared and what is the document's: the shared tier holds only what is stable across every
   specification (who speaks, what a claim is and when it is true, the order of steps, the answers
   and their order, the outcomes' names); everything a document could reasonably define differently
   is the document's, and the two strawmen differed exactly at the definition of which converged
   steps are spared. Where a name is used in more than one document it means one thing everywhere;
-  a local variant is minted under a new name, never modified in place (§ 4).
+  a local variant is minted under a new name, never modified in place (4-the-shape-of-a-specification).
 
 ### § 2.3-make-it-well-formed
 
@@ -133,8 +146,8 @@ One unit at a time. At every step the standing question is the same: what did th
   and are not documented here. The one worth reading as design: an unknown name is an object the
   prose assumed and the model does not have. Ask whether the object is missing or the prose was
   wrong to assume it before adding the declaration.
-- The checker's own refusals (§ 5) are structural, about the form of the document, and never about
-  its meaning.
+- The checker's own refusals (5-assay-vocabulary-and-forms) are structural, about the form of the
+  document, and never about its meaning.
 
 ### § 2.4-inhabit-before-you-believe-green
 
@@ -166,21 +179,23 @@ The failure discipline: assume the design, not the tool [TYPED]. Triage a red in
    its direction flipped.
 3. **A false unit.** The fence says something the design does not mean. Fix the fence; retune the
    translation; the recorded result moves and that movement is the finding.
-4. **Silence.** No unit speaks to the shape the world exhibits. That is a design question, and § 2.6
-   is how it is held without stopping the sitting.
+4. **Silence.** No unit speaks to the shape the world exhibits. That is a design question, and
+   2.6-hold-a-question-open is how it is held without stopping the sitting.
 5. **The tool.** Last, and rarely. A timeout is a result carrying its translation size, not a
-   refutation and not a reason to retry with more time (§ 2.8). Before blaming the solver, rebuild
-   the counterexample by hand from the instance it printed; the instance is always readable.
+   refutation and not a reason to retry with more time (2.8-bounds-and-cost). Before blaming the
+   solver, rebuild the counterexample by hand from the instance it printed; the instance is always
+   readable.
 
 ### § 2.6-hold-a-question-open
 
 What to do when a red is a design question and the sitting must continue [CONDUCTOR, 2026-09-28].
 
 - **`hole-what-kills-and-what-weakens`** — a *contradiction* in the facts does not weaken the search;
-  it kills it silently, every check vacuously green, and § 2.4's runs are what catch it. A *hole*,
-  a shape the specification is silent about, weakens the search exactly as feared: the adversary
-  finds the cheapest world and hands it back for every check that touches the region, the same
-  boring world each time, and nothing else about those checks is learned.
+  it kills it silently, every check vacuously green, and the runs of
+  2.4-inhabit-before-you-believe-green are what catch it. A *hole*, a shape the specification is
+  silent about, weakens the search exactly as feared: the adversary finds the cheapest world and
+  hands it back for every check that touches the region, the same boring world each time, and
+  nothing else about those checks is learned.
 - **`hole-fence-never-fill`** — when a red is silence, write one predicate naming the shape of the
   counterexample, in the vocabulary the model already has, and add its negation to the *premise* of
   the affected check and of the check's twin. Touch nothing else: no fact, no body, no meaning fact,
@@ -200,13 +215,13 @@ What to do when a red is a design question and the sitting must continue [CONDUC
   relation (a field on a singleton sig) with only the ruled sentences about it as axioms; its
   dependents stay honestly red until the body arrives, and never take a stub body returning a
   constant (`fal-stub-body`). *Missing vocabulary*, a phenomenon the model cannot represent, cannot
-  be fenced because the adversary cannot build it either; it is a scope note in the residue (§ 6),
-  not a guard. Two more shapes: a scenario step whose expected answer is not yet known takes a named
-  tautology as its outcome, so the step keeps its place in the world and contributes a true premise
-  (a weaker premise can only make later steps redder, never greener); and a law that is not yet true
-  as a whole stays stated in full and is recorded as an expected red, which is the most truthful
-  form but answers "this whole law is not yet true" rather than "check everything except this
-  corner".
+  be fenced because the adversary cannot build it either; it is a scope note in the residue
+  (6-results-locks-and-what-an-author-owes), not a guard. Two more shapes: a scenario step whose
+  expected answer is not yet known takes a named tautology as its outcome, so the step keeps its
+  place in the world and contributes a true premise (a weaker premise can only make later steps
+  redder, never greener); and a law that is not yet true as a whole stays stated in full and is
+  recorded as an expected red, which is the most truthful form but answers "this whole law is not
+  yet true" rather than "check everything except this corner".
 - **`hole-is-a-question-not-an-answer`** — the deliverable of a sitting is the set of hole predicates
   with their witnesses, each a design question with the world that raised it. The human adjudicates
   questions, one sentence each, never fixes; each answer becomes an ordinary edit and the hole is
@@ -219,7 +234,7 @@ What to do when a red is a design question and the sitting must continue [CONDUC
 ### § 2.7-bank-the-answer
 
 - **`loop-fix-where-the-unit-lives`** — a rule about all worlds goes in the species; a fact about
-  this world goes in the scenario; a scope is never the fix (§ 2.5 item 1).
+  this world goes in the scenario; a scope is never the fix (2.5-read-the-counterexample, item 1).
 - **`loop-refuted-shapes-stay-as-checks`** — a finding enters as a check or a scenario that fails
   before its repair and passes after, and it stays. The register of refuted shapes is the regression
   suite; nothing about it is ever deleted because it now passes.
@@ -242,6 +257,9 @@ Low priority, and to be tuned in use [CONDUCTOR].
   per pair. Prefer an encoding that walks a chain once over one that closes it per pair; where the
   cost is inherent, cap that document's scenarios below the shared ceiling and record the reason. A
   timeout is a result to read, with its translation size, and never a reason to wait longer.
+- In the hot loop, run the one law or the one scenario you are fighting, not the document: every
+  scenario is its own module and every command has a name, so the smallest run is always available
+  (5-assay-vocabulary-and-forms).
 
 ## § 3-writing-so-the-adversary-cannot-cheat
 
@@ -253,8 +271,9 @@ Habits, each learned from a world the solver handed back.
   naming, so that no scenario has to pin it.
 - **`hab-direction-and-order`** — spell every order once, in the shared tier, and read every law over
   it in both directions before believing it; a law over an order that is green while vacuous has
-  not been read (§ 2.4). Separation and other two-place relations are stated about two things: say
-  `a != b` where the design means two, or the model will let a thing be separate from itself.
+  not been read (2.4-inhabit-before-you-believe-green). Separation and other two-place relations
+  are stated about two things: say `a != b` where the design means two, or the model will let a
+  thing be separate from itself.
 - **`hab-defaults-fall-against-you`** [ACKED] — an unrecorded truth defaults to the worst reading (a
   step nobody recorded wrote everything); silence licenses nothing; an empty set is never ⊤, and a
   universal over an empty set is vacuously true, so a claim that names nothing must be given a
@@ -285,8 +304,8 @@ Habits, each learned from a world the solver handed back.
 
 The document form the sittings settled [TYPED leans unless marked].
 
-- One document per component; sections by the design's own joints; the firewall (§ 1.2) in every
-  section; plain prose brief and pointing (§ 1.3).
+- One document per component; sections by the design's own joints; the firewall (1.2-the-firewall)
+  in every section; plain prose brief and pointing (1.3-what-plain-prose-is-for).
 - **`form-everything-inline-no-registry`** — no registry anybody is meant to edit; duplication across
   documents is acceptable so that context sits beside its subject; exact reuse of a scenario across
   documents is expected to be rare. Speakers duplicate most, and a document opens with its fixed
@@ -304,31 +323,35 @@ The document form the sittings settled [TYPED leans unless marked].
 - **`form-cadence-and-names`** — a scenario reads as the concrete step, then its mapping to names,
   then its outcome, each on its own introducer so any of the three can wrap; every fenced block is
   headed by its file name; names are long and explicit because they are the one place intent lives
-  (§ 1.2). Loads are spelled as the shell spells them and folded into named sets rather than
-  repeated.
+  (1.2-the-firewall). Loads are spelled as the shell spells them and folded into named sets rather
+  than repeated.
 - **`form-strawmen-are-quarry-never-seed`** [TYPED] — exploration documents that invented answers to
   reach a compiling model are frozen once their arc closes, carry a non-normative header, and are
   never promoted into a specification; a specification is written clean from the ruled prose.
 
-## § 5-the-checker-s-vocabulary-and-forms
+## § 5-assay-vocabulary-and-forms
 
 The words assay (`notes/30Y`) uses for the things above, so that this document and that one agree.
 Mechanics, flags, and layout are `30Y`'s and are not repeated.
 
 - The *harness* is the shell-side structure assay owns and opens beneath everything: words, classes,
-  claims, and lines. The *prepend half* (`shared.md`) is the shared tier of § 2.2, opened beneath
-  every document; the *append half* (`shared-laws.md`) is what every document must satisfy, spliced
-  after the document's own definitions, so a shared law may name a function each document defines.
-  Both live beside the documents and are found by name.
+  claims, and lines. The *prepend half* (`shared.md`) is the shared tier of 2.2-write-it-and-place-it,
+  opened beneath every document; the *append half* (`shared-laws.md`) is what every document must
+  satisfy, spliced after the document's own definitions, so a shared law may name a function each
+  document defines. Both live beside the documents and are found by name.
 - A *species* is a sig under the claim base with the fact that says what its claims mean when true;
   a *claim atom* is a `one sig` under a species; a *load file* is an `sh` fence of `.` lines whose
   name a scenario sources.
-- A *book* is § 0's scenario: an `sh` fence of concrete shell lines, each followed by a `#}` line
-  mapping its words to names (a bare component names the literal beneath it; a braced component
-  puts it in a class) and by `#=` lines of Alloy scoped to that line, which are a *declaration* (a
-  claim or a world object, `this` bound to the line), a *fact* (no `this`, hoisted), or the line's
-  *outcome* (mentions `this`; the statement the adversary attacks, with the outcomes of the lines
-  above it as premises). A trailing `for` on an outcome is that command's scope.
+- A *book* is the scenario of 0-what-this-is: an `sh` fence of concrete shell lines, each followed
+  by a `#}` line mapping its words to names and by `#=` lines of Alloy scoped to that line. On the
+  map line a bare component that is an identifier names the literal beneath it; a bare component
+  that repeats the literal, or a braced component `{class}`, leaves the literal named after itself
+  under a deterministic, injective munge into an identifier [TYPED 2026-09-28: a word defaults to
+  itself, and no ceremony forces a name]; a braced component also puts the literal in its class. A
+  `#=` line is a *declaration* (a claim or a world object, `this` bound to the line), a *fact* (no
+  `this`, hoisted), or the line's *outcome* (mentions `this`; the statement the adversary attacks,
+  with the outcomes of the lines above it as premises). A trailing `for` on an outcome is that
+  command's scope.
 - A *law* is a `check` carrying a scope clause and runs over a free claim universe; a *corpus check*
   is a `check` carrying none and runs over exactly the document's claims, all in force, as an
   outcome of the *corpus book*, a generated book of one null-command line. A check's *premise twin*
@@ -337,15 +360,18 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
   document's `run bookScope {}` overrides it for that document, `run bookScope_<book> {}` for one
   book, and a trailing `for` for one command; assay appends the exact bounds of the four kinds it
   owns and nothing else.
+- The smallest run: every book is its own generated module and every law and twin has a name, so
+  the hot loop of 2.8-bounds-and-cost runs one module, or one command by name, never the document.
 - Conventions this document adds on top of `30Y`, all [CONDUCTOR]: a hole predicate is named
   `hole_<slug>` and its inhabitation run `hole_<slug>_witness`; the null outcome for a held step is
-  `todo[this]`, a shared predicate with an empty body; a claim's long name is its sentence and the
-  speaker prefix on it is a convention, not a check.
+  `todo[this]`, a predicate with an empty body that the prepend half defines; a claim's long name
+  is its sentence and the speaker prefix on it is a convention, not a check.
 - What refuses where: Alloy refuses what is not well-formed Alloy; assay refuses what is not
-  well-formed *document* (a map line that does not pair with its command, a name covering two
-  literals, a load that resolves to nothing, a `this` on a line with no outcome, a braced literal no
-  line names); nothing refuses a check that restates its own definition, which is why § 3 keeps the
-  kill-by-hand habit.
+  well-formed *document* (a map line that does not pair with its command word for word, a name
+  covering two literals or a literal under two names, a load that resolves to nothing, a `this` on
+  a line with no outcome, a bare component that is neither an identifier nor the literal beneath
+  it); nothing refuses a check that restates its own definition, which is why
+  3-writing-so-the-adversary-cannot-cheat keeps the kill-by-hand habit.
 
 ## § 6-results-locks-and-what-an-author-owes
 
