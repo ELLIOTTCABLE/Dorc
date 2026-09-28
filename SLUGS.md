@@ -3731,7 +3731,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-fence-never-fill
 - defined: —
-- cited: 30Z 312d (2)
+- cited: 30Z 312d (3)
 
 ## hole-probe-path-transport-divergence
 - defined: —
@@ -3747,7 +3747,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-three-kinds-and-their-idioms
 - defined: —
-- cited: 30Z 312d (2)
+- cited: 30Z 312d (3)
 
 ## hole-unmodeled-wrappers
 - defined: —

@@ -346,5 +346,139 @@ Taken by default as stated; a word overrides.
   `World.lineWrites` (what a line in fact writes), and `VerdictFact.dependsOn` (what the
   measured answer in fact depended on). Each truth predicate of § 2.5 and § 2.6 is stated over
   them, transcribing its sentence; nothing else reads them.
-- `ask-rule-three-deferred` — an entry given whole (§ 2.6 rule 3) waits for the traversal act;
-  until then every entry names its mReferent and nothing beneath, stated in § 2.6's commentary.
+- `ask-rule-three-deferred` — RESOLVED the same sitting: rule 3 is mechanized
+  (`act-traversals-and-regions`); a whole-marked entry seeds its finished enumeration or, absent
+  one, every mKey its region covers.
+
+## § 6-state-at-the-close-of-raw-authorship
+
+2026-09-28, tip `e9de23bd`. The raw translation of `notes/311` into `specs/311-identity.assay.md`
+is COMPLETE as an authored document and UNCOMPILED: no `--parse` and no solver run has touched it,
+by the human's nack of `ask-parse-once-per-act`. Twenty-eight `alloy` fences, thirteen checks,
+sixteen runs, no `sh` fence yet. The lock does not exist. Nothing below is green or red; every
+result is owed to the builder phase, which needs the human's typed ack to dispatch.
+
+### § 6.1-what-each-section-is-now
+
+Mechanical (a fence with its translation): § 0.2, § 1.1, § 1.2, § 1.3, § 1.4, § 1.5, § 1.6,
+§ 1.7, § 1.8, § 1.9, § 1.10, § 1.11, § 2.1 to § 2.11 (every one), § 3.1, § 3.2, § 3.3, § 3.4,
+§ 3.5. Normative prose only (`<!-- normative -->`, the checker cannot reach it): § 0 (the two
+sentences of the law that are its own terms of refutation), § 0.1 (the two strata), § 1.1.1
+(state, value, and what an mReferent survives), § 1.2.1 (the strangers case), § 1.5.1 (the
+token over time; the closure sentences the region test consumes are now ALSO mechanized in
+§ 2.9, so § 1.5.1's copies of them are a duplication to strike at the accounting), § 1.6.1 (the
+seats' attribution; further routes), § 1.7.1 (the lookup body's read set), § 1.8.1 (the mTopic
+and mDerivations), § 1.10.1 (placeholder and witness), § 1.11.1, § 2.1.1 (the chain terminates;
+the decline), § 2.6.1 (the finished definition and the worlds), § 2.9.1 (indexicals and the
+floor), § 2.10.1 (invocation and refusal), § 3.1.1, § 3.2.1 (what the answers mean to their
+consumers), § 3.3.1, § 3.4.1 (guest-dependent lends), § 3.5.1 (composites and attribution),
+§ 4.1, § 4.2. Commentary: § 5, § 6, the Conventions, every arity/declared-by/default/consumer/
+danger summary, every example, every false friend. The tri-partition accounting of 311's
+sentences one by one (`act-tri-partition-accounting`) is NOT done; the section map above is its
+first draft and the duplication in § 1.5.1 is its first finding.
+
+### § 6.2-encodings-added-since-the-strategy
+
+Each an encoding of 311's letter; where a reading was unavoidable it is flagged as an ask.
+
+- `enc-cells-are-scheme-less-keys` — `mKey.scheme` is `lone`, `mKey.cellSort` is `lone`, exactly
+  one of them is set; a cell key has no shape, one mKey per (cell mSort, mParent instance), and
+  the one-level rule reads two cell keys of one mSort as SAME (§ 1.9 "a cell's identity is its
+  mParent's plus its mSort").
+- `enc-catalog-sort-is-declared` — `DeclaresCatalogSort` (S's owner) says which mSort a secondary
+  mScheme's mKeys are looked up in; 311 § 2.1 presupposes it ("the mEntryChain's instance for
+  that mSort") without spelling it. `ask-catalog-sort-declaration`.
+- `enc-vantage-is-the-entry-chain` — `sig mVantage { route, enteredFrom, through, ambient:
+  mSort -> lone mKey }`, every mKey `at: one mVantage`, an emitted mKey at its input's vantage; a
+  vantage entered through a wrapper holds the lent instance, else the caller's instance under
+  the sentinel and the flag, else none; its mRoute is the caller's under the sentinel and the
+  flag, else another. "One mPlaceholder" is one atom per vantage per mSort by construction.
+- `enc-lends-truth-is-routing` — a lend is true when every natural mKey of the lent mSort under
+  the wrapper reaches what a route through the lent instance passes to; the sentinel's truth is
+  the same for every unlent mSort against the caller's instance, plus equal-spelled route-scoped
+  mKeys inside and outside reaching one mReferent.
+- `enc-engine-is-a-speaker` — `one sig engine extends Speaker`; its one standing vouch
+  (`engineVouchIsTrue`, § 1.10) is a conjunct of `everyStatementInForceIsTrue`.
+- `enc-flag-is-a-lone-sig` — `lone sig RiskFaultlessSkips`; `flagged` gates `sparedBy` and the
+  sentinel's inheritance; nothing else reads it.
+- `enc-compare-over-derivations` — `sameBy` is the walk, a mCorrespondence, or a composite's
+  parts SAME by the walk; `sameClosure` is its reflexive-transitive closure; DISJOINT composes
+  through SAME; a contradiction (SAME by closure and DISJOINT between closure members) reads
+  UNKNOWN. `ask-contradiction-reads-unknown`: 311 says "refuse both"; a refusal is not one of the
+  four answers, so the safe bottom stands in, and the refusal itself stays normative prose in
+  § 3.2.1 and § 3.5.1.
+- `enc-composite-parts-walk-only` — `compositeSame` reads `walkOfKeys` on the parts, not
+  `compare`, because `compare` reads `compositeSame` and Alloy refuses the recursion; a part SAME
+  only by a mCorrespondence does not make the composites SAME. `ask-composite-parts-by-walk`.
+- `enc-alias-closure-instance-is-every-key` — `alias nothing-else` at a level is true when no
+  other mKey of the level's mScheme reaches its mReferent, over every mKey in the world; 311
+  scopes it to "the instance the lookup ran in". The encoding is stronger than the sentence
+  (fewer worlds satisfy the claim), which is the direction that can HIDE a counterexample.
+  `ask-alias-closure-instance-scope`.
+- `enc-observers-are-the-vantage-ambients` — a fact's `underObservers` is every ambient instance
+  of its topic's vantage; `topicObservers` drops those the sort declared independent of.
+- `enc-support-functions` — § 3.5's attribution is `chainSupport`, `sameSupport`,
+  `disjointSupport` (sets of statements) and one law, that a two-tops DISJOINT rests on one
+  mScheme owner's `:guarantees-unique-name` declarations.
+- `enc-finished-record-per-sort-and-shape` — `FinishesEntailment { finishedSort, finishedShape:
+  lone }`, since a cell has no shape; 311 says "that cell's mSort and shape".
+- `enc-open-read-set-is-uninterpreted` — `one sig Engine { lookupReadSetOpen: set mScheme }`
+  (`30Z:hole-three-kinds-and-their-idioms`, the missing-definition idiom); "any write
+  invalidates a mResolution whose read set is open" is its only axiom.
+- `enc-traversal-members-are-keys` — an unclosed lookup's mParent-Catalog joins its traversal
+  only where it is an mKey; a mRoute or mWorld catalog contributes nothing and the unclosed
+  traversal blocks DISJOINT anyway.
+- `enc-levels-include-the-yield-chain` — `levelsOf[x]` is every mKey on x's yield chain plus
+  every level of its identity's mFullyQualifiedKey, since a natural mKey's own lookup is what
+  crossed the routing mKeys.
+
+### § 6.3-suspicions-to-let-the-solver-settle
+
+Unwalked by the solver; each is a red the builder should expect and report, not repair.
+
+- `sus-view-at-the-shared-level` — under `enc-world-stratum`, a store A that holds a sub-store Y
+  and also holds, as a borrowed re-presentation, a thing Y owns, with A's own mScheme keying both
+  under `:guarantees-unique-name`, may let the two-tops way read the direct mKey and the mKey
+  through Y as DISJOINT with every statement true, since § 3.2 asks `:aliases-nothing-else` only
+  of stores strictly below A. If `law_disjoint_is_sound` is red with that shape, it is a novel
+  hole to hold, not a truth predicate to tighten.
+- `sus-unique-name-across-shapes` — if the scheme-wide reading of
+  `ask-unique-name-ranges-over-the-scheme` is nacked, `law_disjoint_is_sound` goes red on two
+  shapes of one mScheme.
+- `sus-exclusion-readings-differ` — `law_exclusion_readings_agree` is expected red; a red there
+  is `312ch` item 11 made concrete and is a finding for the design sitting.
+- `sus-cross-world-may-read-entry` — `312ch` item 6's collapse is reproducible through rule 4
+  with an entry keyed in another mWorld; `law_sparing_is_sound` stays sound but the premise twin
+  may find no world where such an entry coexists with a sparing.
+- `sus-natural-disjoint-needs-the-catalog` — `naturalKeyAnswer` reads DISJOINT for two natural
+  mKeys under one mParent-Catalog with `:guarantees-unique-name`; the truth predicate's "within
+  one mParent" for natural keys is the catalog, so this should be sound, and the twin tells
+  whether the world seats it.
+
+### § 6.4-what-the-builder-may-and-may-not-do
+
+The Fable-tier builder, on the human's typed ack, in its own worktree off `ai/main`:
+
+- Reads first, in order: root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`; `specs/AGENTS.md`;
+  `plans/30Z`; `notes/30Y`; the `using-alloy` skill and `examples.md`; `specs/311-identity.assay.md`
+  whole; `specs/shared.assay.md`; this ledger's § 5 and § 6. Nothing under `notes/30Ya-*`.
+- May: fix syntax and type errors in the fences without changing meaning; rename a field that
+  Alloy finds ambiguous; add a `_premise` twin or a scope where a twin is unsat for want of atoms
+  and say why; add `expect` marks that record what the run showed; write the first `sh` books
+  from the cases 311's examples name (two files in one filesystem; a hardlink; nested pid
+  namespaces; USER_STORY stage 5), with load files of claim atoms; run `--write` and commit the
+  lock; report every red with its counterexample rebuilt by hand.
+- May not: add, remove, or reword a fact, a truth predicate, a law's body, or a translation
+  sentence to make anything green; widen a scope as a fix; choose between two readings; close a
+  hole. A red that is a design question becomes `pred hole_<slug>` plus its witness run and the
+  premise exclusion of the affected check, and nothing else (`30Z:hole-fence-never-fill`); a
+  moved translation is a finding reported upward.
+- Reports: the lock as written; each red with its shape and which of § 6.3 it matches or does
+  not; each edit it made beyond syntax, with the sentence it believes unchanged.
+
+### § 6.5-next-acts
+
+`act-tri-partition-accounting` (the sentence-by-sentence account of `notes/311` at `7a63bae6`
+against the specification; § 6.1 is its draft; the § 1.5.1 duplication is its first strike);
+the builder phase on the human's ack; the books; then the adversarial crosscheck under the
+human's further instruction.
