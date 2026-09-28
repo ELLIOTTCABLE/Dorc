@@ -82,6 +82,14 @@ shellcheck = "0.11.0"
 # redirect for either. Absent that setup, `verify:kani` refuses loudly and names the task.
 "cargo:kani-verifier" = { version = "0.67.0", os = ["linux"] }
 
+# Alloy 6, the bounded model-finder behind the `alloy` task (the design-tier instrument of
+# `Research/notes/30Y`). The distribution is one platform-neutral jar on a JVM; the http backend
+# pins it by version AND digest into mise's own install store, never the repo tree (SyncThing is
+# live above it). The JDK is Alloy's runtime (6.2 needs 17+) and also runs the single-file driver
+# under spike/verify/alloy/ straight from source, so nothing is compiled or cached by hand.
+java = "temurin-21.0.12+8.0.LTS"
+"http:alloy" = { version = "6.2.0", url = "https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v{{ version }}/org.alloytools.alloy.dist.jar", checksum = "sha256:6b8c1cb5bc93bedfc7c61435c4e1ab6e688a242dc702a394628d9a9801edb78d" }
+
 [env]
 # elan's toolchain store: mise-adjacent user-local state, deliberately OUTSIDE the
 # repo/Sync tree (toolchains are ~1GB of churn no sync or backup should see).
@@ -630,6 +638,11 @@ run = "cargo run -q -p dorc-verify -- materialize"
 description = "One-time, idempotent: run the elan installer mise fetched, populating ELAN_HOME with elan and its lean/lake proxies. Pulls no toolchain — `verify:lean` triggers that from minispec/lean-toolchain."
 raw = true
 run = "elan-init -y --no-modify-path --default-toolchain none"
+
+[tasks.alloy]
+description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, or timeout. `-- --timeout <seconds>` overrides the per-command cap (default 300). Relative paths resolve against the directory you ran mise from."
+raw = true
+run = "java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
 
 [tasks."verify:kani"]
 description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
