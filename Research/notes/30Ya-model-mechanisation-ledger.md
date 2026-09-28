@@ -790,6 +790,34 @@ they sit alongside the Alloy spec rather than only as e2e.
   mostly correctness, and six of the eight correctness items were invisible until the solver
   handed back a world.
 
+## Praxis for writing a specification (from the strawman fights; **[HUMAN]** this ledger is the home for praxis for now, since `30Y` is tooling only)
+
+- What the solver would otherwise choose, the book must state. An unnamed object the spec
+  owns (a key, a referent, a world record) that a book relies on is the adversary's to drop or
+  invent; the counterexample names it, and the fix is a fact in the book or a rule in the
+  species, never a wider scope. Two instances in one strawman before the species-level rule
+  (a named cell is a key) replaced the per-book pins.
+- The premise twin of a law is written as the strongest witness the law is meant to cover, not
+  the trivial one. `monotoneInSpeech_premise` asking for a smaller set answering UNKNOWN and a
+  larger one answering DISJOINT is what let the inverted law fail on the next run; a twin that
+  is merely satisfiable would have passed it.
+- A check that restates a definition cannot fail and is not a check (`attributionMinimal` was
+  the definition of `restsOn`); the emilia specimen. No mechanism catches it.
+- The shared tier holds only what is stable across specifications: speakers, the claim base
+  and the truth default, the order of lines, the answers and their order, the verdict and
+  convergence, the flag, and the names of the outcomes. The sparing law, and so the definition
+  of which converged lines elide, is each document's; the two strawmen's shared modules
+  differed exactly there.
+- At-most claims for one line intersect; a union widens a footprint as speech grows and breaks
+  monotonicity.
+- Every name a specification mints avoids Alloy 6's reserved words, the temporal set included,
+  and never reuses a field name across sigs where a join could go through it.
+- Where a corpus check is written, it ranges over declared claim atoms and reads no
+  truth-in-force, pending `30Y`'s ruling on the corpus universe.
+- The counterfactual reading of attribution (single removal) is honest under one voice per
+  line and dishonest under redundant footprints; the structural reading (the derivation's
+  support) needs no premise and is what `311` § 3.5's sentences describe.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
