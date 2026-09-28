@@ -20,6 +20,7 @@ sig Entry { object : one Object, name : one Name }
 sig Name {}
 
 fact one_directory_per_entry { all e : Entry | one entries.e }
+fact unique_names { all d : Dir, n : Name | lone (d.entries & name.n) }
 
 run consistent {} for 4 expect 1                                   -- keep for the life of the model
 run consistent_nontrivial { some File and some Dir - Root } for 4 expect 1
@@ -65,7 +66,7 @@ run test_root_file_dir {
    }
 } for 4 Object, 3 Entry, 3 Name expect 1
 
-run test_root_file_dir_bad_name {                                  -- same shape, one name shared
+run test_root_file_dir_bad_name {                                  -- same shape, one name shared; unique_names rejects it
    some disj d0, d1 : Dir, disj f0, f1 : File, disj e0, e1, e2 : Entry, disj n0, n2 : Name {
       Root    = d0
       Dir     = d0 + d1
@@ -82,6 +83,26 @@ run test_root_file_dir_bad_name {                                  -- same shape
 `disj` is repeated per group. Pinning every signature to the union of its variables excludes
 stray atoms. The Analyzer's "Export to Predicate" produces exactly this shape from any instance,
 which is how a counterexample becomes a regression test after the fix.
+
+The negative test above is `expect 0`, and a scope too small to seat it is also unsat, so it can
+pass for the wrong reason; the positive twin beside it at the same scope is what keeps it honest.
+When the rule is a predicate rather than a fact, the rejection test cannot be faked that way:
+
+```alloy
+pred names_apart { all d : Dir, n : Name | lone (d.entries & name.n) }
+
+run rejects_shared_name {                          -- sat means rejected; a starved scope is unsat and loud
+   some d0 : Dir, disj e0, e1 : Entry, n0 : Name {
+      Dir = d0  Entry = e0 + e1  Name = n0
+      entries = d0->e0 + d0->e1
+      name    = e0->n0 + e1->n0
+   }
+   not names_apart
+} for 3 expect 1
+```
+
+The valuation is partial (`File` and `object` are left to the solver), which is allowed; a partial
+valuation stands for every completion.
 
 ## A hand-written total order
 
