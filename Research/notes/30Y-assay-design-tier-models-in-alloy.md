@@ -312,11 +312,12 @@ Solver-free, and only what compilation needs:
 - **The report** is the same rows plus the lint results and the generated file paths, as JSON,
   to stdout. No prose, no suspicion, no ranking [TYPED]. A person or model who wants the
   counterexample opens the generated `.als` in the Analyzer or runs `alloy exec` on it.
-- **Exit codes** [CONDUCTOR]: `0` green and lock matches · `1` a red command or a lock mismatch
-  · `2` a lint refusal · `3` the runner failed (jar, JVM, or the heavy-work lock held elsewhere).
-  Open with the human: whether a red the committed lock already records exits `1` or `0`; the
-  praxis of `plans/30Z` 2.6-hold-a-question-open wants an expected red to be recordable, and
-  `notes/30Yc` § 7 carries the conductor's recommendation.
+- **Exit codes**: `0` the computed rows match the committed lock row for row, result and premise
+  included, whether those results are green or red [TYPED 2026-09-28: a set of reds fully acked
+  by the lock is a pass] · `1` a mismatch in either direction, which is what a NEW red is · `2` a
+  lint refusal · `3` the runner failed (jar, JVM, or the heavy-work lock held elsewhere). The
+  report lists the reds the lock accepts as its residue, so a reader sees them without opening
+  the lock; committing the lock is the ceremony that accepts a red.
 
 ### § 2.8-two-examples
 
