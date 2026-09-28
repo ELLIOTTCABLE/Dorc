@@ -396,10 +396,12 @@ records exact unread line-ranges; a follow-up pass can start there.
 
 - Nothing in flight. The five fronts are banked as `turn01`–`turn07`; the web scout's task-1
   hits that were read only in part are listed at the tail of `turn01` and stay unregistered.
-- Owed, not research: `examples.md` in the skill was transcribed from the book's text and has
-  never been executed against the pinned jar. Reading alone found one inconsistency (a negative
-  test with no fact to reject it, repaired in turn07); a builder lane assembling each snippet
-  into a runnable module and running it is the check that turns transcription into tested.
+- `examples.md` has been executed against the pinned jar (turn07, a builder lane in scratch over
+  the book's own model repository): nine of twenty sections disagreed with their own claims and
+  were repaired, and four `SKILL.md` claims were narrowed to what the jar showed. Residue the
+  skill now states: the jar ships no complete model checker, so `1.. steps` errors; on Windows the
+  jar cannot parse `util/natural`. Rulings pending with the human: the runner ignores `expect`;
+  the overflow catalogue entry's true cause is an out-of-range literal.
 - Leads not taken, judged low value for the skill: the unsat-core papers (a GUI feature the
   headless runner does not expose), Aluminum and provenance (not in Alloy 6), the Electrum
   papers, the `util/*.als` sources, the Alloy 4 tutorial and grammar, Software Abstractions
