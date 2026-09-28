@@ -190,3 +190,19 @@ Answered by default as stated; a word from the human overrides.
   `Research/README.md`'s rule that a mechanised note moves under its own ID. Fixed in the shared
   corpus walk (`spike/crates/internal-tooling/src/corpus.rs`, `docids.rs`), two lines, committed
   with the move. The lint is silent over the whole tree afterward.
+- **[TYPED]** 2026-09-28: every document in the `30Z` format is spelled `<stem>.assay.md`.
+  Applied: assay finds the shared halves as `shared.assay.md` and `shared-laws.assay.md`, no
+  compat; the fixture, its expected modules, the task text, `specs/AGENTS.md`, and `plans/30Z`
+  § 5 follow. Consequence, unruled: the lock and the out directory take the stem
+  `311-identity.assay` (`specs/311-identity.assay.lock.json`; `target/alloy/311-identity.assay/`).
+- `fnd-pipeline-stands-on-the-empty-document` — `mise run assay -- specs/311-identity.assay.md
+  --parse` compiles and parses the fence-less document with the shared halves beside it; the
+  default book scope reads `5 but 4 Int, 7 seq` plus assay's exact bounds.
+
+## § 5-state-at-the-rewind
+
+Tip of `ai/main` at the human's rewind, 2026-09-28: the standup commits above, over `a08eb53c`
+(this ledger's mint). In the tree: `specs/311-identity.assay.md` is the note's text, unchanged;
+`specs/shared.assay.md` carries the minimal prepend half (§ 4's disposition), and
+`specs/shared-laws.assay.md` is commentary with no fence. No lock exists. No fence has been
+written into 311. The next act is § 3.2 step 2, under the strategy of § 3.
