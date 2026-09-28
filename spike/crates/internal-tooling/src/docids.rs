@@ -69,8 +69,9 @@ const RETIRED: &[&str] = &[
 
 /// Where the corpus keeps documents whose filename encodes their ID. Walked RECURSIVELY, and
 /// directory names count: `plans/deferred/078-…` and `notes/28G-why-strawmen-v2/` are both real
-/// targets, and missing the subdirectories reported fourteen live documents as dangling.
-const DOC_DIRS: [&str; 2] = ["Research/notes", "Research/plans"];
+/// targets, and missing the subdirectories reported fourteen live documents as dangling. The
+/// `specs/` tier keeps a mechanised note's ID (`Research/README.md`), so it is a target too.
+const DOC_DIRS: [&str; 3] = ["Research/notes", "Research/plans", "specs"];
 
 /// Which spelling produced a citation. Only the bare form needs the corpus-shaped guard below —
 /// a `notes/` path and a `:slug` tail each disambiguate themselves.

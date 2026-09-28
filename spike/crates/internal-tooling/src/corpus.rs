@@ -1,9 +1,9 @@
 //! The prose corpus's own file walk and docID-token primitives, shared by the `docids` dangle
 //! lint and the `slugs` index so the two cannot drift on WHICH files are the corpus or on what a
 //! docID looks like. A naive recursive walk is wrong here: the primary checkout carries sibling
-//! worktrees under `.tmp/` and `.claude/`, so the walk is anchored at `Research/`, `spike/**/CLAUDE.md`
-//! and the root `*.md` files alone, and a `quarantine-DO-NOT-READ` directory is harvested for its
-//! filenames but never opened for content.
+//! worktrees under `.tmp/` and `.claude/`, so the walk is anchored at `Research/`, `specs/`,
+//! `spike/**/CLAUDE.md` and the root `*.md` files alone, and a `quarantine-DO-NOT-READ` directory
+//! is harvested for its filenames but never opened for content.
 
 use std::path::{Path, PathBuf};
 
@@ -119,11 +119,13 @@ fn markdown_under(dir: &Path, files: &mut Vec<PathBuf>, quarantined: &mut Vec<St
     }
 }
 
-/// The three scanned surfaces, sorted: the `Research/` corpus, the `spike/**/CLAUDE.md` steering
+/// The four scanned surfaces, sorted: the `Research/` corpus, the `specs/` tier (a mechanised
+/// note moves there under its own ID, `Research/README.md`), the `spike/**/CLAUDE.md` steering
 /// files, and the root docs. `quarantined` receives the quarantine filenames the walk skipped.
 pub(crate) fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf> {
     let mut files = Vec::new();
     markdown_under(&root.join("Research"), &mut files, quarantined);
+    markdown_under(&root.join("specs"), &mut files, quarantined);
     let mut spike = Vec::new();
     markdown_under(&root.join("spike"), &mut spike, quarantined);
     files.extend(
