@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,9 @@ public class AlloyRunner {
 
    public static void main(String[] args) throws Exception {
       long timeoutSeconds = 300;
+      long cpuSeconds = -1;
+      long batchSeconds = 1800;
+      Caps caps = new Caps(2048, 2);
       List<String> files = new ArrayList<>();
       List<String> given = new ArrayList<>();
       List<String> opens = new ArrayList<>();
@@ -35,6 +39,10 @@ public class AlloyRunner {
       String solver = "sat4j";
       for (int i = 0; i < args.length; i++) {
          if (args[i].equals("--timeout") && i + 1 < args.length) timeoutSeconds = Long.parseLong(args[++i]);
+         else if (args[i].equals("--cpu") && i + 1 < args.length) cpuSeconds = Long.parseLong(args[++i]);
+         else if (args[i].equals("--batch-timeout") && i + 1 < args.length) batchSeconds = Long.parseLong(args[++i]);
+         else if (args[i].equals("--heap") && i + 1 < args.length) caps = new Caps(Long.parseLong(args[++i]), caps.procs());
+         else if (args[i].equals("--procs") && i + 1 < args.length) caps = new Caps(caps.heapMb(), Integer.parseInt(args[++i]));
          else if (args[i].equals("--instances")) instances = true;
          else if (args[i].equals("--solver") && i + 1 < args.length) solver = args[++i];
          else if (args[i].equals("--command") && i + 1 < args.length) only = args[++i];
@@ -53,17 +61,33 @@ public class AlloyRunner {
          return;
       }
 
+      if (cpuSeconds < 0) cpuSeconds = timeoutSeconds;
+
+      // Parse everything first, so the caps line can say how much work is coming.
+      CompModule[] worlds = new CompModule[files.size()];
+      String[] parseErrors = new String[files.size()];
+      int total = 0;
+      for (int f = 0; f < files.size(); f++) {
+         try {
+            worlds[f] = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(files.get(f), opens), files.get(f));
+            for (Command cmd : worlds[f].getAllCommands()) if (only == null || only.equals(cmd.label)) total++;
+         } catch (Err e) {
+            parseErrors[f] = e.toString();
+         }
+      }
+      System.err.println("alloy runner: " + total + " commands; caps: " + timeoutSeconds + "s wall and " + cpuSeconds
+         + "s cpu per command, " + caps.heapMb() + " MB heap, " + caps.procs() + " processors, " + batchSeconds + "s for the batch");
+
       boolean red = false;
       boolean first = true;
+      long batchStart = System.nanoTime();
       System.out.println("[");
       for (int f = 0; f < files.size(); f++) {
          String path = files.get(f);
-         CompModule world;
-         try {
-            world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(path, opens), path);
-         } catch (Err e) {
+         CompModule world = worlds[f];
+         if (world == null) {
             red = true;
-            first = row(first, given.get(f), null, null, null, "error", -1, -1, e.toString(), null);
+            first = row(first, given.get(f), null, null, null, "error", -1, -1, parseErrors[f], null);
             continue;
          }
          String module = world.getModuleName();
@@ -72,7 +96,12 @@ public class AlloyRunner {
             Command cmd = commands.get(i);
             if (only != null && !only.equals(cmd.label)) continue;
             String kind = cmd.check ? "check" : "run";
-            Outcome o = runChild(path, i, opens, instances, solver, timeoutSeconds);
+            if ((System.nanoTime() - batchStart) / 1_000_000_000L >= batchSeconds) {
+               red = true;
+               first = row(first, module, cmd.label, kind, scopeOf(cmd), "not-run", -1, -1, "the batch cap of " + batchSeconds + "s was reached before this command started", null);
+               continue;
+            }
+            Outcome o = runChild(path, i, opens, instances, solver, timeoutSeconds, cpuSeconds, caps);
             String result = switch (o.status) {
                case "sat" -> cmd.check ? "counterexample" : "sat";
                case "unsat" -> cmd.check ? "no-counterexample" : "unsat";
@@ -87,7 +116,7 @@ public class AlloyRunner {
    }
 
    static void usage(String why) {
-      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--command <name>] [--instances] [--solver <id>] [--open <module>=<file.als>]... <file.als>...");
+      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--cpu <seconds>] [--heap <MB>] [--procs <n>] [--batch-timeout <seconds>] [--command <name>] [--instances] [--solver <id>] [--open <module>=<file.als>]... <file.als>...");
       System.exit(USAGE);
    }
 
@@ -122,9 +151,12 @@ public class AlloyRunner {
 
    record Outcome(String status, long wallMs, long solveMs, String message, String instance) {}
 
-   // One JVM per command, so a blown-up scope is killed at the cap instead of hanging the batch.
-   static Outcome runChild(String path, int index, List<String> opens, boolean instances, String solver, long timeoutSeconds) throws Exception {
+   record Caps(long heapMb, int procs) {}
+
+   // One JVM per command, so a blown-up scope is killed at a cap instead of hanging the batch.
+   static Outcome runChild(String path, int index, List<String> opens, boolean instances, String solver, long timeoutSeconds, long cpuSeconds, Caps caps) throws Exception {
       List<String> argv = new ArrayList<>(List.of(ProcessHandle.current().info().command().orElse("java"),
+         "-Xmx" + caps.heapMb() + "m", "-XX:ActiveProcessorCount=" + caps.procs(),
          "-cp", System.getProperty("java.class.path"), System.getProperty("jdk.launcher.sourcefile"),
          "--one", Integer.toString(index), "--solver", solver));
       for (String spec : opens) argv.addAll(List.of("--open", spec));
@@ -137,14 +169,21 @@ public class AlloyRunner {
          pb.redirectOutput(out.toFile()).redirectError(err.toFile());
          long start = System.nanoTime();
          Process p = pb.start();
-         boolean done = p.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+         // Polled once a second: the wall-clock cap, and the CPU-time cap a multi-threaded solver
+         // can reach first.
+         String exceeded = null;
+         while (!p.waitFor(1, TimeUnit.SECONDS)) {
+            if ((System.nanoTime() - start) / 1_000_000_000L >= timeoutSeconds) exceeded = timeoutSeconds + "s wall-clock";
+            else if (p.toHandle().info().totalCpuDuration().map(Duration::getSeconds).orElse(0L) >= cpuSeconds) exceeded = cpuSeconds + "s cpu";
+            if (exceeded != null) break;
+         }
          long wallMs = (System.nanoTime() - start) / 1_000_000;
-         if (!done) {
+         if (exceeded != null) {
             p.descendants().forEach(ProcessHandle::destroyForcibly);
             p.destroyForcibly().waitFor();
             String progress = Files.readAllLines(err, StandardCharsets.UTF_8).stream()
                .filter(l -> l.startsWith("translated ")).reduce((a, b) -> b).orElse("still translating");
-            return new Outcome("timeout", wallMs, -1, "exceeded " + timeoutSeconds + "s; " + progress, null);
+            return new Outcome("timeout", wallMs, -1, "exceeded " + exceeded + "; " + progress, null);
          }
          String stdout = Files.readString(out, StandardCharsets.UTF_8).strip();
          String[] lines = stdout.split("\n", 2);
