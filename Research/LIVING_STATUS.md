@@ -42,6 +42,11 @@ files. Every heavy task
 machine-global heavy-work lock; **exit 75 is contention, do other work**. The one open design
 item, what an author owes and when, grows `plans/30Z` § 6 (the locks and gates are glossed there)
 and sits in `notes/30Yc` § 5 as the conductor's draft. Strawmen under `notes/30Ya-*` are frozen.
+The Alloy authorship praxis for agents is `.claude/skills/using-alloy/` (its `examples.md` executed
+against the pinned jar and repaired 2026-09-28; evidence in
+`.claude/research/design-model-mechanisation-prior-art/`); the runner refuses a `--command` that
+names nothing (exit 2). Both sit on `ai/r30-alloy-praxis-conductor` behind the 311 specification
+arc, with two rulings open: whether the runner honours `expect`, and the overflow catalogue entry.
 
 The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
 `Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of
