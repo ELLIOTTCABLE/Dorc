@@ -176,5 +176,3 @@ Where Alloy fought:
    it, and the ufw line elides (and survives) instead of guarding. Neither book states `some
    w.ufw_rules`. `book_stale_index_flag_not_typed` does not fail the same way because its flag is
    untyped.
-7. **Scratch-module placement** — mechanical, runner-side. Probing a question against the build
-   means a root module beside it; every such module stayed in the scratch directory.
