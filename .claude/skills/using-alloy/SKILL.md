@@ -151,9 +151,11 @@ Each entry: how it looks, why it happens, how you catch it.
   the remainder, possibly zero; a record-like signature needs one atom per distinct value
   combination the trace uses. Catch: the reported scopes, then the smallest scope that seats the
   witness; a rejection run (see Testing) tells starvation from rejection outright.
-- **A check is green with Prevent Overflows on.** Instances where any integer overflows are
-  discarded, so `all f: File | f.size > 10` at bitwidth 4 has no counterexample. Catch: leave the
-  option off and bound sizes in a fact.
+- **A check over integers is green at a bitwidth its literals do not fit.** At the default
+  bitwidth of four, `10` reads as `-6` (measured on the pinned jar: `10 = -6` is satisfiable and
+  `10 > 5` is not), so `all f: File | f.size > 10` has no counterexample with the overflow option
+  off, and turning it on hides more by discarding overflowing instances. Catch: a `but N Int`
+  every literal and sum fits.
 - **A recursive function agrees with you up to depth three and then returns nothing.** With the
   recursion-depth option on (off by default, when recursion is refused loudly), a recursive
   function is unrolled to that depth and returns `none` past it. Catch: do not recurse; memoize
