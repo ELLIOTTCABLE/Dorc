@@ -1064,6 +1064,7 @@ fun memberAnswer[l: Line, w, r: mKey]: one Answer {
 pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
    l in f.atLine.above
    not readsetIsTop[f]
+   no r: readset[f] | staleAt[f.atLine, r]
    all r: readset[f] {
       not writesetIsTop[l, ws[r]]
       all w: ws[r] | memberAnswer[l, w, r] = DISJOINT
@@ -1122,7 +1123,7 @@ run law_exclusion_readings_agree_premise {
 > Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); a may-read entry given whole is compared by the region test; may-read entries feed rule 4 and no other rule.
 > Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
 > An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
-> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
+> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, no readset member is stale at the site (3.3-invalidation-three-mutator-species), and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
 > A may-write entry and an entailment entry license nothing alone.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
@@ -1219,7 +1220,7 @@ fun traversalMembers[k: mKey]: set mKey {
    crossed[k] + (traversalClosed[k] implies none else k.parent & mKey)
 }
 
-fun levelsOf[x: mKey]: set mKey { identity[x].*parent & mKey }
+fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^parent & mKey) }
 
 pred coveredBy[D, x: mKey] {
    some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | walkOfKeys[m, D] = SAME
@@ -1269,7 +1270,7 @@ run law_region_disjoint_is_sound_premise {
 > An entry's author marks it given whole.
 > A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants); it is true when no other mKey of that level's mScheme reaches the level's mReferent.
 > A lookup's mTraversal members are the routing mKeys it emitted, and its mParent-Catalog where the emission is not closed.
-> The mTraversals of x are those `identity(x)` produced at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), and the routes of 2.10-places-the-upward-lookup.
+> The mTraversals of x are those `identity(x)` produced, at every lookup on the way to the primary mKey and at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), and the routes of 2.10-places-the-upward-lookup.
 > A mTraversal is of D's mSort when every member of it is of that mSort, or when it is a placing route of that mSort.
 > For an mKey D given whole against an mKey x, step 1: if x's leaf compares SAME with D, SAME.
 > Step 2: else if any level of a mTraversal compares SAME with D, D's region covers x, and the pair reads UNKNOWN.
@@ -1619,31 +1620,84 @@ hold.
 
 ### § 3.3-invalidation-three-mutator-species
 
-Three mutator species invalidate three kinds of fact. In all three, the engine withdraws
-authority. It never computes the successor identity.
+Three mutator species invalidate three kinds of fact, and in all three the engine withdraws
+authority and never computes the successor identity: below a line, an invalidated
+mResolution's mFullyQualifiedKey reads unknown, so SAME loses authority, elisions demote to
+guards, and DISJOINT collides. The lines above a site are the mutators that ran before it
+(the shared order of lines). The read set of the lookup body is derived from the body, which
+the fences do not hold, so whether it is open is an uninterpreted relation with 311's sentence
+as its only axiom (`plans/30Z` § 2.6). The state mutation's kill-reach is the sparing test of
+2.6-may-write-the-writeset itself, and a lifecycle write to a mRoot-adjacent mKey is caught by
+that test as a write to a container, since every mKey scoped in it meets it at itself; what the
+fences add is the token that a state mutation to the mParent-Store invalidates.
 
-- A routing mutation touches routing mKeys, a mParent-Catalog, or shell state a `resolve()`
-  read. A routing mutation invalidates a mResolution when its mTraversal includes a touched
-  mKey. A writeset entry touches a mTraversal member when `compare()` answers other than
-  DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers). A write also invalidates the
-  mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the read
-  set of the lookup body that produced it (1.7-resolution-and-its-traversal). Any write
-  invalidates a mResolution whose read set is open. Every mFullyQualifiedKey built on an
-  invalidated mResolution reads unknown below the line. Dependent
-  SAME conclusions lose authority, and dependent elisions demote to guards. Dependent DISJOINT
-  conclusions collide. The touched object itself is untouched. Creation, deletion, and rename of
-  an mKey are routing writes. They change what the mKey reaches. The mKeys they write are the
-  verb author's at-most claim. A writeset that omits them is the ordinary at-most omission
-  knife, now visibly covering routing mKeys.
-- A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary
-  kill-reach. A
-  first write can also change an mKey-Primary. So a state mutation whose writeset touches a
-  mParent-Store invalidates the mTokens scoped in it.
-- A lifecycle mutation writes a mRoot-adjacent mKey, such as a boot or a tenure. Every
-  mKey-Primary scoped in it names a new mReferent afterward. Cells whose mFullyQualifiedKeys
-  pass through it are new and unmeasured. Cells whose mFullyQualifiedKeys do not are untouched.
-  "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not
-  declarations.
+```alloy
+one sig Engine { lookupReadSetOpen: set mScheme }
+
+fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
+
+pred touchesTraversal[w: mKey, k: mKey] {
+   some l: levelsOf[k] {
+      some m: crossed[l] | walkOfKeys[w, m] != DISJOINT
+      or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT)
+   }
+   or some g: placedIn[k, mSort] | walkOfKeys[w, g] != DISJOINT
+}
+
+pred routingInvalidatedBy[l: Line, k: mKey] {
+   some w: lineWriteset[l] | touchesTraversal[w, k]
+   or (some lineWriteset[l] and some (levelsOf[k] + k).scheme & Engine.lookupReadSetOpen)
+}
+
+pred tokenInvalidatedBy[l: Line, k: mKey] {
+   some w: lineWriteset[l], p: identity[k].^parent & mKey | walkOfKeys[w, p] != DISJOINT
+}
+
+pred lifecycleInvalidatedBy[l: Line, k: mKey] {
+   some w: lineWriteset[l] | w.parent in mWorld and w in identity[k].^parent
+}
+
+pred staleAt[s: Line, k: mKey] {
+   some l: s.above | routingInvalidatedBy[l, k] or tokenInvalidatedBy[l, k] or lifecycleInvalidatedBy[l, k]
+}
+
+fun compareAt[s: Line, x, y: mKey]: one Answer {
+   (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else walkOfKeys[x, y]
+}
+
+check law_unstale_route_is_untouched {
+   everyStatementInForceIsTrue and storesAreWellFounded implies
+      all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
+         no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
+} for 6 but 4 Int
+
+run law_unstale_route_is_untouched_premise {
+   everyStatementInForceIsTrue and storesAreWellFounded
+   some s: Line, k: mKey, l: s.above |
+      not routingInvalidatedBy[l, k] and atMostClosed[l] and some World.lineWrites[l] and some crossed[levelsOf[k]]
+}
+```
+
+<!-- prose-translation -->
+> A routing mutation touches routing mKeys or a mParent-Catalog: a writeset entry touches a mTraversal member when `compare()` answers other than DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers), by the region test where the member is a mParent-Catalog given whole.
+> A routing mutation invalidates a mResolution when its mTraversal includes a touched mKey.
+> Any write invalidates a mResolution whose read set is open.
+> A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
+> A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
+> A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
+> Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
+> While every statement in force is true and no store is among its own contents, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+
+#### § 3.3.1-what-invalidation-withdraws
+
+<!-- normative -->
+> In all three species the engine withdraws authority; it never computes the successor identity.
+> A routing mutation also touches shell state a `resolve()` read: a write invalidates the mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the read set of the lookup body that produced it (1.7-resolution-and-its-traversal).
+> Dependent SAME conclusions lose authority, dependent elisions demote to guards, and dependent DISJOINT conclusions collide.
+> The touched object itself is untouched.
+> Creation, deletion, and rename of an mKey are routing writes; they change what the mKey reaches; the mKeys they write are the verb author's at-most claim, and a writeset that omits them is the ordinary at-most omission knife, now visibly covering routing mKeys.
+> Cells whose mFullyQualifiedKeys pass through a lifecycle-written mKey are new and unmeasured; cells whose mFullyQualifiedKeys do not are untouched.
+> "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not declarations.
 
 > Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change,
 > a write to any environment variable, cwd, or configuration a lookup reads.
