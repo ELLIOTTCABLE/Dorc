@@ -115,10 +115,11 @@ The two comment forms, precisely:
   shell-lexed and matched one-to-one with the line's words. A bare component is the *name* of
   the literal under it, and when the two are equal the literal is named after itself; a braced
   component `{flavour}` puts the literal under it in a *class* and leaves it named after itself.
-  Every name that is not already an Alloy identifier becomes one under a deterministic, injective
-  munge of its bytes into Alloy's identifier alphabet, readable for common shell punctuation
-  [TYPED 2026-09-28: a word defaults to itself; no ceremony forces a name to be minted, and
-  every word trivially has one]. Any component may be either form, the command word included.
+  Every name that is not already an Alloy identifier becomes one under a deterministic munge of
+  its bytes into Alloy's identifier alphabet, injective over the names it munges and readable for
+  common shell punctuation; a munged spelling that meets an authored identifier is the join-key
+  refusal below [TYPED 2026-09-28: a word defaults to itself; no ceremony forces a name to be
+  minted, and every word trivially has one]. Any component may be either form, the command word included.
   The literal is the join key: one literal is one atom, so a word named on one line and classed
   on another is one atom carrying both; a name covering two literals, munged or authored, is a
   refusal.
@@ -279,7 +280,9 @@ spec, over the relations assay supplies.
 2. **Corpus checks**: the outcomes of the corpus book's one line, at exact bounds over the
    actual claims, every claim in force.
 3. **Vacuity twins**: a `check X` is paired by name with a `run X_premise` in the same module,
-   which must be satisfiable; a check with no twin is recorded `premise: absent`, never green.
+   which must be satisfiable; a check with no twin is recorded `premise: absent`, never green. A
+   book line's check has no twin of its own: its book's run is its witness, and the lock records
+   that run's result as the line's premise.
 4. **Book outcomes**: every line's `check` (§ 2.4).
 5. **Book satisfiability**: every book's `run`.
 
@@ -298,8 +301,8 @@ Solver-free, and only what compilation needs:
 - **The lock** [ACKED, with the human's nack of a generated index in the `SLUGS.md` style]: one
   committed JSON file per spec beside it (STRAWMAN `<spec>.lock.json`), one row per command:
   module, name, kind, scope, result (`sat` · `unsat` · `counterexample` · `no-counterexample`
-  · `timeout` · `premise: absent`), the premise twin's result beside its check, and a hash of
-  the command's text. A timeout is a result, not a runner failure. Wall-clock, and on a
+  · `timeout` · `not-run` · `error`), the premise twin's result beside its check (or `absent`),
+  and a hash of the command's text. A timeout is a result, not a runner failure. Wall-clock, and on a
   timeout whether translation finished and how large the problem was (what decides between a
   ceiling too high and an encoding too costly), are report columns beside the row and never
   enter the lock, which is compared in both directions. `assay --check` recomputes and exits
@@ -310,7 +313,10 @@ Solver-free, and only what compilation needs:
   to stdout. No prose, no suspicion, no ranking [TYPED]. A person or model who wants the
   counterexample opens the generated `.als` in the Analyzer or runs `alloy exec` on it.
 - **Exit codes** [CONDUCTOR]: `0` green and lock matches · `1` a red command or a lock mismatch
-  · `2` a lint refusal · `3` the runner failed (jar, JVM).
+  · `2` a lint refusal · `3` the runner failed (jar, JVM, or the heavy-work lock held elsewhere).
+  Open with the human: whether a red the committed lock already records exits `1` or `0`; the
+  praxis of `plans/30Z` 2.6-hold-a-question-open wants an expected red to be recordable, and
+  `notes/30Yc` § 7 carries the conductor's recommendation.
 
 ### § 2.8-two-examples
 

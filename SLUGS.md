@@ -27,7 +27,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## a-host-is-not-a-partition
 - defined: —
-- cited: 03 04 30Y 30Ya 311u 312b 312ca 312cg Research/GOTCHAS (12)
+- cited: 03 04 30Y 30Ya 311u 312b 312ca 312cg Research/GOTCHAS (11)
 
 ## a-known-flag-suggests-nothing
 - defined: —
@@ -368,7 +368,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: AGENTS AID-NEEDS (3)
 
 ## spike/CLAUDE:agent-surfaces-forced-plain
-- defined: spike/CLAUDE.md:1128 — (r30, measured twice) — the token-billed spam in
+- defined: spike/CLAUDE.md:1133 — (r30, measured twice) — the token-billed spam in
 - cited: 307 (1)
 
 ## plan/CLAUDE:aggregate-mints-carry-the-same-demand
@@ -770,7 +770,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30G 30I 30Ib (3)
 
 ## spike/CLAUDE:background-wsl-children-outlive-taskstop
-- defined: spike/CLAUDE.md:1084 — (post-mortem 2026-08-15) — stopping a
+- defined: spike/CLAUDE.md:1089 — (post-mortem 2026-08-15) — stopping a
 
 ## 28P:bank-28m-stale-wording-at-merge
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:130 — — `res-28m-pre-fold-wording-is-stale` (§5.4/§6 pre-fold
@@ -820,7 +820,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 300 (1)
 
 ## spike/CLAUDE:bless-honours-the-trial-filter
-- defined: spike/CLAUDE.md:1183 — — the "ALL cases" above is the UNFILTERED run.
+- defined: spike/CLAUDE.md:1188 — — the "ALL cases" above is the UNFILTERED run.
 - cited: 30Nc (1)
 
 ## cli/CLAUDE:bless-never-first
@@ -929,9 +929,17 @@ row's `near:` line refreshes only when that row's other lines change.
 ## Research/notes/r26-glue-strawmen/pivot-vps-standup.note:chafe-loops-never-elide-but-should-not-wall
 - defined: Research/notes/r26-glue-strawmen/pivot-vps-standup.note.md:281
 
+## chafe-main-slug-index-stale
+- defined: —
+- cited: 30Yc 30Ye (3)
+
 ## chafe-main-was-clippy-red
 - defined: —
 - cited: 30Yc 30Yd (2)
+
+## chafe-out-of-repo-paths-verbatim
+- defined: —
+- cited: 30Yc 30Ye (2)
 
 ## chafe-powershell-does-not-expand-the-book-glob
 - defined: —
@@ -940,8 +948,20 @@ row's `near:` line refreshes only when that row's other lines change.
 ## Research/notes/r26-glue-strawmen/userdata-boothook-web.note:chafe-privilege-asymmetry-across-deliveries
 - defined: Research/notes/r26-glue-strawmen/userdata-boothook-web.note.md:360
 
+## chafe-scope-error-surfaces-at-solve
+- defined: —
+- cited: 30Yc 30Ye (2)
+
+## chafe-scope-renders-int-lowercase
+- defined: —
+- cited: 30Yc 30Ye (2)
+
 ## Research/notes/r26-glue-strawmen/pivot-vps-standup.note:chafe-ssh-lends-scope-not-dimensions
 - defined: Research/notes/r26-glue-strawmen/pivot-vps-standup.note.md:238
+
+## chafe-test-task-takes-one-filter
+- defined: —
+- cited: 30Yc 30Ye (2)
 
 ## chafe-tests-label-not-in-gitlabels
 - defined: —
@@ -949,6 +969,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## Research/notes/r26-glue-strawmen/pivot-vps-standup.note:chafe-timeout-and-ssh-keygen-are-stdlib-holes
 - defined: Research/notes/r26-glue-strawmen/pivot-vps-standup.note.md:315
+
+## chafe-too-many-lines
+- defined: —
+- cited: 30Yc 30Ye (2)
 
 ## chafe-typos-fix-mode-rewrites-identifiers
 - defined: —
@@ -1041,7 +1065,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 289 28Vb 302 307 309 30Ba 30Ne (8)
 
 ## spike/CLAUDE:commit-msg-gate-is-mechanical
-- defined: spike/CLAUDE.md:1160 — — hk's `commit-msg` step REFUSES a message carrying an
+- defined: spike/CLAUDE.md:1165 — — hk's `commit-msg` step REFUSES a message carrying an
 
 ## comp-artifact-injectivity
 - defined: —
@@ -1647,6 +1671,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ka 30Kb (2)
 
+## dev-exclusive-wrapping-partly-denied
+- defined: —
+- cited: 30Yc 30Ye (2)
+
 ## 205:dev-floor-undershoot
 - defined: Research/notes/205-crosscheck-reconciliation-and-rulings.md:107 — : acknowledged as an aggregate: book-`while`, `. /path` sourcing, and
 
@@ -1867,6 +1895,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 271:direction-observable-transforms-gradient
 - defined: Research/plans/271-block-settle-rulings-ledger.md:495 — (2026-07-12; human-voiced; DRAFTED
 
+## disagree-book-checks-premise-absent
+- defined: —
+- cited: 30Yc 30Ye (2)
+
 ## disagree-braced-only-literals
 - defined: —
 - cited: 30Yc 30Yd (2)
@@ -1882,6 +1914,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## disagree-load-displacement
 - defined: —
 - cited: 30Yc 30Yd (2)
+
+## disagree-locked-red-still-exits-one
+- defined: —
+- cited: 30Yc 30Ye (2)
 
 ## disc-finality-witness-grade
 - defined: —
@@ -1922,7 +1958,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 311o (1)
 
 ## spike/CLAUDE:doctor-inventories-never-reaps
-- defined: spike/CLAUDE.md:1236 — — `mise run doctor` is the read-only answer to
+- defined: spike/CLAUDE.md:1241 — — `mise run doctor` is the read-only answer to
 - cited: 30Q 30Qd 30Vd (3)
 
 ## 215:door1-and-form
@@ -2001,7 +2037,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ne (1)
 
 ## spike/CLAUDE:emitted-is-measure-once-ground-truth
-- defined: spike/CLAUDE.md:1320 — (r30, closing a gap that bit three lanes) — an
+- defined: spike/CLAUDE.md:1325 — (r30, closing a gap that bit three lanes) — an
 - cited: 30P 30Xa cli/CLAUDE (3)
 
 ## cli/CLAUDE:empty-ran-has-two-stable-spellings
@@ -2119,7 +2155,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/170-type-naming-research-plan.md:163 — — soft typing (Cartwright/Fagan); pluggable / optional types (Bracha); the stub-library
 
 ## spike/CLAUDE:failure-visibility-is-a-task-flag
-- defined: spike/CLAUDE.md:1147 — (r30, measured lever table in
+- defined: spike/CLAUDE.md:1152 — (r30, measured lever table in
 - cited: 307 (1)
 
 ## spike/CLAUDE:families-and-roles
@@ -2702,7 +2738,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Q (1)
 
 ## spike/CLAUDE:floor-differential-lane-opt-in
-- defined: spike/CLAUDE.md:1299 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
+- defined: spike/CLAUDE.md:1304 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
 - cited: TODO-ADDTL (1)
 
 ## analysis/CLAUDE:floors-are-whole-window-and-demote-only
@@ -2710,7 +2746,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 307c (1)
 
 ## spike/CLAUDE:fmt-is-a-task-in-every-session
-- defined: spike/CLAUDE.md:1065 — — `mise run fmt` formats, agent session included:
+- defined: spike/CLAUDE.md:1070 — — `mise run fmt` formats, agent session included:
 - cited: 307c (1)
 
 ## 28L:fnd-284-landed-state
@@ -3398,7 +3434,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## foreground-final-verification
 - defined: Research/notes/27U-user-aid-build-phase.md:192 — — a builder's last verification runs
-- defined: spike/CLAUDE.md:1431 — (`27U` §2) — a builder's FINAL verification
+- defined: spike/CLAUDE.md:1436 — (`27U` §2) — a builder's FINAL verification
 - cited: 280 28Vb 30Q (3)
 
 ## FORFEITS:forfeit-ambient-dependency-vouch-composition
@@ -3497,7 +3533,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 286 (1)
 
 ## spike/CLAUDE:four-rung-gate-ladder
-- defined: spike/CLAUDE.md:1029 — (r30) — one path-routed hk graph serves four fixed
+- defined: spike/CLAUDE.md:1031 — (r30) — one path-routed hk graph serves four fixed
 - cited: 30Qd 30Qf 310 (3)
 
 ## front-dogfood-ceiling
@@ -3507,18 +3543,6 @@ row's `near:` line refreshes only when that row's other lines change.
 ## front-embedding-contracts
 - defined: —
 - cited: 26N 26Ob (2)
-
-## 30Ya:front-production-alloy-users
-- defined: Research/notes/30Ya-model-mechanisation-ledger.md:78 — : established (turn01, subagent-graded; conductor re-read the load-bearing archived copies)
-
-## 30Ya:front-shared-unit-in-referent-projects
-- defined: Research/notes/30Ya-model-mechanisation-ledger.md:230 — : established (turn04, subagent-graded; conductor read the notes)
-
-## 30Ya:front-single-artifact-prose-and-checks
-- defined: Research/notes/30Ya-model-mechanisation-ledger.md:112 — : established (turn02, subagent-graded; conductor read the notes' citations, not the archived copies…
-
-## 30Ya:front-structural-ties-between-instruments
-- defined: Research/notes/30Ya-model-mechanisation-ledger.md:173 — : established (turn03, subagent-graded; conductor read the notes, not the archived copies)
 
 ## fruit-emit-hygiene-paste
 - defined: —
@@ -3663,7 +3687,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/cli/CLAUDE.md:300 — — `helper_conflict_diagnostics` mints one
 
 ## spike/CLAUDE:hk-drives-the-hooks
-- defined: spike/CLAUDE.md:1157 — — `hk.pkl` is the one home for every hook step; `mise run
+- defined: spike/CLAUDE.md:1162 — — `hk.pkl` is the one home for every hook step; `mise run
 
 ## hold-region-against-region-floor
 - defined: —
@@ -4053,7 +4077,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/23A-guard-tier-pin-set.md:276 — : gate-7 patterns (`guard`, `vouch`, `package`, `refus`) assume disclosure
 
 ## spike/CLAUDE:kani-coverage-has-measured-walls
-- defined: spike/CLAUDE.md:1056 — (r30) — harnesses declare EXACT concrete
+- defined: spike/CLAUDE.md:1061 — (r30) — harnesses declare EXACT concrete
 - cited: 300 (1)
 
 ## core/CLAUDE:keep-borrows-out-of-closure-returns
@@ -4072,7 +4096,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/087-kill-criteria-critique-and-scope-down.md:61 — — proven to need running → run. Same behaviour as just running it.
 
 ## spike/CLAUDE:known-broken-ack
-- defined: spike/CLAUDE.md:1126 — — must commit a tree that will not compile:
+- defined: spike/CLAUDE.md:1131 — — must commit a tree that will not compile:
 
 ## 30Vd:label-vocabulary-as-minted
 - defined: Research/notes/30Vd-why-surface-reconstruction-lane-report.md:129
@@ -4461,7 +4485,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:730
 
 ## spike/CLAUDE:lexical-fences-are-human-ack-instruments
-- defined: spike/CLAUDE.md:1337 — (human-typed 2026-08-31; scope
+- defined: spike/CLAUDE.md:1342 — (human-typed 2026-08-31; scope
 - cited: 30Va 30Vd 30X 30Xa (5)
 
 ## cli/CLAUDE:lib-target-is-a-loom-seam
@@ -4546,7 +4570,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## map-then-execute-split
 - defined: Research/notes/27U-user-aid-build-phase.md:184 — — a big-bang dispatch splits map-and-rule (proposal,
-- defined: spike/CLAUDE.md:1427 — (`27U` §4) — big-bang dispatches split map-and-rule
+- defined: spike/CLAUDE.md:1432 — (`27U` §4) — big-bang dispatches split map-and-rule
 - cited: 283 28B 28Va 28Vb 30Xa (6)
 
 ## oracle/CLAUDE:marker-and-names
@@ -4747,7 +4771,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 24S 26G 26Lb 26M 26Ob 271 272 273 275 279f 27C 27K 28Q 300 30S 311a 311c 312a Research/notes/27x-strawmen-topology/README core/CLAUDE (31)
 
 ## spike/CLAUDE:never-filter-a-task
-- defined: spike/CLAUDE.md:1094 — — if a task is too loud, run its `-quiet` variant; if it has
+- defined: spike/CLAUDE.md:1099 — — if a task is too loud, run its `-quiet` variant; if it has
 - cited: 300 30Ia 30Xa (3)
 
 ## analysis/CLAUDE:never-live-feeds-the-dialect-fold-only
@@ -4907,7 +4931,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/analysis/CLAUDE.md:191 — (`30I:rul-one-load-account-separate-projections`)
 
 ## spike/CLAUDE:one-platform-green-is-not-cross-platform-green
-- defined: spike/CLAUDE.md:1259 — (two live bugs, 2026-07-24) —
+- defined: spike/CLAUDE.md:1264 — (two live bugs, 2026-07-24) —
 - cited: 289 300 300a (3)
 
 ## cli/CLAUDE:one-runner-one-walk
@@ -4918,7 +4942,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ka 30N 30Nc 30Nd 30Ne (5)
 
 ## spike/CLAUDE:one-shell-answer
-- defined: spike/CLAUDE.md:1012 — — `dorc_transport::Posix::find()` is the ONLY place that answers
+- defined: spike/CLAUDE.md:1014 — — `dorc_transport::Posix::find()` is the ONLY place that answers
 - cited: 28P 28S 30X 30Xa cli/CLAUDE (6)
 
 ## plan/CLAUDE:only-a-proof-retires-a-wall
@@ -5242,7 +5266,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 24S 24T 27C (3)
 
 ## spike/CLAUDE:preflight-bounds-before-spend
-- defined: spike/CLAUDE.md:1207 — (r30, after two incidents: a WSL VM OOM'd twice
+- defined: spike/CLAUDE.md:1212 — (r30, after two incidents: a WSL VM OOM'd twice
 - cited: 307 30G 30Ka 30Nd 30Ne 30Nf 30Nh 30Q (9)
 
 ## 28M:price-forbidden-to-fork
@@ -5514,7 +5538,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:105
 
 ## spike/CLAUDE:real-tools-lane-opt-in
-- defined: spike/CLAUDE.md:1283 — (human-authorized 2026-07-18) — the ONE sanctioned
+- defined: spike/CLAUDE.md:1288 — (human-authorized 2026-07-18) — the ONE sanctioned
 - cited: 27R 27T 28P (3)
 
 ## reason-dedup-is-not-execution-dedup
@@ -6805,7 +6829,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 30Ya 311b 311c 312ca 312cg 312ch (26)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (25)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7609,7 +7633,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 30Ya 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (46)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (45)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -8480,7 +8504,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-injection-sentences-collide-every-fact
 - defined: —
-- cited: 30Ya 312cg 312ch (3)
+- cited: 312cg 312ch (2)
 
 ## srv-open-read-set-any-routing-mutation
 - defined: —
@@ -8492,7 +8516,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-unmarked-verdict-readset-closed-empty
 - defined: —
-- cited: 30Ya 312cg 312ch (3)
+- cited: 312cg 312ch (2)
 
 ## 28Q:stage-0-ship-seam
 - defined: Research/plans/28Q-context-kernel-unification.md:539 — — **LANDED 2026-08-16** (its own lane after stage-i, per
@@ -8706,7 +8730,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:386
 
 ## spike/CLAUDE:task-bodies-are-shell-free
-- defined: spike/CLAUDE.md:1003 — — mise pipes an inline task `run` through `sh -c` on
+- defined: spike/CLAUDE.md:1005 — — mise pipes an inline task `run` through `sh -c` on
 - cited: 300 300a 30Xa (3)
 
 ## task-l2-member-precision-strain
@@ -9232,7 +9256,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ne (1)
 
 ## spike/CLAUDE:two-bless-paths-split-by-directory
-- defined: spike/CLAUDE.md:1173 — — there are TWO blessing authorities (three, counting
+- defined: spike/CLAUDE.md:1178 — — there are TWO blessing authorities (three, counting
 - cited: 28J 30G 30Qb (3)
 
 ## spike/CLAUDE:two-phases-opposite-fail-directions
@@ -9346,7 +9370,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 311o (1)
 
 ## spike/CLAUDE:unused-report-never-reaps
-- defined: spike/CLAUDE.md:1244 — — `mise run doctor:unused` is the SOFT hygiene gate: every
+- defined: spike/CLAUDE.md:1249 — — `mise run doctor:unused` is the SOFT hygiene gate: every
 
 ## 205:us-standing-rule
 - defined: Research/notes/205-crosscheck-reconciliation-and-rulings.md:121 — : softened in CLAUDE.md — site-keyed stays the default shape (it is
@@ -9424,7 +9448,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:431
 
 ## spike/CLAUDE:verify-lane-family
-- defined: spike/CLAUDE.md:1036 — (r30) — `verify:check` rides builder completion on both legs
+- defined: spike/CLAUDE.md:1041 — (r30) — `verify:check` rides builder completion on both legs
 - cited: 300b (1)
 
 ## analysis/CLAUDE:visibility-is-full-positional
@@ -9584,7 +9608,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Va (1)
 
 ## spike/CLAUDE:windows-green-was-always-git-bash
-- defined: spike/CLAUDE.md:1022 — (found 2026-07-26) — before this date every
+- defined: spike/CLAUDE.md:1024 — (found 2026-07-26) — before this date every
 
 ## wire-records-v1-import
 - defined: Research/notes/24U-round24-closeout.md:117 — (NEW at close, human-acked 2026-07-10): the bare minimum
@@ -9621,7 +9645,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## worktree-file-access-law
 - defined: Research/notes/27U-user-aid-build-phase.md:181 — — worktree agents: every Read/Grep/Edit/cite
-- defined: spike/CLAUDE.md:1415 — (`27U` §2 — two incidents, one root cause) — a
+- defined: spike/CLAUDE.md:1420 — (`27U` §2 — two incidents, one root cause) — a
 - cited: 300 300b 307 30C 30Va (7)
 
 ## 283:world-as-payload
@@ -9654,21 +9678,21 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1185 — — the sixth seat joins the regime (LANDED)
 
 ## spike/CLAUDE:wsl-cd-not-bash-lc-cd
-- defined: spike/CLAUDE.md:1076 — (found live by the spine executor, 2026-08-17) —
+- defined: spike/CLAUDE.md:1081 — (found live by the spine executor, 2026-08-17) —
 - cited: 30Q (1)
 
 ## spike/CLAUDE:wsl-needs-a-modern-git
-- defined: spike/CLAUDE.md:1272 — — the repo enables the `relativeWorktrees` extension
+- defined: spike/CLAUDE.md:1277 — — the repo enables the `relativeWorktrees` extension
 - cited: 289 (1)
 
 ## spike/CLAUDE:wsl-trust-per-worktree
-- defined: spike/CLAUDE.md:1072 — — WSL keeps its own mise trust store; a fresh worktree
+- defined: spike/CLAUDE.md:1077 — — WSL keeps its own mise trust store; a fresh worktree
 - cited: 300b 30Ne 30Nf 30Nh (5)
 
 ## spike/CLAUDE:wsl-unix-leg-at-fold
-- defined: spike/CLAUDE.md:1191 — (conductor practice made durable, 2026-07-26; first run
+- defined: spike/CLAUDE.md:1196 — (conductor practice made durable, 2026-07-26; first run
 - cited: 300 (1)
 
 ## spike/CLAUDE:xfail-pins-ride-one-seat
-- defined: spike/CLAUDE.md:1360 — (`30A` d3; r30) — target behavior the engine does not
+- defined: spike/CLAUDE.md:1365 — (`30A` d3; r30) — target behavior the engine does not
 - cited: 30Na 30Qf 30Xa (4)
