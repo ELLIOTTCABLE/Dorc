@@ -23,6 +23,8 @@ pred matches[v: Shword, s: set Shword, l: Line] { v = l.cmd and (no s or s = l.a
 fun keysAt[l: Line, at: set Int, cells: set Shword]: set Key { { k: Key | k.w in l.argv[at] + cells } }
 fact { all d: Disturbs, l: Line | matches[d.verb, d.sub, l] implies d.at in (l.argv).Shword }
 fact { all d: Reads, l: Line | matches[d.verb, d.sub, l] implies d.at in (l.argv).Shword }
+fact { all d: Disturbs, c: d.cells | some k: Key | k.w = c }
+fact { all d: Reads, c: d.cells | some k: Key | k.w = c }
 
 fun footprint[S: set MDecl, l: Line]: set Key {
    (some d: Disturbs & S | matches[d.verb, d.sub, l])
@@ -39,6 +41,7 @@ fact { all d: Disturbs | d in True iff all l: Line | matches[d.verb, d.sub, l] i
 fact { all v: Verdict | some d: Vouches & True | d.verb = v.of.cmd and d.speaker = v.speaker }
 
 sig Separate extends MDecl { a, b: one Key }
+fact { all s: Separate | s.a != s.b }
 fact { Computed = Disturbs + Separate }
 fact { all s: Separate | s in True iff s.a.reaches != s.b.reaches }
 pred separated[S: set MDecl, x, y: Key] { some s: Separate & S | (s.a = x and s.b = y) or (s.a = y and s.b = x) }

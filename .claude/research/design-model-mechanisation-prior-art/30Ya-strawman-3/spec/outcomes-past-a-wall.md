@@ -42,6 +42,8 @@ pred matches[v: Shword, s: set Shword, l: Line] { v = l.cmd and (no s or s = l.a
 fun keysAt[l: Line, at: set Int, cells: set Shword]: set Key { { k: Key | k.w in l.argv[at] + cells } }
 fact { all d: Disturbs, l: Line | matches[d.verb, d.sub, l] implies d.at in (l.argv).Shword }
 fact { all d: Reads, l: Line | matches[d.verb, d.sub, l] implies d.at in (l.argv).Shword }
+fact { all d: Disturbs, c: d.cells | some k: Key | k.w = c }
+fact { all d: Reads, c: d.cells | some k: Key | k.w = c }
 
 fun footprint[S: set MDecl, l: Line]: set Key {
    (some d: Disturbs & S | matches[d.verb, d.sub, l])
@@ -58,18 +60,19 @@ fact { all d: Disturbs | d in True iff all l: Line | matches[d.verb, d.sub, l] i
 fact { all v: Verdict | some d: Vouches & True | d.verb = v.of.cmd and d.speaker = v.speaker }
 ```
 
-A vouch is the existence of the verb's verdict function: whoever wrote it may say a line of that verb is converged, and that statement is the verdict claim. A footprint is an at-most claim about what a verb, under a matched first argument, writes: the keys at named argument positions and the named cells, and nothing else. A verb nobody has footprinted writes every key. Two true footprints for one line bound the same tool from above, so the footprint in force is their intersection. A backing is what the verb's check reads under the same shape; a verb whose check reads are unstated reads every key. A footprint is true exactly when every matched line really wrote inside it; a backing is what the check read, complete by construction, and is not computed against the world here. A withhold is the describer declining the elision half of the license while keeping the guard half. A claim that names an argument position names one every matched line has.
+A vouch is the existence of the verb's verdict function: whoever wrote it may say a line of that verb is converged, and that statement is the verdict claim. A footprint is an at-most claim about what a verb, under a matched first argument, writes: the keys at named argument positions and the named cells, and nothing else. A verb nobody has footprinted writes every key. Two true footprints for one line bound the same tool from above, so the footprint in force is their intersection. A backing is what the verb's check reads under the same shape; a verb whose check reads are unstated reads every key. A footprint is true exactly when every matched line really wrote inside it; a backing is what the check read, complete by construction, and is not computed against the world here. A withhold is the describer declining the elision half of the license while keeping the guard half. A claim that names an argument position names one every matched line has. A cell a describer names is a key by that naming; an argument word is a key only where the identity tier makes it one.
 
 ## § 3 The identity tier's answers
 
 ```alloy
 sig Separate extends MDecl { a, b: one Key }
+fact { all s: Separate | s.a != s.b }
 fact { Computed = Disturbs + Separate }
 fact { all s: Separate | s in True iff s.a.reaches != s.b.reaches }
 pred separated[S: set MDecl, x, y: Key] { some s: Separate & S | (s.a = x and s.b = y) or (s.a = y and s.b = x) }
 ```
 
-Whether two keys reach two things is the identity tier's statement; it is true when they do. Nothing here says how it knows.
+Whether two keys reach two things is the identity tier's statement; it is true when they do, and it is a statement about two keys, never about one. Nothing here says how it knows.
 
 ## § 4 The sparing question, the outcomes, and what a survival rested on
 
@@ -106,38 +109,38 @@ pred oneVoicePerLine[S: set MDecl] {
    all disj s, t: Separate & S | not ((s.a = t.a and s.b = t.b) or (s.a = t.b and s.b = t.a))
 }
 
-check neverWrongWhenAllTrue { all S: set MDecl, w, r: Line | allTrue[S] implies not wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run neverWrongWhenAllTrue_premise { some S: set MDecl, w, r: Line | allTrue[S] and answer[S, w, r] = DISJOINT and some touches[w] and some backing[S, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check neverWrongWhenAllTrue { all S: set MDecl, w, r: Line | allTrue[S] implies not wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run neverWrongWhenAllTrue_premise { some S: set MDecl, w, r: Line | allTrue[S] and answer[S, w, r] = DISJOINT and some touches[w] and some backing[S, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check neverUnderExecutedWhenAllTrue { allTrue[Line.speech & MDecl] implies no l: Elided | underExecuted[l] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run neverUnderExecutedWhenAllTrue_premise { allTrue[Line.speech & MDecl] and some Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check neverUnderExecutedWhenAllTrue { allTrue[Line.speech & MDecl] implies no l: Elided | underExecuted[l] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run neverUnderExecutedWhenAllTrue_premise { allTrue[Line.speech & MDecl] and some Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check monotoneInSpeech { all S, S2: set MDecl, w, r: Line | S in S2 and allTrue[S2] implies answer[S, w, r] in answer[S2, w, r].*weaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run monotoneInSpeech_premise { some S, S2: set MDecl, w, r: Line | S in S2 and S != S2 and allTrue[S2] and answer[S2, w, r] = DISJOINT and answer[S, w, r] = UNKNOWN } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check monotoneInSpeech { all S, S2: set MDecl, w, r: Line | S in S2 and allTrue[S2] implies answer[S2, w, r] in answer[S, w, r].*weaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run monotoneInSpeech_premise { some S, S2: set MDecl, w, r: Line | S in S2 and S != S2 and allTrue[S2] and answer[S2, w, r] = DISJOINT and answer[S, w, r] = UNKNOWN } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check strangerSafe { all S: set MDecl, d: MDecl, w, r: Line | allTrue[S + d] and d.speaker not in S.speaker implies answer[S, w, r] in answer[S + d, w, r].*weaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run strangerSafe_premise { some S: set MDecl, d: MDecl, w, r: Line | some S and allTrue[S + d] and d.speaker not in S.speaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check strangerSafe { all S: set MDecl, d: MDecl, w, r: Line | allTrue[S + d] and d.speaker not in S.speaker implies answer[S + d, w, r] in answer[S, w, r].*weaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run strangerSafe_premise { some S: set MDecl, d: MDecl, w, r: Line | some S and allTrue[S + d] and d.speaker not in S.speaker } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check attributionHonest { all S: set MDecl, w, r: Line | wrong[S, w, r] implies some d: support[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run attributionHonest_premise { some S: set MDecl, w, r: Line | wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check attributionHonest { all S: set MDecl, w, r: Line | wrong[S, w, r] implies some d: support[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run attributionHonest_premise { some S: set MDecl, w, r: Line | wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check attributionSufficient { all S: set MDecl, w, r: Line | answer[support[S, w, r], w, r] = answer[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run attributionSufficient_premise { some S: set MDecl, w, r: Line | some support[S, w, r] and answer[S, w, r] = DISJOINT } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check attributionSufficient { all S: set MDecl, w, r: Line | answer[support[S, w, r], w, r] = answer[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run attributionSufficient_premise { some S: set MDecl, w, r: Line | some support[S, w, r] and answer[S, w, r] = DISJOINT } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check attributionByRemovalHonest { all S: set MDecl, w, r: Line | wrong[S, w, r] implies some d: restsOn[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run attributionByRemovalHonest_premise { some S: set MDecl, w, r: Line | wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check attributionByRemovalHonest { all S: set MDecl, w, r: Line | wrong[S, w, r] implies some d: restsOn[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run attributionByRemovalHonest_premise { some S: set MDecl, w, r: Line | wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check attributionByRemovalHonestWithOneVoice { all S: set MDecl, w, r: Line | oneVoicePerLine[S] and wrong[S, w, r] implies some d: restsOn[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run attributionByRemovalHonestWithOneVoice_premise { some S: set MDecl, w, r: Line | oneVoicePerLine[S] and wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check attributionByRemovalHonestWithOneVoice { all S: set MDecl, w, r: Line | oneVoicePerLine[S] and wrong[S, w, r] implies some d: restsOn[S, w, r] | d not in True } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run attributionByRemovalHonestWithOneVoice_premise { some S: set MDecl, w, r: Line | oneVoicePerLine[S] and wrong[S, w, r] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check flagGatesSurvival { no Typed implies no Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run flagGatesSurvival_premise { some Typed and some Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check flagGatesSurvival { no Typed implies no Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run flagGatesSurvival_premise { some Typed and some Survived } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 
-check survivalRestsOnFootprints { all l: Survived, w: l.above - Elided | some backing[said[l], l] implies some d: Disturbs & l.speech | matches[d.verb, d.sub, w] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
-run survivalRestsOnFootprints_premise { some l: Survived | some backing[said[l], l] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 8 Claim
+check survivalRestsOnFootprints { all l: Survived, w: l.above - Elided | some backing[said[l], l] implies some d: Disturbs & l.speech | matches[d.verb, d.sub, w] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
+run survivalRestsOnFootprints_premise { some l: Survived | some backing[said[l], l] } for 5 but 4 Int, 4 seq, 3 Line, 6 Shword, 6 Key, 8 Claim
 ```
 
-The first four are the product laws: given true speech the sparing question never lies and no elided line needed to run; more speech never weakens an answer; a stranger's speech never weakens one either. Attribution by support is expected to hold. Attribution by removal is expected to fail on the free universe, with and without one voice per line: a false footprint that leaves a key out and a false separation of that key from the backing each cover the same collision on their own, so removing either leaves the answer standing and neither is named. Redundant speech is not the cause; two independent falsehoods masking each other is, and one voice per line does not exclude it. The one-voice premise stays in the corpus checks because it is what makes a book's attribution readable, not because it rescues the law.
+The first four are the product laws: given true speech the sparing question never lies and no elided line needed to run; more speech never weakens an answer, so the larger set's answer is the smaller set's or one it is weaker than; a stranger's speech never weakens one either. Attribution by support is expected to hold. Attribution by removal is expected to fail on the free universe, with and without one voice per line: a false footprint that leaves a key out and a false separation of that key from the backing each cover the same collision on their own, so removing either leaves the answer standing and neither is named. Redundant speech is not the cause; two independent falsehoods masking each other is, and one voice per line does not exclude it. The one-voice premise stays in the corpus checks because it is what makes a book's attribution readable, not because it rescues the law.
 
 ## § 6 Who may say what
 
@@ -150,7 +153,11 @@ The first four are the product laws: given true speech the sparing question neve
 
 ```alloy
 check oneDescriberPerVerb { all disj a, b: Vouches | a.verb != b.verb }
-check describerSpeaksAlone { all d: Disturbs + Reads + Withholds | some v: Vouches | v.verb = d.verb and v.speaker = d.speaker }
+check describerSpeaksAlone {
+   all d: Disturbs | some v: Vouches | v.verb = d.verb and v.speaker = d.speaker
+   all d: Reads | some v: Vouches | v.verb = d.verb and v.speaker = d.speaker
+   all d: Withholds | some v: Vouches | v.verb = d.verb and v.speaker = d.speaker
+}
 check oneFootprintPerShape { all disj d, e: Disturbs | d.verb != e.verb or d.sub != e.sub }
 check oneBackingPerShape { all disj d, e: Reads | d.verb != e.verb or d.sub != e.sub }
 ```
