@@ -154,8 +154,9 @@ Each entry: how it looks, why it happens, how you catch it.
 - **A check is green with Prevent Overflows on.** Instances where any integer overflows are
   discarded, so `all f: File | f.size > 10` at bitwidth 4 has no counterexample. Catch: leave the
   option off and bound sizes in a fact.
-- **A recursive function agrees with you up to depth three and then returns nothing.** Recursion
-  is unrolled to an option-set depth and returns `none` past it. Catch: do not recurse; memoize
+- **A recursive function agrees with you up to depth three and then returns nothing.** With the
+  recursion-depth option on (off by default, when recursion is refused loudly), a recursive
+  function is unrolled to that depth and returns `none` past it. Catch: do not recurse; memoize
   into a field with a fact.
 - **A temporal assertion is green trivially.** The quantifier sits outside `always` over a
   mutable set that is empty at time zero, or a past operator sits at top level where there is no
@@ -170,8 +171,9 @@ Each entry: how it looks, why it happens, how you catch it.
   every argument shape, including degenerate ones (a ring of one node). Validate liveness with
   runs before believing checks.
 - **A higher-order quantifier compiles and then errors, or a `some x: set A` in a check.**
-  Only an outermost existential in a `run`, or an outermost universal in a `check`, can be
-  Skolemized. Catch: rewrite with an explicit subset signature or accept the error.
+  An existential over a set or relation solves in a `run`, and a universal in a `check`, when
+  every quantifier above it is of the same kind; under a quantifier of the other kind it is
+  refused. Catch: rewrite with an explicit subset signature or accept the error.
 
 ## Reading a red, and reading "no instance"
 
@@ -214,9 +216,9 @@ until it goes unsat.
   and `all` with several variables.
 - `a.b[c]` is `(a.b)[c]`. `implies` and `;` associate right; `else` binds the nearest `implies`.
 - `always`, `eventually`, `after`, `historically`, `once`, `before` bind tighter than `and`, `or`,
-  `implies`: `always (A or B)` needs the parentheses. Same for a macro body: `always (eventually
-  (ev))`.
-- Prime distributes: `(s.m)'` is `s.(m')`. A frame macro must be `x = (x)'`, never `x = x'`.
+  `implies`: `always (A or B)` needs the parentheses.
+- Prime distributes: `(s.m)'` is `s.(m')`. Write the frame macro `x = (x)'` as the book does; the
+  pinned jar substitutes a macro's argument already parsed, so the bare form tested equivalent.
 - `init; always next` leaves the first transition unconstrained: `;` is `and after`, so the
   `always` starts at state one. Write `init and always next`.
 - `F until G` also asserts that `G` eventually holds; the form that does not is `G releases F`.
@@ -258,8 +260,9 @@ until it goes unsat.
 - A timeout is a result about the encoding or the scope, not a reason to wait longer. Look for
   closures taken per pair, higher-arity fields, and integers; lower the scope on that command only.
 - Bounded temporal checking defaults to ten steps and returns the shortest counterexample;
-  `for 1.. steps` is unbounded and needs an external complete model checker. Check bounded first,
-  then unbounded only when bounded finds nothing.
+  `for 1.. steps` is unbounded and needs an external complete model checker, which the pinned jar
+  does not ship, so it errors here. Check bounded first, then unbounded only when bounded finds
+  nothing and a checker exists.
 - Inductive invariant checks run at one and two steps and are two orders faster than trace
   checks, at the price of refactoring `init` and `next` into predicates.
 - SAT4J is the portable default and rarely the fastest; iterating instances needs an incremental
@@ -321,7 +324,8 @@ The idiom is a transition system spelled in temporal logic; every part is a plai
   stutter`, which hides concrete values when events are non-deterministic.
 - Event depiction: an `enum Event` and one derived relation per event, `fun upload_happens:
   Event -> File { { e: Upload, f: File | upload[f] } }`, lets `always some events` be the
-  transitions fact and `always lone events` a check, at no solver cost.
+  transitions fact and `always lone events` a check that finds steps where two events coincide
+  (the book's own finds one and marks it `expect 1`), at no solver cost.
 - Kill tests: for each law, delete one unit it rests on and watch it go red; a law nothing kills
   is decoration or restatement. Nothing in the tool catches a check that restates its own
   definition; only this habit does.
@@ -361,6 +365,8 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
 - Alloy Markdown: the Analyzer reads `.md` files whose first lines are a YAML header (`---`, then
   fields, then `---`) followed by fenced `alloy` blocks; a file without the header is not read.
 - Modules resolve by file name relative to the main file's directory, then the library directory.
+  On Windows the pinned jar refuses to parse `util/natural` (an alias clash inside the library
+  file); run such a model under WSL.
 - Higher-order quantification is accepted by the grammar and solved only where Skolemization
   applies; anything else is an error, not a slow run.
 - Rare shapes worth copying (hand-written order without `util/ordering`, generator and uniqueness
