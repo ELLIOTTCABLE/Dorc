@@ -125,3 +125,56 @@ commands had not finished translating at 300s.
 - `~SUSPECT` a 300s default cap makes a full strawman run ~30 minutes, dominated by five book
   timeouts; the cap is per command, never per batch.
 - `-GUESS` memory was not gated; no child exceeded the default JVM heap in these runs.
+
+## § 7-strawman-3
+
+`30Ya-strawman-3/build/outcomes-past-a-wall/`, one flat directory; `open` resolved with no
+overlay, as § 3 predicts (`+SURE`). Invocation from that directory: `mise run alloy -- shared.als
+laws.als corpus.als book_*.als` (sat4j, 300s cap; up to three commands ran concurrently on 32
+logical cores, so wall-clock is slightly inflated). No command timed out, so no 900s retry and no
+CNF size to record; the slowest command took 11.2s.
+
+| module | reds (everything else green as expected) |
+|---|---|
+| shared | none (`bookScope` sat, 1.5s) |
+| laws (10 checks, 10 premises, all 1.7–7.8s) | `attributionByRemovalHonest`, `…WithOneVoice`: counterexample (expected); `monotoneInSpeech`, `strangerSafe`, `survivalRestsOnFootprints`: **counterexample** (unexpected). Every premise sat. |
+| corpus (4 checks, ~2.2s) | none |
+| 9 books (57 checks, 9 runs, 3.8–11.2s each) | `line_7` of `book_stale_index_survives_on_footprints` and of `book_false_footprint_under_executes`: **counterexample**. Every run sat. |
+
+Where Alloy fought:
+
+1. **Ambiguous field over a union** — mechanical. `corpus.als` `describerSpeaksAlone` quantified
+   `all d: Disturbs + Reads + Withholds | … d.verb`: `This name is ambiguous due to multiple
+   matches: field … Disturbs <: verb / Reads <: verb / Withholds <: verb`. Split into three
+   quantifiers, same meaning (`dcd3d037`). FINDINGS' `fight-field-names-clash-on-reverse-join`
+   guarded reverse joins only; a forward join through a union hits the same ambiguity.
+2. **`set Claim` at a `set MDecl` parameter** — no fight. A scratch module (not committed) ran
+   `answer[l.speech, w, l]` and `by[Line]` (a set at an `l: Line` parameter): both typecheck and
+   solve. `~SUSPECT` Alloy does not constrain an argument to its declared parameter bound, so
+   `l.speech` would also carry any bare `Claim` atom; `said[l]` intersects with `MDecl` and
+   therefore does something, and `by[Line]` binds the whole set as `l`, not a per-line union.
+   Neither was compared for equivalence.
+3. **`exactly 0 Line`** — no fight; `corpus.als` parses and runs with it.
+4. **`monotoneInSpeech` and `strangerSafe` counterexamples** — design. Both instances have writer
+   = reader = one line and a smaller speech set with no `Reads` (so `backing` is every key and the
+   answer UNKNOWN) against a larger one containing a `Reads` whose `at` and `cells` are empty (so
+   `backing` is empty and the answer vacuously DISJOINT). `monotoneInSpeech`: `S = {Withholds}`,
+   `S2 = S + {Withholds, Reads}`. `strangerSafe`: `S = {}`, `d` = a tessa `Reads`. The law demands
+   `answer[S] in answer[S2].*weaker`; `DISJOINT.*weaker = {DISJOINT}` under the shared `weaker`
+   fact, so UNKNOWN for the smaller set fails it. `+SURE` of the instance; `~SUSPECT` the direction
+   of `.*weaker` in the law reads opposite to the prose ("more speech never weakens an answer"):
+   under the law as written, the smaller set answering DISJOINT where the larger answers UNKNOWN
+   passes.
+5. **`survivalRestsOnFootprints` counterexample** — design. The survived line's speech is a single
+   false `Separate` whose `a` and `b` are the same key; with no `Disturbs` or `Reads` in force,
+   footprint and backing are that one key, the self-pair is "separated", the flag is typed, and the
+   line elides past a wall with no footprint in its speech. The check has no `allTrue` premise and
+   nothing forbids `a = b`.
+6. **`line_7` of the two stale-index books** — design, `fight-adversary-forces-key-existence`
+   again. Both instances contain no `Key` whose word is `ufw_rules`, so ufw's backing
+   (`cells = ufw_rules`) is empty, the hork wall's everything-footprint is vacuously separated from
+   it, and the ufw line elides (and survives) instead of guarding. Neither book states `some
+   w.ufw_rules`. `book_stale_index_flag_not_typed` does not fail the same way because its flag is
+   untyped.
+7. **Scratch-module placement** — mechanical, runner-side. Probing a question against the build
+   means a root module beside it; every such module stayed in the scratch directory.
