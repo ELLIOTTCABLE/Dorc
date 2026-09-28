@@ -100,6 +100,29 @@ reviewer reads the engine's definitions for a world relation by eye.
 > It never decodes an mKey and never holds an mReferent.
 > The engine never holds an mState, and no mKey names one.
 
+### § 0.2-a-world-exists
+
+The consistency probes of `plans/30Z` § 2.4: a facts-only contradiction makes every check
+green, so these runs must stay satisfiable for the life of the document. The second asks for the
+strongest ordinary world, two mKeys scoped in one mParent-Store with a known chain each.
+
+```alloy
+run bookScope {} for 6 but 4 Int
+
+run world_exists {
+   some k: mKey | knownChain[k] and some k.reaches
+} for 6 but 4 Int expect 1
+
+run chains_meet_in_a_store {
+   some disj a, b: mKey | knownChain[a] and knownChain[b] and a.parent = b.parent and a.parent in mKey
+} for 6 but 4 Int expect 1
+```
+
+<!-- prose-translation -->
+> A book's ceiling in this document is six atoms of every kind the specification owns, and integers of four bits.
+> Some mKey has a known mFullyQualifiedKey and reaches an mReferent.
+> Two mKeys can share one mParent-Store, each with a known mFullyQualifiedKey.
+
 ## § 1-the-model-objects
 
 ### § 1.1-referent-state-and-value
@@ -352,38 +375,61 @@ two statements. The region test (2.9-the-traversal-and-the-region-test) consumes
 
 ### § 1.6-parent-one-per-key
 
-Every mKey has exactly one mParent: the mKey it was resolved inside. An mKey may carry further
-routes, one per other lookup that reached it (2.10-places-the-upward-lookup). None of them is
-its mParent. What the mParent edge carries follows the mScheme.
+What the mParent edge carries follows the mScheme (2.4-parent-as-a-relation): routing through a
+secondary mScheme, identity through the primary one, and the walk of
+3.2-compare-one-chokepoint-four-answers reads the identity edge. The declarations that fix the
+mParent's mSort per shape are 2.2-primary-of-and-identified-in's; that a shape is a function of
+the mKey's own bytes is 1.4-key-and-its-two-views's. The supplying seats, three of them, and
+what a disagreement between them costs, are 1.6.1-the-three-seats. Nothing is a mRoot by
+default, and cloned identifiers are the standing witness.
 
-- Through a secondary mScheme, the mParent is the mParent-Catalog: the thing the mKey was looked
-  up in. The edge carries routing: which instance, and invalidation
-  (3.3-invalidation-three-mutator-species). It never carries identity.
-- Through the primary mScheme, the mParent is the mParent-Store: the mKey relative to which
-  alone the mKey-Primary means anything. The edge carries identity.
-  It is what `compare()` walks (3.2-compare-one-chokepoint-four-answers). At the primary
-  mScheme, mParent-Catalog and mParent-Store are one mKey.
+```alloy
+sig SuppliesParent extends Statement { forKey: one mKey, instance: one mKey }
 
-Through the primary mScheme, that mScheme's owner declares the mParent's mSort
-(`:identified-in`) and the warrants (1.5-token-and-the-two-warrants, and `:root`,
-2.2-primary-of-and-identified-in). The declaration is per matched shape of the mKey's mValue, a
-function of the mKey's own bytes. So an emitter (a secondary mScheme, possibly a stranger's) can
-be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat
-that supplied it.
+fun supplies[k: mKey]: set mKey { (SuppliesParent & InForce & forKey.k).instance }
 
-The mParent instance is an mValue supplied by exactly one of three seats. Each seat names it as
-an mKey of one of the mParent's mSort's mSchemes:
+pred supplyFits[k: mKey] {
+   one supplies[k]
+   primaryOf[supplies[k].scheme] = identifiedIn[k.shape]
+}
 
-- the bind that minted the mKey (1.4-key-and-its-two-views)
-- the lookup that yielded it (2.1-yields-into-another-scheme)
-- the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in)
+fact {
+   all k: mKey {
+      no k.shape implies no k.parent
+      isRoot[k.shape] implies k.parent = rootShape.(k.shape)
+      (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape])
+         implies (one k.parent and k.parent in mRoute)
+      some identifiedIn[k.shape]
+         implies k.parent = (supplyFits[k] implies supplies[k] else none)
+   }
+}
 
-Two seats that disagree are a contradiction. It is refused and attributed to both.
+pred true_SuppliesParent[s: SuppliesParent] {
+   s.forKey.reaches in s.instance.reaches.holds
+}
+```
 
-A shape with no `:identified-in` is scoped in the mRoute
-(1.10-vantage-route-placeholder-witness). A mRoot is a shape declared `:root`. Its mKeys
-need no mParent, which claims they are globally comparable. Nothing is a mRoot by default.
-Cloned identifiers are the standing witness.
+<!-- prose-translation -->
+> Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
+> An mKey matching no shape has no mParent.
+> A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
+> A shape with no `:identified-in` is scoped in the mRoute (1.10-vantage-route-placeholder-witness).
+> For a shape with `:identified-in`, the mParent instance is what a seat supplied, named as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
+> Where no seat supplied one, where two seats disagree, or where the supplied mKey is not of that mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
+> A supplied mParent instance is true when the mReferent the mKey reaches is held by the mReferent the instance reaches.
+
+#### § 1.6.1-the-three-seats
+
+The seats are speech, and each seat's speaker is a different party. Which seat spoke, the
+refusal of a disagreement, and its attribution are 2.1-yields-into-another-scheme's and
+3.5-committee-law-and-attribution's; the fences above read only whether exactly one fitting
+instance was supplied.
+
+<!-- normative -->
+> The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in).
+> Two seats that disagree are a contradiction: it is refused and attributed to both.
+> An emitter (a secondary mScheme, possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat that supplied it.
+> An mKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup); none of them is its mParent.
 
 > Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login
 > name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner
@@ -419,22 +465,56 @@ an explicit act. Any write invalidates a mResolution whose read set is open
 
 ### § 1.8-fully-qualified-key-topic-and-derivation
 
-A mFullyQualifiedKey is the recursive identity of an mKey: its mKey-Primary scoped in its
-mParent, whose identity is itself a mFullyQualifiedKey through the mParent's own primary
-mScheme. The recursion terminates at a mRoot, at the mRoute
-(1.10-vantage-route-placeholder-witness), or at an unknown link. A mFullyQualifiedKey is one
-mDerivation of identity.
+The chain is over mKey-Primaries: `identity()` (3.1-identity-of-a-key) resolves a natural mKey
+to the primary one first. The world atoms that end a chain are declared here; the mRoute is the
+address of 1.10-vantage-route-placeholder-witness, and a mRoot shape's mWorld is the store of
+2.2-primary-of-and-identified-in. A level's height is what the walk of
+3.2-compare-one-chokepoint-four-answers aligns two chains by.
 
-An mWorld is a terminus of a mFullyQualifiedKey. Each mRoot shape is one mWorld. Each mRoute is
-one mWorld. No mFullyQualifiedKey and no finished definition speaks across mWorlds. A
-mCorrespondence may speak across mWorlds (2.7-corresponds-across-a-transition,
-3.2-compare-one-chokepoint-four-answers).
+```alloy
+abstract sig mWorld extends mLevel {}
 
-A mTopic is what a claim is about: the mKey read, plus the observer instance when that mKey's
-mSort is observer-dependent (2.8-observer-dependence-and-independence). A mTopic may carry
-several mDerivations with different generators: its mFullyQualifiedKey, a provider-supplied
-identifier, or a mCorrespondence from a transition owner (2.7-corresponds-across-a-transition).
-mDerivations combine by coherence (3.2-compare-one-chokepoint-four-answers), never by priority.
+sig mRoute extends mWorld {}
+
+sig mRootWorld extends mWorld { rootShape: one mShape }
+
+fact { all w: mRootWorld | isRoot[w.rootShape] }
+
+fact { all s: mShape | isRoot[s] implies one rootShape.s }
+
+fact { no l: mLevel | l in l.^parent }
+
+fun fullyQualifiedKey[k: mKey]: set mLevel { k.*parent }
+
+fun terminus[k: mKey]: lone mLevel { {l: k.*parent | no l.parent} }
+
+pred knownChain[k: mKey] { terminus[k] in mWorld }
+
+fun worldOf[k: mKey]: lone mWorld { terminus[k] & mWorld }
+
+fun height[l: mLevel]: Int { #(l.^parent) }
+```
+
+<!-- prose-translation -->
+> A mFullyQualifiedKey is the recursive identity of an mKey: the mKey scoped in its mParent, whose identity is itself a mFullyQualifiedKey, up through the mParents.
+> The recursion terminates: no level is above itself.
+> It terminates at a mRoot, at the mRoute (1.10-vantage-route-placeholder-witness), or at an unknown link, an mKey with no mParent.
+> An mWorld is a terminus of a mFullyQualifiedKey: each mRoot shape is one mWorld, and each mRoute is one mWorld.
+> A mFullyQualifiedKey is known when it terminates at an mWorld.
+> The height of a level is the number of levels above it.
+
+#### § 1.8.1-derivations-and-the-topic
+
+A mFullyQualifiedKey is one mDerivation of identity; the others, and what a claim is about,
+are 2.7-corresponds-across-a-transition's and 2.8-observer-dependence-and-independence's, and
+their combination is 3.2-compare-one-chokepoint-four-answers's.
+
+<!-- normative -->
+> No mFullyQualifiedKey and no finished definition speaks across mWorlds.
+> A mCorrespondence may speak across mWorlds (2.7-corresponds-across-a-transition, 3.2-compare-one-chokepoint-four-answers).
+> A mTopic is what a claim is about: the mKey read, plus the observer instance when that mKey's mSort is observer-dependent (2.8-observer-dependence-and-independence).
+> A mTopic may carry several mDerivations with different generators: its mFullyQualifiedKey, a provider-supplied identifier, or a mCorrespondence from a transition owner (2.7-corresponds-across-a-transition).
+> mDerivations combine by coherence (3.2-compare-one-chokepoint-four-answers), never by priority.
 
 ### § 1.9-cell-a-singleton-sort
 
@@ -559,40 +639,59 @@ against lazy borrowing.
 
 > ER's identifying relationship. Identifying is not containing.
 
-mScheme P is `:primary-of` mSort K, at most once per mSort. A second name is a second mScheme.
-P's mKeys mean something only relative to K's mParent-Store. P's `resolve()` is the identity on
-the mKey. An mKey of P names the mReferent that K's mParent-Store holds under it, or none. For a
-`:root` shape, the world is the store. The mKey is a level of a mFullyQualifiedKey in both cases
-(1.8-fully-qualified-key-topic-and-derivation). A store that generates its mKeys at creation
-holds an mReferent under a generated mKey while that mReferent exists. A store that admits mKeys
-as names may hold none under an mKey a book names.
+A second name is a second mScheme. P's mKeys mean something only relative to K's mParent-Store;
+`:primary-of` itself is 1.3-scheme-a-way-of-writing's, P's `resolve()` being the identity is
+3.1-identity-of-a-key's, "an mKey reaches one mReferent or none" is 1.4-key-and-its-two-views's,
+and the two warrants are 1.5-token-and-the-two-warrants's. A store that generates its mKeys at
+creation holds an mReferent under a generated mKey while that mReferent exists; a store that
+admits mKeys as names may hold none under an mKey a book names. The mParent's type varies per
+shape, so the child mSort's owner never learns the mParent's types: the mParent mSort's primary
+mScheme classifies, one level up, and each owner speaks one level. A mToken duplicable across
+instances of its would-be mParent must be scoped in something smaller, or left un-warranted,
+since `:root` is false of it. That a grade governs every consumer of the answer it grades,
+corroboration and contradiction included, is 1.5-token-and-the-two-warrants's.
 
-P's owner declares, per matched shape of the mKey's mValue:
+Arity: at most one mScheme per mSort. Declared by: the mSort's owner, on the primary mScheme.
+Default: none; the floor of 1.3-scheme-a-way-of-writing supplies an unwarranted identity
+primary mScheme. Consumer: identity (3.1-identity-of-a-key). Danger:
+`:guarantees-unique-referent`, `:guarantees-unique-name`, and `:root`, per matched shape.
 
-- `:identified-in` mSort M: the mParent's mSort for mKeys of that shape.
-- `:guarantees-unique-referent` and `:guarantees-unique-name` (1.5-token-and-the-two-warrants),
-  absent by default. They govern what mToken equality and inequality license at this level of a
-  mFullyQualifiedKey.
-- `:root`, absent by default. The shape declares no mParent and thereby claims global
-  comparability. It is equivalent to `:guarantees-unique-referent` over the whole world. A
-  mToken duplicable across instances of its would-be mParent must be scoped in something
-  smaller, or left un-warranted.
+```alloy
+sig DeclaresIdentifiedIn extends Statement { onShape: one mShape, inSort: one mSort }
 
-The mParent's type varies per shape. So the child mSort's owner never learns the mParent's
-types. The mParent mSort's primary mScheme classifies, one level up. Each owner speaks one
-level. An mValue matching no declared shape reads unknown from this level.
+sig DeclaresRoot extends Statement { rootedShape: one mShape }
 
-A grade governs every consumer of the answer it grades, corroboration and contradiction
-included. A lookup without `:guarantees-unique-name` cannot contradict anything by returning two
-different mTokens.
+fact { all d: DeclaresIdentifiedIn | d.speaker = d.onShape.ofScheme.schemeOwner }
 
-- Arity: at most one mScheme per mSort.
-- Declared by: the mSort's owner, on the primary mScheme.
-- Default: none. The floor of 1.3-scheme-a-way-of-writing supplies an unwarranted identity
-  primary mScheme.
-- Consumer: identity (3.1-identity-of-a-key).
-- Danger: `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:root`, per matched
-  shape.
+fact { all d: DeclaresRoot | d.speaker = d.rootedShape.ofScheme.schemeOwner }
+
+fact { all s: mScheme, k: mSort | primaryOf[s] = k implies s.schemeOwner = k.sortOwner }
+
+fun identifiedIn[s: mShape]: lone mSort { (DeclaresIdentifiedIn & InForce & onShape.s).inSort }
+
+fact { all s: mShape | lone identifiedIn[s] }
+
+pred isRoot[s: mShape] { some DeclaresRoot & InForce & rootedShape.s }
+
+fact { all s: mShape | isRoot[s] implies no identifiedIn[s] }
+
+pred true_DeclaresIdentifiedIn[d: DeclaresIdentifiedIn] {
+   all k: keysOfShape[d.onShape] | some k.reaches implies
+      some r: keysOfSort[d.inSort].reaches | k.reaches in r.holds
+}
+
+pred true_DeclaresRoot[d: DeclaresRoot] {
+   all a, b: keysOfShape[d.rootedShape] | a.value = b.value implies a.reaches = b.reaches
+}
+```
+
+<!-- prose-translation -->
+> P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M: the mParent's mSort for mKeys of that shape; one M per shape.
+> The primary mScheme's owner is the mSort's owner.
+> `:identified-in` M is true when every mKey of the shape that reaches an mReferent reaches one held by an mReferent that some mKey of M reaches.
+> P's owner declares `:root` per matched shape, absent by default: the shape declares no mParent, so it carries no `:identified-in`, and thereby claims global comparability.
+> `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent.
+> For a `:root` shape, the world is the store: the shape's mWorld (1.8-fully-qualified-key-topic-and-derivation).
 
 > `:root` fails for cloned identifiers. The mParent's type varies per shape: an ext4
 > filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
@@ -623,16 +722,24 @@ both legs, so an aliasing store blocks separation by its own silence.
 
 ### § 2.4-parent-as-a-relation
 
-`:parent` is one per mKey (1.6-parent-one-per-key): never plural, never a species of its own.
-Its mSort is the primary mScheme's declaration for the matched shape. Its instance is whichever
-seat supplied it. The far end is an ordinary mKey with an identity of its own, never a string
-the engine composes. A mVantage supplies instances and is never an mParent.
+Its mSort is the primary mScheme's declaration for the matched shape, and its instance is
+whichever seat supplied it (1.6-parent-one-per-key). A mVantage supplies instances and is never
+an mParent (1.10-vantage-route-placeholder-witness). Arity: one per mKey. Declared by: derived
+from the mScheme's declarations and the supplying seat. Default: not applicable. Consumer:
+routing, through a secondary mScheme; identity, through the primary mScheme. Danger: none of its
+own.
 
-- Arity: one per mKey.
-- Declared by: derived from the mScheme's declarations and the supplying seat.
-- Default: not applicable.
-- Consumer: routing, through a secondary mScheme. Identity, through the primary mScheme.
-- Danger: none of its own.
+```alloy
+fun parentStore[k: mKey]: lone mLevel { isPrimaryKey[k] implies k.parent else none }
+
+fun parentCatalog[k: mKey]: lone mLevel { isNaturalKey[k] implies k.parent else none }
+```
+
+<!-- prose-translation -->
+> `:parent` is one per mKey, never plural, never a species of its own.
+> Through the primary mScheme it is the mParent-Store, which carries identity; through a secondary mScheme it is the mParent-Catalog, which carries routing and never identity.
+> At the primary mScheme, mParent-Catalog and mParent-Store are one mKey.
+> The far end is an ordinary mKey with an identity of its own, or an mWorld, never a string the engine composes.
 
 ### § 2.5-may-read-the-readset
 
@@ -904,19 +1011,32 @@ parts' may-read sets.
 
 ### § 3.1-identity-of-a-key
 
-`identity(k)`, for k an mKey of mScheme S:
+`identity(k)` runs the lookups that take a natural mKey to a primary one
+(2.1-yields-into-another-scheme) and then reads the chain of
+1.8-fully-qualified-key-topic-and-derivation. Each level carries the warrants declared for the
+shape its mKey matched (1.5-token-and-the-two-warrants).
 
-1. Run S's `resolve()` from k's mVantage, and each yielded mScheme's `resolve()` in turn, until
-   an mKey of a primary mScheme is in hand. Each emission supplies the mParent instance for the
-   mKey it yields.
-2. The result is that mKey-Primary scoped in `identity(mParent)`, recursively through each
-   level's primary mScheme, until a mRoot, the mRoute, or an unknown link.
+```alloy
+fun identity[k: mKey]: lone mKey { isPrimaryKey[k] implies k else none }
+```
 
-Each level carries the warrants declared for the shape its mKey matched. A mCompositeSort's
-identity is its owner's function of its parts' identities. A cell's identity is its mParent's
-plus its mSort (1.9-cell-a-singleton-sort). An mKey of an observer-dependent mSort carries the
-O-instance in its mTopic. The mVantage is consulted only to know where to run `resolve()` calls
-and which ambient mParents to bind.
+<!-- prose-translation -->
+> The identity of an mKey of a primary mScheme is that mKey: the primary mScheme's `resolve()` is the identity on the mKey (2.2-primary-of-and-identified-in).
+> The result is that mKey-Primary scoped in the identity of its mParent, recursively through each level's primary mScheme, until a mRoot, the mRoute, or an unknown link: its mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation).
+
+#### § 3.1.1-what-identity-reads-beyond-the-chain
+
+The lookups that reach a primary mKey are 2.1-yields-into-another-scheme's; composites, cells,
+observers, and the mVantage are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's,
+2.8-observer-dependence-and-independence's, and 1.10-vantage-route-placeholder-witness's.
+
+<!-- normative -->
+> For k an mKey of mScheme S, run S's `resolve()` from k's mVantage, and each yielded mScheme's `resolve()` in turn, until an mKey of a primary mScheme is in hand.
+> Each emission supplies the mParent instance for the mKey it yields.
+> A mCompositeSort's identity is its owner's function of its parts' identities.
+> A cell's identity is its mParent's plus its mSort (1.9-cell-a-singleton-sort).
+> An mKey of an observer-dependent mSort carries the O-instance in its mTopic.
+> The mVantage is consulted only to know where to run `resolve()` calls and which ambient mParents to bind.
 
 ### § 3.2-compare-one-chokepoint-four-answers
 
