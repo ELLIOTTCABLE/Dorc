@@ -176,3 +176,18 @@ Where Alloy fought:
    it, and the ufw line elides (and survives) instead of guarding. Neither book states `some
    w.ufw_rules`. `book_stale_index_flag_not_typed` does not fail the same way because its flag is
    untyped.
+
+Second run, after the conductor's rulings on items 4–6 (inverted `.*weaker` direction in the two
+laws, irreflexive `Separate`, named cells are keys, `6 Key` on the laws). Same invocation and
+terms; no `.als` edit was needed and no command timed out (all under 3s for laws and corpus).
+All 92 commands: 71 no-counterexample, 20 sat, 1 counterexample.
+
+7. **Every book is green**, including both `line_7`s, and every book run is sat. `monotoneInSpeech`,
+   `strangerSafe`, `survivalRestsOnFootprints` are no-counterexample; every law premise is sat
+   under `6 Key`.
+8. **`attributionByRemovalHonestWithOneVoice` is no-counterexample**, where it was expected red
+   (and was red in the first run); its premise is sat. `attributionByRemovalHonest` is still red.
+   A scratch module (not committed) ran the same check at `…, 6 Key, 10 Claim` and at `6 but 4
+   Int, 4 seq, 3 Line, 8 Shword, 8 Key, 12 Claim`: no-counterexample at both. `~SUSPECT` one of the
+   rulings (irreflexive `Separate` or cells-are-keys) removed the masking pair under the
+   one-voice premise; not isolated.
