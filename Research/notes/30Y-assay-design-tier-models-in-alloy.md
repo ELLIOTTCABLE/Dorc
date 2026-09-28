@@ -123,8 +123,10 @@ The two comment forms, precisely:
   never mentions `this`** is a fact about the world, and that line generates no atom; a
   **formula on a line that mentions `this`** is that line's *outcome*, the statement the
   adversary attacks (§ 2.4). World facts never need `this`, since the world does not know about
-  lines and every name is global; `this` appears in exactly two places, a claim about this line
-  and the decision about this line. Free names in a `#=` are atoms assay knows: the map's names,
+  lines and every name is global; `this` appears in exactly three places, a claim about this
+  line, a world record about this line (what it wrote, which the truth stratum keys by line),
+  and the decision about this line. A declaration binds `this` whether it is a claim or a world
+  object. Free names in a `#=` are atoms assay knows: the map's names,
   claim atoms, and names the `#=` introduces, which assay mints. A trailing `for` clause on an
   outcome is its command's scope.
 
@@ -137,9 +139,15 @@ Assay owns exactly the sh-side structure, as one Alloy module every generated mo
 module assay
 sig Shword { class: set Class }
 sig Class {}
-sig Claim {}
-sig Line { before: set Line, speech: set Claim, cmd: one Shword, argv: seq Shword }
+abstract sig Claim {}
+sig Line { above: set Line, speech: set Claim, cmd: one Shword, argv: seq Shword }
 ```
+
+- Names: no harness field is an Alloy 6 reserved word (`before` is one, a past-time operator,
+  hence `above`), and no sig that opens the harness reuses a harness field name, since Alloy
+  refuses a join through a name two sigs share, forward over a union and reverse alike.
+  `Claim` is abstract so that no atom exists outside the claim base the shared tier declares;
+  otherwise the adversary mints bare claims in every speech set.
 
 - A `Shword` is one atom per distinct literal shell word, or per name a `#=` introduces.
 - A `Class` is an opaque category of strings [TYPED]: arbitrary, never parsed, never meaningful
@@ -182,7 +190,12 @@ One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN la
   that carries a scope clause.
 - `corpus.als` — opens `claims`; every spec-authored `check` written without a scope clause,
   run at exact bounds over the actual claims.
-- `books/<name>.als` — opens `claims`; one per book fence (§ 2.4).
+- `book_<name>.als` — opens `claims`; one per book fence (§ 2.4).
+- `assay.als` and `shared.als` — the harness and the tree-global module, written into the same
+  directory. Every module is a root Alloy runs on its own, and Alloy resolves every `open`,
+  from any module in the graph, against the root file's directory alone (an opened module
+  never resolves relative to itself); one flat directory per document, module name equal to
+  file name, is the layout that resolves without a models path.
 
 The species-versus-claims split is syntactic (a `one sig` whose ancestry reaches `Claim`); its
 purpose is the scope-minimum limitation of § 1.2. The scope-clause rule for laws versus corpus
@@ -196,7 +209,7 @@ A book fence compiles as follows.
 
 - Literals, classes, introduced names, and class memberships are `words.als`'s, shared by every
   book in the document; a book module declares none.
-- Each line whose `#=` holds an outcome is a `Line` atom with `cmd`, `argv`, and `before` (the
+- Each line whose `#=` holds an outcome is a `Line` atom with `cmd`, `argv`, and `above` (the
   lines above it). Every `#=` declaration is emitted at module level. Every `#=` world fact is
   emitted as a fact, verbatim.
 - **`mech-speech-is-per-line-data`** [ACKED] — each line's `speech` is the set of claims the
@@ -224,7 +237,9 @@ A book fence compiles as follows.
   large book's ceiling costs only that book's commands and never the small ones beside it. The
   ceiling caps one world, not a total across books; the headroom above what a fixture names is
   what the adversary builds counterexamples from, so the shared number is the common case plus
-  headroom, and the rare large book takes the escape.
+  headroom, and the rare large book takes the escape. Wherever a clause sets `Int`, assay also
+  sets `seq`: Alloy clamps a sequence's length to the largest integer the bitwidth admits, and
+  clamps it silently, so an unspelled `seq` bound is a hidden cap on `argv`, never an error.
 
 Assay derives no claim and recognises no verdict. What makes a line converged, how a resolution
 is derived, and what `Elided` means are all facts and functions in the shared module or the
@@ -254,7 +269,10 @@ Solver-free, and only what compilation needs:
 - **The lock** [ACKED, with the human's nack of a generated index in the `SLUGS.md` style]: one
   committed JSON file per spec beside it (STRAWMAN `<spec>.lock.json`), one row per command:
   module, name, kind, scope, result (`sat` · `unsat` · `counterexample` · `no-counterexample`
-  · `premise: absent`), and a hash of the command's text. `assay --check` recomputes and exits
+  · `timeout` · `premise: absent`), the wall-clock, the premise twin's result beside its
+  check, and a hash of the command's text. A timeout is a result, not a runner failure: the
+  row says whether translation finished and, where it did, how large the problem was, since
+  that is what decides between a ceiling too high and an encoding too costly. `assay --check` recomputes and exits
   nonzero on a mismatch in either direction; `assay --write` rewrites it, and the commit that
   carries it is the ceremony, as with `301`'s catalogue lock. Not merged with that lock in this
   experiment.
@@ -262,7 +280,7 @@ Solver-free, and only what compilation needs:
   to stdout. No prose, no suspicion, no ranking [TYPED]. A person or model who wants the
   counterexample opens the generated `.als` in the Analyzer or runs `alloy exec` on it.
 - **Exit codes** [CONDUCTOR]: `0` green and lock matches · `1` a red command or a lock mismatch
-  · `2` a lint refusal · `3` the runner failed (jar, JVM, timeout).
+  · `2` a lint refusal · `3` the runner failed (jar, JVM).
 
 ### § 2.8-two-examples
 
@@ -320,7 +338,7 @@ fact { class = a_path->slash_path + d_path->slash_path + … }
 ```
 
 ```alloy
-module books/siblings_across_filesystems
+module book_siblings_across_filesystems
 open claims
 
 fact { w.inode_x.scheme = Inode and w.inode_z.scheme = Inode }
@@ -329,8 +347,8 @@ fact { w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 and w.f
 
 one sig line_3, line_4 extends Line {}
 one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_4 }
-fact { line_3.cmd = chmod  line_3.argv = 0->g_minus_w + 1->a_path  no line_3.before }
-fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.before = line_3 }
+fact { line_3.cmd = chmod  line_3.argv = 0->g_minus_w + 1->a_path  no line_3.above }
+fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.above = line_3 }
 fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
 fact { line_4.speech = line_3.speech + carl__the_file_at_d_path_has_the_mode }
 
@@ -354,10 +372,16 @@ and a set of claims. The worked version of this, with all its books, is `notes/3
 
 Light on purpose; the builder has latitude on everything not marked.
 
-- **Runner.** A mise-managed JDK and a pinned Alloy 6.2 distribution jar fetched to a cache, never
-  vendored into the tree (SyncThing is live above the repo). Drive `exec` with preferences on the
-  command line, capture the XML per command, parse results and scopes; one process per command,
-  with the wall-clock and memory gating the Kani lane already uses. Windows and WSL alike.
+- **Runner.** A mise-managed JDK and the Alloy 6.2 distribution jar, pinned by version and
+  digest into mise's own store, never vendored into the tree (SyncThing is live above the repo).
+  The runner is one Java source file under `spike/verify/alloy/`, run from source by the pinned
+  JDK as `mise run alloy`: it parses each root module through Alloy's own `CompUtil`, runs each
+  command in a child JVM of its own under a wall-clock cap, and prints one JSON row per command
+  in the lock's shape (§ 2.7); a module living outside the root's directory is served at the
+  spot Alloy resolves `open` to, rather than copied. The jar's `exec` subcommand is not the
+  route: it writes a directory per source file and offers no per-command cap. The JDK is named
+  by its install path, since a machine-global one earlier on `PATH` wins over the pin. Windows
+  and WSL alike.
 - **Compiler.** Rust, as a subcommand of `crates/internal-tooling` (which already reads the
   corpus for `slugs` and `docids`); a sibling crate under `spike/verify/` if it outgrows that. A
   Markdown fence lexer; the syntax crate's lexer for map lines; `#=` lifted verbatim, sorted into
@@ -366,12 +390,14 @@ Light on purpose; the builder has latitude on everything not marked.
 - **Lock and report.** JSON in, JSON out; `--check` writes nothing. Gate placement: lints in the
   pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
   path-filtered the same way; larger scopes in an opt-in lane.
-- **First experiment** [ACKED: minimal harness first, then back to 311 to use it]: point assay at
-  the `notes/30Ya-strawman-2` document where it sits, as the tool's own fixture, and replace its expected
-  report with an observed one. The bites to expect are the experiment's first findings: the
-  subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech; the
-  ceilings the shared `bookScope` should carry; and how far the strawman's fixtures under-pin
-  their worlds, which the adversary will now say. The strawman is not promoted to the
+- **Fixtures** [ACKED: minimal harness first, then back to 311 to use it]: assay's own fixtures
+  are the two strawmen where they sit, `notes/30Ya-strawman-3` (the outcome algebra past a
+  wall; every command finishes in seconds at the shared ceiling of twelve) and
+  `notes/30Ya-strawman-2` (the identity model's first cut; its per-line checks reach millions
+  of clauses at the same ceiling, through the transitive closures in its separation predicate,
+  and are the timeout path's fixture). Assay's report for each replaces the hand-written
+  `report.json` beside it; the fight record and its division in the third strawman's
+  `FINDINGS.md` is what the generator is measured against. Neither strawman is promoted to the
   spec tier [TYPED nack]; turning 311 into a specification is separate, clean-context,
   product-focused frontier work.
 
