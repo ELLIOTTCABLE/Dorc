@@ -112,10 +112,17 @@ A spec document is Markdown with two fence kinds assay reads and nothing else it
 The two comment forms, precisely:
 
 - **`#}` binds the immediately preceding logical line and nothing else.** Its components are
-  shell-lexed and matched one-to-one with the line's words. A bare component *names* the literal
-  under it; a braced component `{flavour}` puts the literal under it in a *class*. Any
-  component may be either, the command word included. The literal is the join key: one literal
-  is one atom, so a word named on one line and classed on another is one atom carrying both.
+  shell-lexed and matched one-to-one with the line's words. A bare component that is an Alloy
+  identifier *names* the literal under it; a bare component that repeats the literal verbatim
+  leaves it named after itself; a braced component `{flavour}` puts the literal under it in a
+  *class* and likewise leaves it named after itself. A literal named after itself gets its
+  identifier from a deterministic, injective munge of its bytes into Alloy's identifier alphabet,
+  readable for common shell punctuation [TYPED 2026-09-28: a word defaults to itself; no
+  ceremony forces a name to be minted]. A bare component that is neither an identifier nor the
+  literal beneath it is a refusal. Any component may be either form, the command word included.
+  The literal is the join key: one literal is one atom, so a word named on one line and classed
+  on another is one atom carrying both, and a minted name colliding with an authored name for a
+  different literal is a refusal.
 - **`#=` is line-scoped Alloy, lifted verbatim** across consecutive `#=` lines, with `this`
   bound to the line's atom. What a `#=` statement *is* decides where it goes [ACKED 2026-09-27]:
   a **declaration** (`one sig …`) is a claim or a world object, emitted at module level, and if
@@ -281,8 +288,9 @@ spec, over the relations assay supplies.
 
 Solver-free, and only what compilation needs:
 
-- one literal carries at most one bare name across the tree, and one name covers at most one
-  literal (the join key of § 2.1);
+- one literal carries at most one name across the tree, and one name covers at most one literal,
+  minted names included (the join key of § 2.1); a bare map component is an identifier or the
+  literal beneath it, never a third thing;
 - every free name in a `#=` is an atom assay knows;
 - every `.` line resolves to a load file or a claim atom;
 - every generated module parses under Alloy (Alloy's own parser; assay reimplements none of it).
