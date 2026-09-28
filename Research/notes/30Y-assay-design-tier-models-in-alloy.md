@@ -193,15 +193,20 @@ One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN la
 
 - `species.als` — opens `assay` and `shared`; every `alloy` fence line that is not a claim atom.
 - `words.als` — opens `shared`; one atom per distinct literal on any map line in the document,
-  per braced class, and per name a `#=` introduces, with the class memberships the map lines
-  state and no others. Nothing else declares a literal: a claim may say `verb = chmod` because
-  some book spelled `chmod`, and one naming a word no book spells gets Alloy's own name error.
+  per braced class, and per name a `#=` line or a claim atom's body introduces, with the class
+  memberships the map lines state and no others. An introduced name is an identifier that no
+  declaration in the document, the shared halves, or the harness binds, that is not an Alloy
+  keyword, and that is not a quantifier's or `let`'s bound name; a cell a claim names
+  (`cells = pkg_index`) is the common case. Nothing else declares a literal. A misspelled
+  declared name therefore becomes a word and fails in Alloy as a type error; a misspelled
+  word becomes a second word, visible only in the report's word table.
 - `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom
   from an `alloy` fence, and one named set per load file, so a book's loads are set expressions.
 - `laws.als` — opens `species` only, so the claim universe is free; every spec-authored `check`
   that carries a scope clause, followed by the shared append half spliced verbatim (§ 2.2).
 - `book_corpus.als` — the corpus book: a generated book of one line, the null command `:`
-  (a real sh word nothing describes, so no claim matches it and no species fact fires), whose
+  (a real sh word nothing describes, so no claim matches it and no species fact fires; its
+  word is minted by assay under a name of assay's own, STRAWMAN `assay_colon`), whose
   speech is every claim atom the document declares. Every spec-authored `check` written without
   a scope clause is an outcome of that line, so it runs at exact bounds over the actual claims
   with all of them in force, through the same mechanism as any book (§ 2.4); truth-in-force is
@@ -286,10 +291,11 @@ Solver-free, and only what compilation needs:
 - **The lock** [ACKED, with the human's nack of a generated index in the `SLUGS.md` style]: one
   committed JSON file per spec beside it (STRAWMAN `<spec>.lock.json`), one row per command:
   module, name, kind, scope, result (`sat` · `unsat` · `counterexample` · `no-counterexample`
-  · `timeout` · `premise: absent`), the wall-clock, the premise twin's result beside its
-  check, and a hash of the command's text. A timeout is a result, not a runner failure: the
-  row says whether translation finished and, where it did, how large the problem was, since
-  that is what decides between a ceiling too high and an encoding too costly. `assay --check` recomputes and exits
+  · `timeout` · `premise: absent`), the premise twin's result beside its check, and a hash of
+  the command's text. A timeout is a result, not a runner failure. Wall-clock, and on a
+  timeout whether translation finished and how large the problem was (what decides between a
+  ceiling too high and an encoding too costly), are report columns beside the row and never
+  enter the lock, which is compared in both directions. `assay --check` recomputes and exits
   nonzero on a mismatch in either direction; `assay --write` rewrites it, and the commit that
   carries it is the ceremony, as with `301`'s catalogue lock. Not merged with that lock in this
   experiment.
@@ -398,12 +404,24 @@ Light on purpose; the builder has latitude on everything not marked.
   spot Alloy resolves `open` to, rather than copied. The jar's `exec` subcommand is not the
   route: it writes a directory per source file and offers no per-command cap. The JDK is named
   by its install path, since a machine-global one earlier on `PATH` wins over the pin. Windows
-  and WSL alike.
+  and WSL alike. The runner is bounded on every axis a solver can exhaust [TYPED 2026-09-28: a
+  command that never returns puts an LLM to sleep for hours]: a wall-clock cap per command, a
+  CPU-time cap per command, a heap cap on the child JVM, a processor count the child may use,
+  and a cap on the whole batch after which remaining commands are reported as not run; every
+  cap is a flag with a default. The task rides `mise run preflight alloy` for disk and RAM, and
+  runs under the repository's global heavy-work lock (`internal-tooling exclusive`), a file in
+  the user's cache directory that names its holder, so a second heavy task on the same machine
+  is refused with the holder's name and told to do other work rather than wait.
 - **Compiler.** Rust, as a subcommand of `crates/internal-tooling` (which already reads the
   corpus for `slugs` and `docids`); a sibling crate under `spike/verify/` if it outgrows that. A
   Markdown fence lexer; the syntax crate's lexer for map lines; `#=` lifted verbatim, sorted into
   declaration, fact, or outcome by shape; the six modules of § 2.3; the lints of § 2.6. Assay
-  never parses Alloy beyond recognising a `sig` declaration's name and parent.
+  never parses Alloy beyond recognising declaration heads and binders: a `sig`'s name, parent,
+  and field names; a `fun`, `pred`, `check`, or `run` name and its scope clause; a
+  quantifier's or `let`'s bound names. That is what classifying declarations and minting
+  words (§ 2.3) need, and nothing else is read. Generated files carry a `--` comment per
+  emitted item naming the source file and line it came from, so an Alloy message can be
+  walked back to the spec [TYPED 2026-09-28: a line-mapping culture, kept from the start].
 - **Lock and report.** JSON in, JSON out; `--check` writes nothing. Gate placement: lints in the
   pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
   path-filtered the same way; larger scopes in an opt-in lane.
