@@ -292,6 +292,19 @@ dir = "spike"
 # `test:hooks` is deliberately ABSENT: it exercises hk.pkl, which changes about quarterly, so
 # paying for it every agent gate buys nothing. `gate:full` still runs it, and an hk.pkl edit
 # calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
+#
+# HEAVY-WORK LOCK: this task and every other one that rides `preflight` (gate:full, gate:arc, the
+# bless family, verify:kani/lean/translate, alloy) runs its body as a hidden `<task>:held` twin
+# under `internal-tooling exclusive`, which refuses with exit 75 while another heavy task on this
+# machine holds the lock. Exit 75 is contention, not a failure. A heavy task started from inside
+# another (gate:arc's gate:full-quiet, a gate step's alloy) runs under its ancestor's hold.
+run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full-quiet -- mise run gate:full-quiet:held --"
+
+[tasks."gate:full-quiet:held"]
+description = "gate:full-quiet's body, without the heavy-work lock; run gate:full-quiet instead."
+hide = true
+raw = true
+dir = "spike"
 run = [
    "mise run preflight gate",
    "mise run gate:floor",
@@ -401,6 +414,12 @@ description = "ACCEPTANCE, human-facing: everything due before a commit, in orde
 raw = true
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
+run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full -- mise run gate:full:held --"
+
+[tasks."gate:full:held"]
+description = "gate:full's body, without the heavy-work lock; run gate:full instead."
+hide = true
+raw = true
 run = [
   "mise run preflight gate",
   "mise run gate:floor",
@@ -426,6 +445,12 @@ run = "cargo run -q -p internal-tooling -- gate-floor --profile medium --profile
 
 [tasks."gate:arc"]
 description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
+raw = true
+run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:arc -- mise run gate:arc:held --"
+
+[tasks."gate:arc:held"]
+description = "gate:arc's body, without the heavy-work lock; run gate:arc instead."
+hide = true
 raw = true
 run = [
    "mise run both gate:full-quiet",
