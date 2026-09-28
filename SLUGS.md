@@ -582,6 +582,14 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/aid/CLAUDE.md:94 — (`two-surfaces` / rec-1) — the registry is a RENDER-plane
 - cited: 28N 30Nh (2)
 
+## ask-alias-closure-instance-scope
+- defined: —
+- cited: 311 312d (3)
+
+## ask-aliases-nothing-else-world-reading
+- defined: —
+- cited: 311 312d (3)
+
 ## ask-amendment-acks
 - defined: —
 - cited: 270 275 277 279f (8)
@@ -601,6 +609,14 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 27Xf (1)
 
+## ask-both-exclusion-readings-are-mechanized
+- defined: —
+- cited: 311 312d (3)
+
+## ask-catalog-sort-declaration
+- defined: —
+- cited: 311 312d (3)
+
 ## 28E:ask-cell-human-description
 - defined: Research/notes/28E-why-surface-design-sitting.md:124 — — why-surfaces badly want "what is this cell
 - cited: 289 28D (2)
@@ -609,9 +625,17 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 307 30M 30Nd (5)
 
+## ask-composite-parts-by-walk
+- defined: —
+- cited: 311 312d (3)
+
 ## ask-confluence-carve-choice
 - defined: —
 - cited: 26B 26C (2)
+
+## ask-contradiction-reads-unknown
+- defined: —
+- cited: 311 312d (3)
 
 ## 28L:ask-de-passthrough-lane-ownership
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:152 — — the 16 pure `sm {{detail}}` codes can never be
@@ -633,6 +657,14 @@ row's `near:` line refreshes only when that row's other lines change.
 ## ask-kind-species-verdict-member
 - defined: —
 - cited: 30Ta (1)
+
+## ask-may-read-is-declared-per-key
+- defined: —
+- cited: 311 312d (3)
+
+## ask-mismatched-supply-reads-unknown
+- defined: —
+- cited: 311 312d (2)
 
 ## 307b:ask-out-param-versus-eighth-tuple-element
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:198 — — I threaded the latch as a `&mut CertifierTrip`
@@ -658,6 +690,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 307b:ask-remove-the-guard-forfeit-row
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:175 — — the census proved a lookup (§2), so
+
+## ask-route-for-any-path-without-identified-in
+- defined: —
+- cited: 311 312d (3)
 
 ## ask-shared-lexical-rulebook
 - defined: —
@@ -685,6 +721,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26B 26C 270 27Q 280 ROADMAP (8)
 
+## ask-unique-name-ranges-over-the-scheme
+- defined: —
+- cited: 311 312d (4)
+
 ## ask-unresolvable-ambient-load-posture
 - defined: —
 - cited: 30M (1)
@@ -698,6 +738,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Qa:ask-witness-order-execution-or-census
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:133 — (FLAG)
+
+## ask-world-relations-for-effects
+- defined: —
+- cited: 311 312d (3)
 
 ## 311b:assessment-entry-changes-and-catalog-store-lifetimes
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:521
@@ -2047,6 +2091,34 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:255 — — with no oracles loaded, the entire algebra is
 - defined: spike/crates/plan/CLAUDE.md:195 — — no oracles loaded ⇒ output byte-identical;
 - cited: 26C 27D 27G 27K 27L 27N 27O 27P 28L 28Q 300 300a 30F 30G 30Ne 30Qb 30T 310 (21)
+
+## enc-lends-truth-is-routing
+- defined: —
+- cited: 311 312d (3)
+
+## enc-observers-are-the-vantage-ambients
+- defined: —
+- cited: 311 312d (3)
+
+## enc-one-instance-is-one-atom-for-now
+- defined: —
+- cited: 311 312d (3)
+
+## enc-primary-owner-is-sort-owner
+- defined: —
+- cited: 311 312d (2)
+
+## enc-primary-yields-into-its-sort
+- defined: —
+- cited: 311 312d (2)
+
+## enc-support-functions
+- defined: —
+- cited: 311 312d (3)
+
+## enc-vantage-is-the-entry-chain
+- defined: —
+- cited: 311 312d (3)
 
 ## entity-algebra-rebuild
 - defined: Research/notes/24U-round24-closeout.md:109 — (né queue-item-3b; ruled by `24C:rul-selector-pre-stdlib`)
@@ -3731,7 +3803,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-fence-never-fill
 - defined: —
-- cited: 30Z 312d (3)
+- cited: 30Z 312d (4)
 
 ## hole-probe-path-transport-divergence
 - defined: —

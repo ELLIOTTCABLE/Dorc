@@ -152,6 +152,14 @@ fun partsOf[r: mReferent]: set mReferent { r.holds }
 > It may have parts, and every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
 > It is not an mKey, and not an mSort.
 
+UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
+`312d:ask-world-relations-for-effects`): the world relations `holds`, `owns`, `affects`, and
+`passes` are the conductor's choice of world stratum, made so that the truth predicates of § 2
+have something to transcribe into; 311 names none of them. In particular `owns` against `holds`
+is one reading of § 2.3's "by the store's own construction". None of this is authoritative or
+acked; it stands only until the document has run under Alloy and the reading is acked or
+replaced, and it is not a pattern to extend (`notes/312d` § 7).
+
 Every identity question is ultimately "do these two mKeys reach one mReferent"; the mKey's
 side of that question is 1.4-key-and-its-two-views. No other term names a part. An mReferent is
 not an mTopic (1.8-fully-qualified-key-topic-and-derivation), and not the set an mKey given
@@ -279,6 +287,11 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 > Where an mSort has a primary mScheme, that mScheme yields into the mSort for at least one shape: some shape of it carries `:identified-in` or `:root`.
 > A `:primary-of` declaration claims nothing about the world.
 
+UNACKED READING, temporary (`312d:enc-primary-yields-into-its-sort`): 311 says a primary mScheme
+"yields into the mSort for at least one shape"; the fence reads that as "some shape of it
+carries `:identified-in` or `:root`". The conductor's reading, not acked, not authoritative,
+held only until acked or replaced (`notes/312d` § 7).
+
 ### § 1.4-key-and-its-two-views
 
 RDBMS primary key and natural key, with their culture: the natural key is user-typed, may alias, and is never identity. The primary key is what the store answers with. Pre-311 documents write _entity_.
@@ -401,6 +414,13 @@ pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
 > `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent: the lookup is a function.
 > `:guarantees-unique-name` is true when, within one mParent, one mReferent reached by an mKey of the shape has one mKey of the lookup.
 
+UNACKED READING, temporary (`312d:ask-unique-name-ranges-over-the-scheme`): 311's "one mReferent
+has one mKey" does not say whether the one mKey ranges over the warranted shape or over the
+whole lookup; the fence takes the lookup, the reading under which the two-tops way of § 3.2
+is sound, and "within one mParent" is read at the world stratum as mParents that reach one
+mReferent. The conductor's readings, not acked, not authoritative, held only until acked or
+replaced (`notes/312d` § 7).
+
 #### § 1.5.1-the-token-over-time-and-the-per-level-closure
 
 A mToken is compared for equality only and never decoded (0.1-the-two-strata), and it is always
@@ -487,6 +507,14 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > Two seats that disagree are a contradiction.
 > Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
 > A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
+
+UNACKED READING, temporary (`312d:ask-route-for-any-path-without-identified-in`,
+`312d:ask-mismatched-supply-reads-unknown`): the fence scopes every shape with neither
+`:identified-in` nor `:yields` in the mRoute, warranted or not, on § 1.6's sentence alone; and it
+gives a mKey whose supplied instance is not of the declared mSort no mParent (unknown from that
+level), where 311 says only that the seat "names it as an mKey of one of the mParent's mSort's
+mSchemes" and says nothing about a mismatch. The conductor's readings, not acked, not
+authoritative, held only until acked or replaced (`notes/312d` § 7).
 
 #### § 1.6.1-what-a-seat-answers-for
 
@@ -824,6 +852,12 @@ run law_natural_disjoint_is_sound_premise {
 <!-- prose-translation -->
 > mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort; S's owner declares it; one T per shape.
 > Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares; the declaration claims nothing about the world.
+
+UNACKED READING, temporary (`312d:ask-catalog-sort-declaration`): 311 names three seats that
+supply the mParent-Catalog INSTANCE and presupposes its mSort ("the mEntryChain's instance for
+that mSort") without a declaration of it; `DeclaresCatalogSort` is the conductor's addition so
+that the entry-chain seat can be read. Not acked, not authoritative, held only until acked or
+replaced (`notes/312d` § 7).
 > A shape that yields carries no `:identified-in` and no `:root`.
 > `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
 > S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
@@ -901,6 +935,12 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 > P's owner declares `:root` per matched shape, absent by default: the shape declares no mParent, so it carries no `:identified-in`, and thereby claims global comparability.
 > `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent.
 > For a `:root` shape, the world is the store: the shape's mWorld (1.8-fully-qualified-key-topic-and-derivation).
+
+UNACKED READING, temporary (`312d:enc-primary-owner-is-sort-owner`): 311 has `:identified-in`
+declared by "P's owner" (§ 1.6, § 2.2) and the section "declared by the mSort's owner, on the
+primary mScheme"; the fence reconciles the two by a fact that a primary mScheme's owner is its
+mSort's owner. The conductor's reading, not acked, not authoritative, held only until acked or
+replaced (`notes/312d` § 7).
 
 `:root` fails for cloned identifiers. The mParent's type varies per shape: an ext4 filesystem in the mRoute, an NFS filesystem in a host, a tmpfs in a boot.
 
@@ -1021,6 +1061,13 @@ pred true_VerdictFact[f: VerdictFact] {
 > May-read entries are not in a readset; a write reaches K through them (2.6-may-write-the-writeset, rule 4).
 > A readset member is ⊤ where its mSort has no closed may-read set, where an mSort on its mFullyQualifiedKey has no closed may-read set, where a may-read entry through which rule 4 reaches it fails either test, transitively, or where its mFullyQualifiedKey, or that of such an entry, ends at the mRoute.
 > A readset is ⊤ where the body marked no read or where any member is ⊤.
+
+UNACKED READING, temporary (`312d:ask-may-read-is-declared-per-key`): 311's may-read is "a
+template the mSite or environment fills"; the fence holds only the filled form, one entry per
+mKey, and no template. The truth predicates of the closure and of the vouch transcribe into the
+world relations of 1.1-referent-state-and-value, which are themselves an unacked reading. The
+conductor's reading, not acked, not authoritative, held only until acked or replaced
+(`notes/312d` § 7).
 
 A may-read entry above the leaf: a loop-backed filesystem's state lives in a file of the outer filesystem, and `dd` over the image rewrites every inner fact. A shared entry: two observers' writability cells share the file's mode.
 
@@ -1176,6 +1223,13 @@ run law_exclusion_readings_agree_premise {
 > A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 
+UNACKED READING, temporary (`312d:ask-both-exclusion-readings-are-mechanized`): 311's exclusion
+sentence admits two readings (`notes/312ch` item 11), and the fence mechanizes both rather than
+choosing, but the sparing LAW is stated over one of them, the one that spares more, and "spared
+only when" is read as the engine's decision rather than a necessary condition. Those are the
+conductor's readings, not acked, not authoritative, held only until acked or replaced
+(`notes/312d` § 7).
+
 #### § 2.6.1-the-finished-definition-and-the-worlds
 
 <!-- normative -->
@@ -1254,6 +1308,12 @@ pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
 > The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken under; K's owner declares the complement, `:observer-independence` of O, per mSort.
 > By default, a cell measured under a lent mKey of O is assumed to depend on it: its fact is then about (mReferent, O-instance), and it stands for another fact only when the two are about one mReferent under O-instances that are SAME.
 > `:observer-independence` of O is true when no answer about a K-cell depended on the O-instance it was taken under.
+
+UNACKED READING, temporary (`312d:enc-observers-are-the-vantage-ambients`): 311 says a cell is
+"measured under a lent mKey of O"; the fence takes every ambient instance of the topic's
+mVantage as an observer and the answer's dependence on the observer's mReferent as the truth
+of independence. The conductor's readings, not acked, not authoritative, held only until acked
+or replaced (`notes/312d` § 7).
 
 ### § 2.9-the-traversal-and-the-region-test
 
@@ -1353,6 +1413,13 @@ run law_region_disjoint_is_sound_premise {
 > Step 4: otherwise UNKNOWN.
 > An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
 > A DISJOINT of the region test is never false while every statement in force is true and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
+
+UNACKED READING, temporary (`312d:ask-alias-closure-instance-scope`): 311 scopes `alias
+nothing-else` to "the instance the lookup ran in"; the fence's truth ranges over every mKey of
+the level's mScheme in the world, which is STRONGER than the sentence and so the direction that
+can hide a counterexample. "Of D's mSort" for a mTraversal is read as every member being of
+that mSort. The conductor's readings, not acked, not authoritative, held only until acked or
+replaced (`notes/312d` § 7).
 
 #### § 2.9.1-indexicals-and-the-floor
 
@@ -1473,6 +1540,12 @@ pred true_DeclaresComposite[d: DeclaresComposite] {}
 > That mSort's identity is its owner's function of its named parts: two composite mKeys of one mCompositeSort are SAME when they name the same roles and their parts are SAME role by role.
 > The may-read set of a mCompositeSort is the union of its parts' may-read sets.
 > Declaring a mCompositeSort claims nothing about the world.
+
+UNACKED READING, temporary (`312d:ask-composite-parts-by-walk`): 311 says the identity "is its
+owner's function of its named parts"; the fence fixes that function as parts SAME role by role
+by the walk alone, since `compare()` reads this predicate and Alloy refuses the recursion. The
+conductor's reading, not acked, not authoritative, held only until acked or replaced
+(`notes/312d` § 7).
 
 Examples: a base and an overlay, or a primary and its replica set.
 
@@ -1723,6 +1796,14 @@ run law_different_sorts_never_same_premise {
 > SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
 > `compare()` never reaches a false SAME while every statement in force is true.
 > `compare()` never reaches a false DISJOINT while every statement in force is true and no store is among its own contents.
+
+UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
+and the laws' premise): 311 says a contradiction is "refuse both and attribute both authors",
+which is not one of the four answers, so the fence answers UNKNOWN there; "one instance" is one
+atom, the sharing of 1.10-vantage-route-placeholder-witness being by construction; and every
+law premises EVERY statement in force true where 311 says "every statement behind it", the
+support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
+readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
@@ -1914,6 +1995,13 @@ pred true_ClosesLends[d: ClosesLends] {
 > A lend is true when every mKey of a secondary mScheme looked up in the lent mSort under the wrapper reaches what a route through the lent instance's mReferent passes to.
 > The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute: it is true when every such mKey of an unlent mSort under the wrapper reaches what a route through the caller's instance passes to, and when an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
 
+UNACKED READING, temporary (`312d:enc-lends-truth-is-routing`, `312d:enc-vantage-is-the-entry-chain`):
+311 says a wrapper lends instances "for the mParent-Catalog mSorts it perturbs, and nothing
+else"; the fence reads "perturbs" through the world relation `passes` and reads the mRoute's
+inheritance as sameness of what same-spelled route-scoped mKeys reach, and it makes a vantage
+not inheriting hold a DIFFERENT mRoute atom. The conductor's readings, not acked, not
+authoritative, held only until acked or replaced (`notes/312d` § 7).
+
 #### § 3.4.1-guest-dependent-lends
 
 <!-- normative -->
@@ -1978,6 +2066,11 @@ run law_disjoint_by_two_tops_rests_on_one_scheme_owner_premise {
 > The support of a SAME is the warrants at every level of the chains it rests on, the yields that reached them, the lends and sentinels that made instances one, and the mCorrespondences.
 > The support of a DISJOINT is the warrants at every level of the two chains.
 > A DISJOINT by the two-tops way rests on one mScheme's owner's `:guarantees-unique-name` declarations.
+
+UNACKED READING, temporary (`312d:enc-support-functions`): 311 lists what attribution names;
+the support functions above are the conductor's construction of "the statements an answer
+rested on", and 311 does not define such a set. Not acked, not authoritative, held only until
+acked or replaced (`notes/312d` § 7).
 
 #### § 3.5.1-composites-and-attribution
 

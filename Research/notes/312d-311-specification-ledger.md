@@ -476,6 +476,45 @@ The Fable-tier builder, on the human's typed ack, in its own worktree off `ai/ma
 - Reports: the lock as written; each red with its shape and which of § 6.3 it matches or does
   not; each edit it made beyond syntax, with the sentence it believes unchanged.
 
+### § 6.6-the-unacked-readings-are-a-failure-mode
+
+**[TYPED]** 2026-09-28: every place where a soft or ambiguous sentence of 311 was turned into a
+hard mechanization is marked INLINE in the specification, adjacent to the fence-and-translation
+pair it softens, as a commentary paragraph beginning `UNACKED READING, temporary` and naming
+its slug here. Each such mark says the reading is the conductor's, has not been acked, is not
+authoritative, and stands only until 311 has been completed, committed, and run under Alloy and
+the reading is acked or replaced. This is a FAILURE MODE, recorded so it is not repeated: the
+correct move on an underspecified sentence is a held hole, `pred hole_<slug>` with its witness
+run and the premise exclusion of the affected checks (`30Z:hole-fence-never-fill`), or residue
+as normative prose, never a reading hardened into a fence with the prose walked back beside it.
+No successor and no builder mints another such mark; the ones below are the whole set, and each
+is deleted when its reading is acked (the mark goes, the fence stays) or replaced (the fence
+moves and the lock shows it).
+
+The sites, each `312d:` slug being the mark's citation:
+
+- § 1.1: `ask-aliases-nothing-else-world-reading`, `ask-world-relations-for-effects` (the world
+  stratum itself).
+- § 1.3: `enc-primary-yields-into-its-sort`.
+- § 1.5: `ask-unique-name-ranges-over-the-scheme`.
+- § 1.6: `ask-route-for-any-path-without-identified-in`, `ask-mismatched-supply-reads-unknown`
+  (a supplied instance not of the declared mSort leaves no mParent; 311 does not say what a
+  mismatch does).
+- § 2.1: `ask-catalog-sort-declaration`.
+- § 2.2: `enc-primary-owner-is-sort-owner` (a fact that the primary mScheme's owner is the
+  mSort's owner, reconciling § 1.6's "P's owner" with § 2.2's "the mSort's owner").
+- § 2.5: `ask-may-read-is-declared-per-key`.
+- § 2.6: `ask-both-exclusion-readings-are-mechanized` (and "spared only when" read as the
+  decision).
+- § 2.8: `enc-observers-are-the-vantage-ambients`.
+- § 2.9: `ask-alias-closure-instance-scope` (and "of D's mSort" read as every member's mSort).
+- § 2.11: `ask-composite-parts-by-walk`.
+- § 3.2: `ask-contradiction-reads-unknown`, `enc-one-instance-is-one-atom-for-now`, and the
+  laws' premise (every statement in force, not the support).
+- § 3.4: `enc-lends-truth-is-routing`, `enc-vantage-is-the-entry-chain` (a non-inheriting
+  vantage holds a different mRoute atom).
+- § 3.5: `enc-support-functions`.
+
 ### § 6.5-next-acts
 
 `act-tri-partition-accounting` (the sentence-by-sentence account of `notes/311` at `7a63bae6`
