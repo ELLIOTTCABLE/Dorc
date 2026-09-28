@@ -74,7 +74,7 @@ fn the_fixture_compiles_to_exactly_the_expected_modules() {
     // generated module is a changed behaviour, reviewed here as a diff rather than found later
     // as an Alloy error in someone's spec.
     let out = fresh_dir("assay_fixture");
-    let spec = fixture().join("widgets.md");
+    let spec = fixture().join("widgets.assay.md");
     let run = assay(&spec, &out);
     assert!(
         run.status.success(),
@@ -84,7 +84,7 @@ fn the_fixture_compiles_to_exactly_the_expected_modules() {
     );
 
     let expected = fixture().join("expected");
-    let regenerate = "mise run assay -- spike/crates/internal-tooling/tests/assay_fixture/widgets.md \
+    let regenerate = "mise run assay -- spike/crates/internal-tooling/tests/assay_fixture/widgets.assay.md \
                       --out spike/crates/internal-tooling/tests/assay_fixture/expected";
     assert_eq!(
         module_files(&out),
@@ -109,7 +109,9 @@ fn one_literal_under_two_names_refuses_before_writing_anything() {
     // mint two words for one thing.
     let out = fresh_dir("assay_join_key_conflict");
     let run = assay(
-        &fixture().join("negative").join("join_key_conflict.md"),
+        &fixture()
+            .join("negative")
+            .join("join_key_conflict.assay.md"),
         &out,
     );
     let report = String::from_utf8_lossy(&run.stdout);
@@ -128,7 +130,7 @@ fn words_name_themselves_as_the_human_pictured() {
     // The ruling, verbatim (`30Yc` § 6): a bare component names its literal, a repeated one
     // leaves it named after itself, and a braced one classes it and leaves it self-named.
     let out = fresh_dir("assay_self_naming");
-    let run = assay(&fixture().join("self_naming.md"), &out);
+    let run = assay(&fixture().join("self_naming.assay.md"), &out);
     let report = String::from_utf8_lossy(&run.stdout);
     assert!(run.status.success(), "{report}");
     let json: serde_json::Value = serde_json::from_str(&report).expect("the report should be JSON");
@@ -164,7 +166,9 @@ fn a_self_named_literal_whose_atom_another_literal_holds_refuses() {
     // where `-d` already holds it: one name over two literals.
     let out = fresh_dir("assay_self_name_conflicts");
     let run = assay(
-        &fixture().join("negative").join("self_name_conflicts.md"),
+        &fixture()
+            .join("negative")
+            .join("self_name_conflicts.assay.md"),
         &out,
     );
     let report = String::from_utf8_lossy(&run.stdout);

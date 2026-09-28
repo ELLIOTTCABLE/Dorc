@@ -170,6 +170,15 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     if specs.is_empty() {
         return usage("no spec document named");
     }
+    if let Some(other) = specs
+        .iter()
+        .find(|p| !p.to_string_lossy().ends_with(DOC_SUFFIX))
+    {
+        return usage(&format!(
+            "{} is not a {DOC_SUFFIX} document",
+            other.display()
+        ));
+    }
     if out.is_some() && specs.len() > 1 {
         return usage("--out names one document's directory, and more than one was named");
     }
@@ -201,12 +210,12 @@ fn documents(paths: &[PathBuf]) -> Vec<PathBuf> {
                 .filter(|p| {
                     p.file_name().is_some_and(|n| {
                         let n = n.to_string_lossy();
-                        n.ends_with(".md") && !is_shared_half(&n)
+                        n.ends_with(DOC_SUFFIX) && !is_shared_half(&n)
                     })
                 });
             out.extend(siblings);
         } else if let Some(stem) = name.strip_suffix(LOCK_SUFFIX) {
-            out.insert(path.with_file_name(format!("{stem}.md")));
+            out.insert(path.with_file_name(format!("{stem}{DOC_SUFFIX}")));
         } else {
             out.insert(path.clone());
         }
@@ -219,8 +228,10 @@ fn is_shared_half(name: &str) -> bool {
 }
 
 const LOCK_SUFFIX: &str = ".lock.json";
-/// The two shared halves, found by these names beside a document (`30Y` § 2.2); `.assay.md` is
-/// the spelling of every document in the `30Z` format.
+/// The spelling of every document in the `30Z` format. A document's stem is its name minus this
+/// suffix, and names its lock (`<stem>.lock.json`) and its out directory (`<stem>/`).
+const DOC_SUFFIX: &str = ".assay.md";
+/// The two shared halves, found by these names beside a document (`30Y` § 2.2).
 const SHARED_HALF: &str = "shared.assay.md";
 const LAWS_HALF: &str = "shared-laws.assay.md";
 
@@ -240,7 +251,9 @@ fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
             .unwrap_or_default()
     };
     let doc_name = lossy(spec.file_name());
-    let stem = lossy(spec.file_stem());
+    let stem = doc_name
+        .strip_suffix(DOC_SUFFIX)
+        .map_or_else(|| lossy(spec.file_stem()), str::to_owned);
     let out = out.unwrap_or_else(|| internal_tooling::target_dir().join("alloy").join(&stem));
     let spec_path = display_path(spec);
     let inputs = Inputs {
@@ -417,7 +430,7 @@ fn set(fields: &mut [(String, Json)], key: &str, value: Json) {
 
 fn usage(problem: &str) -> ExitCode {
     eprintln!(
-        "assay: {problem}\nusage: assay <spec.md>... [--out <dir>] [--parse | --check | --write] [-- <runner caps>]"
+        "assay: {problem}\nusage: assay <spec.assay.md>... [--out <dir>] [--parse | --check | --write] [-- <runner caps>]"
     );
     ExitCode::from(REFUSED)
 }
