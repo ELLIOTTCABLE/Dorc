@@ -12,39 +12,49 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AlloyRunner {
    static final int USAGE = 2;
 
    public static void main(String[] args) throws Exception {
-      if (args.length == 3 && args[0].equals("--one")) {
-         solveOne(args[1], Integer.parseInt(args[2]));
-         return;
-      }
       long timeoutSeconds = 300;
       List<String> files = new ArrayList<>();
+      List<String> given = new ArrayList<>();
+      List<String> opens = new ArrayList<>();
+      int one = -1;
       for (int i = 0; i < args.length; i++) {
          if (args[i].equals("--timeout") && i + 1 < args.length) timeoutSeconds = Long.parseLong(args[++i]);
+         else if (args[i].equals("--open") && i + 1 < args.length && args[i + 1].contains("=")) opens.add(args[++i]);
+         else if (args[i].equals("--one") && i + 1 < args.length) one = Integer.parseInt(args[++i]);
          else if (args[i].startsWith("-")) usage("unknown option " + args[i]);
-         else files.add(args[i]);
+         else {
+            files.add(resolve(args[i]));
+            given.add(args[i]);
+         }
       }
       if (files.isEmpty()) usage("no .als files given");
+      if (one >= 0) {
+         solveOne(files.get(0), one, opens);
+         return;
+      }
 
-      String origin = System.getenv("MISE_ORIGINAL_CWD");
       boolean red = false;
       boolean first = true;
       System.out.println("[");
-      for (String arg : files) {
-         File file = origin != null && !new File(arg).isAbsolute() ? new File(origin, arg) : new File(arg);
-         String path = file.getCanonicalPath();
+      for (int f = 0; f < files.size(); f++) {
+         String path = files.get(f);
          CompModule world;
          try {
-            world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, null, path);
+            world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(path, opens), path);
          } catch (Err e) {
             red = true;
-            first = row(first, arg, null, null, null, "error", -1, -1, e.toString());
+            first = row(first, given.get(f), null, null, null, "error", -1, -1, e.toString());
             continue;
          }
          String module = world.getModuleName();
@@ -52,7 +62,7 @@ public class AlloyRunner {
          for (int i = 0; i < commands.size(); i++) {
             Command cmd = commands.get(i);
             String kind = cmd.check ? "check" : "run";
-            Outcome o = runChild(path, i, timeoutSeconds);
+            Outcome o = runChild(path, i, opens, timeoutSeconds);
             String result = switch (o.status) {
                case "sat" -> cmd.check ? "counterexample" : "sat";
                case "unsat" -> cmd.check ? "no-counterexample" : "unsat";
@@ -67,8 +77,30 @@ public class AlloyRunner {
    }
 
    static void usage(String why) {
-      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] <file.als>...");
+      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--open <module>=<file.als>]... <file.als>...");
       System.exit(USAGE);
+   }
+
+   static String resolve(String arg) throws Exception {
+      String origin = System.getenv("MISE_ORIGINAL_CWD");
+      File file = origin != null && !new File(arg).isAbsolute() ? new File(origin, arg) : new File(arg);
+      return file.getCanonicalPath();
+   }
+
+   // Alloy resolves every `open X` against ONE root: the root file's directory with the root's own
+   // `module a/b` path stripped. `--open X=file` serves file's text at that spot without copying it.
+   static Map<String, String> overlay(String rootPath, List<String> opens) throws Exception {
+      Map<String, String> loaded = new HashMap<>();
+      if (opens.isEmpty()) return loaded;
+      Matcher m = Pattern.compile("(?m)^\\s*module\\s+([A-Za-z0-9_/'\"]+)").matcher(Files.readString(Path.of(rootPath)));
+      int depth = m.find() ? m.group(1).split("/").length - 1 : 0;
+      File root = new File(rootPath).getParentFile();
+      for (int d = 0; d < depth && root.getParentFile() != null; d++) root = root.getParentFile();
+      for (String spec : opens) {
+         String[] kv = spec.split("=", 2);
+         loaded.put(new File(root, kv[0] + ".als").getCanonicalPath(), Files.readString(Path.of(resolve(kv[1]))));
+      }
+      return loaded;
    }
 
    // Command.toString() is "Check name for 6 but ..."; everything after " for " is the scope clause as Alloy read it.
@@ -81,13 +113,15 @@ public class AlloyRunner {
    record Outcome(String status, long wallMs, long solveMs, String message) {}
 
    // One JVM per command, so a blown-up scope is killed at the cap instead of hanging the batch.
-   static Outcome runChild(String path, int index, long timeoutSeconds) throws Exception {
-      String java = ProcessHandle.current().info().command().orElse("java");
-      String source = System.getProperty("jdk.launcher.sourcefile");
+   static Outcome runChild(String path, int index, List<String> opens, long timeoutSeconds) throws Exception {
+      List<String> argv = new ArrayList<>(List.of(ProcessHandle.current().info().command().orElse("java"),
+         "-cp", System.getProperty("java.class.path"), System.getProperty("jdk.launcher.sourcefile"), "--one", Integer.toString(index)));
+      for (String spec : opens) argv.addAll(List.of("--open", spec));
+      argv.add(path);
       Path out = Files.createTempFile("alloy-runner-", ".out");
       Path err = Files.createTempFile("alloy-runner-", ".err");
       try {
-         ProcessBuilder pb = new ProcessBuilder(java, "-cp", System.getProperty("java.class.path"), source, "--one", path, Integer.toString(index));
+         ProcessBuilder pb = new ProcessBuilder(argv);
          pb.redirectOutput(out.toFile()).redirectError(err.toFile());
          long start = System.nanoTime();
          Process p = pb.start();
@@ -111,9 +145,9 @@ public class AlloyRunner {
       }
    }
 
-   static void solveOne(String path, int index) {
+   static void solveOne(String path, int index, List<String> opens) throws Exception {
       try {
-         CompModule world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, null, path);
+         CompModule world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(path, opens), path);
          Command cmd = world.getAllCommands().get(index);
          long start = System.nanoTime();
          A4Solution sol = TranslateAlloyToKodkod.execute_command(A4Reporter.NOP, world.getAllReachableSigs(), cmd, new A4Options());
