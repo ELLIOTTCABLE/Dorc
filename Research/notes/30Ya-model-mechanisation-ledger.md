@@ -812,8 +812,11 @@ they sit alongside the Alloy spec rather than only as e2e.
   monotonicity.
 - Every name a specification mints avoids Alloy 6's reserved words, the temporal set included,
   and never reuses a field name across sigs where a join could go through it.
-- Where a corpus check is written, it ranges over declared claim atoms and reads no
-  truth-in-force, pending `30Y`'s ruling on the corpus universe.
+- A corpus check is an outcome of the document's corpus book, one null-command line whose
+  speech is every declared claim, so truth-in-force is defined there and a check may read it
+  (`30Y` § 2.3, **[HUMAN]** acked 2026-09-28). The generic laws live in the spec tier's append
+  half, spliced after each document's definitions, so they are written once and every document
+  must define the names they use (`30Y` § 2.2, **[HUMAN]** typed 2026-09-28).
 - The counterfactual reading of attribution (single removal) is honest under one voice per
   line and dishonest under redundant footprints; the structural reading (the derivation's
   support) needs no premise and is what `311` § 3.5's sentences describe.

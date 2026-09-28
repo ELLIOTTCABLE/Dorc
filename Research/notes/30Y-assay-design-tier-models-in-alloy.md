@@ -169,11 +169,21 @@ sig Line { above: set Line, speech: set Claim, cmd: one Shword, argv: seq Shword
   are never exposed. At v0 assay hands the map line to the existing syntax crate's lexer, takes
   the first word as `cmd` and the rest as `argv`, and polices nothing [TYPED: least work].
 
-Beside the harness, assay opens the tree-global spec module (STRAWMAN `spec/shared`) into every
-module it generates, so no document declares the truly global things [ACKED]. What that module
-holds, from `Speaker` and the claim species' base through the answer order, the verdict
-subsets, and the truth default, is spec-tier content and not this document's; anything less than
-tree-global is opened explicitly by the spec that wants it.
+Beside the harness, the spec tier owns two shared halves, and assay places them without reading
+either [TYPED 2026-09-28, "keeps assay a thin preprocessor"]. The **prepend** half (STRAWMAN
+`spec/shared.md`) is a module assay opens beneath every document, so no document declares the
+truly global things [ACKED]: what every specification talks about, from `Speaker` and the claim
+species' base through the answer order, the verdict subsets, and the truth default. The
+**append** half (STRAWMAN `spec/shared-laws.md`) is what every specification must satisfy: the
+generic laws, stated over names such as `answer`, `wrong`, and `support` that each document
+defines. Alloy resolves names only downward through `open`, so a law that names a function the
+document defines can be shared only by concatenation: assay splices the append half, as text,
+after the document's own definitions into its laws module (§ 2.3). A document may use either
+half or both. The names the append half uses are the contract a document must define, and a
+document that omits one fails Alloy's own resolution in that document alone; the scope each
+generic law runs at is the append half's to spell, once, for every document. Everything either
+half says is spec-tier content and not this document's; anything less than tree-global is
+opened explicitly by the spec that wants it.
 
 ### § 2.3-the-generated-modules
 
@@ -187,9 +197,13 @@ One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN la
 - `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom
   from an `alloy` fence, and one named set per load file, so a book's loads are set expressions.
 - `laws.als` — opens `species` only, so the claim universe is free; every spec-authored `check`
-  that carries a scope clause.
-- `corpus.als` — opens `claims`; every spec-authored `check` written without a scope clause,
-  run at exact bounds over the actual claims.
+  that carries a scope clause, followed by the shared append half spliced verbatim (§ 2.2).
+- `book_corpus.als` — the corpus book: a generated book of one line, the null command `:`
+  (a real sh word nothing describes, so no claim matches it and no species fact fires), whose
+  speech is every claim atom the document declares. Every spec-authored `check` written without
+  a scope clause is an outcome of that line, so it runs at exact bounds over the actual claims
+  with all of them in force, through the same mechanism as any book (§ 2.4); truth-in-force is
+  defined there, which a lineless universe cannot offer [ACKED 2026-09-28].
 - `book_<name>.als` — opens `claims`; one per book fence (§ 2.4).
 - `assay.als` and `shared.als` — the harness and the tree-global module, written into the same
   directory. Every module is a root Alloy runs on its own, and Alloy resolves every `open`,
@@ -248,7 +262,8 @@ spec, over the relations assay supplies.
 ### § 2.5-the-checks-assay-runs
 
 1. **Laws**: every `check` in `laws.als`, over the free claim universe, at the scope it states.
-2. **Corpus checks**: every `check` in `corpus.als`, at exact bounds over the actual claims.
+2. **Corpus checks**: the outcomes of the corpus book's one line, at exact bounds over the
+   actual claims, every claim in force.
 3. **Vacuity twins**: a `check X` is paired by name with a `run X_premise` in the same module,
    which must be satisfiable; a check with no twin is recorded `premise: absent`, never green.
 4. **Book outcomes**: every line's `check` (§ 2.4).
@@ -296,7 +311,7 @@ one sig tessa__a_bare_word_is_not_a_path extends Yields {} { speaker = tessa  of
 
 The first line lands in `species.als`; the two atoms land in `claims.als`. A `check` written
 with a scope lands in `laws.als` and runs over a free universe of claims; one written without
-lands in `corpus.als` and runs over exactly these.
+becomes an outcome of the corpus book's null line and runs over exactly these, all in force.
 
 A book, as written in an `sh` fence. The `stat` line names two literals and states the world by
 name; the `chmod` lines put the same literals in a class; the second `chmod` line declares the
