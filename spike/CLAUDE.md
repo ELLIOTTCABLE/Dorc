@@ -986,7 +986,9 @@ mise run alloy -- FILES   # Alloy 6 headless over .als files or a directory, one
                           #   command, JSON rows; preflight + the heavy-work lock ride it
                           #   (the design-tier instrument of `notes/30Y`; as-run: `notes/30Yb`)
 mise run assay -- SPEC.md # compile a specification's fences into one directory of Alloy modules
-                          #   under target/alloy/<stem>/ (`notes/30Y` § 2; praxis: `plans/30Z`)
+                          #   under target/alloy/<stem>/; `--parse` checks them under Alloy,
+                          #   `--check`/`--write` run them and lock <stem>.lock.json beside the
+                          #   spec (`notes/30Y` § 2; praxis: `plans/30Z`)
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 mise run test:e2e-quiet   # the case corpus, agent spelling: terse per-case on success,
                           #   failures unabridged; same selection the bare task takes
@@ -1032,7 +1034,10 @@ no task covers, and consider adding the task instead.
   direct per-tool investigation. The contributor chooses the rung, never a
   change-to-command decision tree; hk conservatively chooses applicable checks and
   `gate:step` re-runs one named failure. False-positive inclusion costs wall-clock;
-  false-negative exclusion invalidates the gate.
+  false-negative exclusion invalidates the gate. The heavy rungs and `alloy` run under the
+  machine-global heavy-work lock (`internal-tooling exclusive`; one heavy task per machine,
+  re-entrant for nested tasks): **exit 75 is CONTENTION, not a failure** — nothing was checked
+  and nothing is broken; do other work and retry later, never poll, never delete the lock file.
 - **verify-lane-family** (r30) — `verify:check` rides builder completion on both legs
   (cheap tier: catalogue coherence, unit/slug contracts, hole census, report currency;
   no external engine). `verify:translate-check`, `verify:lean-badges`, and
