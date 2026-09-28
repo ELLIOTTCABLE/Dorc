@@ -15,7 +15,10 @@
   typecheck. `--check` and `--write` parse the same way, then run `mise run alloy -- <caps> <out>`
   (caps after assay's own `--` pass through verbatim) and build one lock row per command;
   `--write` writes `<stem>.lock.json` beside the spec and exits 0, `--check` compares in both
-  directions and exits 1 on a mismatch, a missing lock, or any red row. Exit 3 when the runner did
+  directions and exits 0 iff the run matches the lock row for row, result and premise included,
+  green or red; a missing lock, a row either side lacks, or a moved result or premise exits 1.
+  The reds a passing lock carries are listed in the report as `lock.accepted_reds` (`da374718`,
+  after the human's ruling that reds fully acked by the committed lock pass). Exit 3 when the runner did
   not run at all (spawn failure, any exit but 0 or 1, including 75 contention, or no rows). The
   report per document carries `commands` (each lock row plus `wall_ms`, `solve_ms`, and the
   runner's message, which on a timeout is how far translation got) and `lock` (`path`, `status`
@@ -26,11 +29,15 @@
   `assay/lock.rs`, `assay/runner.rs`).
 - **The lock file**: a JSON array, one row per line so its git diff is a row diff: `module`,
   `name`, `kind`, `scope` (Alloy's own rendering of the clause), `result`, `premise` on a check
-  (the `<check>_premise` run's result, or `absent`), and `hash` (FNV-1a 64 over the command's
+  (the `<check>_premise` run's result; for a book line with no twin, its book's `run`, the corpus
+  book's included; else `absent`), and `hash` (FNV-1a 64 over the command's
   generated text, LF-normalized, the same drift-alarm digest `spike/verify` uses). No timing and
   no translation size. `+SURE` measured on a scratch copy of the fixture: `--check` with no lock
   exits 1 `missing`; `--write` exits 0 and writes nine rows; `--check` exits 0 `matches`; one
-  hand-flipped result exits 1 `mismatch` and names the row once in each direction.
+  hand-flipped result exits 1 `mismatch` and names the row once in each direction. After
+  `da374718`, the fixture plus one always-false law: `--write`, then `--check` exits 0 `matches`
+  with that law in `accepted_reds`; five premises read `sat` (book lines and the corpus check),
+  two `absent` (twinless laws).
 - **`AlloyRunner.java --parse-only`**: one JVM, `CompUtil.parseEverything_fromFile` over each
   root, one row per file (`module`, `file`, `result` `parsed` or `error`, `message`), exit 0 or 1.
   Assay groups rows by message, so one error in a module every other opens (strawman-2's
@@ -48,8 +55,13 @@
   inherited `DORC_HEAVY_WORK_HOLDER` names the pid the lock file names, and sets that variable on
   the command it runs when it acquires. The refusal opens `REFUSED, exit 75: CONTENTION, NOT A
   FAILURE. Nothing was checked and nothing is broken`. Wrapped in it (each as a hidden
-  `<task>:held` twin holding the old body): `gate:full`, `gate:full-quiet`, `gate:arc`, plus
-  `alloy` as before.
+  `<task>:held` twin holding the old body): `gate:full`, `gate:full-quiet`, `gate:arc`
+  (`a746d9b9`); `bless`, `bless:dry`, `bless:case`, `bless:floor`, `verify:kani`, `verify:lean`,
+  `verify:translate` (`edfb7f4e`); plus `alloy` as before. `bless:case`'s `BLESS=1` moved to its
+  twin; the three `verify:*` keep `run_windows = "wsl -- mise run <task>"` on the outer task, so
+  a Windows invocation delegates without holding the Windows lock and the WSL leg takes its own.
+  `mise run bless:dry` on Windows, foreground: exit 0, 177 s wall-clock, the lock acquired and
+  released (no lock file left).
 - **hk steps**: `assay` in `linters` (pre-commit and check), glob `spec/**/*.md`, `mise run assay
   -- {{files}}`; `assay-lock` in `gates` (profile `slow`, builder completion), glob
   `spec/**/*.md` and `spec/**/*.lock.json`, `mise run assay -- --check {{files}}`. Two
@@ -98,13 +110,13 @@ finding. No law row exists to record; the books were not run.
   path canonicalized (`\\?\C:\…` on Windows); only scratch copies meet it.
 - No **C**: no specification content changed.
 
-## § 5-deviations-from-the-brief (every one OPEN)
+## § 5-deviations-from-the-brief (OPEN unless marked)
 
-- `dev-exclusive-wrapping-partly-denied` — no commit. The permission classifier denied the
-  `mise.toml` edit wrapping `bless` and `bless:dry` with the reason "Modify Shared Resources"; per
-  the denial and the conductor's instruction nothing further was attempted. Left UNWRAPPED:
-  `bless`, `bless:dry`, `bless:case`, `bless:floor`, `verify:kani`, `verify:lean`,
-  `verify:translate`. The human applies or authorises these.
+- `dev-exclusive-wrapping-partly-denied` — RESOLVED in `edfb7f4e`: the permission classifier
+  denied the first attempt ("Modify Shared Resources"); the human approved the edit in
+  manual-approval mode on the third round, and all seven are wrapped.
+- `dev-verify-run-windows-stays-outer` — `edfb7f4e`: see § 1; the Windows side of the three
+  WSL-only lanes delegates unlocked.
 - `dev-held-twin-tasks` — `a746d9b9`: a wrapped task's body moves to a hidden `<task>:held` twin,
   because `exclusive` runs one command and a task body is a sequence; `preflight` therefore runs
   inside the lock for the three gates (`alloy` keeps it outside). `mise run <task>:held` bypasses
@@ -138,15 +150,10 @@ finding. No law row exists to record; the books were not run.
   identifier becomes one under a deterministic, injective munge". The munge is injective, but
   identity on identifiers plus munge on the rest is not: `-c` and an authored `w__dash_c` meet.
   Built as the join-key refusal § 2.1 already names; the negative fixture pins it.
-- `disagree-book-checks-premise-absent` — `30Y` § 2.5 item 3 records a check with no
-  `_premise` twin as `premise: absent`, "never green". Every book-line check has no twin by
-  construction (its book `run` witnesses all of them together), so every book row reads `absent`.
-  Built as recorded-not-red: `absent` does not move the exit code. Whether a book check's premise
-  should read the book run's result is open.
-- `disagree-locked-red-still-exits-one` — `30Y` § 2.7 "`1` a red command or a lock mismatch",
-  built literally: a red row exits 1 under `--check` even when the lock records it red, so a
-  document with an expected red (strawman-3's `attributionByRemovalHonest`) can never pass the
-  `assay-lock` step. `30Yc` § 5 treats an expected red as recorded; the two readings differ.
+- `disagree-book-checks-premise-absent` — RESOLVED in `da374718`: `30Y` § 2.5 item 3 now makes
+  a book's run its lines' witness, and the lock records that run's result as their premise.
+- `disagree-locked-red-still-exits-one` — RESOLVED in `da374718` by the human's ruling: a set of
+  reds fully acked by the committed lock is a pass; see § 1.
 - `disagree-result-vocabulary` — the lock's `result` also takes the runner's `error` and
   `not-run`, which § 2.7's list omits.
 
