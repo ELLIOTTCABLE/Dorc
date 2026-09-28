@@ -1,5 +1,6 @@
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.Err;
+import edu.mit.csail.sdg.alloy4.Pos;
 import edu.mit.csail.sdg.ast.Command;
 import edu.mit.csail.sdg.parser.CompModule;
 import edu.mit.csail.sdg.parser.CompUtil;
@@ -24,11 +25,15 @@ import java.util.regex.Pattern;
 
 public class AlloyRunner {
    static final int USAGE = 2;
+   // The child solving now, for the shutdown hook: a runner killed mid-command must not leave it running.
+   static volatile Process live;
 
    public static void main(String[] args) throws Exception {
-      long timeoutSeconds = 300;
+      // Both defaults sit under an agent harness's 600s foreground ceiling: a harness kill
+      // mid-batch is what would otherwise orphan a solver child.
+      long timeoutSeconds = 120;
       long cpuSeconds = -1;
-      long batchSeconds = 1800;
+      long batchSeconds = 540;
       Caps caps = new Caps(2048, 2);
       List<String> files = new ArrayList<>();
       List<String> given = new ArrayList<>();
@@ -49,6 +54,16 @@ public class AlloyRunner {
          else if (args[i].equals("--open") && i + 1 < args.length && args[i + 1].contains("=")) opens.add(args[++i]);
          else if (args[i].equals("--one") && i + 1 < args.length) one = Integer.parseInt(args[++i]);
          else if (args[i].startsWith("-")) usage("unknown option " + args[i]);
+         else if (new File(resolve(args[i])).isDirectory()) {
+            // A directory stands for its `.als` files in sorted order, so no shell glob is needed.
+            File[] found = new File(resolve(args[i])).listFiles((d, name) -> name.endsWith(".als"));
+            List<File> sorted = new ArrayList<>(found == null ? List.of() : List.of(found));
+            sorted.sort(null);
+            for (File file : sorted) {
+               files.add(file.getCanonicalPath());
+               given.add(file.getPath());
+            }
+         }
          else {
             files.add(resolve(args[i]));
             given.add(args[i]);
@@ -62,6 +77,13 @@ public class AlloyRunner {
       }
 
       if (cpuSeconds < 0) cpuSeconds = timeoutSeconds;
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+         Process p = live;
+         if (p != null) {
+            p.descendants().forEach(ProcessHandle::destroyForcibly);
+            p.destroyForcibly();
+         }
+      }));
 
       // Parse everything first, so the caps line can say how much work is coming.
       CompModule[] worlds = new CompModule[files.size()];
@@ -70,7 +92,7 @@ public class AlloyRunner {
       for (int f = 0; f < files.size(); f++) {
          try {
             worlds[f] = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(files.get(f), opens), files.get(f));
-            for (Command cmd : worlds[f].getAllCommands()) if (only == null || only.equals(cmd.label)) total++;
+            for (Command cmd : worlds[f].getAllCommands()) if (!synthesized(worlds[f], cmd) && (only == null || only.equals(cmd.label))) total++;
          } catch (Err e) {
             parseErrors[f] = e.toString();
          }
@@ -94,7 +116,7 @@ public class AlloyRunner {
          List<Command> commands = world.getAllCommands();
          for (int i = 0; i < commands.size(); i++) {
             Command cmd = commands.get(i);
-            if (only != null && !only.equals(cmd.label)) continue;
+            if (synthesized(world, cmd) || (only != null && !only.equals(cmd.label))) continue;
             String kind = cmd.check ? "check" : "run";
             if ((System.nanoTime() - batchStart) / 1_000_000_000L >= batchSeconds) {
                red = true;
@@ -113,6 +135,12 @@ public class AlloyRunner {
       }
       System.out.println("]");
       System.exit(red ? 1 : 0);
+   }
+
+   // Alloy invents a `Default` run for a module that declares no command; it carries no source
+   // position, which an authored `run Default` always does (measured).
+   static boolean synthesized(CompModule world, Command cmd) {
+      return world.getAllCommands().size() == 1 && cmd.pos == Pos.UNKNOWN;
    }
 
    static void usage(String why) {
@@ -169,6 +197,7 @@ public class AlloyRunner {
          pb.redirectOutput(out.toFile()).redirectError(err.toFile());
          long start = System.nanoTime();
          Process p = pb.start();
+         live = p;
          // Polled once a second: the wall-clock cap, and the CPU-time cap a multi-threaded solver
          // can reach first.
          String exceeded = null;
@@ -195,6 +224,7 @@ public class AlloyRunner {
          String stderr = Files.readString(err, StandardCharsets.UTF_8).strip();
          return new Outcome("error", wallMs, -1, "exit " + p.exitValue() + ": " + (stderr.isEmpty() ? stdout : stderr), null);
       } finally {
+         live = null;
          Files.deleteIfExists(out);
          Files.deleteIfExists(err);
       }
