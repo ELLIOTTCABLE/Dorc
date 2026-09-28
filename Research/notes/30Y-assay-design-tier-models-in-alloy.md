@@ -68,9 +68,9 @@ in the Analyzer without assay in the loop.
   and a law meant to hold for all speech must not open the corpus at all. The module split in
   § 2.3 exists for this reason [CONDUCTOR].
 - **Default scopes are small.** Alloy's default of three atoms per sig does not fit a book once
-  keys are first-class things; assay's book commands take a per-invocation default (§ 2.4) and
-  the spec's own `for` clauses override it. A red for want of scope is a red; the report says
-  which command and what scope it ran at, and nothing more.
+  keys are first-class things, and Alloy has no document-wide scope, only a clause per command.
+  The ceiling for every kind assay does not own is the spec's to spell (§ 2.4). A red for want
+  of scope is a red; the report says which command and what scope it ran at, and nothing more.
 - **Higher-order quantification only where Alloy skolemizes it.** A `check` with a top-level
   `all S: set Claim` negates to an existential Alloy can solve; nesting a set quantifier under
   another quantifier does not. A law written outside that shape gets Alloy's own error, passed
@@ -209,11 +209,21 @@ A book fence compiles as follows.
   conclusion is its outcome with `this` substituted and whose premises are the outcomes of every
   line above it, so the first red names the line and an earlier decision is never the adversary's
   to revisit. Each book also becomes one `run` asserting every outcome together, so no check
-  passes because the facts contradict. Scopes: exact bounds on `Shword`, `Class`, `Line`, and
-  `Claim`; assay's per-invocation default for everything else (STRAWMAN `--scope`, default 8,
-  with the integer bitwidth left at Alloy's own); a trailing `for` on an outcome replaces the
-  default for that command. A check with a counterexample is red; a book run with no instance is
-  red.
+  passes because the facts contradict. A check with a counterexample is red; a book run with no
+  instance is red.
+- **`mech-scope-is-spelled-in-alloy`** [ACKED 2026-09-27] — assay sizes exactly the four kinds it
+  owns (`Shword`, `Class`, `Line`, `Claim`) on every command it generates. Every other kind's
+  ceiling is the spec's, since assay cannot know how large a key or a referent may need to be,
+  and Alloy offers no document-wide scope, only a clause per command. So the spec spells it as a
+  command with an agreed name and an empty body whose only content is its scope clause, and
+  assay copies that clause onto the commands it generates (book outcomes, book runs, corpus
+  checks): `run bookScope {} for 12 but 4 Int` in `spec/shared` is every book's default;
+  `run bookScope_<book> {}` in the owning document overrides one book; a trailing `for` on an
+  outcome line overrides one command. Most specific wins. A scope is paid per command, so a
+  large book's ceiling costs only that book's commands and never the small ones beside it. The
+  ceiling caps one world, not a total across books; the headroom above what a fixture names is
+  what the adversary builds counterexamples from, so the shared number is the common case plus
+  headroom, and the rare large book takes the escape.
 
 Assay derives no claim and recognises no verdict. What makes a line converged, how a resolution
 is derived, and what `Elided` means are all facts and functions in the shared module or the
@@ -323,11 +333,12 @@ fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.before
 fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
 fact { line_4.speech = line_3.speech + carl__the_file_at_d_path_has_the_mode }
 
-check line_3 { line_3 in Ran }                            for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
-check line_4 { line_3 in Ran implies line_4 in Elided }   for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
-run siblings_across_filesystems { line_3 in Ran and line_4 in Elided } for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+check line_3 { line_3 in Ran }                            for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+check line_4 { line_3 in Ran implies line_4 in Elided }   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+run siblings_across_filesystems { line_3 in Ran and line_4 in Elided } for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
 ```
 
+The `12 but 4 Int` is copied from the shared module's `bookScope`; the exact bounds are assay's.
 Everything that makes `line_4` elide is the spec's: Carl's claim that chmod reads its operand
 under `Path`, Tessa's claim that a `slash_path` under `Path` yields an inode, the spec's
 derivation of the resolution from those, Carl's verdict claim on the line, and the shared
@@ -359,8 +370,8 @@ Light on purpose; the builder has latitude on everything not marked.
   the strawman-2 document where it sits, as the tool's own fixture, and replace its expected
   report with an observed one. The bites to expect are the experiment's first findings: the
   subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech; the
-  default scope for spec-owned sigs in book commands; and how far the strawman's fixtures
-  under-pin their worlds, which the adversary will now say. The strawman is not promoted to the
+  ceilings the shared `bookScope` should carry; and how far the strawman's fixtures under-pin
+  their worlds, which the adversary will now say. The strawman is not promoted to the
   spec tier [TYPED nack]; turning 311 into a specification is separate, clean-context,
   product-focused frontier work.
 
