@@ -40,8 +40,8 @@ specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it and
 files. Every heavy task
 (`alloy`, the three gates, the four `bless` tasks, the three `verify:*` lanes) runs under the
 machine-global heavy-work lock; **exit 75 is contention, do other work**. The one open design
-item, what an author owes and when, decides `plans/30Z` § 6 and sits in `notes/30Yc` § 5 as the
-conductor's draft. Strawmen under `notes/30Ya-*` are frozen.
+item, what an author owes and when, grows `plans/30Z` § 6 (the locks and gates are glossed there)
+and sits in `notes/30Yc` § 5 as the conductor's draft. Strawmen under `notes/30Ya-*` are frozen.
 
 The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
 `Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of

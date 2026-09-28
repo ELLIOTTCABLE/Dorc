@@ -297,4 +297,8 @@ here what it thinks belongs there. All [CONDUCTOR]:
   binders only, no JVM in tests, results-only lock with reds-as-pass, re-entrant lock and visible
   bypass) and `specs/AGENTS.md` (the firewall in one line, builders never edit, holes not facts,
   what commits and completion run, the shared halves); each with an `@AGENTS.md` pointer
-  `CLAUDE.md`. The `verified-core-discipline` skill gains assay as the design-tier instrument.
+  `CLAUDE.md`; the human then retuned both in their own hand. The `verified-core-discipline`
+  skill gains assay as the design-tier instrument.
+- **[HUMAN]** `30Z` § 6 filled lightly: the purpose of the two locks and the gates that exist, as
+  built and as ruled (reds the lock records pass). What an author owes and when is still the
+  human's; § 5 of this ledger keeps the conductor's draft.
