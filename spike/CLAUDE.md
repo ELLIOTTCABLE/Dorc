@@ -982,8 +982,11 @@ mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (on
                           #   time, memory-gated, CBMC reaped; trailing arg = one harness)
 mise run verify:kani-check # compile the detached harness without invoking Kani
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
-mise run alloy -- FILES   # Alloy 6 headless over .als files, one JVM per command, JSON rows
+mise run alloy -- FILES   # Alloy 6 headless over .als files or a directory, one bounded JVM per
+                          #   command, JSON rows; preflight + the heavy-work lock ride it
                           #   (the design-tier instrument of `notes/30Y`; as-run: `notes/30Yb`)
+mise run assay -- SPEC.md # compile a specification's fences into one directory of Alloy modules
+                          #   under target/alloy/<stem>/ (`notes/30Y` § 2; praxis: `plans/30Z`)
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 mise run test:e2e-quiet   # the case corpus, agent spelling: terse per-case on success,
                           #   failures unabridged; same selection the bare task takes
