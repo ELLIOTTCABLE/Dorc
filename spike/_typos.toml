@@ -61,6 +61,8 @@ extend-ignore-re = [
    # passes `{{files}}`. Underscores and hyphens break the class, so identifiers stay checked.
    "[A-Za-z0-9+/]{32,}={0,2}",
    # `.als` is Alloy's module extension (the design-tier models of `30Y`): `laws.als`,
-   # `books/<name>.als`. Matched with its dot so a bare prose "als" stays spell-checked.
+   # `books/<name>.als`. The bare word too: code compares the dotless extension, and fix mode
+   # rewrote it to "also" inside an identifier and a string literal, silently (`30Yd`).
    "\\.als\\b",
+   "(?:\\b|_)als(?:\\b|_)",
 ]
