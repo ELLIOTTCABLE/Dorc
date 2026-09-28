@@ -109,6 +109,14 @@ local linters = new Mapping<String, Step> {
         check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
         fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"
     }
+    // assay's compile lints over the specification tier (`Research/notes/30Y` § 3): solver-free,
+    // so pre-commit tier. Writes the generated modules to the cargo target dir and nothing else.
+    // A shared half stands for every document beside it, so editing one re-lints them all.
+    // Through `mise run` so relative paths resolve from hk's cwd, not wherever mise was started.
+    ["assay"] {
+        glob = List("spec/**/*.md")
+        check = "mise run assay -- {{files}}"
+    }
     // Spelling, over `spike/**` AND the prose corpus (`Research/**/*.md`) AND the LLM-maintained
     // root docs, listed BY NAME. `{{files}}`, not a fixed root: scanning the whole tree to check a
     // few staged files is the cost that gets a hook bypassed. Config is discovered per file by
@@ -207,6 +215,15 @@ local gates = new Mapping<String, Step> {
         profiles = List("slow")
         glob = List("spike/**", "minispec/Generated/**", "mise.toml", "hk.pkl")
         check = "mise run test"
+        output_summary = "combined"
+    }
+    // The specification tier's lock (`Research/notes/30Y` § 2.7): parse, run Alloy bounded under
+    // the runner's own caps and the heavy-work lock, and compare against `<spec>.lock.json` in both
+    // directions. Builder-completion tier, never pre-commit: it runs a solver.
+    ["assay-lock"] {
+        profiles = List("slow")
+        glob = List("spec/**/*.md", "spec/**/*.lock.json")
+        check = "mise run assay -- --check {{files}}"
         output_summary = "combined"
     }
     ["verify-check"] {

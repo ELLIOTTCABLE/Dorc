@@ -77,6 +77,20 @@ const REACH: &[Reach] = &[
         path: "spike/crates/core/src/lib.rs",
         want_seen: false,
     },
+    // The specification tier does not exist yet, so nothing but this battery notices if the assay
+    // lint's glob stops reaching it; a design note is prose, never a spec.
+    Reach {
+        name: "sees-a-specification-document",
+        step: "assay",
+        path: "spec/identity/model.md",
+        want_seen: true,
+    },
+    Reach {
+        name: "leaves-a-design-note-alone",
+        step: "assay",
+        path: "Research/notes/30Y-assay-design-tier-models-in-alloy.md",
+        want_seen: false,
+    },
 ];
 
 /// Ask hk whether `step` would see `path`.
