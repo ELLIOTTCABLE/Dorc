@@ -9142,7 +9142,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## syntax/CLAUDE:tn-coarse-subst-provenance
 - defined: spike/crates/syntax/CLAUDE.md:115 — — command-substitution bodies re-lex with
-- cited: 219 30Q 30Qc (5)
+- cited: 219 30Q 30Qc 30Yd (6)
 
 ## syntax/CLAUDE:tn-marks-corrupt-bare
 - defined: spike/crates/syntax/CLAUDE.md:108 — — trailing marks on real commands corrupt silently
