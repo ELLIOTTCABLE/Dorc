@@ -37,10 +37,60 @@ fixtures wired so that assay's own output replaces the hand-written `report.json
   well-formed under `30Y` § 2.1, each reported as chafe (§ 4). No semantic edit to any Alloy
   content in them: that is a stop-and-report.
 - The spec tier proper (`spec/`) does not exist yet and is not minted by this arc.
+- **[HUMAN]** 2026-09-28, the dispatch rulings: temporary generated products go under
+  `target/alloy/<spec-stem>/` (the human floated `target/alloy/` in case assay is one of a
+  stable; the conductor's lean was taken); the lock, when it exists, is the only committed
+  generated product and sits beside its spec; no generated `.als` is committed. Line-mapping is
+  a culture to keep: the tooling should eventually paper over line-number and location
+  inconsistencies the transpilation causes; not immediate unless trivial. Leaks are avoided:
+  authors and LLMs must be able to bypass assay and invoke Alloy directly; no unnecessary
+  wrappers or indirection. The strawmen are not durables: free to churn as experimental
+  targets, frozen once this arc ends; assay's own self-test content is built, Dorc-agnostic
+  and meaningless, in the project's test convention, never borrowed from the strawmen (whose
+  content about Dorc is apparently normative and incorrect). Ceremony minimal; build upfront
+  only what the midpoint needs.
+- **[HUMAN]** the midpoint is tuned back to two things a competent conductor can glue by hand
+  for the first rounds of authorship: an invocation of Alloy itself (`mise run alloy`, built),
+  and a compiler command that emits `.als` files into `target/`. Lock, lock checking, runner
+  integration, hk, gates, and any fancier runner are the second half.
+- **[HUMAN]** resource-exhaustion tooling is first-half work: reuse and enrich `preflight`
+  (several disk-exhaustion events this week); add CPU and wall-clock bounds to the solver's
+  safety tooling, janky to start (a SAT command that never returns puts an LLM to sleep for
+  hours; it happened during the runner lane); a global, not project-local, lock on a
+  standardized file so parallel builders and worktrees cannot run very expensive work
+  concurrently, which DENIES and tells the caller to work on something else, never spin-waits.
+  The WSL RAM reading may be unreliable; out of scope unless hit.
+- **[HUMAN]** the `both` gate is held for this arc: Windows leg only. WSL is acting up and
+  `both` freezes the machine, low value while no project Rust the WSL leg would see differently
+  changes; it becomes necessary in the second half, when the gates themselves are worked on.
+- **[HUMAN]** two Opus builders, serial; a fresh conductor context between the halves.
+- Self-tests, the conductor's decision under the human's gentle lean: a minimal Dorc-agnostic
+  fixture spec with a golden over its generated modules, built first, then the compiler built
+  against it; strawman-3 is the run-for-real smoke, not a committed test. Taken because it is
+  short in wall-clock and is what the builder develops against anyway.
+- Corrections applied to `30Y` at dispatch (it is a living plan and reads current): wall-clock
+  and translation size are report columns, never lock columns, since the lock is compared in
+  both directions; words are minted from `#=` lines AND from claim-atom bodies, which strawman-3
+  needs (`pkg_index` and kin appear only in claims); minting words needs assay to recognise
+  declaration heads and quantifier binders, more than "a sig's name and parent"; the corpus
+  book's null command has an assay-minted word; the runner carries the resource bounds above.
 
 ## § 3-lanes-and-state
 
-To be filled at dispatch.
+- **Lane 1, the first half** — one Opus builder on `ai/r30-assay` at `.tmp/trees/r30-assay`,
+  Windows leg. Deliverables: the `assay` subcommand of `internal-tooling` and its `mise run
+  assay` task (compile only, `.als` into `target/alloy/<stem>/`, JSON report, exit 0 or 2); the
+  Dorc-agnostic fixture and its golden test; the runner's resource bounds (child heap cap,
+  CPU-time cap, batch cap, processor count) and a `preflight alloy` profile; the global
+  `exclusive` lock in `internal-tooling`, wrapping `mise run alloy`; strawman-3 compiled from
+  its `.md` and run through the runner as the smoke, results against `report.json`; a lane
+  report under the next free `30Y`-letter note ID with every fight classed A, B, or C.
+  Completion: `mise run
+  gate:full-quiet` on Windows. Then the fold to `ai/main` and the midpoint notification.
+- **Lane 2, the second half** — a fresh builder: the lock and `--check`/`--write`, runner
+  integration, the Alloy-parse lint, hk and gate placement path-filtered to spec files, the
+  `exclusive` lock on the other heavy tasks, `30Y` § 3 currency, the strawman `build/`
+  directories retired or left frozen, the one steering line. Brief written after lane 1 folds.
 
 ## § 4-chafe-register
 
