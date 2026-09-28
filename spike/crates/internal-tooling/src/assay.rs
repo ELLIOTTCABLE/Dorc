@@ -321,8 +321,8 @@ fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
     emit(fields, code)
 }
 
-/// Write the lock, or compare against it in both directions (`30Y` § 2.7): a red command, a
-/// mismatch, and a missing lock all exit 1 under `--check`.
+/// Write the lock, or compare against it in both directions (`30Y` § 2.7): a mismatch or a
+/// missing lock exits 1 under `--check`; a red the committed lock records is accepted.
 fn settle(mode: Mode, lock_path: &Path, computed: &[lock::LockRow]) -> (Json, u8) {
     let mut lock = vec![("path".to_owned(), Json::str(display_path(lock_path)))];
     let mut status = |s: &str| lock.push(("status".to_owned(), Json::str(s)));
@@ -358,8 +358,11 @@ fn settle(mode: Mode, lock_path: &Path, computed: &[lock::LockRow]) -> (Json, u8
     let arr = |rows: &[lock::LockRow]| Json::Arr(rows.iter().map(lock::LockRow::json).collect());
     lock.push(("not_in_lock".to_owned(), arr(&not_in_lock)));
     lock.push(("not_in_run".to_owned(), arr(&not_in_run)));
-    let red = computed.iter().any(lock::LockRow::is_red);
-    (Json::Obj(lock), if matches && !red { 0 } else { RED })
+    lock.push((
+        "accepted_reds".to_owned(),
+        arr(&lock::accepted_reds(&committed_rows, computed)),
+    ));
+    (Json::Obj(lock), if matches { 0 } else { RED })
 }
 
 /// One error in a module every other opens is one finding, naming every module it stopped.

@@ -9,8 +9,8 @@ use super::alloy::{self, Head};
 use super::runner::Row as RunnerRow;
 use crate::json::{Json, read_str};
 
-/// One lock row. `premise` is the `<check>_premise` twin's result on a check, `absent` where it
-/// has none (`30Y` § 2.5 item 3), and `None` on a run.
+/// One lock row. `premise` is the `<check>_premise` twin's result on a check, else its book's
+/// run's result for a book line, else `absent` (`30Y` § 2.5 item 3); `None` on a run.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct LockRow {
     pub(super) module: String,
@@ -74,8 +74,13 @@ pub(super) fn rows(ran: &[RunnerRow], modules: &[(String, String)]) -> Vec<LockR
                 .find(|(file, _)| file.strip_suffix(MODULE_SUFFIX) == Some(r.module.as_str()))
                 .map_or("", |(_, text)| text.as_str());
             let kind = r.kind.clone().unwrap_or_default();
+            let book_run = r
+                .module
+                .strip_prefix("book_")
+                .map(|book| result_of(&r.module, book).or_else(|| result_of(&r.module, &r.module)));
             let premise = (kind == "check").then(|| {
                 result_of(&r.module, &format!("{name}_premise"))
+                    .or_else(|| book_run.flatten())
                     .unwrap_or_else(|| "absent".to_owned())
             });
             Some(LockRow {
@@ -140,6 +145,16 @@ pub(super) fn parse(text: &str) -> Option<Vec<LockRow>> {
         .collect()
 }
 
+/// The red rows the committed lock records exactly as the run produced them: the residue a
+/// passing `--check` carries, acked by whoever committed the lock.
+pub(super) fn accepted_reds(committed: &[LockRow], computed: &[LockRow]) -> Vec<LockRow> {
+    computed
+        .iter()
+        .filter(|r| r.is_red() && committed.contains(r))
+        .cloned()
+        .collect()
+}
+
 /// Rows the run produced that the lock lacks, and rows the lock holds that the run did not.
 pub(super) fn compare(committed: &[LockRow], computed: &[LockRow]) -> (Vec<LockRow>, Vec<LockRow>) {
     let committed_set: BTreeSet<&LockRow> = committed.iter().collect();
@@ -160,7 +175,7 @@ pub(super) fn compare(committed: &[LockRow], computed: &[LockRow]) -> (Vec<LockR
 
 #[cfg(test)]
 mod tests {
-    use super::{LockRow, RunnerRow, compare, parse, render, rows};
+    use super::{LockRow, RunnerRow, accepted_reds, compare, parse, render, rows};
 
     fn ran(module: &str, command: &str, kind: &str, result: &str) -> RunnerRow {
         RunnerRow {
@@ -194,6 +209,28 @@ mod tests {
         assert!(got.iter().all(|r| r.hash.len() == 16));
         assert_ne!(got[0].hash, got[2].hash, "each row hashes its own command");
         assert!(got[1].is_red(), "an unsat run is red");
+    }
+
+    #[test]
+    fn a_book_line_check_is_witnessed_by_its_books_run() {
+        // `30Y` § 2.5 item 3: a book line has no twin of its own; the book's run, which asserts
+        // every outcome together, is what shows its premise has a world.
+        let book = "module book_twirls\ncheck line_2 { a } for 3\nrun twirls { a } for 3\n";
+        let corpus = "module book_corpus\ncheck law { b } for 3\nrun book_corpus {} for 3\n";
+        let got = rows(
+            &[
+                ran("book_twirls", "line_2", "check", "no-counterexample"),
+                ran("book_twirls", "twirls", "run", "unsat"),
+                ran("book_corpus", "law", "check", "no-counterexample"),
+                ran("book_corpus", "book_corpus", "run", "sat"),
+            ],
+            &[
+                ("book_twirls.als".to_owned(), book.to_owned()),
+                ("book_corpus.als".to_owned(), corpus.to_owned()),
+            ],
+        );
+        let premises: Vec<Option<&str>> = got.iter().map(|r| r.premise.as_deref()).collect();
+        assert_eq!(premises, vec![Some("unsat"), None, Some("sat"), None]);
     }
 
     #[test]
@@ -250,5 +287,41 @@ mod tests {
             vec![("moved".into(), "no-counterexample".into())]
         );
         assert_eq!(compare(&committed, &committed), (vec![], vec![]));
+    }
+
+    #[test]
+    fn a_red_the_lock_records_is_accepted_and_a_moved_premise_is_not() {
+        // The human's ruling: a set of reds fully acked by the committed lock passes. The ack is
+        // row for row, so a red whose premise moved is drift, not the red that was acked.
+        let row = |name: &str, result: &str, premise: &str| LockRow {
+            module: "laws".to_owned(),
+            name: name.to_owned(),
+            kind: "check".to_owned(),
+            scope: "3".to_owned(),
+            result: result.to_owned(),
+            premise: Some(premise.to_owned()),
+            hash: "0".repeat(16),
+        };
+        let committed = vec![
+            row("green", "no-counterexample", "sat"),
+            row("known_red", "counterexample", "sat"),
+        ];
+        assert_eq!(compare(&committed, &committed), (vec![], vec![]));
+        assert_eq!(
+            accepted_reds(&committed, &committed),
+            vec![row("known_red", "counterexample", "sat")]
+        );
+
+        let moved = vec![
+            row("green", "no-counterexample", "sat"),
+            row("known_red", "counterexample", "unsat"),
+        ];
+        let (not_in_lock, not_in_run) = compare(&committed, &moved);
+        assert_eq!(
+            not_in_lock,
+            vec![row("known_red", "counterexample", "unsat")]
+        );
+        assert_eq!(not_in_run, vec![row("known_red", "counterexample", "sat")]);
+        assert!(accepted_reds(&committed, &moved).is_empty());
     }
 }
