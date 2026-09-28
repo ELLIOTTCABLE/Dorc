@@ -5,35 +5,39 @@
 > code-tier instrument this extends downward to the design tier) and of `notes/30X` (the testing
 > architecture the correspondence half will eventually ride). Its ledger is `notes/30Ya`; its
 > evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
-> source graded; the worked strawman is `strawman-2/` there, on the older harness). Grades:
-> **[TYPED]** the human typed it · **[ACKED]** confirmed in dialogue · **[CONDUCTOR]**
-> conductor-derived, unratified. Every name here is STRAWMAN and renames freely
-> (`rul-strawman-formats-no-compat`). This document is about the tooling only: what assay
-> reads, what it builds, what it runs, and what it reports. How a spec document is written is
-> not here.
+> source graded; the worked fixture is `strawman-2/` there). Grades: **[TYPED]** the human typed
+> it · **[ACKED]** confirmed in dialogue · **[CONDUCTOR]** conductor-derived, unratified. Every
+> name here is STRAWMAN and renames freely (`rul-strawman-formats-no-compat`). This document is
+> about the tooling only: what assay reads, what it builds, what it runs, and what it reports.
+> How a spec document is written is not here.
 
 ## § 0-what-assay-buys
 
 **assay** is a compiler and checker that reads a literate specification document, builds Alloy 6
 modules from its fences, runs them, and holds the verdicts in a lock. It is a generic solver
 over sh-spelled lines mapped to abstract claims about those lines; it knows shell, and it knows
-nothing about what any claim means. It exists for two payoffs, both typed by the human [TYPED]:
+nothing about what any claim means. Its purposes, in order [TYPED]:
 
+- **`buy-rigor-by-adversary`** — first and above the rest: make it hard for the design process to
+  write a wishy-washy line into a spec. Every statement a spec makes is checked as a `check`,
+  never confirmed by a `run`: the solver is set against the statement, fills every gap the spec
+  left with the world that breaks it, and hands that world back. The counterexample is the
+  sentence the author forgot to write. A `run` is used for one thing only, to prove a set of
+  facts is satisfiable so that a check cannot pass by contradiction.
 - **`buy-regression-before-a-human-reads-it`** — a design statement made precisely once, and a
   later rewrite, composition, or assumption that reads it wrong, is caught mechanically, by a
   gate an LLM runs before showing a claim to a human. Of the two defect populations the three
   crosscheck rounds over the identity model found, text-drift under folds and rewrites is the
-  one that does not narrow with rounds and scales with edit volume; that is the population this
-  instrument is for.
+  one that does not narrow with rounds and scales with edit volume.
 - **`buy-one-input-across-checkers`** — the unit that pins a behavioural claim is a few lines of
   sh with an expected verdict per line: a book. The same book, unrewritten, is the design tier's
   test today and the product's own input at the field tier later, so "the design says elide and
   the product says guard" is a diff over one file, never a translation between two.
 
-What falls out once those are built, each observed in the prior art and each priced by the
-strawman: a refuted shape (the `311u` register, the `GOTCHAS` list) becomes a run that re-runs on
-every edit; the cost of a rewrite is countable as changed lock rows; and the strongest tool the
-panels lacked, "no answer changed" after a rewrite, becomes a lock diff of zero.
+What falls out once those are built: a refuted shape (the `311u` register, the `GOTCHAS` list)
+becomes a check that re-runs on every edit; the cost of a rewrite is countable as changed lock
+rows; and the strongest tool the panels lacked, "no answer changed" after a rewrite, becomes a
+lock diff of zero.
 
 Posture [TYPED]: tracked, not proved. Bounded model-finding over hand-written models of the
 prose, at the prose's own altitude. Markdown in, Alloy out; JSON in, JSON out; a nonzero exit is
@@ -63,12 +67,16 @@ in the Analyzer without assay in the loop.
   opens its module, so a check over the actual claims needs a scope at least the corpus's size,
   and a law meant to hold for all speech must not open the corpus at all. The module split in
   § 2.3 exists for this reason [CONDUCTOR].
+- **Default scopes are small.** Alloy's default of three atoms per sig does not fit a book once
+  keys are first-class things; assay's book commands take a per-invocation default (§ 2.4) and
+  the spec's own `for` clauses override it. A red for want of scope is a red; the report says
+  which command and what scope it ran at, and nothing more.
 - **Higher-order quantification only where Alloy skolemizes it.** A `check` with a top-level
   `all S: set Claim` negates to an existential Alloy can solve; nesting a set quantifier under
   another quantifier does not. A law written outside that shape gets Alloy's own error, passed
   through.
 - **No vacuity check built in.** A `check` whose premise is unsatisfiable passes. § 2.5 pairs
-  checks with satisfiable twins by name, and a book `run` that finds no instance is a failure.
+  checks with satisfiable twins by name, and every book carries a satisfiability run.
 - **Integers are bounded.** They appear as argv positions and as key values in positional
   catalogs (`ufw insert 1`, rowids; 311 § 2.9), and Alloy's integers wrap at the bitwidth the
   scope sets. The bitwidth is a scope like any other; a spec that counts sets it and knows it.
@@ -108,11 +116,16 @@ The two comment forms, precisely:
   component may be either, the command word included. The literal is the join key: one literal
   is one atom, so a word named on one line and classed on another is one atom carrying both.
 - **`#=` is line-scoped Alloy, lifted verbatim** across consecutive `#=` lines, with `this`
-  bound to the line's atom. A `#=` that mentions `this` makes the line a `Line` and a `run`; one
-  that does not is a fact about the world, and its line generates no atom. Free names in a `#=`
-  are atoms assay knows: the map's names, claim atoms, and names the `#=` introduces, which assay
-  mints. A `#=` that is a declaration (`one sig …`) is emitted at module level; any other is a
-  constraint. A trailing `for` clause on a `#=` is the run's scope (§ 2.4).
+  bound to the line's atom. What a `#=` statement *is* decides where it goes [ACKED 2026-09-27]:
+  a **declaration** (`one sig …`) is a claim or a world object, emitted at module level, and if
+  it is a claim it is in force at that line and every line after; a **formula on a line that
+  never mentions `this`** is a fact about the world, and that line generates no atom; a
+  **formula on a line that mentions `this`** is that line's *outcome*, the statement the
+  adversary attacks (§ 2.4). World facts never need `this`, since the world does not know about
+  lines and every name is global; `this` appears in exactly two places, a claim about this line
+  and the decision about this line. Free names in a `#=` are atoms assay knows: the map's names,
+  claim atoms, and names the `#=` introduces, which assay mints. A trailing `for` clause on an
+  outcome is its command's scope.
 
 ### § 2.2-the-harness-and-the-unit
 
@@ -134,7 +147,11 @@ sig Line { before: set Line, speech: set Claim, cmd: one Shword, argv: seq Shwor
   just do. Membership is only ever stated, by a braced map component or by a spec's fact. A
   braced word is a join node, not a quantifier: a book stays concrete, and a universal
   statement over a class is a `check` in the spec.
-- A `Claim` is what a `.` line loads, by file stem. Assay never reads a claim's fields.
+- A `Claim` is what a `.` line loads, by file stem, or what a `#=` declares. Assay never reads a
+  claim's fields, and it is the spec's business that a claim in force cannot be flipped by the
+  solver (the strawman does it with one fact: a claim not otherwise computed is true exactly
+  where some line has it in force). That fact is what lets a measurement, "this line's check said
+  yes", be a claim declared on the line rather than a switch the adversary can throw.
 - **`unit-is-the-logical-line`** [ACKED] — a `Line` is one complete command as sh reads it,
   continuations joined, because that is where a comment attaches. Alloy holds four things about
   it: its order among the book's lines, the claims in force at it, and its decomposed words as
@@ -145,9 +162,9 @@ sig Line { before: set Line, speech: set Claim, cmd: one Shword, argv: seq Shwor
 
 Beside the harness, assay opens the tree-global spec module (STRAWMAN `spec/shared`) into every
 module it generates, so no document declares the truly global things [ACKED]. What that module
-holds, from `Speaker` and the claim species' base through the answer order, the laws, the
-verdict subsets, and how a resolution is derived, is spec-tier content and not this document's;
-anything less than tree-global is opened explicitly by the spec that wants it.
+holds, from `Speaker` and the claim species' base through the answer order, the verdict
+subsets, and the truth default, is spec-tier content and not this document's; anything less than
+tree-global is opened explicitly by the spec that wants it.
 
 ### § 2.3-the-generated-modules
 
@@ -158,8 +175,8 @@ One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN la
   per braced class, and per name a `#=` introduces, with the class memberships the map lines
   state and no others. Nothing else declares a literal: a claim may say `verb = chmod` because
   some book spelled `chmod`, and one naming a word no book spells gets Alloy's own name error.
-- `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom,
-  and one named set per load file, so a book's loads are set expressions.
+- `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom
+  from an `alloy` fence, and one named set per load file, so a book's loads are set expressions.
 - `laws.als` — opens `species` only, so the claim universe is free; every spec-authored `check`
   that carries a scope clause.
 - `corpus.als` — opens `claims`; every spec-authored `check` written without a scope clause,
@@ -172,30 +189,35 @@ checks is STRAWMAN [CONDUCTOR]: it keeps the document valid Alloy, so the Analyz
 mode still opens it, and it reads naturally, since a law states its scope and a corpus check's
 scope is the corpus.
 
-### § 2.4-books-lines-speech-and-runs
+### § 2.4-books-lines-speech-and-outcomes
 
 A book fence compiles as follows.
 
 - Literals, classes, introduced names, and class memberships are `words.als`'s, shared by every
   book in the document; a book module declares none.
-- Each line whose `#=` mentions `this` is a `Line` atom with `cmd`, `argv`, and `before` (the
-  lines above it). Each `#=` without `this` is emitted as a fact, verbatim.
+- Each line whose `#=` holds an outcome is a `Line` atom with `cmd`, `argv`, and `before` (the
+  lines above it). Every `#=` declaration is emitted at module level. Every `#=` world fact is
+  emitted as a fact, verbatim.
 - **`mech-speech-is-per-line-data`** [ACKED] — each line's `speech` is the set of claims the
   `.` lines above it load, in order, a later load displacing an earlier one that answers the
-  same thing (by file stem, at v0). It is data the book module states, computed today by that
-  rule and by the analyzer's own load model later; nothing in a spec learns how it was assembled.
-  Claims are atomic [TYPED]: a load brings a set of them and there is no partial override to
-  model, since an oracle either handles an input shape or declines it whole.
-- Each `Line` becomes a `run` asserting its `#=` body with `this` substituted, conjoined with
-  the bodies of every line above it, so the first red run names the line (a run for one line
-  alone would let the solver choose an earlier line's convergence and dissolve the query). Exact
-  bounds on `Shword`, `Class`, `Line`, and `Claim`; the default scope for everything else unless
-  the `#=` ends in a `for` clause, which is passed through as written. A run that finds no
-  instance is red.
+  same thing (by file stem, at v0), plus every claim declared on a line at or above it. It is
+  data the book module states, computed today by that rule and by the analyzer's own load model
+  later; nothing in a spec learns how it was assembled. Claims are atomic [TYPED]: a load brings
+  a set of them and there is no partial override to model, since an oracle either handles an
+  input shape or declines it whole.
+- **`mech-outcomes-are-checked`** [ACKED 2026-09-27] — each `Line` becomes a `check` whose
+  conclusion is its outcome with `this` substituted and whose premises are the outcomes of every
+  line above it, so the first red names the line and an earlier decision is never the adversary's
+  to revisit. Each book also becomes one `run` asserting every outcome together, so no check
+  passes because the facts contradict. Scopes: exact bounds on `Shword`, `Class`, `Line`, and
+  `Claim`; assay's per-invocation default for everything else (STRAWMAN `--scope`, default 8,
+  with the integer bitwidth left at Alloy's own); a trailing `for` on an outcome replaces the
+  default for that command. A check with a counterexample is red; a book run with no instance is
+  red.
 
-Assay derives no claim and recognises no verdict. Default resolutions, the truth of loaded
-speech, query pairs, and the meaning of `Elided` are all facts and functions in the shared
-module or the spec, over the relations assay supplies.
+Assay derives no claim and recognises no verdict. What makes a line converged, how a resolution
+is derived, and what `Elided` means are all facts and functions in the shared module or the
+spec, over the relations assay supplies.
 
 ### § 2.5-the-checks-assay-runs
 
@@ -203,7 +225,8 @@ module or the spec, over the relations assay supplies.
 2. **Corpus checks**: every `check` in `corpus.als`, at exact bounds over the actual claims.
 3. **Vacuity twins**: a `check X` is paired by name with a `run X_premise` in the same module,
    which must be satisfiable; a check with no twin is recorded `premise: absent`, never green.
-4. **Books**: every line's `run` (§ 2.4).
+4. **Book outcomes**: every line's `check` (§ 2.4).
+5. **Book satisfiability**: every book's `run`.
 
 ### § 2.6-lints
 
@@ -238,7 +261,7 @@ A species with its meaning fact and two claims under it, as written in a spec's 
 ```alloy
 sig Yields extends MDecl { of: one Class, under: one MScheme, to: lone MScheme }
 
-one sig tessa__a_slash_separated_path_names_one_entry_per_component extends Yields {} { speaker = tessa  of = slash_path  under = Path  to = Entry }
+one sig tessa__a_slash_separated_path_names_the_inode_of_its_last_entry extends Yields {} { speaker = tessa  of = slash_path  under = Path  to = Inode }
 one sig tessa__a_bare_word_is_not_a_path extends Yields {} { speaker = tessa  of = bare_word  under = Path  no to }
 ```
 
@@ -246,8 +269,9 @@ The first line lands in `species.als`; the two atoms land in `claims.als`. A `ch
 with a scope lands in `laws.als` and runs over a free universe of claims; one written without
 lands in `corpus.als` and runs over exactly these.
 
-A book, as written in an `sh` fence. The `stat` line names two literals; the `chmod` lines put
-the same literals in a class; the fixture states only what is true of the world:
+A book, as written in an `sh` fence. The `stat` line names two literals and states the world by
+name; the `chmod` lines put the same literals in a class; the second `chmod` line declares the
+measurement its verdict rests on, as a claim, and then states its outcome:
 
 ```sh
 # siblings_across_filesystems.sh
@@ -258,9 +282,9 @@ the same literals in a class; the fixture states only what is true of the world:
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
-#= inode_x.scheme = Inode and inode_z.scheme = Inode
-#= a_path.reaches = inode_x.reaches and d_path.reaches = inode_z.reaches
-#= inode_x.worldParent = fs_1 and inode_z.worldParent = fs_2 and fs_1.worldParent = boot_1 and fs_2.worldParent = boot_1
+#= word.inode_x.scheme = Inode and word.inode_z.scheme = Inode
+#= word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches
+#= word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2 and word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -268,10 +292,12 @@ the same literals in a class; the fixture states only what is true of the world:
 
    chmod g+w /var/lib/other
 #} chmod g+w {slash_path}
+#= one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = this }
 #= this in Elided
 ```
 
-The document's words module and the book's generated module, abridged:
+`word.a_path` is the spec being explicit that a key is a first-class thing with a word, not a
+string. The document's words module and the book's generated module, abridged:
 
 ```alloy
 module words
@@ -286,25 +312,32 @@ fact { class = a_path->slash_path + d_path->slash_path + … }
 module books/siblings_across_filesystems
 open claims
 
-fact { inode_x.scheme = Inode and inode_z.scheme = Inode }
-fact { a_path.reaches = inode_x.reaches and d_path.reaches = inode_z.reaches }
-fact { inode_x.worldParent = fs_1 and inode_z.worldParent = fs_2 and fs_1.worldParent = boot_1 and fs_2.worldParent = boot_1 }
+fact { word.inode_x.scheme = Inode and word.inode_z.scheme = Inode }
+fact { word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches }
+fact { word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2 and word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1 }
 
 one sig line_3, line_4 extends Line {}
+one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_4 }
 fact { line_3.cmd = chmod  line_3.argv = 0->g_minus_w + 1->a_path  no line_3.before }
 fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.before = line_3 }
-fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod  line_4.speech = line_3.speech }
+fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
+fact { line_4.speech = line_3.speech + carl__the_file_at_d_path_has_the_mode }
 
-run line_3 { line_3 in Ran }                  for 4 but exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 16 Claim
-run line_4 { line_3 in Ran and line_4 in Elided } for 4 but exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 16 Claim
+check line_3 { line_3 in Ran }                            for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+check line_4 { line_3 in Ran implies line_4 in Elided }   for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+run siblings_across_filesystems { line_3 in Ran and line_4 in Elided } for 8 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
 ```
 
 Everything that makes `line_4` elide is the spec's: Carl's claim that chmod reads its operand
 under `Path`, Tessa's claim that a `slash_path` under `Path` yields an inode, the spec's
-derivation of the resolution from those, and the shared module's definition of `Elided`. Hand
-the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second claim declines, and
-the same site guards. Assay saw literals, two classes, two lines, and a set of claims. The
-worked version of this, with all its books, is `strawman-2/` in the evidence base.
+derivation of the resolution from those, Carl's verdict claim on the line, and the shared
+module's definitions of `Converged` and `Elided`. The adversary may not flip the verdict claim,
+because a claim in force is true; it may not revisit line 3, because that is a premise; it may
+only hunt for a world the fixture admits in which the questions about line 4 do not all spare.
+Hand the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second claim declines,
+and the same site is forced to guard. Assay saw literals, two classes, two lines, a declaration,
+and a set of claims. The worked version of this, with all its books, is `strawman-2/` in the
+evidence base.
 
 ## § 3-implementation-sketch
 
@@ -316,22 +349,20 @@ Light on purpose; the builder has latitude on everything not marked.
   with the wall-clock and memory gating the Kani lane already uses. Windows and WSL alike.
 - **Compiler.** Rust, as a subcommand of `crates/internal-tooling` (which already reads the
   corpus for `slugs` and `docids`); a sibling crate under `spike/verify/` if it outgrows that. A
-  Markdown fence lexer; the syntax crate's lexer for map lines; `#=` lifted verbatim; the five
-  modules of § 2.3; the lints of § 2.6. Assay never parses Alloy.
+  Markdown fence lexer; the syntax crate's lexer for map lines; `#=` lifted verbatim, sorted into
+  declaration, fact, or outcome by shape; the six modules of § 2.3; the lints of § 2.6. Assay
+  never parses Alloy beyond recognising a `sig` declaration's name and parent.
 - **Lock and report.** JSON in, JSON out; `--check` writes nothing. Gate placement: lints in the
   pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
   path-filtered the same way; larger scopes in an opt-in lane.
-- **First experiment** [ACKED: minimal harness first, then back to 311 to use it]: re-express
-  the strawman-2 document on this harness, in place, as the tool's own fixture, and replace its
-  expected report with an observed one. The bites to expect are the experiment's first findings:
-  the subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech;
-  the default scope for spec-owned sigs in book runs; and whether a `run` over the open world a
-  fixture leaves is too permissive, since a run passes when any admitted world gives the verdict,
-  so a book must pin what the solver would otherwise choose (the strawman pins each printed
-  token's scheme), and a `check` with the line's convergence taken as given is the alternative
-  to price. The strawman is not promoted to the spec
-  tier [TYPED nack]; turning 311 into a specification is separate, clean-context, product-focused
-  frontier work.
+- **First experiment** [ACKED: minimal harness first, then back to 311 to use it]: point assay at
+  the strawman-2 document where it sits, as the tool's own fixture, and replace its expected
+  report with an observed one. The bites to expect are the experiment's first findings: the
+  subset-quantified laws' cost at scope six; `attributionSufficient` under redundant speech; the
+  default scope for spec-owned sigs in book commands; and how far the strawman's fixtures
+  under-pin their worlds, which the adversary will now say. The strawman is not promoted to the
+  spec tier [TYPED nack]; turning 311 into a specification is separate, clean-context,
+  product-focused frontier work.
 
 ### § 3.1-later-and-maybe
 
@@ -339,15 +370,15 @@ Not in the first cut; listed so nothing here is mistaken for forgotten.
 
 - **The correspondence compiler.** A book fence is already a runnable sh file. When the
   product's kernel reaches the design a spec pins, the same file compiles to an e2e expectation
-  (a loom session under the harness binary, the expected transcript derived from the spec's
-  verdict subsets), and assay learns the one piece of Dorc knowledge it will need to map
-  between tools, the outcome vocabulary [TYPED: eventually]. Until then and wherever the product
-  disagrees, the lock stores the field-tier verdict as qualified intent in goblint's manner
-  [ACKED]: `UNKNOWN!` for an unsoundness, `UNKNOWN` for intended imprecision, `TODO` for
-  precision owed; nothing regenerates a stored verdict from product output.
+  (a loom session under the harness binary, the expected transcript derived from each line's
+  outcome), and assay learns the one piece of Dorc knowledge it will need to map between tools,
+  the outcome vocabulary [TYPED: eventually]. Until then and wherever the product disagrees, the
+  lock stores the field-tier verdict as qualified intent in goblint's manner [ACKED]:
+  `UNKNOWN!` for an unsoundness, `UNKNOWN` for intended imprecision, `TODO` for precision owed;
+  nothing regenerates a stored verdict from product output.
 - **Derived columns and views.** The rested-on set per spared line and the danger column per
   claim (the inverse of `restsOn` across all books) are evaluable against instances; a
-  `--eval` of named expressions per run, and views over the lock, once the lock is boring.
+  `--eval` of named expressions per command, and views over the lock, once the lock is boring.
 - **The mutation lane** [TYPED: negative verification and mutation testing are a required
   guard]: line-drop mutants over the `alloy` fences with the laws and books re-run; a mutant no
   check or book kills is reported. Opt-in and slow.
@@ -362,11 +393,14 @@ marked]:
 - Speech is per line and is data (§ 2.4); nothing derives it inside Alloy; the laws stay
   quantified over arbitrary claim sets. An admin's load displacing a foreign author's claim at
   every later line then needs no carve-out anywhere.
+- A measurement is a claim, so a verdict claim's truth is by the default only until a spec
+  models the state the check measures; then it is computed like a resolution's, and a lying
+  verdict function becomes representable and attributable with no change to assay.
 - The truth stratum is the spec's and is not welded static. Alloy 6's `var` sigs and step scopes
   are the route for the lifecycle species (311 § 3.3), for the two standups as two instants, and
   for time-of-check against time-of-use; the runner accepts temporal commands from day one
   because that is a flag, not a design.
-- Fixture facts are sited (a `#=` without `this` sits on a line), which is the hook the temporal
+- Fixture facts are sited (a world-fact `#=` sits on a line), which is the hook the temporal
   work needs; assay hoists them into timeless facts today and stops doing so then.
 - `Line` grows structure, never literals: parts and operators, redirects, substitutions, and a
   bounded word-set form (`{flavour} rest... a_bar`, both ends bound) when a spec needs them.
