@@ -224,8 +224,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   lane table, the typed acks of the close, the post-review repair lane). The design-model
   mechanisation work: **`notes/30Y`** (assay, the plan for a design-tier checker over literate
   specifications in Alloy 6; tooling only, praxis deliberately excluded) · `notes/30Ya` (its
-  ledger: the research fronts, every human-typed lean and ruling of the design sittings, the
-  scope map of what in the corpus is modelable) · `notes/30Yb` (the Alloy runner lane: the
+  ledger: every human-typed lean and ruling of the design sittings, with the conductor findings
+  the human read beside them) · `notes/30Yb` (the Alloy runner lane: the
   `mise run alloy` task, module resolution as observed, and both strawmen run for real, every
   fight recorded) · `notes/30Ya-strawman-2/` (the identity model's first cut as a
   specification: harness, shared module, spec, hand-generated build, observed results) ·
@@ -237,7 +237,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   smoke) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
   with held-open holes, the soundness habits, the document form; generic to any Alloy-checked
   specification, with assay's own vocabulary confined to one section; § 6 awaits the lock).
-  The research evidence base (the four fronts' sources and turn notes) stays in
+  The research evidence base (the four fronts' sources and turn notes, and its `plan.md`: the
+  question, the fronts and their findings, the corpus scope map) stays in
   `.claude/research/design-model-mechanisation-prior-art/`.
   Current state: `LIVING_STATUS.md`; what follows: `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
