@@ -1975,33 +1975,92 @@ pred true_ClosesLends[d: ClosesLends] {
 
 ### § 3.5-committee-law-and-attribution
 
-Every positive step is one author's line:
+Every statement species in this document carries one speaker (the shared `Statement`), and
+each species' speaker fact names the party who can know it about their own tool, store, or
+machine: the engine only chains and meets. What the fences add here is the support of an
+answer, the statements it rested on, so that the two shapes of composition are checkable: a
+granting composite (a SAME or a DISJOINT) rests on more than one author only where each author
+spoke about their own lookup; a withholding composite (an UNKNOWN, a KNOWN_UNSPOKEN, a
+collision) names nobody. Attribution renders the support; the aid plane's rendering is
+`AID-NEEDS.md`'s. The two-tops way's support is one mScheme's owner by construction; the
+one-top way's is one mScheme's owner and the stores' describers on both legs; a SAME's support
+is the warrants of every level, the mCorrespondences, and the sentinels that made instances one.
 
-- a `:yields` and its lookup warrants
-- a shape's `:identified-in` and its warrants
-- a may-read set and its sentinel
-- a may-write entailment and its finished record
-- a mCorrespondence
-- an `:observer-independence`
-- a `:lends`
+```alloy
+fun warrantsOn[k: mLevel]: set Statement {
+   (DeclaresUniqueReferent & InForce & referentShape.(k.shape))
+   + (DeclaresUniqueName & InForce & nameShape.(k.shape))
+   + (DeclaresRoot & InForce & rootedShape.(k.shape))
+   + (DeclaresIdentifiedIn & InForce & onShape.(k.shape))
+   + (SuppliesParent & InForce & forKey.k)
+   + (DeclaresAliasesNothingElse & InForce & store.k)
+}
 
-The engine only chains and meets. Every statement an answer rests on is something one party can
-know about their own tool, store, or machine. That party says it alone, describes nothing they
-cannot see, and names no other author. So the speech needed grows with the number of authors,
-never with the number of pairs of them.
+fun chainSupport[x: mKey]: set Statement {
+   warrantsOn[fullyQualifiedKey[identity[x]]]
+   + (DeclaresYields & InForce & fromShape.((x.*yielded).shape))
+   + (DeclaresLends & InForce & lentInstance.(mSort.(x.at.ambient)))
+   + (ClosesLends & InForce & closedWrapper.(x.at.*enteredFrom.through))
+}
 
-A granting composite is entailed jointly by one mScheme's `:yields` and the primary mScheme's
-declaration for that shape. Each author speaks about their own lookup. A withholding composite
-names nobody and needs nobody's consent.
+fun sameSupport[x, y: mKey]: set Statement {
+   chainSupport[x.sameClosure] + (DeclaresCorresponds & InForce & (keyX + keyY).(x.sameClosure))
+}
 
-Attribution:
+fun disjointSupport[x, y: mKey]: set Statement { chainSupport[x] + chainSupport[y] }
 
-- Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it
-  rested on, the route closures it rested on (1.5-token-and-the-two-warrants,
-  2.10-places-the-upward-lookup), and the closed may-read sets its writeset rested on.
-- Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that
-  made instances one, and the mCorrespondences.
-- Every invalidated conclusion names the writeset that invalidated it.
+fun speakersOf[s: set Statement]: set Speaker { s.speaker }
+
+check law_disjoint_by_two_tops_rests_on_one_scheme_owner {
+   all x, y: mKey, a, b: mLevel |
+      meet[identity[x], identity[y]] = a -> b and separatedAt[identity[x], identity[y], a, b]
+         and twoTopsWay[topBelow[identity[x], a], topBelow[identity[y], b]] implies
+            one speakersOf[DeclaresUniqueName & InForce & nameShape.((topBelow[identity[x], a] + topBelow[identity[y], b]).shape)]
+} for 6 but 4 Int
+
+run law_disjoint_by_two_tops_rests_on_one_scheme_owner_premise {
+   some x, y: mKey, a, b: mLevel |
+      meet[identity[x], identity[y]] = a -> b and separatedAt[identity[x], identity[y], a, b]
+         and twoTopsWay[topBelow[identity[x], a], topBelow[identity[y], b]]
+}
+
+check law_declining_names_nobody {
+   all x, y: mKey | compare[x, y] in UNKNOWN + KNOWN_UNSPOKEN implies
+      compare[x, y] = compare[x, y]
+} for 3 but 4 Int expect 0
+
+check law_speech_grows_with_authors_not_pairs {
+   all d: DeclaresIdentifiedIn + DeclaresYields + DeclaresMayRead + DeclaresEntails + DeclaresLends |
+      d in DeclaresIdentifiedIn implies d.speaker = d.onShape.ofScheme.schemeOwner
+      else d in DeclaresYields implies d.speaker = d.fromShape.ofScheme.schemeOwner
+      else d in DeclaresMayRead implies d.speaker = sortOfKey[d.ofKey].sortOwner
+      else d in DeclaresEntails implies d.speaker = sortOfKey[d.fromKey].sortOwner
+      else d.speaker = d.lendingWrapper.wrapperOwner
+} for 6 but 4 Int
+```
+
+<!-- prose-translation -->
+> Every positive step is one author's line: a `:yields` and its lookup warrants, a shape's `:identified-in` and its warrants, a may-read set and its sentinel, a may-write entailment and its finished record, a mCorrespondence, an `:observer-independence`, a `:lends`; each names its own tool, store, or machine and no other author.
+> The support of a SAME is the warrants at every level of the chains it rests on, the yields that reached them, the lends and sentinels that made instances one, and the mCorrespondences.
+> The support of a DISJOINT is the warrants at every level of the two chains.
+> A DISJOINT by the two-tops way rests on one mScheme's owner's `:guarantees-unique-name` declarations.
+> The speech an answer needs grows with the number of authors, never with the number of pairs of them: each declaration is the line of the one party that owns the thing it is about.
+
+#### § 3.5.1-composites-and-attribution
+
+The check `law_declining_names_nobody` above is deliberately an empty claim marked `expect 0`
+so that it can never be mistaken for a green: that an UNKNOWN or a KNOWN_UNSPOKEN names nobody
+is the absence of a support function, which no check can state; a reviewer reads that no
+definition in this document builds a support for either answer.
+
+<!-- normative -->
+> The engine only chains and meets.
+> Every statement an answer rests on is something one party can know about their own tool, store, or machine; that party says it alone, describes nothing they cannot see, and names no other author.
+> A granting composite is entailed jointly by one mScheme's `:yields` and the primary mScheme's declaration for that shape; each author speaks about their own lookup.
+> A withholding composite names nobody and needs nobody's consent.
+> Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it rested on, the route closures it rested on (1.5-token-and-the-two-warrants, 2.10-places-the-upward-lookup), and the closed may-read sets its writeset rested on.
+> Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that made instances one, and the mCorrespondences.
+> Every invalidated conclusion names the writeset that invalidated it.
 
 > A granting composite: "these two accounts are one". A withholding composite: a mount
 > invalidating an account's mResolution.
