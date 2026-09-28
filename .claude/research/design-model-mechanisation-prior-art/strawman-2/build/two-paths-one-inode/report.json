@@ -1,66 +1,48 @@
 {
   "spec": "spec/two-paths-one-inode.md",
-  "spec_sha": "7d3e0b91",
-  "alloy": "6.2.0@6b8c1cb5",
-  "lifted": {
-    "speakers": ["tessa", "simon", "carl", "stdlib", "foob"],
-    "schemes": ["Path", "Entry", "Inode", "DeviceNumber", "BootId", "BundlePath", "SinglyLinkedPath"],
-    "sorts": ["File", "Filesystem", "Boot", "CertificateBundle"],
-    "verbs": ["chmod"],
-    "static_claims": 17,
-    "oracle_sets": ["tessa_fs", "simon_fs", "stdlib_boot", "carl_chmod", "foob_certs", "tessa_singly_linked"],
-    "words": {
-      "a_path": "/srv/a/shared", "b_path": "/srv/b/shared", "c_path": "/srv/a/other", "d_path": "/var/lib/other",
-      "chmod": "chmod", "g-w": "g-w", "g+w": "g+w", "stat": "stat", "-c": "-c", "'%i %d'": "'%i %d'", "'%i %d %h'": "'%i %d %h'", "cat": "cat"
-    },
-    "introduced": {"inode_x": ["two_paths_one_inode", "siblings_in_one_filesystem", "siblings_across_filesystems"], "inode_y": ["siblings_in_one_filesystem"], "inode_z": ["siblings_across_filesystems"], "fs_1": ["all"], "fs_2": ["siblings_across_filesystems"], "boot_1": ["all"]}
+  "shared": "spec/shared.md",
+  "alloy": "6.2.0",
+  "status": "expected, never observed: nothing here has been run",
+  "lints": {
+    "one_literal_one_name": "ok",
+    "free_names_are_known": "ok",
+    "loads_resolve": "ok",
+    "modules_parse": "unrun"
   },
-  "lint": {
-    "coherence": {"ok": true, "words": 12, "conflicts": []},
-    "inhabitation": {"ok": true, "lines": 28},
-    "scope": {"ok": true, "scoped_lines": 41, "this_on_fixture_line": 0, "free_name_outside_line": 0},
-    "introduced_once": {"ok": true},
-    "claim_prefix_matches_speaker": {"ok": true, "claims": 17},
-    "derived_speaker_matches_scheme_owner": {"ok": true, "derived": 19},
-    "deviations": {"written": ["tessa__a_path_declines", "tessa__b_path_declines"], "suppressed_defaults": ["tessa__a_path_resolves_to_inode_x", "tessa__b_path_resolves_to_inode_x"]},
-    "loads_resolve": {"ok": true, "files": 24, "unknown": []},
-    "verdict_forms": {"ok": true, "sites": 14, "forms": ["Ran", "Elided", "Guarded"]},
-    "no_comment_syntax": {"ok": true},
-    "normative_prose_outside_blockquote": {"ok": true, "sections_without_alloy": ["6"]},
-    "yields_xor_primary": {"ok": true}
+  "words": {
+    "shwords": 20,
+    "classes": ["slash_path", "bare_word"],
+    "introduced": ["inode_x", "inode_y", "inode_z", "fs_1", "fs_2", "boot_1"],
+    "munged": {"dash_c": "-c", "fmt_i_d": "'%i %d'", "fmt_i_d_h": "'%i %d %h'", "proc_boot_id": "/proc/sys/kernel/random/boot_id", "g_minus_w": "g-w", "g_plus_w": "g+w", "w_shared": "shared"},
+    "named": {"a_path": "/srv/a/shared", "b_path": "/srv/b/shared", "c_path": "/srv/a/other", "d_path": "/var/lib/other"}
   },
-  "checks": {
-    "seatCanKnow": {"scope": 12, "result": "no-counterexample"},
-    "neverWrongWhenAllTrue": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
-    "monotoneInSpeech": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
-    "strangerSafe": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
-    "attributionHonest": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
-    "attributionSufficient": {"scope": "6 but 8 MKey", "result": "no-counterexample"},
-    "attributionMinimal": {"scope": "6 but 8 MKey", "result": "no-counterexample"}
-  },
-  "vacuity": {"neverWrongWhenAllTrue": "premise-satisfiable", "monotoneInSpeech": "premise-satisfiable", "strangerSafe": "premise-satisfiable"},
-  "books": {
-    "two_paths_one_inode": {"loads": 14, "derived": 4, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
-    "siblings_in_one_filesystem": {"loads": 14, "derived": 5, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem not in by[this]"],
-      "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "tessa__a_file_has_one_inode_in_its_filesystem", "tessa__a_path_resolves_to_inode_x", "tessa__c_path_resolves_to_inode_y", "tessa__inode_x_is_placed_in_fs_1", "tessa__inode_y_is_placed_in_fs_1", "simon__fs_1_is_placed_in_boot_1", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
-      "mutants": "all not in Spares", "ok": true}}},
-    "siblings_across_filesystems": {"loads": 14, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem in by[this]"],
-      "by": ["tessa__an_inode_is_the_primary_key_of_a_file", "simon__a_device_number_is_the_primary_key_of_a_filesystem", "simon__a_filesystem_has_one_device_number_in_its_boot", "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem", "tessa__a_path_resolves_to_inode_x", "tessa__d_path_resolves_to_inode_z", "tessa__inode_x_is_placed_in_fs_1", "tessa__inode_z_is_placed_in_fs_2", "simon__fs_1_is_placed_in_boot_1", "simon__fs_2_is_placed_in_boot_1", "stdlib__a_boot_id_is_a_root", "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else", "carl__chmod_is_converged_when_the_file_at_its_path_has_the_mode"],
-      "mutants": "all not in Spares", "ok": true}}},
-    "siblings_across_filesystems_without_the_closure": {"loads": 13, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
-    "siblings_in_one_filesystem_without_the_root": {"loads": 13, "derived": 5, "sites": {"3": "Ran", "4": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}},
-    "siblings_across_filesystems_with_a_stranger": {"loads": 15, "derived": 6, "sites": {"3": "Ran", "4": {"expect": "Elided", "answer": "DISJOINT", "intents": ["no (speaker.foob & by[this])"], "by": "same-as siblings_across_filesystems", "mutants": "all not in Spares", "ok": true}}},
-    "two_paths_one_inode_under_a_singly_linked_path_scheme": {"loads": 15, "derived": 1, "written": 2, "sites": {"2": "Ran", "3": {"expect": "Guarded", "answer": "UNKNOWN", "by": [], "ok": true}}}
-  },
-  "danger": {
-    "tessa__a_file_has_one_inode_in_its_filesystem": ["siblings_in_one_filesystem.4:DISJOINT"],
-    "simon__a_filesystem_has_one_device_number_in_its_boot": ["siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
-    "simon__an_ext4_filesystem_exposes_its_inodes_through_no_other_filesystem": ["siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
-    "stdlib__a_boot_id_is_a_root": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
-    "carl__chmod_changes_the_mode_of_the_file_at_its_path_and_nothing_else": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT"],
-    "tessa__a_path_resolves_to_inode_x": ["siblings_in_one_filesystem.4:DISJOINT", "siblings_across_filesystems.4:DISJOINT", "siblings_across_filesystems_with_a_stranger.4:DISJOINT", "stale"],
-    "tessa__a_path_declines": []
-  },
+  "modules": ["shared/species.als", "words.als", "species.als", "claims.als", "laws.als", "corpus.als", "books/*.als"],
+  "commands": [
+    {"module": "laws", "name": "neverWrongWhenAllTrue", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "laws", "name": "monotoneInSpeech", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "laws", "name": "strangerSafe", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "laws", "name": "attributionHonest", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "laws", "name": "attributionSufficient", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "laws", "name": "attributionMinimal", "kind": "check", "scope": "6 but 8 Shword, 3 Line, 1 Query", "result": "no-counterexample", "premise": "sat"},
+    {"module": "corpus", "name": "seatCanKnow", "kind": "check", "scope": "4 but exactly 20 Shword, exactly 2 Class, exactly 16 Claim, exactly 0 Line", "result": "no-counterexample", "premise": "absent"},
+    {"module": "books/two_paths_one_inode", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/two_paths_one_inode", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_in_one_filesystem", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_in_one_filesystem", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/chmod_of_a_bare_word", "name": "line_1", "kind": "run", "result": "sat"},
+    {"module": "books/chmod_of_a_bare_word", "name": "line_2", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems_without_the_closure", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems_without_the_closure", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_in_one_filesystem_without_the_root", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_in_one_filesystem_without_the_root", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems_with_a_stranger", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/siblings_across_filesystems_with_a_stranger", "name": "line_4", "kind": "run", "result": "sat"},
+    {"module": "books/two_paths_one_inode_under_a_singly_linked_path_scheme", "name": "line_3", "kind": "run", "result": "sat"},
+    {"module": "books/two_paths_one_inode_under_a_singly_linked_path_scheme", "name": "line_4", "kind": "run", "result": "sat"}
+  ],
+  "book_run_scope": "4 but exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 16 Claim (18 where a book writes declines)",
   "lock": {"against": null, "diff": "initial"},
-  "status": "green"
+  "exit": 0
 }
