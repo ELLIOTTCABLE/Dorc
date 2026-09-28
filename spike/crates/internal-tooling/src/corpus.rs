@@ -55,6 +55,13 @@ fn is_sync_conflict(name: &str) -> bool {
     name.contains(".sync-conflict-")
 }
 
+/// A scratch note the root `.gitignore` excludes (`_*.md`). It exists only in the checkout that
+/// wrote it, so indexing one commits citations no other worktree can satisfy, and the `slugs`
+/// pre-commit check then refuses every commit made elsewhere.
+fn is_ignored_scratch(name: &str) -> bool {
+    name.starts_with('_') && name.ends_with(".md")
+}
+
 fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return Vec::new();
@@ -63,7 +70,7 @@ fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
         .flatten()
         .filter_map(|entry| {
             let name = entry.file_name().into_string().ok()?;
-            if is_sync_conflict(&name) {
+            if is_sync_conflict(&name) || is_ignored_scratch(&name) {
                 return None;
             }
             Some((name, entry.file_type().is_ok_and(|kind| kind.is_dir())))
