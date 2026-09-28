@@ -719,9 +719,35 @@ they sit alongside the Alloy spec rather than only as e2e.
   emits a `check` per line with the earlier lines' outcomes as premises and one `run` per book
   that all outcomes hold together. A line that runs writes only its outcome. **[HUMAN]** this
   makes "a convergence claim is fallible human speech" visible and atomic in the spec.
-- Conductor, unreacted: with a first-class `Key`, Alloy's default scope no longer fits a book,
-  so the default scope for spec-owned sigs is the live bite; a per-invocation default plus the
-  `for` passthrough is the MVP answer.
+- Conductor finding, posed after the fact and corrected: with a first-class `Key`, Alloy's
+  default scope of three no longer fits a book. **[HUMAN]** significant findings are posed
+  before the patch, not resolved inside one; and assay cannot fix this, since it cannot know the
+  sizing bounds of modelling objects.
+
+## Scope is the spec's (2026-09-27; human-typed, from the first-principles explainer)
+
+- **[HUMAN]** the ceiling must be configurable by the spec author and shareable across spec
+  files ("a key is a thing across the entire spec"). Conductor, acked: Alloy has no
+  document-wide scope, only a clause per command, so the spec spells it as a command with an
+  agreed name and an empty body, `run bookScope {} for 12 but 4 Int` in `spec/shared`, which
+  assay copies onto every command it generates; `bookScope_<book>` in the owning document
+  overrides one book; a trailing `for` on an outcome line overrides one command. The ceiling
+  caps one world, not a total across books; the headroom above what a fixture names is where
+  the adversary builds counterexamples; the shared number is the common case plus headroom.
+- **[HUMAN]** "eight named things" felt absurdly small, with the counter-thesis that the scope
+  also sizes the exploration space, and a worry that scope pressure pushes toward not modelling
+  interim things like keys, missing exactly where precision was needed. Conductor, acked:
+  names are exact and free; the scope caps only unnamed kinds, so first-class keys added no
+  atoms to any book, only a kind that needs a ceiling; eight was the strawman's largest fixture
+  plus one and is a weak adversary; twelve for this strawman. The laws explore the free
+  universe at scope six regardless of how books are sized.
+- **[HUMAN]** a per-book escape is required: a gnarly book of eight commands and ten to fifteen
+  keys may need a cap of twenty without the forty two-line exemplars paying for it. Conductor,
+  acked: a scope is paid per command, so a large book's ceiling costs only its own commands;
+  the three-tier convention above is the escape. `30Y` § 2.4 carries it as
+  `mech-scope-is-spelled-in-alloy`; the strawman's shared module carries `bookScope`.
+- Also this sitting: `Key.word` is `w` (so `w.inode_x`) and `Query`'s ends are `writer` and
+  `reader`, a mechanical rename the human delegated.
 
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
