@@ -570,6 +570,58 @@ they sit alongside the Alloy spec rather than only as e2e.
   the first line of any speaker's speech about a thing; an unowned sort's sort-level claims
   cannot pass the seat check, and its sites guard.
 
+## The settled book form and the state at rewind (2026-09-27; human-typed rulings, conductor findings the human read)
+
+- Two strata in the model. Truth: `reaches` and `worldParent` on `MKey`, named by no claim, read
+  only by `wrong`. Knowledge: what the loaded speech says, including derived claims,
+  `Resolution { of, to: lone }` and `Placement { of, within }`, whose speaker is derived from
+  the owner of the key's scheme and whose truth is computed against the truth stratum, not
+  assumed. A resolution with no target is a decline, always true. **[HUMAN]** the split of
+  literal measurement from claimed measurement is the preferred approach; declining matters
+  for loader, fail-through, and collaboration, since a declined answer can be re-answered, and
+  that is unsettled by design, so the checker must be able to talk about it.
+- Default resolutions are derived by the harness from the static scheme claims composed with
+  the world facts, under the hypothesis that the lookup is correct, and generated into the
+  book module; a human writes only deviations, a decline or a wrong lookup. **[HUMAN]** the
+  written resolution lines felt like claims belonging with the oracle content; they were the
+  hand-written default, and the errorloom analogy holds: setup is the world, the oracle's
+  output is derived unless the test is about the oracle misbehaving.
+- Two comment forms and nothing else. `#}` binds shell words to names, shell-lexed, `{}` a
+  word kind, underscores so one spelling serves shell and Alloy. `#=` is line-scoped Alloy,
+  lifted verbatim across consecutive `#=` lines, `this` bound to the site the line above
+  generates, linted so every free name is that line's own: its map names, instance names it
+  introduces, `Loaded`, claim atoms, `this`. A line whose `#=` holds no verdict form is a
+  fixture line and binds no `this`. Cross-line statements go in an Alloy fence; the seven
+  books have none. **[HUMAN]** collocation by scope is the principle; freeform Alloy beside a
+  shell line is valid only where it is mechanically checked to hold of that line, and
+  file-line references are a non-starter. The introducer characters are free to grow; the
+  syntax serves only this project, keeps information local for an editing LLM, and is
+  skimmable by the human.
+- Verdicts are Alloy: `this in Ran`, `this in Elided`, `this in Guarded`, three subset sigs of
+  `Site` defined once from the consumer map; the e2e compiler recognises exactly these forms
+  to emit the expected transcript. **[HUMAN]** inverted from sugar: a fixed set of Alloy forms
+  is the source and the expected-run files are compiled from them. Attribution is never
+  authored: `restsOn` is computed and locked; an attribution intent is a scoped `#=` check
+  beside the outcome it constrains (`… not in by[this]`).
+- Books are named `# <name>.sh`; repeated loads fold into named oracle sets, one block per
+  speaker, sourced by books. The site's argument is the last key-typed name on its map line,
+  a generator convention, soft.
+- 311 § 1.3 added as a fact: a scheme yields or is primary, never both; without it the laws
+  module admits an instance where a stranger's primary claim on `Path` breaks monotonicity.
+- State: `strawman-2/spec/two-paths-one-inode.md` and `strawman-2/build/` at the commit that
+  follows this entry hold the final shape. Everything is unrun; every result in `report.json`
+  is expected, not observed. Soft spots an implementer inherits: braced class words appear in
+  no book, so `{class}` may be unnecessary in books; the `#=` verdict forms are the only
+  vocabulary the e2e compiler knows; sites are single-argument, redirects and pipes are outside
+  this slice; the claim name's speaker prefix duplicates the `speaker` field, one should give;
+  re-answering a declined key by another scheme is representable and unmodelled; the temporal
+  module (a resolution leaving `True` after a write, § 3.3) is the next missing species;
+  `attributionSufficient` may fail on redundant speech, since `restsOn` is single-removal;
+  scope five or six is the likely ceiling for the subset-quantified laws.
+- **[HUMAN]** closing: no code under this conductor; the next step is a clean-context attempt at
+  implementation from this ledger and the strawman, and the phase's durable output is one
+  `30Y` document extending `notes/301` to design-tier theorems and Alloy.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
