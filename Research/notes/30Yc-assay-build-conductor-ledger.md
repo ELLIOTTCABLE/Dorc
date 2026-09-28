@@ -175,3 +175,40 @@ here what it thinks belongs there. All [CONDUCTOR]:
 - What an author owes and when: every edit runs the document's corpus before the claim is shown
   to a human; a moved result is a finding or a human-committed retirement, never silent; holes
   only decrease between adjudications; a reword of prose or Alloy leaves the lock unmoved.
+
+## § 6-the-second-half-dispatch (2026-09-28; human-typed rulings, then the lane)
+
+- **[HUMAN]** proceed with the second builder now, in this conductor context after all, on the
+  same worktree name (recreated, since lane 1's was removed at the fold).
+- **[HUMAN]** the braced-only literal question is dissolved, and the refusal was wrong: a word
+  defaults to *itself, literally*, under a deterministic, injective munge into Alloy's identifier
+  alphabet, exactly as any other instance; most class words will never appear elsewhere as
+  literals, so their name is beside the point, and no ceremony may force one to be minted.
+  Consequence taken by the conductor: the same rule dissolves `component-is-an-identifier` for a
+  bare component that repeats its literal (strawman-2's `-c`, `g-w`), which now names itself; a
+  bare component that is neither an identifier nor the literal is the one remaining refusal.
+  `30Y` § 2.1 and § 2.6 and `30Z` § 5 now say so; lane 2 builds it.
+- **[HUMAN]** the translation block is optional but strongly recommended, and every change to a
+  section's fences must include a change to its translation prose (adding one where none exists);
+  it cannot prove a match, it fights drift. `30Z` 1.2-the-firewall carries both. Section references
+  inside a document use the full section slug (`2.4-inhabit-before-you-believe-green`) except on
+  repetition within one paragraph; `30Z` rewritten to that convention.
+- **[HUMAN]** enrichment, not pressing: running a minimal set during the hot loop, one section or
+  book by slug, when a document is large and slow. Already available at module and command
+  granularity (one book is one module; `--command` names one law); noted in `30Z` § 5 and the
+  handoff; an `--only <book>` filter on the compiler is a later nicety.
+- A gitignored root handoff, `_tmp-assay-handoff.md`, tells the sibling conductor who will
+  concretize 311 how to use the midpoint tooling, the hot loop, the form, the limits until lane 2
+  folds, and where to record chafe.
+- **Lane 2 — DISPATCHED 2026-09-28**, one Opus builder on `ai/r30-assay` at `.tmp/trees/r30-assay`.
+  Remit: self-naming words with the injective munge and the collision refusal; the lock and
+  `--check`/`--write` beside the spec, timing kept out of it, the runner invoked as a subprocess
+  with caps passed through; the Alloy-parse lint on `--check`/`--write` and on demand; the
+  translation co-change check over staged documents; hk pre-commit lints and the
+  `gate:full-quiet` lock recomputation, path-filtered to `spec/**`, ready before the tier exists;
+  the fixture extended for self-named and braced-only words and for the lock; a lane report at the
+  next free `30Y` letter with the A/B/C division. Held for the human's typed ack, not in the brief:
+  wrapping the other heavy gates in `exclusive`. Completion: `mise run gate:full-quiet` on Windows
+  through the hot loop, `mise run both gate:full-quiet` once at the end [HUMAN: necessary once the
+  gates are worked on]. The sibling conductor may hold the heavy-work lock at any time; the builder
+  treats exit 75 as "do other work".
