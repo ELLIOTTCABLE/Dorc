@@ -336,35 +336,77 @@ pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] }
 
 > OWL's inverse-functional and functional properties, spelled out by direction.
 
-A mToken is an mKey-Primary's mValue: bytes a `resolve()` returned. It is compared for equality
-only and never decoded. It is always scoped in an mParent.
+What each warrant licenses, SAME from equality and DISJOINT from inequality, is the walk of
+3.2-compare-one-chokepoint-four-answers; here is what each means when true. "Within one
+mParent" is read at the world stratum: two mParents that reach one mReferent, or one mWorld.
+The instance of a warrant is per evaluation, and it may rest on what the path measured: since a
+matched shape is a control-flow path, an evaluation that declines the warrant has matched a
+shape that does not carry it.
 
-Any lookup, a secondary mScheme's or a primary mScheme's, may carry two warrants per matched
-shape. They are independent, separately declared, and absent by default.
+```alloy
+fun token[k: mKey]: lone Shword { isPrimaryKey[k] implies k.value else none }
 
-- `:guarantees-unique-referent`: within one mParent, equal mKeys reach one mReferent. The lookup
-  is a function. It licenses SAME from equality.
-- `:guarantees-unique-name`: within one mParent, one mReferent has one mKey. It licenses
-  DISJOINT from inequality.
+sig DeclaresUniqueReferent extends Statement { referentShape: one mShape }
 
-The lookup's owner declares each warrant per matched shape. The warrant holds for every mKey of
-that shape inside any one mParent, while that mKey's mResolution or mToken stands
-(3.3-invalidation-three-mutator-species). A matched shape is a control-flow path of the owner's
-body. A warrant is constructed when that body is evaluated for the mKey in hand. The declaration
-is per shape. The instance is per evaluation. It may rest on what the path measured. Any path
-the dialect admits may decline it. A path that does not reach a warrant has not given it.
+sig DeclaresUniqueName extends Statement { nameShape: one mShape }
 
-The engine vouches for one lookup itself: the local mRoute under no wrapper
-(1.10-vantage-route-placeholder-witness). Across a wrapper, the wrapper's author speaks
-(3.4-entry-and-lends), and everything else is measured and witnessed.
+fact { all d: DeclaresUniqueReferent | d.speaker = d.referentShape.ofScheme.schemeOwner }
 
-Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for
-each level it resolved. The closure states that the mReferent at that level is reachable by
-exactly this one entry anywhere in the instance the lookup ran in, not only in the
-mParent-Catalog the entry was found in. It is a statement about one mKey, from the thing's end,
-made on the path that measured it. Where the lookup knows other entries, it emits them first,
-and a listed alias is checked as the first entry is. The closure and the per-shape warrant are
-two statements. The region test (2.9-the-traversal-and-the-region-test) consumes the closure.
+fact { all d: DeclaresUniqueName | d.speaker = d.nameShape.ofScheme.schemeOwner }
+
+pred guaranteesUniqueReferent[s: mShape] { some DeclaresUniqueReferent & InForce & referentShape.s }
+
+pred guaranteesUniqueName[s: mShape] { some DeclaresUniqueName & InForce & nameShape.s }
+
+fact {
+   all s: mShape | floor[s.ofScheme] implies
+      not guaranteesUniqueReferent[s] and not guaranteesUniqueName[s]
+}
+
+pred withinOneParent[a, b: mKey] {
+   a.parent = b.parent
+   or (a.parent + b.parent in mKey and some a.parent.reaches and a.parent.reaches = b.parent.reaches)
+}
+
+pred true_DeclaresUniqueReferent[d: DeclaresUniqueReferent] {
+   all a, b: keysOfShape[d.referentShape] |
+      withinOneParent[a, b] and a.value = b.value implies a.reaches = b.reaches
+}
+
+pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
+   all a, b: keysOfShape[d.nameShape] |
+      withinOneParent[a, b] and some a.reaches and a.reaches = b.reaches implies a.value = b.value
+}
+```
+
+<!-- prose-translation -->
+> A mToken is an mKey-Primary's mValue: bytes a `resolve()` returned.
+> Any lookup, a secondary mScheme's or a primary mScheme's, may carry two warrants per matched shape; they are independent, separately declared, and absent by default.
+> The lookup's owner declares each warrant per matched shape, and the floor of 1.3-scheme-a-way-of-writing carries neither.
+> A warrant holds for every mKey of that shape inside any one mParent; a path that does not reach a warrant has not given it, so an mKey has a warrant when the shape it matched carries it.
+> Two mKeys are within one mParent when they have one mParent, or when their mParents reach one mReferent.
+> `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent: the lookup is a function.
+> `:guarantees-unique-name` is true when, within one mParent, one mReferent has one mKey of the shape.
+
+#### § 1.5.1-the-token-over-time-and-the-per-level-closure
+
+A mToken is compared for equality only and never decoded (0.1-the-two-strata), and it is always
+scoped in an mParent (1.6-parent-one-per-key). How long a warrant holds is
+3.3-invalidation-three-mutator-species's; the engine's own vouch is
+1.10-vantage-route-placeholder-witness's; the per-level closure is consumed by
+2.9-the-traversal-and-the-region-test, and stays prose until that section is mechanized.
+
+<!-- normative -->
+> A warrant holds while that mKey's mResolution or mToken stands (3.3-invalidation-three-mutator-species).
+> The engine vouches for one lookup itself: the local mRoute under no wrapper (1.10-vantage-route-placeholder-witness).
+> Across a wrapper, the wrapper's author speaks (3.4-entry-and-lends), and everything else is measured and witnessed.
+> Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for each level it resolved.
+> The closure states that the mReferent at that level is reachable by exactly this one entry anywhere in the instance the lookup ran in, not only in the mParent-Catalog the entry was found in.
+> It is a statement about one mKey, from the thing's end, made on the path that measured it.
+> Where the lookup knows other entries, it emits them first, and a listed alias is checked as the first entry is.
+> The closure and the per-shape warrant are two statements; the region test (2.9-the-traversal-and-the-region-test) consumes the closure.
+> A grade governs every consumer of the answer it grades, corroboration and contradiction included.
+> A lookup without `:guarantees-unique-name` cannot contradict anything by returning two different mTokens.
 
 > `:guarantees-unique-referent` fails for round-robin lookups, recycled mKeys, and cloned
 > identifiers presented as mRoots. `:guarantees-unique-name` fails for symlinks and hardlinks,
@@ -698,19 +740,30 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 
 ### § 2.3-aliases-nothing-else-the-store-warrant
 
-A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own
-construction, also identified in another store. The store gives its own mKeys to no other
-store's mReferents.
+The warrant is self-knowledge: whether another store aliases this one is not claimed, since
+nobody can know it, and the world stratum of 1.1-referent-state-and-value keeps what a store
+owns apart from what it merely holds so that a store re-presenting another's things is the one
+whose claim is false. 3.2-compare-one-chokepoint-four-answers asks the warrant of every store on
+both legs, so an aliasing store blocks separation by its own silence. Arity: per store.
+Declared by: whoever describes the store. Default: absent; nothing inside that store then
+separates from anything outside it. Consumer: DISJOINT. Danger: an aliasing store declared
+`:aliases-nothing-else` is a wrong DISJOINT.
 
-The warrant is self-knowledge. Whether another store aliases this one is not claimed, since
-nobody can know it. 3.2-compare-one-chokepoint-four-answers asks the warrant of every store on
-both legs, so an aliasing store blocks separation by its own silence.
+```alloy
+sig DeclaresAliasesNothingElse extends Statement { store: one mKey }
 
-- Arity: per store.
-- Declared by: whoever describes the store.
-- Default: absent. Nothing inside that store then separates from anything outside it.
-- Consumer: DISJOINT (3.2-compare-one-chokepoint-four-answers).
-- Danger: an aliasing store declared `:aliases-nothing-else` is a wrong DISJOINT.
+pred aliasesNothingElse[l: mLevel] { some DeclaresAliasesNothingElse & InForce & store.l }
+
+pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
+   let s = d.store.reaches |
+      all r: s.holds | s in owns.r and owns.r in s
+}
+```
+
+<!-- prose-translation -->
+> A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own construction, also identified in another store: every mReferent the store holds, it owns, and no other store owns.
+> The store gives its own mKeys to no other store's mReferents.
+> The warrant is declared per store, on the mKey that names it, and is absent by default.
 
 > Examples where it holds: a DNS zone for its records, a dpkg database for its packages, a
 > network namespace for its `net/*` knobs, a disk filesystem for its inodes. Examples where it
