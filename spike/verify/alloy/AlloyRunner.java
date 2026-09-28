@@ -92,13 +92,25 @@ public class AlloyRunner {
       CompModule[] worlds = new CompModule[files.size()];
       String[] parseErrors = new String[files.size()];
       int total = 0;
+      boolean anyParseError = false;
+      List<String> labels = new ArrayList<>();
       for (int f = 0; f < files.size(); f++) {
          try {
             worlds[f] = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(files.get(f), opens), files.get(f));
-            for (Command cmd : worlds[f].getAllCommands()) if (!synthesized(worlds[f], cmd) && (only == null || only.equals(cmd.label))) total++;
+            for (Command cmd : worlds[f].getAllCommands()) {
+               if (synthesized(worlds[f], cmd)) continue;
+               labels.add(cmd.label);
+               if (only == null || only.equals(cmd.label)) total++;
+            }
          } catch (Err e) {
+            anyParseError = true;
             parseErrors[f] = e.toString();
          }
+      }
+      // An unparsed file may hold the command, so its error row, not this refusal, is the honest answer.
+      if (only != null && total == 0 && !anyParseError) {
+         System.err.println("alloy runner: --command " + only + " matches no command; available: " + String.join(", ", labels));
+         System.exit(USAGE);
       }
       System.err.println("alloy runner: " + total + " commands; caps: " + timeoutSeconds + "s wall and " + cpuSeconds
          + "s cpu per command, " + caps.heapMb() + " MB heap, " + caps.procs() + " processors, " + batchSeconds + "s for the batch");
