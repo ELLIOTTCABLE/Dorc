@@ -22,6 +22,28 @@ impl Json {
         Self::Obj(fields.into_iter().map(|(k, v)| (k.to_owned(), v)).collect())
     }
 
+    /// One line, no trailing newline: a row in a file diffed line by line.
+    pub(crate) fn line(&self) -> String {
+        match self {
+            Self::Arr(items) => {
+                let items: Vec<String> = items.iter().map(Self::line).collect();
+                format!("[{}]", items.join(", "))
+            }
+            Self::Obj(fields) => {
+                let fields: Vec<String> = fields
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", quote(k), v.line()))
+                    .collect();
+                format!("{{{}}}", fields.join(", "))
+            }
+            Self::Null | Self::Num(_) | Self::Str(_) => {
+                let mut out = String::new();
+                self.write(&mut out, 0);
+                out
+            }
+        }
+    }
+
     pub(crate) fn render(&self) -> String {
         let mut out = String::new();
         self.write(&mut out, 0);
@@ -124,10 +146,14 @@ pub(crate) fn read_num(text: &str, key: &str) -> Option<u64> {
     digits.parse().ok()
 }
 
+/// The first quoted `key` followed by a colon: a string VALUE spelling the key is followed by a
+/// comma or a brace instead, and must not shadow the real key after it.
 fn after_key<'a>(text: &'a str, key: &str) -> Option<&'a str> {
-    let at = text.find(&quote(key))?;
-    let rest = text.get(at.saturating_add(quote(key).len())..)?;
-    Some(rest.trim_start().strip_prefix(':')?.trim_start())
+    let quoted = quote(key);
+    text.match_indices(&quoted).find_map(|(at, _)| {
+        let rest = text.get(at.saturating_add(quoted.len())..)?;
+        Some(rest.trim_start().strip_prefix(':')?.trim_start())
+    })
 }
 
 #[cfg(test)]
@@ -142,6 +168,8 @@ mod tests {
         assert_eq!(read_str(&text, "cwd").as_deref(), Some(tricky));
         assert_eq!(read_num(&text, "pid"), Some(42));
         assert_eq!(read_str(&text, "absent"), None);
+        let shadowed = Json::obj([("name", Json::str("result")), ("result", Json::str("sat"))]);
+        assert_eq!(read_str(&shadowed.line(), "result").as_deref(), Some("sat"));
         assert_eq!(quote("\u{1}"), "\"\\u0001\"");
     }
 }
