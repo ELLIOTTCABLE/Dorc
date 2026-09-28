@@ -622,6 +622,25 @@ they sit alongside the Alloy spec rather than only as e2e.
   implementation from this ledger and the strawman, and the phase's durable output is one
   `30Y` document extending `notes/301` to design-tier theorems and Alloy.
 
+## At the rewind (2026-09-27; the successor conductor's read-in, and the human's typed corrections to it)
+
+- Conductor's observation, **[HUMAN]** "a true observation": the generic laws call `Query`,
+  `answer`, `wrong`, `restsOn`, `by`, `Site`, and the three verdict sigs, all defined by the
+  spec and none by the harness, so the tool's contract with a spec is a by-name signature that
+  nothing yet checks. **[HUMAN]** a meaningful spec document must specify what it is talking
+  about as part of its specification; the division between the harness and the part of a spec
+  shared by most or all specs is a meaningful distinction, not noise. Where it lies is not ruled.
+- **[HUMAN]** the spec tier is no-builder-edits, a do-not-touch tier during unattended build
+  runs, near minispec's posture though not identical (minispec stays LLM-built). In practice
+  the pattern is the same as every design corner: a frontier model and the human, attacked by
+  adversarials and by eye, firmed slowly into something exhaustive. Far out; the present work
+  is the Alloy harness only.
+- **[HUMAN]** ack the shape: a minimal harness first, then back to 311 work to use it. **[HUMAN]
+  nack** promoting the strawman into `spec/`: turning 311 into a spec is delicate, clean-context,
+  product-focused frontier work, guaranteed to surface a dozen underspecifications at once.
+- Conductor's holds, unreacted (chat-only until reacted): the laws module opens the claim
+  atoms; the correspondence half stays out of the first cut.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
