@@ -6,6 +6,7 @@ one sig tessa__a_slash_separated_path_names_the_inode_of_its_last_entry extends 
 one sig tessa__a_bare_word_is_not_a_path extends Yields {} { speaker = tessa  of = bare_word  under = Path  no to }
 one sig tessa__an_inode_is_the_primary_key_of_a_file extends PrimaryOf {} { speaker = tessa  ofScheme = Inode  ofSort = File }
 one sig tessa__a_file_is_identified_in_its_filesystem extends IdentifiedIn {} { speaker = tessa  ofScheme = Inode  within = Filesystem }
+one sig tessa__equal_inodes_in_one_filesystem_reach_one_file extends GuaranteesUniqueReferent {} { speaker = tessa  on = Inode }
 one sig tessa__a_file_has_one_inode_in_its_filesystem extends GuaranteesUniqueName {} { speaker = tessa  on = Inode }
 
 one sig simon__a_device_number_is_the_primary_key_of_a_filesystem extends PrimaryOf {} { speaker = simon  ofScheme = DeviceNumber  ofSort = Filesystem }
@@ -28,7 +29,7 @@ one sig tessa__a_singly_linked_path_names_one_file extends GuaranteesUniqueName 
 fun tessa_fs: set MDecl {
    tessa__a_slash_separated_path_names_the_inode_of_its_last_entry + tessa__a_bare_word_is_not_a_path
    + tessa__an_inode_is_the_primary_key_of_a_file + tessa__a_file_is_identified_in_its_filesystem
-   + tessa__a_file_has_one_inode_in_its_filesystem
+   + tessa__equal_inodes_in_one_filesystem_reach_one_file + tessa__a_file_has_one_inode_in_its_filesystem
 }
 fun simon_fs: set MDecl {
    simon__a_device_number_is_the_primary_key_of_a_filesystem + simon__a_filesystem_is_identified_in_the_boot_that_mounted_it

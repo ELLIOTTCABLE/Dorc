@@ -6,11 +6,12 @@ one sig tessa, simon, carl, stdlib, foob extends Speaker {}
 sig MReferent {}
 abstract sig MSort {}
 abstract sig MScheme { primaryOf: lone MSort }
-sig Key in Shword { scheme: one MScheme, reaches: one MReferent, worldParent: lone Key }
+sig Key { word: one Shword, scheme: one MScheme, reaches: one MReferent, worldParent: lone Key }
 fact { no k: Key | k in k.^worldParent }
+fact { all disj a, b: Key | not (a.word = b.word and a.scheme = b.scheme and a.worldParent = b.worldParent) }
 
 sig Operand extends MDecl { verb: one Shword, at: one Int, under: one MScheme }
-fact { all d: Operand & True, l: Line | d.verb = l.cmd implies l.argv[d.at].scheme = d.under }
+fact { all d: Operand & True, l: Line | d.verb = l.cmd implies some k: Key | k.word = l.argv[d.at] and k.scheme = d.under }
 
 sig Yields extends MDecl { of: one Class, under: one MScheme, to: lone MScheme }
 
@@ -24,7 +25,11 @@ fact { all d: IdentifiedIn & True, k: Key | k.scheme = d.ofScheme and some k.wor
 sig GuaranteesUniqueName extends MDecl { on: one MScheme }
 fact { all d: GuaranteesUniqueName & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.worldParent = b.worldParent and a.reaches = b.reaches implies a = b }
 
+sig GuaranteesUniqueReferent extends MDecl { on: one MScheme }
+fact { all d: GuaranteesUniqueReferent & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.worldParent = b.worldParent and a.word = b.word implies a.reaches = b.reaches }
+
 sig Root extends MDecl { on: one MScheme }
+fact { all d: Root & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.word = b.word implies a.reaches = b.reaches }
 
 one sig Path, Inode, DeviceNumber, BootId, BundlePath extends MScheme {}
 one sig File, Filesystem, Boot, CertificateBundle extends MSort {}
@@ -34,23 +39,20 @@ fact { all d: AliasesNothingElse & True, k, k2: Key | k.worldParent.scheme.prima
 
 sig MayWrite extends MDecl { verb: one Shword }
 sig ChecksRead extends MDecl { verb: one Shword }
-fun keysOf[l: Line]: set Key { l.argv.elems & Key }
-fun writesOf[S: set MDecl, l: Line]: set Key { (some d: MayWrite & S | d.verb = l.cmd) and some keysOf[l] implies keysOf[l] else Key }
-fun readsOf[S: set MDecl, l: Line]: set Key { (some d: ChecksRead & S | d.verb = l.cmd) and some keysOf[l] implies keysOf[l] else Key }
-fact { all l: Line, w: l.argv.elems & Key | some d: Operand & l.speech | d.verb = l.cmd and l.argv[d.at] = w }
+fun keysOf[S: set MDecl, l: Line]: set Key { { k: Key | some d: Operand & S | d.verb = l.cmd and k.word = l.argv[d.at] and k.scheme = d.under } }
+fun writesOf[S: set MDecl, l: Line]: set Key { (some d: MayWrite & S | d.verb = l.cmd) and some keysOf[S, l] implies keysOf[S, l] else Key }
+fun readsOf[S: set MDecl, l: Line]: set Key { (some d: ChecksRead & S | d.verb = l.cmd) and some keysOf[S, l] implies keysOf[S, l] else Key }
+fact { all v: Verdict | v.speaker in (ChecksRead & True & verb.(v.of.cmd)).speaker }
 
 sig Resolution extends MDecl { of: one Key, to: lone Key }
 sig Placement extends MDecl { of: one Key, within: one Key }
-fun Static: set MDecl { MDecl - Resolution - Placement }
-
-fact { all l: Line | Resolution + Placement in l.speech }
-fact { Static & True = Static & Line.speech }
+fact { Computed = Resolution + Placement }
 fact { all x: Resolution | x in True iff (no x.to or x.of.reaches = x.to.reaches) }
 fact { all p: Placement | p in True iff p.within = p.of.worldParent }
 
 fun resolvedIn[S: set MDecl]: Key -> Key {
    { a, b: Key | some x: Resolution & S | x.of = a and x.to = b }
-   + { a: Key - (Resolution & S).of, b: Key | some y: Yields & S | y.of in a.class and y.under = a.scheme and b.scheme = y.to and b.reaches = a.reaches }
+   + { a: Key - (Resolution & S).of, b: Key | some y: Yields & S | y.of in a.word.class and y.under = a.scheme and b.scheme = y.to and b.reaches = a.reaches }
 }
 fun parentIn[S: set MDecl]: Key -> Key {
    { a, b: Key | some p: Placement & S | p.of = a and p.within = b }
@@ -64,7 +66,7 @@ fun top[S: set MDecl, x, A: Key]: one Key { chain[S, x] & (parentIn[S]).A }
 pred separated[S: set MDecl, x, y: Key] {
    some A: x.^(parentIn[S]) & y.^(parentIn[S]) | no (x.^(parentIn[S]) & y.^(parentIn[S]) - A.*(parentIn[S])) and
    let tx = top[S, x, A], ty = top[S, y, A] |
-      tx.scheme = ty.scheme and tx != ty
+      tx.scheme = ty.scheme and tx.word != ty.word
       and (some d: GuaranteesUniqueName & S | d.on = tx.scheme)
       and (all s: (x.^(parentIn[S]) + y.^(parentIn[S])) - A.*(parentIn[S]) | some d: AliasesNothingElse & S | d.store = s.scheme.primaryOf)
 }

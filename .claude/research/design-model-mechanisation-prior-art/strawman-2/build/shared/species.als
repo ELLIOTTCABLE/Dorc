@@ -4,6 +4,8 @@ open assay
 sig Speaker {}
 abstract sig MDecl extends Claim { speaker: one Speaker }
 sig True in MDecl {}
+sig Computed in MDecl {}
+fact { all c: MDecl - Computed | c in True iff c in Line.speech }
 
 abstract sig Ans { weaker: set Ans }
 one sig SAME, DISJOINT, KNOWN_UNSPOKEN, UNKNOWN extends Ans {}
@@ -12,7 +14,10 @@ sig Safe in Ans {}
 sig Spares in Ans {}
 fact { Safe = UNKNOWN + KNOWN_UNSPOKEN  Spares = DISJOINT }
 
+sig Verdict extends MDecl { of: one Line }
 sig Converged in Line {}
+fact { Converged = (Verdict & True).of }
+
 sig Query { w, r: one Line, ans: one Ans }
 fact { all q: Query | q.w not in Converged and q.r in Converged and q.w in q.r.before }
 fact { all w, r: Line | w not in Converged and r in Converged and w in r.before implies some q: Query | q.w = w and q.r = r }
