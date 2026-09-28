@@ -75,8 +75,9 @@ The rule that keeps normativity from smuggling itself into commentary [TYPED 202
   the section has none the change adds one. This cannot prove the two match; it fights drift by
   making the author read the prose every time the law moves, and it makes the review diff show
   both readings side by side. A change to the translation alone is legal (the prose tune of
-  1.1-checked-never-confirmed). The mechanical check of this rule lives at commit time over staged
-  documents [CONDUCTOR; a lane of `notes/30Yc`].
+  1.1-checked-never-confirmed). A change to a fence with its translation untouched is committed
+  only on an active, direct human ack for that commit. The rule is law and is not mechanically
+  checked: no sound check of it exists that is not fragile [TYPED].
 - **`fw-fences-are-purely-mechanical`** [TYPED] — no comment syntax inside a fence except the
   checker's own comment forms (5-assay-vocabulary-and-forms); no prosodic note, no rationale.
   Intent rides names: a long, explicit name is the one carrier of meaning the code cannot hold,
@@ -344,10 +345,11 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
   name a scenario sources.
 - A *book* is the scenario of 0-what-this-is: an `sh` fence of concrete shell lines, each followed
   by a `#}` line mapping its words to names and by `#=` lines of Alloy scoped to that line. On the
-  map line a bare component that is an identifier names the literal beneath it; a bare component
-  that repeats the literal, or a braced component `{class}`, leaves the literal named after itself
-  under a deterministic, injective munge into an identifier [TYPED 2026-09-28: a word defaults to
-  itself, and no ceremony forces a name]; a braced component also puts the literal in its class. A
+  map line a bare component is the name of the literal beneath it, the literal itself when the two
+  are equal; a braced component `{class}` puts the literal in the class and leaves it named after
+  itself. Any name that is not already an Alloy identifier becomes one under a deterministic,
+  injective munge [TYPED 2026-09-28: a word defaults to itself, and no ceremony forces a name].
+  Names are global: one literal, one name, and one name, one literal, across the document. A
   `#=` line is a *declaration* (a claim or a world object, `this` bound to the line), a *fact* (no
   `this`, hoisted), or the line's *outcome* (mentions `this`; the statement the adversary attacks,
   with the outcomes of the lines above it as premises). A trailing `for` on an outcome is that
@@ -369,8 +371,7 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
 - What refuses where: Alloy refuses what is not well-formed Alloy; assay refuses what is not
   well-formed *document* (a map line that does not pair with its command word for word, a name
   covering two literals or a literal under two names, a load that resolves to nothing, a `this` on
-  a line with no outcome, a bare component that is neither an identifier nor the literal beneath
-  it); nothing refuses a check that restates its own definition, which is why
+  a line with no outcome); nothing refuses a check that restates its own definition, which is why
   3-writing-so-the-adversary-cannot-cheat keeps the kill-by-hand habit.
 
 ## § 6-results-locks-and-what-an-author-owes
