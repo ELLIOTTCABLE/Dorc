@@ -212,3 +212,14 @@ here what it thinks belongs there. All [CONDUCTOR]:
   through the hot loop, `mise run both gate:full-quiet` once at the end [HUMAN: necessary once the
   gates are worked on]. The sibling conductor may hold the heavy-work lock at any time; the builder
   treats exit 75 as "do other work".
+- **[HUMAN]** later the same day, three corrections applied to the brief by message: the
+  translation co-change rule is LAW, NOT CHECKED (no sound mechanisation that is not fragile); a
+  fence-only change commits only on an active, direct human ack for that commit; the drift-check
+  deliverable is withdrawn from lane 2 and `30Z` 1.2-the-firewall says so. Wrapping the other heavy
+  tasks in `exclusive` is ACKED: it changes no contract, the same final state is owed, it is merely
+  enforced serial rather than concurrent; added to lane 2, with re-entrancy for nested tasks
+  (`gate:arc` runs completion inside itself). And the conductor's remaining refusal ("a bare
+  component that is neither an identifier nor the literal") was ceremony too: every bare component
+  is a name for the literal beneath it, munged when it is not an identifier, self-named when equal;
+  every word trivially has a name; the only refusal is one name over two literals or one literal
+  under two names. `30Y` § 2.1, § 2.6 and `30Z` § 5 corrected.
