@@ -7,6 +7,8 @@ import edu.mit.csail.sdg.translator.A4Options;
 import edu.mit.csail.sdg.translator.A4Solution;
 import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 
+import kodkod.engine.satlab.SATFactory;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,9 +32,11 @@ public class AlloyRunner {
       int one = -1;
       boolean instances = false;
       String only = null;
+      String solver = "sat4j";
       for (int i = 0; i < args.length; i++) {
          if (args[i].equals("--timeout") && i + 1 < args.length) timeoutSeconds = Long.parseLong(args[++i]);
          else if (args[i].equals("--instances")) instances = true;
+         else if (args[i].equals("--solver") && i + 1 < args.length) solver = args[++i];
          else if (args[i].equals("--command") && i + 1 < args.length) only = args[++i];
          else if (args[i].equals("--open") && i + 1 < args.length && args[i + 1].contains("=")) opens.add(args[++i]);
          else if (args[i].equals("--one") && i + 1 < args.length) one = Integer.parseInt(args[++i]);
@@ -43,8 +47,9 @@ public class AlloyRunner {
          }
       }
       if (files.isEmpty()) usage("no .als files given");
+      if (SATFactory.find(solver).isEmpty()) usage("unknown solver " + solver + " (see `java -jar <alloy jar> solvers`)");
       if (one >= 0) {
-         solveOne(files.get(0), one, opens, instances);
+         solveOne(files.get(0), one, opens, instances, solver);
          return;
       }
 
@@ -67,7 +72,7 @@ public class AlloyRunner {
             Command cmd = commands.get(i);
             if (only != null && !only.equals(cmd.label)) continue;
             String kind = cmd.check ? "check" : "run";
-            Outcome o = runChild(path, i, opens, instances, timeoutSeconds);
+            Outcome o = runChild(path, i, opens, instances, solver, timeoutSeconds);
             String result = switch (o.status) {
                case "sat" -> cmd.check ? "counterexample" : "sat";
                case "unsat" -> cmd.check ? "no-counterexample" : "unsat";
@@ -82,7 +87,7 @@ public class AlloyRunner {
    }
 
    static void usage(String why) {
-      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--command <name>] [--instances] [--open <module>=<file.als>]... <file.als>...");
+      System.err.println("alloy runner: " + why + "\nusage: AlloyRunner [--timeout <seconds>] [--command <name>] [--instances] [--solver <id>] [--open <module>=<file.als>]... <file.als>...");
       System.exit(USAGE);
    }
 
@@ -118,9 +123,10 @@ public class AlloyRunner {
    record Outcome(String status, long wallMs, long solveMs, String message, String instance) {}
 
    // One JVM per command, so a blown-up scope is killed at the cap instead of hanging the batch.
-   static Outcome runChild(String path, int index, List<String> opens, boolean instances, long timeoutSeconds) throws Exception {
+   static Outcome runChild(String path, int index, List<String> opens, boolean instances, String solver, long timeoutSeconds) throws Exception {
       List<String> argv = new ArrayList<>(List.of(ProcessHandle.current().info().command().orElse("java"),
-         "-cp", System.getProperty("java.class.path"), System.getProperty("jdk.launcher.sourcefile"), "--one", Integer.toString(index)));
+         "-cp", System.getProperty("java.class.path"), System.getProperty("jdk.launcher.sourcefile"),
+         "--one", Integer.toString(index), "--solver", solver));
       for (String spec : opens) argv.addAll(List.of("--open", spec));
       if (instances) argv.add("--instances");
       argv.add(path);
@@ -153,12 +159,14 @@ public class AlloyRunner {
       }
    }
 
-   static void solveOne(String path, int index, List<String> opens, boolean instances) throws Exception {
+   static void solveOne(String path, int index, List<String> opens, boolean instances, String solver) throws Exception {
       try {
          CompModule world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, overlay(path, opens), path);
          Command cmd = world.getAllCommands().get(index);
+         A4Options options = new A4Options();
+         options.solver = SATFactory.get(solver);
          long start = System.nanoTime();
-         A4Solution sol = TranslateAlloyToKodkod.execute_command(A4Reporter.NOP, world.getAllReachableSigs(), cmd, new A4Options());
+         A4Solution sol = TranslateAlloyToKodkod.execute_command(A4Reporter.NOP, world.getAllReachableSigs(), cmd, options);
          long solveMs = (System.nanoTime() - start) / 1_000_000;
          System.out.println((sol.satisfiable() ? "sat" : "unsat") + "\t" + solveMs);
          if (instances && sol.satisfiable()) System.out.println(sol);
