@@ -18,8 +18,13 @@
   `internal-tooling exclusive --task alloy -- <the java invocation>`. New runner flags: `--heap <MB>`
   (2048, child `-Xmx`), `--procs <n>` (2, child `-XX:ActiveProcessorCount`), `--cpu <s>` (default
   the wall cap; polled once a second through `ProcessHandle.info().totalCpuDuration()`; a kill
-  reports `timeout` with `exceeded Ns cpu`), `--batch-timeout <s>` (1800; commands not started by
-  then report `not-run`, exit 1). One stderr line names the command count and every cap.
+  reports `timeout` with `exceeded Ns cpu`), `--batch-timeout <s>` (540; commands not started by
+  then report `not-run`, exit 1); `--timeout` defaults to 120. One stderr line names the command
+  count and every cap. A shutdown hook kills the live child when the runner exits (`-GUESS`: a
+  hard `TerminateProcess` on Windows runs no hook; untested either way). A directory argument
+  expands to its `*.als` files in sorted order, and a module whose only command is Alloy's
+  synthesized `Default` (recognised by `Pos.UNKNOWN`; an authored `run Default` carries a real
+  position, `+SURE` measured) yields no row.
 - **`internal-tooling exclusive --task <name> -- <cmd> [args…]`** — the machine-global lock at
   `%LOCALAPPDATA%\dorc\heavy-work.lock` (unix: `$XDG_CACHE_HOME` or `~/.cache`, then
   `dorc/heavy-work.lock`), JSON `{pid, task, started, cwd}`, create-new. A live holder refuses with
@@ -27,11 +32,10 @@
   taken over with a stderr line. Released on the child's exit, success or failure. Only `alloy` is
   wrapped. Each platform leg has its own lock file (`+SURE`: WSL does not see `%LOCALAPPDATA%`).
 - **`mise run preflight alloy`** — Workspace volume, 1 GiB disk (warm = cold), 3 GiB RAM.
-- The glue a conductor uses by hand, from the out dir, in a POSIX shell (PowerShell does not expand
-  the glob; § 4 `chafe-powershell-does-not-expand-the-book-glob`):
-  `mise run alloy -- --timeout 60 --batch-timeout 900 laws.als book_corpus.als book_*.als`.
-  `shared.als` carries no command once the scope carriers are stripped, so Alloy runs a `Default`
-  command there; passing it only adds that row.
+- The glue a conductor uses by hand, from the out dir, in any shell: `mise run alloy -- .` (the
+  defaults already bound it), or name modules to run a subset, e.g.
+  `mise run alloy -- --timeout 60 book_corpus.als`. A document too large for one 540 s batch runs
+  as several calls over module subsets.
 
 ## § 2-the-fixture-and-what-it-covers
 
@@ -67,6 +71,11 @@ Verdicts: **no difference** (`+SURE`, compared row by row against `report.json` 
 module renamed). The one red is `attributionByRemovalHonest` (counterexample), which `report.json`
 records as expected; every other check no-counterexample, every run sat, every premise sat.
 Slowest command 10.3 s. No `java` process survived any run (`tasklist`, `+SURE`).
+
+After `9bf4a19e` added the corpus book's inhabitation run, `mise run alloy -- --timeout 60
+--batch-timeout 300 book_corpus.als` over the recompiled strawman-3: `run book_corpus` is **sat**
+(2.7 s, `+SURE`), so the all-claims-in-force universe is inhabited and the four corpus checks are
+not green by contradiction; the four checks stayed no-counterexample.
 
 | rows | report.json | assay | reading |
 |---|---|---|---|
@@ -121,6 +130,8 @@ own example uses that form (`#} stat -c '%i %d' a_path d_path`, with `dash_c`, `
   wins over the shared one; the corpus book uses `bookScope` (there is no `bookScope_corpus`), and a
   corpus command carrying its own `for` keeps it, plus the exact bounds.
 - `dev-no-corpus-run` — `f76b9cd8`: the corpus book gets no combined satisfiability `run`.
+  REVERSED by the conductor (an unsatisfiable all-in-force universe greens every corpus check
+  vacuously); built in `9bf4a19e` as `run book_corpus {}` at the corpus book's scope.
 - `dev-scoped-runs-are-laws` — `f76b9cd8`: a scoped `run` that is not a premise twin goes to
   `laws.als`; an unscoped one to the corpus book.
 - `dev-declaration-heads-and-parents` — `f76b9cd8`: a `#=` declaration is any sig head
@@ -134,6 +145,14 @@ own example uses that form (`#} stat -c '%i %d' a_path d_path`, with `dash_c`, `
 - `dev-liveness-unknown-refuses` — `ef3332a5`: a liveness check that cannot run answers "alive",
   so the lock refuses rather than risking two solvers; exit 127 when the wrapped command cannot
   spawn, 2 on usage or lock I/O.
+- `req-typos-ignores-the-dotless-extension` — requested by the conductor, not a deviation:
+  `a888048e` adds the bare word (also inside `_`-joined identifiers) to both typos configs; `mise
+  run fmt` left scratch lines `als_files = "als"` untouched, and the old configs flagged them.
+- `req-runner-bounds-under-the-harness-ceiling` — requested by the conductor, not a deviation:
+  `d4cb169b` sets `--timeout 120` and `--batch-timeout 540` as defaults and adds the shutdown
+  hook.
+- `req-runner-directory-and-default-skip` — requested by the conductor, not a deviation:
+  `d4cb169b` expands a directory argument and skips a module's sole synthesized `Default`.
 - `dev-preflight-figures-not-load-measured` — `4334cefa`: 1 GiB and 3 GiB are the heap cap plus
   margin and the fixture's ~20 KiB of modules; no run was measured under memory pressure.
 
