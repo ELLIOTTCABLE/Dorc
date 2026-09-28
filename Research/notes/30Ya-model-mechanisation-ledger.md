@@ -749,6 +749,33 @@ they sit alongside the Alloy spec rather than only as e2e.
 - Also this sitting: `Key.word` is `w` (so `w.inode_x`) and `Query`'s ends are `writer` and
   `reader`, a mechanical rename the human delegated.
 
+## The pre-step: Alloy in anger before assay exists (2026-09-27/28; human-typed framing, conductor's actions)
+
+- **[HUMAN]** not the `30Y` build: a last proving-out, deploying the upstream tool against a real
+  Dorc problem without the constraints of perfect specification text. An Opus builder stands up
+  the minimum that runs `.als` files (mise-managed JDK and Alloy jar, one runner task, one
+  platform; no compiler, no scaffolding); the conductor hand-writes a second strawman, spec and
+  build both, targeting completeness and compileability, on something tractable that is not
+  311 so the state-space coverage grows; then the builder merges it and fights it toward green.
+  Fable tokens go to the authorship, not the tooling.
+- **[HUMAN]** the primary output of the series is the record of where Alloy fights the author,
+  divided carefully at the end into good correctness-chafe and things the tooling should
+  absorb. Where Alloy fights because the design is genuinely not firm, that is the tool doing
+  its job: log it as a surfaced softness, then the conductor has full latitude to invent an
+  answer for the strawman and pursue green, for this session only. The builder has no such
+  latitude: it repairs mechanically and returns design questions to the conductor.
+- **[HUMAN]** every file in a strawman directory carries a strawman, non-normative header, so
+  invented decisions can never be read as Dorc's design. Also from this sitting: three
+  backticks inline break the human's renderer; name a fence kind in words.
+- Conductor's choice of subject: the per-line outcome algebra past a wall (elide, guard, run,
+  survive under the flag; footprints, backings, withholds; the identity tier's answers as
+  opaque claims), the vocabulary assay is meant to own one day and the region `USER_STORY`
+  stages 2 and 5 narrate. `30Ya-strawman-3/` in the evidence base: nine books, ten laws, four
+  corpus checks; `FINDINGS.md` there is the running fight record; everything unrun at the
+  commit that carries it. Two design answers invented there and marked so: a guarded line is
+  a wall (it may run), and attribution is the derivation's support rather than single-removal,
+  because two independent falsehoods mask each other under removal.
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
