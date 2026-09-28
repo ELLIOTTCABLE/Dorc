@@ -4694,6 +4694,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## core/CLAUDE:names-are-not-referents
 - defined: spike/crates/core/CLAUDE.md:59 — — a coordinate names a CELL; two coordinates may name
 
+## 311u:names-never-to-use
+- defined: Research/notes/311u-refuted-shapes-register.md:378
+- cited: 311 (1)
+
 ## narrative-eq-excluded-at-the-carrier
 - defined: Research/notes/28Va-aid-extraction-map.md:565 — — `CollapseNarrative` derives `Eq`, but any
 - defined: spike/crates/aid/CLAUDE.md:49 — — `CollapseNarrative` derives `Eq`, but any

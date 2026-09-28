@@ -374,3 +374,18 @@ alias: a path through symlinks and hardlinks, a package `provides`.
 mSort whose primary mScheme is that name in the store that admits it, under warrants the
 describer declares (2.2-primary-of-and-identified-in). A secondary mScheme's warrants license
 the engine to skip a lookup for equal inputs and nothing more (2.1-yields-into-another-scheme).
+
+## names-never-to-use
+
+- For the store: "table". Also "record", "row", "auxiliary", "weak"; "subsort", "type menu",
+  "index types". All are NACKED or never used.
+- For the question half of a cell: mClaim (collides with 1.11-site-and-claim-species and the
+  spike's `Claim<Tier,_>` tiers, where a fact IS a claim by observation); mExpression
+  ("expression" cannot carry two meanings beside sh syntax); mProperty (JavaScript, Swift, and
+  Kotlin read it as a stored member); condition (boolean only); attribute (stored-flavoured);
+  "observer". The marked line is "a read"; the fact's identity is the mTopic.
+- For the stored half of a cell: mField. No novel term may double over a first-class, sorted,
+  tracked referent, whatever graph it sits in.
+- For the parent: "bearer", mSort-Bearer, "receiver". For a cell: the mCell tag.
+- For an mValue: "string".
+- For the store's-end closure verb: anything built on "own", "presents", or "home".

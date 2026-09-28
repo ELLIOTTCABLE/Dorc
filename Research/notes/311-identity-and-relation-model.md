@@ -1268,7 +1268,8 @@ concept may have at most two names anywhere in git: its name before r31, and its
 § 5 of this document. A split or a merge is allowed. A third name for one concept is never
 allowed. Thus every new write to a durable document uses the name that § 1 to § 5 use now. This
 is true also where this section marks that name as about to change. A later single pass (grep,
-then replace) catches those new uses together with the old ones.
+then replace) catches those new uses together with the old ones. Names that are never to be
+used are in `311u:names-never-to-use`.
 
 This section says only which name to use when. It keeps no status and no history.
 
@@ -1282,10 +1283,10 @@ current: a mechanical replacement, or a Sonnet pass. Historical documents (`note
 keep the dead name. A slug is the exception: when a slug is renamed in a new or important
 document, every reference to that slug is renamed everywhere, historical documents included.
 
-The first generation of r31 (`311a`–`311i`, `312a`, `312b`, `312b-exercises/01`–`04`) keeps its
-own words. This document and every note minted against it never carry them.
+The r31 ledgers are frozen and historical. They record many of these renames as they happened,
+so they carry the old words unchanged. Non-ledger content will probably be updated.
 
-| in the first generation | here |
+| in the r31 ledgers | here |
 |---|---|
 | mKey-CatalogStore / mKey-PrimaryStore | mParent: one edge per mKey; derived views mParent-Catalog (through a secondary mScheme; routing) and mParent-Store (through the primary mScheme; identity) |
 | mSort-CatalogStore / mSort-PrimaryStore | none: the mParent's mSort is declared per matched shape on the primary mScheme (`:identified-in`) |
@@ -1335,18 +1336,3 @@ name, use that name.
 | the identifying-store object (the parent named by `:identified-in`) | "store" is provisional; this model writes mParent-Store. One word is owed; whether mParent-Store discharges it is unacked |
 | the spike's `kind__` API prefix | follows mSort, or the mScheme as the exercise strawmen have it (`sm_Path__resolve()`); untouched in code and pre-311 documents; strawman-tier |
 | `:root` | its name is unacked; where it sits is undecided (`311p` thread 7) |
-
-### § 6.4-names-never-to-use
-
-- For the store: "table". Also "record", "row", "auxiliary", "weak"; "subsort", "type menu",
-  "index types". All are NACKED or never used.
-- For the question half of a cell: mClaim (collides with 1.11-site-and-claim-species and the
-  spike's `Claim<Tier,_>` tiers, where a fact IS a claim by observation); mExpression
-  ("expression" cannot carry two meanings beside sh syntax); mProperty (JavaScript, Swift, and
-  Kotlin read it as a stored member); condition (boolean only); attribute (stored-flavoured);
-  "observer". The marked line is "a read"; the fact's identity is the mTopic.
-- For the stored half of a cell: mField. No novel term may double over a first-class, sorted,
-  tracked referent, whatever graph it sits in.
-- For the parent: "bearer", mSort-Bearer, "receiver". For a cell: the mCell tag.
-- For an mValue: "string".
-- For the store's-end closure verb: anything built on "own", "presents", or "home".
