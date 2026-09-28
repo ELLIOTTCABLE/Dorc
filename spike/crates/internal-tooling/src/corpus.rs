@@ -59,7 +59,7 @@ fn is_sync_conflict(name: &str) -> bool {
 /// wrote it, so indexing one commits citations no other worktree can satisfy, and the `slugs`
 /// pre-commit check then refuses every commit made elsewhere.
 fn is_ignored_scratch(name: &str) -> bool {
-    name.starts_with('_') && name.ends_with(".md")
+    name.starts_with('_') && Path::new(name).extension().is_some_and(|ext| ext == "md")
 }
 
 fn dir_entries(dir: &Path) -> Vec<(String, bool)> {
