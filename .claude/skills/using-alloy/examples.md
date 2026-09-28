@@ -29,7 +29,7 @@ pred no_self_containment { all d : Dir | d not in d.entries.object }
 assert self_containment_suffices {
    no_self_containment implies all o : Object | o in Root + Root.^(entries.object)
 }
-check self_containment_suffices for 6 expect 1                     -- known red: two dirs containing each other
+check self_containment_suffices for 6 expect 1                     -- known red: a File no entry reaches, or two dirs containing each other
 run self_containment_premise { no_self_containment and some Dir - Root } for 6 expect 1
 ```
 
@@ -86,7 +86,8 @@ which is how a counterexample becomes a regression test after the fix.
 
 The negative test above is `expect 0`, and a scope too small to seat it is also unsat, so it can
 pass for the wrong reason; the positive twin beside it at the same scope is what keeps it honest.
-When the rule is a predicate rather than a fact, the rejection test cannot be faked that way:
+With the rule as a predicate instead of the `unique_names` fact (an alternative to the module
+above, not an addition to it), the rejection test cannot be faked that way:
 
 ```alloy
 pred names_apart { all d : Dir, n : Name | lone (d.entries & name.n) }
@@ -107,8 +108,8 @@ valuation stands for every completion.
 ## A hand-written total order
 
 When: comparable identifiers where smaller configurations must still be checked. Avoids:
-`util/ordering` making the scope exact and non-empty, so a scope of three checks only rings of
-exactly three.
+`util/ordering` on the ring's own signature making the scope exact and non-empty, so a scope of
+three checks only rings of exactly three.
 
 ```alloy
 sig Node { next : lone Node, succ : one Node }
@@ -157,13 +158,13 @@ demanding the event at `exactly 1 Node` caught it.
 
 ## The two sanctioned macros
 
-When: many events, many frame conditions, several fairness assumptions. Avoids: a frame written
-`x = x'` that primes only the last factor; a fairness schema whose argument has lower precedence
-than `always`.
+When: many events, many frame conditions, several fairness assumptions. Avoids: a frame or a
+fairness schema hand-expanded as text, which primes only the last factor or binds `always` to half
+of an `or`.
 
 ```alloy
-let unchanged[x] { x = (x)' }                     -- the parentheses distribute the prime
-let fair[ev] { always (eventually (ev)) }         -- the parentheses survive `a or b` as ev
+let unchanged[x] { x = (x)' }                     -- parenthesised as the book writes it
+let fair[ev] { always (eventually (ev)) }         -- likewise
 
 pred upload [f : File] {
    f not in uploaded
@@ -173,8 +174,10 @@ pred upload [f : File] {
 }
 ```
 
-Macros are untyped textual expansion; errors inside them are cryptic. These two are the whole
-recommended repertoire.
+The book calls macros textual expansion and says the parentheses are required; under the pinned
+6.2.0 jar the bare forms `x = x'` and `always eventually ev` tested equivalent to these, so the
+jar substitutes the parsed argument. Keep the parentheses as the portable spelling. Errors inside
+macros are cryptic; these two are the whole recommended repertoire.
 
 ## Stuttering, transitions, and fairness as a premise
 
@@ -202,7 +205,7 @@ assert at_most_one_leader { always lone Elected }
 check at_most_one_leader for 4 but 20 steps
 
 assert at_least_one_leader_fair { fairness implies eventually some Elected }
-check at_least_one_leader_fair for 3 but 20 steps
+check at_least_one_leader_fair for 3 but 10 steps   -- 20 steps takes 100 s to translate and times out under the runner's caps
 ```
 
 Unconditional fairness is `always eventually A`; strong fairness is
@@ -228,14 +231,15 @@ pred inv_shared_are_accessible { shared.Token in uploaded - trashed }
 assert init_inv { init implies inv_shared_are_accessible }
 assert pres_inv { (inv_shared_are_accessible and next) implies after inv_shared_are_accessible }
 check init_inv for 10 but 1 steps
-check pres_inv for 10 but 2 steps                 -- two orders faster than `for 10 but 1.. steps`
+check pres_inv for 10 but 2 steps                 -- 1.2 s, where a 20-step trace check at scope 10 times out
 
 assert shared_are_uploaded { traces implies always shared.Token in uploaded }
-check shared_are_uploaded for 10 but 1.. steps    -- the non-inductive one stays a trace check
+check shared_are_uploaded for 4 but 20 steps      -- the non-inductive one stays a bounded trace check
 ```
 
 A preservation counterexample may be an unreachable state; strengthen the invariant with one
-known to be inductive rather than "confirming" reachability with a run.
+known to be inductive rather than "confirming" reachability with a run. `for 1.. steps` needs a
+complete model checker the pinned jar does not ship; it errors here.
 
 ## Derived state from history
 
@@ -283,7 +287,8 @@ from state diffs; an existentially quantified predicate call where a set would d
 ```alloy
 enum Event { Empty, Upload, Delete, Restore, Share, Download, Stutter }
 
-fun empty_happens   : set Event        { { e : Empty, f : File | empty } }
+-- One per event; delete, restore and download follow the same shape and are elided here.
+fun empty_happens   : set Event        { { e : Empty | empty } }
 fun stutter_happens : set Event        { { e : Stutter | stutter } }
 fun upload_happens  : Event -> File    { { e : Upload, f : File | upload[f] } }
 fun share_happens   : Event -> File -> Token { { e : Share, f : File, t : Token | share[f, t] } }
@@ -292,8 +297,8 @@ fun events : set Event {
    empty_happens + stutter_happens + upload_happens.File + share_happens.Token.File
 }
 
-fact transitions { always some events }
-check at_most_one_event { always lone events } for 3
+fact transitions { always some events }                     -- every event listed, or the missing ones can never fire
+check at_most_one_event { always lone events } for 3 expect 1   -- finds a step where two events coincide; the book's does too
 run two_shares_in_a_row { eventually (some share_happens and after some share_happens) } for 3
 ```
 
@@ -380,9 +385,11 @@ pred processCandidate [n : Node, i : Node] {
    inbox' = inbox - n->Candidate->i + n.succ->Candidate->(i & n.^next) + n.succ->Elect->(n & i)
 }
 
--- Payloads of unequal arity are padded to one arity with a singleton.
+-- Payloads of unequal arity are padded to one arity with a singleton; `->` binds tighter than
+-- `+`, so the union is parenthesised, and the field takes its own name beside `Node.inbox`.
+sig Payload {}
 one sig Empty {}
-sig Node2 { var inbox : Type -> Node -> X + Empty }
+sig Node2 { var inbox2 : Type -> Node -> (Payload + Empty) }
 ```
 
 Arity above three costs the solver on the order of two to the n-squared booleans; this idiom
@@ -390,8 +397,9 @@ does not scale to rich records.
 
 ## Memoization instead of recursion
 
-When: a value that is naturally recursive (depth, rank). Avoids: the recursion-depth option,
-which silently returns `none` past three unrollings and makes the verdict option-dependent.
+When: a value that is naturally recursive (depth, rank). Avoids: recursion, which the Analyzer
+refuses outright by default and, with the recursion-depth option on, silently returns `none` past
+three unrollings, making the verdict option-dependent.
 
 ```alloy
 open util/natural
@@ -408,7 +416,8 @@ run depth4 { some f : File | f.depth = inc[inc[inc[One]]] } for 5 but 3 Name
 ```
 
 `Natural` is bounded by its own scope and `inc` past it is silently empty; the scope on `Natural`
-must exceed the deepest value asked for.
+must exceed the deepest value asked for. On Windows the pinned jar refuses to parse `util/natural`
+at all (an alias clash inside the library file); run it under WSL.
 
 ## Higher-order quantification: what runs
 
@@ -419,8 +428,9 @@ combination.
 run has_self_loop { some e : edge | e = ~e }                      -- outermost some in a run: solved
 check no_self_loops { no e : edge | e = ~e }                      -- outermost no/all in a check: solved
 check all_entries_same_name { all s : set Entry | lone s.name }   -- negated to an existential: solved
--- `all` over a relation inside a run, `some` over a set inside a check, or either nested under
--- another quantifier, is refused. Rewrite with an explicit subset signature.
+-- `all` over a set or relation inside a run, `some` inside a check, or either nested under a
+-- quantifier of the other kind, is refused; nested under the same kind it solves. Rewrite the
+-- refused shape with an explicit subset signature.
 ```
 
 ## Integer guards that stay sound
@@ -439,7 +449,7 @@ fact size_limits    { all f : File | f.size <= div[max, #File] } -- no instance 
 run full_root { #(Root.entries) = 3 } for 4 but 5 Int              -- bitwidth set explicitly
 ```
 
-## Four one-line idioms
+## Five one-line idioms
 
 ```alloy
 some Root and Root in Dir            -- membership when Root is declared lone
