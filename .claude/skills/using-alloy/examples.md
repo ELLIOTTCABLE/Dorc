@@ -425,8 +425,8 @@ check all_entries_same_name { all s : set Entry | lone s.name }   -- negated to 
 
 ## Integer guards that stay sound
 
-When: sizes or counts are unavoidable. Avoids: `sum` over a set deduplicating equal sizes;
-silent wrap-around; the Prevent Overflows option hiding a false check.
+When: sizes or counts are unavoidable. Avoids: `sum` over a set deduplicating equal sizes; the
+Prevent Overflows option hiding a false check.
 
 ```alloy
 one sig Capacity in Int {}

@@ -229,10 +229,8 @@ until it goes unsat.
 - An effect written as inclusion, `n.id in n.outbox'`, leaves the rest of the set free. Write
   `n.outbox' = n.outbox + n.id`.
 - `=` on sets of integers compares sets; `=<` and `>=` sum first. `1 + 2` is the set `{1, 2}`;
-  `1 - 1` is empty; `sum File.size` deduplicates, `sum f: File | f.size` does not. Past the
-  bitwidth a number is wrong, never an error (the sources disagree on whether it wraps or the
-  instance is dropped; depend on neither); the `Int` scope is a bitwidth that the overall scope
-  does not change.
+  `1 - 1` is empty; `sum File.size` deduplicates, `sum f: File | f.size` does not; the `Int`
+  scope is a bitwidth that the overall scope does not change.
 - `seq` has its own scope (default four); `add` and `insert` on a full sequence silently return it
   unchanged; the `Int` bitwidth must cover the `seq` bound.
 - A mutable signature extending a static one is static (a warning says so); atoms never move
@@ -357,9 +355,6 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
 - Never write the pre-6 idiom: no `sig Time` or `sig State`, no `util/ordering[Time]`, no
   `Time`-indexed fields. Training data is dominated by it, half of one 2024 cohort reached for it
   under Alloy 6, and it forfeits `var`, the temporal operators, and the trace semantics.
-- Three repair rounds on one counterexample that have not converged are the signal to stop and
-  report. Measured feedback-loop repair stalls at the third or fourth round and starts returning
-  its input.
 
 ## Quick orientation
 
