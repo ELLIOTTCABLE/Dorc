@@ -29,7 +29,7 @@ Every rule below exists to make a green mean what it appears to mean.
 - A plain `fact` binds the initial state only. Signature declarations, multiplicities and signature
   facts hold in every state. A quantifier outside `always` over a set that changes is evaluated
   at time zero.
-- `in` is subset, not membership. `iden` covers every atom in the universe. `one`/`lone` over
+- `in` is subset, not membership. `iden` covers every atom in the universe. `no`/`one`/`lone` over
   several variables is not the nested form. Quantified variables are not distinct unless you write
   `disj`.
 - Analyzer options (recursion depth, overflow handling, warnings, skolem depth) change answers. A
@@ -57,15 +57,19 @@ each names what stops you.
    instances. Facts that admit only trivial worlds (empty ones, one-atom ones) make every later
    check vacuous.
 5. **Claim.** Write the property as a named `assert`, and the command as `check name for N` with
-   the scope stated. Never `check name {}`: a labelled command with an empty block checks `true`
-   under a reassuring name and can never fail.
+   the scope stated. Never `check name {}`, and never `run name { ... }` where `name` is a predicate:
+   a command with a block is a label plus that block, the assertion or predicate of that name is not
+   applied, and an empty block checks `true` under a reassuring name and can never fail.
 6. **Witness the premise.** For every `check` whose assertion has the shape `premise implies
    conclusion`, add a `run` of the premise and confirm it is satisfiable at the same scope; ask
    that run for the strongest world the law is meant to cover, not merely any world. A check with
    an unsatisfiable premise is green forever and has never been read.
 7. **Kill.** Delete or negate one constraint the claim depends on and confirm something goes red.
-   A claim that nothing can kill is either a restated definition or protected by facts that are
-   too strong. Export the counterexample as a predicate and keep it as a negative test.
+   The kills worth trying are the mutations a mutation tool tries: flip a multiplicity, swap
+   `all`/`some`, swap `^`/`*`, swap `implies`/`iff` or `and`/`or`, insert or drop a `~`, reverse
+   the operands of a join, swap the branches of an `else`, drop a prime, drop an `always`. A claim
+   that nothing can kill is either a restated definition or protected by facts that are too
+   strong. Export the counterexample as a predicate and keep it as a rejection run.
 8. **Read the scopes.** The Analyzer reports the scopes it actually used; read them. Grow a scope
    only when a witness genuinely needs the atoms, and say why beside the command. A scope is never
    the fix for a red.
@@ -80,7 +84,8 @@ for the end.
 Classify every sentence before writing any Alloy:
 
 - An **assumption** about the world becomes a `fact`. Be stingy: this is the knob that removes
-  worlds.
+  worlds, and a fact can be tested negatively only by an `expect 0` that scope starvation fakes;
+  a rule you will ever reject instances against is better a predicate (see Testing).
 - A **claim** you expect to follow becomes an `assert` with a `check`. When unsure whether a
   sentence is assumption or claim, make it a claim; a claim that turns out to be an assumption
   costs one check, an assumption that should have been a claim silently hides bugs. Never put in a
@@ -100,7 +105,15 @@ to be counted.
 
 ## Editing an existing model
 
-- Read every `fact` before anything else; they define the universe every command lives in.
+- Read every `fact` before anything else; they define the universe every command lives in, and an
+  opened module's facts count.
+- Before composing any formula, inventory the model's own `fun` and `pred` definitions and use the
+  one that names the concept. A formula rebuilt from primitives beside an existing helper loses
+  the name that carried the intent; two independent agents did exactly this on a memory-model
+  repair and both missed the accepted fix.
+- To restructure a fact or predicate, keep the old body under a new name and `check { old iff
+  new }` at the working scope before deleting it. That is the unit-level form of a rewording
+  moving nothing.
 - Add a check before changing a fact, so the change has a witness in both directions.
 - A rewording, a rename, or a restructuring must leave every command's outcome unchanged; a
   moved outcome is a finding, not churn.
@@ -130,12 +143,14 @@ Each entry: how it looks, why it happens, how you catch it.
   configurations matter.
 - **No trace at all once the model is "complete".** Traces are infinite; without a stuttering step
   a model that runs out of enabled actions has no trace. Catch: the empty run on the behavioural
-  model; always include `stutter` in the transitions disjunction.
+  model. Include `stutter` when idle behaviour is valid in the domain; when the transition
+  relation is total by design, adding it changes the model (idle traces appear and every liveness
+  claim then needs fairness), so leave it out and let the empty run prove traces exist.
 - **A scenario has no instance.** The scope cannot seat the atoms it needs: a `one sig` consumes
   its parent's scope; when all but one extension of an abstract signature is scoped, the last gets
   the remainder, possibly zero; a record-like signature needs one atom per distinct value
   combination the trace uses. Catch: the reported scopes, then the smallest scope that seats the
-  witness.
+  witness; a rejection run (see Testing) tells starvation from rejection outright.
 - **A check is green with Prevent Overflows on.** Instances where any integer overflows are
   discarded, so `all f: File | f.size > 10` at bitwidth 4 has no counterexample. Catch: leave the
   option off and bound sizes in a fact.
@@ -174,14 +189,22 @@ Assume the model, not the tool. In order of likelihood the counterexample is:
 Use the evaluator on the instance: type any expression or formula, call the model's own functions
 and predicates, and refer to atoms by their evaluator names (`Dir$0`, not the theme's label).
 Skolemized variables appear as `$command_variable` and can be queried. Bounded checking returns
-the shortest counterexample first, so a long trace means every shorter one was ruled out.
+the shortest counterexample first, so a long trace means every shorter one was ruled out. The
+smallest shape also draws the eye: a self-loop shown against a cycle law is the two-cycle's
+degenerate case, so fix the class the instance belongs to, never the instance. Read a trace as
+configuration, initial state, the events in order, the loop edge, and the first failing state.
 
 "No instance" for a `run` means the facts plus the scope forbid it, never that the property is
-false. Check the reported scopes, the ordering-exactness trap, and stuttering before anything else.
+false. Check the reported scopes, the ordering-exactness trap, and stuttering before anything else;
+then bisect: move the facts into named predicates and add them back to the run one at a time
+until it goes unsat.
 
 ## Semantic traps, each with its fix
 
 - Membership: `x in S` is subset. For an optional singleton, write `some x and x in S`.
+- Equality: `a.f = b.g` holds when both sides are empty; `some a.f & b.g` is the overlap test.
+  `Door.state = Unlocked` fails when `Door` is empty where `Door.state in Unlocked` holds; choose
+  by whether the empty case should pass.
 - Reflexivity: `(A <: iden) in R`, not `iden in R`.
 - Emptiness: `no R`. `R = none` is an arity error for a binary `R`.
 - `*r` includes the identity on the whole universe; use it only immediately before a join.
@@ -194,14 +217,22 @@ false. Check the reported scopes, the ordering-exactness trap, and stuttering be
   `implies`: `always (A or B)` needs the parentheses. Same for a macro body: `always (eventually
   (ev))`.
 - Prime distributes: `(s.m)'` is `s.(m')`. A frame macro must be `x = (x)'`, never `x = x'`.
+- `init; always next` leaves the first transition unconstrained: `;` is `and after`, so the
+  `always` starts at state one. Write `init and always next`.
+- `F until G` also asserts that `G` eventually holds; the form that does not is `G releases F`.
+- `let` is substitution, so `let t = x | eventually (x > t)` compares a value with itself; nothing
+  freezes a value across a temporal operator. Compare adjacent states with `x'` against `x`, or
+  look back with `before` under a future operator.
 - Parameter declarations on a `pred` or `fun` are checked when it is run directly and ignored when
   it is invoked. They are documentation. Put the constraint in the body if it matters.
 - Inside a signature fact, fields are already `this.f`; another atom's field is `y.@f`.
 - An effect written as inclusion, `n.id in n.outbox'`, leaves the rest of the set free. Write
   `n.outbox' = n.outbox + n.id`.
 - `=` on sets of integers compares sets; `=<` and `>=` sum first. `1 + 2` is the set `{1, 2}`;
-  `1 - 1` is empty; `sum File.size` deduplicates, `sum f: File | f.size` does not. Integers wrap
-  at the bitwidth; the `Int` scope is a bitwidth that the overall scope does not change.
+  `1 - 1` is empty; `sum File.size` deduplicates, `sum f: File | f.size` does not. Past the
+  bitwidth a number is wrong, never an error (the sources disagree on whether it wraps or the
+  instance is dropped; depend on neither); the `Int` scope is a bitwidth that the overall scope
+  does not change.
 - `seq` has its own scope (default four); `add` and `insert` on a full sequence silently return it
   unchanged; the `Int` bitwidth must cover the `seq` bound.
 - A mutable signature extending a static one is static (a warning says so); atoms never move
@@ -222,6 +253,9 @@ false. Check the reported scopes, the ordering-exactness trap, and stuttering be
 - Cost grows faster than linearly in scope, in bitwidth, and steeply in relation arity (a field
   of arity n may need on the order of two to the n-squared booleans; arity above three is
   rarely worth it).
+- A `univ`-typed field defeats the type-based bounding and is the first thing to remove from a
+  slow model. A `var` relation carries one hidden extra column, and the encoder refuses outright
+  when a relation's domain size to the power of its arity exceeds a 32-bit integer.
 - The reported primary variables are the honest size readout; vars and clauses follow from them.
 - A timeout is a result about the encoding or the scope, not a reason to wait longer. Look for
   closures taken per pair, higher-arity fields, and integers; lower the scope on that command only.
@@ -243,8 +277,14 @@ The idiom is a transition system spelled in temporal logic; every part is a plai
   primed relation, frame conditions for every other mutable relation (or the generic
   `all v: var$ - changed$ | v.value = v.value'`).
 - A `stutter` predicate of frame conditions only, and a transitions fact
-  `always (stutter or some x | event[x] or ...)`. Without stutter there is no infinite trace once
-  actions run out, and the model cannot compose with anything else.
+  `always (stutter or some x | event[x] or ...)`, with `some` and never `one`: `one` over-constrains
+  and hides a missing frame condition, since two events with the same effect may no longer
+  coincide. Without stutter there is no infinite trace once actions run out, and the model cannot
+  compose with anything else.
+- Facts for the initial state and the transitions bind every command to the system, which is what
+  scenario runs want. When inductive checks or scenarios outside the system are wanted, `init`
+  and `next` become predicates and `traces` the premise of every check; then every scenario run
+  must state `traces` itself, or it constrains nothing and finds a garbage instance quietly.
 - A history guard is one operator: `historically t not in File.shared`. Derived state that is a
   function of history is a `fun` over `once` and `before`, not a stored relation with effects.
 - Safety: `always P`. "From then on": `always (E implies after always Q)`. Two states ahead:
@@ -266,8 +306,15 @@ The idiom is a transition system spelled in temporal logic; every part is a plai
   `disj` per group; every signature and field pinned to the union of its variables so no stray
   atom appears. Never introduce `one sig` atoms for a test: they exist in every command's
   universe and break symmetry.
-- A negative instance is the same shape expected unsatisfiable. Mark both with `expect 1` /
-  `expect 0`; `expect 1` disables symmetry breaking on that command.
+- A negative instance is a rejection run, `run { valuation and not rule } expect 1`, whenever the
+  rule is a predicate: satisfiable means rejected, and a scope that cannot seat the valuation
+  comes back unsat and loud, so the test cannot pass by starvation. Write any rule you will ever
+  reject instances against as a predicate for this reason. Only a fact forces the weaker form,
+  the same valuation `expect 0`, which starvation fakes; that form needs the positive instance
+  at the same scope beside it as its twin. `expect 1` disables symmetry breaking on that command.
+- Coverage of a signature or relation is three instances: empty, one, two or more; of a formula,
+  one instance where it holds and one where it fails. The empty case is the one nobody writes and
+  the one a vacuous universal hides in.
 - A counterexample the Analyzer found can be exported as a predicate in exactly this idiom; after
   the fix, keep it as a negative test.
 - Trace scenarios: pin the configuration with some/disj, then states joined by `;` (lowest
@@ -307,6 +354,12 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
 - Read the counterexample before touching anything. Rebuild it by hand from the printed instance;
   it is always small enough.
 - Never rely on an Analyzer option, and never propose one as a fix.
+- Never write the pre-6 idiom: no `sig Time` or `sig State`, no `util/ordering[Time]`, no
+  `Time`-indexed fields. Training data is dominated by it, half of one 2024 cohort reached for it
+  under Alloy 6, and it forfeits `var`, the temporal operators, and the trace semantics.
+- Three repair rounds on one counterexample that have not converged are the signal to stop and
+  report. Measured feedback-loop repair stalls at the third or fourth round and starts returning
+  its input.
 
 ## Quick orientation
 
@@ -325,4 +378,5 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
   digest of what those sources warn about, the experiment behind the language-model numbers, and
   the practitioner prior art live in this repository under
   `.claude/research/design-model-mechanisation-prior-art/` (`turn06` for the first-party read,
-  `turn05` for the field, `plan.md` for the map).
+  `turn05` for the field, `turn07` for the peer skills and the testing literature, `plan.md` for
+  the map).
