@@ -642,7 +642,9 @@ run = "elan-init -y --no-modify-path --default-toolchain none"
 [tasks.alloy]
 description = "Run every command in each `.als` file given after `--`, one JVM per command, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error, or timeout. `-- --timeout <seconds>` overrides the per-command cap (default 300); `-- --command <name>` runs one command; `-- --instances` adds Alloy's instance (the counterexample, for a check) to each row that has one. Alloy resolves every `open X` to `X.als` beside the ROOT file (minus the root's own `module a/b` path); `-- --open X=<file.als>` serves a file living elsewhere at that spot, and Alloy's messages then name the spot, not the file. Relative paths resolve against the directory you ran mise from."
 raw = true
-run = "java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
+# The JDK is spelled by its install path: a bare `java` resolves by PATH order inside the task
+# shell, and a machine-global JDK earlier on PATH silently wins over the pin (measured, Windows).
+run = "{{ exec(command='mise where java') }}/bin/java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
 
 [tasks."verify:kani"]
 description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
