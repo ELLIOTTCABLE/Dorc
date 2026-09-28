@@ -3532,6 +3532,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 286 (1)
 
+## form-scenarios-are-one-world-each
+- defined: —
+- cited: 30Z 312d (2)
+
 ## spike/CLAUDE:four-rung-gate-ladder
 - defined: spike/CLAUDE.md:1031 — (r30) — one path-routed hk graph serves four fixed
 - cited: 30Qd 30Qf 310 (3)
@@ -3554,6 +3558,14 @@ row's `near:` line refreshes only when that row's other lines change.
 ## analysis/CLAUDE:funcenv-reads-source-literal-plane-only
 - defined: spike/crates/analysis/CLAUDE.md:71 — (`28K` §2) — the function-environment
 - cited: 28P 28Q 28R 28Ra 305 306c 30Ib 30Mb 30Mg 30Na 30P 30Q 30Qc 30Qd (21)
+
+## fw-a-section-is-mechanical-iff-it-holds-a-fence
+- defined: —
+- cited: 30Z 312d (2)
+
+## fw-fences-are-purely-mechanical
+- defined: —
+- cited: 30Z 312d (2)
 
 ## 27V:gap-ack6-sibling-hint-absent
 - defined: Research/notes/27V-user-aid-machinery-build-phase.md:70 — — the ruled unloaded-sibling-oracle hint has no
@@ -3618,6 +3630,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/CLAUDE.md:335 — — a GuardInsert carries no StandIn, no Predicted, no
 - defined: spike/crates/plan/CLAUDE.md:100 — — a GuardInsert carries no StandIn, no Predicted, no
 - cited: 26Lb 30Ia 30L 30Nc (4)
+
+## hab-claims-are-data-truth-is-computed
+- defined: —
+- cited: 30Z 312d (2)
 
 ## 27R:hand-finding-model-unification-candidate
 - defined: Research/notes/27R-lint-entrypoint-plan.md:376 — : `crates/lint` minted its OWN
@@ -3709,6 +3725,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26O (1)
 
+## hole-fence-never-fill
+- defined: —
+- cited: 30Z 312d (2)
+
 ## hole-probe-path-transport-divergence
 - defined: —
 - cited: 26O 26Ob (2)
@@ -3720,6 +3740,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## hole-static-identity
 - defined: —
 - cited: 27C (1)
+
+## hole-three-kinds-and-their-idioms
+- defined: —
+- cited: 30Z 312d (2)
 
 ## hole-unmodeled-wrappers
 - defined: —
@@ -4557,6 +4581,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## loop-propagation-staged-now
 - defined: —
 - cited: 30Qa (1)
+
+## loop-refuted-shapes-stay-as-checks
+- defined: —
+- cited: 30Z 312d (2)
 
 ## syntax/CLAUDE:lossless-quoting-is-correctness
 - defined: spike/crates/syntax/CLAUDE.md:37 — — an unquoted expansion changes a command's
