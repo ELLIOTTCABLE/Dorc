@@ -27,7 +27,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## a-host-is-not-a-partition
 - defined: —
-- cited: 03 04 30Y 30Ya 311u 312b 312ca 312cg Research/GOTCHAS (11)
+- cited: 03 04 30Y 30Ya 311u 312b 312ca 312cg Research/GOTCHAS (12)
 
 ## a-known-flag-suggests-nothing
 - defined: —
@@ -3508,6 +3508,18 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26N 26Ob (2)
 
+## 30Ya:front-production-alloy-users
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:78 — : established (turn01, subagent-graded; conductor re-read the load-bearing archived copies)
+
+## 30Ya:front-shared-unit-in-referent-projects
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:230 — : established (turn04, subagent-graded; conductor read the notes)
+
+## 30Ya:front-single-artifact-prose-and-checks
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:112 — : established (turn02, subagent-graded; conductor read the notes' citations, not the archived copies…
+
+## 30Ya:front-structural-ties-between-instruments
+- defined: Research/notes/30Ya-model-mechanisation-ledger.md:173 — : established (turn03, subagent-graded; conductor read the notes, not the archived copies)
+
 ## fruit-emit-hygiene-paste
 - defined: —
 - cited: 30Qe (1)
@@ -6793,7 +6805,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/CLAUDE.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (25)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 30Ya 311b 311c 312ca 312cg 312ch (26)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7597,7 +7609,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-sin-ordering
 - defined: Research/plans/271-block-settle-rulings-ledger.md:511 — (2026-07-12; TYPED — the razor's severity scale, sharpening
-- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (45)
+- cited: 26H 26I 275 27C 28K 28M 28O 28P 28Rb 300 307c 308b 30C 30E 30Ia 30Ib 30Kb 30Mb 30Ne 30P 30Pd 30Qa 30Qb 30Qf 30S 30T 30Vb 30Xa 30Ya 310 311c 311p 312ca AID-NEEDS ORACLE_PROVIDES analysis/CLAUDE oracle/CLAUDE plan/CLAUDE spike/CLAUDE (46)
 
 ## rul-single-mark-production-subset
 - defined: —
@@ -8468,7 +8480,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-injection-sentences-collide-every-fact
 - defined: —
-- cited: 312cg 312ch (2)
+- cited: 30Ya 312cg 312ch (3)
 
 ## srv-open-read-set-any-routing-mutation
 - defined: —
@@ -8480,7 +8492,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## srv-unmarked-verdict-readset-closed-empty
 - defined: —
-- cited: 312cg 312ch (2)
+- cited: 30Ya 312cg 312ch (3)
 
 ## 28Q:stage-0-ship-seam
 - defined: Research/plans/28Q-context-kernel-unification.md:539 — — **LANDED 2026-08-16** (its own lane after stage-i, per
