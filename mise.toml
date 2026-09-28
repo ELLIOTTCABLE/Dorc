@@ -520,10 +520,24 @@ run = [
 description = "ORCHESTRATOR-ONLY: re-bless goldens after the acceptance gate."
 raw = true
 dir = "spike"
+run = "cargo run -q -p internal-tooling -- exclusive --task bless -- mise run bless:held --"
+
+[tasks."bless:held"]
+description = "bless's body, without the heavy-work lock; run bless instead."
+hide = true
+raw = true
+dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
 description = "Builder-safe dry blessing; no golden writes."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- exclusive --task bless:dry -- mise run bless:dry:held --"
+
+[tasks."bless:dry:held"]
+description = "bless:dry's body, without the heavy-work lock; run bless:dry instead."
+hide = true
 raw = true
 dir = "spike"
 run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
@@ -538,15 +552,29 @@ run = "cargo run -q -p dorc-loom --bin dorc-loom --"
 description = "The SCOPED re-bless: BLESS=1 over exactly the named cases, and nothing else. `bless` above verifies the WHOLE suite first and refuses while anything is red, which is right for a conductor's close and a deadlock for the one job this exists for — a change that legitimately moves a case's golden cannot bless it while that case is the red one. Same selection `test:e2e` takes (ONE bare substring, or any number of case PATHS), same runner, same gates, and the trial filter is what keeps every other golden byte-identical. Verify the scope yourself afterwards: `git status --short` must show only the cases you named. A case carrying `expected.emitted` is still refused here — that is `bless:floor`'s."
 dir = "spike"
 raw = true
+run = "cargo run -q -p internal-tooling -- exclusive --task bless:case -- mise run bless:case:held --"
+
+[tasks."bless:case:held"]
+description = "bless:case's body, without the heavy-work lock; run bless:case instead."
+hide = true
+dir = "spike"
+raw = true
 # The trailing `--` is load-bearing for the reason `test:e2e` records: without it mise's
 # passthrough lands on `cargo test`, whose own `[TESTNAME]` takes exactly one positional.
 run = "cargo test -p dorc-cli --test e2e --"
 
-[tasks."bless:case".env]
+[tasks."bless:case:held".env]
 BLESS = "1"
 
 [tasks."bless:floor"]
 description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- exclusive --task bless:floor -- mise run bless:floor:held --"
+
+[tasks."bless:floor:held"]
+description = "bless:floor's body, without the heavy-work lock; run bless:floor instead."
+hide = true
 raw = true
 dir = "spike"
 run = "cargo run -q -p internal-tooling -- bless --floor"
@@ -626,12 +654,18 @@ run = "cargo run -q -p dorc-verify -- promote"
 [tasks."verify:translate"]
 description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
 raw = true
+run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task verify:translate -- mise run verify:translate:held --"
+run_windows = "wsl -- mise run verify:translate"
+
+[tasks."verify:translate:held"]
+description = "verify:translate's body, without the heavy-work lock; run verify:translate instead."
+hide = true
+raw = true
 run = [
    "mise run preflight lean",
    "mise run verify:translate-impl",
    "mise run verify:materialize",
 ]
-run_windows = "wsl -- mise run verify:translate"
 
 [tasks."verify:translate-check"]
 description = "Check strict translation output against committed generated files."
@@ -687,8 +721,15 @@ run = "cargo run -q -p internal-tooling -- assay"
 description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
 raw = true
 dir = "spike"
-run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
+run = "cargo run -q -p internal-tooling -- exclusive --task verify:kani -- mise run verify:kani:held --"
 run_windows = "wsl -- mise run verify:kani"
+
+[tasks."verify:kani:held"]
+description = "verify:kani's body, without the heavy-work lock; run verify:kani instead."
+hide = true
+raw = true
+dir = "spike"
+run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
 
 [tasks."verify:kani-check"]
 description = "Check the detached Kani harness with the standard toolchain."
@@ -706,8 +747,15 @@ run_windows = "wsl -- mise run verify:kani-setup"
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
 raw = true
 dir = "spike"
-run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
+run = "cargo run -q -p internal-tooling -- exclusive --task verify:lean -- mise run verify:lean:held --"
 run_windows = "wsl -- mise run verify:lean"
+
+[tasks."verify:lean:held"]
+description = "verify:lean's body, without the heavy-work lock; run verify:lean instead."
+hide = true
+raw = true
+dir = "spike"
+run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 
 [tasks."verify:lean-badges"]
 description = "Recompute Lean badges and compare them with the catalogue."
