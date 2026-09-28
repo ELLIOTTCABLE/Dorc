@@ -646,6 +646,12 @@ raw = true
 # shell, and a machine-global JDK earlier on PATH silently wins over the pin (measured, Windows).
 run = "{{ exec(command='mise where java') }}/bin/java -cp {{ exec(command='mise where http:alloy') }}/org.alloytools.alloy.dist.jar {{ config_root }}/spike/verify/alloy/AlloyRunner.java"
 
+[tasks.assay]
+description = "Compile a spec document into Alloy modules (`notes/30Y` § 2): `-- <spec.md> [--out <dir>]`. Reads the document's `alloy` and `sh` fences plus `shared.md` and `shared-laws.md` beside it, writes one flat directory of `.als` modules (default `<cargo target dir>/alloy/<spec-stem>/`), and prints one JSON report. Exit 2 on a lint refusal, writing nothing. Compile only: it runs no solver and takes no lock; run the modules with `mise run alloy` from the out dir. Relative paths resolve against the directory you ran mise from."
+raw = true
+dir = "spike"
+run = "cargo run -q -p internal-tooling -- assay"
+
 [tasks."verify:kani"]
 description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
 raw = true

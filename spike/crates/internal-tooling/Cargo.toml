@@ -29,6 +29,9 @@ path = "src/lib.rs"
 [dependencies]
 dorc-testbed = { path = "../testbed", version = "0.0.0" }
 dorc-transport = { path = "../transport", version = "0.0.0" }
+# `assay` lexes book lines with the product's own lexer (`notes/30Y` § 2.2); path crates only,
+# no features anywhere in the graph, so the fingerprint hazard above does not arise.
+dorc-syntax = { path = "../syntax", version = "0.0.0" }
 
 [lints]
 workspace = true
