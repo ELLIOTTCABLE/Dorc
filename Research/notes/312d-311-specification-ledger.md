@@ -195,3 +195,134 @@ Answered by default as stated; a word from the human overrides.
   `<stem>.lock.json` and the out directory `target/alloy/<stem>/`; the docID lint knows
   `specs/` and walks all of `Research/` by filename, the quarantine included.
   `mise run assay -- specs/311-identity.assay.md --parse` is green on the fence-less document.
+
+## § 5-strategy-amended-after-the-rewind
+
+Written 2026-09-28 by the rewound conductor, before any fence was authored. § 3 stands except
+where a line below supersedes it; each superseding line names the § 3 slug it moves.
+
+### § 5.1-tunes-typed-this-sitting
+
+- **[TYPED]** the `using-alloy` skill now prefers a rejection run, `run { valuation and not rule }
+  expect 1`, over the `expect 0` form, which scope starvation fakes. Supersedes the `expect 0`
+  reading of `str-refuted-shapes-are-inhabited-runs`.
+- **[TYPED]** `311u` and the crosscheck commentaries may wait for a later pass; not a ruling.
+- **[TYPED]** readability and factoring are wanted where they cost no correctness; the human read
+  `str-truth-predicates-are-transcriptions` as duplicating each English sentence twice.
+- **[TYPED]** `git mv` of the note to `specs/311-identity.assay.md` is done (§ 3.2 item 1).
+- **[TYPED]** `form-residue-lives-in-a-sub-section` is NACKED as literally put, kept in spirit:
+  incompletely translated lines mid-arc are expected; the close owes that every part of 311 is
+  exactly one of (1) non-normative, (2) normative and mechanical, or (3) normative and genuinely
+  unmechanizable. That tri-partition is the whole arc's work order.
+- **[TYPED]** an unmechanizable sentence: lean toward SPLITTING the mechanizable content out, per
+  `plans/30Z`, only where both resultant meanings are carried faithfully and the input prose is
+  unambiguous; otherwise residue, hopefully temporary.
+- **[TYPED]** the human's hope is that mechanizable and unmechanizable CONCEPTS are already
+  separate in 311: the algebra, the objects, and the relations are mechanical; the unmechanizable
+  is a small set of outlier concepts that belong in sections of their own. Firewall the two by
+  section wherever the text allows; a residue sub-heading is a fallback, not the plan.
+- **[TYPED]** the two tables of 311 § 5 are non-normative.
+- **[TYPED]** nit: the ledger's order items and every reference use slugs.
+
+### § 5.2-dispositions
+
+- `dsp-translation-is-the-one-copy` (supersedes the reading of
+  `str-truth-predicates-are-transcriptions`) — a mechanized sentence of 311 lives ONCE, as the
+  translation block of the fence that carries it (`form-translation-reuses-311-sentences`); a
+  truth predicate's translation IS that sentence. No second quotation anywhere. The only
+  duplication the praxis forces is fence beside translation, which is the firewall's diff surface
+  and stays.
+- `dsp-runs-always-carry-a-scope` — assay routes any command with a scope clause to `laws.als`,
+  a `_premise` twin inherits its check's scope, and an UNSCOPED `run` is emitted as a corpus
+  outcome (`assay.rs`, the `corpus.push` arm), which would invert its meaning. Every run here
+  carries a scope; twins omit it and inherit.
+- `dsp-rejection-runs-expect-one` — a kill, a refuted shape, and a hole's witness are each a
+  `run { … } expect 1` at a scope that seats the witness, never an `expect 0`.
+- `dsp-register-and-panels-in-a-later-pass` — the `311u` entries as inhabited runs and the § 4.2
+  register's mechanical twins come after the tri-partition, unless a kill of a law needs one.
+- `dsp-firewall-by-section` — expected mechanical: § 0's law, § 1's objects, § 2's relations,
+  § 3.1 to § 3.3. Expected normative-unmechanizable, to be homed in non-mechanical sections under
+  `<!-- normative -->`: the boundary (§ 4.1), the register (§ 4.2), and the sentences that name
+  acts outside the model (the vouch tier, the standup `witness()`, the integrity plane, the
+  flag's consumption policy, the aid attribution of § 3.5). A sentence found unmechanizable
+  inside a mechanical section moves only where its meaning is unambiguous; else it stays and is
+  counted at the close.
+- `dsp-parse-sparingly-in-main-context` — the conductor runs `--parse` at most once per act and
+  fixes only what is obvious; every solver fight goes to the builder, after the raw translation.
+
+### § 5.3-encoding-decisions
+
+Each is an encoding of 311's letter, not a reading of its design; where a choice of reading was
+unavoidable it is flagged `ask-` in § 5.5 and taken by default as stated.
+
+- `enc-levels-keys-and-worlds` — `abstract sig mLevel {}`; `sig mKey extends mLevel { value: one
+  Shword, scheme: one mScheme, shape: lone mShape, parent: lone mLevel, reaches: lone mReferent
+  }`; `abstract sig mWorld extends mLevel {}`; `sig mRoute extends mWorld {}`; one world atom per
+  `:root` shape (311 § 2.2 "for a :root shape, the world is the store"; § 3.2 "two mKeys of that
+  shape meet there and compare as siblings"), so a root key's chain ends at its shape's world and
+  the walk needs no special case. An mKey's mValue is the shell word assay minted.
+- `enc-world-stratum` — `sig mReferent { holds: set mReferent, owns: set mReferent }` with
+  `owns in holds`. "Identified in a store" is `holds`; "by the store's own construction" is
+  `owns` (a store re-presenting another's things holds without owning). `reaches` is one or none
+  (§ 2.2 "or none"). No mState, no mValue beyond the key's word, at this stage.
+- `enc-statements-are-declarations` — every `:relation`, warrant, closure, and supply of § 1 and
+  § 2 is a subtype of the shared `Statement`, carrying its subject as fields; each has one truth
+  predicate, `true_<Species>`, transcribing its defining sentence into the world stratum; the
+  engine reads only `InForce` statements; the laws premise `everyStatementInForceIsTrue`.
+- `enc-shape-is-the-matched-path` — `sig mShape { scheme: one mScheme }`; a key with no shape
+  matched no path and reads unknown from that level; equal mValues of one mScheme match one
+  shape (§ 1.6, "a function of the mKey's own bytes"); a shape with no in-force
+  `:identified-in` is scoped in the mRoute (§ 1.6).
+- `enc-parent-is-a-field-fed-by-supplies` — `SuppliesParent` statements are the seats; a key's
+  `parent` is the one in-force supply where exactly one exists, the mRoute of its vantage where
+  its shape has no `:identified-in`, its shape's world where the shape is `:root`, and none
+  otherwise (an unknown link). Two supplies that disagree leave no parent; the refusal law is
+  `act-yields-and-seats`'s.
+- `enc-height-by-cardinality` — a level's height is `#(l.^parent)`; two levels align when
+  their heights agree; the lockstep of § 3.2 walks aligned pairs from the terminus. Integers are
+  the shared `bookScope`'s bitwidth; a chain longer than the bitwidth admits is impossible at the
+  scopes used.
+- `enc-walk-is-the-fqk-derivation` — `fun walk[x, y: mKey]: one Answer` is § 3.2's
+  mFullyQualifiedKey mDerivation with its four answers; `compare()`, the coherence over
+  mDerivations, is defined in `act-vantage-observer-cells-composite-lends` and reads `walk`.
+- `enc-one-instance-is-one-atom-for-now` — until § 1.10 is mechanized, "one instance" is one
+  atom; the sentinel's and the ambient instance's sharing widens it later, and the lock shows
+  what that moves.
+- `enc-stores-well-founded-is-a-premise` — "a store is never among its own contents" (§ 3.2, the
+  one-top way) is a named predicate in the premise of the laws that rest on it, never a fact.
+
+### § 5.4-order-of-acts
+
+Supersedes § 3.2's numbered list; item 1 is done. One act at a time, each with its fences, its
+translations, its twins, and one kill.
+
+- `act-chain-and-worlds` — § 1.1, § 1.3, § 1.4, § 1.6, § 1.8, § 2.2, § 2.4, § 3.1: the objects,
+  the chain, the termini, `identity()` as the chain. Inhabit; the chain-terminates fact.
+- `act-warrants-and-store-closure` — § 1.5's two warrants and `:root`, § 2.3.
+- `act-the-walk-and-its-laws` — § 3.2 and § 0: `walk`, the four answers,
+  `law_same_is_sound`, `law_disjoint_is_sound`, `law_nobody_spoke_declines`; twins; kills; the
+  first books (a hardlink; two files in one filesystem; nested pid namespaces).
+- `act-yields-and-seats` — § 2.1, § 1.6's three seats and the disagreement refusal.
+- `act-readset-writeset-sparing` — § 2.5, § 2.6; USER_STORY stage 5 and the loop image as books.
+- `act-traversals-and-regions` — § 1.7, § 2.9, § 2.10.
+- `act-invalidation` — § 3.3.
+- `act-vantage-observer-cells-composite-lends` — § 1.10, § 2.7, § 2.8, § 1.9, § 2.11, § 3.4,
+  and `compare()` over mDerivations.
+- `act-committee-and-attribution` — § 3.5.
+- `act-tri-partition-accounting` — § 4 and every remaining sentence homed as (1), (2), or (3);
+  the lock written; the builder dispatched on the human's typed ack.
+
+### § 5.5-questions-for-the-human-non-design
+
+Taken by default as stated; a word overrides.
+
+- `ask-aliases-nothing-else-world-reading` — § 2.3's "by the store's own construction" is
+  encoded as ownership (`enc-world-stratum`), since the strong reading (nothing held here is
+  held anywhere) contradicts § 2.3's "whether another store aliases this one is not claimed".
+  The encoding decides which worlds a red can show; it is a world-modelling choice, not a
+  change to any rule.
+- `ask-route-for-any-path-without-identified-in` — § 1.6's "A shape with no `:identified-in` is
+  scoped in the mRoute" is applied to every matched path, warranted or not. The narrower
+  reading (an undeclared path reads unknown) is noted and not taken; § 1.6's sentence is
+  explicit.
+- `ask-parse-once-per-act` — per `dsp-parse-sparingly-in-main-context`.
