@@ -2,7 +2,7 @@ module laws
 open species
 
 check neverWrongWhenAllTrue { all S: set MDecl, q: Query | allTrue[S] implies not wrong[S, q] } for 6 but 8 Shword, 3 Line, 1 Query
-run neverWrongWhenAllTrue_premise { some S: set MDecl, q: Query | allTrue[S] and some writesOf[S, q.w] } for 6 but 8 Shword, 3 Line, 1 Query
+run neverWrongWhenAllTrue_premise { some S: set MDecl, q: Query | allTrue[S] and some writesOf[S, q.writer] } for 6 but 8 Shword, 3 Line, 1 Query
 
 check monotoneInSpeech { all S, S2: set MDecl, q: Query | S in S2 and allTrue[S2] implies answer[S, q] in answer[S2, q].*weaker } for 6 but 8 Shword, 3 Line, 1 Query
 run monotoneInSpeech_premise { some S, S2: set MDecl, q: Query | S in S2 and S != S2 and allTrue[S2] } for 6 but 8 Shword, 3 Line, 1 Query

@@ -2,9 +2,9 @@ module books/two_paths_one_inode
 open claims
 
 -- world facts, verbatim from the fixture lines
-fact { word.inode_x.scheme = Inode }
-fact { word.a_path.reaches = word.inode_x.reaches and word.b_path.reaches = word.inode_x.reaches and word.inode_x.worldParent = word.fs_1 }
-fact { word.fs_1.worldParent = word.boot_1 }
+fact { w.inode_x.scheme = Inode }
+fact { w.a_path.reaches = w.inode_x.reaches and w.b_path.reaches = w.inode_x.reaches and w.inode_x.worldParent = w.fs_1 }
+fact { w.fs_1.worldParent = w.boot_1 }
 
 one sig line_3, line_4 extends Line {}
 -- the claim declared on line 4, in force there and after

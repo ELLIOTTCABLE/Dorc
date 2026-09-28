@@ -282,9 +282,9 @@ measurement its verdict rests on, as a claim, and then states its outcome:
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
-#= word.inode_x.scheme = Inode and word.inode_z.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2 and word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1
+#= w.inode_x.scheme = Inode and w.inode_z.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 and w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -296,7 +296,7 @@ measurement its verdict rests on, as a claim, and then states its outcome:
 #= this in Elided
 ```
 
-`word.a_path` is the spec being explicit that a key is a first-class thing with a word, not a
+`w.a_path` is the spec being explicit that a key is a first-class thing with a word, not a
 string. The document's words module and the book's generated module, abridged:
 
 ```alloy
@@ -312,9 +312,9 @@ fact { class = a_path->slash_path + d_path->slash_path + … }
 module books/siblings_across_filesystems
 open claims
 
-fact { word.inode_x.scheme = Inode and word.inode_z.scheme = Inode }
-fact { word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches }
-fact { word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2 and word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1 }
+fact { w.inode_x.scheme = Inode and w.inode_z.scheme = Inode }
+fact { w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches }
+fact { w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 and w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1 }
 
 one sig line_3, line_4 extends Line {}
 one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_4 }

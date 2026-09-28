@@ -1,10 +1,10 @@
 module books/siblings_across_filesystems
 open claims
 
-fact { word.inode_x.scheme = Inode and word.inode_z.scheme = Inode }
-fact { word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches }
-fact { word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2 }
-fact { word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1 }
+fact { w.inode_x.scheme = Inode and w.inode_z.scheme = Inode }
+fact { w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches }
+fact { w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 }
+fact { w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1 }
 
 one sig line_3, line_4 extends Line {}
 one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_4 }

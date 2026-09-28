@@ -19,12 +19,12 @@ one sig tessa, simon, carl, stdlib, foob extends Speaker {}
 sig MReferent {}
 abstract sig MSort {}
 abstract sig MScheme { primaryOf: lone MSort }
-sig Key { word: one Shword, scheme: one MScheme, reaches: one MReferent, worldParent: lone Key }
+sig Key { w: one Shword, scheme: one MScheme, reaches: one MReferent, worldParent: lone Key }
 fact { no k: Key | k in k.^worldParent }
-fact { all disj a, b: Key | not (a.word = b.word and a.scheme = b.scheme and a.worldParent = b.worldParent) }
+fact { all disj a, b: Key | not (a.w = b.w and a.scheme = b.scheme and a.worldParent = b.worldParent) }
 
 sig Operand extends MDecl { verb: one Shword, at: one Int, under: one MScheme }
-fact { all d: Operand & True, l: Line | d.verb = l.cmd implies some k: Key | k.word = l.argv[d.at] and k.scheme = d.under }
+fact { all d: Operand & True, l: Line | d.verb = l.cmd implies some k: Key | k.w = l.argv[d.at] and k.scheme = d.under }
 
 sig Yields extends MDecl { of: one Class, under: one MScheme, to: lone MScheme }
 
@@ -39,10 +39,10 @@ sig GuaranteesUniqueName extends MDecl { on: one MScheme }
 fact { all d: GuaranteesUniqueName & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.worldParent = b.worldParent and a.reaches = b.reaches implies a = b }
 
 sig GuaranteesUniqueReferent extends MDecl { on: one MScheme }
-fact { all d: GuaranteesUniqueReferent & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.worldParent = b.worldParent and a.word = b.word implies a.reaches = b.reaches }
+fact { all d: GuaranteesUniqueReferent & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.worldParent = b.worldParent and a.w = b.w implies a.reaches = b.reaches }
 
 sig Root extends MDecl { on: one MScheme }
-fact { all d: Root & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.word = b.word implies a.reaches = b.reaches }
+fact { all d: Root & True, a, b: Key | a.scheme = d.on and b.scheme = d.on and a.w = b.w implies a.reaches = b.reaches }
 
 one sig Path, Inode, DeviceNumber, BootId, BundlePath extends MScheme {}
 one sig File, Filesystem, Boot, CertificateBundle extends MSort {}
@@ -80,7 +80,7 @@ Simon can say this because he describes the filesystem. Tessa cannot, because an
 ```alloy
 sig MayWrite extends MDecl { verb: one Shword }
 sig ChecksRead extends MDecl { verb: one Shword }
-fun keysOf[S: set MDecl, l: Line]: set Key { { k: Key | some d: Operand & S | d.verb = l.cmd and k.word = l.argv[d.at] and k.scheme = d.under } }
+fun keysOf[S: set MDecl, l: Line]: set Key { { k: Key | some d: Operand & S | d.verb = l.cmd and k.w = l.argv[d.at] and k.scheme = d.under } }
 fun writesOf[S: set MDecl, l: Line]: set Key { (some d: MayWrite & S | d.verb = l.cmd) and some keysOf[S, l] implies keysOf[S, l] else Key }
 fun readsOf[S: set MDecl, l: Line]: set Key { (some d: ChecksRead & S | d.verb = l.cmd) and some keysOf[S, l] implies keysOf[S, l] else Key }
 fact { all v: Verdict | v.speaker in (ChecksRead & True & verb.(v.of.cmd)).speaker }
@@ -103,7 +103,7 @@ fact { all p: Placement | p in True iff p.within = p.of.worldParent }
 
 fun resolvedIn[S: set MDecl]: Key -> Key {
    { a, b: Key | some x: Resolution & S | x.of = a and x.to = b }
-   + { a: Key - (Resolution & S).of, b: Key | some y: Yields & S | y.of in a.word.class and y.under = a.scheme and b.scheme = y.to and b.reaches = a.reaches }
+   + { a: Key - (Resolution & S).of, b: Key | some y: Yields & S | y.of in a.w.class and y.under = a.scheme and b.scheme = y.to and b.reaches = a.reaches }
 }
 fun parentIn[S: set MDecl]: Key -> Key {
    { a, b: Key | some p: Placement & S | p.of = a and p.within = b }
@@ -117,7 +117,7 @@ fun top[S: set MDecl, x, A: Key]: one Key { chain[S, x] & (parentIn[S]).A }
 pred separated[S: set MDecl, x, y: Key] {
    some A: x.^(parentIn[S]) & y.^(parentIn[S]) | no (x.^(parentIn[S]) & y.^(parentIn[S]) - A.*(parentIn[S])) and
    let tx = top[S, x, A], ty = top[S, y, A] |
-      tx.scheme = ty.scheme and tx.word != ty.word
+      tx.scheme = ty.scheme and tx.w != ty.w
       and (some d: GuaranteesUniqueName & S | d.on = tx.scheme)
       and (all s: (x.^(parentIn[S]) + y.^(parentIn[S])) - A.*(parentIn[S]) | some d: AliasesNothingElse & S | d.store = s.scheme.primaryOf)
 }
@@ -130,12 +130,12 @@ fun answerKeys[S: set MDecl, x, y: Key]: one Ans {
 }
 
 fun answer[S: set MDecl, q: Query]: one Ans {
-   (all x: writesOf[S, q.w], y: readsOf[S, q.r] | answerKeys[S, x, y] = DISJOINT) implies DISJOINT else UNKNOWN
+   (all x: writesOf[S, q.writer], y: readsOf[S, q.reader] | answerKeys[S, x, y] = DISJOINT) implies DISJOINT else UNKNOWN
 }
-fact { all q: Query | q.ans = answer[q.r.speech, q] }
-pred wrong[S: set MDecl, q: Query] { answer[S, q] = DISJOINT and some x: writesOf[S, q.w], y: readsOf[S, q.r] | x.reaches = y.reaches }
+fact { all q: Query | q.ans = answer[q.reader.speech, q] }
+pred wrong[S: set MDecl, q: Query] { answer[S, q] = DISJOINT and some x: writesOf[S, q.writer], y: readsOf[S, q.reader] | x.reaches = y.reaches }
 fun restsOn[S: set MDecl, q: Query]: set MDecl { { d: S | answer[S - d, q] != answer[S, q] } }
-fun by[l: Line]: set MDecl { { d: l.speech | some q: r.l | d in restsOn[l.speech, q] } }
+fun by[l: Line]: set MDecl { { d: l.speech | some q: reader.l | d in restsOn[l.speech, q] } }
 ```
 
 A resolution is what a lookup told the engine; `reaches` is what was so. Where nobody wrote one, the resolution is derived from the yield claim that matches the key's flavour and scheme, under the hypothesis that the lookup was correct; a written one stands in its place, and a written one with no target is a decline, which is never false. A placement is derived the same way from the scheme's identified-in claim. A chain that ends at a key nobody has declared a root spares nothing. What a line's verdict rests on names the claims in force at that line, so a derived resolution is attributed to the yield claim it came from. A book's fixture says which scheme each token the host printed belongs to, as it says which filesystem each inode is in: the adversary is otherwise free to read the printed inode number as a boot id.
@@ -146,7 +146,7 @@ A resolution is what a lookup told the engine; `reaches` is what was so. Where n
 pred allTrue[S: set MDecl] { S in True }
 
 check neverWrongWhenAllTrue { all S: set MDecl, q: Query | allTrue[S] implies not wrong[S, q] } for 6 but 8 Shword, 3 Line, 1 Query
-run neverWrongWhenAllTrue_premise { some S: set MDecl, q: Query | allTrue[S] and some writesOf[S, q.w] } for 6 but 8 Shword, 3 Line, 1 Query
+run neverWrongWhenAllTrue_premise { some S: set MDecl, q: Query | allTrue[S] and some writesOf[S, q.writer] } for 6 but 8 Shword, 3 Line, 1 Query
 
 check monotoneInSpeech { all S, S2: set MDecl, q: Query | S in S2 and allTrue[S2] implies answer[S, q] in answer[S2, q].*weaker } for 6 but 8 Shword, 3 Line, 1 Query
 run monotoneInSpeech_premise { some S, S2: set MDecl, q: Query | S in S2 and S != S2 and allTrue[S2] } for 6 but 8 Shword, 3 Line, 1 Query
@@ -230,12 +230,12 @@ check seatCanKnow {
 
    stat -c '%i %d' /srv/a/shared /srv/b/shared
 #} stat -c '%i %d' a_path b_path
-#= word.inode_x.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.b_path.reaches = word.inode_x.reaches and word.inode_x.worldParent = word.fs_1
+#= w.inode_x.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.b_path.reaches = w.inode_x.reaches and w.inode_x.worldParent = w.fs_1
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -256,13 +256,13 @@ check seatCanKnow {
 
    stat -c '%i %d' /srv/a/shared /srv/a/other
 #} stat -c '%i %d' a_path c_path
-#= word.inode_x.scheme = Inode and word.inode_y.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.c_path.reaches = word.inode_y.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_y.worldParent = word.fs_1
+#= w.inode_x.scheme = Inode and w.inode_y.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.c_path.reaches = w.inode_y.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_y.worldParent = w.fs_1
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -284,13 +284,13 @@ check seatCanKnow {
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
-#= word.inode_x.scheme = Inode and word.inode_z.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2
+#= w.inode_x.scheme = Inode and w.inode_z.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -336,13 +336,13 @@ Carl reads the operand under `Path` whatever it looks like; Tessa's lookup decli
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
-#= word.inode_x.scheme = Inode and word.inode_z.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2
+#= w.inode_x.scheme = Inode and w.inode_z.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -365,13 +365,13 @@ Without Simon's closure, two files in two filesystems collide. Nothing was false
 
    stat -c '%i %d' /srv/a/shared /srv/a/other
 #} stat -c '%i %d' a_path c_path
-#= word.inode_x.scheme = Inode and word.inode_y.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.c_path.reaches = word.inode_y.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_y.worldParent = word.fs_1
+#= w.inode_x.scheme = Inode and w.inode_y.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.c_path.reaches = w.inode_y.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_y.worldParent = w.fs_1
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -404,13 +404,13 @@ one sig foob__a_bundle_path_is_the_primary_key_of_a_certificate_bundle extends P
 
    stat -c '%i %d' /srv/a/shared /var/lib/other
 #} stat -c '%i %d' a_path d_path
-#= word.inode_x.scheme = Inode and word.inode_z.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.d_path.reaches = word.inode_z.reaches
-#= word.inode_x.worldParent = word.fs_1 and word.inode_z.worldParent = word.fs_2
+#= w.inode_x.scheme = Inode and w.inode_z.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches
+#= w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1 and word.fs_2.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
@@ -444,14 +444,14 @@ one sig tessa__a_singly_linked_path_names_one_file extends GuaranteesUniqueName 
 
    stat -c '%i %d %h' /srv/a/shared /srv/b/shared
 #} stat -c '%i %d %h' a_path b_path
-#= word.inode_x.scheme = Inode
-#= word.a_path.reaches = word.inode_x.reaches and word.b_path.reaches = word.inode_x.reaches and word.inode_x.worldParent = word.fs_1
-#= one sig tessa__a_path_declines extends Resolution {} { speaker = tessa  of = word.a_path  no to }
-#= one sig tessa__b_path_declines extends Resolution {} { speaker = tessa  of = word.b_path  no to }
+#= w.inode_x.scheme = Inode
+#= w.a_path.reaches = w.inode_x.reaches and w.b_path.reaches = w.inode_x.reaches and w.inode_x.worldParent = w.fs_1
+#= one sig tessa__a_path_declines extends Resolution {} { speaker = tessa  of = w.a_path  no to }
+#= one sig tessa__b_path_declines extends Resolution {} { speaker = tessa  of = w.b_path  no to }
 
    cat /proc/sys/kernel/random/boot_id
 #} cat /proc/sys/kernel/random/boot_id
-#= word.fs_1.worldParent = word.boot_1
+#= w.fs_1.worldParent = w.boot_1
 
    chmod g-w /srv/a/shared
 #} chmod g-w {slash_path}
