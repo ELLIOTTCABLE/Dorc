@@ -142,7 +142,9 @@ public class AlloyRunner {
          if (!done) {
             p.descendants().forEach(ProcessHandle::destroyForcibly);
             p.destroyForcibly().waitFor();
-            return new Outcome("timeout", wallMs, -1, "exceeded " + timeoutSeconds + "s", null);
+            String progress = Files.readAllLines(err, StandardCharsets.UTF_8).stream()
+               .filter(l -> l.startsWith("translated ")).reduce((a, b) -> b).orElse("still translating");
+            return new Outcome("timeout", wallMs, -1, "exceeded " + timeoutSeconds + "s; " + progress, null);
          }
          String stdout = Files.readString(out, StandardCharsets.UTF_8).strip();
          String[] lines = stdout.split("\n", 2);
@@ -166,7 +168,16 @@ public class AlloyRunner {
          A4Options options = new A4Options();
          options.solver = SATFactory.get(solver);
          long start = System.nanoTime();
-         A4Solution sol = TranslateAlloyToKodkod.execute_command(A4Reporter.NOP, world.getAllReachableSigs(), cmd, options);
+         // On stderr, so a killed child still says whether translation finished and how large the SAT problem was.
+         A4Reporter progress = new A4Reporter() {
+            @Override
+            public void solve(int step, int primaryVars, int totalVars, int clauses) {
+               System.err.println("translated in " + (System.nanoTime() - start) / 1_000_000 + "ms: "
+                  + primaryVars + " primary vars, " + totalVars + " vars, " + clauses + " clauses");
+               System.err.flush();
+            }
+         };
+         A4Solution sol = TranslateAlloyToKodkod.execute_command(progress, world.getAllReachableSigs(), cmd, options);
          long solveMs = (System.nanoTime() - start) / 1_000_000;
          System.out.println((sol.satisfiable() ? "sat" : "unsat") + "\t" + solveMs);
          if (instances && sol.satisfiable()) System.out.println(sol);
