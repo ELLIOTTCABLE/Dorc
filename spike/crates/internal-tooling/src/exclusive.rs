@@ -15,6 +15,8 @@ use crate::json::{Json, read_num, read_str};
 
 /// `EX_TEMPFAIL`: try again later.
 const REFUSED: u8 = 75;
+/// The holder's pid, set on the command it runs and so inherited by everything under it.
+const HOLDER_ENV: &str = "DORC_HEAVY_WORK_HOLDER";
 /// A lock file is a few hundred bytes; anything larger is not ours and reads as no holder.
 const LOCK_READ_CAP: u64 = 64 * 1024;
 
@@ -44,6 +46,10 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         );
         return ExitCode::from(2);
     };
+    let (program, rest) = command.split_first().unwrap_or((task, &[]));
+    if held_by_ancestor(&lock, std::env::var(HOLDER_ENV).ok().as_deref()) {
+        return spawn(Command::new(program).args(rest), program);
+    }
     match acquire(&lock, task) {
         Ok(()) => {}
         Err(Acquire::Held(holder)) => {
@@ -55,10 +61,18 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             return ExitCode::from(2);
         }
     }
-    let (program, rest) = command.split_first().unwrap_or((task, &[]));
-    let status = Command::new(program).args(rest).status();
+    let code = spawn(
+        Command::new(program)
+            .args(rest)
+            .env(HOLDER_ENV, std::process::id().to_string()),
+        program,
+    );
     release(&lock);
-    match status {
+    code
+}
+
+fn spawn(command: &mut Command, program: &str) -> ExitCode {
+    match command.status() {
         Ok(status) => ExitCode::from(
             status
                 .code()
@@ -70,6 +84,15 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             ExitCode::from(127)
         }
     }
+}
+
+/// A heavy task nested inside another (`gate:arc` running `gate:full-quiet`, a gate step running
+/// `alloy`) runs under its ancestor's lock: the holder's pid reaches it only by inheritance, and
+/// counts only while the lock still names that pid.
+fn held_by_ancestor(lock: &Path, inherited: Option<&str>) -> bool {
+    inherited
+        .and_then(|pid| pid.parse::<u32>().ok())
+        .is_some_and(|pid| read_holder(lock).is_some_and(|h| h.pid == pid))
 }
 
 enum Acquire {
@@ -144,7 +167,8 @@ fn release(lock: &Path) {
 fn refuse(lock: &Path, h: &Holder) {
     let ago = now().saturating_sub(h.started);
     eprintln!(
-        "exclusive: REFUSED. This machine runs one heavy task at a time, and `{}` holds the lock \
+        "exclusive: REFUSED, exit {REFUSED}: CONTENTION, NOT A FAILURE. Nothing was checked and \
+         nothing is broken; this machine runs one heavy task at a time, and `{}` holds the lock \
          (pid {}, started {}m{}s ago, in {}; lock file {}). Do other work and retry later; do not \
          wait on it in a loop. If that process is not really running, delete the lock file.",
         h.task,
@@ -221,7 +245,7 @@ fn alive(pid: u32) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{Acquire, acquire, alive, read_holder, release};
+    use super::{Acquire, acquire, alive, held_by_ancestor, read_holder, release};
 
     #[test]
     fn a_live_holder_refuses_and_a_dead_one_is_taken_over() {
@@ -255,6 +279,32 @@ mod tests {
         );
         assert_eq!(read_holder(&lock).map(|h| h.task), Some("third".to_owned()));
         release(&lock);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn only_the_holders_own_descendants_run_under_its_lock() {
+        // `gate:arc` runs `gate:full-quiet`, which must not refuse itself; a stranger, or a stale
+        // inherited pid whose lock is gone, must still take the ordinary path.
+        let dir = std::env::temp_dir().join(format!("dorc-exclusive-nest-{}", std::process::id()));
+        let lock = dir.join("heavy-work.lock");
+        let _ = std::fs::remove_dir_all(&dir);
+        let me = std::process::id().to_string();
+
+        assert!(!held_by_ancestor(&lock, Some(&me)), "no lock, no holder");
+        assert!(acquire(&lock, "gate:arc").is_ok());
+        assert!(held_by_ancestor(&lock, Some(&me)));
+        assert!(
+            !held_by_ancestor(&lock, Some("1")),
+            "another pid is a stranger"
+        );
+        assert!(!held_by_ancestor(&lock, None), "no inheritance, no nesting");
+        assert!(!held_by_ancestor(&lock, Some("not a pid")));
+        release(&lock);
+        assert!(
+            !held_by_ancestor(&lock, Some(&me)),
+            "a released lock is held by nobody"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
