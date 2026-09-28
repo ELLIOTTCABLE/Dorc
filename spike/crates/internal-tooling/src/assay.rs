@@ -215,10 +215,14 @@ fn documents(paths: &[PathBuf]) -> Vec<PathBuf> {
 }
 
 fn is_shared_half(name: &str) -> bool {
-    matches!(name, "shared.md" | "shared-laws.md")
+    matches!(name, SHARED_HALF | LAWS_HALF)
 }
 
 const LOCK_SUFFIX: &str = ".lock.json";
+/// The two shared halves, found by these names beside a document (`30Y` § 2.2); `.assay.md` is
+/// the spelling of every document in the `30Z` format.
+const SHARED_HALF: &str = "shared.assay.md";
+const LAWS_HALF: &str = "shared-laws.assay.md";
 
 /// Compile one document, and past that whatever `mode` asks; prints its report, returns its code.
 fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
@@ -230,7 +234,7 @@ fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
         }
     };
     let beside = |name: &str| std::fs::read_to_string(spec.with_file_name(name)).ok();
-    let (shared, laws) = (beside("shared.md"), beside("shared-laws.md"));
+    let (shared, laws) = (beside(SHARED_HALF), beside(LAWS_HALF));
     let lossy = |s: Option<&std::ffi::OsStr>| {
         s.map(|s| s.to_string_lossy().into_owned())
             .unwrap_or_default()
@@ -246,11 +250,11 @@ fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
             text: &doc,
         },
         shared: shared.as_deref().map(|text| Source {
-            name: "shared.md",
+            name: SHARED_HALF,
             text,
         }),
         laws: laws.as_deref().map(|text| Source {
-            name: "shared-laws.md",
+            name: LAWS_HALF,
             text,
         }),
     };

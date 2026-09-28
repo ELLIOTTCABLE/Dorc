@@ -2,17 +2,17 @@
 module shared
 open assay
 
--- shared.md:8
+-- shared.assay.md:8
 sig Speaker {}
 
--- shared.md:9
+-- shared.assay.md:9
 abstract sig Blurb extends Claim { speaker: one Speaker }
 
--- shared.md:10
+-- shared.assay.md:10
 sig Heard in Blurb {}
 
--- shared.md:11
+-- shared.assay.md:11
 fact { all b: Blurb | b in Heard iff b in Line.speech }
 
--- shared.md:12
+-- shared.assay.md:12
 fact { all l: Line | l not in l.^above }

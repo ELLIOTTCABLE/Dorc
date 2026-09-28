@@ -8,5 +8,5 @@ check everyWobbleIsHeardWhenSpoken { all l: Line, w: Wobble & l.speech | w in He
 -- widgets.md:19
 run everyWobbleIsHeardWhenSpoken_premise { some l: Line | some Wobble & l.speech } for 3 but 2 Int
 
--- shared-laws.md:8
+-- shared-laws.assay.md:8
 check wobblyNeedsAWobble { all l: Line | wobbly[l] implies some Wobble & l.speech } for 3 but 2 Int

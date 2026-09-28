@@ -93,9 +93,9 @@ scenario that dies if the unit is deleted. Order, chosen so the first non-vacuou
 model's core:
 
 1. Standup: the toolchain as found (`mise run assay` on a skeleton; `--parse` before any solve);
-   `git mv` of the note to `specs/311-identity.md` so history follows; the shared halves
-   (`specs/shared.md`: Speaker, the claim base, in-force, `bookScope`, `todo`;
-   `specs/shared-laws.md`: empty until a law proves shared).
+   `git mv` of the note to `specs/311-identity.assay.md` so history follows; the shared halves
+   (`specs/shared.assay.md`: Speaker, the claim base, in-force, `bookScope`, `todo`;
+   `specs/shared-laws.assay.md`: empty until a law proves shared).
 2. The chain: mReferent, mSort, mScheme, mKey with value, scheme, parent; `:primary-of` and
    `:identified-in` per shape; `:root`; the mRoute terminus; `identity()` (311 § 1.1, § 1.4, § 1.6,
    § 1.8, § 2.2, § 2.4, § 3.1). Inhabit.
@@ -166,3 +166,27 @@ Answered by default as stated; a word from the human overrides.
   already declare themselves non-normative.
 - `ask-commit-granularly-on-ai-main` — one commit per unit on `ai/main`, the lock committed with
   the fences it records.
+
+## § 4-standup-findings
+
+- **[TYPED]** 2026-09-28, on sharing: `specs/` may hold more than the one document; primitives
+  likely to be reused by other components' specifications may be divided out. Correctness is the
+  only guiding star, and sharing that harms it is not attempted. Any shared content that is in
+  any way normative is in the `30Z` format, visible and coherent with every other
+  specification, never buried in a supportive preload file.
+- `dsp-shared-tier-is-minimal-and-in-form` (conductor's disposition) — the shared halves
+  `specs/shared.assay.md` and `specs/shared-laws.assay.md` are written as `30Z` documents (fences,
+  translation blocks, the firewall), and hold only what no specification defines: the speaker,
+  the claim base and its speaker field, the in-force rule, the null outcome, and the default
+  book scope. Everything 311 defines stays in 311. With one specification in the tier, what a
+  second would share is a guess; lifting a unit into the shared tier later is a reword the lock
+  must show moves nothing (`30Z:loop-a-reword-moves-nothing`), which is the correctness-preserving
+  direction. Alloy composes modules only downward through `open`, so a shared definition can
+  never depend on a document's own; that constraint is what keeps a shared unit from becoming a
+  buried rule.
+- `fnd-corpus-walk-did-not-know-specs` — the slug index and the docID dangle lint anchored their
+  walk at `Research/`, the steering files, and the root docs, so a note moved to `specs/` would
+  have dangled every `311:` citation and dropped 311's section slugs from `SLUGS.md`, against
+  `Research/README.md`'s rule that a mechanised note moves under its own ID. Fixed in the shared
+  corpus walk (`spike/crates/internal-tooling/src/corpus.rs`, `docids.rs`), two lines, committed
+  with the move. The lint is silent over the whole tree afterward.

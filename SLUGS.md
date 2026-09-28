@@ -3536,6 +3536,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Z 312d (2)
 
+## form-shared-holds-only-the-stable
+- defined: —
+- cited: 30Z specs/shared.assay (2)
+
 ## spike/CLAUDE:four-rung-gate-ladder
 - defined: spike/CLAUDE.md:1031 — (r30) — one path-routed hk graph serves four fixed
 - cited: 30Qd 30Qf 310 (3)
@@ -4577,6 +4581,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## loom-transcript-is-what-the-user-saw
 - defined: —
 - cited: 282 30X (2)
+
+## loop-a-reword-moves-nothing
+- defined: —
+- cited: 30Z 312d specs/shared-laws.assay (3)
 
 ## loop-propagation-staged-now
 - defined: —

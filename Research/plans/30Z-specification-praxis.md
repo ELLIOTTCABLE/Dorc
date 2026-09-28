@@ -338,8 +338,8 @@ The words assay (`notes/30Y`) uses for the things above, so that this document a
 Mechanics, flags, and layout are `30Y`'s and are not repeated.
 
 - The *harness* is the shell-side structure assay owns and opens beneath everything: words, classes,
-  claims, and lines. The *prepend half* (`shared.md`) is the shared tier of 2.2-write-it-and-place-it,
-  opened beneath every document; the *append half* (`shared-laws.md`) is what every document must
+  claims, and lines. The *prepend half* (`shared.assay.md`) is the shared tier of 2.2-write-it-and-place-it,
+  opened beneath every document; the *append half* (`shared-laws.assay.md`) is what every document must
   satisfy, spliced after the document's own definitions, so a shared law may name a function each
   document defines. Both live beside the documents and are found by name.
 - A *species* is a sig under the claim base with the fact that says what its claims mean when true;
