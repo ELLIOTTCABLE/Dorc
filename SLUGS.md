@@ -458,7 +458,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-backing-selfframing
 - defined: —
-- cited: 30Mb 30Q 30T 311c 311t 312cg 312ch ANALYZER-NEEDS (11)
+- cited: 30Mb 30Q 30T 311 311c 311t 312cg 312ch ANALYZER-NEEDS (13)
 
 ## an-claim-tier
 - defined: —
@@ -466,7 +466,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-compare-chokepoint
 - defined: —
-- cited: 310 311 311a ANALYZER-NEEDS (4)
+- cited: 310 311 311a ANALYZER-NEEDS (5)
 
 ## an-cross-host-kind
 - defined: —
@@ -1102,7 +1102,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:compare-consumer-map
 - defined: spike/CLAUDE.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 312cb 312cg (6)
+- cited: 26Ob 311 311a 311c 312cb 312cg (7)
 
 ## analysis/CLAUDE:compare-only-at-chokepoints
 - defined: spike/crates/analysis/CLAUDE.md:282 — — dialect sets + backing provenance (minting

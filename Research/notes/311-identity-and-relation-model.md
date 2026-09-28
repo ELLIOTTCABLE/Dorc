@@ -1258,3 +1258,95 @@ consumer, the unflagged rows come first.
     The vouch licenses the vouched line's own elision at the verdict tier, with no flag
     (`KNOBS:kCONTRACT-RUNGS`). Its closure of the readset feeds the sparing test, under
     the flag.
+
+## § 6-pending-renames
+
+This section is temporary and non-normative. Delete it when every entry is applied or dropped.
+
+Renaming is in progress, at the same time as the model changes. Outside this section, one
+concept may have at most two names anywhere in git: its name before r31, and its name in § 1 to
+§ 5 of this document. A split or a merge is allowed. A third name for one concept is never
+allowed. Thus every new write to a durable document uses the name that § 1 to § 5 use now. This
+is true also where this section marks that name as about to change. A later single pass (grep,
+then replace) catches those new uses together with the old ones.
+
+This section says only which name to use when. It keeps no status and no history.
+
+### § 6.1-applied-here-not-yet-applied-elsewhere
+
+Use the name of § 1 to § 5. Never write the dead name in new text.
+
+The application will likely be partial. Core, critical, and living documents (the root
+documents, `plans/`, `spike/` code and its `CLAUDE.md` files) get one commit that makes them
+current: a mechanical replacement, or a Sonnet pass. Historical documents (`notes/`) will likely
+keep the dead name. A slug is the exception: when a slug is renamed in a new or important
+document, every reference to that slug is renamed everywhere, historical documents included.
+
+The first generation of r31 (`311a`–`311i`, `312a`, `312b`, `312b-exercises/01`–`04`) keeps its
+own words. This document and every note minted against it never carry them.
+
+| in the first generation | here |
+|---|---|
+| mKey-CatalogStore / mKey-PrimaryStore | mParent: one edge per mKey; derived views mParent-Catalog (through a secondary mScheme; routing) and mParent-Store (through the primary mScheme; identity) |
+| mSort-CatalogStore / mSort-PrimaryStore | none: the mParent's mSort is declared per matched shape on the primary mScheme (`:identified-in`) |
+| naming system (described, never named) | mScheme (owns the `resolve()`; what every bind and mark names) |
+| `:named-in` | `:yields` (per matched shape, into any mSort) |
+| `:identified-in` (one per mSort) | `:primary-of` on the mScheme, with `:identified-in` and the warrants per matched shape |
+| mAspectSort, `:named-like` | none: a cell is a singleton mSort under its mParent (1.9-cell-a-singleton-sort) |
+| mNaturalKey / mPrimaryKey | mKey-Natural / mKey-Primary (the ledgers and exercises keep the old order as an acceptable gloss) |
+
+Outside r31, the last bullet of `AGENTS.md`'s "Terminology firming" still names mKey-CatalogStore,
+mKey-PrimaryStore, mSort-CatalogStore, and mSort-PrimaryStore as this model's words.
+
+Plain-English "read" that must NOT be tagged or renamed (a host read, not the operation):
+312b-exercises/01 ~line 54; 312b-exercises/02 ~lines 52 and 65.
+
+| dead name | name here | where the dead name remains |
+|---|---|---|
+| mPlacement · `:lives-in` · "placement"; and "backing" (`an-backing-selfframing`, the probe's marked read set): the declared and the measured halves of one side | `may-read` (the record verb / relation); Readset (the set: the declared `may-read` entries, the probe's marked reads, and the Readsets of every container on the chain). Sentinel `may-read nothing-else` | `ANALYZER-NEEDS` rows, including the slug `ANALYZER-NEEDS:an-backing-selfframing` (also cited from `plans/30T`); `USER_STORY`; `KNOBS` |
+| footprint · `disturbs` · "at-most claim"; and `:reaches` / `disturbance_reaches` (the entailment, computed into the same set) | `may-write` (the record verb / relation); Writeset (the set: the declared `may-write` entries, the entailment, and the may-write sets of the written thing's containers strictly below the level shared with the fact's key). Sentinel `may-write nothing-else` (the finished definition / completion record) | `USER_STORY` stages 5–7; `KNOBS:kBURDEN`; `ANALYZER-NEEDS`; `FORFEITS`; the spike members `cmd__disturbs()` and `kind__disturbance_reaches()`, which follow the verb |
+| `unrelated` | KNOWN_UNSPOKEN | `30U` § 7, `compare-consumer-map`, `ANALYZER-NEEDS:an-compare-chokepoint`. The design-of-record documents keep `unrelated` until the model is ruled (4.2-supersessions-pending-in-prior-documents names them) |
+
+### § 6.2-undecided-whether-a-name-is-dead
+
+§ 1 to § 5 still use these words. The table in 6.1-applied-here-not-yet-applied-elsewhere lists
+each as a dead name. Whether that retirement covers these uses is undecided.
+
+- "backing" for a mResolution's mTraversal (1.7-resolution-and-its-traversal, and the consumer
+  line of 2.9-the-traversal-and-the-region-test), and "backing sets" in
+  3.2-compare-one-chokepoint-four-answers. The dead "backing" is the probe's marked read set.
+- "at-most claim" for the mKeys that a verb's author declares it writes
+  (3.3-invalidation-three-mutator-species, 3.4-entry-and-lends,
+  4.2-supersessions-pending-in-prior-documents). If it is a name, it is a third name for the
+  may-write concept. If it only describes the strength of the claim, it stays.
+
+### § 6.3-open-names
+
+Nothing here is applied anywhere. Do not write a candidate. Where § 1 to § 5 hold a provisional
+name, use that name.
+
+| concept | candidates / notes |
+|---|---|
+| the route row's spellings (all owed; the relation is not new) | (a) a sort's declaration that it places another sort (strawman `: : places "sm.File"` on the placing sort's declaration member); (b) the upward body on the placing sort, invoked with a placed key's value, its arms deciding which spellings it consumes (strawman `sm_Package__member_of()`); (c) the downward members body (today only as write reach, USER_STORY stage 7's `dpkg -L : disturbs sm.File`; as membership, a member owed or that body reused); the record both ends feed is `looked-up-in P:key` with a closure scoped per route-sort, which exists. The relation name `:places` is provisional here; its final name is 312's |
+| the two ends of the alias row | `:guarantees-unique-name` declared per shape at the store's end; `alias nothing-else` emitted per key at the thing's end: two RELATED BUT SEPARATE statements here. Whether licensing needs both ends in agreement, either end, or a lattice, and what "a warrant" is, are 312's. "One warrant, two spellings" is retracted |
+| a sort's key that some store hands out names for | "individual": reads well (human); "sort" and "scheme-for-naming-a-sort" read well alongside it |
+| `sm.Service:nginx@active` | the `@` coordinate as facet syntax, expanding to a facet-sort key formed from the parent's resolved primary key (`311q` § 8–§ 9); sugar and defaults are 312 material |
+| the THING'S-end twin of `:aliases-nothing-else` (this thing has no other parent) | human: `:sole-parent` (beside `:sole` · `:sole-view` for the store's end, now spent) · conductor: the sentinel of `:identified-in` (`identified-in nothing-else`) · warrant form: `:guarantees-unique-parent` · verb menu considered for the store's end `:<verb>-nothing-else`: views · re-keys · aliases (taken) · re-exports (collides with sh `export`) · fronts · factors-through. Human: many names churn if the table shape of `311t` § 11 is taken, the "guarantees" being better spelled as closure statements |
+| the identifying-store object (the parent named by `:identified-in`) | "store" is provisional; this model writes mParent-Store. One word is owed; whether mParent-Store discharges it is unacked |
+| the spike's `kind__` API prefix | follows mSort, or the mScheme as the exercise strawmen have it (`sm_Path__resolve()`); untouched in code and pre-311 documents; strawman-tier |
+| `:root` | its name is unacked; where it sits is undecided (`311p` thread 7) |
+
+### § 6.4-names-never-to-use
+
+- For the store: "table". Also "record", "row", "auxiliary", "weak"; "subsort", "type menu",
+  "index types". All are NACKED or never used.
+- For the question half of a cell: mClaim (collides with 1.11-site-and-claim-species and the
+  spike's `Claim<Tier,_>` tiers, where a fact IS a claim by observation); mExpression
+  ("expression" cannot carry two meanings beside sh syntax); mProperty (JavaScript, Swift, and
+  Kotlin read it as a stored member); condition (boolean only); attribute (stored-flavoured);
+  "observer". The marked line is "a read"; the fact's identity is the mTopic.
+- For the stored half of a cell: mField. No novel term may double over a first-class, sorted,
+  tracked referent, whatever graph it sits in.
+- For the parent: "bearer", mSort-Bearer, "receiver". For a cell: the mCell tag.
+- For an mValue: "string".
+- For the store's-end closure verb: anything built on "own", "presents", or "home".
