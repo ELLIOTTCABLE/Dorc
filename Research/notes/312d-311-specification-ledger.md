@@ -325,4 +325,26 @@ Taken by default as stated; a word overrides.
   scoped in the mRoute" is applied to every matched path, warranted or not. The narrower
   reading (an undeclared path reads unknown) is noted and not taken; § 1.6's sentence is
   explicit.
-- `ask-parse-once-per-act` — per `dsp-parse-sparingly-in-main-context`.
+- `ask-parse-once-per-act` — NACKED **[TYPED]** 2026-09-28: no `--parse` in the conductor's
+  context at all; the builder owns every parser and solver run. `dsp-parse-sparingly-in-main-context`
+  is superseded.
+- `ask-unique-name-ranges-over-the-scheme` — § 1.5's "within one mParent, one mReferent has one
+  mKey" is encoded with the one mKey ranging over the lookup (every mKey of the scheme), not over
+  the warranted shape alone. Under the shape-only reading, two shapes of one mScheme could name
+  one mReferent under two mValues and the two-tops way of § 3.2 would read them DISJOINT with
+  every statement true. The scheme-wide reading is the one under which § 3.2's own way is sound;
+  the shape-only reading is noted and not taken.
+- `ask-may-read-is-declared-per-key` — § 2.5's may-read is "a template the mSite or environment
+  fills"; the fences hold the filled form, one `DeclaresMayRead` per (mKey, entry), spoken by
+  the mSort's owner, with `ClosesMayRead` per mSort. A template mechanism is not modelled.
+- `ask-both-exclusion-readings-are-mechanized` — § 2.6's container exclusion (`312ch` item 11)
+  is encoded twice, `writesetAgainst` (excluded as built) and `writesetAtTest` (excluded at the
+  last step only); `law_sparing_is_sound` is stated over the first, which spares more, and
+  `law_exclusion_readings_agree` asks whether they ever differ. No reading is chosen.
+- `ask-world-relations-for-effects` — the sparing law's world side is three uninterpreted
+  relations: `mReferent.affects` (a write to one changes the mState of the other),
+  `World.lineWrites` (what a line in fact writes), and `VerdictFact.dependsOn` (what the
+  measured answer in fact depended on). Each truth predicate of § 2.5 and § 2.6 is stated over
+  them, transcribing its sentence; nothing else reads them.
+- `ask-rule-three-deferred` — an entry given whole (§ 2.6 rule 3) waits for the traversal act;
+  until then every entry names its mReferent and nothing beneath, stated in § 2.6's commentary.

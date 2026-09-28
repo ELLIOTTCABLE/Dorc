@@ -132,7 +132,7 @@ its own construction against what it merely re-presents (the distinction 2.3-ali
 needs). The engine never reads these relations; the truth predicates do.
 
 ```alloy
-sig mReferent { holds: set mReferent, owns: set mReferent }
+sig mReferent { holds: set mReferent, owns: set mReferent, affects: set mReferent }
 
 fact { owns in holds }
 
@@ -146,6 +146,7 @@ fun partsOf[r: mReferent]: set mReferent { r.holds }
 <!-- prose-translation -->
 > An mReferent is a persisting piece of the world.
 > A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
+> A write to an mReferent affects the mState of the mReferents it affects (2.5-may-read-the-readset).
 > An mReferent has the mSort of the mKey that reaches it, and two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
 > It has one or more mKeys.
 > It may have parts, and every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
@@ -638,23 +639,39 @@ outside-churn horizon.
 
 ### § 1.11-site-and-claim-species
 
-A mSite is within a book line. It has an argv, an mEntryChain, and a program point. Speech at or
-about a mSite has one author per claim. The claim species are:
+A mSite is within a book line, assay's `Line`: it has an argv, a program point (the line's place
+among the lines above it), and an mEntryChain (1.10-vantage-route-placeholder-witness). Every
+species of speech is a subtype of the shared `Statement`, with one speaker: the writeset claim
+and the entailment are 2.6-may-write-the-writeset's; the mCorrespondence is
+2.7-corresponds-across-a-transition's; the per-mScheme declarations are
+2.1-yields-into-another-scheme's, 2.2-primary-of-and-identified-in's, and
+2.9-the-traversal-and-the-region-test's; the per-mSort declarations are
+2.5-may-read-the-readset's, 2.8-observer-dependence-and-independence's,
+1.9-cell-a-singleton-sort's, and 2.10-places-the-upward-lookup's; the wrapper's `:lends` and
+their sentinel are 3.4-entry-and-lends's. The verdict fact is declared here, since it is the
+thing every sparing is about. Its `dependsOn` field is world stratum (0.1-the-two-strata): the
+mReferents whose mState the measured answer in fact depended on, which no engine definition
+reads.
 
-- a verdict fact: the measured answer to a read of a cell. Its readset is the body's marked
-  reads. The tool-oracle author vouches it.
-- a writeset claim: an at-most may-write set per matched shape, with its completion witness. The
-  tool-oracle author or the filesystem binder makes it.
-- a may-write entailment (2.6-may-write-the-writeset), by the mSort owner.
-- a mCorrespondence (2.7-corresponds-across-a-transition), by the transition owner.
-- the per-mScheme declarations (2.1-yields-into-another-scheme,
-  2.2-primary-of-and-identified-in, 2.9-the-traversal-and-the-region-test).
-- the per-mSort declarations (2.5-may-read-the-readset,
-  2.8-observer-dependence-and-independence, 1.9-cell-a-singleton-sort, and `:places` with its
-  lookup, 2.10-places-the-upward-lookup).
-- the wrapper's `:lends` and their sentinel (3.4-entry-and-lends).
+```alloy
+sig VerdictFact extends Statement {
+   topic: one mKey,
+   atLine: one Line,
+   markedReads: set mKey,
+   dependsOn: set mReferent
+}
+```
 
-Every warrant is typed speech, never an exit status.
+<!-- prose-translation -->
+> A verdict fact is the measured answer to a read of a cell, taken at a mSite.
+> Its readset is the body's marked reads (2.5-may-read-the-readset).
+> The tool-oracle author vouches it: the vouch is the fact's speaker.
+
+#### § 1.11.1-speech-is-typed
+
+<!-- normative -->
+> Speech at or about a mSite has one author per claim.
+> Every warrant is typed speech, never an exit status.
 
 ## § 2-the-model-relations
 
@@ -865,47 +882,69 @@ fun parentCatalog[k: mKey]: lone mLevel { isNaturalKey[k] implies k.parent else 
 
 > Separation logic's footprint, at the read side: the mReferents an answer may depend on.
 
-K `:may-read` these mKeys: K's mState is affected by writes to them. The relation is
-many-valued. It is an edge type from an mSort to mKeys of other mSorts, a template the mSite or
-environment fills. K's owner declares it, with a completion sentinel closing the set. Every
-mSort in a mFullyQualifiedKey may declare may-read entries, not only leaves. An entry may name
-an mKey of another mWorld. `compare()` decides that pair as
-3.2-compare-one-chokepoint-four-answers decides any pair.
+The relation is many-valued: an edge type from an mSort to mKeys of other mSorts, a template
+the mSite or environment fills; the fences hold the filled form, one entry per mKey of the
+mSort, spoken by the mSort's owner, with the sentinel per mSort. Every mSort in a
+mFullyQualifiedKey may declare may-read entries, not only leaves, and an entry may name an mKey
+of another mWorld, which `compare()` decides as 3.2-compare-one-chokepoint-four-answers decides
+any pair. May-read is distinct from mParent: the mParent is one and answers identity; may-read
+entries are many and answer interference, so two cells with different mParents can share a
+may-read entry and so collide without being the same. An mKey's mParent instance is no may-read
+entry and needs no declaration, since the walk collides a write at or above it; an entry naming a
+store says more, that every write to an mKey relative to that store may change K, nobody having
+said otherwise, which is 2.9-the-traversal-and-the-region-test's whole-mark. A closed may-read
+set is knife-tier, one of the two closures every sparing rests on. The mRoute declares no set
+(1.10-vantage-route-placeholder-witness). Arity: many per mSort, with a sentinel. Declared by:
+the mSort owner. Default: ⊤. Consumer: the writeset of a line. Danger: none positive; omission
+is the silent channel.
 
-A fact's readset is the marked reads of the body that answered it. For a verdict fact, the
-vouch closes them (`KNOBS:kCONTRACT-RUNGS`). A body that marks no read has readset ⊤. May-read
-entries are not in a readset. A write reaches K through them (2.6-may-write-the-writeset,
-rule 4). An mSort that declares no may-read set, or declares one and does not close it, is
-affected by every write. A readset member is ⊤ where any of these holds:
+```alloy
+sig DeclaresMayRead extends Statement { ofKey: one mKey, readEntry: one mKey }
 
-- its mSort has no closed may-read set
-- an mSort on its mFullyQualifiedKey has no closed may-read set
-- a may-read entry through which rule 4 reaches it fails either test above, or an entry
-  through which rule 4 reaches that entry, transitively
-- its mFullyQualifiedKey, or the mFullyQualifiedKey of such an entry, ends at the mRoute
+sig ClosesMayRead extends Statement { readSort: one mSort }
 
-⊤ is DISJOINT from nothing. The mRoute declares no set (1.10-vantage-route-placeholder-witness).
+fact { all d: DeclaresMayRead | d.speaker = primaryOf[d.ofKey.scheme].sortOwner }
 
-An mKey's mParent instance is no may-read entry and needs no declaration. The walk of
-3.2-compare-one-chokepoint-four-answers collides a write at or above it. A may-read entry naming
-a store says more: every write to an mKey relative to that store may change K, nobody having
-said otherwise.
+fact { all d: ClosesMayRead | d.speaker = d.readSort.sortOwner }
 
-An omitted entry is a silent channel. It licenses nothing positive.
+fun mayReadEntries[k: mKey]: set mKey { (DeclaresMayRead & InForce & ofKey.k).readEntry }
 
-May-read is distinct from mParent. The mParent is one and answers identity. May-read entries are
-many and answer interference. Two cells with different mParents can share a may-read entry and
-so collide without being the same.
+fun mayReadEdge: mKey -> mKey { {k, e: mKey | e in mayReadEntries[k]} }
 
-A closed may-read set is knife-tier. It is one of the two closures every sparing rests on
-(2.6-may-write-the-writeset).
+pred mayReadClosed[s: mSort] { some ClosesMayRead & InForce & readSort.s }
 
-- Arity: many per mSort, with a sentinel.
-- Declared by: the mSort owner.
-- Default: ⊤. A readset member of the mSort, or one reached through it, is then ⊤.
-- Consumer: the writeset of a line (2.6-may-write-the-writeset).
-- Danger: none positive. Omission is the silent channel. The closed set is one of sparing's two
-  closures.
+pred sortClosed[k: mKey] { mayReadClosed[primaryOf[k.scheme]] }
+
+pred readsetMemberIsTop[k: mKey] {
+   some m: k.*mayReadEdge |
+      (some l: m.*parent & mKey | not sortClosed[l]) or terminus[m] in mRoute
+}
+
+fun readset[f: VerdictFact]: set mKey { f.markedReads }
+
+pred readsetIsTop[f: VerdictFact] { no f.markedReads or some k: f.markedReads | readsetMemberIsTop[k] }
+
+pred true_DeclaresMayRead[d: DeclaresMayRead] {}
+
+pred true_ClosesMayRead[d: ClosesMayRead] {
+   all k: keysOfSort[d.readSort] | some k.reaches implies
+      affects.(k.reaches) in k.reaches.*holds + (^holds).(k.reaches) + mayReadEntries[k].reaches
+}
+
+pred true_VerdictFact[f: VerdictFact] {
+   some f.markedReads implies f.dependsOn in f.markedReads.reaches
+}
+```
+
+<!-- prose-translation -->
+> K `:may-read` these mKeys: K's mState is affected by writes to them; K's owner declares an entry per mKey of K, and closes the set per mSort with a completion sentinel.
+> An entry licenses nothing positive.
+> A closed may-read set is true when, for every mKey of K that reaches an mReferent, every mReferent whose write affects that mReferent is the mReferent itself, something it holds, something that holds it, or an mReferent one of the mKey's entries reaches.
+> A fact's readset is the marked reads of the body that answered it; for a verdict fact, the vouch closes them (`KNOBS:kCONTRACT-RUNGS`): the vouch is true when the measured answer depended on no mReferent outside what the marked reads reach.
+> A body that marks no read has readset ⊤.
+> May-read entries are not in a readset; a write reaches K through them (2.6-may-write-the-writeset, rule 4).
+> A readset member is ⊤ where its mSort has no closed may-read set, where an mSort on its mFullyQualifiedKey has no closed may-read set, where a may-read entry through which rule 4 reaches it fails either test, transitively, or where its mFullyQualifiedKey, or that of such an entry, ends at the mRoute.
+> A readset is ⊤ where the body marked no read or where any member is ⊤.
 
 > A may-read entry above the leaf: a loop-backed filesystem's state lives in a file of the outer
 > filesystem, and `dd` over the image rewrites every inner fact. A shared entry: two observers'
@@ -916,50 +955,144 @@ A closed may-read set is knife-tier. It is one of the two closures every sparing
 > A refuted shape: two entries overlap only when they are one place
 > (`311u:refuted-only-same-entries-overlap`). The model collides whatever is not DISJOINT.
 
-A line's writeset is the set of mKeys the line may write or may change. It is the least set
-that four rules close:
+The at-most set is the footprint of `plans/30U`, declared by the verb's author per matched
+shape and closed by the completion record; where the body emits at runtime, the verb author's
+completion record closes them. The entailment is arm-incremental and collide-adding, declared
+by K's owner, about effects and not identity; it carries every cross-mSort consequence no
+mFullyQualifiedKey expresses, and the reached finished record witnesses that the write set,
+after entailment, is complete. The fences hold the filled form of the entailment, an entry per
+written mKey, and the record per shape. The sentence excluding containers at or above the level
+the written mKey shares with the read mKey admits two readings (`notes/312ch`, item 11): the
+exclusion applied as the writeset is built, or only at the test; both are mechanized, the law is
+stated over the first, which spares the more, and a check asks whether they ever disagree. Rule
+3, an mKey given whole, is 2.9-the-traversal-and-the-region-test's and is not yet mechanized;
+until it is, every entry names its mReferent and nothing beneath. Arity: per matched shape of
+the verb, for the at-most set; many per matched shape on the mSort, for the entailment; plus
+the finished record. Declared by: the verb's author, for the at-most set; the mSort owner, for
+the entailment. Default: unfinished, which collides. Consumer: the sparing test, within one
+mWorld; never a generator of DISJOINT. Danger: the premature finished record.
 
-1. Every may-write entry the verb's author declared per matched shape is in the writeset (the
-   footprint of `plans/30U`). The completion record closes those entries. Where the body emits
-   at runtime, the verb author's completion record closes them.
-2. Where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey
-   that K's may-write entailment names is in the writeset. For each origin cell in the
-   writeset, a reached finished record for that cell's mSort and shape finishes the entailment
-   (`plans/30U`).
-3. Where an mKey given whole is in the writeset, every mKey reached beneath it is in the
-   writeset (2.9-the-traversal-and-the-region-test).
-4. Where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared
-   for an mKey k of mSort M, k is in the writeset (2.5-may-read-the-readset,
-   3.2-compare-one-chokepoint-four-answers).
+```alloy
+one sig World { lineWrites: Line -> mReferent }
 
-An unclosed at-most set or an unfinished entailment puts ⊤ in the writeset. An unclosed may-read
-set puts ⊤ in the readset (2.5-may-read-the-readset). ⊤ is DISJOINT from nothing. A container at or above the deepest level that the written mKey shares with the read
-mKey contributes no entailment to the test against that fact. May-read entries feed rule 4 and
-no other rule.
+sig DeclaresMayWrite extends Statement { writeLine: one Line, writeEntry: one mKey }
 
-The entailment: writing an mKey of K entails may-write of these mKeys of other mSorts. It is
-arm-incremental and collide-adding. The reached completion record finishes the definition. It
-witnesses that the write set, after entailment, is complete. K's owner declares it. The
-entailment is about effects, not identity. It carries every cross-mSort consequence no
-mFullyQualifiedKey expresses. It generates no DISJOINT: "nothing else" is no other thing, never
-no other mKey for the thing written.
+sig ClosesMayWrite extends Statement { closedLine: one Line }
 
-An elision is spared past a line only when `compare()` answers DISJOINT for every pair of a
-writeset member and a readset member (2.5-may-read-the-readset), of one mSort or of two
-(3.2-compare-one-chokepoint-four-answers, or 2.9-the-traversal-and-the-region-test where an
-mKey is given whole).
+sig DeclaresEntails extends Statement { fromKey: one mKey, entailedEntry: one mKey }
 
-The test spares narrowly and collides widely. Whatever is not DISJOINT collides. The finished
-definition is a within-mWorld sentence. It never speaks across mRoutes or mRoots (§3.2). A
-may-read entry that names an mKey of another mWorld enters rule 4 where a write in that mWorld
-reaches it (§2.5).
+sig FinishesEntailment extends Statement { finishedShape: one mShape }
 
-- Arity: per matched shape of the verb, for the at-most set. Many per matched shape on the
-  mSort, for the entailment. Plus the finished record.
-- Declared by: the verb's author, for the at-most set. The mSort owner, for the entailment.
-- Default: unfinished, which collides.
-- Consumer: the sparing test above, within one mWorld. Never a generator of DISJOINT.
-- Danger: the premature finished record.
+fact { all d: DeclaresEntails | d.speaker = primaryOf[d.fromKey.scheme].sortOwner }
+
+fact { all d: FinishesEntailment | d.speaker = primaryOf[d.finishedShape.ofScheme].sortOwner }
+
+fun atMostEntries[l: Line]: set mKey { (DeclaresMayWrite & InForce & writeLine.l).writeEntry }
+
+pred atMostClosed[l: Line] { some ClosesMayWrite & InForce & closedLine.l }
+
+fun entailed[k: mKey]: set mKey { (DeclaresEntails & InForce & fromKey.k).entailedEntry }
+
+pred entailmentFinished[k: mKey] { some FinishesEntailment & InForce & finishedShape.(k.shape) }
+
+fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | walkOfKeys[m, e] != DISJOINT} }
+
+fun contributingContainers[m, r: mKey]: set mKey {
+   (identity[m].*parent & mKey) - (meet[identity[m], identity[r]].mLevel).*parent
+}
+
+fun spreadsTo[m, r: mKey]: set mKey { entailed[contributingContainers[m, r]] + rule4[m] }
+
+fun writesetAgainst[l: Line, r: mKey]: set mKey {
+   atMostEntries[l].*({m, k: mKey | k in spreadsTo[m, r]})
+}
+
+fun writesetUnexcluded[l: Line]: set mKey {
+   atMostEntries[l].*({m, k: mKey | k in entailed[identity[m].*parent & mKey] + rule4[m]})
+}
+
+fun writesetAtTest[l: Line, r: mKey]: set mKey {
+   atMostEntries[l] + {k: mKey | some m: writesetUnexcluded[l] | k in spreadsTo[m, r]}
+}
+
+pred writesetIsTop[l: Line, ws: set mKey] {
+   not atMostClosed[l] or some m: ws | not entailmentFinished[m]
+}
+
+pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
+   l in f.atLine.above
+   not readsetIsTop[f]
+   all r: readset[f] {
+      not writesetIsTop[l, ws[r]]
+      all w: ws[r] | walkOfKeys[w, r] = DISJOINT
+   }
+}
+
+fun writesetsAgainst[l: Line]: mKey -> mKey { {r, w: mKey | w in writesetAgainst[l, r]} }
+
+fun writesetsAtTest[l: Line]: mKey -> mKey { {r, w: mKey | w in writesetAtTest[l, r]} }
+
+pred spared[l: Line, f: VerdictFact] { sparedBy[l, f, writesetsAgainst[l]] }
+
+pred sparedAtTest[l: Line, f: VerdictFact] { sparedBy[l, f, writesetsAtTest[l]] }
+
+pred true_DeclaresMayWrite[d: DeclaresMayWrite] {}
+
+pred true_ClosesMayWrite[d: ClosesMayWrite] {
+   World.lineWrites[d.closedLine] in atMostEntries[d.closedLine].reaches
+}
+
+pred true_DeclaresEntails[d: DeclaresEntails] {}
+
+pred true_FinishesEntailment[d: FinishesEntailment] {
+   all k: keysOfShape[d.finishedShape] | some k.reaches implies
+      (k.reaches).affects in k.reaches.*holds + entailed[k].reaches
+}
+
+check law_sparing_is_sound {
+   everyStatementInForceIsTrue and storesAreWellFounded implies
+      all l: Line, f: VerdictFact & InForce | spared[l, f] implies
+         no (World.lineWrites[l]).*affects & f.dependsOn
+} for 6 but 4 Int
+
+run law_sparing_is_sound_premise {
+   everyStatementInForceIsTrue and storesAreWellFounded
+   some l: Line, f: VerdictFact & InForce |
+      spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
+}
+
+check law_exclusion_readings_agree {
+   all l: Line, f: VerdictFact & InForce | spared[l, f] iff sparedAtTest[l, f]
+} for 6 but 4 Int
+
+run law_exclusion_readings_agree_premise {
+   some l: Line, f: VerdictFact & InForce, m: atMostEntries[l], r: readset[f] |
+      some contributingContainers[m, r] and some entailed[identity[m].*parent & mKey]
+}
+```
+
+<!-- prose-translation -->
+> A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set closed under three of the four rules.
+> Rule 1: every may-write entry the verb's author declared per matched shape is in the writeset; the completion record closes those entries.
+> Rule 2: where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey that K's may-write entailment names is in the writeset; a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
+> Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); may-read entries feed rule 4 and no other rule.
+> Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
+> An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
+> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two.
+> A may-write entry and an entailment entry license nothing alone.
+> A completion record is true when every mReferent the line writes is one an at-most entry reaches.
+> A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
+> A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
+
+#### § 2.6.1-the-finished-definition-and-the-worlds
+
+<!-- normative -->
+> Where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test), and the region test decides the pair where an mKey is given whole.
+> The test spares narrowly and collides widely: whatever is not DISJOINT collides.
+> The entailment generates no DISJOINT: "nothing else" is no other thing, never no other mKey for the thing written.
+> The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
+> A may-read entry that names an mKey of another mWorld enters rule 4 where a write in that mWorld reaches it (2.5-may-read-the-readset).
 
 > Without the exclusion of containers at or above the shared level, a filesystem's entailment,
 > which names its disk, would make two files in one filesystem collide through it. Examples of
@@ -1241,6 +1374,10 @@ fun walk[x, y: mKey]: one Answer {
    else UNKNOWN
 }
 
+fun walkOfKeys[x, y: mKey]: one Answer {
+   (some identity[x] and some identity[y]) implies walk[identity[x], identity[y]] else UNKNOWN
+}
+
 pred everyStatementInForceIsTrue {
    all d: DeclaresPrimaryOf & InForce | true_DeclaresPrimaryOf[d]
    all d: DeclaresYields & InForce | true_DeclaresYields[d]
@@ -1250,6 +1387,13 @@ pred everyStatementInForceIsTrue {
    all d: DeclaresUniqueReferent & InForce | true_DeclaresUniqueReferent[d]
    all d: DeclaresUniqueName & InForce | true_DeclaresUniqueName[d]
    all d: DeclaresAliasesNothingElse & InForce | true_DeclaresAliasesNothingElse[d]
+   all d: DeclaresMayRead & InForce | true_DeclaresMayRead[d]
+   all d: ClosesMayRead & InForce | true_ClosesMayRead[d]
+   all d: VerdictFact & InForce | true_VerdictFact[d]
+   all d: DeclaresMayWrite & InForce | true_DeclaresMayWrite[d]
+   all d: ClosesMayWrite & InForce | true_ClosesMayWrite[d]
+   all d: DeclaresEntails & InForce | true_DeclaresEntails[d]
+   all d: FinishesEntailment & InForce | true_FinishesEntailment[d]
 }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
@@ -1306,6 +1450,7 @@ run law_different_sorts_never_same_premise {
 > One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some other shape, `:identified-in` the mSort of the other side's top.
 > Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
 > Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
+> Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key); an mKey with no identity reads UNKNOWN.
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
