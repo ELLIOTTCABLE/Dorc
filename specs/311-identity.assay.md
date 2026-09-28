@@ -310,6 +310,7 @@ sig mKey extends mLevel {
    shape: lone mShape,
    parent: lone mLevel,
    yielded: lone mKey,
+   at: one mVantage,
    reaches: lone mReferent
 }
 
@@ -344,6 +345,7 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > A lookup chooses among the shapes its mScheme declares, never outside them: the shape an mKey matches is a shape of its own mScheme.
 > Which shape an mValue matches is a function of the mKey's own bytes: two mKeys of one mScheme with equal mValues match one shape (1.6-parent-one-per-key).
 > An mKey may carry the mKey its lookup emitted for it, minted at the emission point the `resolve()` declares: an mKey of the mScheme its shape `:yields` (2.1-yields-into-another-scheme), and none where the shape yields nothing.
+> Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
 > mKey-Primary is an mKey of the primary mScheme, on a shape that yields nothing, meaningful only relative to its mParent-Store; mKey-Natural is any other mKey, what tool authors and books write.
@@ -469,9 +471,12 @@ fact {
       some k.cellSort implies k.parent = (supplyFits[k] implies supplies[k] else none)
       isRoot[k.shape] implies k.parent = rootShape.(k.shape)
       (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape] and no yieldsTo[k.shape])
-         implies (one k.parent and k.parent in mRoute)
-      (some identifiedIn[k.shape] or some yieldsTo[k.shape])
+         implies k.parent = k.at.route
+      some identifiedIn[k.shape]
          implies k.parent = (supplyFits[k] implies supplies[k] else none)
+      some yieldsTo[k.shape]
+         implies k.parent = (some supplies[k] implies (supplyFits[k] implies supplies[k] else none)
+                             else k.at.ambient[catalogSortOf[k.scheme]])
    }
 }
 
@@ -485,7 +490,8 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > An mKey matching no shape has no mParent.
 > A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
-> A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute (1.10-vantage-route-placeholder-witness).
+> A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute of the mKey's mVantage (1.10-vantage-route-placeholder-witness).
+> For a shape that yields, where no bind and no declaration supplied the mParent-Catalog instance, the mVantage supplies its ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme), or none where it holds none.
 > The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
 > A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
 > For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
@@ -664,32 +670,61 @@ pred true_DeclaresCell[d: DeclaresCell] {}
 
 ### § 1.10-vantage-route-placeholder-witness
 
-A mVantage is the address a probe reached an mReferent from: the mEntryChain, a finite map from
-mParent-Catalog mSorts to the instances wrappers lent (3.4-entry-and-lends). It is not part of
-any mKey's identity. It does three things:
+A mVantage is the address a probe reached an mReferent from, and every mKey carries the one it
+was resolved from. What a wrapper lends, and how a vantage entered through a wrapper inherits
+the rest, is 3.4-entry-and-lends; the mRoute holds no mState and declares no may-read set, so a
+readset member whose mFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset). "Resolved
+once per mEntryChain and shared" is by construction: a vantage holds one ambient instance per
+mParent-Catalog mSort, so every mKey the vantage scopes in that mSort has the one instance as
+its mParent, and two same-spelled leaf mKeys are two atoms, SAME only by warrant. The engine is
+a speaker for its one vouch. The placeholder and the standup `witness()` are two instants the
+fences do not hold (1.10.1-placeholder-and-witness).
 
-- It says where a `resolve()` executes.
-- It supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent
-  mParent-Catalog mSort.
-- For a shape with no `:identified-in`, it is the mRoute: the last-resort mParent.
+```alloy
+one sig engine extends Speaker {}
 
-The mRoute is an address. It holds no mState and declares no may-read set. A readset member
-whose mFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset).
+sig mVantage {
+   route: one mRoute,
+   enteredFrom: lone mVantage,
+   through: lone Wrapper,
+   ambient: mSort -> lone mKey
+}
 
-For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent
-instances within one unwalled span. Under a wrapper, the wrapper's sentinel supplies the
-inherited instances that 3.4-entry-and-lends admits, under `--risk-faultless-skips`. Each is
-resolved once per mEntryChain and shared: one mPlaceholder.
-Two same-spelled leaf mKeys are two mPlaceholders, SAME only by warrant
-(3.2-compare-one-chokepoint-four-answers). Two mVantages share the mRoute and the ambient
-instances through a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends).
-Otherwise the mRoute and the ambient instances are unknown across mVantages.
+fact { all v: mVantage | some v.through iff some v.enteredFrom }
 
-A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey,
-ambient mParents, mEntryChain). The probe standup binds it. The apply standup re-reads it
-through the same entry and `compare()`s the two. That re-read is the `witness()`. A mismatch is
-integrity, never a verdict input. The `witness()` cannot see a recycled mKey. That stays on the
-outside-churn horizon.
+fact { no v: mVantage | v in v.^enteredFrom }
+
+fact { all v: mVantage, s: mSort | sortOfKey[v.ambient[s]] in s }
+
+fact { all k: mKey | k.yielded.at in k.at }
+
+fact { all f: VerdictFact | f.underObservers = mSort.(f.topic.at.ambient) }
+
+pred engineVouchIsTrue {
+   all v: mVantage | no v.through implies
+      all k: mKey | k.at = v and isNaturalKey[k] and k.parent = v.ambient[catalogSortOf[k.scheme]] implies
+         k.reaches in k.parent.reaches.passes
+}
+```
+
+<!-- prose-translation -->
+> A mVantage is the mEntryChain: a finite map from mParent-Catalog mSorts to the instances in effect, each an mKey of that mSort, with its mRoute; it is not part of any mKey's identity.
+> Every mKey is resolved from one mVantage, and an mKey a lookup emits is resolved from the vantage of the mKey it was emitted for.
+> A mVantage says where a `resolve()` executes, supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort, and is the mRoute, the last-resort mParent, for a shape with no `:identified-in` (1.6-parent-one-per-key).
+> A vantage entered through a wrapper is entered from the caller's vantage, and no vantage is entered from itself.
+> The observers a fact was measured under are the instances its mEntryChain holds (2.8-observer-dependence-and-independence).
+> For execution under no wrapper, the engine itself vouches the ambient mParent instances: the engine's vouch is true when every mKey of a secondary mScheme it scoped in an ambient instance reaches what a route through that instance's mReferent passes to.
+
+#### § 1.10.1-placeholder-and-witness
+
+<!-- normative -->
+> The mRoute is an address; it holds no mState and declares no may-read set.
+> For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent instances within one unwalled span.
+> Each is resolved once per mEntryChain and shared: one mPlaceholder.
+> A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey, ambient mParents, mEntryChain); the probe standup binds it.
+> The apply standup re-reads it through the same entry and `compare()`s the two; that re-read is the `witness()`.
+> A mismatch is integrity, never a verdict input.
+> The `witness()` cannot see a recycled mKey; that stays on the outside-churn horizon.
 
 > A recycled mKey the `witness()` cannot see: a reissued pid or inode.
 
@@ -752,7 +787,17 @@ attributed to the yield.
 ```alloy
 sig DeclaresYields extends Statement { fromShape: one mShape, intoScheme: one mScheme }
 
+sig DeclaresCatalogSort extends Statement { forScheme: one mScheme, catalogSort: one mSort }
+
 fact { all d: DeclaresYields | d.speaker = d.fromShape.ofScheme.schemeOwner }
+
+fact { all d: DeclaresCatalogSort | d.speaker = d.forScheme.schemeOwner }
+
+fun catalogSortOf[s: mScheme]: lone mSort { (DeclaresCatalogSort & InForce & forScheme.s).catalogSort }
+
+fact { all s: mScheme | lone catalogSortOf[s] }
+
+pred true_DeclaresCatalogSort[d: DeclaresCatalogSort] {}
 
 fun yieldsTo[s: mShape]: lone mScheme { (DeclaresYields & InForce & fromShape.s).intoScheme }
 
@@ -795,6 +840,7 @@ run law_natural_disjoint_is_sound_premise {
 
 <!-- prose-translation -->
 > mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort; S's owner declares it; one T per shape.
+> Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares; the declaration claims nothing about the world.
 > A shape that yields carries no `:identified-in` and no `:root`.
 > `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
 > S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
@@ -1058,7 +1104,7 @@ fun wholeWriteEntries[l: Line]: set mKey { (DeclaresMayWrite & GivenWhole & InFo
 
 fun wholeReadEntries: set mKey { (DeclaresMayRead & GivenWhole & InForce).readEntry }
 
-fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else walkOfKeys[m, e] }
+fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else compare[m, e] }
 
 fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | entryAnswer[m, e] != DISJOINT} }
 
@@ -1087,10 +1133,11 @@ pred writesetIsTop[l: Line, ws: set mKey] {
 }
 
 fun memberAnswer[l: Line, w, r: mKey]: one Answer {
-   w in wholeWriteEntries[l] implies regionTest[w, r] else walkOfKeys[w, r]
+   w in wholeWriteEntries[l] implies regionTest[w, r] else compare[w, r]
 }
 
 pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
+   flagged
    l in f.atLine.above
    not readsetIsTop[f]
    no r: readset[f] | staleAt[f.atLine, r]
@@ -1152,7 +1199,7 @@ run law_exclusion_readings_agree_premise {
 > Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); a may-read entry given whole is compared by the region test; may-read entries feed rule 4 and no other rule.
 > Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
 > An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
-> ⊤ is DISJOINT from nothing: an elision is spared past a line only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, no readset member is stale at the site (3.3-invalidation-three-mutator-species), and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
+> ⊤ is DISJOINT from nothing: an elision is spared past a line only under `--risk-faultless-skips` (3.2-compare-one-chokepoint-four-answers), and only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, no readset member is stale at the site (3.3-invalidation-three-mutator-species), and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
 > A may-write entry and an entailment entry license nothing alone.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
@@ -1227,9 +1274,9 @@ fun topicObservers[f: VerdictFact]: set mKey {
 }
 
 pred sameTopic[f, g: VerdictFact] {
-   walkOfKeys[f.topic, g.topic] = SAME
-   all o: topicObservers[f] | some p: topicObservers[g] | walkOfKeys[o, p] = SAME
-   all p: topicObservers[g] | some o: topicObservers[f] | walkOfKeys[o, p] = SAME
+   compare[f.topic, g.topic] = SAME
+   all o: topicObservers[f] | some p: topicObservers[g] | compare[o, p] = SAME
+   all p: topicObservers[g] | some o: topicObservers[f] | compare[o, p] = SAME
 }
 
 pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
@@ -1284,7 +1331,7 @@ fun traversalMembers[k: mKey]: set mKey {
 fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^parent & mKey) }
 
 pred coveredBy[D, x: mKey] {
-   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | walkOfKeys[m, D] = SAME
+   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | compare[m, D] = SAME
 }
 
 pred lookupTraversalOfSort[l: mKey, G: mSort] {
@@ -1295,9 +1342,9 @@ pred outsideByTraversals[D, x: mKey] {
    let G = sortOfKey[D] {
       (some l: levelsOf[x] | lookupTraversalOfSort[l, G]) or some placedIn[x, G]
       all l: levelsOf[x] | lookupTraversalOfSort[l, G] implies
-         traversalClosed[l] and all m: traversalMembers[l] | walkOfKeys[m, D] = DISJOINT and aliasClosed[m]
+         traversalClosed[l] and all m: traversalMembers[l] | compare[m, D] = DISJOINT and aliasClosed[m]
       some placedIn[x, G] implies
-         lookedUpInClosed[x, G] and all g: placedIn[x, G] | walkOfKeys[g, D] = DISJOINT
+         lookedUpInClosed[x, G] and all g: placedIn[x, G] | compare[g, D] = DISJOINT
    }
 }
 
@@ -1306,7 +1353,7 @@ pred outsideByPlacing[D, x: mKey] {
 }
 
 fun regionTest[D, x: mKey]: one Answer {
-   walkOfKeys[x, D] = SAME implies SAME
+   compare[x, D] = SAME implies SAME
    else coveredBy[D, x] implies UNKNOWN
    else (outsideByTraversals[D, x] or outsideByPlacing[D, x]) implies DISJOINT
    else UNKNOWN
@@ -1513,8 +1560,9 @@ observers are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's, and
 > (`311u:refuted-parent-partitions-its-children`). Separation comes from one definition's own
 > distinctions.
 
-`compare(x, y)` combines mDerivations (3.2.1-derivations-consumers-and-the-flag); the walk
-below is the mFullyQualifiedKey mDerivation, and the laws of § 0 are stated over it here. Levels
+The walk below is the mFullyQualifiedKey mDerivation; `compare(x, y)` combines it with the
+others, and the laws of § 0 are stated over both here; what each answer licenses is
+3.2.1-what-the-answers-mean-to-their-consumers. Levels
 are numbered from the leaf, level 0, upward through mParents; the walk aligns two chains by
 height from the terminus (1.8-fully-qualified-key-topic-and-derivation). "One instance" is one
 atom until 1.10-vantage-route-placeholder-witness is mechanized: the mPlaceholder inherited
@@ -1592,7 +1640,44 @@ fun walkOfKeys[x, y: mKey]: one Answer {
    (some identity[x] and some identity[y]) implies walk[identity[x], identity[y]] else UNKNOWN
 }
 
+pred sameBy[x, y: mKey] { walkOfKeys[x, y] = SAME or corresponds[x, y] or compositeSame[x, y] }
+
+fun sameClosure: mKey -> mKey { *{x, y: mKey | sameBy[x, y] or sameBy[y, x]} }
+
+pred contradicted[x, y: mKey] {
+   y in x.sameClosure
+   some x2: x.sameClosure, y2: y.sameClosure | walkOfKeys[x2, y2] = DISJOINT
+}
+
+fun compare[x, y: mKey]: one Answer {
+   contradicted[x, y] implies UNKNOWN
+   else y in x.sameClosure implies SAME
+   else (some x2: x.sameClosure, y2: y.sameClosure | walkOfKeys[x2, y2] = DISJOINT) implies DISJOINT
+   else walkOfKeys[x, y]
+}
+
+check law_compare_same_is_sound {
+   everyStatementInForceIsTrue implies
+      all x, y: mKey | compare[x, y] = SAME implies x.reaches = y.reaches
+} for 6 but 4 Int
+
+run law_compare_same_is_sound_premise {
+   everyStatementInForceIsTrue
+   some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.reaches
+}
+
+check law_compare_disjoint_is_sound {
+   everyStatementInForceIsTrue and storesAreWellFounded implies
+      all x, y: mKey | compare[x, y] = DISJOINT implies no x.reaches & y.reaches
+} for 6 but 4 Int
+
+run law_compare_disjoint_is_sound_premise {
+   everyStatementInForceIsTrue and storesAreWellFounded
+   some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
+}
+
 pred everyStatementInForceIsTrue {
+   engineVouchIsTrue
    all d: DeclaresPrimaryOf & InForce | true_DeclaresPrimaryOf[d]
    all d: DeclaresYields & InForce | true_DeclaresYields[d]
    all d: DeclaresIdentifiedIn & InForce | true_DeclaresIdentifiedIn[d]
@@ -1618,6 +1703,9 @@ pred everyStatementInForceIsTrue {
    all d: DeclaresCorresponds & InForce | true_DeclaresCorresponds[d]
    all d: DeclaresObserverIndependence & InForce | true_DeclaresObserverIndependence[d]
    all d: DeclaresComposite & InForce | true_DeclaresComposite[d]
+   all d: DeclaresCatalogSort & InForce | true_DeclaresCatalogSort[d]
+   all d: DeclaresLends & InForce | true_DeclaresLends[d]
+   all d: ClosesLends & InForce | true_ClosesLends[d]
 }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
@@ -1675,6 +1763,12 @@ run law_different_sorts_never_same_premise {
 > Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
 > Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
 > Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key); an mKey with no identity reads UNKNOWN.
+> `compare(x, y)`: SAME is "or" across mDerivations, the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles), and "and" within one mFullyQualifiedKey; SAME composes transitively.
+> A warranted SAME and a warranted DISJOINT on one pair is a contradiction: the pair reads UNKNOWN, and the refusal with its attribution is 3.5-committee-law-and-attribution's.
+> Otherwise the strongest warranted answer stands: SAME, else DISJOINT, else what the walk answers.
+> SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
+> `compare()` never reaches a false SAME while every statement in force is true.
+> `compare()` never reaches a false DISJOINT while every statement in force is true and no store is among its own contents.
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
@@ -1682,13 +1776,13 @@ run law_different_sorts_never_same_premise {
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
 > mKeys of different mSorts never read SAME.
 
-#### § 3.2.1-derivations-consumers-and-the-flag
+#### § 3.2.1-what-the-answers-mean-to-their-consumers
 
-`compare()` over several mDerivations, the consumer map, and the flag are
-1.10-vantage-route-placeholder-witness's, 2.7-corresponds-across-a-transition's, and
-3.4-entry-and-lends's to mechanize; until then these sentences are prose. Partial measurement
-never widening is a statement about two measurements of one chain, which the fences do not yet
-hold.
+The consumer map is the sparing test's and the fact-transport's; the flag's gate on a
+sentinel-inherited SAME is by construction (3.4-entry-and-lends), and its gate on sparing is in
+the test (2.6-may-write-the-writeset). Partial measurement never widening is a statement about
+two measurements of one chain, which the fences do not hold. A provider-supplied identifier is
+an mKey of a `:root` shape in this model.
 
 <!-- normative -->
 > SAME means the fact is about this mKey.
@@ -1700,10 +1794,7 @@ hold.
 > KNOWN_UNSPOKEN never spares and never transports, whatever either side has declared finished (2.6-may-write-the-writeset).
 > Two mSchemes yielding one mKey-Primary is the sole same-referent generator across ways of naming.
 > Partial measurement never widens: a mDerivation with an unmeasured or mRoute-terminated link yields at most what it would yield with the link measured.
-> SAME is "or" across mDerivations (the mFullyQualifiedKey, a mCorrespondence, a provider-supplied identifier) and "and" within one mFullyQualifiedKey.
-> A warranted SAME and a warranted DISJOINT on one pair is a contradiction: refuse both and attribute both authors.
-> Otherwise the strongest warranted answer stands.
-> SAME composes transitively; SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
+> A contradiction is refused, and both authors are attributed.
 > The universal meet over backing sets is unchanged.
 > Genuinely different mKey-Primaries for one mReferent are two mDerivations for one mTopic, reconciled by coherence, never a second mKey inside one mParent.
 
@@ -1731,10 +1822,10 @@ fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
 
 pred touchesTraversal[w: mKey, k: mKey] {
    some l: levelsOf[k] {
-      some m: crossed[l] | walkOfKeys[w, m] != DISJOINT
+      some m: crossed[l] | compare[w, m] != DISJOINT
       or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT)
    }
-   or some g: placedIn[k, mSort] | walkOfKeys[w, g] != DISJOINT
+   or some g: placedIn[k, mSort] | compare[w, g] != DISJOINT
 }
 
 pred routingInvalidatedBy[l: Line, k: mKey] {
@@ -1743,7 +1834,7 @@ pred routingInvalidatedBy[l: Line, k: mKey] {
 }
 
 pred tokenInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l], p: identity[k].^parent & mKey | walkOfKeys[w, p] != DISJOINT
+   some w: lineWriteset[l], p: identity[k].^parent & mKey | compare[w, p] != DISJOINT
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
@@ -1755,7 +1846,7 @@ pred staleAt[s: Line, k: mKey] {
 }
 
 fun compareAt[s: Line, x, y: mKey]: one Answer {
-   (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else walkOfKeys[x, y]
+   (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else compare[x, y]
 }
 
 check law_unstale_route_is_untouched {
@@ -1801,24 +1892,83 @@ run law_unstale_route_is_untouched_premise {
 
 > Dynamic binding: `parameterize`, `fluid-let`.
 
-A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs,
-and nothing else. The lent instance becomes the ambient mParent for every mKey of a secondary
-mScheme looked up in that mParent-Catalog mSort.
+The lent instance becomes the ambient mParent for every mKey of a secondary mScheme looked up
+in that mParent-Catalog mSort (1.10-vantage-route-placeholder-witness, 1.6-parent-one-per-key),
+and leaf mKeys then inherit transitively through their mFullyQualifiedKeys with no further
+speech. A wrapper may declare mCorrespondences across the mParent-Catalogs it lends
+(2.7-corresponds-across-a-transition). A lend that depends on the guest is
+3.4.1-guest-dependent-lends. Arity: per wrapper, per mParent-Catalog mSort, plus the sentinel.
+Declared by: the wrapper owner. Default: ⊤, which walls. Consumer: ambient mParent supply.
+Danger: a wrong lend measures the wrong mVantage; a wrong sentinel is a wrong SAME, and the
+flag prices it.
 
-An unlent mParent-Catalog mSort is ⊤ under the wrapper. After the wrapper's completion
-sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the
-caller's instances instead. Leaf mKeys then inherit transitively through their
-mFullyQualifiedKeys with no further speech. A wrapper may declare mCorrespondences across
-the mParent-Catalogs it lends (2.7-corresponds-across-a-transition). A lend may depend on the
-guest. The wrapper author then declares the guest-insensitive default and supplies a policy read
-that declines on departure.
+```alloy
+lone sig RiskFaultlessSkips {}
 
-- Arity: per wrapper, per mParent-Catalog mSort, plus the sentinel.
-- Declared by: the wrapper owner.
-- Default: ⊤, which walls.
-- Consumer: ambient mParent supply.
-- Danger: a wrong lend measures the wrong mVantage. The sentinel is an at-most claim over every
-  mParent-Catalog mSort and the mRoute. A wrong sentinel is a wrong SAME. The flag prices it.
+pred flagged { some RiskFaultlessSkips }
+
+sig Wrapper { wrapperOwner: one Speaker }
+
+sig DeclaresLends extends Statement { lendingWrapper: one Wrapper, lentSort: one mSort, lentInstance: one mKey }
+
+sig ClosesLends extends Statement { closedWrapper: one Wrapper }
+
+fact { all d: DeclaresLends | d.speaker = d.lendingWrapper.wrapperOwner }
+
+fact { all d: ClosesLends | d.speaker = d.closedWrapper.wrapperOwner }
+
+fun lent[w: Wrapper, s: mSort]: lone mKey {
+   (DeclaresLends & InForce & lendingWrapper.w & lentSort.s).lentInstance
+}
+
+fact { all w: Wrapper, s: mSort | lone lent[w, s] }
+
+pred lendsClosed[w: Wrapper] { some ClosesLends & InForce & closedWrapper.w }
+
+pred inherits[v: mVantage] { some v.through and lendsClosed[v.through] and flagged }
+
+fact {
+   all v: mVantage, s: mSort | some v.through implies
+      v.ambient[s] = (some lent[v.through, s] implies lent[v.through, s]
+                      else inherits[v] implies v.enteredFrom.ambient[s]
+                      else none)
+}
+
+fact {
+   all v: mVantage | some v.through implies
+      (inherits[v] implies v.route = v.enteredFrom.route else v.route != v.enteredFrom.route)
+}
+
+fun keysUnder[w: Wrapper]: set mKey { {k: mKey | k.at.through = w} }
+
+pred true_DeclaresLends[d: DeclaresLends] {
+   all k: keysUnder[d.lendingWrapper] |
+      isNaturalKey[k] and catalogSortOf[k.scheme] = d.lentSort implies
+         k.reaches in d.lentInstance.reaches.passes
+}
+
+pred true_ClosesLends[d: ClosesLends] {
+   let w = d.closedWrapper {
+      all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]] implies
+         k.reaches in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].reaches.passes
+      all k: keysUnder[w], j: mKey | j.at = k.at.enteredFrom and k.scheme = j.scheme and k.value = j.value
+         and k.parent = k.at.route and j.parent = j.at.route implies k.reaches = j.reaches
+   }
+}
+```
+
+<!-- prose-translation -->
+> `--risk-faultless-skips` is set for a run, or it is not.
+> A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs, and nothing else; the wrapper owner declares each lend, one instance per lent mSort, and the completion sentinel.
+> An unlent mParent-Catalog mSort is ⊤ under the wrapper: a vantage entered through the wrapper holds no instance for it.
+> After the wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the caller's instances instead; otherwise the mRoute is unknown across the two vantages, another mRoute.
+> A lend is true when every mKey of a secondary mScheme looked up in the lent mSort under the wrapper reaches what a route through the lent instance's mReferent passes to.
+> The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute: it is true when every such mKey of an unlent mSort under the wrapper reaches what a route through the caller's instance passes to, and when an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
+
+#### § 3.4.1-guest-dependent-lends
+
+<!-- normative -->
+> A lend may depend on the guest; the wrapper author then declares the guest-insensitive default and supplies a policy read that declines on departure.
 
 > Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a
 > network namespace. A lend that depends on the guest: sudoers matches the guest command.
