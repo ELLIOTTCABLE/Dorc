@@ -400,8 +400,10 @@ records exact unread line-ranges; a follow-up pass can start there.
   the book's own model repository): nine of twenty sections disagreed with their own claims and
   were repaired, and four `SKILL.md` claims were narrowed to what the jar showed. Residue the
   skill now states: the jar ships no complete model checker, so `1.. steps` errors; on Windows the
-  jar cannot parse `util/natural`. Rulings pending with the human: the runner ignores `expect`;
-  the overflow catalogue entry's true cause is an out-of-range literal.
+  jar cannot parse `util/natural`. Both rulings landed the same day: the runner honours `expect`
+  (a command carrying one is red only on disagreement, and its row reports it), and the overflow
+  entry names the out-of-range literal, reintroduced after a conductor run agreeing with the
+  book's wrap reading.
 - Leads not taken, judged low value for the skill: the unsat-core papers (a GUI feature the
   headless runner does not expose), Aluminum and provenance (not in Alloy 6), the Electrum
   papers, the `util/*.als` sources, the Alloy 4 tutorial and grammar, Software Abstractions

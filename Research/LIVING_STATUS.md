@@ -44,9 +44,9 @@ item, what an author owes and when, grows `plans/30Z` § 6 (the locks and gates 
 and sits in `notes/30Yc` § 5 as the conductor's draft. Strawmen under `notes/30Ya-*` are frozen.
 The Alloy authorship praxis for agents is `.claude/skills/using-alloy/` (its `examples.md` executed
 against the pinned jar and repaired 2026-09-28; evidence in
-`.claude/research/design-model-mechanisation-prior-art/`); the runner refuses a `--command` that
-names nothing (exit 2). Both sit on `ai/r30-alloy-praxis-conductor` behind the 311 specification
-arc, with two rulings open: whether the runner honours `expect`, and the overflow catalogue entry.
+`.claude/research/design-model-mechanisation-prior-art/`). The runner refuses a `--command` that
+names nothing (exit 2), judges a command carrying `expect` by agreement with it, reports the
+`expect` in the row, and keeps kodkod's native-library probes off stderr.
 
 The test-architecture rebuild folded into `ai/main` on 2026-09-05 (its account: the r30 row of
 `Research/README.md`; its ledger `notes/30Xa`; its design of record `notes/30X`). What remains of
