@@ -306,6 +306,7 @@ sig mKey extends mLevel {
    scheme: one mScheme,
    shape: lone mShape,
    parent: lone mLevel,
+   yielded: lone mKey,
    reaches: lone mReferent
 }
 
@@ -313,13 +314,19 @@ fact { all k: mKey | k.shape.ofScheme in k.scheme }
 
 fact { all a, b: mKey | a.scheme = b.scheme and a.value = b.value implies a.shape = b.shape }
 
+fact { all k: mKey | no yieldsTo[k.shape] implies no k.yielded }
+
+fact { all k: mKey | some k.yielded implies k.yielded.scheme = yieldsTo[k.shape] }
+
+fact { no k: mKey | k in k.^yielded }
+
 fun keysOfShape[s: mShape]: set mKey { shape.s }
 
 fun keysOfSort[k: mSort]: set mKey { {x: mKey | primaryOf[x.scheme] = k} }
 
-pred isNaturalKey[k: mKey] { not isPrimary[k.scheme] }
+pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] and no yieldsTo[k.shape] }
 
-pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] }
+pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 ```
 
 <!-- prose-translation -->
@@ -329,8 +336,10 @@ pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] }
 > The mParent is the instance one of the seats of 1.6-parent-one-per-key supplies, or none, which leaves the mFullyQualifiedKey unknown from that level.
 > A lookup chooses among the shapes its mScheme declares, never outside them: the shape an mKey matches is a shape of its own mScheme.
 > Which shape an mValue matches is a function of the mKey's own bytes: two mKeys of one mScheme with equal mValues match one shape (1.6-parent-one-per-key).
+> An mKey may carry the mKey its lookup emitted for it, minted at the emission point the `resolve()` declares: an mKey of the mScheme its shape `:yields` (2.1-yields-into-another-scheme), and none where the shape yields nothing.
+> No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
-> mKey-Natural is an mKey of a secondary mScheme, what tool authors and books write; mKey-Primary is an mKey of the primary mScheme, meaningful only relative to its mParent-Store.
+> mKey-Primary is an mKey of the primary mScheme, on a shape that yields nothing, meaningful only relative to its mParent-Store; mKey-Natural is any other mKey, what tool authors and books write.
 
 ### § 1.5-token-and-the-two-warrants
 
@@ -427,28 +436,38 @@ what a disagreement between them costs, are 1.6.1-the-three-seats. Nothing is a 
 default, and cloned identifiers are the standing witness.
 
 ```alloy
-sig SuppliesParent extends Statement { forKey: one mKey, instance: one mKey }
+abstract sig Seat {}
+
+one sig BindSeat, YieldSeat, DeclarationSeat, EntryChainSeat extends Seat {}
+
+sig SuppliesParent extends Statement { forKey: one mKey, instance: one mKey, seat: one Seat }
+
+fact { all s: SuppliesParent | s.seat = YieldSeat implies s.speaker = (yielded.(s.forKey)).scheme.schemeOwner }
+
+fact { all s: SuppliesParent | s.seat = DeclarationSeat implies s.speaker = s.forKey.scheme.schemeOwner }
 
 fun supplies[k: mKey]: set mKey { (SuppliesParent & InForce & forKey.k).instance }
 
+pred parentRefused[k: mKey] { some disj p, q: supplies[k] }
+
 pred supplyFits[k: mKey] {
    one supplies[k]
-   primaryOf[supplies[k].scheme] = identifiedIn[k.shape]
+   some identifiedIn[k.shape] implies primaryOf[supplies[k].scheme] = identifiedIn[k.shape]
 }
 
 fact {
    all k: mKey {
       no k.shape implies no k.parent
       isRoot[k.shape] implies k.parent = rootShape.(k.shape)
-      (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape])
+      (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape] and no yieldsTo[k.shape])
          implies (one k.parent and k.parent in mRoute)
-      some identifiedIn[k.shape]
+      (some identifiedIn[k.shape] or some yieldsTo[k.shape])
          implies k.parent = (supplyFits[k] implies supplies[k] else none)
    }
 }
 
 pred true_SuppliesParent[s: SuppliesParent] {
-   s.forKey.reaches in s.instance.reaches.holds
+   isPrimaryKey[s.forKey] implies s.forKey.reaches in s.instance.reaches.holds
 }
 ```
 
@@ -456,21 +475,21 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
 > An mKey matching no shape has no mParent.
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
-> A shape with no `:identified-in` is scoped in the mRoute (1.10-vantage-route-placeholder-witness).
-> For a shape with `:identified-in`, the mParent instance is what a seat supplied, named as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
-> Where no seat supplied one, where two seats disagree, or where the supplied mKey is not of that mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
-> A supplied mParent instance is true when the mReferent the mKey reaches is held by the mReferent the instance reaches.
+> A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute (1.10-vantage-route-placeholder-witness).
+> The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
+> A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
+> For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
+> Two seats that disagree are a contradiction.
+> Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
+> A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
 
-#### § 1.6.1-the-three-seats
+#### § 1.6.1-what-a-seat-answers-for
 
-The seats are speech, and each seat's speaker is a different party. Which seat spoke, the
-refusal of a disagreement, and its attribution are 2.1-yields-into-another-scheme's and
-3.5-committee-law-and-attribution's; the fences above read only whether exactly one fitting
-instance was supplied.
+The refusal's attribution is 3.5-committee-law-and-attribution's; the routes that are not the
+mParent are 2.10-places-the-upward-lookup's.
 
 <!-- normative -->
-> The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in).
-> Two seats that disagree are a contradiction: it is refused and attributed to both.
+> A disagreement between seats is refused and attributed to both.
 > An emitter (a secondary mScheme, possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat that supplied it.
 > An mKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup); none of them is its mParent.
 
@@ -644,34 +663,81 @@ warrant makes it dangerous.
 
 ### § 2.1-yields-into-another-scheme
 
-mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort. S's `resolve()`, run
-in the mVantage, maps an mKey of S to an mKey of T. It may supply that mKey's mParent instance
-(1.6-parent-one-per-key). T is a primary mScheme, or a secondary mScheme that in turn yields
-one. The chain always terminates at a primary mScheme.
+S's `resolve()`, run in the mVantage, maps an mKey of S to an mKey of T; the emitted mKey sits
+on the input mKey (1.4-key-and-its-two-views), and the lookup may supply the emitted mKey's
+mParent instance from the yield seat (1.6-parent-one-per-key). Where S's own mKeys are looked
+up is S's mParent-Catalog, the mParent of a natural mKey, supplied by the bind, by S's owner's
+declaration, or by the mEntryChain's instance for that mSort
+(1.10-vantage-route-placeholder-witness). Arity: per matched shape of a secondary mScheme, into
+any mSort. Declared by: S's owner. Default: none; an mScheme that declares neither `:yields` nor
+`:primary-of` is a floor primary mScheme (1.3-scheme-a-way-of-writing). Consumer: mResolution
+(1.7-resolution-and-its-traversal) and the mFullyQualifiedKey (3.1-identity-of-a-key). Danger:
+the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME or DISJOINT,
+attributed to the yield.
 
-Where S's own mKeys are looked up is S's mParent-Catalog. It is an instance supplied by exactly
-one of three seats, as a store's is (1.6-parent-one-per-key). Each seat names it as an mKey of
-one of that mSort's mSchemes:
+```alloy
+sig DeclaresYields extends Statement { fromShape: one mShape, intoScheme: one mScheme }
 
-- the bind that minted the mKey
-- S's owner's declaration
-- the mEntryChain's instance for that mSort (1.10-vantage-route-placeholder-witness)
+fact { all d: DeclaresYields | d.speaker = d.fromShape.ofScheme.schemeOwner }
 
-An unknown input makes the instance unknown.
+fun yieldsTo[s: mShape]: lone mScheme { (DeclaresYields & InForce & fromShape.s).intoScheme }
 
-S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's
-mKeys license before the primary mScheme is reached. They never license across mParent-Catalogs.
-A `resolve()` declines on mReferents its mSort does not describe. This is the mechanical net
-against lazy borrowing.
+fact { all s: mShape | lone yieldsTo[s] }
 
-- Arity: per matched shape of a secondary mScheme, into any mSort.
-- Declared by: S's owner.
-- Default: none. An mScheme that declares neither `:yields` nor `:primary-of` is a floor primary
-  mScheme (1.3-scheme-a-way-of-writing).
-- Consumer: mResolution (1.7-resolution-and-its-traversal) and the mFullyQualifiedKey
-  (3.1-identity-of-a-key).
-- Danger: the lookup warrants. A wrong yield or a wrong supplied instance is a wrong SAME or
-  DISJOINT, attributed to the yield.
+fact { all s: mShape | some yieldsTo[s] implies no identifiedIn[s] and not isRoot[s] }
+
+pred true_DeclaresYields[d: DeclaresYields] {
+   all k: keysOfShape[d.fromShape] | some k.yielded implies k.reaches = k.yielded.reaches
+}
+
+fun naturalKeyAnswer[x, y: mKey]: one Answer {
+   (x.scheme = y.scheme and some x.parent and x.parent = y.parent) implies
+      (sameAtOneLevel[x, y] implies SAME
+       else twoTopsWay[x, y] implies DISJOINT
+       else UNKNOWN)
+   else UNKNOWN
+}
+
+check law_natural_same_is_sound {
+   everyStatementInForceIsTrue implies
+      all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.reaches = y.reaches
+} for 6 but 4 Int
+
+run law_natural_same_is_sound_premise {
+   everyStatementInForceIsTrue
+   some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.reaches
+}
+
+check law_natural_disjoint_is_sound {
+   everyStatementInForceIsTrue implies
+      all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.reaches & y.reaches
+} for 6 but 4 Int
+
+run law_natural_disjoint_is_sound_premise {
+   everyStatementInForceIsTrue
+   some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.reaches and some y.reaches
+}
+```
+
+<!-- prose-translation -->
+> mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort; S's owner declares it; one T per shape.
+> A shape that yields carries no `:identified-in` and no `:root`.
+> `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
+> S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
+> They never license across mParent-Catalogs: two mKeys not in one mParent-Catalog read UNKNOWN.
+> A SAME licensed before the primary mScheme is reached is never false while every statement in force is true.
+> A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true.
+
+#### § 2.1.1-the-chain-and-the-decline
+
+That the yield chain terminates at a primary mScheme is a property of the declarations, which
+strangers write; the fences read a chain that reaches no primary mKey as an unknown identity
+(3.1-identity-of-a-key). A decline is an evaluation that emits nothing.
+
+<!-- normative -->
+> T is a primary mScheme, or a secondary mScheme that in turn yields one; the chain always terminates at a primary mScheme.
+> An unknown input makes the instance unknown.
+> A `resolve()` declines on mReferents its mSort does not describe; this is the mechanical net against lazy borrowing.
 
 > A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket,
 > under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the
@@ -1071,21 +1137,22 @@ parts' may-read sets.
 shape its mKey matched (1.5-token-and-the-two-warrants).
 
 ```alloy
-fun identity[k: mKey]: lone mKey { isPrimaryKey[k] implies k else none }
+fun identity[k: mKey]: lone mKey { {p: k.*yielded | isPrimaryKey[p]} }
 ```
 
 <!-- prose-translation -->
+> For k an mKey of mScheme S, follow S's `resolve()`'s emission, and each yielded mScheme's emission in turn, until an mKey of a primary mScheme is in hand: that mKey is the identity of k, and there is none where no emission reaches a primary mScheme.
 > The identity of an mKey of a primary mScheme is that mKey: the primary mScheme's `resolve()` is the identity on the mKey (2.2-primary-of-and-identified-in).
 > The result is that mKey-Primary scoped in the identity of its mParent, recursively through each level's primary mScheme, until a mRoot, the mRoute, or an unknown link: its mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation).
 
 #### § 3.1.1-what-identity-reads-beyond-the-chain
 
-The lookups that reach a primary mKey are 2.1-yields-into-another-scheme's; composites, cells,
-observers, and the mVantage are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's,
-2.8-observer-dependence-and-independence's, and 1.10-vantage-route-placeholder-witness's.
+Where a `resolve()` runs is 1.10-vantage-route-placeholder-witness's; composites, cells, and
+observers are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's, and
+2.8-observer-dependence-and-independence's.
 
 <!-- normative -->
-> For k an mKey of mScheme S, run S's `resolve()` from k's mVantage, and each yielded mScheme's `resolve()` in turn, until an mKey of a primary mScheme is in hand.
+> Each `resolve()` runs from k's mVantage.
 > Each emission supplies the mParent instance for the mKey it yields.
 > A mCompositeSort's identity is its owner's function of its parts' identities.
 > A cell's identity is its mParent's plus its mSort (1.9-cell-a-singleton-sort).
@@ -1176,6 +1243,7 @@ fun walk[x, y: mKey]: one Answer {
 
 pred everyStatementInForceIsTrue {
    all d: DeclaresPrimaryOf & InForce | true_DeclaresPrimaryOf[d]
+   all d: DeclaresYields & InForce | true_DeclaresYields[d]
    all d: DeclaresIdentifiedIn & InForce | true_DeclaresIdentifiedIn[d]
    all d: DeclaresRoot & InForce | true_DeclaresRoot[d]
    all d: SuppliesParent & InForce | true_SuppliesParent[d]
