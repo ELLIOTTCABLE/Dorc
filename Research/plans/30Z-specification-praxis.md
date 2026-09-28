@@ -383,5 +383,24 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
 
 ## § 6-results-locks-and-what-an-author-owes
 
-TODO. This section waits on the lock, the gates, and the ruling of what an author owes and when
-(`notes/30Yc` carries the conductor's current thinking until then).
+- **`lock-results-beside-the-spec`** — every command's result is recorded in `<stem>.lock.json`
+  beside its document, one row per command: module, name, kind, scope, result, the premise
+  twin's result, and a hash of the command's text; never a timing. `--write` records the run;
+  `--check` recomputes and compares in both directions.
+- **`lock-is-the-ratchet`** [TYPED 2026-09-28] — `--check` passes when the run matches the lock row
+  for row, reds included: a set of reds the committed lock already records, with no new one, is a
+  pass. A new red, a moved result, a row present on one side only, is a mismatch. Committing the
+  lock is the act that accepts a result, and the report lists the accepted reds as the document's
+  residue, so nobody has to open the lock to see them.
+- **`lock-a-reword-shows-as-nothing`** — a rewording that moves no result leaves the lock
+  untouched; a moved row is the text-drift signal of 2.7-bank-the-answer made mechanical.
+- **`gate-commit-lints`** — committing a document under `specs/` runs assay's compile lints,
+  solver-free, in about a second; a refusal names the document and the lint.
+- **`gate-completion-checks-the-lock`** — builder completion runs `--check` over the changed
+  documents and their locks: parse errors refuse first, then the run, bounded by the runner's caps
+  on wall-clock, CPU time, heap, and the whole batch.
+- **`gate-one-heavy-task-per-machine`** — every solver run and every heavy gate holds one
+  machine-global lock; a second heavy task is refused with the holder's name (exit 75). That is
+  contention, not a failure: nothing was checked and nothing is broken; do other work and retry.
+- On demand, outside any gate: `--parse` alone, one module, or one command by name
+  (5-assay-vocabulary-and-forms), and the runner's `--instances` for the counterexample.
