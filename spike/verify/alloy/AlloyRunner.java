@@ -29,6 +29,8 @@ public class AlloyRunner {
    static volatile Process live;
 
    public static void main(String[] args) throws Exception {
+      // Kodkod logs every native-library probe at INFO, about thirty lines a run, none of them a verdict.
+      System.setProperty("org.slf4j.simpleLogger.log.kodkod", "warn");
       // Both defaults sit under an agent harness's 600s foreground ceiling: a harness kill
       // mid-batch is what would otherwise orphan a solver child.
       long timeoutSeconds = 120;
