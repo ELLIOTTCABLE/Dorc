@@ -1,20 +1,27 @@
-# 311 — Identity and relation: the model
+# 311 — Identity and relation: the specification
 
-> AI-authored preparatory model (Fable, the `r31-prep-design-duck` sittings, the human present
-> and adjudicating). Notes-tier and ahistorical. Ledgers and reviews cite it as `311j`. Nothing
-> here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this document. Where it
-> disagrees with a prior document, it is a deliberate proposal to re-litigate that document, and
-> 4.2-supersessions-pending-in-prior-documents registers the disagreement until the document is
-> rewritten. `[LEAN]` marks a human lean paraphrased from chat, never a ruling.
->
-> Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
-> authors. They are stated fully enough that the concretization step (names, spellings,
-> user-facing usage: the `312` series) can build on them without re-modeling.
->
-> Scope: abstract objects and relations only. No syntax, no strawman sh, no UX, no
-> gradual-enhancement ladder, no implementation. No spellings are proposed. Section footers hold
-> examples. They are illustrative and not fully worked. `[LEAN]` Dangerous operations get rare,
-> long names. Safe operations get short names.
+The identity model, mechanized. AI-authored (Fable, the `r31-prep-design-duck` sittings and the
+`312d` mechanization arc, the human present and adjudicating). Specification-tier and
+ahistorical; nothing here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this
+document. Where it disagrees with a prior document, it is a deliberate proposal to re-litigate
+that document, and 4.2-supersessions-pending-in-prior-documents registers the disagreement until
+the document is rewritten. Ledgers and reviews cite the note this document replaces as `311j`.
+
+Purpose: the abstract objects, relations, and laws of identity across mutually-unknowing
+authors, stated fully enough that the concretization step (names, spellings, user-facing usage:
+the `312` series) can build on them without re-modeling. Scope: abstract objects and relations
+only. No syntax, no strawman sh, no UX, no gradual-enhancement ladder, no implementation. No
+spellings are proposed.
+
+How to read this document (`plans/30Z`): the fences are the law. A section that holds a fence is
+mechanical, and its `<!-- prose-translation -->` block says exactly what its fences say. A
+section with no fence is normative only through a `<!-- normative -->` block, and such a block
+is residue the checker cannot reach. Everything else, this running text included, is commentary.
+An un-headed blockquote is commentary: under a heading it names a false friend from a
+neighbouring field, a name the object carried before this document, or a refuted shape
+(`notes/311u`); at the end of a section it holds the section's examples, illustrative and not
+fully worked. The results of every command are in `311-identity.lock.json` beside this file;
+what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 
 ## Conventions
 
@@ -39,6 +46,23 @@
 - § 5 is non-normative in its entirety (5-the-relations-indexed-two-ways). It indexes § 1 to
   § 3 and defines nothing.
 
+Spelling inside the fences:
+
+- A model object keeps its prose name as an Alloy signature: `mKey`, `mSort`. A shell word is
+  assay's `Shword`; an mKey's mValue is one.
+- A statement species is a signature under the shared `Statement`, named for the act:
+  `DeclaresIdentifiedIn`, `SuppliesParent`. Its fields name what it is about. One statement
+  atom in a scenario is `speaker__what_it_says`.
+- Every species has one truth predicate, `true_<Species>[s]`, which transcribes the sentence
+  that says what the statement means when true. The engine's own definitions never read the
+  world stratum; the truth predicates alone do.
+- A field name is unique across the whole document, so no join is ever ambiguous.
+- A law is `check law_<slug> … for N`; its premise twin is `run law_<slug>_premise {…}` with
+  no scope of its own; a kill or a refuted shape is `run kill_<slug> {…} for N expect 1`; a
+  held design question is `pred hole_<slug>` with `run hole_<slug>_witness {…} for N expect 1`.
+  Every run carries a scope clause, since assay reads an unscoped run as a corpus outcome.
+- The four answers are the atoms of `Answer`: `SAME`, `DISJOINT`, `KNOWN_UNSPOKEN`, `UNKNOWN`.
+
 ## § 0-the-problem-and-the-law
 
 Dorc removes a line only on connected claims that the line is unnecessary: a measurement claimed
@@ -50,87 +74,129 @@ Identity has two consumers with opposite failure directions. SAME lets one fact 
 another. DISJOINT lets a license survive a write. Each under-executes when wrong. UNKNOWN is
 safe for both.
 
-The engine knows only syntax, authored speech, and what authored probes returned. It never
-decodes an mKey and never holds an mReferent. No single author knows the whole path from a
-tool's argument to a measurable mReferent. Viewpoint transitions, authored by yet other people,
-change which mReferent an mKey reaches mid-book.
+No single author knows the whole path from a tool's argument to a measurable mReferent.
+Viewpoint transitions, authored by yet other people, change which mReferent an mKey reaches
+mid-book. What the engine can and cannot hold is 0.1-the-two-strata.
 
-The law the model must satisfy: the true answer is reachable once those who can know have
-spoken. Where nobody has spoken, the model declines to answer. The model never reaches a false
-answer while every statement behind it is true. A wrong answer with no false statement behind it
-refutes the model. Who must say what is 3.5-committee-law-and-attribution.
+The laws that state this for `compare()` are the checks of 3.2-compare-one-chokepoint-four-answers;
+who must say what is 3.5-committee-law-and-attribution. The law itself:
+
+<!-- normative -->
+> The true answer is reachable once those who can know have spoken.
+> Where nobody has spoken, the model declines to answer.
+> The model never reaches a false answer while every statement behind it is true.
+> A wrong answer with no false statement behind it refutes the model.
+
+### § 0.1-the-two-strata
+
+The engine and the world are two strata, and the fences keep them apart: the world stratum (an
+mReferent, what an mKey reaches, what a store holds) is what the truth predicates read; the
+engine's definitions read only mKeys, their declared shapes, and the statements in force.
+Nothing in the fences enforces the separation; the two sentences below are the rule, and a
+reviewer reads the engine's definitions for a world relation by eye.
+
+<!-- normative -->
+> The engine knows only syntax, authored speech, and what authored probes returned.
+> It never decodes an mKey and never holds an mReferent.
+> The engine never holds an mState, and no mKey names one.
 
 ## § 1-the-model-objects
 
 ### § 1.1-referent-state-and-value
 
-An mReferent is a persisting piece of the world that has state.
+The world stratum of 0.1-the-two-strata: an mReferent, what a store holds, and what it holds by
+its own construction against what it merely re-presents (the distinction 2.3-aliases-nothing-else-the-store-warrant
+needs). The engine never reads these relations; the truth predicates do.
 
-- It has the mSort of the mKey that reaches it. Two mSorts over one piece of the world is the
-  strangers case (1.2-sort-the-declared-carrier).
-- It has one or more mKeys.
-- It may have parts. Every part is an ordinary mReferent of an ordinary mSort identified in it
-  (1.9-cell-a-singleton-sort). No other term names a part.
-- It survives changes to its mState. It does not survive destruction and recreation under its
-  old mKey. It does not survive a lifecycle write to what it is scoped in
-  (3.3-invalidation-three-mutator-species).
-- It is not an mKey (an mKey names it), not an mState (it has one), and not an mValue (a read
-  yields one from it). It is not an mTopic (1.8-fully-qualified-key-topic-and-derivation). It is
-  not the set an mKey given whole denotes: the container is the mReferent, and the set is a set
-  (2.9-the-traversal-and-the-region-test).
+```alloy
+sig mReferent { holds: set mReferent, owns: set mReferent }
 
-The engine never holds an mReferent. It reaches mReferents only through mKeys, mTokens, and
-mDerivations. Every identity question is ultimately "do these two mKeys reach one mReferent".
-Before a lookup binds an mKey, that mKey names a may-set of mReferents
-(1.5-token-and-the-two-warrants).
+fact { owns in holds }
 
-An mState is the condition of one mReferent at one instant: what a write changes and what a read
-observes. The engine never holds an mState, and no mKey names one. An mState is known only
-through a read, which yields an mValue. Two mReferents may have equal mStates and stay two. One
-mReferent's mState changes and it stays one.
+fact { all r: mReferent | some reaches.r }
 
-An mValue is bytes a shell holds or will hold, with an exit status where one is produced. There
-are three kinds:
+fun sortsOf[r: mReferent]: set mSort { primaryOf[(reaches.r).scheme] }
 
-- an mKey's mValue: bytes that name an mReferent, bound at a bind
-- a captured mValue: bytes a read copied out of an mState, graded by provenance (`notes/275`)
-- a verdict's exit status
+fun partsOf[r: mReferent]: set mReferent { r.holds }
+```
 
-An mValue is what a read yields from an mState. It is never the mState. Two reads of one
-mReferent at two instants may yield two mValues.
+<!-- prose-translation -->
+> An mReferent is a persisting piece of the world.
+> A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
+> An mReferent has the mSort of the mKey that reaches it, and two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
+> It has one or more mKeys.
+> It may have parts, and every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
+> It is not an mKey, and not an mSort.
+
+Every identity question is ultimately "do these two mKeys reach one mReferent"; the mKey's
+side of that question is 1.4-key-and-its-two-views. No other term names a part. An mReferent is
+not an mTopic (1.8-fully-qualified-key-topic-and-derivation), and not the set an mKey given
+whole denotes: the container is the mReferent, and the set is a set
+(2.9-the-traversal-and-the-region-test).
 
 > Examples of an mReferent: an inode, a database row, a package record, a kernel parameter, a
 > running process, a machine, a mount table.
+
+#### § 1.1.1-state-and-value
+
+State and time are not in the fences: no fence holds an mState, and the sentences that say what
+an mReferent survives are read by the invalidation rules of 3.3-invalidation-three-mutator-species,
+which withdraw authority and never compute a successor. The value plane (`notes/275`) is outside
+this model. What is normative here is normative as prose.
+
+<!-- normative -->
+> An mReferent survives changes to its mState.
+> It does not survive destruction and recreation under its old mKey.
+> It does not survive a lifecycle write to what it is scoped in (3.3-invalidation-three-mutator-species).
+> Before a lookup binds an mKey, that mKey names a may-set of mReferents (1.5-token-and-the-two-warrants).
+> An mState is the condition of one mReferent at one instant: what a write changes and what a read observes.
+> An mState is known only through a read, which yields an mValue.
+> Two mReferents may have equal mStates and stay two.
+> One mReferent's mState changes and it stays one.
+> An mValue is bytes a shell holds or will hold, with an exit status where one is produced.
+> There are three kinds of mValue: an mKey's mValue, bytes that name an mReferent, bound at a bind; a captured mValue, bytes a read copied out of an mState, graded by provenance (`notes/275`); and a verdict's exit status.
+> An mValue is what a read yields from an mState, and it is never the mState.
+> Two reads of one mReferent at two instants may yield two mValues.
 
 ### § 1.2-sort-the-declared-carrier
 
 > Many-sorted logic's carrier. Never a PLT kind. Never "the kind of thing". Pre-311 documents
 > write _kind_.
 
-An mSort is one owner's declared vocabulary: a carrier in the logician's sense, a domain of
-discourse someone chose to speak in. It has reverse-DNS naming, no registry, and
-owner-adjudication as its social contract. It is not a category of the world. The engine never
-knows what an mSort denotes. It never assumes two mSorts denote disjoint mReferents.
+A carrier in the logician's sense, a domain of discourse someone chose to speak in. It has
+reverse-DNS naming, no registry, and owner-adjudication as its social contract. An mSort fixes
+only what its owner declares under it, each a statement species of its own section: which
+mScheme, if any, is its primary mScheme (2.2-primary-of-and-identified-in); its may-read set
+(2.5-may-read-the-readset); its may-write entailment and finished definition
+(2.6-may-write-the-writeset); its `:observer-dependence`
+(2.8-observer-dependence-and-independence); its cells (1.9-cell-a-singleton-sort). Each of
+those species carries the fact that its speaker is the mSort's owner. An mSort has no mKeys and
+no `resolve()`: an mKey names an mScheme (1.4-key-and-its-two-views), and the floor of
+1.3-scheme-a-way-of-writing lets an mScheme precede its mSort's name. An mSort is named only
+when something is declared about it as a whole; naming is not in the fences.
 
-An mSort fixes only what its owner declares under it:
+```alloy
+sig mSort { sortOwner: one Speaker }
+```
 
-- which mScheme, if any, is its primary mScheme (2.2-primary-of-and-identified-in)
-- its may-read set (2.5-may-read-the-readset)
-- its may-write entailment and finished definition (2.6-may-write-the-writeset)
-- its `:observer-dependence` (2.8-observer-dependence-and-independence)
-- its cells (1.9-cell-a-singleton-sort)
+<!-- prose-translation -->
+> An mSort is one owner's declared vocabulary.
 
-The owner speaks only about the mSort's relations to its immediate neighbours.
+#### § 1.2.1-the-strangers-case
 
 Several mSchemes into one mSort is the cooperative case: one owner admits several ways of
 writing down what they describe. Several mSorts over one world-thing is the ordinary strangers
-case. The strangers case is undetectable to the engine. It reads KNOWN_UNSPOKEN at the chokepoint
-(3.2-compare-one-chokepoint-four-answers). Only a human act merges it, by making one mSort's
-mSchemes yield into the other's.
+case. The sentences below are the laws of 3.2-compare-one-chokepoint-four-answers seen from the
+mSort's side; they stay prose until that section's checks carry them.
 
-An mSort has no mKeys and no `resolve()`. It is never valid where an mScheme is. It is named
-only when something is declared about it as a whole. The floor of 1.3-scheme-a-way-of-writing
-lets an mScheme precede its mSort's name.
+<!-- normative -->
+> An mSort is not a category of the world.
+> The engine never knows what an mSort denotes.
+> It never assumes two mSorts denote disjoint mReferents.
+> The strangers case is undetectable to the engine.
+> It reads KNOWN_UNSPOKEN at the chokepoint (3.2-compare-one-chokepoint-four-answers).
+> Only a human act merges it, by making one mSort's mSchemes yield into the other's.
+> The owner speaks only about the mSort's relations to its immediate neighbours.
 
 > The strangers case: two vendors describe one tool, or two vocabularies reach one cell under
 > `/proc/sys`.
@@ -139,29 +205,58 @@ lets an mScheme precede its mSort's name.
 
 > A term language over a carrier. Never itself an mSort.
 
-An mScheme is a way of writing down which mReferent is meant, with one accountable owner. An
-mScheme fixes:
+An mScheme fixes its `resolve()` (3.1-identity-of-a-key), whether it is `:primary-of` an mSort
+with its declarations per matched shape (2.2-primary-of-and-identified-in), what it `:yields`
+per matched shape and where its mKeys are looked up when it is secondary
+(2.1-yields-into-another-scheme), and its lookup warrants (1.5-token-and-the-two-warrants).
+Nothing else constrains where an mScheme yields. A shape is where every per-shape declaration
+hangs, so it is declared here; what a shape is, a control-flow path of the owner's body, is
+1.5-token-and-the-two-warrants's. The floor's "no warrants" is a fact of that section, and its
+"identity `resolve()`" and "the mRoute as its only mParent" follow from 3.1-identity-of-a-key
+and 1.6-parent-one-per-key. An mSort with no mScheme at all has singleton mKeys under mParents
+(1.9-cell-a-singleton-sort), and a mark of the form `parent-key@sm.Sort` is that section's.
 
-- its `resolve()`
-- whether it is `:primary-of` an mSort, with its declarations per matched shape
-  (2.2-primary-of-and-identified-in)
-- what it `:yields`, per matched shape, each an mKey of another mScheme of any mSort
-  (2.1-yields-into-another-scheme)
-- where its mKeys are looked up, when it is a secondary mScheme (2.1-yields-into-another-scheme)
-- its lookup warrants (1.5-token-and-the-two-warrants)
+```alloy
+sig mScheme { schemeOwner: one Speaker }
 
-An mSort has at most one primary mScheme. Where it has one, that mScheme yields into the mSort
-for at least one shape. Nothing else constrains where an mScheme yields. An mSort may have no
-mScheme at all. Its mKeys are then singletons under mParents (1.9-cell-a-singleton-sort).
+sig mShape { ofScheme: one mScheme }
 
-The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary mScheme
-of an mSort nobody has named. It has an identity `resolve()`, no warrants, and the mRoute as its
-only mParent. That mSort acquires a name the first time its owner declares something about it as
-a whole.
+sig DeclaresPrimaryOf extends Statement { primaryScheme: one mScheme, ofSort: one mSort }
 
-There is no default mScheme. A bind or a mark always names an mScheme. A mark of the form
-`parent-key@sm.Sort` names the mParent's mScheme and the singleton's mSort
-(1.9-cell-a-singleton-sort).
+fact { all d: DeclaresPrimaryOf | d.speaker = d.ofSort.sortOwner }
+
+fun primaryOf[s: mScheme]: lone mSort { (DeclaresPrimaryOf & InForce & primaryScheme.s).ofSort }
+
+fact { all k: mSort | lone (DeclaresPrimaryOf & InForce & ofSort.k).primaryScheme }
+
+fact { all s: mScheme | lone primaryOf[s] }
+
+pred floor[s: mScheme] {
+   no primaryOf[s]
+   no (DeclaresYields & InForce).fromShape & ofScheme.s
+}
+
+pred isPrimary[s: mScheme] { some primaryOf[s] or floor[s] }
+
+fact { all s: mShape | floor[s.ofScheme] implies no identifiedIn[s] and not isRoot[s] }
+
+fact {
+   all d: DeclaresPrimaryOf & InForce |
+      some s: ofScheme.(d.primaryScheme) | some identifiedIn[s] or isRoot[s]
+}
+
+pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
+```
+
+<!-- prose-translation -->
+> An mScheme is a way of writing down which mReferent is meant, with one accountable owner.
+> Every shape belongs to one mScheme.
+> `:primary-of` is declared by the mSort's owner, on the primary mScheme (2.2-primary-of-and-identified-in).
+> An mSort has at most one primary mScheme.
+> An mScheme is `:primary-of` at most one mSort.
+> The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary mScheme of an mSort nobody has named, and no shape of it carries `:identified-in` or `:root`.
+> Where an mSort has a primary mScheme, that mScheme yields into the mSort for at least one shape: some shape of it carries `:identified-in` or `:root`.
+> A `:primary-of` declaration claims nothing about the world.
 
 ### § 1.4-key-and-its-two-views
 
@@ -169,32 +264,50 @@ There is no default mScheme. A bind or a mark always names an mScheme. A mark of
 > alias, and is never identity. The primary key is what the store answers with. Pre-311
 > documents write _entity_.
 
-An mKey is a plan-time object that models what a runtime string will denote. It has three parts:
-an mValue, its mScheme, and its mParent (1.6-parent-one-per-key). It is minted at a bind, or at
-an emission point a `resolve()` declares (2.1-yields-into-another-scheme), before any lookup
-runs.
+An mKey is a plan-time object that models what a runtime string will denote. It is minted at a
+bind, or at an emission point a `resolve()` declares (2.1-yields-into-another-scheme), before
+any lookup runs. Every lookup is a measurement: what it decides late is which declared shape an
+mValue matches, so which mSort an mKey reaches, and which mParent mSort and warrants apply, is
+known only once bytes arrive. The mPlaceholder, for an mValue or an mParent not yet measured, is
+1.10-vantage-route-placeholder-witness's. An mLevel is what a mFullyQualifiedKey passes through
+(1.8-fully-qualified-key-topic-and-derivation): an mKey, or one of the world atoms that end a
+chain. The `reaches` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
+no engine definition reads it. The two views coincide when an mSort's only mScheme is its primary
+mScheme, and the primary view is where the dangerous warrants can honestly sit.
 
-- The mScheme is always declared.
-- The mValue is a literal, or a mPlaceholder for a captured mValue.
-- The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a
-  mPlaceholder.
+```alloy
+abstract sig mLevel {}
 
-Every lookup is a measurement. It binds mPlaceholders and chooses among the structures of the
-mFullyQualifiedKey that the mSchemes declare, never outside them. What measurement decides late
-is which declared shape an mValue matches (2.1-yields-into-another-scheme,
-2.2-primary-of-and-identified-in). So which mSort an mKey reaches, and which mParent mSort and
-warrants apply, is known only once bytes arrive.
+sig mKey extends mLevel {
+   value: one Shword,
+   scheme: one mScheme,
+   shape: lone mShape,
+   parent: lone mLevel,
+   reaches: lone mReferent
+}
 
-An mValue with no mScheme is nothing. An mScheme with no supplyable mParent instance leaves the
-mFullyQualifiedKey unknown from that level.
+fact { all k: mKey | k.shape.ofScheme in k.scheme }
 
-Two derived views:
+fact { all a, b: mKey | a.scheme = b.scheme and a.value = b.value implies a.shape = b.shape }
 
-- mKey-Natural: an mKey of a secondary mScheme. This is what tool authors and books write.
-- mKey-Primary: an mKey of the primary mScheme. It is meaningful only relative to its
-  mParent-Store. This is where the dangerous warrants can honestly sit.
+fun keysOfShape[s: mShape]: set mKey { shape.s }
 
-The two views coincide when an mSort's only mScheme is its primary mScheme.
+fun keysOfSort[k: mSort]: set mKey { {x: mKey | primaryOf[x.scheme] = k} }
+
+pred isNaturalKey[k: mKey] { not isPrimary[k.scheme] }
+
+pred isPrimaryKey[k: mKey] { isPrimary[k.scheme] }
+```
+
+<!-- prose-translation -->
+> An mKey has three parts: an mValue, its mScheme, and its mParent (1.6-parent-one-per-key).
+> The mScheme is always declared; there is no default mScheme, and a bind or a mark always names one.
+> The mValue is a literal: the shell word bound at the bind.
+> The mParent is the instance one of the seats of 1.6-parent-one-per-key supplies, or none, which leaves the mFullyQualifiedKey unknown from that level.
+> A lookup chooses among the shapes its mScheme declares, never outside them: the shape an mKey matches is a shape of its own mScheme.
+> Which shape an mValue matches is a function of the mKey's own bytes: two mKeys of one mScheme with equal mValues match one shape (1.6-parent-one-per-key).
+> An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
+> mKey-Natural is an mKey of a secondary mScheme, what tool authors and books write; mKey-Primary is an mKey of the primary mScheme, meaningful only relative to its mParent-Store.
 
 ### § 1.5-token-and-the-two-warrants
 
