@@ -32,8 +32,6 @@ pub(crate) enum Lint {
     JoinKeyCoherence,
     MapWordCount,
     MapLineFollowsCommand,
-    ComponentIsAnIdentifier,
-    BracedLiteralIsNamed,
     LoadStemResolves,
     FenceHeader,
     NoStrayComments,
@@ -42,12 +40,10 @@ pub(crate) enum Lint {
 }
 
 impl Lint {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 8] = [
         Self::JoinKeyCoherence,
         Self::MapWordCount,
         Self::MapLineFollowsCommand,
-        Self::ComponentIsAnIdentifier,
-        Self::BracedLiteralIsNamed,
         Self::LoadStemResolves,
         Self::FenceHeader,
         Self::NoStrayComments,
@@ -60,8 +56,6 @@ impl Lint {
             Self::JoinKeyCoherence => "join-key-coherence",
             Self::MapWordCount => "map-word-count",
             Self::MapLineFollowsCommand => "map-line-follows-command",
-            Self::ComponentIsAnIdentifier => "component-is-an-identifier",
-            Self::BracedLiteralIsNamed => "braced-literal-is-named",
             Self::LoadStemResolves => "load-stem-resolves",
             Self::FenceHeader => "fence-header",
             Self::NoStrayComments => "no-stray-comments",
@@ -595,36 +589,41 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
         }
     }
 
-    // The join key: one literal carries at most one name, one name at most one literal.
+    // The join key: one literal carries at most one name and one name covers at most one literal,
+    // where a literal no bare component names is named after itself (`30Y` § 2.1).
     let mut names_of: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    let mut literals_of: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut classes_of: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut first_seen: BTreeMap<String, usize> = BTreeMap::new();
     let mut class_seen: BTreeMap<String, usize> = BTreeMap::new();
-    let mut word_order: Vec<(usize, String)> = Vec::new();
     for cmd in books.iter().flat_map(|b| &b.rows).map(|r| r.cmd) {
         for (literal, component) in &cmd.words {
+            let names = names_of.entry(literal.clone()).or_default();
             match component {
                 Component::Name(name) => {
-                    names_of
-                        .entry(literal.clone())
-                        .or_default()
-                        .insert(name.clone());
-                    literals_of
-                        .entry(name.clone())
-                        .or_default()
-                        .insert(literal.clone());
-                    word_order.push((cmd.line, name.clone()));
+                    names.insert(alloy::atom(name));
                 }
                 Component::Class(class) => {
+                    let class = alloy::atom(class);
                     classes_of
                         .entry(literal.clone())
                         .or_default()
                         .insert(class.clone());
-                    class_seen.entry(class.clone()).or_insert(cmd.line);
+                    class_seen.entry(class).or_insert(cmd.line);
                 }
             }
             first_seen.entry(literal.clone()).or_insert(cmd.line);
+        }
+    }
+    let mut literals_of: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for (literal, names) in &mut names_of {
+        if names.is_empty() {
+            names.insert(alloy::atom(literal));
+        }
+        for name in names.iter() {
+            literals_of
+                .entry(name.clone())
+                .or_default()
+                .insert(literal.clone());
         }
     }
     let seen_at = |literal: &str| first_seen.get(literal).copied().unwrap_or(0);
@@ -644,27 +643,25 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
                 .with("literals", joined(literals)),
         );
     }
-    for (literal, classes) in classes_of
-        .iter()
-        .filter(|(l, _)| !names_of.contains_key(*l))
-    {
-        findings.push(
-            Finding::new(Lint::BracedLiteralIsNamed, file, seen_at(literal))
-                .with("literal", literal)
-                .with("classes", joined(classes)),
-        );
-    }
     if !findings.is_empty() {
         findings.sort_by_key(|f| (f.lint, f.line));
         return Err(findings);
     }
+    let atom_of: BTreeMap<&str, &str> = names_of
+        .iter()
+        .filter_map(|(literal, names)| Some((literal.as_str(), names.first()?.as_str())))
+        .collect();
+    let literal_of_name: BTreeMap<&str, &str> = atom_of.iter().map(|(l, n)| (*n, *l)).collect();
     let word_for = |literal: &str| {
-        names_of
+        atom_of
             .get(literal)
-            .and_then(|n| n.first())
-            .cloned()
-            .unwrap_or_default()
+            .map_or_else(String::new, |n| (*n).to_owned())
     };
+    let mut word_order: Vec<(usize, String)> = books
+        .iter()
+        .flat_map(|b| &b.rows)
+        .flat_map(|r| r.cmd.words.iter().map(|(l, _)| (r.cmd.line, word_for(l))))
+        .collect();
     for row in books.iter_mut().flat_map(|b| &mut b.rows) {
         row.names = row
             .cmd
@@ -826,10 +823,9 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
 
     let literal_of = |name: &str| match name {
         NULL_WORD => Json::str(":"),
-        _ => literals_of
+        _ => literal_of_name
             .get(name)
-            .and_then(|l| l.first())
-            .map_or(Json::Null, Json::str),
+            .map_or(Json::Null, |l| Json::str(*l)),
     };
     let report = vec![
         (

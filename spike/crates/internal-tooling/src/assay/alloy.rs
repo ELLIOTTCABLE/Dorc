@@ -2,6 +2,7 @@
 //! item's head and binders (`notes/30Y` § 3). Nothing else is parsed; Alloy parses the rest.
 
 use std::collections::BTreeSet;
+use std::fmt::Write as _;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Tok {
@@ -88,6 +89,87 @@ pub(super) fn is_plain_identifier(word: &str) -> bool {
     chars.next().is_some_and(|c| c.is_ascii_alphabetic())
         && chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
         && !is_reserved(word)
+}
+
+/// Readable escapes for the shell punctuation a map line carries; every other non-alphanumeric
+/// character escapes as `u` and its code point in hex, which no entry here spells.
+const MNEMONICS: &[(char, &str)] = &[
+    (' ', "sp"),
+    ('!', "bang"),
+    ('"', "dq"),
+    ('#', "hash"),
+    ('$', "dollar"),
+    ('%', "pct"),
+    ('&', "amp"),
+    ('\'', "sq"),
+    ('(', "lp"),
+    (')', "rp"),
+    ('*', "star"),
+    ('+', "plus"),
+    (',', "comma"),
+    ('-', "dash"),
+    ('.', "dot"),
+    ('/', "slash"),
+    (':', "colon"),
+    (';', "semi"),
+    ('<', "lt"),
+    ('=', "eq"),
+    ('>', "gt"),
+    ('?', "qm"),
+    ('@', "at"),
+    ('[', "lb"),
+    ('\\', "bs"),
+    (']', "rb"),
+    ('^', "caret"),
+    ('`', "bq"),
+    ('{', "lc"),
+    ('|', "pipe"),
+    ('}', "rc"),
+    ('~', "tilde"),
+    ('\t', "tab"),
+    ('\n', "nl"),
+];
+
+/// The atom a map name spells (`notes/30Y` § 2.1): an Alloy identifier is itself, anything else
+/// its [`munge`]. A literal nobody names is its own name.
+pub(super) fn atom(name: &str) -> String {
+    if is_plain_identifier(name) {
+        name.to_owned()
+    } else {
+        munge(name)
+    }
+}
+
+/// A deterministic, injective spelling of any text in Alloy's identifier alphabet.
+///
+/// ASCII letters and digits pass through, `_` doubles, and any other character becomes
+/// `_<mnemonic>_`, so every escaped spelling carries an even number of underscores and decodes
+/// left to right. Where that spelling does not start with a letter, or is a keyword, it is
+/// prefixed `w_`, whose single underscore makes the count odd; the two families cannot meet, and
+/// each is injective, so the whole map is.
+fn munge(text: &str) -> String {
+    let mut body = String::new();
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() {
+            body.push(c);
+        } else if c == '_' {
+            body.push_str("__");
+        } else {
+            body.push('_');
+            match MNEMONICS.iter().find(|(m, _)| *m == c) {
+                Some((_, name)) => body.push_str(name),
+                None => {
+                    let _ = write!(body, "u{:x}", u32::from(c));
+                }
+            }
+            body.push('_');
+        }
+    }
+    if body.starts_with(|c: char| c.is_ascii_alphabetic()) && !is_reserved(&body) {
+        body
+    } else {
+        format!("w_{body}")
+    }
 }
 
 /// Tokens of `src`, whose first line is file line `first_line`. Comments vanish; strings and
@@ -520,7 +602,44 @@ pub(super) fn split_scope(src: &str) -> (String, Option<String>) {
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::{Head, binders, introduced, items, replace_this, split_scope, tokenize};
+    use super::{
+        Head, atom, binders, introduced, is_plain_identifier, items, munge, replace_this,
+        split_scope, tokenize,
+    };
+
+    #[test]
+    fn munges_are_distinct_identifiers_and_an_identifier_names_itself() {
+        // Two names sharing an atom would silently become one word; the underscore-bearing and
+        // prefixed pairs are the ones a careless escape merges.
+        let nasty = [
+            "-c",
+            "'%i %d'",
+            "2>&1",
+            ">>/var/log/hork.log",
+            "a_b",
+            "a-b",
+            "a__b",
+            "443/tcp",
+            "set",
+            "w_set",
+            "",
+            "_",
+            "\u{2603}",
+        ];
+        let names: Vec<String> = nasty.iter().map(|l| munge(l)).collect();
+        for (literal, name) in nasty.iter().zip(&names) {
+            assert!(
+                is_plain_identifier(name),
+                "{literal:?} minted {name:?}, not an identifier"
+            );
+        }
+        let distinct: BTreeSet<&String> = names.iter().collect();
+        assert_eq!(distinct.len(), names.len(), "{names:?}");
+        assert_eq!(munge("-c"), "w__dash_c");
+        assert_eq!(munge("a-b"), "a_dash_b");
+        assert_eq!(atom("a_b"), "a_b");
+        assert_eq!(atom("set"), "w_set");
+    }
 
     fn head_of(src: &str) -> Head {
         items(src, 1).first().map_or(Head::Other, super::Item::head)

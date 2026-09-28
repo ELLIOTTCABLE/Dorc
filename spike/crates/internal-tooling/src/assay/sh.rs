@@ -20,6 +20,8 @@ pub(super) struct Command {
     pub(super) stmts: Vec<(usize, String)>,
 }
 
+/// What a map component says about the literal beneath it (`notes/30Y` § 2.1): a bare component
+/// names it, a braced one classes it and leaves it named after itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Component {
     Name(String),
@@ -167,21 +169,17 @@ fn attach_map(
         );
         return;
     }
-    let mut pairs = Vec::new();
-    for (literal, raw) in literals.into_iter().zip(components) {
-        let component = match raw.strip_prefix('{').and_then(|c| c.strip_suffix('}')) {
-            Some(class) => Component::Class(class.to_owned()),
-            None => Component::Name(raw.clone()),
-        };
-        let (Component::Class(ident) | Component::Name(ident)) = &component;
-        if !is_plain_identifier(ident) {
-            findings.push(
-                Finding::new(Lint::ComponentIsAnIdentifier, file, line).with("component", &raw),
-            );
-        }
-        pairs.push((literal, component));
-    }
-    cmd.words = pairs;
+    cmd.words = literals
+        .into_iter()
+        .zip(components)
+        .map(|(literal, raw)| {
+            let component = match raw.strip_prefix('{').and_then(|c| c.strip_suffix('}')) {
+                Some(class) => Component::Class(class.to_owned()),
+                None => Component::Name(raw),
+            };
+            (literal, component)
+        })
+        .collect();
 }
 
 /// A line's words as the syntax crate splits it: every simple command's assignments, words, and

@@ -122,3 +122,58 @@ fn one_literal_under_two_names_refuses_before_writing_anything() {
     assert_eq!(hits[0]["literal"], "/tmp/sprocket", "{report}");
     assert!(!out.exists(), "a refusal must write no module");
 }
+
+#[test]
+fn words_name_themselves_as_the_human_pictured() {
+    // The ruling, verbatim (`30Yc` § 6): a bare component names its literal, a repeated one
+    // leaves it named after itself, and a braced one classes it and leaves it self-named.
+    let out = fresh_dir("assay_self_naming");
+    let run = assay(&fixture().join("self_naming.md"), &out);
+    let report = String::from_utf8_lossy(&run.stdout);
+    assert!(run.status.success(), "{report}");
+    let json: serde_json::Value = serde_json::from_str(&report).expect("the report should be JSON");
+    let words: Vec<(String, String)> = json["words"]
+        .as_array()
+        .expect("the words table should be listed")
+        .iter()
+        .filter(|w| !w["literal"].is_null())
+        .map(|w| (w["name"].to_string(), w["literal"].to_string()))
+        .collect();
+    let pair = |n: &str, l: &str| (format!("{n:?}"), format!("{l:?}"));
+    assert_eq!(
+        words,
+        vec![
+            pair("widget", "foo"),
+            pair("bar", "bar"),
+            pair("baz", "baz"),
+            pair("bum", "bum"),
+            pair("assay_colon", ":"),
+        ],
+        "{report}"
+    );
+    assert_eq!(
+        json["classes"]["c"],
+        serde_json::json!(["baz", "bum"]),
+        "{report}"
+    );
+}
+
+#[test]
+fn a_self_named_literal_whose_atom_another_literal_holds_refuses() {
+    // `-c` names itself, and its atom `w__dash_c` joins the key space every bare name lives in,
+    // where `-d` already holds it: one name over two literals.
+    let out = fresh_dir("assay_self_name_conflicts");
+    let run = assay(
+        &fixture().join("negative").join("self_name_conflicts.md"),
+        &out,
+    );
+    let report = String::from_utf8_lossy(&run.stdout);
+    assert_eq!(run.status.code(), Some(2), "{report}");
+    let json: serde_json::Value = serde_json::from_str(&report).expect("the report should be JSON");
+    let clash = json["lints"]["join-key-coherence"]
+        .as_array()
+        .expect("the lint should be listed");
+    assert_eq!(clash.len(), 1, "{report}");
+    assert_eq!(clash[0]["name"], "w__dash_c", "{report}");
+    assert!(!out.exists(), "a refusal must write no module");
+}

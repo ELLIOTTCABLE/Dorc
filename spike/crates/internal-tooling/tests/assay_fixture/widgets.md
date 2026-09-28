@@ -52,4 +52,8 @@ one sig bob__twirl_wobbles_on_the_sprocket_heap extends Wobble {} { speaker = bo
    twirl /tmp/sprocket
 #} twirl {gizmo}
 #= this.argv[0] in gizmo.~class for 4 but 3 Int
+
+   frob -c 'x y' /tmp/gadget
+#} frob -c 'x y' {gizmo}
+#= this.argv[2] in gizmo.~class
 ```

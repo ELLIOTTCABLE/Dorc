@@ -12,6 +12,9 @@ one sig knob_word extends Shword {} -- widgets.md:45
 one sig append_spin_log extends Shword {} -- widgets.md:47
 one sig stderr_to_stdout extends Shword {} -- widgets.md:47
 one sig twirl extends Shword {} -- widgets.md:52
+one sig w__dash_c extends Shword {} -- widgets.md:56
+one sig w__sq_x_sp_y_sq_ extends Shword {} -- widgets.md:56
+one sig w__slash_tmp_slash_gadget extends Shword {} -- widgets.md:56
 one sig assay_colon extends Shword {} -- assay: the corpus book's null command
 one sig gizmo extends Class {} -- widgets.md:47
-fact { class = sprocket_path->gizmo }
+fact { class = w__slash_tmp_slash_gadget->gizmo + sprocket_path->gizmo }
