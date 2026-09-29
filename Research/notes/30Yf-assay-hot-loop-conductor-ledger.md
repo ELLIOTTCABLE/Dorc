@@ -20,8 +20,11 @@ every command paying ~17 s of translation for two memo-table facts) and the smal
 solving and the rest is JVM start, parse, and translation.
 
 State: the lane is folded into `ai/main` (twelve commits ending at "State the batch clip, the
-official tier's belt, and the cap interplay"); a documentation lane rewrites `notes/30Y` to what
-is, brings the `30Yc` register current, and updates the status. Measured at the lane's report over the frozen strawman-3 (92 rows, one
+official tier's belt, and the cap interplay"), and so is its documentation lane, which also
+repaired one defect it found (the official write replaced a definite row with an unmeasurement
+on an unchanged key). `notes/30Y` is the description of record of what is; where it and this
+ledger differ in a detail of mechanism, `30Y` was written from the code and wins. Measured at the
+lane's report over the frozen strawman-3 (92 rows, one
 red): a full `--write` went from 425 s (one JVM per command) to 126 s at the gate tier (40 rows
 solved, 62 green by entailment) and 71 s at the official tier with two children; `--check` with
 nothing changed 4 s; one book's world fact edited 10 s; one law edited 4 s; every verdict

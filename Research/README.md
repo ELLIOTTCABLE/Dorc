@@ -225,8 +225,9 @@ the license-contamination map. Cross-references are `docID:slug`.
   §6 the deferred set) + `30Va` (conduct) / `30Vb`,`30Vc` (strawmen — raw, read-optional) /
   `30Vd` (lane ledger) · `30Xa` (the rebuild's conductor ledger: every checkpoint ruling, the
   lane table, the typed acks of the close, the post-review repair lane). The design-model
-  mechanisation work: **`notes/30Y`** (assay, the plan for a design-tier checker over literate
-  specifications in Alloy 6; tooling only, praxis deliberately excluded) · `notes/30Ya` (its
+  mechanisation work: **`notes/30Y`** (assay as it is: the design-tier checker over literate
+  specifications in Alloy 6, its generated modules, lock, key, tiers, and adapter; tooling only,
+  praxis deliberately excluded) · `notes/30Ya` (its
   ledger: every human-typed lean and ruling of the design sittings, with the conductor findings
   the human read beside them) · `notes/30Yb` (the Alloy runner lane: the
   `mise run alloy` task, module resolution as observed, and both strawmen run for real, every
@@ -239,12 +240,17 @@ the license-contamination map. Cross-references are `docID:slug`.
   assay` compiler, the fixture, the runner's bounds and the heavy-work lock, the strawman-3
   smoke) · `notes/30Ye` (the lock-and-gates lane as built: self-naming words, `--parse`,
   `--check`/`--write` and the lock beside the spec, the hk steps over `specs/**`, the re-entrant
-  heavy-work lock around the gates) · **`plans/30Z`** (specification praxis: the posture and firewall, the authoring loop
-  with held-open holes, the soundness habits, the document form; generic to any Alloy-checked
-  specification, with assay's own vocabulary confined to one section; § 6 awaits the lock).
-  The research evidence base (the four fronts' sources and turn notes, and its `plan.md`: the
+  heavy-work lock around the gates) · `notes/30Yf` (the hot-loop lane's conductor ledger: the
+  correctness properties a fast loop must keep, the lock's definite-versus-unmeasured semantics,
+  the incremental key, the whole-book conjunction, replay and its guard, the tiers, the
+  Rust-over-adapter split, and the measured before and after) · **`plans/30Z`** (specification
+  praxis: the posture and firewall, the authoring loop with held-open holes, the soundness
+  habits, the document form; generic to any Alloy-checked specification, with assay's own
+  vocabulary confined to one section; § 6 the lock and the gates).
+  The research evidence base (the five fronts' sources and turn notes, and its `plan.md`: the
   question, the fronts and their findings, the corpus scope map) stays in
-  `.claude/research/design-model-mechanisation-prior-art/`.
+  `.claude/research/design-model-mechanisation-prior-art/`; the Alloy authorship praxis for
+  agents that came of it is the skill `.claude/skills/using-alloy/`.
   Current state: `LIVING_STATUS.md`; what follows: `ROADMAP.md`.
 - **r26-revival — live execution (MINTED 2026-07-27; the ROUND stays open)** — Dorc ran
   against a real machine: the ssh executor (`dorc apply host <plan.sh` does its own ssh'ing),
