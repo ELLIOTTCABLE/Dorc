@@ -691,3 +691,45 @@ specification behaviour. Every prior instruction stands. The successor is dispat
 `50e53398` rebased over `ai/main`, as `ai/312d-mechanize-311-b`, with the order: the
 tri-partition accounting against the corrected baseline; the books, each world put to the
 conductor first; the final lock and report, with its own tooling-chafe section.
+
+## § 12-the-accounting-first-pass
+
+The successor's turn 1 (branch `ai/312d-mechanize-311-b`, the predecessor's twenty-one commits
+rebased over `ai/main` at `1995fa4a`; no edit of its own yet), 2026-09-29. Baseline: the note's
+content at `1af7e0d9^` (`a08eb53c`; last changed at `8b7ad973`), 1339 lines; § 5 and § 6
+byte-identical between baseline and specification. Sentence-level over § 0 to § 4: 770
+sentences. First-pass categories, the successor's judgement over every row: commentary 207;
+plain prose judged normative 66 (57 of them the § 4.2 register entries, which sit outside the
+blockquote); mechanical with a named carrier 237; carried structurally by typing or absence 33;
+in a translation block but carried differently or by a definition nothing consumes 53;
+normative residue 152; residue duplicating a mechanized sentence 18; absent 4. The reverse
+account over 304 headed sentences: 169 verbatim, 57 merges, 11 moves, 2 rewords, and the
+additions of the mechanization (13 law sentences; 17 truth-predicate sentences; 3
+world-stratum sentences under the § 1.1 marks; 15 structural facts the encoding needs; 4
+premise definitions; 2 probes; the scope and plumbing sentences; 8 marked readings). The full
+table is the successor's scratchpad `tri-partition.tsv` with `additions.tsv`, uncommitted.
+
+Readings the raw pass hardened WITHOUT a mark, found by the accounting (no mark is minted for
+them, per § 7; they are the sitting's, listed here so they are not lost): a `:primary-of`
+mScheme may carry a yielding shape whose mKeys are then natural (`isPrimaryKey` demands a
+non-yielding shape; 311 § 2.1 has `:yields` on a secondary mScheme's shapes) · a supplied
+mParent instance must be an mKey of the parent mSort's PRIMARY mScheme, where 311 § 1.6 says
+"of one of the mParent's mSort's mSchemes" (narrows the worlds; the books' path-in-directory
+case hits it) · the composite replaced "a provider-supplied identifier" in § 3.2's derivations
+and a verdict fact's topic is one mKey, so a topic with two mKeys is representable only through
+a mCorrespondence · invalidation reads the writeset with every container contributing, there
+being no read mKey to exclude against · the region test's first form demands the lookup's
+closing act (stronger than 311's first form; differs only where the unclosed traversal's catalog
+is an mWorld) · a mTraversal's order is not held (no consumer in 311 reads it). Two more were
+repaired toward the letter on the conductor's ruling: the entry chain is a seat that refuses on
+disagreement (§ 1.6), and a lifecycle write is to a mRoot-adjacent mKey, not any mWorld-adjacent
+one (§ 3.3). Disagreements recorded, no edit: § 1.9's "exactly one mKey" against the fence's "at
+most one" (an existence fact would be a generator the scopes cannot seat; the prose is not
+softened); § 2.1's "may supply" against § 3.1's "supplies" in the baseline itself; the may-write
+translation naming "the verb's author", a role the fences lack. Definitions 311 states whose
+consuming law is a coverage gap: `sameTopic` (no fact-transport law), `compareAt`, `places`,
+the two mParent views, the support functions. Two false units of the `placedIn` class repaired
+on ruling: `readsetMemberIsTop` walked the catalog chain where 311 says the mFullyQualifiedKey;
+`compositeMayRead` was defined and read by nothing where 311 says the composite's set is the
+union. The conductor's rulings on the fifty-one items were given in chat and are being applied
+on the successor's branch; the tri-partition's final counts follow its turn 2.
