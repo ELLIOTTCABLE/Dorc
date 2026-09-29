@@ -72,30 +72,51 @@ pub(super) fn fits(xml: &str, bitwidth: u64, scope: &str, sigs: &[(String, Vec<S
     if attr(instance.0, "bitwidth").and_then(|b| b.parse::<u64>().ok()) != Some(bitwidth) {
         return false;
     }
-    let mut ids: Vec<(String, String)> = Vec::new();
+    // An atom is listed under its most specific signature only, so a signature's count is its own
+    // atoms plus every descendant's by `parentID` (a subset signature repeats atoms and has none).
+    let mut ids: Vec<(String, String, Option<String>, usize)> = Vec::new();
     for (open, body) in tags(xml, "sig") {
         let (Some(label), Some(id)) = (attr(open, "label"), attr(open, "ID")) else {
             return false;
         };
-        ids.push((id.to_owned(), label.to_owned()));
-        if attr(open, "builtin") == Some("yes") {
-            continue;
-        }
-        if !sigs.iter().any(|(l, _)| l == label) {
+        ids.push((
+            id.to_owned(),
+            label.to_owned(),
+            attr(open, "parentID").map(str::to_owned),
+            body.matches("<atom ").count(),
+        ));
+        if attr(open, "builtin") != Some("yes") && !sigs.iter().any(|(l, _)| l == label) {
             return false;
         }
-        let atoms = body.matches("<atom ").count();
-        if exact_bounds(scope)
+    }
+    let count = |root: &str| -> usize {
+        let mut total = 0usize;
+        let mut stack = vec![root.to_owned()];
+        while let Some(id) = stack.pop() {
+            for (child, _, parent, atoms) in &ids {
+                if *child == id {
+                    total = total.saturating_add(*atoms);
+                }
+                if parent.as_deref() == Some(id.as_str()) && *child != id {
+                    stack.push(child.clone());
+                }
+            }
+        }
+        total
+    };
+    for (n, sig) in exact_bounds(scope) {
+        let named = ids
             .iter()
-            .any(|(n, sig)| label.rsplit('/').next() == Some(sig.as_str()) && atoms != *n)
-        {
+            .filter(|(_, label, _, _)| label.rsplit('/').next() == Some(sig.as_str()))
+            .collect::<Vec<_>>();
+        if named.len() != 1 || named.first().is_some_and(|(id, _, _, _)| count(id) != n) {
             return false;
         }
     }
     tags(xml, "field").iter().all(|(open, _)| {
-        let owner = attr(open, "parentID").and_then(|p| ids.iter().find(|(id, _)| id == p));
+        let owner = attr(open, "parentID").and_then(|p| ids.iter().find(|(id, ..)| id == p));
         match (attr(open, "label"), owner) {
-            (Some(field), Some((_, sig))) => sigs
+            (Some(field), Some((_, sig, ..))) => sigs
                 .iter()
                 .any(|(l, fields)| l == sig && fields.iter().any(|f| f == field)),
             _ => false,
@@ -155,6 +176,9 @@ mod tests {
    <atom label="A$0"/>
    <atom label="A$1"/>
 </sig>
+<sig label="this/B" ID="6" parentID="4" one="yes">
+   <atom label="B$0"/>
+</sig>
 <field label="f" ID="5" parentID="4">
    <tuple> <atom label="A$1"/> <atom label="A$1"/> </tuple>
 </field>
@@ -162,18 +186,24 @@ mod tests {
 </alloy>"#;
 
     fn sigs(fields: &[&str]) -> Vec<(String, Vec<String>)> {
-        vec![(
-            "this/A".to_owned(),
-            fields.iter().map(|f| (*f).to_owned()).collect(),
-        )]
+        vec![
+            (
+                "this/A".to_owned(),
+                fields.iter().map(|f| (*f).to_owned()).collect(),
+            ),
+            ("this/B".to_owned(), Vec::new()),
+        ]
     }
 
     #[test]
     fn an_instance_fits_only_its_bitwidth_its_exact_bounds_and_its_declarations() {
-        assert!(fits(XML, 4, "3 but exactly 2 A", &sigs(&["f"])));
+        assert!(
+            fits(XML, 4, "3 but exactly 3 A", &sigs(&["f"])),
+            "a child signature's atoms count toward its parent's exact bound"
+        );
         assert!(!fits(XML, 5, "3", &sigs(&["f"])), "another bitwidth");
         assert!(
-            !fits(XML, 4, "3 but exactly 3 A", &sigs(&["f"])),
+            !fits(XML, 4, "3 but exactly 2 A", &sigs(&["f"])),
             "an exact bound unmet"
         );
         assert!(!fits(XML, 4, "3", &sigs(&[])), "a field no longer declared");
