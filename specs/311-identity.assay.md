@@ -1265,6 +1265,101 @@ conductor's readings, not acked, not authoritative, held only until acked or rep
 
 Without the exclusion of containers at or above the shared level, a filesystem's entailment, which names its disk, would make two files in one filesystem collide through it. Examples of the entailment: a package's postinst enabling its unit, a restart killing a main process.
 
+#### § 2.6.2-a-book-stage-five-the-index-given-whole
+
+USER_STORY stage 5's stale-index morning, with the index given whole: Anna's apt describer
+names the package index, a cell of her own mSort identified in the boot, finishes its
+entailment, and closes the line's at-most set; Tessa and the stdlib close every may-read set on
+the status file's chain; the flag is set. So every reason for a collision but one is removed,
+and the answer isolates that one: the index and the status file meet at the boot as mKeys of
+two mSorts with no shared key space, the acked cost of `311t` § 14. The book is self-contained
+and pinned as the books of 3.2.2-a-book-two-files-in-one-filesystem are; the book in which
+Anna names the list files instead is owed after these run (`notes/312d` § 19).
+
+```alloy
+run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
+```
+
+```sh
+# stage_five_the_index_given_whole.sh
+   apt-get update
+#} apt_get update
+#= one sig stdlib, tessa, anna, deb extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_Filesystem, sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_PkgIndex extends mSort {} { sortOwner = anna }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_FsId, sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig sm_AptIndex extends mScheme {} { schemeOwner = anna }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig fsid_shape extends mShape {} { ofScheme = sm_FsId }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig index_shape extends mShape {} { ofScheme = sm_AptIndex }
+#= one sig the_boot, fs_1, status_inode, the_index extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
+#= one sig k_index extends mKey {} { value = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  reaches = the_index }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
+#= Speaker = stdlib + tessa + anna + deb
+#= mSort = sm_Boot + sm_Filesystem + sm_File + sm_PkgIndex
+#= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path + sm_AptIndex
+#= mShape = boot_shape + fsid_shape + inode_shape + slash_path_shape + index_shape
+#= mReferent = the_boot + fs_1 + status_inode + the_index
+#= mKey = k_boot + k_fs_1 + k_index + k_status_inode + k_status_path
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_boot
+#= no Wrapper and no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen
+#= World.lineWrites = (anna__update_writes_the_index).writeLine->the_index
+#= GivenWhole = anna__update_writes_the_index
+#= holds = the_boot->fs_1 + the_boot->the_index + fs_1->status_inode
+#= owns = holds
+#= passes = fs_1->status_inode
+#= no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib  readSort = sm_Boot }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
+#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_status_inode  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
+#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_Filesystem }
+#= one sig anna__the_apt_index_is_primary_of_the_package_index extends DeclaresPrimaryOf {} { speaker = anna  primaryScheme = sm_AptIndex  ofSort = sm_PkgIndex }
+#= one sig anna__the_index_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = anna  onShape = index_shape  inSort = sm_Boot }
+#= one sig anna__the_index_is_in_the_boot extends SuppliesParent {} { speaker = anna  forKey = k_index  instance = k_boot  seat = DeclarationSeat }
+#= one sig anna__the_package_index_entails_nothing_else extends FinishesEntailment {} { speaker = anna  finishedSort = sm_PkgIndex  finishedShape = index_shape }
+#= one sig anna__update_writes_the_index extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_index }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= everyStatementInForceIsTrue and atMostClosed[this] and wholeWriteEntries[this] = k_index
+
+   dpkg -s nginx
+#} dpkg dash_s nginx
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= let f = atLine.this, l = (anna__update_writes_the_index).writeLine | tabledCompare[k_index, f.topic] = KNOWN_UNSPOKEN and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not spared[l, f]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is eight atoms of every kind the specification owns.
+> The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem and closes the boot's may-read set.
+> Tessa speaks as in that book and closes the file's and the filesystem's may-read sets.
+> Anna owns the package index: the apt index's mScheme is `:primary-of` it, its shape `:identified-in` the boot, and its entailment for that shape is finished; her `apt-get update` may-writes the index, given whole, and writes nothing else.
+> Deb's `dpkg -s nginx` measures the package as a read of the status file's path, which yields the status file's inode in the filesystem.
+> The world holds one boot, one filesystem and the index in it, and the status file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; the first line writes the index.
+> Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed and its one entry, the index, is given whole.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers KNOWN_UNSPOKEN for the index against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the fact is not spared past the line.
+
 ### § 2.7-corresponds-across-a-transition
 
 A scoped `sameAs`. Not "corresponds to" loosely: a part, a view, or a correlate of a thing is not it.
@@ -1931,6 +2026,258 @@ an mKey of a `:root` shape in this model.
 > Genuinely different mKey-Primaries for one mReferent are two mDerivations for one mTopic, reconciled by coherence, never a second mKey inside one mParent.
 
 Two mSorts meeting at a common ancestor: a package status file and a unit file share a filesystem. Genuinely different mKey-Primaries for one mReferent: an NFS filehandle and the server's inode, or a machine-id and a cloud instance-id.
+
+#### § 3.2.2-a-book-two-files-in-one-filesystem
+
+The books of this section and the next two are worlds pinned line by line (`plans/30Z` § 4,
+`notes/30Y` § 2.4), each self-contained: every world object and every statement in force is
+declared on the book's own lines, because a statement's fields name the world objects and a
+load file can carry only statements. A book pins every signature to the atoms it names, so
+each line's check evaluates the walk in that one world and the book's run is its own witness.
+The expected answers are the conductor's hand-walk of the fences over the stated world
+(`notes/312d` § 19); a red is triaged as that walk's slip, then a fence's, then a hole, and is
+never a reason to restate the world. The actors: the stdlib, at the top of the curve, roots the
+boot; Tessa describes filesystems and files; Carl describes `cmp`; Pia describes processes and
+their namespaces; Dora describes `docker exec`. The path mScheme is looked up in the filesystem
+in every book, a coarse describer's choice that keeps directories out of the world.
+
+```alloy
+run bookScope_two_files_one_filesystem {} for 10 but 4 Int
+```
+
+```sh
+# two_files_one_filesystem.sh
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig stdlib, tessa, carl extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_Filesystem, sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_FsId, sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig fsid_shape extends mShape {} { ofScheme = sm_FsId }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig the_boot, fs_1, inode_17, inode_42 extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
+#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
+#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  reaches = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  reaches = inode_17 }
+#= Speaker = stdlib + tessa + carl
+#= mSort = sm_Boot + sm_Filesystem + sm_File
+#= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
+#= mShape = boot_shape + fsid_shape + inode_shape + slash_path_shape
+#= mReferent = the_boot + fs_1 + inode_17 + inode_42
+#= mKey = k_boot + k_fs_1 + k_ino_17_at_line_1 + k_ino_17_at_line_3 + k_ino_42 + k_srv_a_at_line_1 + k_srv_b + k_srv_a_at_line_3
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_boot
+#= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= holds = the_boot->fs_1 + fs_1->inode_17 + fs_1->inode_42
+#= owns = holds
+#= passes = fs_1->inode_17 + fs_1->inode_42
+#= no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_1  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_3_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_3  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__ino_42_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_42  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[f.topic] = w_boot)
+
+   cmp -s ./golden.conf /srv/b/app.conf
+#} cmp dash_s golden_conf srv_b_app_conf
+#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_b  atLine = this  markedReads = k_srv_b  dependsOn = inode_42 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = DISJOINT and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
+
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_3  atLine = this  markedReads = k_srv_a_at_line_3  dependsOn = inode_17 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = SAME and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is ten atoms of every kind the specification owns, its eight mKeys, one mRoute, and one mRoot mWorld among them.
+> The stdlib roots the boot: the boot id's mScheme is `:primary-of` the boot's mSort, and its one shape is `:root`.
+> Tessa owns the filesystem and the file: the filesystem id's mScheme is `:primary-of` the filesystem, its shape `:identified-in` the boot; the inode number's mScheme is `:primary-of` the file, its shape `:identified-in` the filesystem and carrying `:guarantees-unique-referent` and `:guarantees-unique-name`; a slash path `:yields` an inode and is looked up in a filesystem.
+> The world holds one boot, one filesystem in it, and two inodes in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag; the seat that supplies each inode's and the filesystem's mParent is the primary mScheme's declaration.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true; the path's identity is the inode key its lookup emitted, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
+> Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: `compare()` answers SAME, the natural-key license answers UNKNOWN, and the two facts are about one mTopic.
+
+#### § 3.2.3-a-book-a-hardlink-under-a-false-unique-name
+
+Tessa's world with one inode under two paths, and Tessa's `:guarantees-unique-name` on the
+path shape in force although it is false in that world (a hardlink is that warrant's failure,
+2.3-aliases-nothing-else-the-store-warrant). The book asks the walk by identities and the
+natural-key license the same question, and asks which statement in force is the false one.
+
+```alloy
+run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
+```
+
+```sh
+# a_hardlink_under_a_false_unique_name.sh
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig stdlib, tessa, carl extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_Filesystem, sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_FsId, sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig fsid_shape extends mShape {} { ofScheme = sm_FsId }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig the_boot, fs_1, inode_17 extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
+#= one sig k_srv_a extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
+#= one sig k_srv_mirror extends mKey {} { value = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  reaches = inode_17 }
+#= Speaker = stdlib + tessa + carl
+#= mSort = sm_Boot + sm_Filesystem + sm_File
+#= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
+#= mShape = boot_shape + fsid_shape + inode_shape + slash_path_shape
+#= mReferent = the_boot + fs_1 + inode_17
+#= mKey = k_boot + k_fs_1 + k_ino_17_at_line_1 + k_ino_17_at_line_2 + k_srv_a + k_srv_mirror
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_boot
+#= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= holds = the_boot->fs_1 + fs_1->inode_17
+#= owns = holds
+#= passes = fs_1->inode_17
+#= no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__a_path_names_one_inode extends DeclaresUniqueName {} { speaker = tessa  nameShape = slash_path_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_1  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_2_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_2  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a  atLine = this  markedReads = k_srv_a  dependsOn = inode_17 }
+#= allInForceTrueExcept[tessa__a_path_names_one_inode] and not true_DeclaresUniqueName[tessa__a_path_names_one_inode] and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
+
+   cmp -s ./golden.conf /srv/mirror/app.conf
+#} cmp dash_s golden_conf srv_mirror_app_conf
+#= one sig carl__srv_mirror_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_mirror  atLine = this  markedReads = k_srv_mirror  dependsOn = inode_17 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g] and naturalKeyAnswer[f.topic, g.topic] = DISJOINT
+```
+
+<!-- prose-translation -->
+> This book's ceiling is eight atoms of every kind the specification owns.
+> The stdlib, Tessa, and Carl speak as in 3.2.2-a-book-two-files-in-one-filesystem, and Tessa also declares `:guarantees-unique-name` on the slash path shape.
+> The world holds one boot, one filesystem in it, and one inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; no line writes.
+> Two paths, `/srv/a/app.conf` and `/srv/mirror/app.conf`, each yield an inode key of the one inode's number, and both reach the one inode.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true except Tessa's `:guarantees-unique-name` on the path shape, which is false; the path's identity is the inode key its lookup emitted.
+> Line 2, `cmp` against `/srv/mirror/app.conf`, against line 1: `compare()` answers SAME and the two facts are about one mTopic, while the natural-key license answers DISJOINT, the wrong answer the one false statement licenses.
+
+#### § 3.2.4-a-book-nested-pid-namespaces
+
+Guest pid 1 and host pid 4821 are one process (`311u:refuted-deriving-the-store-warrant-from-chain-shape`;
+2.7-corresponds-across-a-transition's first example). Pia's pids are identified in pid
+namespaces, which nest by shape, the initial one identified in the boot; the container's
+namespace declares no `:aliases-nothing-else`. The book's second line runs inside the container
+through Dora's `docker exec`, which lends the container's namespace; Dora declares the
+mCorrespondence, as the transition's owner.
+
+```alloy
+run bookScope_nested_pid_namespaces {} for 8 but 4 Int
+```
+
+```sh
+# nested_pid_namespaces.sh
+   kill -0 4821
+#} kill dash_0 pid_4821
+#= one sig stdlib, pia, dora extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_PidNamespace, sm_Process extends mSort {} { sortOwner = pia }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_PidNsId, sm_Pid extends mScheme {} { schemeOwner = pia }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig initial_namespace_shape, nested_namespace_shape extends mShape {} { ofScheme = sm_PidNsId }
+#= one sig pid_shape extends mShape {} { ofScheme = sm_Pid }
+#= one sig the_boot, ns_0, ns_1, proc_web extends mReferent {}
+#= one sig r0, r1 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig docker_exec extends Wrapper {} { wrapperOwner = dora }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_PidNamespace->k_ns_0 }
+#= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = docker_exec  ambient = sm_PidNamespace->k_ns_1 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_ns_0 extends mKey {} { value = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  reaches = ns_0 }
+#= one sig k_ns_1 extends mKey {} { value = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  reaches = ns_1 }
+#= one sig k_pid_4821 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  reaches = proc_web }
+#= one sig k_pid_1 extends mKey {} { value = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  reaches = proc_web }
+#= Speaker = stdlib + pia + dora
+#= mSort = sm_Boot + sm_PidNamespace + sm_Process
+#= mScheme = sm_BootId + sm_PidNsId + sm_Pid
+#= mShape = boot_shape + initial_namespace_shape + nested_namespace_shape + pid_shape
+#= mReferent = the_boot + ns_0 + ns_1 + proc_web
+#= mKey = k_boot + k_ns_0 + k_ns_1 + k_pid_4821 + k_pid_1
+#= mVantage = v0 + v1 and mRoute = r0 + r1 and mRootWorld = w_boot and Wrapper = docker_exec
+#= no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= holds = the_boot->ns_0 + ns_0->ns_1 + ns_0->proc_web + ns_1->proc_web
+#= owns = the_boot->ns_0 + ns_0->ns_1 + ns_0->proc_web
+#= no passes and no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig pia__the_namespace_id_is_primary_of_the_pid_namespace extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_PidNsId  ofSort = sm_PidNamespace }
+#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_Pid  ofSort = sm_Process }
+#= one sig pia__the_initial_namespace_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia  onShape = initial_namespace_shape  inSort = sm_Boot }
+#= one sig pia__a_nested_namespace_is_identified_in_its_parent_namespace extends DeclaresIdentifiedIn {} { speaker = pia  onShape = nested_namespace_shape  inSort = sm_PidNamespace }
+#= one sig pia__a_pid_is_identified_in_its_namespace extends DeclaresIdentifiedIn {} { speaker = pia  onShape = pid_shape  inSort = sm_PidNamespace }
+#= one sig pia__a_pid_reaches_one_process_in_its_namespace extends DeclaresUniqueReferent {} { speaker = pia  referentShape = pid_shape }
+#= one sig pia__a_process_has_one_pid_in_a_namespace extends DeclaresUniqueName {} { speaker = pia  nameShape = pid_shape }
+#= one sig pia__ns_0_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_ns_0  instance = k_boot  seat = DeclarationSeat }
+#= one sig pia__ns_1_is_in_ns_0 extends SuppliesParent {} { speaker = pia  forKey = k_ns_1  instance = k_ns_0  seat = DeclarationSeat }
+#= one sig pia__pid_4821_is_in_ns_0 extends SuppliesParent {} { speaker = pia  forKey = k_pid_4821  instance = k_ns_0  seat = DeclarationSeat }
+#= one sig pia__pid_1_is_in_ns_1 extends SuppliesParent {} { speaker = pia  forKey = k_pid_1  instance = k_ns_1  seat = DeclarationSeat }
+#= one sig dora__docker_exec_lends_the_containers_pid_namespace extends DeclaresLends {} { speaker = dora  lendingWrapper = docker_exec  lentSort = sm_PidNamespace  lentInstance = k_ns_1 }
+#= one sig dora__guest_pid_1_is_host_pid_4821 extends DeclaresCorresponds {} { speaker = dora  keyX = k_pid_1  keyY = k_pid_4821 }
+#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_4821  atLine = this  markedReads = k_pid_4821  dependsOn = proc_web }
+#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_pid_4821 and worldOf[f.topic] = w_boot)
+
+   docker exec web kill -0 1
+#} docker exec web kill dash_0 pid_1
+#= one sig pia__init_is_running_inside extends VerdictFact {} { speaker = pia  topic = k_pid_1  atLine = this  markedReads = k_pid_1  dependsOn = proc_web }
+#= let f = atLine.this, g = pia__web_is_running | tabledWalk[f.topic, g.topic] = UNKNOWN and tabledCompare[f.topic, g.topic] = SAME and not sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is eight atoms of every kind the specification owns.
+> The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
+> Pia owns the pid namespace and the process: the namespace id's mScheme is `:primary-of` the pid namespace, its initial shape `:identified-in` the boot and its nested shape `:identified-in` the pid namespace; the pid's mScheme is `:primary-of` the process, its shape `:identified-in` the pid namespace and carrying both warrants; no store declares `:aliases-nothing-else`.
+> Dora owns the wrapper `docker exec`: it `:lends` the container's namespace as the pid-namespace instance and declares no sentinel, and Dora declares that guest pid 1 `:corresponds` to host pid 4821.
+> The world holds one boot, the initial namespace in it, the container's namespace and one process in the initial namespace, and that process in the container's namespace too; the initial namespace owns the process and the container's namespace owns nothing; nothing passes; no write affects another mReferent; no line writes.
+> The first line runs from the host's mVantage, whose ambient namespace is the initial one; the second runs from a mVantage entered through the wrapper, whose ambient namespace is the lent one and whose mRoute is another, since nothing inherits without the sentinel and the flag.
+> Line 1, `kill -0 4821`: every statement in force is true; the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Line 2, `kill -0 1` inside the container, against line 1: the mFullyQualifiedKey walk answers UNKNOWN, `compare()` answers SAME through the mCorrespondence, and the two facts are not about one mTopic, since a process is observer-dependent on its namespace by default and the two namespaces compare UNKNOWN.
 
 ### § 3.3-invalidation-three-mutator-species
 
