@@ -466,7 +466,7 @@ fact { all s: SuppliesParent | s.seat = DeclarationSeat implies s.speaker = s.fo
 
 fun supplies[k: mKey]: set mKey { (SuppliesParent & InForce & forKey.k).instance }
 
-pred parentRefused[k: mKey] { some disj p, q: supplies[k] }
+pred parentRefused[k: mKey] { some disj p, q: supplies[k] | p != q }
 
 pred supplyFits[k: mKey] {
    one supplies[k]
