@@ -1742,22 +1742,22 @@ pred storesAreWellFounded { no r: mReferent | r in r.^holds }
 
 check law_same_is_sound {
    everyStatementInForceIsTrue implies
-      all x, y: mKey | walk[x, y] = SAME implies x.reaches = y.reaches
+      all x, y: mKey | walkOfKeys[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
    everyStatementInForceIsTrue
-   some disj x, y: mKey | walk[x, y] = SAME and some x.reaches
+   some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.reaches
 }
 
 check law_disjoint_is_sound {
    everyStatementInForceIsTrue and storesAreWellFounded implies
-      all x, y: mKey | walk[x, y] = DISJOINT implies no x.reaches & y.reaches
+      all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
-   some x, y: mKey | walk[x, y] = DISJOINT and some x.reaches and some y.reaches
+   some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches and some y.reaches
       and some (x.^parent + y.^parent) & mKey
 }
 
