@@ -30,21 +30,21 @@
 
 ## IN FLIGHT (2026-09-29)
 
-The assay hot-loop lane, `ai/r30-assay-hot-loop` (ledger `notes/30Yf`, the rulings; an Opus
-builder in `.tmp/trees/r30-assay-hot-loop`): the lock's definite-versus-unmeasured semantics with
-`budget`, `size`, and `phase`; the incremental key; targeted runs; the whole-book conjunction;
-counterexample replay; assay's logic in Rust over a four-verb Java adapter that doubles as the
-per-document child. It never touches `specs/`; the 311 arc's lock migrates by schema version.
-`notes/30Y` is rewritten to what is when the lane lands.
-
-The assay build closed 2026-09-28, both lanes folded (ledger `notes/30Yc`, § 7 the close; as
-built `notes/30Yd`, `notes/30Ye`; the plan `notes/30Y`; the praxis `plans/30Z`). The design-tier
-checker exists: `mise run assay -- <spec.md> [--parse | --check | --write]` compiles a
-specification into `target/alloy/<stem>/`, parses it under Alloy, or runs it and locks
-`<stem>.lock.json` beside the spec, a set of reds the lock records being a pass; `mise run alloy
--- --timeout <s> <dir>` runs a directory bounded; hk steps `assay` (pre-commit lints) and
-`assay-lock` (completion) are wired to `specs/**`, whose only contents so far are its steering
-files. Every heavy task
+The assay build closed 2026-09-28 and its hot-loop lane 2026-09-29, every lane folded (ledgers
+`notes/30Yc`, § 7 the close, and `notes/30Yf`, the hot-loop rulings; as built `notes/30Yd`,
+`notes/30Ye`; what is, `notes/30Y`; the praxis `plans/30Z`). The design-tier checker exists:
+`mise run assay -- <spec.assay.md> [--parse | --staged | --check | --write] [--hot | --gate |
+--official] [--module <m> | --only <[module.]command>]` compiles a specification into
+`target/alloy/<stem>/` and answers every row whose key is unchanged straight from
+`<stem>.lock.json`, so a `--check` with nothing changed costs a parse; a set of reds the lock
+records is still a pass. The tiers are `--hot` (120 CPU s per command, deferring what last timed
+out or is large), `--gate` (600 s; the default and the `assay-lock` completion step) and
+`--official` (1800 s and 4096 MB, from scratch); exit 4 means no mismatch but rows unmeasured or
+owed a run at the ceiling, which the official tier answers. The 311 specification's lock is
+schema 1: its first `--check` re-solves every row, and a row that times out against it reads as
+unmeasured (exit 4) until a definite result or an `--official` run records it. Pre-commit's hk
+`assay` step runs `--staged` (compile, parse, and a key-diff warning); `mise run alloy --
+--timeout <s> <dir>` runs a directory bounded. Every heavy task
 (`alloy`, the three gates, the four `bless` tasks, the three `verify:*` lanes) runs under the
 machine-global heavy-work lock; **exit 75 is contention, do other work**. The one open design
 item, what an author owes and when, grows `plans/30Z` § 6 (the locks and gates are glossed there)
