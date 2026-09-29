@@ -270,11 +270,6 @@ pred isPrimary[s: mScheme] { some primaryOf[s] or floor[s] }
 
 fact { all s: mShape | floor[s.ofScheme] implies no identifiedIn[s] and not isRoot[s] }
 
-fact {
-   all d: DeclaresPrimaryOf & InForce |
-      some s: ofScheme.(d.primaryScheme) | some identifiedIn[s] or isRoot[s]
-}
-
 pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 ```
 
@@ -286,13 +281,17 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 > An mSort has at most one primary mScheme.
 > An mScheme is `:primary-of` at most one mSort.
 > The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary mScheme of an mSort nobody has named, and no shape of it carries `:identified-in` or `:root`.
-> Where an mSort has a primary mScheme, that mScheme yields into the mSort for at least one shape: some shape of it carries `:identified-in` or `:root`.
 > A `:primary-of` declaration claims nothing about the world.
 
-UNACKED READING, temporary (`312d:enc-primary-yields-into-its-sort`): 311 says a primary mScheme
-"yields into the mSort for at least one shape"; the fence reads that as "some shape of it
-carries `:identified-in` or `:root`". The conductor's reading, not acked, not authoritative,
-held only until acked or replaced (`notes/312d` § 7).
+#### § 1.3.1-a-primary-scheme-and-its-sort
+
+The sentence below is about a well-formed description, and no fence draws a restriction from
+it: the checker considers every world, those with a primary mScheme that never yields into its
+mSort among them, since a description that fails a rule of form is still one Dorc must be safe
+under. It is held for the design sitting with a lean to remove it (`notes/312d` § 21).
+
+<!-- normative -->
+> Where an mSort has a primary mScheme, that mScheme yields into the mSort for at least one shape.
 
 ### § 1.4-key-and-its-two-views
 

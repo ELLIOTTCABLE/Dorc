@@ -2136,10 +2136,6 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 311 312d (2)
 
-## enc-primary-yields-into-its-sort
-- defined: —
-- cited: 311 312d (4)
-
 ## enc-support-functions
 - defined: —
 - cited: 311 312d (4)
