@@ -1854,10 +1854,9 @@ one sig Engine { lookupReadSetOpen: set mScheme }
 fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
 
 pred touchesTraversal[w: mKey, k: mKey] {
-   some l: levelsOf[k] {
-      some m: crossed[l] | compare[w, m] != DISJOINT
-      or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT)
-   }
+   (some l: levelsOf[k] |
+      (some m: crossed[l] | compare[w, m] != DISJOINT)
+      or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT))
    or some g: placedIn[k, mSort] | compare[w, g] != DISJOINT
 }
 
