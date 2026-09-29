@@ -1626,7 +1626,7 @@ pred sameChains[x, y: mKey] { alignedSame[x, y] }
 
 fun meet[x, y: mKey]: mLevel -> mLevel {
    {a: x.*parent, b: y.*parent |
-      alignedSame[a, b]
+      alignedSame[a, b] and
       no a2: x.*parent, b2: y.*parent | alignedSame[a2, b2] and a in a2.^parent}
 }
 
