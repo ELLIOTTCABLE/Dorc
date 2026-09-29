@@ -19,6 +19,7 @@ check everyWobbleIsHeardWhenSpoken { all l: Line, w: Wobble & l.speech | w in He
 run everyWobbleIsHeardWhenSpoken_premise { some l: Line | some Wobble & l.speech }
 
 check everySpokenWobbleIsHeard { Wobble & Line.speech in Heard }
+check everyHeardBlurbIsSpoken { Heard in Line.speech }
 
 run bookScope_twirls {} for 5 but 3 Int, 3 seq
 ```

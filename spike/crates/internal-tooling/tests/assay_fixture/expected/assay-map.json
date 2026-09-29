@@ -1,0 +1,93 @@
+{"modules": {
+  "assay.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 2]],
+    [[1, "assay", 3]],
+    [[1, "assay", 4]],
+    [[1, "assay", 5]]
+  ],
+  "shared.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "shared.assay.md", 8]],
+    [[1, "shared.assay.md", 9]],
+    [[1, "shared.assay.md", 10]],
+    [[1, "shared.assay.md", 11]],
+    [[1, "shared.assay.md", 12]]
+  ],
+  "species.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "widgets.assay.md", 6]],
+    [[1, "widgets.assay.md", 8]],
+    [[1, "widgets.assay.md", 9]],
+    [[1, "widgets.assay.md", 10]],
+    [[1, "widgets.assay.md", 12]]
+  ],
+  "words.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "widgets.assay.md", 28]],
+    [[1, "widgets.assay.md", 29]],
+    [[1, "widgets.assay.md", 30]],
+    [[1, "widgets.assay.md", 44]],
+    [[1, "widgets.assay.md", 44]],
+    [[1, "widgets.assay.md", 44]],
+    [[1, "widgets.assay.md", 46]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "widgets.assay.md", 53]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "assay", 0]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "assay", 0]]
+  ],
+  "claims.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "widgets.assay.md", 28]],
+    [[1, "widgets.assay.md", 29]],
+    [[1, "widgets.assay.md", 30]],
+    [[1, "widgets.assay.md", 34]]
+  ],
+  "laws.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "widgets.assay.md", 18]],
+    [[1, "widgets.assay.md", 19]],
+    [[1, "shared-laws.assay.md", 8]]
+  ],
+  "book_corpus.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "widgets.assay.md", 21]],
+    [[1, "widgets.assay.md", 22]],
+    [[1, "assay", 0]],
+    [[1, "assay", 0]]
+  ],
+  "book_twirls.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "widgets.assay.md", 46]],
+    [[1, "widgets.assay.md", 40]],
+    [[1, "widgets.assay.md", 50]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "widgets.assay.md", 53]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "widgets.assay.md", 53]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "widgets.assay.md", 48]],
+    [[1, "widgets.assay.md", 53]],
+    [[1, "widgets.assay.md", 57]],
+    [[1, "widgets.assay.md", 40]],
+    [[1, "widgets.assay.md", 40]]
+  ]
+}}

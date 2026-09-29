@@ -265,12 +265,66 @@ pub(super) fn text<'a>(src: &'a str, tok: &Token) -> &'a str {
     src.get(tok.start..tok.end).unwrap_or("")
 }
 
-/// One top-level declaration: its tokens and its verbatim source.
+/// One top-level declaration: its tokens and its verbatim source, whose byte range in the text it
+/// was split from is `start..end`.
 #[derive(Debug, Clone)]
 pub(super) struct Item {
     pub(super) toks: Vec<Token>,
     pub(super) line: usize,
     pub(super) text: String,
+    pub(super) start: usize,
+    pub(super) end: usize,
+}
+
+/// `src` with every command paragraph removed, and nothing else touched: a command is a query that
+/// binds no name and constrains no other command (`notes/30Yf` `key-why-stripping-commands-is-sound`).
+pub(super) fn strip_commands(src: &str) -> String {
+    let mut out = String::with_capacity(src.len());
+    let mut at = 0;
+    for item in items(src, 1)
+        .into_iter()
+        .filter(|i| matches!(i.head(), Head::Command { .. }))
+    {
+        out.push_str(src.get(at..item.start).unwrap_or(""));
+        at = item.end;
+    }
+    out.push_str(src.get(at..).unwrap_or(""));
+    out
+}
+
+/// What the tokenizer cannot split with certainty, which emission refuses rather than guesses at:
+/// an unterminated string or block comment, or a quote glued to an identifier (Alloy lets `"`
+/// continue a name, where this tokenizer would open a string).
+pub(super) fn unsure(src: &str) -> Option<&'static str> {
+    let bytes = src.as_bytes();
+    let mut i = 0;
+    while let Some(&b) = bytes.get(i) {
+        let next = bytes.get(i.saturating_add(1)).copied();
+        if (b == b'-' && next == Some(b'-')) || (b == b'/' && next == Some(b'/')) {
+            i = skip_while(bytes, i, |c| c != b'\n');
+        } else if b == b'/' && next == Some(b'*') {
+            match src.get(i.saturating_add(2)..).and_then(|r| r.find("*/")) {
+                Some(at) => i = i.saturating_add(at).saturating_add(4),
+                None => return Some("an unterminated block comment"),
+            }
+        } else if b == b'"' {
+            let glued = i
+                .checked_sub(1)
+                .and_then(|p| bytes.get(p))
+                .is_some_and(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'\''));
+            if glued {
+                return Some("a quote glued to an identifier");
+            }
+            let close = skip_while(bytes, i.saturating_add(1), |c| c != b'"');
+            if close >= bytes.len() {
+                return Some("an unterminated string");
+            }
+            i = close.saturating_add(1);
+        } else {
+            i = i.saturating_add(1);
+        }
+    }
+    None
 }
 
 /// What the head of an item says, and nothing more.
@@ -340,6 +394,8 @@ pub(super) fn items(src: &str, first_line: usize) -> Vec<Item> {
             Some(Item {
                 line: first.line,
                 text: src.get(first.start..last.end)?.to_owned(),
+                start: first.start,
+                end: last.end,
                 toks: toks
                     .iter()
                     .map(|t| Token {

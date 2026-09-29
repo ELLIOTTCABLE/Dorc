@@ -91,7 +91,10 @@ fn the_fixture_compiles_to_exactly_the_expected_modules() {
         module_files(&expected),
         "module set differs; regenerate with `{regenerate}`"
     );
-    for name in module_files(&expected) {
+    for name in module_files(&expected)
+        .into_iter()
+        .chain(["assay-map.json".to_owned()])
+    {
         let want =
             std::fs::read_to_string(expected.join(&name)).expect("expected module should read");
         let got = std::fs::read_to_string(out.join(&name)).expect("generated module should read");
@@ -180,4 +183,36 @@ fn a_self_named_literal_whose_atom_another_literal_holds_refuses() {
     assert_eq!(clash.len(), 1, "{report}");
     assert_eq!(clash[0]["name"], "w__dash_c", "{report}");
     assert!(!out.exists(), "a refusal must write no module");
+}
+
+fn refused_with(name: &str, lint: &str) -> serde_json::Value {
+    let out = fresh_dir(&format!("assay_{name}"));
+    let run = assay(
+        &fixture().join("negative").join(format!("{name}.assay.md")),
+        &out,
+    );
+    let report = String::from_utf8_lossy(&run.stdout);
+    assert_eq!(run.status.code(), Some(2), "{report}");
+    let json: serde_json::Value = serde_json::from_str(&report).expect("the report should be JSON");
+    let hits = json["lints"][lint]
+        .as_array()
+        .expect("the lint should be listed");
+    assert_eq!(hits.len(), 1, "{report}");
+    assert!(!out.exists(), "a refusal must write no module");
+    hits.first().cloned().unwrap_or_default()
+}
+
+#[test]
+fn an_unscoped_run_that_twins_no_check_refuses() {
+    // Unrefused, it would become a corpus outcome and ask "is it forced" where it said "can it be".
+    let hit = refused_with("stray_run", "unscoped-run-is-a-premise-twin");
+    assert_eq!(hit["run"], "lonelyRun");
+}
+
+#[test]
+fn two_commands_of_one_label_in_a_module_refuse() {
+    // The lock names a row by module and label; Alloy would run both and the lock would keep one.
+    let hit = refused_with("twin_label", "label-is-unique-in-module");
+    assert_eq!(hit["label"], "every_line");
+    assert_eq!(hit["module"], "book_every_line.als");
 }
