@@ -1136,7 +1136,7 @@ fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTe
 
 fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | entryAnswer[m, e] != DISJOINT} }
 
-fun seed[l: Line]: set mKey { atMostEntries[l] + beneathFor[wholeWriteEntries[l]] }
+fun seed[l: Line]: set mKey { atMostEntries[l] + {k: mKey | some P: wholeWriteEntries[l] | k in beneathFor[P]} }
 
 fun contributingContainers[m, r: mKey]: set mKey {
    (identity[m].*parent & mKey) - (meet[identity[m], identity[r]].mLevel).*parent
@@ -1370,7 +1370,8 @@ fun traversalMembers[k: mKey]: set mKey {
 fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^parent & mKey) }
 
 pred coveredBy[D, x: mKey] {
-   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | tabledCompare[m, D] = SAME
+   (some l: levelsOf[x], m: traversalMembers[l] | tabledCompare[m, D] = SAME)
+   or (some m: placedIn[x, sortOfKey[D]] | tabledCompare[m, D] = SAME)
 }
 
 pred lookupTraversalOfSort[l: mKey, G: mSort] {
@@ -1409,7 +1410,7 @@ check law_region_disjoint_is_sound {
 run law_region_disjoint_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
-      and some traversalMembers[levelsOf[x]]
+      and (some l: levelsOf[x] | some traversalMembers[l])
 }
 ```
 
