@@ -982,13 +982,15 @@ mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (on
                           #   time, memory-gated, CBMC reaped; trailing arg = one harness)
 mise run verify:kani-check # compile the detached harness without invoking Kani
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
-mise run alloy -- FILES   # Alloy 6 headless over .als files or a directory, one bounded JVM per
-                          #   command, JSON rows; preflight + the heavy-work lock ride it
-                          #   (the design-tier instrument of `notes/30Y`; as-run: `notes/30Yb`)
-mise run assay -- SPEC.md # compile a specification's fences into one directory of Alloy modules
-                          #   under target/alloy/<stem>/; `--parse` checks them under Alloy,
-                          #   `--check`/`--write` run them and lock <stem>.lock.json beside the
-                          #   spec (`notes/30Y` § 2; praxis: `plans/30Z`)
+mise run alloy -- FILES   # Alloy 6 headless over .als files or a directory: one adapter JVM per
+                          #   file, parsed once, every command under CPU/wall/heap caps with the
+                          #   child respawned at a cap; JSON rows, `expect` judged by agreement;
+                          #   preflight + the heavy-work lock ride it (`notes/30Y` § 3)
+mise run assay -- SPEC.assay.md # compile a specification's fences into Alloy modules under
+                          #   target/alloy/<stem>/; `--parse` checks them, `--check`/`--write`
+                          #   run them against <stem>.lock.json beside the spec, incrementally by
+                          #   key; `--only`/`--module` for one slice; `--hot|--gate|--official`
+                          #   tiers; exit 4 = unmeasured rows, 75 = contention (`notes/30Y` § 2)
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 mise run test:e2e-quiet   # the case corpus, agent spelling: terse per-case on success,
                           #   failures unabridged; same selection the bare task takes
