@@ -485,8 +485,8 @@ fact {
       some identifiedIn[k.shape]
          implies k.parent = (supplyFits[k] implies supplies[k] else none)
       some yieldsTo[k.shape]
-         implies k.parent = (some supplies[k] implies (supplyFits[k] implies supplies[k] else none)
-                             else k.at.ambient[catalogSortOf[k.scheme]])
+         implies k.parent = (let seats = supplies[k] + k.at.ambient[catalogSortOf[k.scheme]] |
+                             one seats implies seats else none)
    }
 }
 
@@ -501,7 +501,7 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
 > A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute of the mKey's mVantage (1.10-vantage-route-placeholder-witness).
-> For a shape that yields, where no bind and no declaration supplied the mParent-Catalog instance, the mVantage supplies its ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme), or none where it holds none.
+> For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance: the instance is the one the seats supply, and there is none where they supply none or disagree.
 > The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
 > A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
 > For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
