@@ -49,7 +49,8 @@ Spelling inside the fences:
 
 - A model object keeps its prose name as an Alloy signature: `mKey`, `mSort`. A shell word is
   assay's `Shword`; an mKey's mValue is one.
-- A statement species is a signature under the shared `Statement`, named for the act:
+- A statement is a spoken foundation: a party states it, and the contract trusts it. A
+  statement species is a signature under the shared `Spoken`, named for the act:
   `DeclaresIdentifiedIn`, `SuppliesParent`. Its fields name what it is about. One statement
   atom in a scenario is `speaker__what_it_says`.
 - Every species has one truth predicate, `true_<Species>[s]`, which transcribes the sentence
@@ -93,6 +94,13 @@ mReferent, what an mKey reaches, what a store holds) is what the truth predicate
 engine's definitions read only mKeys, their declared shapes, and the statements in force.
 Nothing in the fences enforces the separation; the two sentences below are the rule, and a
 reviewer reads the engine's definitions for a world relation by eye.
+
+An answer rests on foundations of three kinds, kept apart so that a wrong answer is attributed
+to the right party. A statement is what a party states, trusted by contract: every species of
+§ 1 and § 2, under the shared `Spoken`. An engine's axiom is a rule about sh that differential
+test discharges; nobody speaks it, and it is a premise of the laws and no atom
+(1.10-vantage-route-placeholder-witness). A measurement the engine itself takes would be the
+third kind; this document holds none, and the first one is never filed under `Spoken`.
 
 <!-- normative -->
 > The engine knows only syntax, authored speech, and what authored probes returned.
@@ -251,7 +259,7 @@ sig mScheme { schemeOwner: one Speaker }
 
 sig mShape { ofScheme: one mScheme }
 
-sig DeclaresPrimaryOf extends Statement { primaryScheme: one mScheme, ofSort: one mSort }
+sig DeclaresPrimaryOf extends Spoken { primaryScheme: one mScheme, ofSort: one mSort }
 
 fact { all d: DeclaresPrimaryOf | d.speaker = d.ofSort.sortOwner }
 
@@ -372,9 +380,9 @@ shape that does not carry it.
 ```alloy
 fun token[k: mKey]: lone Shword { isPrimaryKey[k] implies k.value else none }
 
-sig DeclaresUniqueReferent extends Statement { referentShape: one mShape }
+sig DeclaresUniqueReferent extends Spoken { referentShape: one mShape }
 
-sig DeclaresUniqueName extends Statement { nameShape: one mShape }
+sig DeclaresUniqueName extends Spoken { nameShape: one mShape }
 
 fact { all d: DeclaresUniqueReferent | d.speaker = d.referentShape.ofScheme.schemeOwner }
 
@@ -457,7 +465,7 @@ abstract sig Seat {}
 
 one sig BindSeat, YieldSeat, DeclarationSeat, EntryChainSeat extends Seat {}
 
-sig SuppliesParent extends Statement { forKey: one mKey, instance: one mKey, seat: one Seat }
+sig SuppliesParent extends Spoken { forKey: one mKey, instance: one mKey, seat: one Seat }
 
 fact { all s: SuppliesParent | s.seat = YieldSeat implies s.speaker = (yielded.(s.forKey)).scheme.schemeOwner }
 
@@ -537,9 +545,9 @@ consumers read membership. What touches a member and so invalidates the mResolut
 1.7.1-the-lookup-body-and-its-reads.
 
 ```alloy
-sig EmitsCrossed extends Statement { crossedFor: one mKey, crossedKey: one mKey }
+sig EmitsCrossed extends Spoken { crossedFor: one mKey, crossedKey: one mKey }
 
-sig ClosesTraversal extends Statement { closedFor: one mKey }
+sig ClosesTraversal extends Spoken { closedFor: one mKey }
 
 fact { all d: EmitsCrossed | d.speaker = d.crossedFor.scheme.schemeOwner }
 
@@ -654,7 +662,7 @@ answers a cell is a read of the cell's mKey, and the fact's identity is the mTop
 mKeys (1.3-scheme-a-way-of-writing).
 
 ```alloy
-sig DeclaresCell extends Statement { theCell: one mSort, cellParent: one mSort }
+sig DeclaresCell extends Spoken { theCell: one mSort, cellParent: one mSort }
 
 fact { all d: DeclaresCell | d.speaker = d.theCell.sortOwner }
 
@@ -743,7 +751,7 @@ A recycled mKey the `witness()` cannot see: a reissued pid or inode.
 
 A mSite is within a book line, assay's `Line`: it has an argv, a program point (the line's place
 among the lines above it), and an mEntryChain (1.10-vantage-route-placeholder-witness). Every
-species of speech is a subtype of the shared `Statement`, with one speaker: the writeset claim
+species of speech is a subtype of the shared `Spoken`, with one speaker: the writeset claim
 and the entailment are 2.6-may-write-the-writeset's; the mCorrespondence is
 2.7-corresponds-across-a-transition's; the per-mScheme declarations are
 2.1-yields-into-another-scheme's, 2.2-primary-of-and-identified-in's, and
@@ -756,7 +764,7 @@ mReferents whose mState the measured answer in fact depended on, which no engine
 reads.
 
 ```alloy
-sig VerdictFact extends Statement {
+sig VerdictFact extends Spoken {
    topic: one mKey,
    atLine: one Line,
    markedReads: set mKey,
@@ -796,9 +804,9 @@ the lookup warrants; a wrong yield or a wrong supplied instance is a wrong SAME 
 attributed to the yield.
 
 ```alloy
-sig DeclaresYields extends Statement { fromShape: one mShape, intoScheme: one mScheme }
+sig DeclaresYields extends Spoken { fromShape: one mShape, intoScheme: one mScheme }
 
-sig DeclaresCatalogSort extends Statement { forScheme: one mScheme, catalogSort: one mSort }
+sig DeclaresCatalogSort extends Spoken { forScheme: one mScheme, catalogSort: one mSort }
 
 fact { all d: DeclaresYields | d.speaker = d.fromShape.ofScheme.schemeOwner }
 
@@ -913,9 +921,9 @@ primary mScheme. Consumer: identity (3.1-identity-of-a-key). Danger:
 `:guarantees-unique-referent`, `:guarantees-unique-name`, and `:root`, per matched shape.
 
 ```alloy
-sig DeclaresIdentifiedIn extends Statement { onShape: one mShape, inSort: one mSort }
+sig DeclaresIdentifiedIn extends Spoken { onShape: one mShape, inSort: one mSort }
 
-sig DeclaresRoot extends Statement { rootedShape: one mShape }
+sig DeclaresRoot extends Spoken { rootedShape: one mShape }
 
 fact { all d: DeclaresIdentifiedIn | d.speaker = d.onShape.ofScheme.schemeOwner }
 
@@ -969,7 +977,7 @@ separates from anything outside it. Consumer: DISJOINT. Danger: an aliasing stor
 `:aliases-nothing-else` is a wrong DISJOINT.
 
 ```alloy
-sig DeclaresAliasesNothingElse extends Statement { store: one mKey }
+sig DeclaresAliasesNothingElse extends Spoken { store: one mKey }
 
 pred aliasesNothingElse[l: mLevel] { some DeclaresAliasesNothingElse & InForce & store.l }
 
@@ -1028,9 +1036,9 @@ the mSort owner. Default: ⊤. Consumer: the writeset of a line. Danger: none po
 is the silent channel.
 
 ```alloy
-sig DeclaresMayRead extends Statement { ofKey: one mKey, readEntry: one mKey }
+sig DeclaresMayRead extends Spoken { ofKey: one mKey, readEntry: one mKey }
 
-sig ClosesMayRead extends Statement { readSort: one mSort }
+sig ClosesMayRead extends Spoken { readSort: one mSort }
 
 fact { all d: DeclaresMayRead | d.speaker = sortOfKey[d.ofKey].sortOwner }
 
@@ -1110,13 +1118,13 @@ mWorld; never a generator of DISJOINT. Danger: the premature finished record.
 ```alloy
 one sig World { lineWrites: Line -> mReferent }
 
-sig DeclaresMayWrite extends Statement { writeLine: one Line, writeEntry: one mKey }
+sig DeclaresMayWrite extends Spoken { writeLine: one Line, writeEntry: one mKey }
 
-sig ClosesMayWrite extends Statement { closedLine: one Line }
+sig ClosesMayWrite extends Spoken { closedLine: one Line }
 
-sig DeclaresEntails extends Statement { fromKey: one mKey, entailedEntry: one mKey }
+sig DeclaresEntails extends Spoken { fromKey: one mKey, entailedEntry: one mKey }
 
-sig FinishesEntailment extends Statement { finishedSort: one mSort, finishedShape: lone mShape }
+sig FinishesEntailment extends Spoken { finishedSort: one mSort, finishedShape: lone mShape }
 
 fact { all d: DeclaresEntails | d.speaker = sortOfKey[d.fromKey].sortOwner }
 
@@ -1581,7 +1589,7 @@ attributed to the transition author. Arity: per transition pair. Declared by: th
 owner. Default: absent, so UNKNOWN. Danger: a wrong mCorrespondence is a wrong SAME.
 
 ```alloy
-sig DeclaresCorresponds extends Statement { keyX: one mKey, keyY: one mKey }
+sig DeclaresCorresponds extends Spoken { keyX: one mKey, keyY: one mKey }
 
 fact { all d: DeclaresCorresponds | d.speaker not in d.keyX.scheme.schemeOwner + d.keyY.scheme.schemeOwner }
 
@@ -1609,7 +1617,7 @@ owner. Default: dependent, so no carry across O-instances. Consumer: the SAME co
 qualifier on the claim's mTopic. Danger: a false independence.
 
 ```alloy
-sig DeclaresObserverIndependence extends Statement { independentSort: one mSort, ofObserver: one mSort }
+sig DeclaresObserverIndependence extends Spoken { independentSort: one mSort, ofObserver: one mSort }
 
 fact { all d: DeclaresObserverIndependence | d.speaker = d.independentSort.sortOwner }
 
@@ -1666,7 +1674,7 @@ it; a false `alias nothing-else` is a wrong DISJOINT; an open or coarse emission
 ```alloy
 sig GivenWhole in DeclaresMayWrite + DeclaresMayRead {}
 
-sig EmitsAliasNothingElse extends Statement { atLevel: one mKey }
+sig EmitsAliasNothingElse extends Spoken { atLevel: one mKey }
 
 fact { all d: EmitsAliasNothingElse | d.speaker = d.atLevel.scheme.schemeOwner }
 
@@ -1785,11 +1793,11 @@ test, and invalidation. Danger: a false `looked-up-in nothing-else` is G's owner
 DISJOINT.
 
 ```alloy
-sig DeclaresPlaces extends Statement { placingSort: one mSort, placedSort: one mSort }
+sig DeclaresPlaces extends Spoken { placingSort: one mSort, placedSort: one mSort }
 
-sig RecordsLookedUpIn extends Statement { placedKey: one mKey, inKey: one mKey }
+sig RecordsLookedUpIn extends Spoken { placedKey: one mKey, inKey: one mKey }
 
-sig ClosesLookedUpIn extends Statement { closedKey: one mKey, routeSort: one mSort }
+sig ClosesLookedUpIn extends Spoken { closedKey: one mKey, routeSort: one mSort }
 
 fact { all d: DeclaresPlaces | d.speaker = d.placingSort.sortOwner }
 
@@ -1848,7 +1856,7 @@ the roles. Default: not applicable. Consumer: identity (3.1-identity-of-a-key), 
 ```alloy
 sig Role {}
 
-sig DeclaresComposite extends Statement { compositeSort: one mSort }
+sig DeclaresComposite extends Spoken { compositeSort: one mSort }
 
 fact { all d: DeclaresComposite | d.speaker = d.compositeSort.sortOwner }
 
@@ -2086,7 +2094,7 @@ run law_compare_disjoint_is_sound_premise {
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
 }
 
-pred axiomaticByContractExcept[except: set Statement] {
+pred axiomaticByContractExcept[except: set Spoken] {
    all d: DeclaresPrimaryOf & InForce - except | true_DeclaresPrimaryOf[d]
    all d: DeclaresYields & InForce - except | true_DeclaresYields[d]
    all d: DeclaresIdentifiedIn & InForce - except | true_DeclaresIdentifiedIn[d]
@@ -2689,9 +2697,9 @@ pred flagged { some RiskFaultlessSkips }
 
 sig Wrapper { wrapperOwner: one Speaker }
 
-sig DeclaresLends extends Statement { lendingWrapper: one Wrapper, lentSort: one mSort, lentInstance: one mKey }
+sig DeclaresLends extends Spoken { lendingWrapper: one Wrapper, lentSort: one mSort, lentInstance: one mKey }
 
-sig ClosesLends extends Statement { closedWrapper: one Wrapper }
+sig ClosesLends extends Spoken { closedWrapper: one Wrapper }
 
 fact { all d: DeclaresLends | d.speaker = d.lendingWrapper.wrapperOwner }
 
@@ -2761,7 +2769,7 @@ Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns ex
 
 ### § 3.5-committee-law-and-attribution
 
-Every statement species in this document carries one speaker (the shared `Statement`), and
+Every statement species in this document carries one speaker (the shared `Spoken`), and
 each species' speaker fact names the party who can know it about their own tool, store, or
 machine: the engine only chains and meets. What the fences add here is the support of an
 answer, the statements it rested on, so that the two shapes of composition are checkable: a
@@ -2773,7 +2781,7 @@ one-top way's is one mScheme's owner and the stores' describers on both legs; a 
 is the warrants of every level, the mCorrespondences, and the sentinels that made instances one.
 
 ```alloy
-fun warrantsOn[k: mLevel]: set Statement {
+fun warrantsOn[k: mLevel]: set Spoken {
    (DeclaresUniqueReferent & InForce & referentShape.(k.shape))
    + (DeclaresUniqueName & InForce & nameShape.(k.shape))
    + (DeclaresRoot & InForce & rootedShape.(k.shape))
@@ -2782,20 +2790,20 @@ fun warrantsOn[k: mLevel]: set Statement {
    + (DeclaresAliasesNothingElse & InForce & store.k)
 }
 
-fun chainSupport[x: mKey]: set Statement {
+fun chainSupport[x: mKey]: set Spoken {
    warrantsOn[fullyQualifiedKey[identity[x]]]
    + (DeclaresYields & InForce & fromShape.((x.*yielded).shape))
    + (DeclaresLends & InForce & lentInstance.(mSort.(x.at.ambient)))
    + (ClosesLends & InForce & closedWrapper.(x.at.*enteredFrom.through))
 }
 
-fun sameSupport[x, y: mKey]: set Statement {
+fun sameSupport[x, y: mKey]: set Spoken {
    chainSupport[x.sameClosure] + (DeclaresCorresponds & InForce & (keyX + keyY).(x.sameClosure))
 }
 
-fun disjointSupport[x, y: mKey]: set Statement { chainSupport[x] + chainSupport[y] }
+fun disjointSupport[x, y: mKey]: set Spoken { chainSupport[x] + chainSupport[y] }
 
-fun speakersOf[s: set Statement]: set Speaker { s.speaker }
+fun speakersOf[s: set Spoken]: set Speaker { s.speaker }
 
 check law_disjoint_by_two_tops_rests_on_one_scheme_owner {
    all x, y: mKey, a, b: mLevel |

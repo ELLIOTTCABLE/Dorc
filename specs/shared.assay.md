@@ -2,27 +2,36 @@
 
 The module assay opens beneath every specification in this directory (`notes/30Y` § 2.2). It
 holds only what every specification talks about and none defines
-(`30Z:form-shared-holds-only-the-stable`): who speaks, what a statement is and when it is in
+(`30Z:form-shared-holds-only-the-stable`): who speaks, what a foundation is and when it is in
 force, the order of a book's lines, the null outcome of a held step, and the default scope of a
 book. Everything subtler is a specification's own. How a specification is written is
 `plans/30Z`; what assay does with these fences is `notes/30Y`.
 
-## § 1-speakers-and-statements
+## § 1-speakers-and-foundations
+
+A foundation is the genus of what an answer rests on. The one kind declared here is the
+spoken foundation, which a specification's prose calls a statement: a party states it, and the
+contract trusts it. An engine's axiom is a premise of a specification's laws and no atom. A
+measurement that an engine itself takes would be a second kind of foundation, with no speaker;
+no specification holds one yet, so none is declared.
 
 ```alloy
 sig Speaker {}
 
-abstract sig Statement extends Claim { speaker: one Speaker }
+abstract sig Foundation extends Claim {}
 
-sig InForce in Statement {}
+abstract sig Spoken extends Foundation { speaker: one Speaker }
 
-fact { all s: Statement | s in InForce iff s in Line.speech }
+sig InForce in Foundation {}
+
+fact { all f: Foundation | f in InForce iff f in Line.speech }
 ```
 
 <!-- prose-translation -->
 > A speaker is a party who can be named.
-> A statement is a claim with exactly one speaker.
-> A statement is in force exactly when some line of the book carries it in its speech.
+> A foundation is a claim.
+> A spoken foundation is a foundation with exactly one speaker.
+> A foundation is in force exactly when some line of the book carries it in its speech.
 
 ## § 2-the-order-of-lines
 
