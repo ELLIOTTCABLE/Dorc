@@ -2138,7 +2138,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-primary-yields-into-its-sort
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d (4)
 
 ## enc-support-functions
 - defined: —
@@ -4422,7 +4422,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## law-monotone-enhancement
 - defined: —
-- cited: 312a 312ch (3)
+- cited: 312a 312ch 312d (4)
 
 ## 28T:law-never-weaken-the-question
 - defined: Research/notes/28T-correctness-tooling-synthesis.md:184 — — the anti-gaming law, verbatim in the skill: no
@@ -5389,7 +5389,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pos-halo-is-the-hazard
 - defined: —
-- cited: 30Y 30Yf 30Z (3)
+- cited: 30Y 30Yf 30Z 312d (4)
 
 ## spike/CLAUDE:posix-in-spirit-default
 - defined: spike/CLAUDE.md:730 — (`271:rul-posix-in-spirit-defaults`, standing) — for

@@ -1533,3 +1533,88 @@ valve of § 15.3 stand, sharpened for a lower-reasoning builder:
   report. No lock is written.
 - No subagents under it. No scope edit except a `bookScope_<book>` a book needs to seat its own
   atoms, and then only upward to the count the world names.
+
+## § 20-the-worlds-sitting-and-the-punt
+
+2026-09-29, the same conductor, after the four books landed (`d8d7da50`) and before any
+dispatch. The human's words are banked as typed; the conductor's opinions of the sitting were
+read and neither acked nor nacked, the human saying they did not follow them, so they are
+chat-tier thoughts and bind nothing.
+
+### § 20.1-typed-this-sitting
+
+- **[TYPED]** a lean, not a global hard rule, and not for the one-to-one mechanization itself:
+  where a world of claims seems wrong, the repair is not necessarily to edit the structure of
+  the claims. Often both worlds are kept as test cases, since net they specify Dorc's behaviour
+  more fully. The human's instance: the conductor's switch to a rooted-boot world is a different
+  way of writing the stdlib, and that cannot express the correctness of 311. Possible stdlibs
+  are useful for discussing how 311 should operate, but 311 cannot be specified by THE stdlib,
+  because the stdlib is specified in terms of 311. A thinner stdlib that cannot license an
+  answer is itself a test case that narrows the specification.
+- **[TYPED]** "never replace" is too strong: it is one rule of thumb among many. The human
+  reached for "only remove when the replacement strictly dominates" and asked what foundation
+  that has; the conductor's answer is § 20.3's first item.
+- **[TYPED]** the human wants the specification documents readable and short-ish, the Alloy and
+  the sh sections reading as specification text and necessary examples; a document that accrues
+  every narrowing example grows long fast.
+- **[TYPED]** the human's picture of a book: like an e2e, a global thing about the world, whose
+  outcome is a set of judgements about it (the narrative and the projection derived from it into
+  outcomes), dependent on the whole product and not on one specification document; and no
+  mechanical way to share books is visible that does not make the whole specification one
+  document.
+- **[TYPED]** the human suspects specification documents will not map cleanly, many to many,
+  onto seams that align with fundamental units of outcome-truth, and does not know what such
+  units are.
+- **[TYPED]** the punt: most of the sharing question waits until more specification is written
+  and the needed shape can be decided. For now nasty duplication is mildly fine, with an eye to
+  reducing it soundly later.
+- **[TYPED]** the performance lane is fully landed and `ai/main` forwarded over it.
+
+### § 20.2-findings-posed-and-unanswered
+
+- `fnd-primary-yields-reading-forbids-thin-stdlibs` (+SURE of the texts) — the marked reading
+  `enc-primary-yields-into-its-sort` (§ 1.3's fact: some shape of a primary mScheme carries
+  `:identified-in` or `:root`) is stronger than 311's sentence, that a primary mScheme yields
+  into its mSort for at least one shape. It refuses every world in which a named mSort's primary
+  mKeys are scoped in the mRoute, which 311's letter permits (§ 1.6; § 1.5's warrants on any
+  lookup). A fact that removes legal worlds is the direction that hides counterexamples. The
+  conductor switched the books' worlds to a rooted boot where it should have reported this; the
+  human's lean caught it. Posed in chat: replace the clause with "some shape of it declares no
+  `:yields`". Unanswered; nothing is edited. The thin twins of the four books (two files scoped
+  in the mRoute; a stage-five twin) cannot be written until it is answered, since their run has
+  no instance under the fact as it stands.
+- `fnd-thin-worlds-withhold-sparing-not-disjoint` (+SURE of the text; ~SUSPECT of the intent) —
+  a mRoute is one mWorld, so two chains ending at one mRoute pass step 1 of the walk and may
+  read DISJOINT; what a rooted stdlib buys is sparing (a readset member whose chain ends at the
+  mRoute is ⊤, § 2.5) and comparison across two mVantages.
+
+### § 20.3-the-conductors-opinions-unacked-and-unfollowed
+
+Listed by slug so a successor does not re-derive them; each is an opinion, none a plan.
+
+- `opn-domination-is-provable-only-syntactically` — one test case strictly dominates another,
+  over every future edit, only where the world is the same, the premises no stronger, and the
+  dominated conclusion a syntactic conjunct of the dominating one; a mutation battery shows
+  redundancy as evidence over the mutants tried, never as proof; a richer world never dominates
+  a thinner one, and the pair tests monotonicity (`26M:law-monotone-enhancement`), which neither
+  tests alone.
+- `opn-exemplary-books-here-regression-books-beside` — a sibling document for the regression
+  body, its rows reporting under the specification's own lock so that a red there is the
+  specification's red (the answer to `30Z:pos-halo-is-the-hazard`); exemplary books stay.
+- `opn-share-what-is-known-keep-conclusions-private` — three roles (a vocabulary of signatures;
+  libraries and scenarios of atoms; specifications holding meaning, laws, and short assertions
+  about named scenarios), composed by `open`, with textual splice kept for upward obligation
+  alone; a scenario silent in a specification's vocabulary is a legal input to it.
+
+### § 20.4-the-tooling-as-landed-and-what-it-changes
+
+`notes/30Y` and `plans/30Z` are rewritten for the landed checker; the conductor re-read
+`30Y` § 2 and the praxis's diff. What bears on this arc: every book gets an `every_line`
+conjunction; a targeted run (`--only`, `--module`) runs a slice and never writes; the tiers
+are `--hot`, `--gate`, and `--official` (from scratch, the ceiling budget); results are definite
+or unmeasured, and exit 4 asks for the official tier; the specification's committed lock is
+schema 1, so every row re-solves and nothing is cached from it; pre-commit's `assay` step
+compiles and parses the staged document. The four books were committed before the lane landed
+and have met no parser. § 19.6's order of work stands with two substitutions: the books run as
+`--module book_<name>` slices at the hot tier, and the measurement of the seven timing-out
+commands is an `--official --check`, which writes nothing.
