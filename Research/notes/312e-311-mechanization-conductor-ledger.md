@@ -39,3 +39,19 @@
 - The conductor's worktree is `.tmp/trees/r31-mechanize-311-conductor`, on
   `ai/r31-mechanize-311-conductor`, minted from `ai/main` at `595961ea`. Every commit is by
   pathspec.
+
+## § 3-the-official-pass-launched-by-the-human
+
+- **[TYPED]** 2026-09-29: the human launched the official write in a terminal of their own, with
+  the command the conductor had put in chat,
+  `mise run assay -- specs/311-identity.assay.md --write --official`. The conductor dispatched no
+  builder for it. The human reports how it goes.
+- **[TYPED]** the conductor's estimate of the pass's length was an upper bound from the tier's
+  caps, with no observed runtime behind it. The human acked the estimate as the safe reading.
+- The pass reads `specs/` in the checkout it was launched from. That text stays untouched until
+  the lock is written. The conductor's worktree has an output directory of its own on the
+  Windows leg, so a parse or a commit there does not reach the pass's modules (~SUSPECT, read off
+  `mise.toml` and the directories present, not tested).
+- The sentence tables of `312d` § 12 and § 13 survive in the predecessor builder's session
+  scratch directory, which is temporary. A copy is in the conductor's worktree under
+  `.tmp/312d-accounting-tables/`, ignored by git.
