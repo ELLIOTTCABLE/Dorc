@@ -255,10 +255,11 @@ pub(super) fn next(committed: &[Row], computed: &[Row], whole: bool) -> Vec<Row>
         .iter()
         .filter_map(|x| {
             let c = committed.iter().find(|c| c.id() == x.id());
-            if !x.result.unmeasured() || whole {
-                Some(x.clone())
-            } else {
-                c.cloned()
+            let known = c.filter(|c| c.result.definite() && c.key.is_some() && c.key == x.key);
+            match (x.result.unmeasured(), whole) {
+                (false, _) => Some(x.clone()),
+                (true, true) => Some(known.unwrap_or(x).clone()),
+                (true, false) => c.cloned(),
             }
         })
         .collect()
@@ -383,6 +384,31 @@ mod tests {
         let partial = next(&committed, &computed, false);
         assert_eq!(partial, vec![committed[0].clone(), computed[1].clone()]);
         assert_eq!(next(&committed, &computed, true), computed);
+    }
+
+    #[test]
+    fn the_official_tier_keeps_a_known_verdict_and_records_what_it_cannot_carry() {
+        let committed = vec![
+            row("same", Outcome::NoCounterexample, "a"),
+            row("rekeyed", Outcome::NoCounterexample, "a"),
+            row("slow", Outcome::Timeout, "a"),
+        ];
+        let computed = vec![
+            row("same", Outcome::Timeout, "a"),
+            row("rekeyed", Outcome::Timeout, "b"),
+            row("fresh", Outcome::Timeout, "c"),
+            row("slow", Outcome::Timeout, "a"),
+        ];
+        assert_eq!(
+            next(&committed, &computed, true),
+            vec![
+                committed[0].clone(),
+                computed[1].clone(),
+                computed[2].clone(),
+                computed[3].clone()
+            ],
+            "only a definite row on an unchanged key survives an official unmeasurement"
+        );
     }
 
     #[test]
