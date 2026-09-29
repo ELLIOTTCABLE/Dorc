@@ -1036,7 +1036,7 @@ fact { all d: ClosesMayRead | d.speaker = d.readSort.sortOwner }
 
 fun mayReadEntries[k: mKey]: set mKey { (DeclaresMayRead & InForce & ofKey.k).readEntry }
 
-fun mayReadEdge: mKey -> mKey { {k, e: mKey | e in mayReadEntries[k]} }
+fun mayReadEdge: mKey -> mKey { {k, e: mKey | e in compositeMayRead[k]} }
 
 pred mayReadClosed[s: mSort] { some ClosesMayRead & InForce & readSort.s }
 
@@ -1057,7 +1057,7 @@ pred true_DeclaresMayRead[d: DeclaresMayRead] {}
 
 pred true_ClosesMayRead[d: ClosesMayRead] {
    all k: keysOfSort[d.readSort] | some k.reaches implies
-      affects.(k.reaches) in k.reaches.*holds + (^holds).(k.reaches) + mayReadEntries[k].reaches
+      affects.(k.reaches) in k.reaches.*holds + (^holds).(k.reaches) + compositeMayRead[k].reaches
 }
 
 pred true_VerdictFact[f: VerdictFact] {
@@ -1136,7 +1136,7 @@ fun wholeReadEntries: set mKey { (DeclaresMayRead & GivenWhole & InForce).readEn
 
 fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else tabledCompare[m, e] }
 
-fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | entryAnswer[m, e] != DISJOINT} }
+fun rule4[m: mKey]: set mKey { {k: mKey | some e: compositeMayRead[k] | entryAnswer[m, e] != DISJOINT} }
 
 fun seed[l: Line]: set mKey { atMostEntries[l] + {k: mKey | some P: wholeWriteEntries[l] | k in beneathFor[P]} }
 
