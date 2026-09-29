@@ -77,6 +77,12 @@ The list every lever below is measured against [CONDUCTOR; read by the human, un
   owe their run again with no special case. An accepted full timeout is the third residue kind
   beside accepted reds and unmeasured rows, listed under its own heading, and is never a green
   (`30Z:pos-halo-is-the-hazard`).
+- **`lock-oom-and-error-rows`** [CONDUCTOR, ruled at the breakpoint] — out-of-memory is an
+  unmeasurement of its own kind, `out-of-memory`, with the heap cap recorded beside `budget` and
+  the same early-versus-full logic against the official tier's heap; a child dying otherwise is
+  `error` with its message. `error` is neither definite nor an unmeasurement: a deterministic
+  refusal, never skipped, never carried across a changed key, and matched as accepted residue only
+  on the same key and message.
 - **`lock-tier-invariant`** [ACKED] — a lower tier never makes the lock worse: it writes only
   definite results and never overwrites one with an unmeasurement; only the official tier makes
   the lock whole. Committing the lock stays the ceremony; rows are never hand-edited to invent a
@@ -98,6 +104,12 @@ The list every lever below is measured against [CONDUCTOR; read by the human, un
   partial-instance inference, core options, solver id), never a flag vector. Generated modules
   carry no comments: assay writes its line map to a sidecar, so the key is comment-blind without a
   canonicaliser [ACKED: "ack comment-strip"].
+- **`key-hashes-what-the-jvm-parses`** [CONDUCTOR, ruled at the breakpoint] — the bytes hashed are
+  exactly the bytes the JVM parses; a normalisation that is not emitted is never hashed, so a
+  normaliser defect surfaces as a parse error or a verdict change in the emitted module rather
+  than as a silent false key match. Items are emitted as their tokens joined by single spaces, one
+  item per line, string literals verbatim, and anything the tokenizer is unsure of is a lint
+  refusal; the sidecar maps by column.
 - **`key-platform-recorded-not-keyed`** [CONDUCTOR] — verdicts are platform-independent, parse
   failures are not; the platform is a row attribute, a cross-platform hit says so, and
   `platform-fail` is its own unmeasurement.
@@ -114,7 +126,9 @@ The list every lever below is measured against [CONDUCTOR; read by the human, un
 **`run-targeted-is-a-slice-not-a-block`** [TYPED: "a vertical pyramidal slice"] — `--only
 <command>` and `--module <book>` pass through assay to the runner's `--command`; a targeted run
 carries what its green needs to mean anything (the target's twin, and the module's consistency
-run) and never writes the lock. Cheap-first ordering by recorded `size`; in the hot tier a
+run: the book run for a book, the corpus run for the corpus book, and nothing extra for `laws.als`,
+where the twin is each law's witness and a law without one is already `premise: absent`) and never
+writes the lock; `--write` with a target is a usage error. Cheap-first ordering by recorded `size`; in the hot tier a
 deterministic size threshold above which a row is `deferred`, listed, never green, so the hot loop
 never produces a timeout by design.
 
@@ -138,14 +152,26 @@ never produces a timeout by design.
 
 ## § 6-counterexample-replay
 
-**`replay-evaluate-before-solving`** [TYPED: "fantastic, hard ack"] — for a red row, evaluate the
-stored counterexample against the edited model before solving; if it still satisfies the facts and
-violates the claim it is red at once with a genuine instance; otherwise re-solve. Sound by
-evaluation. Fit guards [CONDUCTOR, from iAlloy's stated gap]: same bitwidth; per-signature atom
-counts within the command's bounds, equal for exact bounds; every signature and field in the
-instance still declared; otherwise re-solve. Static commands first; temporal commands after § 9's
-two verifications. The mechanism is in-tree (`A4SolutionReader` against a fresh parse, then eval),
-which the LSP already does.
+**`replay-evaluate-before-solving`** [TYPED: "fantastic, hard ack"] — for any row whose last
+result carried an instance (a counterexample, or a sat run's witness, twins and book runs
+included), evaluate the stored instance against the edited model before solving; if it still
+satisfies the current command formula it is a genuine result at once; otherwise re-solve. Sound by
+evaluation, under the guard below.
+
+**`replay-guard-declarations-byte-identical`** [CONDUCTOR, from the builder's measured finding at
+the lane's breakpoint] — `Command.formula` is the explicit facts and the negated claim only; it
+carries no signature facts, multiplicities, abstractness, or subset constraints, and
+`A4SolutionReader` enforces none of them, so an instance that violates a newly added signature fact
+evaluates as a counterexample: a false red. The declaration constraints are built privately inside
+the translator and are not evaluable through the API. Therefore replay only when every paragraph
+of the module closure other than `fact`, `assert`, and commands is byte-identical to the closure
+the instance came from, and the scope string is identical; then the declaration constraints and
+bounds are unchanged, the instance satisfied them when found, and evaluating the current formula
+is complete. A `pred`, `fun`, `sig`, `enum`, or `open` edit re-solves; a fact, outcome, or
+world-fact edit replays. The three XML guards (same bitwidth; per-signature atom counts within the
+bounds, equal for exact ones; every signature and field still declared) stay as belts. Temporal
+replay is included: the builder verified that Alloy 6's instance XML round-trips a lasso trace and
+that the evaluator evaluates temporal formulas over the whole read-back trace.
 
 ## § 7-hygiene-with-teeth
 
@@ -166,9 +192,14 @@ compile-time string check).
   The key-diff warns; the completion gate refuses. Nothing solver-shaped. Tune by measurement.
 - **Hot** (the author's loop): targeted runs; incremental `--check` over changed keys;
   cheap-first; deferral; ~120 s CPU per command; the 540 s batch cap for the harness window.
-- **Gate** (builder completion): incremental over changed keys, ~600 s per command, a batch cap
-  derived from rows-to-run, under the machine lock; rows over the cap recorded `timeout` with
-  their budget; exit under the asymmetric rules.
+- **Gate** (builder completion): incremental over changed keys, ~600 s per command, under the
+  machine lock; the batch cap stays the 540 s that fits a foreground harness window (overridable),
+  rows it does not reach recorded `not-run`, since a command that never returns is the failure the
+  human named first and the official tier is where the long tail goes. Exit codes [CONDUCTOR,
+  ruled at the breakpoint]: 0 every row green or accepted residue; 1 a mismatch or a new row; 2 a
+  lint; 3 the runner could not run (75 for contention surfaces as 3); 4 no mismatch but rows
+  unmeasured or owed, distinct from 1 because the reader's next act differs (run the official
+  tier, versus fix the model); rows the hot tier defers by design do not count toward 4.
 - **Official** (nightly or CI): from scratch, keys ignored, 900 to 3600 s per command, K children
   under preflight's RAM bound; writes a candidate lock and prints the diff; a human commits it. CI
   standup (runner choice) is separate work.
@@ -182,6 +213,13 @@ compile-time string check).
   list out), `solve` (one command under given options; verdict, instance, the effective options
   used, translation size, phase out), `eval` (model, instance XML, formula; true or false), and
   parse-only. Nothing reimplements Alloy.
+- **`arch-one-java-file`** [CONDUCTOR, ruled at the breakpoint] — `mise run alloy` is
+  reimplemented in Rust over the adapter, keeping its CLI, row shape, exit codes, and every
+  behaviour the runner has (the fail-closed `--command`, `expect` judged by agreement, no expect
+  text in `scope`, kodkod quiet, the five caps, directory arguments); the adapter replaces the
+  runner, compiled once into the target directory keyed by its source hash (a precompiled class
+  starts and parses a small model in about 0.2 s; the source launcher took 0.57 s, and the old path
+  paid it twice per command).
 - **`arch-adapter-loop-is-the-daemon`** [TYPED soft ack: not a core goal, "if it chafes, drop it",
   least work, sketched] — one adapter process per document: parse once, run its commands in
   sequence, Rust enforces every budget by killing and respawning the child (losing only the parse
