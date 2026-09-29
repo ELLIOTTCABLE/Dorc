@@ -635,7 +635,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ask-contradiction-reads-unknown
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d (4)
 
 ## 28L:ask-de-passthrough-lane-ownership
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:152 — — the 16 pure `sm {{detail}}` codes can never be
@@ -2114,7 +2114,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-support-functions
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d (4)
 
 ## enc-vantage-is-the-entry-chain
 - defined: —
@@ -7236,7 +7236,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-measurement-is-authorship
 - defined: Research/plans/271-block-settle-rulings-ledger.md:524 — (2026-07-12; TYPED — doctrine; CLAUDE.md
-- cited: 275 277 312a AGENTS (6)
+- cited: 275 277 312a 312d AGENTS (7)
 
 ## rul-migrated-marker-typed-for-chrome
 - defined: —

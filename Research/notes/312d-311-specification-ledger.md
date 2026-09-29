@@ -1154,3 +1154,108 @@ forward on the CURRENT tooling. The handoff is the uncommitted root file
   unaffordable at six, each under `check { old iff new }`, each the human's call individually.
 - Unsettled by the sitting: whether the seven are slow or unaffordable at six (the next
   dispatch's first item); the platform-option question; alternate scopes per tier.
+
+## § 17-the-world-stratum-explained-and-the-law-defended-with-the-humans-corrections
+
+2026-09-29, the same conductor, the second queued turn and the turn after it. The conductor's
+two explanations are banked as delivered; the human's corrections sit beside them as **[TYPED]**
+and bind everything after. Nothing here is ruled beyond those corrections.
+
+### § 17.1-the-world-stratum-as-explained
+
+- The one-sentence form: 311 is written from the engine's side and says what may be concluded
+  from declarations; its § 0 law says those conclusions are never wrong while the declarations
+  are true; checking that needs a subject for "true" and "wrong", which 311 deliberately lacks;
+  the world stratum is that subject, invented by the conductor in the raw pass so the laws would
+  have one, and every UNACKED READING mark is a place the invention forced a choice 311's English
+  left open.
+- The anchor given: `compare()` as a proof system (axioms the statements in force; rules the
+  walk; theorems the four answers), the § 0 law as its soundness against a semantics, an Alloy
+  `check` as a bounded search for a countermodel (premises hold, conclusion fails). Type-system
+  soundness and alias analysis as the familiar instances.
+- What was built: `sig mReferent { holds, owns, affects, passes }` (held = identified in, many
+  stores per referent; owns ⊆ holds = by the store's own construction; affects = a write to one
+  changes another's mState, directional; passes = a route passes through), `mKey.reaches: lone`,
+  `VerdictFact.dependsOn`, `World.lineWrites`. Each truth predicate transcribes one 311 sentence
+  into these; each law's conclusion reads them. No mState values, no time, no mValue content.
+- The discipline: the engine's definitions never read a world relation; Alloy cannot enforce it
+  (the fields sit on `mKey` beside fields the engine reads); § 0.1 states it as prose; a reviewer
+  greps the engine's definitions for the seven world names.
+- The direction of error: a truth predicate stronger than 311's sentence hides countermodels (the
+  dangerous direction; the alias-closure mark is the instance); weaker yields noise reds; leaving
+  `affects` and `passes` uninterpreted is the conservative posture and is the current state.
+- The fourteen marks collapse to five questions on the vocabulary: `ask-holds` (identified-in as
+  many-to-many between referents); `ask-owns` (own ⊆ hold; `:aliases-nothing-else` as "all I hold
+  I own and nobody else owns", chosen over the strong reading because § 2.3 says aliasing by
+  another store is not claimed); `ask-affects-and-the-chain` (directional; the may-read closure's
+  exemption of the holds-chain, a reading without which every honest closure is false);
+  `ask-passes` (one relation for traversals, places, and lends); `ask-the-actual-bits` (reaches
+  one-or-none; dependsOn; lineWrites; no state, no time). The remaining marks
+  (`ask-contradiction-reads-unknown`, `enc-support-functions`, the exclusion readings) stay their
+  own questions.
+- Consequence for books: `#=` world facts are written in this vocabulary and are the load-bearing
+  lines, which is why the four worlds were drafted in advance.
+
+### § 17.2-the-section-zero-law-defended-in-product-terms
+
+- The claim as put: Dorc never removes a line on its own authority; every removal rests on
+  statements named people made about their own tools, stores, or machines; the engine composes
+  and adds no belief of its own; a wrong removal is therefore somebody's false sentence, and the
+  receipt can point at it. Four grounds: agnosticism leaves no stronger promise available; the
+  recovery story (`dorc why`) requires every wrong removal to have a wrong link, else
+  IMPLEMENTATION's second sin has a non-empty class; each hat's liability is bounded only if no
+  anonymous step sits between their sentences and the decision; it is the one soundness the frame
+  problem permits, because the open-world residue is located entirely in authored "nothing else"
+  sentences. Objections met: garbage-in (Dorc names which garbage and adds none; `311u` is the
+  register of refused own-inferences); the flag (no skip is faultless: every survival rests on a
+  named negative existential, false when wrong, its author unable to have known); the engine's own
+  vouch (about sh, differentially tested); measurement (`271:rul-measurement-is-authorship`);
+  "never" (applies to the composition, never the outcome); truism (`30U`'s free rider was a live
+  violation; the six holes are candidate ones). Not claimed: correctness, safety, completeness,
+  the removal of the frame problem, integrity, adequacy.
+
+### § 17.3-the-humans-corrections-typed-and-binding
+
+- **[TYPED]** NACK of "Dorc knows nothing about the world by design": Dorc DOES know things
+  about the world by design, and the dividing line between engine-known and spoken is very
+  precise because it yields work. Its current gloss, not its forever-totality: sh semantics
+  (engine-known) against system, binary, and internet truths (spoken). The engine-known side owes
+  differential tests, rich floors, cross-systems testing; the spoken side owes obsessive refag
+  analysis, language design, speech and contract work. The line can move: the engine could one
+  day model `sudo` in-engine, paying with differential and cross-platform tests on `sudo`.
+- **[TYPED]** NACK of "the engine speaks": speech is reserved for what a user does under the
+  contract. The engine computes. The engine's axioms are the complement of speech-axioms, the
+  differentially-tested ones; in the spec they are axioms, never speech.
+- **[TYPED]** careful with "no measurements": the point of separating measurement-that-is-speech
+  is to RESERVE a slot for someday engine-measurements, Dorc-generated, no-refag, locked-down,
+  referentially-tested probe components (some already on the table around the r26 orchestration
+  work, where the engine and executor do actual things to actual systems). Such a measurement
+  must never be mixed with user speech nor attributed to a user's fault.
+- **[TYPED]** phrase the split as "the contract" against "the engine", the project's actual split
+  of obligation: speech, from the perspective of owed work, is contract-precision work; the known
+  world is engine-plus-tests work. Ack asked.
+- **[TYPED]** "and we know which" is effectively the whole product: with a fully accurate map of
+  claim to line to narrative, knowing which lines a net set of boolean conclusions disnecessitates
+  is a strict subset of the whole narrative (the human's logic, to be checked); lean toward
+  expanding the precise terminology to "contract + engine → narrative", ish. Logic to be checked;
+  naming matters deeply.
+- **[TYPED]** horizon: from a specification standpoint the horizon is mostly not thought or
+  talked about elsewhere precisely BECAUSE the specification draws and maintains the line; the
+  Alloy is suspected to be one of the only places it is explicitly drawn; the human has no
+  picture of how, and asked for a strawman: how the spec mechanically says "TOCTOU is out of
+  scope" to the adversary.
+- **[TYPED]** the flag's wording is precise: what the engine computes, owes, and works over is
+  ATTRIBUTION; the flag prices FAULT, in the who-took-a-wrong-action-that-could-have-gone-
+  otherwise sense, not the moral one. A faultless skip has no wrong action because of epistemics:
+  no world exists in which the attributable persons' set contains a solution that the contract
+  owed them. Contract-net-epistemics: the contract decides what "reasonably knowable" means and
+  horizons out the technically-knowable-in-forty-five-years; that contract shapes the
+  specification as the precise line between attribution and fault; things horizoned out as not
+  reasonably knowable are nobody's fault and are the domain of the faultless skip. "Faultless" is
+  a precise mechanical mapping over attributions: `attributions.filter(within contracted
+  knowability class)`, ish.
+- **[TYPED]** extremely hard ack on refusing "never" for outcomes, and a HARD NACK on "usually" or
+  any frequency terminology about outcomes at all: Dorc will usually be wrong; the value model is
+  that OPS is usually wrong, most of ops is burning down wrongness and then gasping for air at a
+  fragile steady state, and Dorc wants to burn down that wrongness faster and more precisely.
+- **[TYPED]** otherwise ack. Ledger; opine in chat; a rewind toward dispatch follows.
