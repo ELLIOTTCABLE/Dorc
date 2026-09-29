@@ -1798,6 +1798,8 @@ pred everyStatementInForceIsTrue { allInForceTrueExcept[none] }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
 
+pred routesAreStrict { no r: mReferent | r in r.^passes }
+
 check law_same_is_sound {
    everyStatementInForceIsTrue and not hole_cell_keys_under_same_parents_reach_differently implies
       all x, y: mKey | walkOfKeys[x, y] = SAME implies x.reaches = y.reaches
@@ -1883,6 +1885,7 @@ readings, not acked, not authoritative, held only until acked or replaced (`note
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
 > Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate, and the engine's vouch holds; with the empty set named, this is every statement in force being true.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
+> No route passes through itself when no mReferent passes to itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
 > The model never reaches a false DISJOINT while every statement in force is true and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
@@ -1976,7 +1979,7 @@ run hole_natural_key_catalog_off_the_route_witness {
 } for 6 but 4 Int expect 1
 
 check law_unstale_route_is_untouched {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
       and not hole_unclosed_traversal_without_a_key_catalog
       and not hole_natural_key_catalog_off_the_route implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
@@ -1984,7 +1987,7 @@ check law_unstale_route_is_untouched {
 } for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
    some s: Line, k: mKey, l: s.above |
@@ -2000,7 +2003,7 @@ run law_unstale_route_is_untouched_premise {
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
 > A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
-> While every statement in force is true and no store is among its own contents, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+> While every statement in force is true, no store is among its own contents, and no route passes through itself, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
 
 Scope: the untouched-route law runs at nine statements because its twin's witness needs seven in force at once (three traversal closures, one emitted member, the line's at-most entry and its completion, and the name warrant that separates the written key from the crossed one) and is unsat at the six every other command shares.
 
