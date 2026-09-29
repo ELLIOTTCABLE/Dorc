@@ -79,7 +79,7 @@ mid-book. What the engine can and cannot hold is 0.1-the-two-strata.
 
 Two of the law's four sentences are the checks of 3.2-compare-one-chokepoint-four-answers:
 where nobody has spoken the walk declines, and the walk never reaches a false SAME or DISJOINT
-while every statement in force is true. Who must say what is 3.5-committee-law-and-attribution.
+while every statement in force is true and the engine's axioms hold. Who must say what is 3.5-committee-law-and-attribution.
 The other two sentences are the law's own terms of refutation, and stay prose:
 
 <!-- normative -->
@@ -829,32 +829,34 @@ fun naturalKeyAnswer[x, y: mKey]: one Answer {
 }
 
 check law_natural_same_is_sound {
-   everyStatementInForceIsTrue implies
+   axiomaticByContract and axiomaticByDifferentialTest implies
       all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_natural_same_is_sound_premise {
-   everyStatementInForceIsTrue
+   axiomaticByContract and axiomaticByDifferentialTest
    some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.reaches
 }
 
 run kill_natural_same_is_sound_unique_referent {
-   some d: DeclaresUniqueReferent & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueReferent[d]
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
       and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.reaches != y.reaches
 } for 6 but 4 Int expect 1
 
 check law_natural_disjoint_is_sound {
-   everyStatementInForceIsTrue implies
+   axiomaticByContract and axiomaticByDifferentialTest implies
       all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_natural_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue
+   axiomaticByContract and axiomaticByDifferentialTest
    some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.reaches and some y.reaches
 }
 
 run kill_natural_disjoint_is_sound_unique_name {
-   some d: DeclaresUniqueName & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueName[d]
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
       and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.reaches & y.reaches
 } for 6 but 4 Int expect 1
 ```
@@ -872,8 +874,8 @@ replaced (`notes/312d` § 7).
 > `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
 > S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
 > They never license across mParent-Catalogs: two mKeys not in one mParent-Catalog read UNKNOWN.
-> A SAME licensed before the primary mScheme is reached is never false while every statement in force is true.
-> A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true.
+> A SAME licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
+> A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
 
 #### § 2.1.1-the-chain-and-the-decline
 
@@ -1200,7 +1202,7 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
 }
 
 check law_sparing_is_sound {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
       and not hole_composite_keys_with_same_parts_reach_differently implies
@@ -1209,7 +1211,7 @@ check law_sparing_is_sound {
 } for 4 but 4 Int, 10 Claim
 
 run law_sparing_is_sound_premise {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
@@ -1240,7 +1242,7 @@ run law_exclusion_readings_agree_premise {
 > K's owner declares the entailment; the written mSort's owner declares the finished record.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
-> A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 
 Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten.
@@ -1340,7 +1342,7 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 #= one sig anna__the_package_index_entails_nothing_else extends FinishesEntailment {} { speaker = anna  finishedSort = sm_PkgIndex  finishedShape = index_shape }
 #= one sig anna__update_writes_the_index extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_index }
 #= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
-#= everyStatementInForceIsTrue and atMostClosed[this] and wholeWriteEntries[this] = k_index
+#= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and wholeWriteEntries[this] = k_index
 
    dpkg -s nginx
 #} dpkg dash_s nginx
@@ -1356,7 +1358,7 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 > Deb's `dpkg -s nginx` measures the package as a read of the status file's path, which yields the status file's inode in the filesystem.
 > The world holds one boot, one filesystem and the index in it, and the status file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; the first line writes the index.
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
-> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed and its one entry, the index, is given whole.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed and its one entry, the index, is given whole.
 > Line 2, `dpkg -s nginx`, against line 1: `compare()` answers KNOWN_UNSPOKEN for the index against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the fact is not spared past the line.
 
 #### § 2.6.3-a-book-stage-five-the-list-file-named
@@ -1429,7 +1431,7 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 #= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
 #= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
 #= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
-#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
+#= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
 
    dpkg -s nginx
 #} dpkg dash_s nginx
@@ -1443,7 +1445,7 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 > Anna's `apt-get update` may-writes one list file, named by its slash path and not given whole, and writes nothing else.
 > The world holds one boot, one filesystem in it, and the status file's inode and the list file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; the first line writes the list file's inode.
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
-> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
 > Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the line invalidates the status path's mResolution and its mToken, so the status path is stale at the fact's site; the fact is not spared past the line.
 
 #### § 2.6.4-a-book-stage-five-the-list-file-named-in-the-route
@@ -1490,7 +1492,7 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 #= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
 #= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
 #= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
-#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
+#= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
 
    dpkg -s nginx
 #} dpkg dash_s nginx
@@ -1505,7 +1507,7 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 > Anna and Deb speak as in 2.6.3-a-book-stage-five-the-list-file-named.
 > The world holds the status file's inode and the list file's inode; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the list file's inode.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
-> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
 > Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the line's writeset against the fact is not ⊤ and the status path is not stale at the fact's site; the fact's readset is ⊤, since the status inode's mFullyQualifiedKey ends at the mRoute; the fact is not spared past the line.
 
 #### § 2.6.5-a-book-two-volumes-of-one-issuer
@@ -1550,7 +1552,7 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 #= one sig petra__writing_a_volume_entails_nothing_else extends FinishesEntailment {} { speaker = petra  finishedSort = sm_Volume  finishedShape = volume_id_shape }
 #= one sig ravi__modify_writes_the_volume extends DeclaresMayWrite {} { speaker = ravi  writeLine = this  writeEntry = k_vol_0b2 }
 #= one sig ravi__modify_writes_nothing_else extends ClosesMayWrite {} { speaker = ravi  closedLine = this }
-#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_vol_0b2 and entailmentFinished[k_vol_0b2] and worldOf[k_vol_0b2] = w_volumes
+#= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_vol_0b2 and entailmentFinished[k_vol_0b2] and worldOf[k_vol_0b2] = w_volumes
 
    aws ec2 describe-volumes --volume-ids vol-0a1
 #} aws ec2 describe_volumes dash_dash_volume_ids vol_0a1
@@ -1564,7 +1566,7 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 > Ravi's `modify-volume` may-writes the one volume it names, not given whole, and writes nothing else; his `describe-volumes` measures the other volume as a read of its id.
 > The world holds two volumes; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the second volume.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each volume's mKey is scoped in the volume id's mWorld.
-> Line 1, `modify-volume` on `vol-0b2`: every statement in force is true; the line's at-most set is closed, its one entry is that volume's id, and that entry's mSort and shape have a finished record; the entry's mFullyQualifiedKey ends at the volume id's mWorld.
+> Line 1, `modify-volume` on `vol-0b2`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is that volume's id, and that entry's mSort and shape have a finished record; the entry's mFullyQualifiedKey ends at the volume id's mWorld.
 > Line 2, `describe-volumes` on `vol-0a1`, against line 1: `compare()` answers DISJOINT for the two ids; neither the fact's readset nor the line's writeset against it is ⊤; the read id is not stale at the fact's site; the fact is spared past the line; and no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 
 ### § 2.7-corresponds-across-a-transition
@@ -1719,17 +1721,17 @@ pred hole_region_closure_with_unknown_leaf_pair {
 }
 
 run hole_region_closure_with_unknown_leaf_pair_witness {
-   hole_region_closure_with_unknown_leaf_pair and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   hole_region_closure_with_unknown_leaf_pair and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 check law_region_disjoint_is_sound {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair implies
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.reaches & (D.reaches + D.reaches.passes)
 } for 6 but 4 Int
 
 run law_region_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
@@ -1749,7 +1751,7 @@ run law_region_disjoint_is_sound_premise {
 > Second form: the placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no `looked-up-in` record; then x is in no region of that mSort.
 > Step 4: otherwise UNKNOWN.
 > An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
-> A DISJOINT of the region test is never false while every statement in force is true and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
+> A DISJOINT of the region test is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
 
 UNACKED READING, temporary (`312d:ask-alias-closure-instance-scope`): 311 scopes `alias
 nothing-else` to "the instance the lookup ran in"; the fence's truth ranges over every mKey of
@@ -1935,7 +1937,9 @@ compare as siblings; mRoots of two shapes are two mWorlds, and a mRoute is anoth
 1.8-fully-qualified-key-topic-and-derivation declares the termini. mKeys of different mSorts
 share no primary mScheme, so their mFullyQualifiedKeys meet, if at all, only at a common
 ancestor, and that meeting is not a claim about the leaves; Dorc equates mKeys and never merges
-mSorts. The laws take every statement in force as true, since the support of one answer is
+mSorts. The laws take every statement in force as true and the engine's axioms as holding, two
+premises named apart because different work outside this document discharges each; they take
+every statement and not an answer's own, since the support of one answer is
 3.5-committee-law-and-attribution's; "a store is never among its own contents", which the
 one-top way rests on, is a premise of the DISJOINT law and never a fact.
 
@@ -2034,7 +2038,7 @@ pred hole_cell_keys_under_same_parents_reach_differently {
 }
 
 run hole_cell_keys_under_same_parents_reach_differently_witness {
-   hole_cell_keys_under_same_parents_reach_differently and everyStatementInForceIsTrue
+   hole_cell_keys_under_same_parents_reach_differently and axiomaticByContract and axiomaticByDifferentialTest
 } for 6 but 4 Int expect 1
 
 pred hole_world_scoped_top_aliases_into_a_store {
@@ -2043,7 +2047,7 @@ pred hole_world_scoped_top_aliases_into_a_store {
 }
 
 run hole_world_scoped_top_aliases_into_a_store_witness {
-   hole_world_scoped_top_aliases_into_a_store and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   hole_world_scoped_top_aliases_into_a_store and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 pred hole_composite_keys_with_same_parts_reach_differently {
@@ -2051,39 +2055,38 @@ pred hole_composite_keys_with_same_parts_reach_differently {
 }
 
 run hole_composite_keys_with_same_parts_reach_differently_witness {
-   hole_composite_keys_with_same_parts_reach_differently and everyStatementInForceIsTrue
+   hole_composite_keys_with_same_parts_reach_differently and axiomaticByContract and axiomaticByDifferentialTest
 } for 6 but 4 Int expect 1
 
 check law_compare_same_is_sound {
-   everyStatementInForceIsTrue
+   axiomaticByContract and axiomaticByDifferentialTest
       and not hole_cell_keys_under_same_parents_reach_differently
       and not hole_composite_keys_with_same_parts_reach_differently implies
       all x, y: mKey | compare[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_compare_same_is_sound_premise {
-   everyStatementInForceIsTrue
+   axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
    not hole_composite_keys_with_same_parts_reach_differently
    some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.reaches
 }
 
 check law_compare_disjoint_is_sound {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_composite_keys_with_same_parts_reach_differently implies
       all x, y: mKey | compare[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_composite_keys_with_same_parts_reach_differently
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
 }
 
-pred allInForceTrueExcept[except: set Statement] {
-   shellResolvesInTheAmbientInstance
+pred axiomaticByContractExcept[except: set Statement] {
    all d: DeclaresPrimaryOf & InForce - except | true_DeclaresPrimaryOf[d]
    all d: DeclaresYields & InForce - except | true_DeclaresYields[d]
    all d: DeclaresIdentifiedIn & InForce - except | true_DeclaresIdentifiedIn[d]
@@ -2114,36 +2117,39 @@ pred allInForceTrueExcept[except: set Statement] {
    all d: ClosesLends & InForce - except | true_ClosesLends[d]
 }
 
-pred everyStatementInForceIsTrue { allInForceTrueExcept[none] }
+pred axiomaticByContract { axiomaticByContractExcept[none] }
+
+pred axiomaticByDifferentialTest { shellResolvesInTheAmbientInstance }
 
 pred noStoreIsAmongItsOwnContents { no r: mReferent | r in r.^holds }
 
 pred noRoutePassesThroughItself { no r: mReferent | r in r.^passes }
 
 check law_same_is_sound {
-   everyStatementInForceIsTrue and not hole_cell_keys_under_same_parents_reach_differently implies
+   axiomaticByContract and axiomaticByDifferentialTest and not hole_cell_keys_under_same_parents_reach_differently implies
       all x, y: mKey | walkOfKeys[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
-   everyStatementInForceIsTrue
+   axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
    some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.reaches
 }
 
 run kill_same_is_sound_unique_referent {
    not hole_cell_keys_under_same_parents_reach_differently
-   some d: DeclaresUniqueReferent & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueReferent[d]
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
 } for 6 but 4 Int expect 1
 
 check law_disjoint_is_sound {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and not hole_world_scoped_top_aliases_into_a_store implies
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_world_scoped_top_aliases_into_a_store implies
       all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches and some y.reaches
       and some (x.^parent + y.^parent) & mKey
@@ -2192,8 +2198,8 @@ run law_different_sorts_never_same_premise {
 > Otherwise the strongest warranted answer stands: SAME, else DISJOINT, else what the walk answers.
 > The two tables hold the engine's walk answer and `compare()` answer over every pair of mKeys and equal those functions pair by pair; they are plumbing the other definitions read, not objects of the model.
 > SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
-> `compare()` never reaches a false SAME while every statement in force is true.
-> `compare()` never reaches a false DISJOINT while every statement in force is true and no store is among its own contents.
+> `compare()` never reaches a false SAME while every statement in force is true and the engine's axioms hold.
+> `compare()` never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents.
 
 UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
 and the laws' premise): 311 says a contradiction is "refuse both and attribute both authors",
@@ -2202,12 +2208,13 @@ atom, the sharing of 1.10-vantage-route-placeholder-witness being by constructio
 law premises EVERY statement in force true where 311 says "every statement behind it", the
 support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
 readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
-> Every statement in force is true when each statement in force satisfies its species' truth predicate.
-> Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate, and the engine's axiom about where the shell resolves holds; with the empty set named, this is every statement in force being true.
+> Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate.
+> Every statement in force is true when that holds with the empty set named; the contract makes it axiomatic.
+> The engine's axioms hold when the engine's axiom about where the shell resolves holds (1.10-vantage-route-placeholder-witness); differential test makes them axiomatic, and nobody speaks them.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > No route passes through itself when no mReferent passes to itself, directly or through others.
-> The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
-> The model never reaches a false DISJOINT while every statement in force is true and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
+> The model never reaches a false SAME while every statement in force is true and the engine's axioms hold: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
+> The model never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
 > mKeys of different mSorts never read SAME.
 
@@ -2304,7 +2311,7 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 #= one sig tessa__ino_17_at_line_3_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_3  instance = k_fs_1  seat = DeclarationSeat }
 #= one sig tessa__ino_42_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_42  instance = k_fs_1  seat = DeclarationSeat }
 #= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
-#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[f.topic] = w_boot)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[f.topic] = w_boot)
 
    cmp -s ./golden.conf /srv/b/app.conf
 #} cmp dash_s golden_conf srv_b_app_conf
@@ -2323,7 +2330,7 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 > Tessa owns the filesystem and the file: the filesystem id's mScheme is `:primary-of` the filesystem, its shape `:identified-in` the boot; the inode number's mScheme is `:primary-of` the file, its shape `:identified-in` the filesystem and carrying `:guarantees-unique-referent` and `:guarantees-unique-name`; a slash path `:yields` an inode and is looked up in a filesystem.
 > The world holds one boot, one filesystem in it, and two inodes in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; no line writes.
 > Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag; the seat that supplies each inode's and the filesystem's mParent is the primary mScheme's declaration.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true; the path's identity is the inode key its lookup emitted, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold; the path's identity is the inode key its lookup emitted, and its mFullyQualifiedKey ends at the boot's mWorld.
 > Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: `compare()` answers SAME, the natural-key license answers UNKNOWN, and the two facts are about one mTopic.
 
@@ -2388,7 +2395,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_1  instance = k_fs_1  seat = DeclarationSeat }
 #= one sig tessa__ino_17_at_line_2_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_2  instance = k_fs_1  seat = DeclarationSeat }
 #= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a  atLine = this  markedReads = k_srv_a  dependsOn = inode_17 }
-#= allInForceTrueExcept[tessa__a_path_names_one_inode] and not true_DeclaresUniqueName[tessa__a_path_names_one_inode] and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
+#= axiomaticByContractExcept[tessa__a_path_names_one_inode] and axiomaticByDifferentialTest and not true_DeclaresUniqueName[tessa__a_path_names_one_inode] and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
 
    cmp -s ./golden.conf /srv/mirror/app.conf
 #} cmp dash_s golden_conf srv_mirror_app_conf
@@ -2401,7 +2408,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 > The stdlib, Tessa, and Carl speak as in 3.2.2-a-book-two-files-in-one-filesystem, and Tessa also declares `:guarantees-unique-name` on the slash path shape.
 > The world holds one boot, one filesystem in it, and one inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; no line writes.
 > Two paths, `/srv/a/app.conf` and `/srv/mirror/app.conf`, each yield an inode key of the one inode's number, and both reach the one inode.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true except Tessa's `:guarantees-unique-name` on the path shape, which is false; the path's identity is the inode key its lookup emitted.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true except Tessa's `:guarantees-unique-name` on the path shape, which is false, and the engine's axioms hold; the path's identity is the inode key its lookup emitted.
 > Line 2, `cmp` against `/srv/mirror/app.conf`, against line 1: `compare()` answers SAME and the two facts are about one mTopic, while the natural-key license answers DISJOINT, the wrong answer the one false statement licenses.
 
 #### § 3.2.4-a-book-nested-pid-namespaces
@@ -2468,7 +2475,7 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 #= one sig dora__docker_exec_lends_the_containers_pid_namespace extends DeclaresLends {} { speaker = dora  lendingWrapper = docker_exec  lentSort = sm_PidNamespace  lentInstance = k_ns_1 }
 #= one sig dora__guest_pid_1_is_host_pid_4821 extends DeclaresCorresponds {} { speaker = dora  keyX = k_pid_1  keyY = k_pid_4821 }
 #= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_4821  atLine = this  markedReads = k_pid_4821  dependsOn = proc_web }
-#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_pid_4821 and worldOf[f.topic] = w_boot)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_4821 and worldOf[f.topic] = w_boot)
 
    docker exec web kill -0 1
 #} docker exec web kill dash_0 pid_1
@@ -2483,7 +2490,7 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 > Dora owns the wrapper `docker exec`: it `:lends` the container's namespace as the pid-namespace instance and declares no sentinel, and Dora declares that guest pid 1 `:corresponds` to host pid 4821.
 > The world holds one boot, the initial namespace in it, the container's namespace and one process in the initial namespace, and that process in the container's namespace too; the initial namespace owns the process and the container's namespace owns nothing; nothing passes; no write affects another mReferent; no line writes.
 > The first line runs from the host's mVantage, whose ambient namespace is the initial one; the second runs from a mVantage entered through the wrapper, whose ambient namespace is the lent one and whose mRoute is another, since nothing inherits without the sentinel and the flag.
-> Line 1, `kill -0 4821`: every statement in force is true; the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Line 1, `kill -0 4821`: every statement in force is true and the engine's axioms hold; the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
 > Line 2, `kill -0 1` inside the container, against line 1: the mFullyQualifiedKey walk answers UNKNOWN, `compare()` answers SAME through the mCorrespondence, and the two facts are not about one mTopic, since a process is observer-dependent on its namespace by default and the two namespaces compare UNKNOWN.
 
 #### § 3.2.5-a-book-two-files-scoped-in-the-route
@@ -2530,7 +2537,7 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
 #= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
 #= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
-#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.parent)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.parent)
 
    cmp -s ./golden.conf /srv/b/app.conf
 #} cmp dash_s golden_conf srv_b_app_conf
@@ -2549,7 +2556,7 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 > Nobody describes a filesystem or a boot.
 > The world holds two inodes; no store holds them, nothing passes, no write affects another mReferent, and no line writes.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true; the path's identity is the inode key its lookup emitted, whose mFullyQualifiedKey ends at the mRoute; the path's own mKey has no mParent.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold; the path's identity is the inode key its lookup emitted, whose mFullyQualifiedKey ends at the mRoute; the path's own mKey has no mParent.
 > Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the mFullyQualifiedKey walk and `compare()` answer UNKNOWN, the natural-key license answers UNKNOWN, and the two facts are not about one mTopic.
 
@@ -2604,7 +2611,7 @@ pred hole_unclosed_traversal_without_a_key_catalog {
 }
 
 run hole_unclosed_traversal_without_a_key_catalog_witness {
-   hole_unclosed_traversal_without_a_key_catalog and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   hole_unclosed_traversal_without_a_key_catalog and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 pred hole_natural_key_catalog_off_the_route {
@@ -2613,11 +2620,11 @@ pred hole_natural_key_catalog_off_the_route {
 }
 
 run hole_natural_key_catalog_off_the_route_witness {
-   hole_natural_key_catalog_off_the_route and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
+   hole_natural_key_catalog_off_the_route and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 check law_unstale_route_is_untouched {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
       and not hole_unclosed_traversal_without_a_key_catalog
       and not hole_natural_key_catalog_off_the_route
       and not hole_region_closure_with_unknown_leaf_pair implies
@@ -2626,7 +2633,7 @@ check law_unstale_route_is_untouched {
 } for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
-   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
    not hole_region_closure_with_unknown_leaf_pair
@@ -2644,7 +2651,7 @@ run law_unstale_route_is_untouched_premise {
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
 > A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
-> While every statement in force is true, no store is among its own contents, and no route passes through itself, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+> While every statement in force is true, the engine's axioms hold, no store is among its own contents, and no route passes through itself, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
 
 Scope: the untouched-route law runs at nine statements because its twin's witness needs seven in force at once (three traversal closures, one emitted member, the line's at-most entry and its completion, and the name warrant that separates the written key from the crossed one) and is unsat at the six every other command shares.
 
