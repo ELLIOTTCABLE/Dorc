@@ -3803,7 +3803,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-fence-never-fill
 - defined: —
-- cited: 30Z 312d (4)
+- cited: 30Z 312d (5)
 
 ## hole-probe-path-transport-divergence
 - defined: —

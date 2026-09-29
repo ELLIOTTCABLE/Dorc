@@ -476,7 +476,14 @@ The Fable-tier builder, on the human's typed ack, in its own worktree off `ai/ma
 - Reports: the lock as written; each red with its shape and which of § 6.3 it matches or does
   not; each edit it made beyond syntax, with the sentence it believes unchanged.
 
-### § 6.6-the-unacked-readings-are-a-failure-mode
+### § 6.5-next-acts
+
+`act-tri-partition-accounting` (the sentence-by-sentence account of `notes/311` at `7a63bae6`
+against the specification; § 6.1 is its draft; the § 1.5.1 duplication is its first strike);
+the builder phase on the human's ack; the books; then the adversarial crosscheck under the
+human's further instruction.
+
+## § 7-the-unacked-readings-are-a-failure-mode
 
 **[TYPED]** 2026-09-28: every place where a soft or ambiguous sentence of 311 was turned into a
 hard mechanization is marked INLINE in the specification, adjacent to the fence-and-translation
@@ -515,9 +522,14 @@ The sites, each `312d:` slug being the mark's citation:
   vantage holds a different mRoute atom).
 - § 3.5: `enc-support-functions`.
 
-### § 6.5-next-acts
+## § 8-the-builder-dispatched
 
-`act-tri-partition-accounting` (the sentence-by-sentence account of `notes/311` at `7a63bae6`
-against the specification; § 6.1 is its draft; the § 1.5.1 duplication is its first strike);
-the builder phase on the human's ack; the books; then the adversarial crosscheck under the
-human's further instruction.
+2026-09-28, over `bbe7fe72` and the ledger commit that carries this section, the human present
+and the dispatch typed. One Fable-tier builder, in its own worktree on `ai/312d-mechanize-311`,
+holding the § 6.4 remit sharpened into a brief (inline in the dispatch, not durable): parse;
+inhabit; the twins; every law, each red rebuilt by hand and classified under `30Z` § 2.5 and
+matched against § 6.3; holes only under `30Z:hole-fence-never-fill`; one kill per green law,
+through an `allInForceTrueExcept` restructuring of the premise checked `old iff new`; the lock
+written and committed; books last, and only after each book's world is put to the conductor. The
+builder runs every parser and solver run; the conductor runs none and takes no adjacent work
+while it runs. Nobody mints another UNACKED READING mark.
