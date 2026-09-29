@@ -1122,7 +1122,7 @@ fun wholeWriteEntries[l: Line]: set mKey { (DeclaresMayWrite & GivenWhole & InFo
 
 fun wholeReadEntries: set mKey { (DeclaresMayRead & GivenWhole & InForce).readEntry }
 
-fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else compare[m, e] }
+fun entryAnswer[m, e: mKey]: one Answer { e in wholeReadEntries implies regionTest[e, m] else tabledCompare[m, e] }
 
 fun rule4[m: mKey]: set mKey { {k: mKey | some e: mayReadEntries[k] | entryAnswer[m, e] != DISJOINT} }
 
@@ -1151,7 +1151,7 @@ pred writesetIsTop[l: Line, ws: set mKey] {
 }
 
 fun memberAnswer[l: Line, w, r: mKey]: one Answer {
-   w in wholeWriteEntries[l] implies regionTest[w, r] else compare[w, r]
+   w in wholeWriteEntries[l] implies regionTest[w, r] else tabledCompare[w, r]
 }
 
 pred sparedBy[l: Line, f: VerdictFact, ws: mKey -> mKey] {
@@ -1294,9 +1294,9 @@ fun topicObservers[f: VerdictFact]: set mKey {
 }
 
 pred sameTopic[f, g: VerdictFact] {
-   compare[f.topic, g.topic] = SAME
-   all o: topicObservers[f] | some p: topicObservers[g] | compare[o, p] = SAME
-   all p: topicObservers[g] | some o: topicObservers[f] | compare[o, p] = SAME
+   tabledCompare[f.topic, g.topic] = SAME
+   all o: topicObservers[f] | some p: topicObservers[g] | tabledCompare[o, p] = SAME
+   all p: topicObservers[g] | some o: topicObservers[f] | tabledCompare[o, p] = SAME
 }
 
 pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
@@ -1357,7 +1357,7 @@ fun traversalMembers[k: mKey]: set mKey {
 fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^parent & mKey) }
 
 pred coveredBy[D, x: mKey] {
-   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | compare[m, D] = SAME
+   some m: traversalMembers[levelsOf[x]] + placedIn[x, sortOfKey[D]] | tabledCompare[m, D] = SAME
 }
 
 pred lookupTraversalOfSort[l: mKey, G: mSort] {
@@ -1368,9 +1368,9 @@ pred outsideByTraversals[D, x: mKey] {
    let G = sortOfKey[D] {
       (some l: levelsOf[x] | lookupTraversalOfSort[l, G]) or some placedIn[x, G]
       all l: levelsOf[x] | lookupTraversalOfSort[l, G] implies
-         traversalClosed[l] and all m: traversalMembers[l] | compare[m, D] = DISJOINT and aliasClosed[m]
+         traversalClosed[l] and all m: traversalMembers[l] | tabledCompare[m, D] = DISJOINT and aliasClosed[m]
       some placedIn[x, G] implies
-         lookedUpInClosed[x, G] and all g: placedIn[x, G] | compare[g, D] = DISJOINT
+         lookedUpInClosed[x, G] and all g: placedIn[x, G] | tabledCompare[g, D] = DISJOINT
    }
 }
 
@@ -1379,7 +1379,7 @@ pred outsideByPlacing[D, x: mKey] {
 }
 
 fun regionTest[D, x: mKey]: one Answer {
-   compare[x, D] = SAME implies SAME
+   tabledCompare[x, D] = SAME implies SAME
    else coveredBy[D, x] implies UNKNOWN
    else (outsideByTraversals[D, x] or outsideByPlacing[D, x]) implies DISJOINT
    else UNKNOWN
@@ -1528,7 +1528,7 @@ pred compositeSame[x, y: mKey] {
    x + y in CompositeKey
    sortOfKey[x] = sortOfKey[y]
    x.part.mKey = y.part.mKey
-   all r: x.part.mKey | walkOfKeys[x.part[r], y.part[r]] = SAME
+   all r: x.part.mKey | tabledWalk[x.part[r], y.part[r]] = SAME
 }
 
 fun compositeMayRead[k: mKey]: set mKey { mayReadEntries[k] + mayReadEntries[Role.(k.part)] }
@@ -1668,21 +1668,31 @@ fun walkOfKeys[x, y: mKey]: one Answer {
    (some identity[x] and some identity[y]) implies walk[identity[x], identity[y]] else UNKNOWN
 }
 
-pred sameBy[x, y: mKey] { walkOfKeys[x, y] = SAME or corresponds[x, y] or compositeSame[x, y] }
+pred sameBy[x, y: mKey] { tabledWalk[x, y] = SAME or corresponds[x, y] or compositeSame[x, y] }
 
 fun sameClosure: mKey -> mKey { *{x, y: mKey | sameBy[x, y] or sameBy[y, x]} }
 
 pred contradicted[x, y: mKey] {
    y in x.sameClosure
-   some x2: x.sameClosure, y2: y.sameClosure | walkOfKeys[x2, y2] = DISJOINT
+   some x2: x.sameClosure, y2: y.sameClosure | tabledWalk[x2, y2] = DISJOINT
 }
 
 fun compare[x, y: mKey]: one Answer {
    contradicted[x, y] implies UNKNOWN
    else y in x.sameClosure implies SAME
-   else (some x2: x.sameClosure, y2: y.sameClosure | walkOfKeys[x2, y2] = DISJOINT) implies DISJOINT
-   else walkOfKeys[x, y]
+   else (some x2: x.sameClosure, y2: y.sameClosure | tabledWalk[x2, y2] = DISJOINT) implies DISJOINT
+   else tabledWalk[x, y]
 }
+
+one sig Tables { walkTable: mKey -> mKey -> Answer, compareTable: mKey -> mKey -> Answer }
+
+fact { all x, y: mKey | Tables.walkTable[x][y] = walkOfKeys[x, y] }
+
+fact { all x, y: mKey | Tables.compareTable[x][y] = compare[x, y] }
+
+fun tabledWalk[x, y: mKey]: one Answer { Tables.walkTable[x][y] }
+
+fun tabledCompare[x, y: mKey]: one Answer { Tables.compareTable[x][y] }
 
 check law_compare_same_is_sound {
    everyStatementInForceIsTrue implies
@@ -1796,6 +1806,7 @@ run law_different_sorts_never_same_premise {
 > `compare(x, y)`: SAME is "or" across mDerivations, the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles), and "and" within one mFullyQualifiedKey; SAME composes transitively.
 > A warranted SAME and a warranted DISJOINT on one pair is a contradiction: the pair reads UNKNOWN, and the refusal with its attribution is 3.5-committee-law-and-attribution's.
 > Otherwise the strongest warranted answer stands: SAME, else DISJOINT, else what the walk answers.
+> The two tables hold the engine's walk answer and `compare()` answer over every pair of mKeys and equal those functions pair by pair; they are plumbing the other definitions read, not objects of the model.
 > SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
 > `compare()` never reaches a false SAME while every statement in force is true.
 > `compare()` never reaches a false DISJOINT while every statement in force is true and no store is among its own contents.
@@ -1859,9 +1870,9 @@ fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
 
 pred touchesTraversal[w: mKey, k: mKey] {
    (some l: levelsOf[k] |
-      (some m: crossed[l] | compare[w, m] != DISJOINT)
+      (some m: crossed[l] | tabledCompare[w, m] != DISJOINT)
       or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT))
-   or some g: (RecordsLookedUpIn & InForce & placedKey.k).inKey | compare[w, g] != DISJOINT
+   or some g: (RecordsLookedUpIn & InForce & placedKey.k).inKey | tabledCompare[w, g] != DISJOINT
 }
 
 pred routingInvalidatedBy[l: Line, k: mKey] {
@@ -1870,7 +1881,7 @@ pred routingInvalidatedBy[l: Line, k: mKey] {
 }
 
 pred tokenInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l], p: identity[k].^parent & mKey | compare[w, p] != DISJOINT
+   some w: lineWriteset[l], p: identity[k].^parent & mKey | tabledCompare[w, p] != DISJOINT
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
@@ -1882,7 +1893,7 @@ pred staleAt[s: Line, k: mKey] {
 }
 
 fun compareAt[s: Line, x, y: mKey]: one Answer {
-   (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else compare[x, y]
+   (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else tabledCompare[x, y]
 }
 
 check law_unstale_route_is_untouched {
