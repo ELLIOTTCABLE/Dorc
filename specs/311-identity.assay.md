@@ -1704,37 +1704,39 @@ run law_compare_disjoint_is_sound_premise {
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
 }
 
-pred everyStatementInForceIsTrue {
+pred allInForceTrueExcept[except: set Statement] {
    engineVouchIsTrue
-   all d: DeclaresPrimaryOf & InForce | true_DeclaresPrimaryOf[d]
-   all d: DeclaresYields & InForce | true_DeclaresYields[d]
-   all d: DeclaresIdentifiedIn & InForce | true_DeclaresIdentifiedIn[d]
-   all d: DeclaresRoot & InForce | true_DeclaresRoot[d]
-   all d: SuppliesParent & InForce | true_SuppliesParent[d]
-   all d: DeclaresUniqueReferent & InForce | true_DeclaresUniqueReferent[d]
-   all d: DeclaresUniqueName & InForce | true_DeclaresUniqueName[d]
-   all d: DeclaresAliasesNothingElse & InForce | true_DeclaresAliasesNothingElse[d]
-   all d: DeclaresMayRead & InForce | true_DeclaresMayRead[d]
-   all d: ClosesMayRead & InForce | true_ClosesMayRead[d]
-   all d: VerdictFact & InForce | true_VerdictFact[d]
-   all d: DeclaresMayWrite & InForce | true_DeclaresMayWrite[d]
-   all d: ClosesMayWrite & InForce | true_ClosesMayWrite[d]
-   all d: DeclaresEntails & InForce | true_DeclaresEntails[d]
-   all d: FinishesEntailment & InForce | true_FinishesEntailment[d]
-   all d: EmitsCrossed & InForce | true_EmitsCrossed[d]
-   all d: ClosesTraversal & InForce | true_ClosesTraversal[d]
-   all d: EmitsAliasNothingElse & InForce | true_EmitsAliasNothingElse[d]
-   all d: DeclaresPlaces & InForce | true_DeclaresPlaces[d]
-   all d: RecordsLookedUpIn & InForce | true_RecordsLookedUpIn[d]
-   all d: ClosesLookedUpIn & InForce | true_ClosesLookedUpIn[d]
-   all d: DeclaresCell & InForce | true_DeclaresCell[d]
-   all d: DeclaresCorresponds & InForce | true_DeclaresCorresponds[d]
-   all d: DeclaresObserverIndependence & InForce | true_DeclaresObserverIndependence[d]
-   all d: DeclaresComposite & InForce | true_DeclaresComposite[d]
-   all d: DeclaresCatalogSort & InForce | true_DeclaresCatalogSort[d]
-   all d: DeclaresLends & InForce | true_DeclaresLends[d]
-   all d: ClosesLends & InForce | true_ClosesLends[d]
+   all d: DeclaresPrimaryOf & InForce - except | true_DeclaresPrimaryOf[d]
+   all d: DeclaresYields & InForce - except | true_DeclaresYields[d]
+   all d: DeclaresIdentifiedIn & InForce - except | true_DeclaresIdentifiedIn[d]
+   all d: DeclaresRoot & InForce - except | true_DeclaresRoot[d]
+   all d: SuppliesParent & InForce - except | true_SuppliesParent[d]
+   all d: DeclaresUniqueReferent & InForce - except | true_DeclaresUniqueReferent[d]
+   all d: DeclaresUniqueName & InForce - except | true_DeclaresUniqueName[d]
+   all d: DeclaresAliasesNothingElse & InForce - except | true_DeclaresAliasesNothingElse[d]
+   all d: DeclaresMayRead & InForce - except | true_DeclaresMayRead[d]
+   all d: ClosesMayRead & InForce - except | true_ClosesMayRead[d]
+   all d: VerdictFact & InForce - except | true_VerdictFact[d]
+   all d: DeclaresMayWrite & InForce - except | true_DeclaresMayWrite[d]
+   all d: ClosesMayWrite & InForce - except | true_ClosesMayWrite[d]
+   all d: DeclaresEntails & InForce - except | true_DeclaresEntails[d]
+   all d: FinishesEntailment & InForce - except | true_FinishesEntailment[d]
+   all d: EmitsCrossed & InForce - except | true_EmitsCrossed[d]
+   all d: ClosesTraversal & InForce - except | true_ClosesTraversal[d]
+   all d: EmitsAliasNothingElse & InForce - except | true_EmitsAliasNothingElse[d]
+   all d: DeclaresPlaces & InForce - except | true_DeclaresPlaces[d]
+   all d: RecordsLookedUpIn & InForce - except | true_RecordsLookedUpIn[d]
+   all d: ClosesLookedUpIn & InForce - except | true_ClosesLookedUpIn[d]
+   all d: DeclaresCell & InForce - except | true_DeclaresCell[d]
+   all d: DeclaresCorresponds & InForce - except | true_DeclaresCorresponds[d]
+   all d: DeclaresObserverIndependence & InForce - except | true_DeclaresObserverIndependence[d]
+   all d: DeclaresComposite & InForce - except | true_DeclaresComposite[d]
+   all d: DeclaresCatalogSort & InForce - except | true_DeclaresCatalogSort[d]
+   all d: DeclaresLends & InForce - except | true_DeclaresLends[d]
+   all d: ClosesLends & InForce - except | true_ClosesLends[d]
 }
+
+pred everyStatementInForceIsTrue { allInForceTrueExcept[none] }
 
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
 
@@ -1806,6 +1808,7 @@ law premises EVERY statement in force true where 311 says "every statement behin
 support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
 readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
+> Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate, and the engine's vouch holds; with the empty set named, this is every statement in force being true.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
 > The model never reaches a false DISJOINT while every statement in force is true and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
