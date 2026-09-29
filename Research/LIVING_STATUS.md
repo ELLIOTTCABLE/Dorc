@@ -28,7 +28,14 @@
 
 ---
 
-## IN FLIGHT — nothing (2026-09-28)
+## IN FLIGHT (2026-09-29)
+
+The assay hot-loop lane, `ai/r30-assay-hot-loop` (ledger `notes/30Yf`, the rulings; an Opus
+builder in `.tmp/trees/r30-assay-hot-loop`): the lock's definite-versus-unmeasured semantics with
+`budget`, `size`, and `phase`; the incremental key; targeted runs; the whole-book conjunction;
+counterexample replay; assay's logic in Rust over a four-verb Java adapter that doubles as the
+per-document child. It never touches `specs/`; the 311 arc's lock migrates by schema version.
+`notes/30Y` is rewritten to what is when the lane lands.
 
 The assay build closed 2026-09-28, both lanes folded (ledger `notes/30Yc`, § 7 the close; as
 built `notes/30Yd`, `notes/30Ye`; the plan `notes/30Y`; the praxis `plans/30Z`). The design-tier
