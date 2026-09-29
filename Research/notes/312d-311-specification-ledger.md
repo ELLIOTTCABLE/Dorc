@@ -1764,3 +1764,36 @@ the specification's translation blocks.
   invalidates the mToken of every mKey scoped in that store and in every store above it, and
   the sparing test is reached only by read mKeys scoped directly in a mRoot's mWorld. § 2.6.3
   shows the shape and § 2.6.5 the exception. Held; repaired by nobody.
+
+## § 23-what-landed-before-the-stop-and-the-conduct-correction
+
+2026-09-29, the same conductor, stopped by the human mid-sitting and rewound after this section.
+
+- **[TYPED]** 2026-09-29: "I wasn't intending any conductor-context work. You didn't have room
+  for that." The conductor had read the prompt's "primary bulk-author" as an order to author in
+  its own context, and did. `str-author-in-context-solve-in-the-builder` (§ 22.2) is superseded
+  by this; what replaces it is the human's to say.
+- Landed on `ai/main` over `47367c22`, the specification and the shared half alone, every commit
+  past the pre-commit `assay` step with exit 0 and none of it solved:
+  - `0264b5da`, the four books of § 22.3 (§ 2.6.3, § 2.6.4, § 2.6.5, § 3.2.5), and § 2.6.2's
+    pointer to the first of them.
+  - `f4cffc2a`, § 18.3's pure renames: `storesAreWellFounded` is `noStoreIsAmongItsOwnContents`,
+    `routesAreStrict` is `noRoutePassesThroughItself`.
+  - `717bd0e1`, § 18.3's axiomatic pair: `axiomaticByContractExcept[except]`, `axiomaticByContract`
+    (the empty set named), and `axiomaticByDifferentialTest` (today the one shell-resolution
+    axiom); `everyStatementInForceIsTrue` and `allInForceTrueExcept` are gone; every law, twin,
+    kill, hole witness, and book outcome premises both by name; every translation sentence that
+    said "every statement in force is true" now adds "and the engine's axioms hold".
+  - `fbd8e3af`, § 18.3's genus: the shared half declares `Foundation` under `Claim`, `Spoken`
+    under it with the speaker, and `InForce` over `Foundation`; every species extends `Spoken`.
+    The prose word "statement" is kept throughout as 311's word for a spoken foundation; the
+    shared half's slug is `1-speakers-and-foundations`; § 0.1's commentary names the three kinds.
+    No `Measured` is declared.
+  - `ed70650f`, ten kills by the `axiomaticByContractExcept[d]` pattern, each `expect 1` and
+    unrun: `same` by `:yields`; `disjoint` by `:guarantees-unique-name` and by
+    `:aliases-nothing-else` (at nine statements); `compare_same` and `compare_disjoint` by a
+    mCorrespondence; `sparing` by the completion record and by the vouch; `region` by
+    `looked-up-in nothing-else`; `untouched-route` by the traversal's closing act and by the
+    completion record. One translation sentence per section names its kills, § 2.1's included.
+- Not verified by anything: that the renames moved no result; that any book or kill answers as
+  written. § 18.3's support-form law and `horizon_` prefix are untouched.
