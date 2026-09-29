@@ -281,6 +281,7 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 <!-- prose-translation -->
 > An mScheme is a way of writing down which mReferent is meant, with one accountable owner.
 > Every shape belongs to one mScheme.
+> A matched shape is a control-flow path of the owner's body.
 > `:primary-of` is declared by the mSort's owner, on the primary mScheme (2.2-primary-of-and-identified-in).
 > An mSort has at most one primary mScheme.
 > An mScheme is `:primary-of` at most one mSort.
@@ -1237,6 +1238,7 @@ run law_exclusion_readings_agree_premise {
 > An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
 > ⊤ is DISJOINT from nothing: an elision is spared past a line only under `--risk-faultless-skips` (3.2-compare-one-chokepoint-four-answers), and only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, no readset member is stale at the site (3.3-invalidation-three-mutator-species), and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
 > A may-write entry and an entailment entry license nothing alone.
+> K's owner declares the entailment; the written mSort's owner declares the finished record.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
 > A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
@@ -1572,6 +1574,7 @@ pred true_DeclaresComposite[d: DeclaresComposite] {}
 > A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a mCompositeSort: a composite mKey names one part per role.
 > That mSort's identity is its owner's function of its named parts: two composite mKeys of one mCompositeSort are SAME when they name the same roles and their parts are SAME role by role.
 > The may-read set of a mCompositeSort is the union of its parts' may-read sets.
+> The mCompositeSort's owner, the author holding the roles, declares it.
 > Declaring a mCompositeSort claims nothing about the world.
 
 UNACKED READING, temporary (`312d:ask-composite-parts-by-walk`): 311 says the identity "is its
@@ -2020,6 +2023,7 @@ run law_unstale_route_is_untouched_premise {
 > A routing mutation invalidates a mResolution when its mTraversal includes a touched mKey.
 > Any write invalidates a mResolution whose read set is open.
 > A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
+> Invalidation reads the line's writeset with every container contributing, there being no read mKey to exclude against.
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
 > A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
