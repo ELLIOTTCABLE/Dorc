@@ -823,3 +823,194 @@ banked; the conductor's proposals of the same sitting stay in chat until the hum
   `timeout`; kills exist for four laws only (`natural_same`, `natural_disjoint`, `same`,
   `nobody_spoke`); the other nine checks, `sparing` and `different_sorts_never_same` included,
   carry no kill. No `sh` fence exists.
+
+## § 15-the-planning-sitting-before-the-next-dispatch
+
+2026-09-29, the same rewound conductor, design and planning only; the human present and
+reading. The human's word at the close: "I see no logical holes, pseudo-ack." That is not a
+ruling on any item below; every item stays at the grade it carries. The conductor is to be
+rewound before any dispatch, so this section is written at the resolution a successor needs to
+resume without re-deriving. Two turns are QUEUED by the human and were deliberately not spent
+here: (1) an explanation, in chat, of what the conductor calls "the world stratum" (the human
+does not know what the term means; it was never put to them); (2) a full turn theorizing how to
+speed the hot loop mechanically, with the incremental-lock idea vetted before any of it is handed
+to the assay builder.
+
+### § 15.1-the-standup-as-put-and-the-humans-corrections
+
+- The conductor's standup separated the "hole count" into three populations: genuine 311 holes
+  (the six `hole_` predicates; +SURE two are 311's own, the cell key's mReferent untied from its
+  mParent's and its mSort, and § 2.9 step 3 presupposing step 1 settled x ≠ D; two are twins of
+  the first; ~SUSPECT two are artifacts of the conductor's readings,
+  `hole_world_scoped_top_aliases_into_a_store` and
+  `hole_unclosed_traversal_without_a_key_catalog`); the invented world stratum (the fourteen
+  marks nearly all hang on the four world relations plus `reaches`, which 311 never held and the
+  § 0 law cannot be checked without; the process defect is that this one decision was made
+  piecemeal and marked fourteen times instead of put once); and process slips (the `=`-on-empty
+  class, a branching function on a set, six readings hardened with no mark, the LLM Alloy error
+  rate amplified by authoring 2,500 lines with no parse).
+- Two platform defects named: the encoding is expensive (`meet` closes `^parent` per pair,
+  `height` is an integer, `sameClosure` is a closure over a comprehension, the `Tables` memo
+  taxes every command ~17 s) so the DISJOINT and compare laws time out at six and the burndown
+  cannot re-run them; and no book exists, though books are the stronger instrument and would have
+  caught the slip classes in minutes.
+- **[TYPED]** "~1,200 words" was a typo for lines; the human's mental model of this corner is
+  effectively the two tables of § 5, and that simplicity may be why the mechanization is full of
+  holes.
+- **[TYPED]** the ledger carries no question for the human (banked § 14); the world stratum is
+  explained in chat, next, on the human's ack.
+
+### § 15.2-scope-down-proposed-and-retracted
+
+- The conductor first proposed lowering the scope of the seven timing-out commands to where each
+  solves (`30Z` § 2.8), with the twin kept satisfiable as the tripwire.
+- **[TYPED]** the human's objection, accepted in full: a timeout is not a weaker measurement, it
+  is the absence of one; the corpus should not be deterministic under a short hot-loop cap; there
+  will be a CI or full-gate budget that is the "official" one, and hot-loop caps must be shorter,
+  so per-item scope caps cannot be hardcoded to speed the hot loop.
+- RETRACTED (conductor): scope-down. The corrected model: SCOPE is part of the CLAIM ("no
+  counterexample in worlds of size N"); the CAP is a BUDGET for finding out. The lock holds the
+  official-budget result; the hot loop runs what it can and records "not measured here"; a
+  per-item scope drops only if a command cannot finish at the official budget either, which
+  nobody has measured. The praxis's "lower a bound only for cost" presumed one budget.
+- First act on the seven, therefore: measure once at a generous cap (~900 s per command, about
+  two hours worst case, unattended), report only, no lock write; learn which are unaffordable at
+  six against merely slow. The lock-format consequence (a budget column; `timeout` never equal
+  to a result; the one row that already flipped between machines) is the queued hot-loop turn's.
+
+### § 15.3-the-builder-tier-decision
+
+- **[TYPED]** the human's framing: a builder that only reports reds to the conductor is no
+  better than a Fable, because the conductor's context is the bottleneck (rewinds start near
+  700–900k of 900k); the three viable cells are "Opus does it all and asks occasional
+  questions", "Fable does it all and asks occasional questions", and "a Fable pushes an Opus";
+  NOT "the conductor pushes an Opus". The human's hope: Opus can churn against reds semantically
+  now that the document is mostly written. On typing it out the human leaned to Opus, wanting
+  tokens for a substantial adversarial review, and asked the conductor to be very sure and argue
+  both sides.
+- Both sides as argued. FOR Opus: the remaining work enumerated (measuring the seven; kills by a
+  fixed pattern with the species chosen from the law's premise; the four books whose worlds and
+  answers § 13 already drafts, leaving transcription plus small-instance diagnosis, with a
+  self-contradictory world caught by assay as an unsat book run; the split if taken, mechanical
+  against a spelled seam) is about three quarters churn; the `30Z` § 2.5 triage is a procedure;
+  the failure that bit this arc (readings hardened, prose walked back) was a Fable-tier discipline
+  failure, not a capacity one; the Fable budget buys most at the adversarial review. FOR Fable:
+  a new counterexample on `disjoint` or `compare_disjoint` at the official budget lands in the
+  subtlest part of the model (two-tops, one-top, `legStores`, the store closure) and a mis-triage
+  either mints a spurious hole or reports a real hole as a slip and stalls; an Opus inventing a
+  book world from the spec alone must be fluent in a world stratum documented only in truth
+  predicates and marks, and a subtly wrong world yields a GREEN book that means nothing, which no
+  twin catches because a book's run is its own twin; each Opus question costs conductor context.
+- The call (conductor; the human's pseudo-ack): ONE Opus, with two clamps and one valve. Clamp
+  one: it never edits a fence body, a world fact, an outcome line, or a translation; its only
+  permitted edits are a `hole_` predicate with its witness run and premise exclusion, a kill run,
+  a `Scope:` paragraph, and the books' plumbing lines (`#}` map lines, load files). Clamp two: a
+  red is reported with its instance rebuilt by hand and its `30Z` § 2.5 class named, never
+  repaired. The valve: exactly one class escalates to the conductor, a NEW counterexample on a law
+  that today reads `timeout`; that is the arc's purpose firing and the right place to spend
+  conductor context. Against the green-book risk: the brief carries the four worlds and every
+  expected answer as § 13 drafts them, so the load-bearing lines are the conductor's in the brief
+  and the Opus transcribes; a book whose world it would have to invent is one it may not write.
+  Grade: sure of the direction; the residual risk sits at the valve, and the valve's cost is
+  bounded by how often the arc does its job. "What remains is mechanical" as first put was
+  overstated; "mostly mechanical with one rare deep-triage class" is the accurate form.
+
+### § 15.4-the-311-313-seam-argued-and-deferred
+
+- **[TYPED]** the human, on the document's length, leans toward splitting the semantic material
+  into two specifications, 311 and 313, and asked for a clear, simple, internally consistent
+  seam and for a PRODUCT-SIDE or EPISTEMIC reason the dependency can only ever run one way, so a
+  mechanical split never forces an incorrect design-level division later. Two concerns typed:
+  (1) correctness, whether properties weaken by not being executed as a unit every time, and
+  lesser, an LLM reading only one document before editing (mitigable by the mechanical net and
+  `AGENTS.md`); (2) wallclock, likely better when editing one, with algorithmic duplication when
+  both must build.
+- The seam (conductor): `compare()`. 311 keeps everything `compare()` needs and nothing it does
+  not: the objects (§ 1.1 to § 1.6, § 1.8, § 1.9, § 1.10), the identity relations (`:yields`,
+  `:primary-of`, `:identified-in`, `:root`, `:aliases-nothing-else`, `:parent`, `:corresponds`,
+  composites, lends and the vantage), `identity()`, `compare()` with its tables, the walk laws,
+  and the committee law over compare's support; its one export is the four-answer table. 313 takes
+  the consumers: the verdict fact and its topic (§ 1.11; § 2.8's observer qualifier), may-read and
+  the readset, may-write and the writeset, the entailment and finished record, the traversal and
+  region test (§ 1.7's traversal half; § 2.9), `:places` (§ 2.10), invalidation (§ 3.3), sparing
+  and its laws. 313 opens 311. +SURE (every fence read for it) no identity-side definition reads
+  an interference species, so the dependency is strictly one-way and Alloy enforces it after the
+  split (311 never opens 313, so a stray reference fails to parse). Four definitions are mis-homed
+  today and move with the cut: `sortOfKey` (defined in § 2.9, used identity-side everywhere);
+  `traversal`, `EmitsCrossed`, `ClosesTraversal` (§ 1.7, whose resolution half is identity and
+  traversal half routing, so the section splits); `VerdictFact`; `flagged` (read by both; declared
+  in 311). Books exercising `compare()` alone belong in 311; books exercising sparing in 313.
+- The product-side argument (conductor; the human saw no logical hole): the direction is the
+  human's own typed formulation, `311t` § 15, "identity is minting; freshness is holding".
+  Identity asks who hands out a name and what it reaches, answered from speech about lookups and
+  stores, and must be answerable before any line runs because both its consumers need it at plan
+  time. Interference asks where state is kept and what a write reaches, and is DEFINED OVER minted
+  names (every may-read and may-write entry is an mKey), so it presupposes identity, while a
+  `resolve()` never consults a may-read set (§ 2.4 and § 2.5 in words: the mParent answers
+  identity, entries answer interference, a parent instance is no entry). The refuted shapes fence
+  it: `311u:refuted-identity-as-a-table-against-axes` and `311u:refuted-stored-in-as-one-relation`
+  are the designs where holding leaked into minting, both killed on ops cases. The temporal half is
+  § 3.3's charter sentence, "the engine withdraws authority and never computes the successor
+  identity": book order enters only to WITHDRAW an identity answer, never to produce one. In the
+  fences this already holds: `compare()` reads no `Line`, no `above`, no fact, no writeset;
+  `compareAt` (313's) is `compare()` met with staleness. The one future test of the seam is
+  § 1.10.1's "one placeholder per unwalled span" (a span names lines), but a span is "no
+  invalidating line between", which is staleness, so it lands on 313's side of the meet as
+  `compareAt` does; mechanizing it as an input to timeless `compare()` would violate § 3.3's
+  sentence and the seam would refuse it loudly. Grade: ~SUSPECT sufficient forever; +SURE it is
+  311's own principle and not a mechanical convenience. Restated: 311 is the timeless identity
+  algebra with no book order in it; 313 is what the book's lines do to facts.
+- Correctness under the split (conductor; +SURE of the direction): 311's checks are STRENGTHENED,
+  since every statement species shares one `Claim` scope (at `for 6` at most six statements exist
+  across twenty-eight species today) and removing the twelve interference species from 311's
+  universe seats more identity statements at the same scope; 313's laws lose nothing, seeing all of
+  311's definitions and facts through `open`, and the one genuinely joint property, sparing, lives
+  there. Costs: `cost-cross-spec-open` (-GUESS assay does not yet implement one document opening
+  another's species and claims modules; the fixture shows only `open shared`; if so, a small assay
+  item and a hard prerequisite); `cost-slug-rename` (every `311:2.5-`, `2.6-`, `2.9-`, `2.10-`,
+  `3.3-` citation across the corpus becomes `313:`, per the spec's own § 6.1 rule, a mechanical but
+  real pass over the crosscheck ledgers especially); `cost-own-probes` (313 needs its own
+  inhabitation runs); the § 4.2 register and § 5 tables split by which document each "Here" cites.
+- **[TYPED]** the human's second thought: two documents are almost guaranteed slower or worse,
+  since under one net cap each region gets half (one region exhausted while the other finishes
+  early, the slack no longer shared) or under a cap each the runtime doubles; lean to one file and
+  one shared cap until fully firmed.
+- Conductor's answer: the dichotomy does not hold at the command level (per-command caps decide
+  `timeout`; a split moves no row's result; 313's commands cost what they cost today and 311's
+  get cheaper; total work is the same or less; the batch cap is a ceiling not a cost, and "two
+  batches, two caps" is a spelling problem for the tooling), but the conclusion holds for two
+  other reasons, so the split is DEFERRED: the world stratum is unacked and the split would assign
+  its relations across two documents (`holds`, `owns`, `passes` to 311; `affects` to 313), so a
+  re-cut of the stratum could re-cut the split; and the corpus-wide slug rename is churn to pay
+  once, after firming. The seam is recorded here and cuts later at no extra cost.
+
+### § 15.5-wallclock-observations-banked-unvetted
+
+Proposed by the conductor in chat, NOT vetted, and the human queued a full turn to vet the
+incremental-lock idea before it reaches the assay builder; nothing here is to be handed to a
+builder until that turn.
+
+- The human's observed 45-minute single tool call was almost certainly `--write` followed by
+  `--check`, two full ~25-minute passes for one lock, under the machine lock. A pass is
+  thirty-nine commands serial, one JVM each; seven burn the full 120 s cap by design (fourteen
+  minutes of nothing); every command pays the two memo tables' defining facts (~17 s).
+- Candidate assay items, none touching Alloy semantics: an incremental lock, each row keyed by a
+  hash of the command's text plus its module's text plus every module it transitively opens, so
+  `--check` and `--write` re-run only changed rows (with books in their own modules a book edit
+  re-runs one module); `--write` reporting the diff it would have checked so write-then-check is
+  one pass; the runner owning K parallel children within one run under a shared RAM budget (the
+  machine-global lock stays; preflight bounds RAM); a batch cap derived from row count times the
+  per-command cap; a per-command passthrough (`mise run alloy -- --command <name>` exists, assay
+  does not expose it, the first builder asked for exactly that as `--probe`). ~SUSPECT the
+  incremental lock alone turns the book loop from ~25 minutes to under two.
+
+### § 15.6-the-first-dispatch-as-sketched
+
+Pending the human's typed ack after the two queued turns; a rewound successor writes the brief.
+One Opus, its own worktree off `ai/main` (`cba61fdb` at this writing), brief carrying: the safety
+block; step-zero and step-one per `spike/CLAUDE.md`; the two clamps and the valve of § 15.3; the
+four worlds of § 13 with every expected answer; the no-subagent clamp. Order of work: the
+official-budget measurement of the seven timing-out commands, report only, no lock write; the
+books, each transcribed from the brief's world, run, and any red reported with its instance and
+its § 2.5 class; kills for the unkilled green laws (`sparing` first). Excluded from the brief:
+any scope edit; the split; any lock-format change; anything the two queued turns decide.

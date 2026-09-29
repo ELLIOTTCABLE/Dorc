@@ -5763,6 +5763,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-identity-as-a-table-against-axes
 - defined: Research/notes/311u-refuted-shapes-register.md:106
+- cited: 312d (1)
 
 ## 311u:refuted-identity-by-natural-key
 - defined: Research/notes/311u-refuted-shapes-register.md:366
@@ -5829,6 +5830,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-stored-in-as-one-relation
 - defined: Research/notes/311u-refuted-shapes-register.md:246
+- cited: 312d (1)
 
 ## 311u:refuted-subsorts-or-a-type-menu
 - defined: Research/notes/311u-refuted-shapes-register.md:64
