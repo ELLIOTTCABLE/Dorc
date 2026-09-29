@@ -1044,7 +1044,9 @@ pred sortClosed[k: mKey] { mayReadClosed[sortOfKey[k]] }
 
 pred readsetMemberIsTop[k: mKey] {
    some m: k.*mayReadEdge |
-      (some l: m.*parent & mKey | not sortClosed[l]) or terminus[m] in mRoute
+      (not sortClosed[m]
+       or (some l: identity[m].*parent & mKey | not sortClosed[l])
+       or terminus[identity[m]] in mRoute)
 }
 
 fun readset[f: VerdictFact]: set mKey { f.markedReads }
