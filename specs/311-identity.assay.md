@@ -97,6 +97,7 @@ reviewer reads the engine's definitions for a world relation by eye.
 <!-- normative -->
 > The engine knows only syntax, authored speech, and what authored probes returned.
 > It never decodes an mKey and never holds an mReferent.
+> It reaches mReferents only through mKeys, mTokens, and mDerivations.
 > The engine never holds an mState, and no mKey names one.
 
 ### § 0.2-a-world-exists
@@ -137,10 +138,6 @@ sig mReferent { holds: set mReferent, owns: set mReferent, affects: set mReferen
 fact { owns in holds }
 
 fact { all r: mReferent | some reaches.r }
-
-fun sortsOf[r: mReferent]: set mSort { primaryOf[(reaches.r).scheme] }
-
-fun partsOf[r: mReferent]: set mReferent { r.holds }
 ```
 
 <!-- prose-translation -->
@@ -148,9 +145,7 @@ fun partsOf[r: mReferent]: set mReferent { r.holds }
 > A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
 > A write to an mReferent affects the mState of the mReferents it affects (2.5-may-read-the-readset).
 > A route to an mReferent passes through the mReferents that pass to it; what an mReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
-> An mReferent has the mSort of the mKey that reaches it, and two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
 > It has one or more mKeys.
-> It may have parts, and every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
 > It is not an mKey, and not an mSort.
 
 UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
@@ -178,6 +173,10 @@ this model. What is normative here is normative as prose.
 
 <!-- normative -->
 > An mReferent survives changes to its mState.
+> It has the mSort of the mKey that reaches it.
+> Two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
+> It may have parts.
+> Every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
 > It does not survive destruction and recreation under its old mKey.
 > It does not survive a lifecycle write to what it is scoped in (3.3-invalidation-three-mutator-species).
 > Before a lookup binds an mKey, that mKey names a may-set of mReferents (1.5-token-and-the-two-warrants).
@@ -222,6 +221,7 @@ mSort's side; they stay prose until that section's checks carry them.
 
 <!-- normative -->
 > An mSort is not a category of the world.
+> It is never valid where an mScheme is.
 > The engine never knows what an mSort denotes.
 > It never assumes two mSorts denote disjoint mReferents.
 > The strangers case is undetectable to the engine.
@@ -239,7 +239,7 @@ An mScheme fixes its `resolve()` (3.1-identity-of-a-key), whether it is `:primar
 with its declarations per matched shape (2.2-primary-of-and-identified-in), what it `:yields`
 per matched shape and where its mKeys are looked up when it is secondary
 (2.1-yields-into-another-scheme), and its lookup warrants (1.5-token-and-the-two-warrants).
-Nothing else constrains where an mScheme yields. A shape is where every per-shape declaration
+A shape is where every per-shape declaration
 hangs, so it is declared here; what a shape is, a control-flow path of the owner's body, is
 1.5-token-and-the-two-warrants's. The floor's "no warrants" is a fact of that section, and its
 "identity `resolve()`" and "the mRoute as its only mParent" follow from 3.1-identity-of-a-key
@@ -571,14 +571,16 @@ pred true_ClosesTraversal[d: ClosesTraversal] {
 
 #### § 1.7.1-the-lookup-body-and-its-reads
 
-The engine derives a lookup body's read set from the body, which the fences do not hold: shell
-parity supplies the reads of sh constructs, the path mScheme the reads of a path, and the speech
-that describes an external command the reads of that command.
+The read set of a lookup body is not in the fences.
 
 <!-- normative -->
 > Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
 > Its target object is not its backing: an mKey can stop reaching an object without the object changing, and an object can change without its mKey changing.
 > A mResolution also depends on the read set of the lookup body that produced it.
+> The engine derives that set from the body.
+> Shell parity supplies the reads of sh constructs.
+> The path mScheme supplies the reads of a path.
+> The speech that describes an external command supplies the reads of that command.
 > The read set is closed only when the read set of every external command in the body is closed.
 > The author of the speech that describes an external command closes that command's read set by an explicit act.
 > Any write invalidates a mResolution whose read set is open (3.3-invalidation-three-mutator-species).
@@ -734,6 +736,8 @@ pred engineVouchIsTrue {
 > The mRoute is an address; it holds no mState and declares no may-read set.
 > For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent instances within one unwalled span.
 > Each is resolved once per mEntryChain and shared: one mPlaceholder.
+> The mValue is a literal, or a mPlaceholder for a captured mValue.
+> The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a mPlaceholder.
 > A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey, ambient mParents, mEntryChain); the probe standup binds it.
 > The apply standup re-reads it through the same entry and `compare()`s the two; that re-read is the `witness()`.
 > A mismatch is integrity, never a verdict input.
@@ -885,6 +889,7 @@ strangers write; the fences read a chain that reaches no primary mKey as an unkn
 
 <!-- normative -->
 > T is a primary mScheme, or a secondary mScheme that in turn yields one; the chain always terminates at a primary mScheme.
+> Nothing else constrains where an mScheme yields.
 > An unknown input makes the instance unknown.
 > A `resolve()` declines on mReferents its mSort does not describe; this is the mechanical net against lazy borrowing.
 
