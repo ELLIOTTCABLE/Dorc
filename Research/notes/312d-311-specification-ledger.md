@@ -533,3 +533,126 @@ through an `allInForceTrueExcept` restructuring of the premise checked `old iff 
 written and committed; books last, and only after each book's world is put to the conductor. The
 builder runs every parser and solver run; the conductor runs none and takes no adjacent work
 while it runs. Nobody mints another UNACKED READING mark.
+
+## § 9-the-builder-phase-first-two-turns
+
+State at `3d697bd6` on `ai/312d-mechanize-311` (fourteen commits over `3a5c81f7`; worktree
+`C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\agent-a03007ade2e0378bf`), 2026-09-28: the document
+parses; the lock exists (38 rows, eight accepted reds) and reproduces under `--check` with the
+runner's caps raised (`--timeout 120 --batch-timeout 4000`, about 25 minutes per pass); the
+completion gate's `assay-lock` step fails only because its default 540 s batch cap reaches half
+the commands. Not folded. The conductor's turn-1 rulings were given in chat and applied by the
+builder; the turn-2 rulings are in chat and not yet banked.
+
+Findings of turn 1, every one a transcription defect of the conductor's raw pass and none a
+change to 311's meaning:
+
+- `fnd-none-equality-class` — four fences compared two possibly-empty `lone` expressions with
+  `=`, which is true when both are empty: the § 1.9 cell fact (forbidding any two ordinary mKeys
+  one mParent, which starved every soundness twin and made four greens vacuous),
+  `withinOneParent`, `lifecycleInvalidatedBy`, `naturalKeyAnswer`. **[TYPED]** 2026-09-28, the
+  human recalling the skill's own trap entry: the spelling is the overlap, `some a & b`; `=`
+  between two possibly-empty expressions only where the translation says "or both empty". The
+  builder swept every fence under that rule and found seven sites in all.
+- `fnd-walk-laws-quantified-natural-keys` — the two walk laws ranged `walk` over every mKey
+  where § 3.2 walks by identities; restated over `walkOfKeys`, which covers the primary case as
+  the identity of a primary key and the natural case through `true_DeclaresYields`.
+- `fnd-touches-traversal-mis-scoped` — a block-bodied quantifier scoped the catalog-given-whole
+  disjunct inside `some m: crossed[l]`; re-parenthesized to the translation's reading.
+- `fnd-placed-in-whole-sort-dead` — `placedIn[k, mSort]` compared one sort against the whole
+  set and never fired; now every `looked-up-in` record of k.
+- `fnd-compare-translation-cost` — every `compare`-routed command failed to translate at scope
+  6, about ×5 per atom; memoized as `Tables` (`walkTable`, `compareTable`, no multiplicity on
+  the answer column, one defining fact each, agreement with the functions checked at scope 4
+  because the un-tabled form does not solve at 5); the tables tax every command about 17 s.
+
+Holes surfaced by the solver, each minted `hole_<slug>` with a sat witness and premise
+exclusions on the laws that showed it, each a design question for the human's sitting, none
+closed:
+
+- `hole_cell_keys_under_same_parents_reach_differently` — § 1.9 gives a cell's identity as
+  (mParent, mSort) engine-side; no sentence ties a cell key's mReferent to its mParent's
+  mReferent and its mSort. Excludes the SAME laws.
+- `hole_world_scoped_top_aliases_into_a_store` — the two-tops and one-top ways with a leaf top
+  scoped in an mWorld and no store on that leg: an mReferent inside a closed store is also
+  reached directly from the world. The § 5.1 OPEN thing's-end cell's first non-declining case.
+  The mRoute variant rests on `ask-route-for-any-path-without-identified-in`; the mRoot variant
+  also on `ask-aliases-nothing-else-world-reading`, since an mWorld owns nothing in this encoding
+  where § 2.2 says the world is the store. Excludes the DISJOINT laws and, by evidence, sparing.
+- `hole_composite_keys_with_same_parts_reach_differently` — § 2.11's twin of the cell hole.
+  Excludes the compare laws.
+- `hole_unclosed_traversal_without_a_key_catalog` — a route-scoped lookup with no emitted member
+  has an empty mTraversal in the fences; 311 covers it by the engine's vouch of the mRoute within
+  a span (§ 1.10.1), which is prose. Excludes the unstale law.
+- `hole_natural_key_catalog_off_the_route` — no world sentence says a natural mKey's supplied
+  mParent-Catalog instance is on the route to its mReferent (`true_SuppliesParent` speaks for
+  mKey-Primaries only). Excludes the unstale law. Conductor's candidate sentence for the sitting,
+  unacked: the catalog seat is true when the mKey's mReferent is one a route through the
+  instance's mReferent passes to.
+- Left red at the close of turn 2: § 2.9 step 3's second form concludes DISJOINT for a leaf pair
+  whose `compare()` is UNKNOWN (two parentless cell keys of one mSort reaching one mReferent; a
+  `looked-up-in nothing-else` vacuously true), shown by the region and sparing laws; a hole is
+  the turn-3 ruling's holding pattern, and the sentence 311 lacks (step 3 presupposes step 1
+  settled that x is not D) is the sitting's.
+
+Kills: four sat (`natural_same` by unique-referent, `natural_disjoint` by unique-name, `same` by
+unique-referent, `nobody_spoke` by unique-referent); `two_tops` killable only by deleting its
+speaker fact; `different_sorts_never_same` unkillable by construction and kept as a tripwire.
+
+The builder reports one direct message from the human, verbatim in its supplement, asking for a
+tooling-chafe section as a first-class product; § 10 is that section. The conductor did not see
+the message and lists it here as reported.
+
+## § 10-tooling-chafe-the-builders-register
+
+The builder's observations, as delivered (its grades; the conductor's notes marked), for the
+assay owner to lift into `30Yc`'s chafe register. Nothing semantic was weakened for any of these.
+
+- Coverage that narrowed, so each is visible: `law_sparing_is_sound` at `4 but 4 Int, 10 Claim`
+  because its writeset closure does not translate at 6; the tables' agreement check at 4, since
+  at 5 it translated (67 s, 974k clauses) and did not solve in 400 s; `disjoint`, `compare_same`,
+  `compare_disjoint`, `two_tops` translate in about 18 s and do not solve in 120 s CPU at 6 (all
+  no-counterexample at 5; `two_tops` no-counterexample at 6 in 95 s alone); five holes narrow
+  seven laws, the praxis as designed.
+- Runner, lock, gate: 38 commands need about 25 minutes under the 120 s per-command cap, so the
+  540 s batch default leaves the tail `not-run`, the lock mismatches, and the gate's `assay-lock`
+  step has no override (suggested: a per-document cap spelled beside `bookScope` and copied by
+  assay, or a batch cap derived from row count times the per-command cap); a `timeout` row is
+  time-dependent, so the ratchet is not deterministic across machines or loads (`two_tops`
+  no-counterexample alone and `timeout` in the batch; the unstale twin 82–108 s; `law_same`
+  53–60 s; suggested: record the phase, still translating against translated with clause counts,
+  in the lock, and a deterministic budget beside seconds); write-then-check is two full passes for
+  one lock; `--parse` launches a JVM under preflight and the machine lock, about 30 s, some
+  twenty-three times this arc.
+- Assay's compilation shape against Alloy's inlining: Alloy inlines every call and the only
+  sharing device is a table field defined by a fact, and every law shares one `laws.als`, so
+  every command pays every table's fact (a per-law module would let cheap laws stay cheap and
+  allow per-law caps; -GUESS on assay's cost); a table on a `one sig` adds a column, so a `meet`
+  table is arity 5 and refused at 107 atoms, and arity-4 tables for `regionTest` and the writesets
+  made translation worse; an unscoped `run` becomes a corpus outcome silently, only the `_premise`
+  naming keeping twins out (suggested: refuse an unscoped run not named `<existing check>_premise`);
+  the corpus book with zero claims still runs, 14 s per pass.
+- Instances and the reading loop: every instance is one JSON line with every relation, empty ones
+  included, about 8 kB with escaped newlines; the harness's Grep omits long lines and its sed
+  splitting was refused, so rebuilding by hand from that text was the costliest step of the loop
+  (suggested: `--instances-dir` with one plain-text instance per red, empty relations omitted,
+  one relation per line); scratch bisecting needs module copies beside a probe (suggested:
+  `--probe <file>` against the current out directory); rows need grep patterns (suggested:
+  `--summary` printing name, result, wall per line).
+- Alloy traps the document contained that no tool caught: the empty-equality trap at seven sites
+  (an advisory compile lint on `=` between two possibly-empty expressions outside a `some` guard
+  would have flagged all seven; conductor's note: an instrument that reports, never a fence,
+  and the human's to want); a branching function applied to a set argument, accepted silently
+  (a line for the skill's trap list); a declared `fun` result multiplicity is documentation only,
+  which is why the tables stay unbounded; three syntax shapes the parser refuses loudly (a
+  block-bodied quantifier followed by `or`; juxtaposed formulas in a comprehension body;
+  `some disj p, q: S` with no body).
+- The harness around the tools: a `for` loop over a helper script, a variable-heavy path
+  assignment, and `wsl --cd … -- mise trust` were refused as too complex to verify, so every
+  solver call became literal-path lines and the WSL gate leg never ran; every solver run, parse
+  included, holds the one machine lock, so with eleven deliberate 120 s timeouts per full pass
+  most of the wall-clock was waiting in series.
+- The builder's overall grade: the tooling did its job, every refusal loud, every row
+  reproducible under a raised cap, no verdict dependent on an option; the chafe is cost and
+  ergonomics, with the one correctness-adjacent exception that time-based `timeout` rows are not
+  deterministic across machines.

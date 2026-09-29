@@ -588,7 +588,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ask-aliases-nothing-else-world-reading
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d (4)
 
 ## ask-amendment-acks
 - defined: —
@@ -693,7 +693,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ask-route-for-any-path-without-identified-in
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d (4)
 
 ## ask-shared-lexical-rulebook
 - defined: —
