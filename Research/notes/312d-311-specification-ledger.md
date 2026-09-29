@@ -1797,3 +1797,48 @@ the specification's translation blocks.
     completion record. One translation sentence per section names its kills, § 2.1's included.
 - Not verified by anything: that the renames moved no result; that any book or kill answers as
   written. § 18.3's support-form law and `horizon_` prefix are untouched.
+
+## § 24-the-third-opus-sitting-typed-items-and-leg-one
+
+2026-09-29, a rewound conductor over `ed70650f`, stood up on this ledger, the specification
+whole, both shared halves, the `using-alloy` skill with its examples, and the deltas of
+`notes/30Y` and `plans/30Z` as landed. § 23 is committed as `bdbaf062`.
+
+- **[TYPED]** the hold on the lock is lifted: the build-work on the tooling has landed, and a
+  full rebuild from scratch is owed. § 19.6's "no lock is written" is superseded.
+- **[TYPED]** the official tier and the lock are one act: it cannot lock what it did not run.
+  The run is `--write --official` (`notes/30Y` § 2.7); writing records a row, and the commit
+  that carries the lock accepts it.
+- **[TYPED]** the human works on the mise tooling in parallel, in the primary checkout. Every
+  commit is by pathspec, always.
+- **[TYPED]** Opus builders are authorized for this arc, the one in flight included. The
+  conductor commits this ledger as and when it sees fit.
+- **[TYPED]** more of the work moves to Opus. Fable tokens are wanted for the adversarial
+  review, and a conductor that exhausts its context costs a whole standup again, about 600k
+  tokens and usually uncached. Opus is never left unsupervised: the conductor authors little
+  so that it can afford to read the builder's work. A builder that authors anything reads the
+  full skill, `plans/30Z`, and the rest first, under very explicit guardrails and limitations.
+  Where the line lies is not ruled.
+- Leg one, as the builder reported it (agent `a9db46ba9df571cf3`, branch `ai/312d-books-leg`
+  at `0264b5da`, no commit, no edit): `--parse` clean, every lint list empty. The eight books
+  ran as hot slices at 120 s of CPU per command. Five answer as § 19.4 and § 22.3 expect,
+  each `every_line` no-counterexample and each run sat: `a_hardlink_under_a_false_unique_name`,
+  `nested_pid_namespaces`, `two_files_scoped_in_the_route`,
+  `stage_five_the_list_file_named_in_the_route`, and `two_volumes_of_one_issuer`, in which the
+  sparing test is reached and the world agrees. Three are unmeasured, every such row a timeout
+  still translating: all five rows of `two_files_one_filesystem`; and line 2, the conjunction,
+  and the run of `stage_five_the_index_given_whole` and of `stage_five_the_list_file_named`,
+  whose line 1 alone finishes and is unwitnessed. No row is a counterexample and no run is
+  unsat.
+- `fnd-book-cost-climbs-with-the-key-count` (+SURE of the rows; ~SUSPECT of the cause) — six
+  mKeys at scope eight translate to about 0.95M clauses in a minute; the rooted two-files
+  world, eight mKeys at scope ten, does not finish translating in 120 s. A book's cost is the
+  encoding's cost over every pair of mKeys. `sus-a-contained-write-touches-its-store` stays
+  unmeasured, its book being one of the three.
+- The builder flagged that `specs/AGENTS.md` bars a builder from editing a specification,
+  against the lexical-repair clause of its brief. No repair was made.
+- Leg two, sent to the same builder: the branch fast-forwarded to `bdbaf062`; the parse; one
+  hot pass over the laws module; triage of an unsat kill, an unsat twin, or a counterexample
+  by scratch probes, reported and repaired by nobody; the recorded results set beside
+  today's. It edits nothing. The official write follows the conductor's reading of that
+  report.
