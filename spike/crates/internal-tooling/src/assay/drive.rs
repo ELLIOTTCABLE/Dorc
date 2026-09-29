@@ -523,7 +523,7 @@ fn decide(
             c.solve_ms = Some(solve_ms);
             match (&xml, &e.guard) {
                 (Some(xml), Some(guard)) => {
-                    replay::store(job.out, &e.module, &e.info.label, guard, xml)
+                    replay::store(job.out, &e.module, &e.info.label, guard, xml);
                 }
                 _ => replay::forget(job.out, &e.module, &e.info.label),
             }

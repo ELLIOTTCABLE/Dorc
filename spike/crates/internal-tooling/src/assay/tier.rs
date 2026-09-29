@@ -84,7 +84,7 @@ pub(super) fn with_overrides(mut caps: Caps, args: &[String]) -> Result<Caps, St
             }
             "--heap" => caps.machine.heap_mb = n,
             "--procs" => {
-                caps.machine.procs = u32::try_from(n).map_err(|_| "--procs is too large")?
+                caps.machine.procs = u32::try_from(n).map_err(|_| "--procs is too large")?;
             }
             "--batch-timeout" => caps.batch_s = Some(n),
             other => return Err(format!("unknown cap {other}")),

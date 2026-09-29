@@ -82,7 +82,7 @@ const REACH: &[Reach] = &[
     Reach {
         name: "sees-a-specification-document",
         step: "assay",
-        path: "specs/identity/model.md",
+        path: "specs/identity/model.assay.md",
         want_seen: true,
     },
     Reach {
