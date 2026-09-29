@@ -71,7 +71,6 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     code
 }
 
-/// The lock, held by this process for heavy work it does itself; released on drop.
 #[derive(Debug)]
 pub(crate) struct Hold {
     ours: Option<PathBuf>,
@@ -85,8 +84,6 @@ impl Drop for Hold {
     }
 }
 
-/// Take the lock for `task` in-process, or the exit code to leave with: 75 for contention, having
-/// said who holds it, 2 when the lock cannot be read or written.
 pub(crate) fn hold(task: &str) -> Result<Hold, u8> {
     let Some(lock) = lock_path() else {
         eprintln!(

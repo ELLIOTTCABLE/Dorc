@@ -1,6 +1,3 @@
-//! One document, end to end: compile, then whatever the mode asks (the parse lint, the pre-commit
-//! key-diff, or a pass through the solver), judged against the lock and reported as one JSON object.
-
 use std::path::{Path, PathBuf};
 
 use super::drive::{self, Computed, Job, Target};
@@ -21,7 +18,6 @@ fn emit_report(fields: Fields, code: u8) -> u8 {
     code
 }
 
-/// A file as the index holds it, for the pre-commit step; `None` when it is not staged.
 fn staged(path: &Path) -> Option<String> {
     let rel = display_path(path);
     let out = std::process::Command::new("git")
@@ -352,7 +348,6 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     emit_report(fields, code)
 }
 
-/// A bare `--only <command>` names the one module holding it, or is refused with the candidates.
 fn resolve_target(target: &Target, modules: &[(String, emit::Rendered)]) -> Result<Target, String> {
     let Target::Only { module, label } = target else {
         return Ok(target.clone());
@@ -385,7 +380,6 @@ fn resolve_target(target: &Target, modules: &[(String, emit::Rendered)]) -> Resu
     }
 }
 
-/// The premise a check's green rests on: its `_premise` twin, else its book's run, else absent.
 fn premise(c: &Computed, rows: &[Computed]) -> Option<String> {
     if c.row.kind != "check" {
         return None;
@@ -422,7 +416,6 @@ fn command_json(c: &Computed, standing: Standing, rows: &[Computed]) -> Json {
     json
 }
 
-/// "N rows go unmeasured with this commit": rows whose key the staged bytes move from the lock's.
 fn key_diff(entries: &[drive::Entry], committed: &[Row], spec: &str) -> Json {
     let moved: Vec<String> = entries
         .iter()
@@ -444,7 +437,6 @@ fn key_diff(entries: &[drive::Entry], committed: &[Row], spec: &str) -> Json {
     Json::Arr(moved.into_iter().map(Json::Str).collect())
 }
 
-/// `--write` says what it changed, row by row, the diff a `--check` would have shown.
 fn print_diff(before: &[Row], after: &[Row], lock_path: &Path) {
     let id = |r: &Row| format!("{}.{}", r.module, r.name);
     for r in after {
@@ -482,8 +474,6 @@ fn print_diff(before: &[Row], after: &[Row], lock_path: &Path) {
     }
 }
 
-/// One Alloy refusal is one finding per distinct message, walked back to the spec line through the
-/// sidecar where it points into a generated module.
 fn unparsed(
     refusals: &[(String, Refusal)],
     modules: &[(String, emit::Rendered)],
@@ -563,7 +553,6 @@ mod tests {
 
     #[test]
     fn a_premise_is_the_twin_else_the_books_run_else_absent() {
-        // Derived at report time from the rows themselves, so it can never disagree with them.
         let rows = vec![
             computed("laws", "k", "check", Outcome::NoCounterexample),
             computed("laws", "k_premise", "run", Outcome::Unsat),

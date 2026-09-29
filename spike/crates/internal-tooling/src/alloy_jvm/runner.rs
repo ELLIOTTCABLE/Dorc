@@ -1,6 +1,3 @@
-//! `mise run alloy -- [caps] <file.als | dir>...`: every command of every root, bounded, one JSON
-//! row per command (`notes/30Yb`, `30Yd` § 1). The author's route to the solver without assay.
-
 use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
@@ -169,8 +166,6 @@ fn parse_only(adapter: &mut Adapter, o: &Opts) -> ExitCode {
     ExitCode::from(u8::from(!ok))
 }
 
-/// An `expect` is the author's recorded verdict, so disagreeing with it is the red; without one a
-/// run is meant to be satisfiable and a check to hold. Errors and caps are always red.
 fn agrees(result: &str, expects: Option<u64>) -> bool {
     match expects {
         Some(1) => matches!(result, "sat" | "counterexample"),
@@ -211,7 +206,6 @@ fn solve_all(adapter: &mut Adapter, o: &Opts) -> ExitCode {
         }
         parsed.push((file, given, p));
     }
-    // An unparsed file may hold the command, so its error row, not this refusal, is the honest answer.
     if let Some(only) = &o.only
         && total == 0
         && !any_error

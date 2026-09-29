@@ -1,7 +1,3 @@
-//! Alloy 6 behind one Java adapter (`spike/verify/alloy/AlloyAdapter.java`, `notes/30Yf` § 9):
-//! the adapter answers four verbs and decides nothing; every budget, key, and verdict rule is
-//! here or in `assay`. `runner` is `mise run alloy`, the author's direct route to the solver.
-
 pub(crate) mod adapter;
 pub(crate) mod runner;
 
@@ -10,7 +6,6 @@ use std::path::{Path, PathBuf};
 use crate::json::{Json, Value};
 use crate::sha256;
 
-/// The pinned JDK and Alloy jar, exported by the `alloy` and `assay` tasks from `mise where`.
 #[derive(Debug, Clone)]
 pub(crate) struct Jvm {
     java: PathBuf,
@@ -22,9 +17,6 @@ const JAVA_HOME_ENV: &str = "ALLOY_JAVA_HOME";
 const JAR_ENV: &str = "ALLOY_JAR";
 
 impl Jvm {
-    /// The pins by install path, never a bare `java`: a machine-global JDK earlier on `PATH`
-    /// silently wins over the pin (measured, Windows). Asked of mise only when a JVM is needed, so
-    /// a compile-only run pays nothing for it.
     pub(crate) fn from_env() -> Result<Self, String> {
         let cache = internal_tooling::target_dir()
             .join("alloy")
@@ -91,8 +83,6 @@ impl Jvm {
     }
 }
 
-/// The root `mise.toml`'s pins for the JDK and the jar: while they are unchanged, and the paths
-/// they resolved to still exist, `mise where` would answer the same, so its answer is cached.
 fn pins() -> Option<String> {
     let text = std::fs::read_to_string(dorc_testbed::repo_root().join("mise.toml")).ok()?;
     let lines: Vec<&str> = text
@@ -120,7 +110,6 @@ fn mise_where(tool: &str) -> Result<PathBuf, String> {
     Ok(PathBuf::from(String::from_utf8_lossy(&out.stdout).trim()))
 }
 
-/// The adapter's source, and its digest (a key input: an adapter change is a semantics change).
 pub(crate) fn adapter_source() -> PathBuf {
     dorc_testbed::repo_root()
         .join("spike")
@@ -136,8 +125,6 @@ pub(crate) fn adapter_digest() -> Result<String, String> {
         .map_err(|e| format!("{}: {e}", path.display()))
 }
 
-/// The jar's identity is the checksum mise enforces at install, read from the root `mise.toml`
-/// rather than re-hashed on every run.
 pub(crate) fn jar_digest() -> Result<String, String> {
     let path = dorc_testbed::repo_root().join("mise.toml");
     let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -158,7 +145,6 @@ fn jar_checksum(mise_toml: &str) -> Option<String> {
     (hex.len() == 64).then_some(hex)
 }
 
-/// `.als` files a path stands for: a directory stands for its own, sorted.
 pub(crate) fn expand(path: &Path) -> Vec<PathBuf> {
     if !path.is_dir() {
         return vec![path.to_path_buf()];
@@ -174,7 +160,6 @@ pub(crate) fn expand(path: &Path) -> Vec<PathBuf> {
     found
 }
 
-/// The platform a measurement was made on (`notes/30Yf` § 3: recorded, never keyed).
 pub(crate) fn platform() -> &'static str {
     match std::env::consts::OS {
         "windows" => "windows",

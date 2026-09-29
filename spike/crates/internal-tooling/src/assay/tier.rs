@@ -1,32 +1,20 @@
-//! The three tiers (`notes/30Yf` § 8): what each spends per command and per batch, whether it trusts
-//! keys, and whether it defers the known-expensive. The ceiling is the official tier's budget, so
-//! a raised ceiling demotes accepted timeouts to early ones with no special case.
-
 use crate::alloy_jvm::adapter::{Budget, Machine};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Tier {
-    /// The author's loop: incremental, cheap-first, deferring what is known to be slow.
     Hot,
-    /// Builder completion, in the foreground: incremental, bounded to a harness window.
     Gate,
-    /// Nightly or CI, in the background: from scratch, keys ignored, the ceiling budget.
     Official,
 }
 
-/// CPU seconds at or above which a timeout is full rather than early.
 pub(super) const CEILING_CPU_S: u64 = 1800;
-/// The heap at or above which an out-of-memory is full rather than early.
 pub(super) const CEILING_HEAP_MB: u64 = 4096;
-/// Recorded clauses above which the hot tier defers a row rather than attempt it (strawman-3's
-/// largest command translates to well under this; the 311 laws that time out are several times it).
 pub(super) const DEFER_CLAUSES: u64 = 2_000_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct Caps {
     pub(super) budget: Budget,
     pub(super) machine: Machine,
-    /// No command starts after this many seconds of the run; `None` is unbounded.
     pub(super) batch_s: Option<u64>,
 }
 
@@ -55,8 +43,6 @@ impl Tier {
         }
     }
 
-    /// Whether a pass may reuse what an earlier pass left: cached rows and stored instances. The
-    /// official tier is the belt to those braces and recomputes everything.
     pub(super) fn trusts_keys(self) -> bool {
         self != Self::Official
     }
@@ -66,7 +52,6 @@ impl Tier {
     }
 }
 
-/// The runner's cap flags, as `mise run alloy` spells them, over a tier's defaults.
 pub(super) fn with_overrides(mut caps: Caps, args: &[String]) -> Result<Caps, String> {
     let mut it = args.iter();
     let (mut wall_given, mut cpu_given) = (false, false);

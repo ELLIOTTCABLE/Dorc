@@ -1,12 +1,6 @@
-//! The incremental key (`notes/30Yf` § 3): a row whose definite result was found under the same key
-//! is not recomputed. The key hashes exactly the bytes Alloy parsed (the adapter's loaded closure),
-//! never a normalisation of them; command paragraphs are the one thing removed.
-
 use super::alloy::{self, Head};
 use crate::sha256::Sha256;
 
-/// Inputs every key in a run shares: the jar's and the adapter's identities, and the effective
-/// options the adapter reported for this run.
 #[derive(Debug, Clone)]
 pub(super) struct Fixed {
     pub(super) jar: String,
@@ -14,7 +8,7 @@ pub(super) struct Fixed {
     pub(super) options: String,
 }
 
-/// The key of one command: its root's closure (commands removed), its own text, its scope.
+// Hashes the bytes Alloy parsed, never a normalisation: a normaliser bug must show, not match.
 pub(super) fn key(
     closure: &[(String, String)],
     command: &str,
@@ -40,8 +34,6 @@ pub(super) fn key(
     h.hex()
 }
 
-/// A command's text in the module that holds it: by label, else by position among the unnamed,
-/// since Alloy labels an unnamed command itself.
 pub(super) fn command_text(module: &str, label: &str, nth_unnamed: usize) -> Option<String> {
     let commands: Vec<(Option<String>, String)> = alloy::items(module, 1)
         .into_iter()
@@ -115,8 +107,6 @@ mod tests {
 
     #[test]
     fn comments_and_whitespace_in_a_fence_move_no_key() {
-        // The two reword classes an author makes most; either moving a key would re-solve a
-        // document for nothing and, worse, teach authors that the key is noise.
         let reworded = DOC
             .replace(
                 "pred loud[g: Gadget] { some g.speaker }",
@@ -131,8 +121,6 @@ mod tests {
 
     #[test]
     fn a_law_edit_moves_only_its_own_key_and_a_line_edit_moves_its_readers() {
-        // A command is a query, so a law's text is in its own key alone; a book line's outcome is
-        // also a premise of every later line, of the conjunction, and of the book's run.
         let before = keys(DOC);
         let law = keys(&DOC.replace("check lawB { no Gadget }", "check lawB { lone Gadget }"));
         let moved = |after: &BTreeMap<(String, String), String>| -> Vec<String> {

@@ -1,7 +1,3 @@
-//! The lock, schema 2 (`notes/30Yf` § 2): definite results and unmeasurements as their own kinds,
-//! each row with the budget it was measured under, and an asymmetric match: a definite result may
-//! be written at any budget, an unmeasurement never overwrites one and never matches one.
-
 use crate::alloy_jvm::adapter::Size;
 use crate::json::{Json, Value};
 
@@ -9,7 +5,6 @@ use super::tier::{CEILING_CPU_S, CEILING_HEAP_MB};
 
 const SCHEMA: u64 = 2;
 
-/// What a command came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Outcome {
     Sat,
@@ -22,8 +17,6 @@ pub(super) enum Outcome {
     UnsupportedHere,
     NotRun,
     Deferred,
-    /// A deterministic refusal of the text (a scope Alloy demands at solve time, say): neither a
-    /// fact about the model nor an absence of measurement.
     Error,
 }
 
@@ -69,7 +62,6 @@ impl Outcome {
     }
 }
 
-/// One lock row. `key` is absent on a row read from schema 1, which therefore counts as changed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Row {
     pub(super) module: String,
@@ -148,7 +140,6 @@ impl Row {
         (&self.module, &self.name)
     }
 
-    /// Would a bigger budget, or a bigger heap, owe this row another run?
     fn early(&self) -> bool {
         match self.result {
             Outcome::Timeout => self.budget.is_none_or(|b| b < CEILING_CPU_S),
@@ -158,7 +149,6 @@ impl Row {
     }
 }
 
-/// The lock file: a schema line, then one row per line, so its git diff is a row diff.
 pub(super) fn render(rows: &[Row]) -> String {
     let mut lines = vec![format!(
         "  {}",
@@ -168,7 +158,6 @@ pub(super) fn render(rows: &[Row]) -> String {
     format!("[\n{}\n]\n", lines.join(",\n"))
 }
 
-/// Rows of a lock file of either schema; `None` when it does not read.
 pub(super) fn parse(text: &str) -> Option<Vec<Row>> {
     let Value::Arr(items) = Value::parse(text)? else {
         return None;
@@ -181,22 +170,16 @@ pub(super) fn parse(text: &str) -> Option<Vec<Row>> {
         .collect()
 }
 
-/// How one row stands against the committed lock.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Standing {
     Green,
     AcceptedRed,
-    /// A full timeout, a full out-of-memory, a platform failure, or an unsupported command the
-    /// committed lock records, on an unchanged key.
     AcceptedUnmeasured,
     AcceptedError,
-    /// A definite result on an unchanged key that this run did not re-measure.
     Carried,
     Mismatch(Why),
     Unmeasured,
-    /// An early timeout or out-of-memory the lock records: it owes one run at the ceiling.
     Owed,
-    /// Deferred by the hot tier's design; listed, never green, never counted.
     Deferred,
 }
 
@@ -223,8 +206,8 @@ impl Standing {
     }
 }
 
-/// The asymmetric match for one computed row (`notes/30Yf` `lock-asymmetric-match`).
 pub(super) fn judge(committed: Option<&Row>, computed: &Row) -> Standing {
+    // An unknown key (schema 1) cannot prove the text unchanged.
     let same_key = |c: &Row| c.key.is_some() && c.key == computed.key;
     let x = computed.result;
     let Some(c) = committed else {
@@ -267,9 +250,6 @@ pub(super) fn judge(committed: Option<&Row>, computed: &Row) -> Standing {
     }
 }
 
-/// The lock a write leaves (`notes/30Yf` `lock-tier-invariant`): definite and error rows as
-/// computed; an unmeasurement never replaces a committed row, which stays with its old key; and
-/// only a tier that makes the lock whole writes an unmeasurement at all.
 pub(super) fn next(committed: &[Row], computed: &[Row], whole: bool) -> Vec<Row> {
     computed
         .iter()
@@ -307,8 +287,6 @@ mod tests {
 
     #[test]
     fn a_definite_result_needs_its_equal_and_a_budget_never_decides_it() {
-        // A counterexample found at any budget against a locked no-counterexample is wrong, and a
-        // faster machine finding the same verdict elsewhere is the same verdict.
         let locked = row("k", Outcome::NoCounterexample, "a");
         let mut again = row("k", Outcome::NoCounterexample, "b");
         again.budget = Some(1800);
@@ -324,7 +302,6 @@ mod tests {
 
     #[test]
     fn an_unmeasurement_never_matches_a_definite_result_on_a_changed_key() {
-        // The unsoundness this schema removes: a slow machine passing a new red by timing out.
         let locked = row("k", Outcome::NoCounterexample, "a");
         assert_eq!(
             judge(Some(&locked), &row("k", Outcome::Timeout, "b")),
@@ -349,8 +326,6 @@ mod tests {
 
     #[test]
     fn a_timeout_is_early_below_the_ceiling_and_accepted_at_it() {
-        // Early owes one run at the ceiling; full owes analysis or acceptance, and committing the
-        // lock is the acceptance.
         let early = row("k", Outcome::Timeout, "a");
         assert_eq!(
             judge(Some(&early), &row("k", Outcome::Timeout, "a")),
@@ -399,8 +374,6 @@ mod tests {
 
     #[test]
     fn a_lower_tier_never_makes_the_lock_worse() {
-        // Only the official tier writes an unmeasurement; below it a committed row survives,
-        // old key and all, so its next check still sees the text as changed.
         let committed = vec![row("kept", Outcome::NoCounterexample, "a")];
         let computed = vec![
             row("kept", Outcome::Timeout, "b"),

@@ -110,8 +110,8 @@ const PROFILES: [Profile; 5] = [
         // total ~20 KiB on disk).
         disk_cold: GIB,
         disk_warm: GIB,
-        // The runner's default adapter heap cap (`alloy_jvm::runner`, `--heap 2048`) plus the
-        // adapter JVM's non-heap: a cap the machine cannot grant is not a cap.
+        // The runner's default adapter heap cap (`--heap 2048`) plus the adapter JVM's non-heap:
+        // a cap the machine cannot grant is not a cap.
         ram: 3 * GIB,
     },
 ];
@@ -133,7 +133,6 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     }
 }
 
-/// The same check for a caller whose stdout is its product: the line goes to stderr.
 pub(crate) fn gate(name: &str) -> bool {
     let Some(profile) = PROFILES.iter().find(|p| p.name == name) else {
         eprintln!("preflight: unknown profile {name:?}");
@@ -161,7 +160,6 @@ fn verdict(profile: &Profile) -> (bool, String) {
     }
 }
 
-/// Available RAM in bytes for a caller sizing its own parallelism, when it can be measured.
 pub(crate) fn available_ram() -> Option<u64> {
     free_ram().ok()
 }

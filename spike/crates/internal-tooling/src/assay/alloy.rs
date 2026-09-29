@@ -265,8 +265,7 @@ pub(super) fn text<'a>(src: &'a str, tok: &Token) -> &'a str {
     src.get(tok.start..tok.end).unwrap_or("")
 }
 
-/// One top-level declaration: its tokens and its verbatim source, whose byte range in the text it
-/// was split from is `start..end`.
+/// One top-level declaration: its tokens and its verbatim source.
 #[derive(Debug, Clone)]
 pub(super) struct Item {
     pub(super) toks: Vec<Token>,
@@ -276,8 +275,6 @@ pub(super) struct Item {
     pub(super) end: usize,
 }
 
-/// `src` with every command paragraph removed, and nothing else touched: a command is a query that
-/// binds no name and constrains no other command (`notes/30Yf` `key-why-stripping-commands-is-sound`).
 pub(super) fn strip_commands(src: &str) -> String {
     let mut out = String::with_capacity(src.len());
     let mut at = 0;
@@ -292,9 +289,6 @@ pub(super) fn strip_commands(src: &str) -> String {
     out
 }
 
-/// What the tokenizer cannot split with certainty, which emission refuses rather than guesses at:
-/// an unterminated string or block comment, or a quote glued to an identifier (Alloy lets `"`
-/// continue a name, where this tokenizer would open a string).
 pub(super) fn unsure(src: &str) -> Option<&'static str> {
     let bytes = src.as_bytes();
     let mut i = 0;

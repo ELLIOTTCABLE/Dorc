@@ -37,11 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * The four verbs assay and the `alloy` runner reach Alloy through (`notes/30Yf` § 9): parse, parse-only,
- * solve, and eval, one JSON object per line on stdin and stdout. Every decision is the caller's; this
- * file only asks Alloy and reports what it answered.
- */
 public class AlloyAdapter {
    static final PrintStream OUT = new PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out), true, StandardCharsets.UTF_8);
    static final Map<String, CompModule> worlds = new HashMap<>();
@@ -51,7 +46,7 @@ public class AlloyAdapter {
       System.setOut(new PrintStream(new java.io.OutputStream() { public void write(int b) {} }));
       Thread ticker = new Thread(() -> {
          while (true) {
-            // A caller killed mid-solve closes no pipe this thread would notice; its absence must stop the solver.
+            // A caller killed mid-solve closes no pipe this thread would notice.
             if (!ProcessHandle.current().parent().map(ProcessHandle::isAlive).orElse(false)) Runtime.getRuntime().halt(1);
             emit(event("tick"));
             try { Thread.sleep(1000); } catch (InterruptedException e) { return; }
@@ -117,8 +112,6 @@ public class AlloyAdapter {
       return o;
    }
 
-   // Alloy resolves every `open X` against ONE root: the root file's directory with the root's own
-   // `module a/b` path stripped. `opens` serves a file's text at that spot without copying it.
    static File resolutionRoot(String root) throws Exception {
       java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?m)^\\s*module\\s+([A-Za-z0-9_/'\"]+)").matcher(Files.readString(Path.of(root)));
       int depth = m.find() ? m.group(1).split("/").length - 1 : 0;
@@ -195,8 +188,6 @@ public class AlloyAdapter {
       return p.startsWith(b) ? p.substring(b.length()) : p;
    }
 
-   // Command.toString() is "Check name for 6 but ... expect 1"; the scope clause is what follows " for ",
-   // less the trailing expect, which the caller carries as its own field.
    static String scopeOf(Command cmd) {
       String s = cmd.toString().replaceFirst(" expect -?\\d+$", "");
       int at = s.indexOf(" for ");
@@ -275,8 +266,6 @@ public class AlloyAdapter {
       return o;
    }
 
-   // Sound only under the caller's guard: every paragraph but facts, asserts, and commands unchanged
-   // since the instance was found, so the declaration constraints it satisfied then still hold.
    static JsonObject eval(JsonObject req) throws Exception {
       CompModule world = world(req);
       A4Solution sol = A4SolutionReader.read(world.getAllReachableSigs(), new XMLNode(new StringReader(req.get("instance_xml").getAsString())));

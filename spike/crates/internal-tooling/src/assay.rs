@@ -35,7 +35,6 @@ sig Line { above: set Line, speech: set Claim, cmd: one Shword, argv: seq Shword
 /// The corpus book's null command, a word of assay's own (`30Y` § 2.3).
 const NULL_WORD: &str = "assay_colon";
 const MODULE_SUFFIX: &str = ".als";
-/// The line-map sidecar beside the generated modules (`notes/30Yf` § 3).
 const LINE_MAP: &str = "assay-map.json";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -132,17 +131,14 @@ struct Inputs<'a> {
 struct Compiled {
     modules: Vec<(String, emit::Rendered)>,
     report: Vec<(&'static str, Json)>,
-    /// Per module, the checks its `every_line` conjoins (`notes/30Yf` § 5).
     conjunctions: Vec<(String, Vec<String>)>,
 }
 
-/// What a run of assay does past compiling (`notes/30Y` § 2.7, `notes/30Yf` § 4 and § 8).
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Mode {
     Compile,
     /// The Alloy-parse lint alone (`30Y` § 2.6, fourth item).
     Parse,
-    /// Pre-commit: the parse lint and the key-diff over the staged bytes, warning only.
     Staged,
     Check,
     Write,
@@ -152,11 +148,9 @@ enum Mode {
 const RED: u8 = 1;
 const REFUSED: u8 = 2;
 const RUNNER_FAILED: u8 = 3;
-/// No row contradicts the lock, but some went unmeasured or are owed a run at the ceiling.
 const UNMEASURED: u8 = 4;
 const CONTENTION: u8 = 75;
 
-/// Worst first: a refusal hides everything, a wrong row outranks an unmeasured one.
 fn severity(code: u8) -> u8 {
     match code {
         0 => 0,
@@ -168,7 +162,6 @@ fn severity(code: u8) -> u8 {
     }
 }
 
-/// What one invocation asked for, beside the documents.
 #[derive(Debug, Clone)]
 struct Ask {
     mode: Mode,
@@ -177,8 +170,6 @@ struct Ask {
     caps: Vec<String>,
 }
 
-/// `mise run assay -- <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write]
-/// [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [-- <runner caps>]`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
     let (ours, caps) = match args.iter().position(|a| a == "--") {
         Some(at) => {
@@ -353,8 +344,6 @@ fn display_path(spec: &Path) -> String {
         )
 }
 
-/// Write every module and the line-map sidecar, removing the modules the previous compile's sidecar
-/// names and this one does not, so a renamed book never leaves a stale module for a directory run.
 fn write_modules(out: &Path, modules: &[(String, emit::Rendered)]) -> std::io::Result<Vec<String>> {
     std::fs::create_dir_all(out)?;
     let fresh: BTreeSet<&str> = modules.iter().map(|(name, _)| name.as_str()).collect();
@@ -1053,8 +1042,6 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
     })
 }
 
-/// Render every module to its emitted bytes, refusing what the tokenizer is unsure of and any
-/// module holding two commands of one label (the lock's row identity is `(module, name)`).
 fn finish(modules: Vec<(String, String)>) -> Result<Vec<(String, emit::Rendered)>, Vec<Finding>> {
     let mut findings = Vec::new();
     let mut out = Vec::new();

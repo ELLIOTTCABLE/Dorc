@@ -1,6 +1,3 @@
-//! SHA-256 (FIPS 180-4), std-only: assay's incremental key licenses NOT recomputing a verdict
-//! (`notes/30Yf` § 3), so it wants a collision-resistant digest, where FNV stays a drift alarm.
-
 use std::fmt::Write as _;
 
 const K: [u32; 64] = [
@@ -70,7 +67,6 @@ const K: [u32; 64] = [
     0xc671_78f2,
 ];
 
-/// An incremental hasher: feed it, then take the hex digest.
 #[derive(Debug, Clone)]
 pub(crate) struct Sha256 {
     state: [u32; 8],
@@ -120,7 +116,6 @@ impl Sha256 {
         self.pending.extend_from_slice(blocks.remainder());
     }
 
-    /// Length-prefixed, so a sequence of fields cannot be re-split into another sequence.
     pub(crate) fn field(&mut self, bytes: &[u8]) {
         self.update(&u64::try_from(bytes.len()).unwrap_or(u64::MAX).to_be_bytes());
         self.update(bytes);
@@ -209,7 +204,6 @@ mod tests {
 
     #[test]
     fn the_fips_vectors_hold_across_block_boundaries() {
-        // A key that hashes wrong still "matches itself", so only published vectors catch it.
         assert_eq!(
             hex(b""),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

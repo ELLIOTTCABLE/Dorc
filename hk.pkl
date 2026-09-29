@@ -109,12 +109,7 @@ local linters = new Mapping<String, Step> {
         check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
         fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"
     }
-    // assay's compile lints, Alloy's parse lint, and the key-diff over the STAGED bytes against the
-    // staged lock (`Research/notes/30Yf` § 8): solver-free, so pre-commit tier. The key-diff warns
-    // how many rows the commit leaves unmeasured; the completion gate is what refuses them.
-    // Writes the generated modules to the cargo target dir and nothing else. A shared half stands
-    // for every document beside it, and a lock for its document. Through `mise run` so relative
-    // paths resolve from hk's cwd. The tier's steering files are plain `.md` and never reach assay.
+    // The key-diff over STAGED bytes only warns; the completion gate refuses (`30Yf` § 8).
     ["assay"] {
         glob = List("specs/**/*.assay.md", "specs/**/*.lock.json")
         check = "mise run assay -- --staged {{files}}"

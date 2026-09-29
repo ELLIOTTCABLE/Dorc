@@ -158,8 +158,6 @@ fn after_key<'a>(text: &'a str, key: &str) -> Option<&'a str> {
     })
 }
 
-/// A parsed JSON value, for replies that nest (the Alloy adapter's). A number keeps its source
-/// spelling, so re-rendering one is exact.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Value {
     Null,
@@ -171,7 +169,6 @@ pub(crate) enum Value {
 }
 
 impl Value {
-    /// One whole JSON text, or `None` for anything malformed or trailing.
     pub(crate) fn parse(text: &str) -> Option<Self> {
         let mut p = Parser {
             bytes: text.as_bytes(),
@@ -217,7 +214,6 @@ impl Value {
         }
     }
 
-    /// Compact, in source order: the canonical spelling a key hashes.
     pub(crate) fn compact(&self) -> String {
         match self {
             Self::Null => "null".to_owned(),
@@ -239,7 +235,6 @@ impl Value {
     }
 }
 
-/// Nesting deeper than this is refused rather than recursed into.
 const MAX_DEPTH: usize = 64;
 
 struct Parser<'a> {
@@ -386,8 +381,6 @@ mod tests {
 
     #[test]
     fn a_nested_reply_parses_and_re_renders_exactly() {
-        // The adapter's options object is hashed into every key, so its compact spelling must be
-        // a function of the reply, byte for byte.
         let text = r#" {"ok": true, "unrolls": -1, "loaded": [{"path": "a\\b", "text": "x\ny é 😀"}], "none": null} "#;
         let v = Value::parse(text).expect("the reply should parse");
         assert_eq!(v.bool("ok"), Some(true));

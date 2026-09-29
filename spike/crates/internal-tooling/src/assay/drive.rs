@@ -1,7 +1,3 @@
-//! One pass over a compiled document (`notes/30Yf` § 3–§ 6, § 8): parse every root once through the
-//! adapter, key every command, then for each row in cheap-first order decide whether it is cached,
-//! deferred, entailed by its book's conjunction, answered by replaying its last instance, or solved.
-
 use std::path::Path;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -17,19 +13,13 @@ use crate::alloy_jvm::{self, Jvm};
 
 const SOLVER: &str = "sat4j";
 
-/// Which commands a pass runs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Target {
     All,
     Module(String),
-    /// A command and what its green needs: its premise twin and its module's consistency run.
-    Only {
-        module: String,
-        label: String,
-    },
+    Only { module: String, label: String },
 }
 
-/// Where a computed row's result came from; the report says, the lock does not.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Provenance {
     Fresh,
@@ -57,13 +47,10 @@ pub(super) struct Computed {
     pub(super) provenance: Provenance,
     pub(super) wall_ms: Option<u64>,
     pub(super) solve_ms: Option<u64>,
-    /// What the report says beside the row: how far a timeout got, why a row went unrun.
     pub(super) note: Option<String>,
-    /// The command's position in its module, for the lock's row order.
     pub(super) index: u64,
 }
 
-/// Everything a pass needs, borrowed from the compile and the committed lock.
 #[derive(Debug)]
 pub(super) struct Job<'a> {
     pub(super) out: &'a Path,
@@ -75,7 +62,6 @@ pub(super) struct Job<'a> {
     pub(super) target: &'a Target,
 }
 
-/// One command, keyed, with what the lock last said of it.
 #[derive(Debug, Clone)]
 pub(super) struct Entry {
     pub(super) module: String,
@@ -84,7 +70,6 @@ pub(super) struct Entry {
     guard: Option<String>,
     sigs: Vec<(String, Vec<String>)>,
     committed: Option<Row>,
-    /// The effective options the key was computed under, which every solve must echo.
     options: String,
     platform_fail: Option<String>,
 }
@@ -102,7 +87,6 @@ impl Entry {
     }
 }
 
-/// Every root parsed and every command keyed; or the roots Alloy refused, for the parse lint.
 #[derive(Debug)]
 pub(super) struct Survey {
     pub(super) entries: Vec<Entry>,
@@ -113,7 +97,6 @@ fn stem(name: &str) -> &str {
     name.strip_suffix(super::MODULE_SUFFIX).unwrap_or(name)
 }
 
-/// The modules a target needs parsed.
 fn wanted(target: &Target, module: &str) -> bool {
     match target {
         Target::All => true,
@@ -190,8 +173,6 @@ fn keyed(
         .collect()
 }
 
-/// A root this jar refuses on this platform inside its own library: every command it holds is
-/// unmeasured here, named from the text assay emitted, since Alloy never listed them.
 fn platform_failed(
     module: &str,
     rendered: &Rendered,
@@ -240,7 +221,6 @@ fn platform_failed(
         .collect()
 }
 
-/// The entries a target runs.
 fn slice(entries: Vec<Entry>, target: &Target) -> Vec<Entry> {
     let Target::Only { module, label } = target else {
         return entries;
@@ -259,10 +239,8 @@ fn slice(entries: Vec<Entry>, target: &Target) -> Vec<Entry> {
         .collect()
 }
 
-/// A pass's rows, or the roots Alloy refused (then no row ran).
 pub(super) type Ran = (Vec<Computed>, Vec<(String, Refusal)>);
 
-/// Run a pass: parse, key, then decide every row. `Err` only when the adapter cannot start.
 pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
     let mut adapter = Adapter::new(jvm, job.caps.machine)?;
     let survey = survey(&mut adapter, job)?;
@@ -315,8 +293,6 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
     Ok((rows, Vec::new()))
 }
 
-/// How many adapter children the official tier can afford: RAM over each child's heap plus its
-/// non-heap, at most four.
 fn parallelism(caps: Caps) -> usize {
     let per = caps
         .machine
@@ -564,8 +540,6 @@ fn decide(
     c
 }
 
-/// An Alloy message with the out directory's own path taken out, so a lock row reads the same in
-/// every worktree.
 pub(super) fn portable(message: &str, out: &Path) -> String {
     let slashed = |s: &str| s.replace('\\', "/");
     let dir = format!(

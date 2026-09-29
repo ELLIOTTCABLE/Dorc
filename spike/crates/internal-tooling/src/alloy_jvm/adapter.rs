@@ -1,7 +1,3 @@
-//! One adapter child: spawned once, parses each root once, answers commands in sequence, and is
-//! killed and respawned by us when a budget runs out (`notes/30Yf` `arch-adapter-loop-is-the-daemon`).
-//! CPU is read from the child's own ticks, since std offers no portable child-CPU reading.
-
 use std::io::{BufRead as _, BufReader, Read as _, Write as _};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
@@ -12,21 +8,18 @@ use std::time::{Duration, Instant};
 use super::{Jvm, adapter_digest, adapter_source};
 use crate::json::{Json, Value};
 
-/// A kill-at budget for one request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Budget {
     pub(crate) cpu_s: u64,
     pub(crate) wall_s: u64,
 }
 
-/// What the child JVM is allowed; fixed for its life.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Machine {
     pub(crate) heap_mb: u64,
     pub(crate) procs: u32,
 }
 
-/// Translation size, as Alloy reports it just before solving; deterministic given the jar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct Size {
     pub(crate) primary_vars: u64,
@@ -65,7 +58,6 @@ impl Phase {
     }
 }
 
-/// One command of a parsed root.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommandInfo {
     pub(crate) index: u64,
@@ -78,14 +70,12 @@ pub(crate) struct CommandInfo {
     pub(crate) synthesized: bool,
 }
 
-/// A root as Alloy loaded it: every module of its closure with the text Alloy read.
 #[derive(Debug, Clone)]
 pub(crate) struct Parsed {
     pub(crate) module: String,
     pub(crate) loaded: Vec<(String, String)>,
     pub(crate) commands: Vec<CommandInfo>,
     pub(crate) options: Value,
-    /// Every non-builtin signature Alloy reached, with its field labels.
     pub(crate) sigs: Vec<(String, Vec<String>)>,
 }
 
@@ -97,7 +87,6 @@ pub(crate) struct Refusal {
     pub(crate) column: Option<u64>,
 }
 
-/// What one solve came to.
 #[derive(Debug, Clone)]
 pub(crate) enum Solved {
     Found {
@@ -125,7 +114,6 @@ struct Live {
     stderr: Arc<Mutex<String>>,
 }
 
-/// The adapter child for one document (or one `mise run alloy` invocation).
 #[derive(Debug)]
 pub(crate) struct Adapter {
     java: PathBuf,
@@ -134,7 +122,6 @@ pub(crate) struct Adapter {
     live: Option<LiveHandle>,
 }
 
-/// `Live` holds a `Receiver`, which has no `Debug`; this wrapper names it for `Adapter`'s derive.
 struct LiveHandle(Live);
 
 impl std::fmt::Debug for LiveHandle {
@@ -147,7 +134,6 @@ const STDERR_TAIL: usize = 16 * 1024;
 const POLL: Duration = Duration::from_millis(200);
 
 impl Adapter {
-    /// Compiles the adapter once per source digest into the target dir, then waits to be asked.
     pub(crate) fn new(jvm: &Jvm, machine: Machine) -> Result<Self, String> {
         let classes = compiled(jvm)?;
         let sep = if cfg!(windows) { ";" } else { ":" };
@@ -215,7 +201,6 @@ impl Adapter {
             .ok_or_else(|| "adapter did not start".to_owned())
     }
 
-    /// Kill the child; the next request respawns it, losing only the parse cache.
     pub(crate) fn kill(&mut self) {
         if let Some(LiveHandle(mut live)) = self.live.take() {
             let _ = live.proc.kill();
@@ -223,7 +208,6 @@ impl Adapter {
         }
     }
 
-    /// One request, answered, killed at `budget`, or lost with the child.
     fn call(&mut self, request: &Json, budget: Option<Budget>) -> Call {
         let live = match self.spawn() {
             Ok(live) => live,
@@ -251,6 +235,7 @@ impl Adapter {
                         continue;
                     };
                     match value.str("event") {
+                        // std reads no child's CPU portably, so the child reports its own.
                         Some("start") => base_cpu = value.u64("cpu_ms"),
                         Some("translated") => translated = Some(value),
                         Some(_) => {
@@ -296,7 +281,6 @@ impl Adapter {
         ))
     }
 
-    /// Parse `root` with its closure, or Alloy's refusal.
     pub(crate) fn parse(
         &mut self,
         root: &Path,
@@ -342,7 +326,6 @@ impl Adapter {
         })
     }
 
-    /// Parse and typecheck only: the module's name, or Alloy's refusal.
     pub(crate) fn parse_only(
         &mut self,
         root: &Path,
@@ -401,8 +384,6 @@ impl Adapter {
         }
     }
 
-    /// Does `xml` satisfy command `index`'s formula (facts included) in the current model?
-    /// `None` when the evaluator cannot say; the caller then solves.
     pub(crate) fn eval(
         &mut self,
         root: &Path,
@@ -427,7 +408,6 @@ impl Drop for Adapter {
     }
 }
 
-/// Which command, and what to bring back.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Ask<'a> {
     pub(crate) index: u64,
@@ -501,8 +481,6 @@ fn request(verb: &str, root: &Path, opens: &[(String, PathBuf)], extra: &[(&str,
     Json::Obj(fields)
 }
 
-/// The compiled adapter for the current source, compiled on first use; a racing compile lands in
-/// its own directory and loses the rename harmlessly.
 fn compiled(jvm: &Jvm) -> Result<PathBuf, String> {
     let digest = adapter_digest()?;
     let root = internal_tooling::target_dir().join("alloy");

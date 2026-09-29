@@ -1,11 +1,6 @@
-> assay self-test fixture; it means nothing. A book named after its own conjunction must refuse.
+> assay self-test fixture; it means nothing. Two commands of one label in one module must refuse.
 
-```sh
-# every_line.sh
-   frob a
-#} frob a
-#= this in Line
-   spin b
-#} spin b
-#= this in Line
+```alloy
+check k { no Line } for 3
+check k { some Line } for 3
 ```

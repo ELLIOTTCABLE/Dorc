@@ -206,15 +206,13 @@ fn refused_with(name: &str, lint: &str) -> serde_json::Value {
 
 #[test]
 fn an_unscoped_run_that_twins_no_check_refuses() {
-    // Unrefused, it would become a corpus outcome and ask "is it forced" where it said "can it be".
     let hit = refused_with("stray_run", "unscoped-run-is-a-premise-twin");
     assert_eq!(hit["run"], "lonelyRun");
 }
 
 #[test]
 fn two_commands_of_one_label_in_a_module_refuse() {
-    // The lock names a row by module and label; Alloy would run both and the lock would keep one.
     let hit = refused_with("twin_label", "label-is-unique-in-module");
-    assert_eq!(hit["label"], "every_line");
-    assert_eq!(hit["module"], "book_every_line.als");
+    assert_eq!(hit["label"], "k");
+    assert_eq!(hit["module"], "laws.als");
 }

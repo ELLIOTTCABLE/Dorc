@@ -1,16 +1,8 @@
-//! Generated modules carry no comments and one item per line (`notes/30Yf` § 3, W1): every gap
-//! between two tokens becomes one space, adjacent tokens stay adjacent, and where each stretch of a
-//! line came from goes to the sidecar instead. The key hashes these emitted bytes, the very bytes
-//! Alloy parses, so a defect here shows as a parse error or a moved verdict, never a silent match.
-
 use super::alloy::{self, Token};
 use crate::json::Json;
 
-/// Marks the start of an emitted block in the emitter's own internal text: `\u{1}file\u{1}line`.
-/// A spec carrying this byte is refused, so it can only ever be ours.
 pub(super) const ORIGIN: char = '\u{1}';
 
-/// Where a stretch of a generated line came from: a spec file and line, or assay itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Segment {
     pub(super) column: usize,
@@ -18,14 +10,12 @@ pub(super) struct Segment {
     pub(super) line: usize,
 }
 
-/// One generated module: its bytes, and a segment list per line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Rendered {
     pub(super) text: String,
     pub(super) map: Vec<Vec<Segment>>,
 }
 
-/// Render the emitter's internal text, or say which spec line holds what the tokenizer is unsure of.
 pub(super) fn render(internal: &str) -> Result<Rendered, (String, usize, &'static str)> {
     let mut blocks: Vec<(String, usize, String)> = vec![("assay".to_owned(), 0, String::new())];
     for line in internal.split('\n') {
@@ -62,6 +52,7 @@ fn one_line(src: &str, toks: &[Token], file: &str) -> (String, Vec<Segment>) {
     let mut segments: Vec<Segment> = Vec::new();
     let mut prev: Option<&Token> = None;
     for tok in toks {
+        // Adjacent stays adjacent: `this/A` and `1..3` are other programs with a space inside.
         if prev.is_some_and(|p| p.end < tok.start) {
             line.push(' ');
         }
@@ -79,7 +70,6 @@ fn one_line(src: &str, toks: &[Token], file: &str) -> (String, Vec<Segment>) {
 }
 
 impl Rendered {
-    /// One JSON array per generated line, of `[column, file, line]` segments.
     pub(super) fn map_json_lines(&self) -> Vec<String> {
         let num = |n: usize| Json::Num(u64::try_from(n).unwrap_or(u64::MAX));
         self.map
@@ -95,7 +85,6 @@ impl Rendered {
             .collect()
     }
 
-    /// The spec position a generated line and column came from, for walking an Alloy message back.
     pub(super) fn origin(&self, line: usize, column: usize) -> Option<&Segment> {
         self.map
             .get(line.checked_sub(1)?)?
@@ -115,7 +104,6 @@ mod tests {
 
     #[test]
     fn gaps_collapse_to_one_space_and_adjacency_survives() {
-        // `this/A` and `1..3` must stay glued: a space inside either is another program.
         let internal = format!(
             "module m\nopen util/ordering[A]\n\n{}\n{}",
             block(
