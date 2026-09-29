@@ -364,8 +364,27 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
   document's `run bookScope {}` overrides it for that document, `run bookScope_<book> {}` for one
   book, and a trailing `for` for one command; assay appends the exact bounds of the four kinds it
   owns and nothing else.
-- The smallest run: every book is its own generated module and every law and twin has a name, so
-  the hot loop of 2.8-bounds-and-cost runs one module, or one command by name, never the document.
+- A *targeted run* names one command or one module and runs a *slice*: the command, its premise
+  twin, and in a book the book's run (the corpus run in the corpus book), without which a green
+  means nothing. It checks and never writes the lock. The hot loop of 2.8-bounds-and-cost runs a
+  slice, never the document.
+- A *tier* is how hard a run tries: *hot* for the author's loop, *gate* for completion, *official*
+  from scratch, ignoring the lock's keys, replaying nothing, entailing nothing. A row's *budget* is
+  the CPU seconds per command it was measured under; the *ceiling* is the official tier's budget
+  and heap. A result found under any budget is the same fact.
+- A result is *definite* (`sat`, `unsat`, `counterexample`, `no-counterexample`) or *unmeasured*,
+  which says nothing about the model and comes in six kinds: `timeout`, `out-of-memory`,
+  `platform-fail`, `unsupported-here`, `not-run`, and the hot tier's `deferred`. `error` is
+  neither. A timeout below the ceiling is *early* and owes a run at the ceiling; one at or above
+  it is *full* and owes analysis or acceptance. An accepted unmeasurement is residue, never green.
+- *Entailment*: a book's green `every_line`, the conjunction of its line checks verbatim, makes
+  each of its lines green without a solve; a red one sends the lines to find the first red line.
+  The official tier solves every line alone and reports a conjunction that disagrees with its
+  lines as a finding against the construction.
+- *Replay*: a row whose last solve found an instance re-evaluates that instance against the edited
+  model before solving, and an instance that still fits is a genuine counterexample or witness at
+  once. Replay applies only while every declaration is unchanged: a fact, claim, or world-fact
+  edit replays; a `pred`, `fun`, `sig`, `enum`, or `open` edit re-solves.
 - Where assay departs from the `using-alloy` skill's idioms, on purpose: a book's atoms are named
   `one sig`s at exact bounds in a generated module of their own, where the skill's some/disj
   instance idiom serves hand-written tests inside one shared model; and `run bookScope {}` and a
@@ -378,15 +397,22 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
 - What refuses where: Alloy refuses what is not well-formed Alloy; assay refuses what is not
   well-formed *document* (a map line that does not pair with its command word for word, a name
   covering two literals or a literal under two names, a load that resolves to nothing, a `this` on
-  a line with no outcome); nothing refuses a check that restates its own definition, which is why
+  a line with no outcome, an unscoped `run` not named for a check's twin, two commands of one
+  label in one module, a paragraph the tokenizer cannot split with certainty); nothing refuses a
+  check that restates its own definition, which is why
   3-writing-so-the-adversary-cannot-cheat keeps the kill-by-hand habit.
 
 ## § 6-results-locks-and-what-an-author-owes
 
 - **`lock-results-beside-the-spec`** — every command's result is recorded in `<stem>.lock.json`
-  beside its document, one row per command: module, name, kind, scope, result, the premise
-  twin's result, and a hash of the command's text; never a timing. `--write` records the run;
-  `--check` recomputes and compares in both directions.
+  beside its document, one row per command: module, name, kind, scope, result, and the budget,
+  heap, size, key, and platform it was measured under; never a timing; the premise twin's result
+  is read from the twin's own row. `--write` records the run; `--check` answers a row whose key is
+  unchanged from the lock and recomputes the rest, comparing in both directions.
+- **`lock-unmeasured-is-not-a-pass`** — a run that finds no mismatch but leaves rows unmeasured,
+  or owed a run at the ceiling, exits 4: a request to run the official tier, never a red and
+  never a green. An unmeasurement never matches or overwrites a definite result, and on a changed
+  key it unlocks the row.
 - **`lock-is-the-ratchet`** [TYPED 2026-09-28] — `--check` passes when the run matches the lock row
   for row, reds included: a set of reds the committed lock already records, with no new one, is a
   pass. A new red, a moved result, a row present on one side only, is a mismatch. Committing the
@@ -395,7 +421,9 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
 - **`lock-a-reword-shows-as-nothing`** — a rewording that moves no result leaves the lock
   untouched; a moved row is the text-drift signal of 2.7-bank-the-answer made mechanical.
 - **`gate-commit-lints`** — committing a document under `specs/` runs assay's compile lints,
-  solver-free, in about a second; a refusal names the document and the lint.
+  Alloy's parse, and a key-diff of the staged bytes against the lock, solver-free, in under three
+  seconds; a refusal names the document and the lint, and the key-diff only warns how many rows
+  the commit leaves unmeasured.
 - **`gate-completion-checks-the-lock`** — builder completion runs `--check` over the changed
   documents and their locks: parse errors refuse first, then the run, bounded by the runner's caps
   on wall-clock, CPU time, heap, and the whole batch.
