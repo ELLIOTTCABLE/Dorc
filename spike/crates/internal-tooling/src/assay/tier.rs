@@ -55,6 +55,8 @@ impl Tier {
         }
     }
 
+    /// Whether a pass may reuse what an earlier pass left: cached rows and stored instances. The
+    /// official tier is the belt to those braces and recomputes everything.
     pub(super) fn trusts_keys(self) -> bool {
         self != Self::Official
     }

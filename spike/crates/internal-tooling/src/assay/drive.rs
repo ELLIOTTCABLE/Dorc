@@ -472,6 +472,7 @@ fn decide(
     let elapsed = |s: Instant| u64::try_from(s.elapsed().as_millis()).unwrap_or(u64::MAX);
     if let (Some(guard), Some((stored, xml))) =
         (&e.guard, replay::load(job.out, &e.module, &e.info.label))
+        && job.tier.trusts_keys()
         && *guard == stored
         && replay::fits(&xml, e.info.bitwidth, &e.info.scope, &e.sigs)
         && adapter.eval(&root, e.info.index, &xml, job.caps.budget) == Some(true)
