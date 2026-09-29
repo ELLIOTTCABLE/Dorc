@@ -11,6 +11,14 @@
 
 ## § 0-remit-and-state
 
+**Closed 2026-09-29** [TYPED: "we're done with this arc"]. The human's closing rulings, all
+[TYPED]: no opaque review for this arc ("it's not relevant here"); the composition of several
+specification documents is sat separately and nothing of it is ruled or recorded here; the 311
+specification's lock is rebuilt from scratch under the human's oversight rather than migrated row
+by row; the 311 arc's root handoff file is removed. The conductor's worktree is kept for a
+rewind. What a successor needs is `notes/30Y` (what is) and `plans/30Z` § 5 to § 6 (the words and
+the gates); this ledger is the record of why.
+
 The remit [TYPED]: speed up the hot loop of writing and checking a specification without
 weakening any correctness property; decide what belongs in the tooling; decide what pre-commit,
 the hot loop, the gate, and CI each contain. Two loops exist and want different first levers: the
