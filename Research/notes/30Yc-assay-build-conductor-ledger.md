@@ -150,6 +150,41 @@ are `notes/30Yd` § 4 in the builder's words; the conductor's sort:
   says union at v0). `30Yd:disagree-harness-claim-abstract` needs nothing: `30Y` is right and
   strawman-3's hand harness is the stale one, frozen.
 
+The hot-loop lane's (`notes/30Yf`; the tool as it stands is `30Y` § 2.5, § 2.7, § 3):
+
+- **Resolved, B.** `chafe-one-jvm-per-command`: a trivial command paid a JVM start, a parse, and
+  a translation for 50 ms of solving (`30Yf` § 0); one adapter child per document parses once.
+  `chafe-timeout-matched-timeout`: a lock row `timeout` matched a computed `timeout`, so a slow
+  machine could pass a new red on the slowest laws; the asymmetric match
+  (`30Yf:lock-asymmetric-match`) replaces it. `chafe-every-check-resolves-everything`: an
+  unchanged document re-solved every row; the key answers an unchanged row from the lock.
+  `chafe-stray-run-inverts-meaning`: an unscoped `run` not named for a twin became a corpus
+  outcome, "exists" read as "forced"; it is a refusal. `chafe-stale-modules-and-silent-write`:
+  modules a document no longer emits stayed in the out directory, and `--write` said nothing of
+  what it changed; the compile removes them and `--write` prints its diff.
+  `30Ye:dev-contention-is-runner-failure`: contention surfaces as assay's own exit 75.
+  `chafe-official-write-dropped-known-verdicts`: `--official --write` let a timeout replace a
+  definite row on an unchanged key; a known verdict is kept.
+- **Resolved, A.** `chafe-alloy-accepts-duplicate-labels`: Alloy runs two commands of one label
+  in one module, which the lock's `(module, name)` row cannot hold; assay refuses the duplicate.
+- **Found, A, absorbed.** `chafe-partial-instance-inference-is-default`: `A4Options` infers partial
+  instances by default through the API, so every recorded verdict, the 311 lock's included, used
+  it; it stays on, and the key records it. `chafe-instance-xml-lists-leaf-atoms-only`: instance
+  XML lists an atom under its most specific signature alone, so the replay belt counts an exact
+  bound over a signature and its descendants. `chafe-command-formula-lacks-declaration-constraints`:
+  `Command.formula` carries the explicit facts and the claim, none of the signature facts,
+  multiplicities, abstractness, or subset constraints, and `A4SolutionReader` enforces none, so
+  replay pins every declaration byte-identically (`30Yf:replay-guard-declarations-byte-identical`).
+  `chafe-alloy-cli-depth-overwrites-symmetry`: Alloy 6.2.0's own command line sets
+  `opt.symmetry = options.depth(opt.symmetry)` (`CLI.java` line 153), as a scout reported from
+  the source; not reproduced here, and it does not touch the adapter, which drives the API and
+  keys the options it reports.
+- **Remaining, B.** `chafe-runner-batch-cap-stops-starts-only`: the standalone `mise run alloy`
+  stops new starts at its batch cap, and a command already started runs to its own cap; assay's
+  clip is not in it. `chafe-deferral-threshold-untuned`: the hot tier defers above 2,000,000
+  clauses, a starting figure no measurement has tuned. `chafe-three-platforms-unverified-on-macos`:
+  the three-platform rule (`30Yf:arch-three-platforms`) has never run on macOS or Apple Silicon.
+
 ## § 5-what-belongs-in-30Z-section-6
 
 **[HUMAN]** 2026-09-28: `plans/30Z` § 6 (results, locks, what an author owes) stays a TODO until

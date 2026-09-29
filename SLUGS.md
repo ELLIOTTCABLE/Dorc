@@ -568,7 +568,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## arch-three-platforms
 - defined: —
-- cited: 30Y 30Yf (2)
+- cited: 30Y 30Yc 30Yf (3)
 
 ## oracle/CLAUDE:argparse-is-the-vouch-typechecker
 - defined: spike/crates/oracle/CLAUDE.md:18 — — the oracle author's own argparse is the
@@ -1727,6 +1727,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## dev-census-openers-are-incomplete
 - defined: —
 - cited: 30N 30Nb 30Nc (4)
+
+## dev-contention-is-runner-failure
+- defined: —
+- cited: 30Yc 30Ye (2)
 
 ## 27S:dev-e2e-findings-via-native
 - defined: Research/notes/27S-lint-sketch-landing.md:110 — — `27R` §7 lists "findings present via inert stub
@@ -4656,7 +4660,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lock-asymmetric-match
 - defined: —
-- cited: 30Y 30Yf (2)
+- cited: 30Y 30Yc 30Yf (3)
 
 ## lock-definite-versus-unmeasured
 - defined: —
@@ -5997,7 +6001,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## replay-guard-declarations-byte-identical
 - defined: —
-- cited: 30Y 30Yf (2)
+- cited: 30Y 30Yc 30Yf (3)
 
 ## 30Rk:report-api-close
 - defined: Research/notes/30Rk-durable-transition-residue-lane-report.md:9 — : what the three tidy items became
