@@ -1200,7 +1200,7 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
 }
 
 check law_sparing_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
       and not hole_composite_keys_with_same_parts_reach_differently implies
@@ -1209,7 +1209,7 @@ check law_sparing_is_sound {
 } for 4 but 4 Int, 10 Claim
 
 run law_sparing_is_sound_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
@@ -1719,17 +1719,17 @@ pred hole_region_closure_with_unknown_leaf_pair {
 }
 
 run hole_region_closure_with_unknown_leaf_pair_witness {
-   hole_region_closure_with_unknown_leaf_pair and everyStatementInForceIsTrue and storesAreWellFounded
+   hole_region_closure_with_unknown_leaf_pair and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 check law_region_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded and not hole_region_closure_with_unknown_leaf_pair implies
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.reaches & (D.reaches + D.reaches.passes)
 } for 6 but 4 Int
 
 run law_region_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
@@ -2043,7 +2043,7 @@ pred hole_world_scoped_top_aliases_into_a_store {
 }
 
 run hole_world_scoped_top_aliases_into_a_store_witness {
-   hole_world_scoped_top_aliases_into_a_store and everyStatementInForceIsTrue and storesAreWellFounded
+   hole_world_scoped_top_aliases_into_a_store and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 pred hole_composite_keys_with_same_parts_reach_differently {
@@ -2069,14 +2069,14 @@ run law_compare_same_is_sound_premise {
 }
 
 check law_compare_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_composite_keys_with_same_parts_reach_differently implies
       all x, y: mKey | compare[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_composite_keys_with_same_parts_reach_differently
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
@@ -2116,9 +2116,9 @@ pred allInForceTrueExcept[except: set Statement] {
 
 pred everyStatementInForceIsTrue { allInForceTrueExcept[none] }
 
-pred storesAreWellFounded { no r: mReferent | r in r.^holds }
+pred noStoreIsAmongItsOwnContents { no r: mReferent | r in r.^holds }
 
-pred routesAreStrict { no r: mReferent | r in r.^passes }
+pred noRoutePassesThroughItself { no r: mReferent | r in r.^passes }
 
 check law_same_is_sound {
    everyStatementInForceIsTrue and not hole_cell_keys_under_same_parents_reach_differently implies
@@ -2138,12 +2138,12 @@ run kill_same_is_sound_unique_referent {
 } for 6 but 4 Int expect 1
 
 check law_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and not hole_world_scoped_top_aliases_into_a_store implies
       all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches and some y.reaches
       and some (x.^parent + y.^parent) & mKey
@@ -2604,7 +2604,7 @@ pred hole_unclosed_traversal_without_a_key_catalog {
 }
 
 run hole_unclosed_traversal_without_a_key_catalog_witness {
-   hole_unclosed_traversal_without_a_key_catalog and everyStatementInForceIsTrue and storesAreWellFounded
+   hole_unclosed_traversal_without_a_key_catalog and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 pred hole_natural_key_catalog_off_the_route {
@@ -2613,11 +2613,11 @@ pred hole_natural_key_catalog_off_the_route {
 }
 
 run hole_natural_key_catalog_off_the_route_witness {
-   hole_natural_key_catalog_off_the_route and everyStatementInForceIsTrue and storesAreWellFounded
+   hole_natural_key_catalog_off_the_route and everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 check law_unstale_route_is_untouched {
-   everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
       and not hole_unclosed_traversal_without_a_key_catalog
       and not hole_natural_key_catalog_off_the_route
       and not hole_region_closure_with_unknown_leaf_pair implies
@@ -2626,7 +2626,7 @@ check law_unstale_route_is_untouched {
 } for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
-   everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
+   everyStatementInForceIsTrue and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
    not hole_region_closure_with_unknown_leaf_pair
