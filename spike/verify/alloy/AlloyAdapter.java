@@ -50,6 +50,8 @@ public class AlloyAdapter {
       System.setOut(new PrintStream(new java.io.OutputStream() { public void write(int b) {} }));
       Thread ticker = new Thread(() -> {
          while (true) {
+            // A caller killed mid-solve closes no pipe this thread would notice; its absence must stop the solver.
+            if (!ProcessHandle.current().parent().map(ProcessHandle::isAlive).orElse(false)) Runtime.getRuntime().halt(1);
             emit(event("tick"));
             try { Thread.sleep(1000); } catch (InterruptedException e) { return; }
          }

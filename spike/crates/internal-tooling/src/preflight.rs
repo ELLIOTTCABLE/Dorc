@@ -110,8 +110,8 @@ const PROFILES: [Profile; 5] = [
         // total ~20 KiB on disk).
         disk_cold: GIB,
         disk_warm: GIB,
-        // The runner's default child heap cap (`AlloyRunner.java` `--heap 2048`) plus the parent
-        // JVM and the child's non-heap: a cap the machine cannot grant is not a cap.
+        // The runner's default adapter heap cap (`alloy_jvm::runner`, `--heap 2048`) plus the
+        // adapter JVM's non-heap: a cap the machine cannot grant is not a cap.
         ram: 3 * GIB,
     },
 ];

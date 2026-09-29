@@ -7,6 +7,7 @@
 
 use std::process::ExitCode;
 
+mod alloy_jvm;
 mod arrangement_census;
 mod assay;
 mod bless;
@@ -51,6 +52,7 @@ fn main() -> ExitCode {
         Some("docids") => docids::run(args.get(1..).unwrap_or_default()),
         Some("slugs") => slugs::run(args.get(1..).unwrap_or_default()),
         Some("doctor") => doctor::run(args.get(1..).unwrap_or_default()),
+        Some("alloy") => alloy_jvm::runner::run(args.get(1..).unwrap_or_default()),
         Some("assay") => assay::run(args.get(1..).unwrap_or_default()),
         Some("exclusive") => exclusive::run(args.get(1..).unwrap_or_default()),
         // The rendered inventory only; the GATE is `xfail_census_is_coherent` in the lib, and this

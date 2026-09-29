@@ -71,6 +71,45 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     code
 }
 
+/// The lock, held by this process for heavy work it does itself; released on drop.
+#[derive(Debug)]
+pub(crate) struct Hold {
+    ours: Option<PathBuf>,
+}
+
+impl Drop for Hold {
+    fn drop(&mut self) {
+        if let Some(lock) = &self.ours {
+            release(lock);
+        }
+    }
+}
+
+/// Take the lock for `task` in-process, or the exit code to leave with: 75 for contention, having
+/// said who holds it, 2 when the lock cannot be read or written.
+pub(crate) fn hold(task: &str) -> Result<Hold, u8> {
+    let Some(lock) = lock_path() else {
+        eprintln!(
+            "exclusive: no user cache directory (LOCALAPPDATA, XDG_CACHE_HOME, or HOME) to hold the lock"
+        );
+        return Err(2);
+    };
+    if held_by_ancestor(&lock, std::env::var(HOLDER_ENV).ok().as_deref()) {
+        return Ok(Hold { ours: None });
+    }
+    match acquire(&lock, task) {
+        Ok(()) => Ok(Hold { ours: Some(lock) }),
+        Err(Acquire::Held(holder)) => {
+            refuse(&lock, &holder);
+            Err(REFUSED)
+        }
+        Err(Acquire::Io(e)) => {
+            eprintln!("exclusive: {}: {e}", lock.display());
+            Err(2)
+        }
+    }
+}
+
 fn spawn(command: &mut Command, program: &str) -> ExitCode {
     match command.status() {
         Ok(status) => ExitCode::from(
