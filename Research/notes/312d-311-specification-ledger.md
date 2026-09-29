@@ -656,3 +656,38 @@ assay owner to lift into `30Yc`'s chafe register. Nothing semantic was weakened 
   reproducible under a raised cap, no verdict dependent on an option; the chafe is cost and
   ergonomics, with the one correctness-adjacent exception that time-based `timeout` rows are not
   deterministic across machines.
+
+## § 11-turn-three-and-the-handover
+
+Tip `50e53398` on `ai/312d-mechanize-311` (twenty-one commits over `3a5c81f7`; only the
+specification and the lock touched), 2026-09-29. Turn 3 applied the fourteen rulings the
+conductor gave in chat after turn 2: `coveredBy` and `seed` per element (a branching function had
+been applied to a set argument, a second mechanical slip class beside `fnd-none-equality-class`);
+`true_ClosesLookedUpIn` guarded inside its antecedent; `routesAreStrict` as a named premise on the
+untouched-route law, never a fact; the exclusion-readings law at four atoms and ten statements
+beside the sparing law; the sixth hole. The lock: 39 rows, no counterexample row. Witnessed and
+killed greens: `natural_same`, `natural_disjoint`, `same`, `nobody_spoke`. Witnessed greens:
+`sparing` (at `4 but 4 Int, 10 Claim`) and `different_sorts_never_same`. Seven checks translate
+and do not solve within 120 s CPU at their scopes (`disjoint`, `compare_same`, `compare_disjoint`,
+`two_tops`, `region`, `unstale` at nine statements, `exclusion_agree` at four and ten), each
+no-counterexample at five where measured; they are the coverage frontier and stay as recorded.
+Holes held: § 9's five and `hole_region_closure_with_unknown_leaf_pair` (§ 2.9 step 3 concludes
+DISJOINT for a leaf pair `compare()` reads UNKNOWN or KNOWN_UNSPOKEN, step 1 never having settled
+that x is not D; on the region, sparing, and untouched-route laws). The builder's three judgement
+calls beyond the rulings' letter, accepted by the conductor: the guard inside the antecedent (a key
+reaching nothing keeps a vacuously true closure, as the sentence says), one translation sentence
+for `routesAreStrict`, and the hole's widening to KNOWN_UNSPOKEN. The gate's `assay-lock` step
+stays red at its 540 s batch cap. Not folded; the fold is the human's.
+
+Correction to § 6.5: the baseline for the tri-partition accounting is the note's content at the
+parent of the rename commit, `1af7e0d9^:Research/notes/311-identity-and-relation-model.md` (the
+note at `8b7ad973`), not `7a63bae6`; edits landed after that tip (`312cg` § 24 to § 30).
+
+**[TYPED]** 2026-09-29: the first builder is wound down at its context cap. A new clean-context
+Fable builder is authorized; it is allowed an Opus under it, at its option, for churn-y,
+low-logic mechanics, under the standing order that an Opus never edits Alloy text in any
+meaningful way, only mechanics and general mess that is not thinking about correct
+specification behaviour. Every prior instruction stands. The successor is dispatched from
+`50e53398` rebased over `ai/main`, as `ai/312d-mechanize-311-b`, with the order: the
+tri-partition accounting against the corrected baseline; the books, each world put to the
+conductor first; the final lock and report, with its own tooling-chafe section.
