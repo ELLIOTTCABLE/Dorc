@@ -733,3 +733,62 @@ on ruling: `readsetMemberIsTop` walked the catalog chain where 311 says the mFul
 `compositeMayRead` was defined and read by nothing where 311 says the composite's set is the
 union. The conductor's rulings on the fifty-one items were given in chat and are being applied
 on the successor's branch; the tri-partition's final counts follow its turn 2.
+
+## § 13-the-close-of-the-mechanization-arc
+
+**[TYPED]** 2026-09-29: the arc closes here, both conductor and builder near their context caps.
+No fast-forward of `ai/main`, no ceremony, both builder worktrees left in place; a rewound
+conductor takes the fold and the ceremony before the next dispatch. Nothing new is taken on.
+
+State a successor inherits. The work is on `ai/312d-mechanize-311-b` at `a212975c`, twenty-nine
+commits over `ai/main` (twenty-one the first builder's, eight the successor's), tree clean,
+worktree `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\agent-a70159e5c19f3608a`; the first
+builder's branch `ai/312d-mechanize-311` at `50e53398` and its worktree
+`...\agent-a03007ade2e0378bf` are superseded by the rebase and kept only as evidence. `ai/main`
+itself carries only this ledger's commits above `3a5c81f7`. The fold is a rebase of the successor's
+branch over `ai/main` (expected clean) and a fast-forward; the completion gate's `assay-lock` step
+is red for the batch-cap reason alone.
+
+The successor's eight commits: four repairs toward 311's letter (the entry chain as a refusing seat,
+§ 1.6, the one edit that changed a translation sentence and is ruled; `readsetMemberIsTop` over the
+identity chain; `compositeMayRead` consumed by rule 4 and the closure truth; lifecycle as
+mRoot-adjacent), four translation sentences added, thirteen baseline sentences restored verbatim
+into normative blocks with `sortsOf` and `partsOf` deleted, nine residue duplicates struck under the
+one-copy rule, and the fifty-seven register entries moved inside § 4.2's blockquote byte for byte.
+No red appeared; every touched command reproduced its lock row. The lock (39 rows) is the first
+builder's, untouched; `--check` at `a212975c` mismatches on exactly one row,
+`law_disjoint_by_two_tops_rests_on_one_scheme_owner`, recorded `timeout` and now solving in 95 to
+105 s against the 120 s cap, its hash unchanged: the time-dependence of § 10, not an effect of any
+edit. Left as is on the conductor's ruling; a re-lock waits on a deterministic budget in the runner.
+
+The tri-partition at the tip, over the 770 baseline sentences: commentary 211; mechanical with a
+named carrier 259; structural 33; residue 222; carried differently or by an inert definition 36,
+every one a recorded item (the marks, § 12's found readings, the inert definitions); residue copies
+kept whole for an unmechanized half 9; plain prose judged normative 0; absent 0. The tables are the
+successor's scratchpad `tri-partition-v3.tsv` and `additions-v2.tsv`, uncommitted; whether they
+become a durable is the human's.
+
+Not started, banked as the next arc's first step: the books, four worlds drafted by the successor
+and confirmed by the conductor, no load file written. B1 `two-files-one-filesystem`: tessa owns
+`sm.Path`, `sm.File`, `sm.Filesystem`; the inode mScheme `:primary-of sm.File`, its shape
+`:identified-in sm.Filesystem` with both warrants; the path shape `:yields` it; the filesystem's
+shape scoped in the mRoute and `:aliases-nothing-else`; the declaration seat supplies `fs_1`, a
+primary key; `/srv/a` and `/srv/b` yield two inodes, DISJOINT; a second path to the first inode,
+SAME. B2 `a-hardlink`: as B1 with the path shape carrying neither warrant (the honest world under
+§ 2.3); two paths yield one inode, SAME; the region test against a sibling directory UNKNOWN; the
+book with a false unique-name in force is the attributed wrong-DISJOINT world, a second book.
+B3 `nested-pid-namespaces`: pia's pid mScheme `:primary-of sm.Process`, `:identified-in
+sm.PidNamespace` with both warrants; the namespace mScheme's two shapes, `nested` and `initial`;
+no `:aliases-nothing-else` on the inner namespace; pid 1 inside and pid 4821 outside reach one
+process: UNKNOWN without the container manager's `:corresponds`, SAME with it. B4
+`user-story-stage-five`: as USER_STORY spells it, the index cell given whole against the four facts
+meets each at `host` with no shared key space and reads KNOWN_UNSPOKEN, which never spares; the
+honest outcomes are `todo[this]` until the sitting, the acked cost of `311t` § 14 and the § 4.2
+register's first entry; the book that spares is the one whose apt describer names the list files.
+
+Owed to nobody, listed so a successor sees the whole field: the human's sitting over the six holes
+(§ 9, § 11), the found readings and recorded disagreements (§ 12), and the seven UNACKED READING
+marks (§ 7); the tooling items of § 10 for the assay owner, the deterministic budget first; the
+adversarial crosscheck over the platform, under the human's instruction; the `AGENTS.md`
+opaque-review gate, which binds a Fable conductor at the end of this work and needs the human's
+typed ack to dispatch.
