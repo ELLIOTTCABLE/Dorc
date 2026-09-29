@@ -3,8 +3,9 @@
 > Tier: LLM-authored plan (Fable conductor, from the 2026-09-27 sittings; round 30). Subordinate
 > to the root docs and `spike/CLAUDE.md`; sibling of `notes/301` (minispec and dorc-verify, the
 > code-tier instrument this extends downward to the design tier) and of `notes/30X` (the testing
-> architecture the correspondence half will eventually ride). Its ledger is `notes/30Ya`; its
-> evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
+> architecture the correspondence half will eventually ride). Its ledger is `notes/30Ya`, and its
+> build ledgers are `notes/30Yc` (with the chafe register) and `notes/30Yf` (the lock's
+> semantics, the key, and the tiers); its evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
 > source graded); the worked fixtures are `notes/30Ya-strawman-2/` and `notes/30Ya-strawman-3/`,
 > both run (`notes/30Yb`). Grades: **[TYPED]** the human typed
 > it · **[ACKED]** confirmed in dialogue · **[CONDUCTOR]** conductor-derived, unratified. Every
@@ -55,9 +56,11 @@ and universally quantified laws, which is Alloy's whole language; the small-scop
 holds empirically here, since every panel witness to date fits in four to six atoms; a check
 takes seconds; a counterexample is a concrete small world a human can read; Alloy 6 adds a
 temporal mode (`var` sigs, `after`, `always`) the chronology work will want (§ 4); and the
-distribution is one jar on a JVM, with a headless `exec` subcommand and a documented Markdown
-mode that runs fenced `alloy` blocks straight out of a `.md` file, so a person can open a spec
-in the Analyzer without assay in the loop.
+distribution is one jar on a JVM. The jar carries a headless `exec` subcommand and a documented
+Markdown mode that runs fenced `alloy` blocks straight out of a `.md` file, so a person can open a
+spec or a generated module in the Analyzer, or run it from a shell, without assay in the loop.
+Assay itself uses neither: it drives the jar's Java API through a small adapter of its own (§ 3),
+because `exec` writes an output directory per source and offers no per-command cap.
 
 ### § 1.2-limitations-stated-plainly
 
@@ -210,15 +213,20 @@ One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN la
 - `claims.als` — opens `species` and `words`; every `one sig … extends <sig under Claim>` atom
   from an `alloy` fence, and one named set per load file, so a book's loads are set expressions.
 - `laws.als` — opens `species` only, so the claim universe is free; every spec-authored `check`
-  that carries a scope clause, followed by the shared append half spliced verbatim (§ 2.2).
+  that carries a scope clause, and every spec-authored `run` that does other than a corpus
+  check's twin (a premise twin of a law written without its own clause takes its law's), followed by the shared append half spliced
+  verbatim (§ 2.2).
 - `book_corpus.als` — the corpus book: a generated book of one line, the null command `:`
   (a real sh word nothing describes, so no claim matches it and no species fact fires; its
   word is minted by assay under a name of assay's own, STRAWMAN `assay_colon`), whose
   speech is every claim atom the document declares. Every spec-authored `check` written without
   a scope clause is an outcome of that line, so it runs at exact bounds over the actual claims
   with all of them in force, through the same mechanism as any book (§ 2.4); truth-in-force is
-  defined there, which a lineless universe cannot offer [ACKED 2026-09-28].
-- `book_<name>.als` — opens `claims`; one per book fence (§ 2.4).
+  defined there, which a lineless universe cannot offer [ACKED 2026-09-28]. A corpus check's
+  premise twin lands here beside it. The module ends with the corpus `every_line` conjunction
+  (below) and the inhabitation run `run book_corpus {}`.
+- `book_<name>.als` — opens `claims`; one per book fence (§ 2.4): the line checks `line_<n>`, the
+  book's `every_line` conjunction, and the book's run, named after the book.
 - `assay.als` and `shared.als` — the harness and the tree-global module, written into the same
   directory. Every module is a root Alloy runs on its own, and Alloy resolves every `open`,
   from any module in the graph, against the root file's directory alone (an opened module
@@ -229,7 +237,35 @@ The species-versus-claims split is syntactic (a `one sig` whose ancestry reaches
 purpose is the scope-minimum limitation of § 1.2. The scope-clause rule for laws versus corpus
 checks is STRAWMAN [CONDUCTOR]: it keeps the document valid Alloy, so the Analyzer's Markdown
 mode still opens it, and it reads naturally, since a law states its scope and a corpus check's
-scope is the corpus.
+scope is the corpus. An unscoped `run` is a corpus outcome only as a premise twin: one not named
+`<check>_premise` after a check of the same document is a refusal, since as an outcome its
+meaning would invert from "some world has this" to "every world has this" [the 311 arc asked].
+
+**The emitted text** [ACKED: "ack comment-strip"; CONDUCTOR `30Yf:key-hashes-what-the-jvm-parses`].
+Every generated module is comment-free and carries one item per line: each paragraph's tokens on
+one line, one space wherever the source separates two tokens and none where it does not (so
+`this/A` and `1..3` stay the programs they are), string literals verbatim. What the tokenizer
+cannot split with certainty (an unterminated string or block comment, a quote glued to an
+identifier, a control byte) is a refusal, never a guess. The line map is a sidecar,
+`assay-map.json` in the same directory: for every emitted line of every module, the spec file and
+line each column span came from, so an Alloy message, a lint, or a counterexample walks back to
+the document [TYPED 2026-09-28: a line-mapping culture]. The key (§ 2.7) hashes exactly the
+bytes Alloy parses, and those bytes carry no comment, so rewording a comment or reflowing a
+paragraph moves no key; a normalisation that went wrong shows as a parse error or a moved
+verdict, never as a silent key match. A compile removes the modules the previous map listed and
+this compile no longer emits, and nothing else in the directory.
+
+**`every_line`, the whole-book conjunction** [ACKED, `30Yf:book-conjunction-entails-the-lines`].
+Each book with two or more line checks that carry no `for` of their own gets one more check,
+`every_line`, whose body is those checks' bodies verbatim, premises included, each in a block and
+joined by `and`, at the book's own scope clause. Validity distributes over conjunction at one
+scope over one set of facts, so a green `every_line` makes every member green (§ 2.5), and a red
+one leaves the line checks to find the first red line. A line with its own `for` stays outside it
+and runs alone. The corpus book gets the same conjunction over its corpus checks written inline
+(`check X { … }`, not naming an assertion, no `expect`). Its members share one module and one
+scope clause by construction, which is the whole of what the entailment rests on
+[CONDUCTOR `30Yf:book-conjunction-assay-invariants`]. Two commands of one label in one module
+are a refusal: the lock's row is `(module, name)`, and Alloy accepts the duplicate.
 
 ### § 2.4-books-lines-speech-and-outcomes
 
@@ -280,44 +316,194 @@ spec, over the relations assay supplies.
 2. **Corpus checks**: the outcomes of the corpus book's one line, at exact bounds over the
    actual claims, every claim in force.
 3. **Vacuity twins**: a `check X` is paired by name with a `run X_premise` in the same module,
-   which must be satisfiable; a check with no twin is recorded `premise: absent`, never green. A
-   book line's check has no twin of its own: its book's run is its witness, and the lock records
-   that run's result as the line's premise.
+   which must be satisfiable; a check with no twin is reported `premise: absent`, never green. A
+   book line's check, and a corpus check without a twin, has its book's run as its witness, and
+   the report gives that run's result as the check's premise (§ 2.7).
 4. **Book outcomes**: every line's `check` (§ 2.4).
-5. **Book satisfiability**: every book's `run`.
+5. **Book satisfiability**: every book's `run`, the corpus book's included.
+6. **Conjunctions**: each module's `every_line` (§ 2.3).
+
+**How a pass answers a row.** `--check` and `--write` compile, parse every module once in one
+adapter child per document (§ 3), and answer each command by the first of these that applies:
+
+- `platform-fail` when Alloy refused, on this platform, a library module the jar bundles (the
+  Windows jar and `util/natural`); nothing about the model is learned.
+- `unsupported-here` for a `1.. steps` command, which needs a complete temporal checker the jar
+  does not ship.
+- **cached**: in the hot and gate tiers, a row whose committed result is definite and whose key
+  is unchanged is the committed row, unsolved [ACKED `30Yf:key-composition`].
+- `deferred`: in the hot tier, a row whose last result was a timeout or an out-of-memory, or whose
+  recorded translation is larger than the deferral threshold (§ 3), is listed and never green;
+  the hot loop never produces a timeout by design [TYPED: "a vertical pyramidal slice"].
+- **entailed**: in the hot and gate tiers, a member of an `every_line` that completed
+  `no-counterexample` is `no-counterexample` without a solve. A conjunction that is red, timed
+  out, or errored entails nothing, and its lines are answered one by one.
+- `not-run` when the batch's time is spent before the command starts.
+- **replayed**: in the hot and gate tiers, a row whose last solve found an instance (a
+  counterexample, or a run's witness) evaluates that instance against the current command and
+  facts before solving; still satisfying, it is a genuine counterexample or witness at once
+  [TYPED: "fantastic, hard ack"]. The instance is used only under
+  `30Yf:replay-guard-declarations-byte-identical` [CONDUCTOR]: Alloy's command formula carries
+  the explicit facts and the claim and none of the declaration constraints (signature facts,
+  multiplicities, abstractness, subset parents), and its instance reader enforces none of them,
+  so an instance is replayed only when every paragraph of the loaded closure other than a
+  `fact`, an `assert`, or a command is byte-identical to the closure it came from and the scope
+  string is identical. Then a `fact`, a claim, or a world-fact edit replays, and a `pred`, `fun`,
+  `sig`, `enum`, or `open` edit re-solves. Three belts on the instance itself: the same bitwidth;
+  every `exactly N S` bound met by the atoms of `S` and its descendants (instance XML lists an
+  atom under its most specific signature only); every signature and field it names still
+  declared. Temporal commands are included, on the builder's verification that instance XML
+  round-trips a lasso trace and that the evaluator reads the whole trace (`30Yf` § 6).
+- **fresh**: otherwise the command is solved, under the tier's caps.
+
+**Targeted runs** [TYPED: "a vertical pyramidal slice"; `30Yf:run-targeted-is-a-slice-not-a-block`].
+`--module <m>` runs every command of one generated module. `--only [<module>.]<command>` runs the
+command, its `<command>_premise` twin, and, in a book module, the book's run (in `book_corpus`,
+`book_corpus`), which is what the green needs beside it to mean anything; in `laws` a law without
+a twin is already `premise: absent`. Without a module, `--only` names the one module holding
+that command and refuses when none or several do. A targeted run checks and never writes: named
+without a mode it is a `--check`, and `--write` with a target is a usage error.
+
+**Tiers** [ACKED; the numbers are § 3's]. `--hot` is the author's loop: cached rows, deferral,
+entailment, replay, and a small per-command budget. `--gate`, the default and the completion
+gate's, is the same without deferral and with a larger budget. `--official` is the from-scratch
+belt: keys ignored, no replay, no entailment, every line solved on its own beside its
+conjunction, at the project's ceiling budget and heap, several children in parallel; a
+conjunction whose verdict disagrees with its lines' own (green against a red line, or red
+against all-green lines) is a finding against the construction and exits 1 [CONDUCTOR, ruled at
+the lane's report].
 
 ### § 2.6-lints
 
-Solver-free, and only what compilation needs:
+Solver-free except the last, and only what compilation needs; each is a named refusal in the
+report (exit 2):
 
-- one literal carries at most one name across the tree, and one name covers at most one literal,
-  munged names included (the join key of § 2.1);
-- every free name in a `#=` is an atom assay knows;
-- every `.` line resolves to a load file or a claim atom;
-- every generated module parses under Alloy (Alloy's own parser; assay reimplements none of it).
+- `join-key-coherence`: one literal carries at most one name across the document, and one name
+  covers at most one literal, munged names included (the join key of § 2.1);
+- `map-word-count`: a `#}` line has as many components as its command has words;
+- `map-line-follows-command`: a `#}` line follows its command directly, every command has one,
+  and a `#=` line follows a mapped command;
+- `fence-header`: an `sh` fence opens with `# <identifier>.sh`;
+- `no-stray-comments`: an `sh` fence carries no other `#` line;
+- `load-stem-resolves`: every `.` line resolves to a load file or a claim atom;
+- `this-on-atomless-line`: a declaration mentions `this` only on a line that has an outcome;
+- `parent-is-a-known-sig`: every `extends` or `in` parent is a sig declared somewhere assay reads
+  (or `univ`, `Int`, `String`);
+- `unscoped-run-is-a-premise-twin`: an unscoped `run` is named `<check>_premise` after a check of
+  the document (§ 2.3);
+- `label-is-unique-in-module`: no two commands of one label in one generated module (§ 2.3);
+- `tokenizer-is-certain`: every emitted paragraph tokenizes with certainty (§ 2.3);
+- `alloy-parses`: every generated module parses and typechecks under Alloy's own parser, through
+  the adapter (assay reimplements none of it); one finding per distinct message, naming the
+  modules it stopped and walked back through the line map to the spec line.
+
+A free name in a `#=` that nothing declares is not a lint: it is minted as a word (§ 2.3).
 
 ### § 2.7-the-lock-the-report-and-the-exit-code
 
 - **The lock** [ACKED, with the human's nack of a generated index in the `SLUGS.md` style]: one
-  committed JSON file per spec beside it (STRAWMAN `<spec>.lock.json`), one row per command:
-  module, name, kind, scope, result (`sat` · `unsat` · `counterexample` · `no-counterexample`
-  · `timeout` · `not-run` · `error`), the premise twin's result beside its check (or `absent`),
-  and a hash of the command's text. A timeout is a result, not a runner failure. Wall-clock, and on a
-  timeout whether translation finished and how large the problem was (what decides between a
-  ceiling too high and an encoding too costly), are report columns beside the row and never
-  enter the lock, which is compared in both directions. `assay --check` recomputes and exits
-  nonzero on a mismatch in either direction; `assay --write` rewrites it, and the commit that
-  carries it is the ceremony, as with `301`'s catalogue lock. Not merged with that lock in this
-  experiment.
-- **The report** is the same rows plus the lint results and the generated file paths, as JSON,
-  to stdout. No prose, no suspicion, no ranking [TYPED]. A person or model who wants the
-  counterexample opens the generated `.als` in the Analyzer or runs `alloy exec` on it.
-- **Exit codes**: `0` the computed rows match the committed lock row for row, result and premise
-  included, whether those results are green or red [TYPED 2026-09-28: a set of reds fully acked
-  by the lock is a pass] · `1` a mismatch in either direction, which is what a NEW red is · `2` a
-  lint refusal · `3` the runner failed (jar, JVM, or the heavy-work lock held elsewhere). The
-  report lists the reds the lock accepts as its residue, so a reader sees them without opening
-  the lock; committing the lock is the ceremony that accepts a red.
+  committed JSON file per document beside it, `<stem>.lock.json` for `<stem>.assay.md`: an array
+  whose first element is `{"schema": 2}` and then one row per command, one per line, so its git
+  diff is a row diff. It is compared in both directions; the commit that carries it is the
+  ceremony, as with `301`'s catalogue lock, and rows are never hand-edited. Not merged with that
+  lock in this experiment.
+- **Results** [ACKED `30Yf:lock-definite-versus-unmeasured`]. A *definite* result, `sat`,
+  `unsat`, `counterexample`, or `no-counterexample`, is a fact about the model at that scope that
+  no budget changes. An *unmeasurement* says nothing about the model and is recorded as its own
+  kind [TYPED: a platform failure is separate from a timeout, with the same semantics]:
+  `timeout` (with `phase`, `translating` or `solving`), `out-of-memory`, `platform-fail`,
+  `unsupported-here`, `not-run` (the batch's time ran out before it started), and `deferred`
+  (the hot tier's, § 2.5). `error` is neither [CONDUCTOR `30Yf:lock-oom-and-error-rows`]: a
+  deterministic refusal (a missing scope is Alloy's error at solve time), never skipped, never
+  carried across a changed key.
+- **Columns**: `module`, `name`, `kind`, `scope` (Alloy's own rendering of the clause),
+  `result`, and where they apply: `phase`; `budget`, the per-command CPU cap in seconds the row
+  was measured under (a command cut short by the batch clip records the budget it actually had);
+  `heap`, in megabytes, on a timeout or an out-of-memory; `size`, the translation's primary
+  variables, variables, and clauses, on a fresh solve and on a timeout past translation (a
+  replayed or entailed row carries none); `key` (below); `platform` (`windows`, `linux`, or
+  `macos`: recorded, never keyed, since verdicts are platform-independent and parse failures are
+  not [CONDUCTOR `30Yf:key-platform-recorded-not-keyed`]); `message` on an error or a platform
+  failure, with the out directory's paths made relative. No timing: wall-clock and solve time
+  are report columns. The premise is not stored either: the report derives it from the twin's
+  row, or the book's run's (§ 2.5).
+- **The key** [ACKED `30Yf:key-composition`]: SHA-256 over the loaded closure exactly as Alloy
+  loaded it (every module, bundled `util/*` included, each with its command paragraphs removed
+  textually), the command's own generated text, its scope as Alloy renders it, the jar's pinned
+  digest, the adapter source's digest, and the effective options the adapter reports having used
+  (solver, symmetry, skolem depth, overflow, unrolls, decompose mode and threads,
+  partial-instance inference, core minimisation and granularity), never a flag vector. A solve
+  that reports other options than its key was computed under is an `error`. Stripping commands
+  is sound because a command is a query: it binds no name, adds no constraint another command
+  inherits, declares no atom, and opens no module; the premises a book line or a conjunction
+  embeds are in the command's own text, which the key hashes
+  [`30Yf:key-why-stripping-commands-is-sound`].
+- **Matching** [ACKED `30Yf:lock-asymmetric-match`]: each computed row against the committed row
+  of the same `(module, name)`. A definite result matches only its equal, at any budget, and an
+  equal `size` across a changed key proves nothing; an unmeasurement never matches a definite
+  result on a changed key, which unlocks the row as unmeasured rather than leaving it passing
+  [TYPED: "unlocks as 'unmeasured', not stays-passing"].
+
+  | committed row | computed | standing | exit |
+  | --- | --- | --- | --- |
+  | any | definite, equal to the committed result | `green`, or `accepted-red` | 0 |
+  | any | definite, another result (an unmeasurement or `error` committed included) | `mismatch-moved` | 1 |
+  | none | definite or `error` | `mismatch-new` | 1 |
+  | `error`, same key and message | `error` | `accepted-error` | 0 |
+  | anything else | `error` | `mismatch-moved` | 1 |
+  | definite, same key | an unmeasurement | `carried` | 0 |
+  | `platform-fail` | `platform-fail` | `accepted-unmeasured` | 0 |
+  | an early unmeasurement, `not-run`, or `deferred`, same key | an unmeasurement | `owed` | 4 |
+  | a full timeout or out-of-memory, or `unsupported-here`, same key | an unmeasurement | `accepted-unmeasured` | 0 |
+  | none, or any other with a changed or unknown key | an unmeasurement | `unmeasured` (`deferred` if deferred) | 4 (a deferral: 0) |
+
+  A committed row the whole run no longer produces is `gone`, and a missing or unreadable
+  lock is a mismatch; both exit 1.
+- **Early and full** [TYPED, refined; `30Yf:lock-early-versus-full-timeout`]: a timeout below the
+  ceiling budget, or an out-of-memory below the ceiling heap (the official tier's, § 3), is
+  *early* and owes exactly one thing, a run at the ceiling; at or above it the row is *full* and
+  owes analysis (`size` and `phase` say whether it is translation-bound, the specification's to
+  restructure, or solve-bound, the solver's or a change of claim) or acceptance. Full is relative
+  to the current ceiling, so a raised ceiling demotes accepted rows to early and they owe their
+  run again with no special case.
+- **Accepted residue**, listed by the report under its own headings and never a green
+  (`30Z:pos-halo-is-the-hazard`): accepted reds, accepted unmeasurements (full timeouts and
+  out-of-memories, platform failures, unsupported commands), and accepted errors (an `error` on
+  the same key with the same message).
+- **Writing** [ACKED `30Yf:lock-tier-invariant`: a lower tier never makes the lock worse].
+  `--write` at the hot or gate tier writes every row it computed definite or `error`; for a row
+  it computed as an unmeasurement it keeps the committed row, or writes none. `--write
+  --official` writes every computed row except that an unmeasurement never replaces a committed
+  definite row whose key is unchanged, since that verdict is known and the row is carried with
+  its old key and result; on a changed key or a new row the official tier writes the
+  unmeasurement, so a full timeout on new text is recordable for acceptance. Rows the document no
+  longer has are dropped. `--write` prints the rows it changed on stderr (`+` new, `~` moved,
+  `-` gone) and exits 0 once the lock is written, or 1 on the official tier's construction
+  finding (§ 2.5). A targeted run never writes.
+- **A schema-1 lock** (no `schema` element) is read for its results alone: its `budget`, `heap`,
+  `size`, and `key` read as unknown, and its `premise` and `hash` columns are ignored. No such row
+  matches a key, so nothing is cached, carried, or owed from it: every row re-solves, a definite
+  result matches by equality, and an unmeasurement against it is `unmeasured` until a run records
+  a definite result or an official tier records the row. Any `--write` renders schema 2.
+- **The report** is one JSON object per document on stdout: the spec, the out directory, the
+  generated files, the word table, the class table, the corpus and books summaries, the lint
+  results, and on `--check` or `--write` every command's row with its `premise`, `provenance`
+  (`fresh`, `cached`, `entailed`, `replayed`, or `unrun`), `standing`, `wall_ms`, `solve_ms`, and
+  a `note` (on a timeout, how far translation got), then the lock's summary: the tier, the
+  status (`matches`, `mismatch`, `unmeasured`, `missing`, `unreadable`, `written`), and the rows
+  under each standing, the `gone` rows, and the official tier's `construction_disagreements`.
+  `--staged` adds `key_diff`. No prose, no suspicion, no ranking [TYPED]. A person or model who
+  wants the counterexample opens the generated `.als` in the Analyzer, or runs `mise run alloy
+  -- --instances --command <name> <module.als>` on it.
+- **Exit codes**: `0` every row green or accepted residue [TYPED 2026-09-28: a set of reds fully
+  acked by the lock is a pass] · `1` a mismatch (a moved result, a new row, a row gone, a
+  missing lock) or the official tier's construction finding · `2` a lint refusal, compile or
+  parse, or a usage error · `3` the solver could not run (no JVM, a refused adapter compile,
+  preflight's refusal) · `4` no mismatch, but rows went unmeasured or are owed a run at the
+  ceiling, distinct from 1 because the reader's next act differs: run the official tier, where 1
+  says fix the model [CONDUCTOR, ruled at the breakpoint]; rows the hot tier defers do not count
+  toward it · `75` the heavy-work lock is held elsewhere: contention, not a failure; do other
+  work. Over several documents the most severe wins, in the order 0, 4, 1, 3, 75, 2.
 
 ### § 2.8-two-examples
 
@@ -368,98 +554,188 @@ string. The document's words module and the book's generated module, abridged:
 ```alloy
 module words
 open shared
-
-one sig stat, dash_c, fmt_i_d, cat, proc_boot_id, chmod, g_minus_w, g_plus_w, a_path, d_path, inode_x, inode_z, fs_1, fs_2, boot_1, … extends Shword {}
-one sig slash_path, bare_word extends Class {}
+one sig stat extends Shword {}
+one sig dash_c extends Shword {}
+one sig fmt_i_d extends Shword {}
+one sig a_path extends Shword {}
+one sig d_path extends Shword {}
+one sig inode_x extends Shword {}
+…
+one sig chmod extends Shword {}
+one sig g_dash_w extends Shword {}
+one sig g_plus_w extends Shword {}
+…
+one sig slash_path extends Class {}
+one sig bare_word extends Class {}
 fact { class = a_path->slash_path + d_path->slash_path + … }
 ```
 
 ```alloy
 module book_siblings_across_filesystems
 open claims
-
 fact { w.inode_x.scheme = Inode and w.inode_z.scheme = Inode }
 fact { w.a_path.reaches = w.inode_x.reaches and w.d_path.reaches = w.inode_z.reaches }
 fact { w.inode_x.worldParent = w.fs_1 and w.inode_z.worldParent = w.fs_2 and w.fs_1.worldParent = w.boot_1 and w.fs_2.worldParent = w.boot_1 }
-
-one sig line_3, line_4 extends Line {}
-one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_4 }
-fact { line_3.cmd = chmod  line_3.argv = 0->g_minus_w + 1->a_path  no line_3.above }
-fact { line_4.cmd = chmod  line_4.argv = 0->g_plus_w + 1->d_path   line_4.above = line_3 }
-fact { line_3.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
-fact { line_4.speech = line_3.speech + carl__the_file_at_d_path_has_the_mode }
-
-check line_3 { line_3 in Ran }                            for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
-check line_4 { line_3 in Ran implies line_4 in Elided }   for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
-run siblings_across_filesystems { line_3 in Ran and line_4 in Elided } for 12 but 4 Int, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+one sig line_2, line_3 extends Line {}
+one sig carl__the_file_at_d_path_has_the_mode extends Verdict {} { of = line_3 }
+fact { line_2.cmd = chmod line_2.argv = 0->g_dash_w + 1->a_path no line_2.above }
+fact { line_3.cmd = chmod line_3.argv = 0->g_plus_w + 1->d_path line_3.above = line_2 }
+fact { line_2.speech = tessa_fs + simon_fs + stdlib_boot + carl_chmod }
+fact { line_3.speech = line_2.speech + carl__the_file_at_d_path_has_the_mode }
+check line_2 { (line_2 in Ran) } for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+check line_3 { (line_2 in Ran) implies (line_3 in Elided) } for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+check every_line { { (line_2 in Ran) } and { (line_2 in Ran) implies (line_3 in Elided) } } for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
+run siblings_across_filesystems { (line_2 in Ran) and (line_3 in Elided) } for 12 but 4 Int, 7 seq, exactly 20 Shword, exactly 2 Class, exactly 2 Line, exactly 17 Claim
 ```
 
-The `12 but 4 Int` is copied from the shared module's `bookScope`; the exact bounds are assay's.
-Everything that makes `line_4` elide is the spec's: Carl's claim that chmod reads its operand
-under `Path`, Tessa's claim that a `slash_path` under `Path` yields an inode, the spec's
+The `stat` line is the book's first command and states only world facts, so it is `line_1` and
+has no atom; the two `chmod` lines are `line_2` and `line_3`. The `12 but 4 Int` is copied from
+the shared module's `bookScope`, the `7 seq` follows from the `4 Int`, and the exact bounds are
+assay's. Everything that makes `line_3` elide is the spec's: Carl's claim that chmod reads its
+operand under `Path`, Tessa's claim that a `slash_path` under `Path` yields an inode, the spec's
 derivation of the resolution from those, Carl's verdict claim on the line, and the shared
 module's definitions of `Converged` and `Elided`. The adversary may not flip the verdict claim,
-because a claim in force is true; it may not revisit line 3, because that is a premise; it may
-only hunt for a world the fixture admits in which the questions about line 4 do not all spare.
+because a claim in force is true; it may not revisit line 2, because that is a premise; it may
+only hunt for a world the fixture admits in which the questions about line 3 do not all spare.
 Hand the same lines a bare word (`#} chmod g-w {bare_word}`) and Tessa's second claim declines,
 and the same site is forced to guard. Assay saw literals, two classes, two lines, a declaration,
 and a set of claims. The worked version of this, with all its books, is `notes/30Ya-strawman-2/`.
 
 ## § 3-implementation-sketch
 
-Light on purpose; the builder has latitude on everything not marked.
+The builder has latitude on everything not marked.
 
-- **Runner.** A mise-managed JDK and the Alloy 6.2 distribution jar, pinned by version and
+- **Architecture** [ACKED `30Yf:arch-mostly-rust-tiny-java`]: everything decidable from text and
+  JSON is assay's Rust (keys, the lock and its asymmetry, tiers and budgets, ordering and
+  deferral, the conjunction, the replay policy and its guards, reporting); the JVM keeps four
+  verbs. Nothing reimplements Alloy.
+- **The toolchain.** A mise-managed JDK and the Alloy 6.2 distribution jar, pinned by version and
   digest into mise's own store, never vendored into the tree (SyncThing is live above the repo).
-  The runner is one Java source file under `spike/verify/alloy/`, run from source by the pinned
-  JDK as `mise run alloy`: it parses each root module through Alloy's own `CompUtil`, runs each
-  command in a child JVM of its own under a wall-clock cap, and prints one JSON row per command
-  in the lock's shape (§ 2.7); a module living outside the root's directory is served at the
-  spot Alloy resolves `open` to, rather than copied. The jar's `exec` subcommand is not the
-  route: it writes a directory per source file and offers no per-command cap. The JDK is named
-  by its install path, since a machine-global one earlier on `PATH` wins over the pin. Windows
-  and WSL alike. The runner is bounded on every axis a solver can exhaust [TYPED 2026-09-28: a
-  command that never returns puts an LLM to sleep for hours]: a wall-clock cap per command, a
-  CPU-time cap per command, a heap cap on the child JVM, a processor count the child may use,
-  and a cap on the whole batch after which remaining commands are reported as not run; every
-  cap is a flag with a default, and the defaults (120 seconds per command, 540 per batch) sit
-  under the 600-second ceiling an agent harness puts on a foreground command, so a harness kill
-  never orphans a solver; a shutdown hook destroys whichever child is live when the runner
-  exits. The runner takes a directory as well as files, and skips a module whose only command is
-  the `Default` Alloy synthesizes for a command-less module (recognisable by its unknown source
-  position). The task rides `mise run preflight alloy` for disk and RAM, and
-  runs under the repository's global heavy-work lock (`internal-tooling exclusive`), a file in
-  the user's cache directory that names its holder, so a second heavy task on the same machine
-  is refused with the holder's name and told to do other work rather than wait.
+  Their paths come from `mise where` (or `ALLOY_JAVA_HOME` and `ALLOY_JAR`), never from `PATH`,
+  since a machine-global JDK earlier on `PATH` would win over the pin; they are cached in
+  `<target>/alloy/jvm-paths.json`, keyed by the two pin lines of the root `mise.toml`, so a warm
+  invocation spawns no `mise`.
+- **The adapter**, `spike/verify/alloy/AlloyAdapter.java`: one Java class speaking JSON lines on
+  stdin and stdout, four verbs. `parse` takes a root module and returns the closure Alloy loaded
+  (each module's path and text), the command list (label, kind, `expect`, scope, bitwidth,
+  unbounded steps, whether Alloy synthesized it), the signatures and their fields, and the
+  effective options; `parse-only` parses and returns the module name; `solve` runs one command
+  and returns the result, the translation size, the options it used, and on request the
+  instance as XML or text; `eval` reads a stored instance and evaluates a command's formula
+  conjoined with every reachable fact. A root parses once and stays cached in the child. The
+  child emits a tick with its own CPU time every second, since Rust's standard library reads no
+  child's CPU portably, and a `translated` event when translation ends; it halts itself when its
+  parent is gone, and reports an out-of-memory as its own reply. It is compiled once by the pinned
+  `javac` into `<target>/alloy/adapter-<the first 16 hex digits of its source's SHA-256>/`, so an
+  edit to the source compiles a fresh class and the key moves with it. Kodkod's native-library
+  probes are kept off stderr.
+- **One child per document** [TYPED soft ack: "if it chafes, drop it";
+  `30Yf:arch-adapter-loop-is-the-daemon`]: an assay pass spawns one adapter JVM per document,
+  parses each module once, and runs its commands in sequence. Rust enforces every budget: a
+  command's CPU from the child's own ticks since its start, its wall-clock from the moment the
+  request was sent, polled every 200 ms; a command over either is killed with the child, and the
+  next call respawns it, losing only the parse cache. The phase of a timeout is `solving` once a
+  `translated` event arrived, `translating` otherwise. The child JVM runs with the tier's heap
+  (`-Xmx`), processor count (`-XX:ActiveProcessorCount`), and `-XX:+ExitOnOutOfMemoryError`. No
+  daemon outlives the invocation, and there is no socket.
+- **The runner**, `mise run alloy`: a Rust subcommand over one adapter child for all its files,
+  keeping the runner's command line, row shape, and exits: it parses each root module, runs each
+  command, and prints one JSON row per command; a module living outside the root's directory is
+  served with `--open` at the spot Alloy resolves `open` to, rather than copied; `--command`
+  refuses a name that matches nothing (exit 2); a command carrying `expect` is judged by
+  agreement with it and its row carries the `expect`, never inside `scope`; `--parse-only`
+  parses alone. It is bounded on every axis a solver can exhaust [TYPED 2026-09-28: a command
+  that never returns puts an LLM to sleep for hours]: a wall-clock cap per command (default
+  120 s), a CPU cap (default the wall cap), a heap cap (2048 MB), a processor count (2), and a
+  batch cap (540 s, under the 600-second ceiling an agent harness puts on a foreground command)
+  after which commands not yet started are `not-run`; the runner's batch cap stops new starts
+  only. The runner kills the live child as it exits. An out-of-memory is an `error` row there.
+  It takes a directory as well as files, and skips a module whose only command is the `Default`
+  Alloy synthesizes for a command-less module. The task rides `mise run preflight alloy` for disk
+  and RAM, and runs under the repository's global heavy-work lock (`internal-tooling exclusive`),
+  a file in the user's cache directory that names its holder, so a second heavy task on the same
+  machine is refused with the holder's name (exit 75) and told to do other work rather than wait.
+- **The tiers' caps** [ACKED; the ceiling CONDUCTOR, ruled at the breakpoint]:
+
+  | tier | CPU per command | wall per command | heap | batch | children |
+  | --- | --- | --- | --- | --- | --- |
+  | `--hot` | 120 s | 240 s | 2048 MB | 540 s | 1 |
+  | `--gate` (default) | 600 s | 1200 s | 2048 MB | 540 s | 1 |
+  | `--official` | 1800 s, the ceiling | 3600 s | 4096 MB, the ceiling | none | 1 to 4 |
+
+  Each child may use two processors. The official tier runs as many children as the machine's
+  available RAM holds at the heap plus 512 MB each, at least one and at most four, each taking
+  whole modules from one queue. The batch cap is a hard bound on wall time [CONDUCTOR, ruled at
+  the lane's report]: a command starts only with its wall cap clipped to what the batch has left,
+  one cut short by the clip is a `timeout` at the budget it had (which reads as early and owed),
+  and `not-run` is for a command never started, so a started command never outlives the batch.
+  Caps after assay's own `--` override the tier: `--cpu` (alone, it sets the wall cap to twice
+  itself), `--timeout` (the wall cap; alone, it sets the CPU cap to itself too), `--heap`,
+  `--procs`, `--batch-timeout`. Assay always solves with sat4j.
+- **Ordering and deferral.** Modules run cheapest first, by the smallest translation size the
+  lock records for any of their commands (a module with none recorded runs last); within a
+  module the `every_line` conjunction runs first, then its commands by recorded size. The hot
+  tier's deferral threshold is 2,000,000 clauses, a starting figure, not a measured one.
+- **The Rust**, under `spike/crates/internal-tooling/src/`: `alloy_jvm.rs` (the JVM paths and
+  their cache, the jar's and the adapter's digests, the platform name, directory arguments);
+  `alloy_jvm/adapter.rs` (the child, its four verbs, budget enforcement, the compiled class);
+  `alloy_jvm/runner.rs` (`mise run alloy`); `assay.rs` (the command line, the compiler, the
+  module layout, exit severities); `assay/sh.rs` (`sh` fences and map lines); `assay/alloy.rs`
+  (the tokenizer, heads and binders, the munge, command stripping); `assay/emit.rs` (the
+  one-item-per-line rendering and the line map); `assay/book.rs` (the conjunction);
+  `assay/key.rs` (the key); `assay/replay.rs` (the replay guard, the stored instances under
+  `<out>/instances/<module>/<label>.xml`, and the fit belts); `assay/tier.rs` (tiers, caps, the
+  ceiling, the deferral threshold); `assay/lock.rs` (the lock's rows, schemas, matching, and
+  writing); `assay/drive.rs` (the survey, slices, ordering, and the per-row decision of § 2.5);
+  `assay/pass.rs` (one document's pass, the report, the diff, the exit). `json.rs` and
+  `sha256.rs` are the crate's own, standard library only.
+- **Gate placement.** Pre-commit, hk's `assay` step over staged `specs/**/*.assay.md` and
+  `specs/**/*.lock.json`, runs `--staged` [TYPED: parse and key-diff belong there]: it compiles
+  the staged bytes into `<stem>.staged/`, parses every module through a fresh adapter child at a
+  1024 MB heap, and diffs the keys against the staged lock, warning on stderr how many rows the
+  commit leaves unmeasured; it never solves, takes no heavy-work lock, and exits 0 unless a lint
+  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `--check` at the
+  gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no heavy-work
+  lock. `--check` and `--write` ride `preflight alloy` and the heavy-work lock, and exit 75 when
+  another task holds it. The official tier's standup in CI (runner choice) is separate work.
+- **Platforms** [TYPED `30Yf:arch-three-platforms`]: Windows, Linux, and macOS must be
+  supportable; WSL is secondary. sat4j is pure Java and the default, and no design depends on a
+  bundled native: minisat and glucose ship for Windows and Linux, the core-producing minisat and
+  plingeling for Linux only, macOS and Apple Silicon unverified. A faster solver, if one ever
+  earns its place, is an external DIMACS solver pinned per platform through mise like the jar and
+  the JDK, driven by a small factory in the adapter; 6.2 has no generic external factory.
+  Whether a timeout is translation-bound or solve-bound is the `phase` column's to say per row
+  before any solver is chosen [CONDUCTOR `30Yf:arch-solver-choice-is-a-measurement`].
 - **Compiler.** Rust, as a subcommand of `crates/internal-tooling` (which already reads the
   corpus for `slugs` and `docids`); a sibling crate under `spike/verify/` if it outgrows that. A
   Markdown fence lexer; the syntax crate's lexer for map lines; `#=` lifted verbatim, sorted into
-  declaration, fact, or outcome by shape; the six modules of § 2.3; the lints of § 2.6. Assay
+  declaration, fact, or outcome by shape; the modules of § 2.3; the lints of § 2.6. Assay
   never parses Alloy beyond recognising declaration heads and binders: a `sig`'s name, parent,
   and field names; a `fun`, `pred`, `check`, or `run` name and its scope clause; a
   quantifier's or `let`'s bound names. That is what classifying declarations and minting
-  words (§ 2.3) need, and nothing else is read. Generated files carry a `--` comment per
-  emitted item naming the source file and line it came from, so an Alloy message can be
-  walked back to the spec [TYPED 2026-09-28: a line-mapping culture, kept from the start].
-- **Lock and report.** JSON in, JSON out; `--check` writes nothing. Gate placement: lints in the
-  pre-commit hk step, path-filtered to spec files; lock recomputation in `gate:full-quiet`,
-  path-filtered the same way; larger scopes in an opt-in lane.
+  words (§ 2.3) need, and nothing else is read. The line map in `assay-map.json` walks every
+  emitted column back to the spec file and line it came from [TYPED 2026-09-28: a line-mapping
+  culture, kept from the start]. `--check` never writes the lock; generated modules, their line
+  map, and stored instances live under `<target>/alloy/<stem>/`, never committed.
 - **Fixtures** [TYPED 2026-09-28]: assay's own fixture is a meaningless, Dorc-agnostic document
-  under `internal-tooling`'s tests, compiled byte-for-byte against committed expected modules,
-  with one negative document for a lint refusal; no committed test runs a JVM. The two strawmen,
+  under `internal-tooling`'s tests, compiled byte-for-byte against committed expected modules and
+  their `assay-map.json`, with negative documents for the join-key, stray-run, and
+  duplicate-label refusals; no committed test runs a JVM. The two strawmen,
   `notes/30Ya-strawman-3` (the outcome algebra past a wall; every command finishes in seconds at
   the shared ceiling of twelve) and `notes/30Ya-strawman-2` (the identity model's first cut;
   its per-line checks reach millions of clauses at the same ceiling, through the transitive
   closures in its separation predicate), are frozen exploration artifacts, never fixtures: their
   content about Dorc is apparently normative and partly wrong. Strawman-3 was compiled and run
   once by hand as the compiler's smoke (`notes/30Yd`: every verdict as the hand build's);
-  strawman-2 refuses under the identifier rule for map components and stays as it is. Neither is
+  strawman-2 compiles, and its frozen shared half's laws error under Alloy (`notes/30Ye`). Neither is
   promoted to the spec tier [TYPED nack]; turning 311 into a specification is separate,
   clean-context, product-focused frontier work.
 
 ### § 3.1-later-and-maybe
 
-Not in the first cut; listed so nothing here is mistaken for forgotten.
+Not built; listed so nothing here is mistaken for forgotten. What is excluded outright as unsound
+or risky (scope escalation, any size-equality pass, shared translation between a check and its
+twin, slice reuse of unsat results) is `30Yf` § 11's.
 
 - **The correspondence compiler.** A book fence is already a runnable sh file. When the
   product's kernel reaches the design a spec pins, the same file compiles to an e2e expectation
@@ -475,8 +751,11 @@ Not in the first cut; listed so nothing here is mistaken for forgotten.
 - **The mutation lane** [TYPED: negative verification and mutation testing are a required
   guard]: line-drop mutants over the `alloy` fences with the laws and books re-run; a mutant no
   check or book kills is reported. Opt-in and slow.
-- Larger scopes nightly; unification with the catalogue lock; conditional loads (`if [ -f
-  local.sh ]; then . ./local.sh; fi`) as two speech sets per later line.
+- The official tier on a schedule or in CI, and larger scopes there; a deterministic budget unit
+  (a SAT conflict limit, in the manner of Lean's heartbeats) refining `budget` so that
+  "unmeasured at K conflicts" is machine-independent; unification with the catalogue lock;
+  conditional loads (`if [ -f local.sh ]; then . ./local.sh; fi`) as two speech sets per later
+  line.
 
 ## § 4-latitude-kept-open
 

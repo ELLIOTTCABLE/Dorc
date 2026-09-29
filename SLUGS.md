@@ -554,6 +554,22 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26O 26Ob ANALYZER-NEEDS ROADMAP Research/README (5)
 
+## arch-adapter-loop-is-the-daemon
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## arch-mostly-rust-tiny-java
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## arch-solver-choice-is-a-measurement
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## arch-three-platforms
+- defined: —
+- cited: 30Y 30Yf (2)
+
 ## oracle/CLAUDE:argparse-is-the-vouch-typechecker
 - defined: spike/crates/oracle/CLAUDE.md:18 — — the oracle author's own argparse is the
 
@@ -876,6 +892,14 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 23E:blocker-coverage-c2
 - defined: Research/notes/23E-spike-reconciliation.md:234 — (§2) — the load-bearing STOP: shared APIs R2/R3 change are consumed by the
+
+## book-conjunction-assay-invariants
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## book-conjunction-entails-the-lines
+- defined: —
+- cited: 30Y 30Yf (2)
 
 ## bottom-line-broad-proposal-rejected-narrow-seam-retained
 - defined: —
@@ -4188,6 +4212,18 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 311o (1)
 
+## key-hashes-what-the-jvm-parses
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## key-platform-recorded-not-keyed
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## key-why-stripping-commands-is-sound
+- defined: —
+- cited: 30Y 30Yf (2)
+
 ## core/CLAUDE:kind-fence-movable
 - defined: spike/crates/core/CLAUDE.md:82 — (re-cut `30U`) — cross-kind pairs short-circuit to
 - cited: 300 310 (3)
@@ -4618,9 +4654,29 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
+## lock-asymmetric-match
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## lock-definite-versus-unmeasured
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## lock-early-versus-full-timeout
+- defined: —
+- cited: 30Y 30Yf (2)
+
+## lock-oom-and-error-rows
+- defined: —
+- cited: 30Y 30Yf (2)
+
 ## 28N:lock-tier-by-mechanism
 - defined: Research/notes/28N-loomability-ledger.md:16 — — the words live in a generated lock and are edited by the
 - cited: 28L (2)
+
+## lock-tier-invariant
+- defined: —
+- cited: 30Y 30Yf (2)
 
 ## loom-driver-is-derived-and-reported
 - defined: —
@@ -5329,7 +5385,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## pos-halo-is-the-hazard
 - defined: —
-- cited: 30Yf 30Z (2)
+- cited: 30Y 30Yf 30Z (3)
 
 ## spike/CLAUDE:posix-in-spirit-default
 - defined: spike/CLAUDE.md:730 — (`271:rul-posix-in-spirit-defaults`, standing) — for
@@ -5938,6 +5994,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/CLAUDE:replay-executor-ownership
 - defined: spike/CLAUDE.md:786 — (`282:rul-generic-executor-consumer-dispatch`) —
 - cited: 28Va (1)
+
+## replay-guard-declarations-byte-identical
+- defined: —
+- cited: 30Y 30Yf (2)
 
 ## 30Rk:report-api-close
 - defined: Research/notes/30Rk-durable-transition-residue-lane-report.md:9 — : what the three tidy items became
@@ -8187,6 +8247,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30R:ruled-product-shape
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:89
+
+## run-targeted-is-a-slice-not-a-block
+- defined: —
+- cited: 30Y 30Yf (2)
 
 ## 27R:rung-oracle-solo
 - defined: Research/notes/27R-lint-entrypoint-plan.md:287 — — oracles loaded with NO runbook and no plan-output: per the
