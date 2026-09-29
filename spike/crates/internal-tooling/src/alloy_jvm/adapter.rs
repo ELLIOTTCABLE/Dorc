@@ -85,6 +85,8 @@ pub(crate) struct Parsed {
     pub(crate) loaded: Vec<(String, String)>,
     pub(crate) commands: Vec<CommandInfo>,
     pub(crate) options: Value,
+    /// Every non-builtin signature Alloy reached, with its field labels.
+    pub(crate) sigs: Vec<(String, Vec<String>)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -227,10 +229,10 @@ impl Adapter {
             Ok(live) => live,
             Err(e) => return Call::Died(e),
         };
-        let line = format!("{}\n", request.line());
+        let framed = format!("{}\n", request.line());
         if live
             .stdin
-            .write_all(line.as_bytes())
+            .write_all(framed.as_bytes())
             .and_then(|()| live.stdin.flush())
             .is_err()
         {
@@ -322,6 +324,21 @@ impl Adapter {
                 .filter_map(command_info)
                 .collect(),
             options: reply.get("options").cloned().unwrap_or(Value::Null),
+            sigs: reply
+                .arr("sigs")
+                .iter()
+                .filter_map(|s| {
+                    let fields = s
+                        .arr("fields")
+                        .iter()
+                        .filter_map(|f| match f {
+                            Value::Str(f) => Some(f.clone()),
+                            _ => None,
+                        })
+                        .collect();
+                    Some((s.str("label")?.to_owned(), fields))
+                })
+                .collect(),
         })
     }
 

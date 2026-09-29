@@ -1,14 +1,18 @@
 //! `assay`: compile a literate spec document into one flat directory of Alloy modules
-//! (`notes/30Y` § 2), and on request parse them, run them through the ordinary `alloy` task, and
+//! (`notes/30Y` § 2), and on request parse them, run them through the Alloy adapter, and
 //! hold the verdicts in a lock beside the spec (`30Y` § 2.7). Markdown in, `.als` out, one JSON
 //! report per document on stdout.
 
 mod alloy;
 mod book;
+mod drive;
 mod emit;
+mod key;
 mod lock;
-mod runner;
+mod pass;
+mod replay;
 mod sh;
+mod tier;
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -119,7 +123,6 @@ struct Source<'a> {
 /// The document and the two shared halves found beside it (`30Y` § 2.2).
 #[derive(Debug, Clone, Copy)]
 struct Inputs<'a> {
-    spec_path: &'a str,
     doc: Source<'a>,
     shared: Option<Source<'a>>,
     laws: Option<Source<'a>>,
@@ -133,12 +136,14 @@ struct Compiled {
     conjunctions: Vec<(String, Vec<String>)>,
 }
 
-/// What a run of assay does past compiling (`notes/30Y` § 2.7).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// What a run of assay does past compiling (`notes/30Y` § 2.7, `notes/30Yf` § 4 and § 8).
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Mode {
     Compile,
     /// The Alloy-parse lint alone (`30Y` § 2.6, fourth item).
     Parse,
+    /// Pre-commit: the parse lint and the key-diff over the staged bytes, warning only.
+    Staged,
     Check,
     Write,
 }
@@ -147,8 +152,33 @@ enum Mode {
 const RED: u8 = 1;
 const REFUSED: u8 = 2;
 const RUNNER_FAILED: u8 = 3;
+/// No row contradicts the lock, but some went unmeasured or are owed a run at the ceiling.
+const UNMEASURED: u8 = 4;
+const CONTENTION: u8 = 75;
 
-/// `mise run assay -- <spec.md>... [--out <dir>] [--parse | --check | --write] [-- <runner caps>]`.
+/// Worst first: a refusal hides everything, a wrong row outranks an unmeasured one.
+fn severity(code: u8) -> u8 {
+    match code {
+        0 => 0,
+        UNMEASURED => 1,
+        RED => 2,
+        RUNNER_FAILED => 3,
+        CONTENTION => 4,
+        _ => 5,
+    }
+}
+
+/// What one invocation asked for, beside the documents.
+#[derive(Debug, Clone)]
+struct Ask {
+    mode: Mode,
+    tier: tier::Tier,
+    target: drive::Target,
+    caps: Vec<String>,
+}
+
+/// `mise run assay -- <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write]
+/// [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [-- <runner caps>]`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
     let (ours, caps) = match args.iter().position(|a| a == "--") {
         Some(at) => {
@@ -159,7 +189,12 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     };
     let mut specs = Vec::new();
     let mut out = None;
-    let mut mode = Mode::Compile;
+    let mut ask = Ask {
+        mode: Mode::Compile,
+        tier: tier::Tier::Gate,
+        target: drive::Target::All,
+        caps: caps.to_vec(),
+    };
     let mut it = ours.iter();
     while let Some(arg) = it.next() {
         let wanted = match arg.as_str() {
@@ -167,7 +202,33 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
                 out = it.next().map(|d| resolve(d));
                 continue;
             }
+            "--hot" | "--gate" | "--official" => {
+                ask.tier = match arg.as_str() {
+                    "--hot" => tier::Tier::Hot,
+                    "--official" => tier::Tier::Official,
+                    _ => tier::Tier::Gate,
+                };
+                continue;
+            }
+            "--module" | "--only" => {
+                let Some(name) = it.next() else {
+                    return usage(&format!("{arg} names a module or command"));
+                };
+                ask.target = match (arg.as_str(), name.split_once('.')) {
+                    ("--module", _) => drive::Target::Module(name.clone()),
+                    (_, Some((module, label))) => drive::Target::Only {
+                        module: module.to_owned(),
+                        label: label.to_owned(),
+                    },
+                    (_, None) => drive::Target::Only {
+                        module: String::new(),
+                        label: name.clone(),
+                    },
+                };
+                continue;
+            }
             "--parse" => Mode::Parse,
+            "--staged" => Mode::Staged,
             "--check" => Mode::Check,
             "--write" => Mode::Write,
             flag if flag.starts_with('-') => return usage(&format!("unknown option {flag}")),
@@ -176,10 +237,17 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
                 continue;
             }
         };
-        if mode != Mode::Compile {
-            return usage("--parse, --check, and --write exclude each other");
+        if ask.mode != Mode::Compile {
+            return usage("--parse, --staged, --check, and --write exclude each other");
         }
-        mode = wanted;
+        ask.mode = wanted;
+    }
+    if ask.target != drive::Target::All {
+        match ask.mode {
+            Mode::Write => return usage("a targeted run never writes the lock"),
+            Mode::Compile => ask.mode = Mode::Check,
+            Mode::Parse | Mode::Staged | Mode::Check => {}
+        }
     }
     let specs = documents(&specs);
     if specs.is_empty() {
@@ -199,8 +267,8 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     }
     let worst = specs
         .iter()
-        .map(|spec| one(spec, out.clone(), mode, caps))
-        .max()
+        .map(|spec| pass::one(spec, out.clone(), &ask))
+        .max_by_key(|code| severity(*code))
         .unwrap_or(0);
     ExitCode::from(worst)
 }
@@ -250,207 +318,10 @@ const DOC_SUFFIX: &str = ".assay.md";
 const SHARED_HALF: &str = "shared.assay.md";
 const LAWS_HALF: &str = "shared-laws.assay.md";
 
-/// Compile one document, and past that whatever `mode` asks; prints its report, returns its code.
-fn one(spec: &Path, out: Option<PathBuf>, mode: Mode, caps: &[String]) -> u8 {
-    let doc = match std::fs::read_to_string(spec) {
-        Ok(text) => text,
-        Err(e) => {
-            eprintln!("assay: {}: {e}", spec.display());
-            return REFUSED;
-        }
-    };
-    let beside = |name: &str| std::fs::read_to_string(spec.with_file_name(name)).ok();
-    let (shared, laws) = (beside(SHARED_HALF), beside(LAWS_HALF));
-    let lossy = |s: Option<&std::ffi::OsStr>| {
-        s.map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or_default()
-    };
-    let doc_name = lossy(spec.file_name());
-    let stem = doc_name
-        .strip_suffix(DOC_SUFFIX)
-        .map_or_else(|| lossy(spec.file_stem()), str::to_owned);
-    let out = out.unwrap_or_else(|| internal_tooling::target_dir().join("alloy").join(&stem));
-    let spec_path = display_path(spec);
-    let inputs = Inputs {
-        spec_path: &spec_path,
-        doc: Source {
-            name: &doc_name,
-            text: &doc,
-        },
-        shared: shared.as_deref().map(|text| Source {
-            name: SHARED_HALF,
-            text,
-        }),
-        laws: laws.as_deref().map(|text| Source {
-            name: LAWS_HALF,
-            text,
-        }),
-    };
-    let mut fields = vec![
-        ("spec".to_owned(), Json::str(&spec_path)),
-        ("out".to_owned(), Json::str(out.display().to_string())),
-    ];
-    let emit = |fields: Vec<(String, Json)>, code: u8| {
-        print!("{}", Json::Obj(fields).render());
-        code
-    };
-
-    let compiled = match compile(&inputs) {
-        Ok(compiled) => compiled,
-        Err(findings) => {
-            fields.push(("modules".to_owned(), Json::Arr(Vec::new())));
-            fields.push(("lints".to_owned(), lints_json(&findings)));
-            return emit(fields, REFUSED);
-        }
-    };
-    match write_modules(&out, &compiled.modules) {
-        Ok(paths) => fields.push((
-            "modules".to_owned(),
-            Json::Arr(paths.into_iter().map(Json::Str).collect()),
-        )),
-        Err(e) => {
-            eprintln!("assay: writing {}: {e}", out.display());
-            return RED;
-        }
-    }
-    fields.extend(compiled.report.into_iter().map(|(k, v)| (k.to_owned(), v)));
-    if mode == Mode::Compile {
-        return emit(fields, 0);
-    }
-
-    // Alloy's own parser is the fourth lint; assay reimplements none of it.
-    let parsed = match runner::invoke(&["--parse-only".to_owned()], &out) {
-        Ok(rows) => rows,
-        Err(why) => return emit(runner_failed(fields, &why), RUNNER_FAILED),
-    };
-    let unparsed = unparsed(&parsed, &doc_name);
-    if !unparsed.is_empty() {
-        set(&mut fields, "lints", lints_json(&unparsed));
-        return emit(fields, REFUSED);
-    }
-    if mode == Mode::Parse {
-        return emit(fields, 0);
-    }
-
-    let ran = match runner::invoke(caps, &out) {
-        Ok(rows) => rows,
-        Err(why) => return emit(runner_failed(fields, &why), RUNNER_FAILED),
-    };
-    let texts: Vec<(String, String)> = compiled
-        .modules
-        .iter()
-        .map(|(n, r)| (n.clone(), r.text.clone()))
-        .collect();
-    let computed = lock::rows(&ran, &texts);
-    fields.push((
-        "commands".to_owned(),
-        Json::Arr(
-            computed
-                .iter()
-                .zip(ran.iter().filter(|r| r.command.is_some()))
-                .map(|(row, r)| with_timing(row, r))
-                .collect(),
-        ),
-    ));
-    let lock_path = spec.with_file_name(format!("{stem}{LOCK_SUFFIX}"));
-    let (lock, code) = settle(mode, &lock_path, &computed);
-    fields.push(("lock".to_owned(), lock));
-    emit(fields, code)
-}
-
-/// Write the lock, or compare against it in both directions (`30Y` § 2.7): a mismatch or a
-/// missing lock exits 1 under `--check`; a red the committed lock records is accepted.
-fn settle(mode: Mode, lock_path: &Path, computed: &[lock::LockRow]) -> (Json, u8) {
-    let mut lock = vec![("path".to_owned(), Json::str(display_path(lock_path)))];
-    let mut status = |s: &str| lock.push(("status".to_owned(), Json::str(s)));
-    if mode == Mode::Write {
-        let code = match std::fs::write(lock_path, lock::render(computed)) {
-            Ok(()) => {
-                status("written");
-                0
-            }
-            Err(e) => {
-                eprintln!("assay: writing {}: {e}", lock_path.display());
-                status("unwritten");
-                RED
-            }
-        };
-        return (Json::Obj(lock), code);
-    }
-    let committed = std::fs::read_to_string(lock_path).ok();
-    let Some(committed_rows) = committed
-        .as_deref()
-        .map_or_else(|| Some(Vec::new()), lock::parse)
-    else {
-        status("unreadable");
-        return (Json::Obj(lock), RED);
-    };
-    let (not_in_lock, not_in_run) = lock::compare(&committed_rows, computed);
-    let matches = committed.is_some() && not_in_lock.is_empty() && not_in_run.is_empty();
-    status(match (committed.is_some(), matches) {
-        (false, _) => "missing",
-        (true, true) => "matches",
-        (true, false) => "mismatch",
-    });
-    let arr = |rows: &[lock::LockRow]| Json::Arr(rows.iter().map(lock::LockRow::json).collect());
-    lock.push(("not_in_lock".to_owned(), arr(&not_in_lock)));
-    lock.push(("not_in_run".to_owned(), arr(&not_in_run)));
-    lock.push((
-        "accepted_reds".to_owned(),
-        arr(&lock::accepted_reds(&committed_rows, computed)),
-    ));
-    (Json::Obj(lock), if matches { 0 } else { RED })
-}
-
-/// One error in a module every other opens is one finding, naming every module it stopped.
-fn unparsed(parsed: &[runner::Row], doc_name: &str) -> Vec<Finding> {
-    let mut stopped: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    for r in parsed.iter().filter(|r| r.result != "parsed") {
-        let file = Path::new(&r.module).file_name();
-        stopped
-            .entry(r.message.clone().unwrap_or_default())
-            .or_default()
-            .push(file.map_or_else(|| r.module.clone(), |f| f.to_string_lossy().into_owned()));
-    }
-    stopped
-        .into_iter()
-        .map(|(message, modules)| {
-            Finding::new(Lint::AlloyParses, doc_name, 0)
-                .with("modules", modules.join(" "))
-                .with("message", message)
-        })
-        .collect()
-}
-
-/// A lock row with the report-only columns beside it: wall-clock, solve time, and on a timeout
-/// how far translation got (`30Y` § 2.7).
-fn with_timing(row: &lock::LockRow, ran: &runner::Row) -> Json {
-    let mut json = row.json();
-    if let Json::Obj(fields) = &mut json {
-        let ms = |n: Option<u64>| n.map_or(Json::Null, Json::Num);
-        fields.push(("wall_ms".to_owned(), ms(ran.wall_ms)));
-        fields.push(("solve_ms".to_owned(), ms(ran.solve_ms)));
-        if let Some(message) = &ran.message {
-            fields.push(("message".to_owned(), Json::str(message)));
-        }
-    }
-    json
-}
-
-fn runner_failed(mut fields: Vec<(String, Json)>, why: &str) -> Vec<(String, Json)> {
-    fields.push(("runner".to_owned(), Json::str(why)));
-    fields
-}
-
-fn set(fields: &mut [(String, Json)], key: &str, value: Json) {
-    if let Some((_, slot)) = fields.iter_mut().find(|(k, _)| k == key) {
-        *slot = value;
-    }
-}
-
 fn usage(problem: &str) -> ExitCode {
     eprintln!(
-        "assay: {problem}\nusage: assay <spec.assay.md>... [--out <dir>] [--parse | --check | --write] [-- <runner caps>]"
+        "assay: {problem}
+usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [-- <runner caps>]"
     );
     ExitCode::from(REFUSED)
 }

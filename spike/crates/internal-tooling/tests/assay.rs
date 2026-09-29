@@ -194,8 +194,10 @@ fn refused_with(name: &str, lint: &str) -> serde_json::Value {
     let report = String::from_utf8_lossy(&run.stdout);
     assert_eq!(run.status.code(), Some(2), "{report}");
     let json: serde_json::Value = serde_json::from_str(&report).expect("the report should be JSON");
-    let hits = json["lints"][lint]
-        .as_array()
+    let hits = json
+        .get("lints")
+        .and_then(|l| l.get(lint))
+        .and_then(serde_json::Value::as_array)
         .expect("the lint should be listed");
     assert_eq!(hits.len(), 1, "{report}");
     assert!(!out.exists(), "a refusal must write no module");

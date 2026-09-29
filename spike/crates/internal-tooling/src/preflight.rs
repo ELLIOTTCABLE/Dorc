@@ -124,23 +124,50 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let Some(profile) = PROFILES.iter().find(|p| p.name == name) else {
         return usage(&format!("unknown profile {name:?}"));
     };
-
-    if std::env::var("DORC_PREFLIGHT").is_ok_and(|v| v == "skip") {
-        println!("preflight {name}: SKIPPED by DORC_PREFLIGHT=skip");
-        return ExitCode::SUCCESS;
+    let (ok, line) = verdict(profile);
+    println!("{line}");
+    if ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
+}
 
+/// The same check for a caller whose stdout is its product: the line goes to stderr.
+pub(crate) fn gate(name: &str) -> bool {
+    let Some(profile) = PROFILES.iter().find(|p| p.name == name) else {
+        eprintln!("preflight: unknown profile {name:?}");
+        return false;
+    };
+    let (ok, line) = verdict(profile);
+    eprintln!("{line}");
+    ok
+}
+
+fn verdict(profile: &Profile) -> (bool, String) {
+    let name = profile.name;
+    if std::env::var("DORC_PREFLIGHT").is_ok_and(|v| v == "skip") {
+        return (
+            true,
+            format!("preflight {name}: SKIPPED by DORC_PREFLIGHT=skip"),
+        );
+    }
     match profile.cache.root() {
-        Err(reason) => {
-            println!("preflight {name}: not applicable here — {reason}");
-            ExitCode::SUCCESS
-        }
+        Err(reason) => (
+            true,
+            format!("preflight {name}: not applicable here — {reason}"),
+        ),
         Ok(root) => report(profile, &root),
     }
 }
 
+/// Available RAM in bytes for a caller sizing its own parallelism, when it can be measured.
+pub(crate) fn available_ram() -> Option<u64> {
+    free_ram().ok()
+}
+
 /// Measure, then print exactly one line: a pass note, or a refusal naming the remedy.
-fn report(profile: &Profile, root: &Path) -> ExitCode {
+fn report(profile: &Profile, root: &Path) -> (bool, String) {
     let name = profile.name;
     let warm = profile.cache.witness(root).exists();
     let need_disk = if warm {
@@ -160,7 +187,7 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
     if let Ok(free) = disk
         && free < need_disk
     {
-        println!(
+        let line = format!(
             "preflight {name}: REFUSED — {} free on the volume holding {}{note}, needs {} \
              ({state} cache). Free space (`mise run doctor` inventories what is reclaimable), or \
              set DORC_PREFLIGHT=skip for an emergency.",
@@ -168,19 +195,19 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
             root.display(),
             gib(need_disk)
         );
-        return ExitCode::FAILURE;
+        return (false, line);
     }
     if let Ok(free) = ram
         && free < profile.ram
     {
-        println!(
+        let line = format!(
             "preflight {name}: REFUSED — {} RAM available, needs {}. Reap what is holding it \
              (an orphaned `cbmc` outlives its driver; `pkill -9 -x cbmc`), or set \
              DORC_PREFLIGHT=skip for an emergency.",
             gib(free),
             gib(profile.ram)
         );
-        return ExitCode::FAILURE;
+        return (false, line);
     }
 
     // An unmeasurable probe warns and passes. Refusing on it would block a whole platform
@@ -191,14 +218,14 @@ fn report(profile: &Profile, root: &Path) -> ExitCode {
     // its own free space (see `wsl_host_mount`'s doc comment), and a passing line that
     // headlined that number would read as reassuring while hiding the figure that actually
     // governs. `note` still appends the host reading by name for provenance.
-    println!(
+    let line = format!(
         "preflight {name}: ok — disk {}{note} (needs {}, {state}), ram {} (needs {})",
         say(&disk),
         gib(need_disk),
         say(&ram),
         gib(profile.ram)
     );
-    ExitCode::SUCCESS
+    (true, line)
 }
 
 /// The dumbest capability probe that works: WSL always sets this, at no I/O cost.

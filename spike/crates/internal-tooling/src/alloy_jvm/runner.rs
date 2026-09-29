@@ -74,7 +74,9 @@ fn opts(args: &[String]) -> Result<Opts, String> {
             }
             "--instances" => o.instances = true,
             "--parse-only" => o.parse_only = true,
-            "--solver" => o.solver = it.next().ok_or("--solver takes an id")?.clone(),
+            "--solver" => o
+                .solver
+                .clone_from(it.next().ok_or("--solver takes an id")?),
             "--command" => o.only = Some(it.next().ok_or("--command takes a name")?.clone()),
             "--open" => {
                 let spec = it

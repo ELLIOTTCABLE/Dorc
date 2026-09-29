@@ -1,6 +1,8 @@
 //! SHA-256 (FIPS 180-4), std-only: assay's incremental key licenses NOT recomputing a verdict
 //! (`notes/30Yf` § 3), so it wants a collision-resistant digest, where FNV stays a drift alarm.
 
+use std::fmt::Write as _;
+
 const K: [u32; 64] = [
     0x428a_2f98,
     0x7137_4491,
@@ -135,9 +137,16 @@ impl Sha256 {
         for block in tail.chunks_exact(64) {
             self.compress(block);
         }
-        self.state.iter().map(|w| format!("{w:08x}")).collect()
+        self.state.iter().fold(String::new(), |mut out, w| {
+            let _ = write!(out, "{w:08x}");
+            out
+        })
     }
 
+    #[expect(
+        clippy::many_single_char_names,
+        reason = "the working variables keep FIPS 180-4's own names"
+    )]
     fn compress(&mut self, block: &[u8]) {
         let mut w = [0u32; 64];
         for (slot, word) in w.iter_mut().zip(block.chunks_exact(4)) {
@@ -214,7 +223,7 @@ mod tests {
             "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
         );
         assert_eq!(
-            hex(&[b'a'; 1_000_000]),
+            hex(&vec![b'a'; 1_000_000]),
             "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0"
         );
         let mut split = Sha256::default();

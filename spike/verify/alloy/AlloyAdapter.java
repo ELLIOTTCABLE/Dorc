@@ -10,6 +10,7 @@ import edu.mit.csail.sdg.alloy4.Pos;
 import edu.mit.csail.sdg.alloy4.XMLNode;
 import edu.mit.csail.sdg.ast.Command;
 import edu.mit.csail.sdg.ast.Expr;
+import edu.mit.csail.sdg.ast.Sig;
 import edu.mit.csail.sdg.parser.CompModule;
 import edu.mit.csail.sdg.parser.CompUtil;
 import edu.mit.csail.sdg.translator.A4Options;
@@ -171,6 +172,17 @@ public class AlloyAdapter {
          commands.add(j);
       }
       o.add("commands", commands);
+      JsonArray sigs = new JsonArray();
+      for (Sig s : world.getAllReachableSigs()) {
+         if (s.builtin) continue;
+         JsonObject j = new JsonObject();
+         j.addProperty("label", s.label);
+         JsonArray fields = new JsonArray();
+         for (Sig.Field f : s.getFields()) fields.add(f.label);
+         j.add("fields", fields);
+         sigs.add(j);
+      }
+      o.add("sigs", sigs);
       o.add("options", describe(options(req)));
       return o;
    }
