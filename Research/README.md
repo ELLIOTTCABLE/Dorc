@@ -326,8 +326,11 @@ the license-contamination map. Cross-references are `docID:slug`.
   `6b7108b4`: reports `notes/312ca`–`312cd` (Fable and Astra, neutral and adversarial), the
   adjudication **`notes/312c`**, and its LIVING burndown ledger **`notes/312cg`** (what was
   applied, what is held, the human's rulings); the delta crosscheck over the changes since, with
-  the conductor's own review beside three lanes, **`notes/312ch`**. The bare `312` is reserved
-  for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
+  the conductor's own review beside three lanes, **`notes/312ch`**. The mechanization: 311 now
+  lives at `specs/311-identity.assay.md`, under the same ID, in the `plans/30Z` format; its
+  ledgers are **`notes/312d`** (raw authorship, the builder phases, the books, the first
+  measurements; closed) and **`notes/312e`** (LIVING, from the official lock pass onward). The
+  bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
   arc remit: lanes, order, merge points, the two cut-seams; implementation-tier, pointers
