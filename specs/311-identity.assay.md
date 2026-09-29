@@ -1273,7 +1273,7 @@ the status file's chain; the flag is set. So every reason for a collision but on
 and the answer isolates that one: the index and the status file meet at the boot as mKeys of
 two mSorts with no shared key space, the acked cost of `311t` § 14. The book is self-contained
 and pinned as the books of 3.2.2-a-book-two-files-in-one-filesystem are; the book in which
-Anna names the list files instead is owed after these run (`notes/312d` § 19).
+Anna names a list file instead is 2.6.3-a-book-stage-five-the-list-file-named.
 
 ```alloy
 run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
@@ -1358,6 +1358,214 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
 > Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed and its one entry, the index, is given whole.
 > Line 2, `dpkg -s nginx`, against line 1: `compare()` answers KNOWN_UNSPOKEN for the index against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the fact is not spared past the line.
+
+#### § 2.6.3-a-book-stage-five-the-list-file-named
+
+The same morning, with Anna's describer naming what `apt-get update` writes in Tessa's words:
+one list file, by its path. The list file and the status file are two inodes of one
+filesystem. The world, the stdlib, Tessa, and Deb are those of
+2.6.2-a-book-stage-five-the-index-given-whole; Anna mints no mSort of her own. The answer below
+is the fences' answer in this world, and it rests on a suspected hole that is held for the
+design sitting: whether a write to one mKey of a store touches the store
+(`notes/312d` § 22, `sus-a-contained-write-touches-its-store`).
+
+```alloy
+run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
+```
+
+```sh
+# stage_five_the_list_file_named.sh
+   apt-get update
+#} apt_get update
+#= one sig stdlib, tessa, anna, deb extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_Filesystem, sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_FsId, sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig fsid_shape extends mShape {} { ofScheme = sm_FsId }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig the_boot, fs_1, status_inode, list_inode extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
+#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = list_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
+#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  reaches = list_inode }
+#= Speaker = stdlib + tessa + anna + deb
+#= mSort = sm_Boot + sm_Filesystem + sm_File
+#= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
+#= mShape = boot_shape + fsid_shape + inode_shape + slash_path_shape
+#= mReferent = the_boot + fs_1 + status_inode + list_inode
+#= mKey = k_boot + k_fs_1 + k_status_inode + k_list_inode + k_status_path + k_list_path
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_boot
+#= no Wrapper and no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no GivenWhole
+#= World.lineWrites = (anna__update_writes_the_list_file).writeLine->list_inode
+#= holds = the_boot->fs_1 + fs_1->status_inode + fs_1->list_inode
+#= owns = holds
+#= passes = fs_1->status_inode + fs_1->list_inode
+#= no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib  readSort = sm_Boot }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
+#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_status_inode  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__the_list_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_list_inode  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
+#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_Filesystem }
+#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
+#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
+
+   dpkg -s nginx
+#} dpkg dash_s nginx
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= let f = atLine.this, l = (anna__update_writes_the_list_file).writeLine | tabledCompare[k_list_path, f.topic] = DISJOINT and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and routingInvalidatedBy[l, f.topic] and tokenInvalidatedBy[l, f.topic] and staleAt[this, f.topic] and not spared[l, f]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is eight atoms of every kind the specification owns.
+> The stdlib, Tessa, and Deb speak as in 2.6.2-a-book-stage-five-the-index-given-whole, and Tessa also declares the finished record for a file written by its path.
+> Anna's `apt-get update` may-writes one list file, named by its slash path and not given whole, and writes nothing else.
+> The world holds one boot, one filesystem in it, and the status file's inode and the list file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; the first line writes the list file's inode.
+> Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the line invalidates the status path's mResolution and its mToken, so the status path is stale at the fact's site; the fact is not spared past the line.
+
+#### § 2.6.4-a-book-stage-five-the-list-file-named-in-the-route
+
+The thin sibling of 2.6.3-a-book-stage-five-the-list-file-named: Tessa describes files and
+nothing above them, as in 3.2.5-a-book-two-files-scoped-in-the-route, so both inodes are scoped
+in the mRoute and no mKey has an mKey for an mParent.
+
+```alloy
+run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
+```
+
+```sh
+# stage_five_the_list_file_named_in_the_route.sh
+   apt-get update
+#} apt_get update
+#= one sig tessa, anna, deb extends Speaker {}
+#= one sig sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig status_inode, list_inode extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
+#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = list_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
+#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  reaches = list_inode }
+#= Speaker = tessa + anna + deb
+#= mSort = sm_File
+#= mScheme = sm_Inode + sm_Path
+#= mShape = inode_shape + slash_path_shape
+#= mReferent = status_inode + list_inode
+#= mKey = k_status_inode + k_list_inode + k_status_path + k_list_path
+#= mVantage = v0 and mRoute = r0 and no mRootWorld
+#= no Wrapper and no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no GivenWhole
+#= World.lineWrites = (anna__update_writes_the_list_file).writeLine->list_inode
+#= no holds and no owns and no passes and no affects
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
+#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
+#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
+
+   dpkg -s nginx
+#} dpkg dash_s nginx
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= let f = atLine.this, l = (anna__update_writes_the_list_file).writeLine | tabledCompare[k_list_path, f.topic] = DISJOINT and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not staleAt[this, f.topic] and readsetIsTop[f] and not spared[l, f]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is five atoms of every kind the specification owns.
+> Tessa owns the file: the inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`; a slash path `:yields` an inode, and nothing says where a path is looked up; she closes the file's may-read set and declares the finished record for a file written by its path.
+> Nobody describes a filesystem or a boot.
+> Anna and Deb speak as in 2.6.3-a-book-stage-five-the-list-file-named.
+> The world holds the status file's inode and the list file's inode; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the list file's inode.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
+> Line 1, `apt-get update`: every statement in force is true; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the line's writeset against the fact is not ⊤ and the status path is not stale at the fact's site; the fact's readset is ⊤, since the status inode's mFullyQualifiedKey ends at the mRoute; the fact is not spared past the line.
+
+#### § 2.6.5-a-book-two-volumes-of-one-issuer
+
+Two mKeys scoped directly in a mRoot's mWorld: volume identifiers that an issuer mints and does
+not repeat. Petra describes the issuer's volumes; Ravi describes the tool. The book writes one
+volume above a fact about the other.
+
+```alloy
+run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
+```
+
+```sh
+# two_volumes_of_one_issuer.sh
+   aws ec2 modify-volume --volume-id vol-0b2 --iops 4000
+#} aws ec2 modify_volume dash_dash_volume_id vol_0b2 dash_dash_iops iops_4000
+#= one sig petra, ravi extends Speaker {}
+#= one sig sm_Volume extends mSort {} { sortOwner = petra }
+#= one sig sm_VolumeId extends mScheme {} { schemeOwner = petra }
+#= one sig volume_id_shape extends mShape {} { ofScheme = sm_VolumeId }
+#= one sig volume_a, volume_b extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_volumes extends mRootWorld {} { rootShape = volume_id_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_vol_0a1 extends mKey {} { value = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  reaches = volume_a }
+#= one sig k_vol_0b2 extends mKey {} { value = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  reaches = volume_b }
+#= Speaker = petra + ravi
+#= mSort = sm_Volume
+#= mScheme = sm_VolumeId
+#= mShape = volume_id_shape
+#= mReferent = volume_a + volume_b
+#= mKey = k_vol_0a1 + k_vol_0b2
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_volumes
+#= no Wrapper and no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no GivenWhole
+#= World.lineWrites = (ravi__modify_writes_the_volume).writeLine->volume_b
+#= no holds and no owns and no passes and no affects
+#= one sig petra__the_volume_id_is_primary_of_the_volume extends DeclaresPrimaryOf {} { speaker = petra  primaryScheme = sm_VolumeId  ofSort = sm_Volume }
+#= one sig petra__a_volume_id_is_a_root extends DeclaresRoot {} { speaker = petra  rootedShape = volume_id_shape }
+#= one sig petra__a_volume_has_one_id extends DeclaresUniqueName {} { speaker = petra  nameShape = volume_id_shape }
+#= one sig petra__the_volumes_may_read_set_is_closed extends ClosesMayRead {} { speaker = petra  readSort = sm_Volume }
+#= one sig petra__writing_a_volume_entails_nothing_else extends FinishesEntailment {} { speaker = petra  finishedSort = sm_Volume  finishedShape = volume_id_shape }
+#= one sig ravi__modify_writes_the_volume extends DeclaresMayWrite {} { speaker = ravi  writeLine = this  writeEntry = k_vol_0b2 }
+#= one sig ravi__modify_writes_nothing_else extends ClosesMayWrite {} { speaker = ravi  closedLine = this }
+#= everyStatementInForceIsTrue and atMostClosed[this] and atMostEntries[this] = k_vol_0b2 and entailmentFinished[k_vol_0b2] and worldOf[k_vol_0b2] = w_volumes
+
+   aws ec2 describe-volumes --volume-ids vol-0a1
+#} aws ec2 describe_volumes dash_dash_volume_ids vol_0a1
+#= one sig ravi__the_volume_is_in_use extends VerdictFact {} { speaker = ravi  topic = k_vol_0a1  atLine = this  markedReads = k_vol_0a1  dependsOn = volume_a }
+#= let f = atLine.this, l = (ravi__modify_writes_the_volume).writeLine | tabledCompare[k_vol_0b2, f.topic] = DISJOINT and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not staleAt[this, f.topic] and spared[l, f] and no (World.lineWrites[l]).*affects & f.dependsOn
+```
+
+<!-- prose-translation -->
+> This book's ceiling is four atoms of every kind the specification owns, its two mKeys, one mRoute, and one mRoot mWorld among them.
+> Petra owns the volume: the volume id's mScheme is `:primary-of` the volume, and its one shape is `:root` and carries `:guarantees-unique-name`; she closes the volume's may-read set and declares the finished record for a volume written by its id.
+> Ravi's `modify-volume` may-writes the one volume it names, not given whole, and writes nothing else; his `describe-volumes` measures the other volume as a read of its id.
+> The world holds two volumes; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the second volume.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each volume's mKey is scoped in the volume id's mWorld.
+> Line 1, `modify-volume` on `vol-0b2`: every statement in force is true; the line's at-most set is closed, its one entry is that volume's id, and that entry's mSort and shape have a finished record; the entry's mFullyQualifiedKey ends at the volume id's mWorld.
+> Line 2, `describe-volumes` on `vol-0a1`, against line 1: `compare()` answers DISJOINT for the two ids; neither the fact's readset nor the line's writeset against it is ⊤; the read id is not stale at the fact's site; the fact is spared past the line; and no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 
 ### § 2.7-corresponds-across-a-transition
 
@@ -2277,6 +2485,73 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 > The first line runs from the host's mVantage, whose ambient namespace is the initial one; the second runs from a mVantage entered through the wrapper, whose ambient namespace is the lent one and whose mRoute is another, since nothing inherits without the sentinel and the flag.
 > Line 1, `kill -0 4821`: every statement in force is true; the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
 > Line 2, `kill -0 1` inside the container, against line 1: the mFullyQualifiedKey walk answers UNKNOWN, `compare()` answers SAME through the mCorrespondence, and the two facts are not about one mTopic, since a process is observer-dependent on its namespace by default and the two namespaces compare UNKNOWN.
+
+#### § 3.2.5-a-book-two-files-scoped-in-the-route
+
+The thin sibling of 3.2.2-a-book-two-files-in-one-filesystem: the same three lines, where Tessa
+describes files and nothing above them. An inode has one number, so she declares
+`:guarantees-unique-name` on the inode number. A number alone does not say which filesystem it
+is of, so she withholds `:guarantees-unique-referent`. Nobody describes a filesystem, so
+nothing says where a path is looked up. Both books stay: the thin world is a description Dorc
+must be safe under, and it is no correction of the rooted one.
+
+```alloy
+run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
+```
+
+```sh
+# two_files_scoped_in_the_route.sh
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig tessa, carl extends Speaker {}
+#= one sig sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig inode_17, inode_42 extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
+#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
+#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  reaches = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  reaches = inode_17 }
+#= Speaker = tessa + carl
+#= mSort = sm_File
+#= mScheme = sm_Inode + sm_Path
+#= mShape = inode_shape + slash_path_shape
+#= mReferent = inode_17 + inode_42
+#= mKey = k_ino_17_at_line_1 + k_ino_17_at_line_3 + k_ino_42 + k_srv_a_at_line_1 + k_srv_b + k_srv_a_at_line_3
+#= mVantage = v0 and mRoute = r0 and no mRootWorld
+#= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= no holds and no owns and no passes and no affects
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= everyStatementInForceIsTrue and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.parent)
+
+   cmp -s ./golden.conf /srv/b/app.conf
+#} cmp dash_s golden_conf srv_b_app_conf
+#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_b  atLine = this  markedReads = k_srv_b  dependsOn = inode_42 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = DISJOINT and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
+
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_3  atLine = this  markedReads = k_srv_a_at_line_3  dependsOn = inode_17 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | tabledWalk[f.topic, g.topic] = UNKNOWN and tabledCompare[f.topic, g.topic] = UNKNOWN and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is seven atoms of every kind the specification owns, its six mKeys and one mRoute among them.
+> Tessa owns the file: the inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`; a slash path `:yields` an inode, and nothing says where a path is looked up.
+> Nobody describes a filesystem or a boot.
+> The world holds two inodes; no store holds them, nothing passes, no write affects another mReferent, and no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true; the path's identity is the inode key its lookup emitted, whose mFullyQualifiedKey ends at the mRoute; the path's own mKey has no mParent.
+> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
+> Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the mFullyQualifiedKey walk and `compare()` answer UNKNOWN, the natural-key license answers UNKNOWN, and the two facts are not about one mTopic.
 
 ### § 3.3-invalidation-three-mutator-species
 
