@@ -839,6 +839,11 @@ run law_natural_same_is_sound_premise {
    some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.reaches
 }
 
+run kill_natural_same_is_sound_unique_referent {
+   some d: DeclaresUniqueReferent & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueReferent[d]
+      and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.reaches != y.reaches
+} for 6 but 4 Int expect 1
+
 check law_natural_disjoint_is_sound {
    everyStatementInForceIsTrue implies
       all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.reaches & y.reaches
@@ -848,6 +853,11 @@ run law_natural_disjoint_is_sound_premise {
    everyStatementInForceIsTrue
    some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.reaches and some y.reaches
 }
+
+run kill_natural_disjoint_is_sound_unique_name {
+   some d: DeclaresUniqueName & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueName[d]
+      and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.reaches & y.reaches
+} for 6 but 4 Int expect 1
 ```
 
 <!-- prose-translation -->
@@ -1796,6 +1806,12 @@ run law_same_is_sound_premise {
    some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.reaches
 }
 
+run kill_same_is_sound_unique_referent {
+   not hole_cell_keys_under_same_parents_reach_differently
+   some d: DeclaresUniqueReferent & InForce | allInForceTrueExcept[d] and not true_DeclaresUniqueReferent[d]
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+} for 6 but 4 Int expect 1
+
 check law_disjoint_is_sound {
    everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
       all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
@@ -1817,6 +1833,12 @@ run law_nobody_spoke_declines_premise {
    no InForce & (DeclaresUniqueReferent + DeclaresUniqueName + DeclaresRoot + DeclaresAliasesNothingElse)
    some disj x, y: mKey | knownChain[x] and knownChain[y] and worldOf[x] = worldOf[y]
 }
+
+run kill_nobody_spoke_declines_unique_referent {
+   no InForce & (DeclaresUniqueName + DeclaresRoot + DeclaresAliasesNothingElse)
+   some DeclaresUniqueReferent & InForce
+   some disj x, y: mKey | walk[x, y] = SAME
+} for 6 but 4 Int expect 1
 
 check law_different_sorts_never_same {
    all x, y: mKey | x.scheme != y.scheme implies walk[x, y] != SAME
