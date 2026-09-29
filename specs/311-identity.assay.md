@@ -427,13 +427,13 @@ replaced (`notes/312d` § 7).
 
 A mToken is compared for equality only and never decoded (0.1-the-two-strata), and it is always
 scoped in an mParent (1.6-parent-one-per-key). How long a warrant holds is
-3.3-invalidation-three-mutator-species's; the engine's own vouch is
+3.3-invalidation-three-mutator-species's; the engine's own axiom is
 1.10-vantage-route-placeholder-witness's; the per-level closure is consumed by
 2.9-the-traversal-and-the-region-test, and stays prose until that section is mechanized.
 
 <!-- normative -->
 > A warrant holds while that mKey's mResolution or mToken stands (3.3-invalidation-three-mutator-species).
-> The engine vouches for one lookup itself: the local mRoute under no wrapper (1.10-vantage-route-placeholder-witness).
+> One lookup rests on the engine's own axiom, discharged by differential test and never spoken: the local mRoute under no wrapper (1.10-vantage-route-placeholder-witness).
 > Across a wrapper, the wrapper's author speaks (3.4-entry-and-lends), and everything else is measured and witnessed.
 > It is a statement about one mKey, from the thing's end, made on the path that measured it.
 > Where the lookup knows other entries, it emits them first, and a listed alias is checked as the first entry is.
@@ -687,13 +687,12 @@ the rest, is 3.4-entry-and-lends; the mRoute holds no mState and declares no may
 readset member whose mFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset). "Resolved
 once per mEntryChain and shared" is by construction: a vantage holds one ambient instance per
 mParent-Catalog mSort, so every mKey the vantage scopes in that mSort has the one instance as
-its mParent, and two same-spelled leaf mKeys are two atoms, SAME only by warrant. The engine is
-a speaker for its one vouch. The placeholder and the standup `witness()` are two instants the
+its mParent, and two same-spelled leaf mKeys are two atoms, SAME only by warrant. The engine does
+not speak: its one axiom, about where the shell resolves, is a premise of every law
+(3.2-compare-one-chokepoint-four-answers). The placeholder and the standup `witness()` are two instants the
 fences do not hold (1.10.1-placeholder-and-witness).
 
 ```alloy
-one sig engine extends Speaker {}
-
 sig mVantage {
    route: one mRoute,
    enteredFrom: lone mVantage,
@@ -711,7 +710,7 @@ fact { all k: mKey | k.yielded.at in k.at }
 
 fact { all f: VerdictFact | f.underObservers = mSort.(f.topic.at.ambient) }
 
-pred engineVouchIsTrue {
+pred shellResolvesInTheAmbientInstance {
    all v: mVantage | no v.through implies
       all k: mKey | k.at = v and isNaturalKey[k] and some k.parent & v.ambient[catalogSortOf[k.scheme]] implies
          k.reaches in k.parent.reaches.passes
@@ -724,13 +723,13 @@ pred engineVouchIsTrue {
 > A mVantage says where a `resolve()` executes, supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort, and is the mRoute, the last-resort mParent, for a shape with no `:identified-in` (1.6-parent-one-per-key).
 > A vantage entered through a wrapper is entered from the caller's vantage, and no vantage is entered from itself.
 > The observers a fact was measured under are the instances its mEntryChain holds (2.8-observer-dependence-and-independence).
-> For execution under no wrapper, the engine itself vouches the ambient mParent instances: the engine's vouch is true when every mKey of a secondary mScheme it scoped in an ambient instance reaches what a route through that instance's mReferent passes to.
+> For execution under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves, discharged by differential test and never spoken: it holds when every mKey of a secondary mScheme the engine scoped in an ambient instance reaches what a route through that instance's mReferent passes to.
 
 #### § 1.10.1-placeholder-and-witness
 
 <!-- normative -->
 > The mRoute is an address; it holds no mState and declares no may-read set.
-> For execution under no wrapper, the engine itself vouches the mRoute and the ambient mParent instances within one unwalled span.
+> For execution under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom, discharged by differential test and never spoken.
 > Each is resolved once per mEntryChain and shared: one mPlaceholder.
 > The mValue is a literal, or a mPlaceholder for a captured mValue.
 > The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a mPlaceholder.
@@ -1782,7 +1781,7 @@ run law_compare_disjoint_is_sound_premise {
 }
 
 pred allInForceTrueExcept[except: set Statement] {
-   engineVouchIsTrue
+   shellResolvesInTheAmbientInstance
    all d: DeclaresPrimaryOf & InForce - except | true_DeclaresPrimaryOf[d]
    all d: DeclaresYields & InForce - except | true_DeclaresYields[d]
    all d: DeclaresIdentifiedIn & InForce - except | true_DeclaresIdentifiedIn[d]
@@ -1902,7 +1901,7 @@ law premises EVERY statement in force true where 311 says "every statement behin
 support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
 readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
 > Every statement in force is true when each statement in force satisfies its species' truth predicate.
-> Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate, and the engine's vouch holds; with the empty set named, this is every statement in force being true.
+> Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate, and the engine's axiom about where the shell resolves holds; with the empty set named, this is every statement in force being true.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > No route passes through itself when no mReferent passes to itself, directly or through others.
 > The model never reaches a false SAME while every statement in force is true: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
@@ -2363,7 +2362,7 @@ statement, where the default does the work.
 | ROUTE  | XCAT  | P    | `:places` [G, T] · the finished entailment's members[^shared]    | the finished record[^shared]                                             | SPARE        | 2.10          |
 | VANT   | —     | T    | —[^dep]                                                          | `:observer-independence` of O [sort, O]                                  | SAME         | 2.8           |
 | VANT   | —     | W    | `:lends` [wrapper, sort] · `:corresponds` [lent catalogs]        | the completion sentinel [wrapper]                                        | SAME         | 3.4           |
-| VANT   | —     | E    | —                                                                | the local-route vouch [span]                                             | SAME         | 1.5, 1.10     |
+| VANT   | —     | E    | —                                                                | the local-route axiom [span]                                             | SAME         | 1.5, 1.10     |
 | ATTEST | —     | T, A | TABLED                                                           | TABLED                                                                   | —            | `311t` § 12   |
 
 [^corr]:
@@ -2410,6 +2409,8 @@ The kinds:
 - sentinel: the closing act on a declared set.
 - record: the closing act on an emitted set, at a body's tail.
 - vouch: one party's statement that stands for a set of measurements.
+- axiom: an engine rule about where the shell resolves, discharged by differential test; never a
+  party's statement.
 
 The built column says when the statement comes into being:
 
@@ -2437,7 +2438,7 @@ consumer, the unflagged rows come first.
 | `:root`                                | warrant  | T's owner            | shape           | decl       | SAME         | wSAME           | no       | 2.2, 3.2      |
 | `:corresponds`                         | route    | the transition owner | pair            | decl       | SAME         | wSAME           | no       | 2.7           |
 | `:observer-independence` of O          | warrant  | T's owner            | sort, O         | decl       | SAME         | wSAME           | no       | 2.8           |
-| the local-route vouch                  | vouch    | the engine           | span            | —          | SAME         | wSAME           | no       | 1.5, 1.10     |
+| the local-route axiom                  | axiom    | the engine           | span            | —          | SAME         | wSAME           | no       | 1.5, 1.10     |
 | `:lends`                               | route    | the wrapper's author | wrapper, sort   | decl       | SAME         | vantage         | no       | 3.4           |
 | `:yields` with the supplied instance   | route    | the lookup's owner   | shape           | decl, eval | SAME · DISJ  | wSAME · wDISJ   | no · yes | 1.6, 2.1      |
 | `:identified-in`                       | route    | T's owner            | shape           | decl       | SAME · DISJ  | wSAME · wDISJ   | no · yes | 1.6, 2.2, 3.2 |
