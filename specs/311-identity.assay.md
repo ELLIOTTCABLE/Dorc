@@ -1858,7 +1858,7 @@ pred touchesTraversal[w: mKey, k: mKey] {
    (some l: levelsOf[k] |
       (some m: crossed[l] | compare[w, m] != DISJOINT)
       or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT))
-   or some g: placedIn[k, mSort] | compare[w, g] != DISJOINT
+   or some g: (RecordsLookedUpIn & InForce & placedKey.k).inKey | compare[w, g] != DISJOINT
 }
 
 pred routingInvalidatedBy[l: Line, k: mKey] {
