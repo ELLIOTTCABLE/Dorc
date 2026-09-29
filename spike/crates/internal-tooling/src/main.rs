@@ -24,6 +24,7 @@ mod posix_script;
 mod precommit_gate;
 mod preflight;
 mod prose_census;
+mod sha256;
 mod slug_near;
 mod slugs;
 mod step_globs;
