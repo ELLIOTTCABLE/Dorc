@@ -435,11 +435,9 @@ scoped in an mParent (1.6-parent-one-per-key). How long a warrant holds is
 > A warrant holds while that mKey's mResolution or mToken stands (3.3-invalidation-three-mutator-species).
 > The engine vouches for one lookup itself: the local mRoute under no wrapper (1.10-vantage-route-placeholder-witness).
 > Across a wrapper, the wrapper's author speaks (3.4-entry-and-lends), and everything else is measured and witnessed.
-> Separately from the per-shape warrant, a lookup may emit a closure, `alias nothing-else`, for each level it resolved.
-> The closure states that the mReferent at that level is reachable by exactly this one entry anywhere in the instance the lookup ran in, not only in the mParent-Catalog the entry was found in.
 > It is a statement about one mKey, from the thing's end, made on the path that measured it.
 > Where the lookup knows other entries, it emits them first, and a listed alias is checked as the first entry is.
-> The closure and the per-shape warrant are two statements; the region test (2.9-the-traversal-and-the-region-test) consumes the closure.
+> The closure and the per-shape warrant are two statements.
 > A grade governs every consumer of the answer it grades, corroboration and contradiction included.
 > A lookup without `:guarantees-unique-name` cannot contradict anything by returning two different mTokens.
 
@@ -583,7 +581,6 @@ The read set of a lookup body is not in the fences.
 > The speech that describes an external command supplies the reads of that command.
 > The read set is closed only when the read set of every external command in the body is closed.
 > The author of the speech that describes an external command closes that command's read set by an explicit act.
-> Any write invalidates a mResolution whose read set is open (3.3-invalidation-three-mutator-species).
 
 Examples of a mTraversal: each directory entry and symlink for a path, the resolver configuration and mVantage for a hostname, the unit table for a service name.
 
@@ -634,7 +631,6 @@ are 2.7-corresponds-across-a-transition's and 2.8-observer-dependence-and-indepe
 their combination is 3.2-compare-one-chokepoint-four-answers's.
 
 <!-- normative -->
-> No mFullyQualifiedKey and no finished definition speaks across mWorlds.
 > A mCorrespondence may speak across mWorlds (2.7-corresponds-across-a-transition, 3.2-compare-one-chokepoint-four-answers).
 > A mTopic is what a claim is about: the mKey read, plus the observer instance when that mKey's mSort is observer-dependent (2.8-observer-dependence-and-independence).
 > A mTopic may carry several mDerivations with different generators: its mFullyQualifiedKey, a provider-supplied identifier, or a mCorrespondence from a transition owner (2.7-corresponds-across-a-transition).
@@ -1535,8 +1531,6 @@ Invocations are not in the fences; a record either is in force or is not.
 > The engine invokes G's lookup only when all three hold: a writeset or readset entry names an mKey of G given whole; the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no route of mSort G; G declares that it places T.
 > It invokes the lookup with every mKey it holds for that mReferent.
 > A closure `looked-up-in nothing-else` from one invocation can contradict a record from another invocation; the engine then refuses both answers and attributes the refusal to G's owner.
-> Each member of a finished enumeration is an entry of the test of 2.6-may-write-the-writeset, and P itself stays an entry of that test.
-> Where a placing route places x in P and a finished enumeration of P has no member SAME with x, the pair reads UNKNOWN.
 
 Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
 
@@ -1618,7 +1612,6 @@ observers are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's, and
 > Each `resolve()` runs from k's mVantage.
 > Each emission supplies the mParent instance for the mKey it yields.
 > A mCompositeSort's identity is its owner's function of its parts' identities.
-> A cell's identity is its mParent's plus its mSort (1.9-cell-a-singleton-sort).
 > An mKey of an observer-dependent mSort carries the O-instance in its mTopic.
 > The mVantage is consulted only to know where to run `resolve()` calls and which ambient mParents to bind.
 
@@ -1931,7 +1924,6 @@ an mKey of a `:root` shape in this model.
 > DISJOINT licenses sparing under the same flag.
 > UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
 > An omission is a distinction only inside the body that made it.
-> No mFullyQualifiedKey speaks across mWorlds; the finished definition does not speak across mWorlds, because its sentence is within-mWorld (2.6-may-write-the-writeset); a mCorrespondence is the one mDerivation that may speak across mWorlds (2.7-corresponds-across-a-transition).
 > KNOWN_UNSPOKEN never spares and never transports, whatever either side has declared finished (2.6-may-write-the-writeset).
 > Two mSchemes yielding one mKey-Primary is the sole same-referent generator across ways of naming.
 > Partial measurement never widens: a mDerivation with an unmeasured or mRoute-terminated link yields at most what it would yield with the link measured.
