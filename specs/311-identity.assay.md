@@ -113,7 +113,8 @@ run world_exists {
 } for 6 but 4 Int expect 1
 
 run chains_meet_in_a_store {
-   some disj a, b: mKey | knownChain[a] and knownChain[b] and a.parent = b.parent and a.parent in mKey
+   some disj a, b: mKey | isPrimaryKey[a] and isPrimaryKey[b] and no (a + b).cellSort
+      and knownChain[a] and knownChain[b] and a.parent = b.parent and a.parent in mKey
 } for 6 but 4 Int expect 1
 ```
 
@@ -665,7 +666,7 @@ fact { all c: mSort | lone cellParentSort[c] }
 
 fact { all k: mKey | some k.cellSort implies some cellParentSort[k.cellSort] }
 
-fact { all disj a, b: mKey | a.cellSort = b.cellSort and some a.parent and a.parent = b.parent implies a = b }
+fact { all disj a, b: mKey | some a.cellSort and a.cellSort = b.cellSort and some a.parent and a.parent = b.parent implies a = b }
 
 pred true_DeclaresCell[d: DeclaresCell] {}
 ```
