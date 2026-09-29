@@ -2110,7 +2110,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-primary-yields-into-its-sort
 - defined: —
-- cited: 311 312d (2)
+- cited: 311 312d (3)
 
 ## enc-support-functions
 - defined: —
@@ -5758,6 +5758,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-deriving-the-store-warrant-from-chain-shape
 - defined: Research/notes/311u-refuted-shapes-register.md:72
+- cited: 311 (1)
 
 ## 311u:refuted-equal-keys-reach-one-referent-by-default
 - defined: Research/notes/311u-refuted-shapes-register.md:154

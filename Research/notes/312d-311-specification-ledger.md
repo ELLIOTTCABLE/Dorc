@@ -1363,3 +1363,173 @@ found-without-a-mark readings (§ 12), and the fourteen marks (§ 7). The first 
 (`check { old iff new }` where a body moves; lock diff zero otherwise), minus anything the two
 queued turns have since decided (both are now spent: § 16 and § 17). The conductor sees no open
 thread before dispatch.
+
+## § 19-the-opus-sitting-strategy-and-the-books-authored
+
+2026-09-29, a rewound conductor over `baff88de`, holding the ledger, the specification whole,
+both shared halves, the lock's row names, and the `using-alloy` skill with its examples. Written
+before any authoring, per the human's order; § 3, § 5, § 15, and § 18 stand except where a line
+below supersedes one by slug.
+
+### § 19.1-typed-this-sitting
+
+- **[TYPED]** the conductor is the primary bulk-author, conductor, and adjudicator, with
+  everything critical in context; it reasons, holds the source documents in sight, and writes
+  the `.md`, `.assay.md`, and `.als` text; churny tool-calls and fiddling go to subagents.
+- **[TYPED]** builders are Opus from here (the belief: the residue is mostly mechanical). The
+  conductor is more critical of an Opus's results and claims than the ledger's history of
+  Fable-tier builders warrants, especially where a builder tries to contradict or reverse a
+  prior result.
+- **[TYPED]** the order stands: main-context authorship first, worker churn and tooling later,
+  the adversarial crosscheck last under further instruction.
+- **[TYPED]** Fable-tier and Astra-tier subagents stay authorized at the value tier; every
+  dispatch still needs the human's typed ack.
+
+### § 19.2-standup-findings
+
+- `fnd-hot-loop-lane-not-on-main` — `ai/r30-assay-hot-loop` carries four commits over `ai/main`
+  (the Rust-side runner over one adapter child, comment-free one-item-per-line modules with a
+  line-map sidecar, the whole-book conjunction, the stray-run and duplicate-label refusals); none
+  is on `ai/main`. Assay on `ai/main` exposes `--parse`, `--parse-only`, `--check`, `--write`,
+  `--out`; the runner exposes `--command`. The builder works on the current tooling and neither
+  waits for nor merges the lane.
+- `fnd-book-drafts-contradict-the-primary-yields-fact` (+SURE, by hand) — § 13's B1 scopes the
+  filesystem's shape in the mRoute, and its B4 has every chain end at the mRoute; the fact of
+  § 1.3 (`enc-primary-yields-into-its-sort`: a `:primary-of` scheme has some shape carrying
+  `:identified-in` or `:root`) forbids a route-scoped `:primary-of` scheme, and an inode
+  `:identified-in sm.Filesystem` needs the filesystem's sort to have a primary scheme
+  (`supplyFits`). The honest world under the current text roots the boot (`:root` on the boot
+  id's shape) and identifies the filesystem in it, which is `312cg` § 24 (a) and § 26. The
+  authored books below take that world; the § 13 drafts are superseded.
+- `fnd-in-force-is-book-global` (+SURE of the text) — the shared half defines `InForce` as
+  `Line.speech` over every line, so a claim declared on a later line is in force for every
+  line's outcome; per-line speech growth is invisible to 311's definitions, which read `InForce`
+  only. Consequence for the books: a variant that adds one claim is a separate book, never a
+  later line. A 311-side limitation to record for the design sitting, not a tooling item.
+- `fnd-shared-world-objects-have-no-home` (+SURE of `30Y` § 2.3) — a book's world objects
+  (speakers, sorts, schemes, shapes, keys, referents, the vantage) can be declared only in that
+  book's `#=` lines: an `alloy` fence sends a non-claim `one sig` to `species.als`, which every
+  law opens, so shared world objects would consume every law's scope and change every law's
+  incremental key; and a load file carries claim atoms only, whose fields must name world
+  objects. So every book is self-contained and the stdlib's world is written out in each,
+  byte-identical where it is the same world. Recorded for the assay owner as the one tooling
+  want this sitting: a module of world objects that book modules open and laws never do.
+
+### § 19.3-book-form-decisions
+
+Each is a form call within `plans/30Z` § 4 and `notes/30Y` § 2.4; none reads 311's design.
+
+- `bk-self-contained-by-hash-equals` — every book declares its own world objects and its own
+  claims as `#=` declarations; no load file at this stage (`fnd-shared-world-objects-have-no-home`).
+- `bk-every-signature-pinned` — a book pins every signature to the union of its declared atoms
+  and every world relation (`holds`, `owns`, `affects`, `passes`, `World.lineWrites`,
+  `Engine.lookupReadSetOpen`, the flag, `no Wrapper` and `no CompositeKey` where none exists),
+  the skill's some/disj idiom in the `one sig` form that assay's own departure prescribes
+  (`30Z` § 5). A book is one world; its checks evaluate the model there, and its run is its
+  witness.
+- `bk-outcomes-reach-this-through-the-lines-own-speech` — an outcome names its line through the
+  statements declared on it (`atLine.this` for a fact, `writeLine.this` for a may-write entry),
+  never a line number; a sparing outcome names the writing line as `(the may-write atom).writeLine`.
+- `bk-claims-declared-where-they-first-bear` — the stdlib's and each describer's declarations
+  sit on the first line; a fact sits on the line that measures it; a may-write entry on the line
+  that writes.
+- `bk-expected-answers-are-the-conductors-hand-walk` — every expected answer in a book is the
+  conductor's walk of the fences over the stated world, written before any solver run; a red
+  is triaged under `30Z` § 2.5 as the walk's slip, then the fence's, and is never a reason to
+  restate the world. The first line of an honest book asserts `everyStatementInForceIsTrue`, so
+  the book's answers are answers about an honest world; a book with a false claim asserts
+  `allInForceTrueExcept[that claim]` and names it, which is the attribution the § 0 law promises.
+- `bk-the-path-catalog-is-the-filesystem` — the path scheme's mParent-Catalog sort is the
+  filesystem in every book (a coarse describer's choice inside the book; a directory sort would
+  add referents the books do not need). The engine's axiom then requires the filesystem to pass
+  to its inodes in the world stratum, which the books state.
+- `bk-one-book-per-claim-set` — a variant that changes what is in force is its own fence
+  (`fnd-in-force-is-book-global`).
+- `bk-books-sit-beside-what-they-exercise` — the walk's books are a sub-section of § 3.2; the
+  sparing test's books a sub-section of § 2.6; each book's section carries a translation block
+  saying the world and each line's expected answer, in the words of the world.
+- `bk-scope-per-book` — each book carries `run bookScope_<book> {} for N but 4 Int` in an
+  `alloy` fence beside it, N the book's mLevel count plus headroom for nothing (a pinned world
+  needs none).
+
+### § 19.4-the-four-books-and-their-expected-answers
+
+Authored this sitting into `specs/311-identity.assay.md`; the worlds, in words, are in the
+specification's translation blocks. Expected answers, as the conductor walked them:
+
+- `two_files_one_filesystem` (§ 3.2): the stdlib roots the boot; Tessa's filesystem is
+  identified in the boot, her inodes in the filesystem, her paths yield inodes and are looked
+  up in the filesystem; the inode shape carries both warrants. Three `cmp` lines: `/srv/a`,
+  `/srv/b`, `/srv/a` again. Line 1: an honest world; the path's identity is its inode; the chain
+  ends at the boot's mWorld. Line 2 against line 1: DISJOINT by the two-tops way at the
+  filesystem, no store on either leg; the natural-key license UNKNOWN (paths carry no warrant);
+  not the same topic. Line 3 against line 1: SAME by `:guarantees-unique-referent` on two inode
+  atoms of one value; the natural-key license UNKNOWN; the same topic (the filesystem is the
+  one observer and compares SAME with itself).
+- `a_hardlink_under_a_false_unique_name` (§ 3.2): Tessa's world with `/srv/a/app.conf` and
+  `/srv/mirror/app.conf` two paths to one inode, and Tessa's FALSE `:guarantees-unique-name` on
+  the path shape in force. Line 2 against line 1: the walk by identities SAME and the same
+  topic; the natural-key license DISJOINT (a wrong DISJOINT); every statement in force true
+  except the one named, which is false: the attributed wrong answer.
+- `nested_pid_namespaces` (§ 3.2): Pia's pids identified in pid namespaces, namespaces nested
+  by shape, the initial namespace in the boot; Dora's `docker exec` lends the container's
+  namespace and declares that guest pid 1 corresponds to host pid 4821. Line 1 (`kill -0 4821`,
+  the host vantage): honest; identity and world. Line 2 (`docker exec web kill -0 1`, a vantage
+  entered through the wrapper): the walk UNKNOWN (one-top fails: the pid scheme has no other
+  shape identified in a namespace), `compare()` SAME through the mCorrespondence, and NOT the
+  same topic, since a process fact is observer-dependent on its namespace by default and the
+  two namespaces compare UNKNOWN (one is the other's container). The last is the informative
+  answer: the correspondence makes the referents one and § 2.8's default keeps the facts apart.
+- `stage_five_the_index_given_whole` (§ 2.6): USER_STORY stage 5's morning with Anna's apt
+  describer naming the package index given whole, identified in the boot, its entailment
+  finished; Tessa's and the stdlib's may-read sets closed; Deb's `dpkg -s` reading the status
+  file's path; the flag set. Line 2 against line 1: `compare()` KNOWN_UNSPOKEN (two sorts under
+  the boot; neither the two-tops nor the one-top way fires); the readset is not ⊤ and the
+  writeset is not ⊤; not spared. The acked cost of `311t` § 14 with the identity reason
+  isolated from every other reason for a collision.
+
+### § 19.5-suspicions-banked-for-a-fifth-book
+
+- `sus-primary-level-traversal-is-the-store-given-whole` (~SUSPECT; a hand-walk, unrun) — under
+  § 1.7's fence a level with no emitted member and no closing act has its mParent given whole as
+  a traversal member, primary levels included, since at the primary the catalog and the store
+  are one mKey (§ 2.4). A write to any inode in a filesystem then touches the inode level of
+  every other key in that filesystem (`touchesTraversal`: the region test reads the written
+  inode as covered by the filesystem), so every same-filesystem write routing-invalidates every
+  resolution in the filesystem, and the closing act cannot honestly be given at the primary
+  level while the world routes anything to the inode (`true_ClosesTraversal` needs nothing to
+  pass to it). If that walk holds, USER_STORY stage 5's file survivals never spare within one
+  filesystem under the current text, whatever Anna names. To be shown by a book
+  (`stage_five_the_list_files_named`, Anna naming the list inodes) after the four run, and held
+  as a hole or as the acked coarse floor at the sitting; never repaired here. It sits on
+  `ask-passes` (§ 17.1).
+
+### § 19.6-the-opus-builders-remit
+
+One Opus, its own worktree off `ai/main`, on the human's typed ack. The two clamps and the
+valve of § 15.3 stand, sharpened for a lower-reasoning builder:
+
+- It never edits a fence body, a world fact, an outcome line, or a translation, with the one
+  ledgered exception of § 18.3's renames, each verified by `check { old iff new }` where a body
+  moves and by the lock moving nothing otherwise.
+- A red is reported with its instance rebuilt by hand and its `30Z` § 2.5 class named, never
+  repaired; a book red is FIRST the conductor's hand-walk being wrong, then a fence slip, then
+  a hole, and the builder says which it believes and why, and touches nothing.
+- A lock row that flips against the committed lock, and any claim that a prior ledger result
+  was wrong, is escalated with the evidence, never applied. The valve stays: a new
+  counterexample on a law that today reads `timeout` is the arc's purpose firing.
+- **[TYPED]** 2026-09-29, mid-sitting: the sibling's tooling work will invalidate the existing
+  lock, which will be regenerated in full later; no lock regeneration, churn, or worry during
+  the first parts of this arc, until the human says otherwise. Consequences: the builder never
+  runs `--write`; a `--check` mismatch against the committed lock is not a finding and is not
+  reported as one; a reword is verified by `check { old iff new }` where a body moves and, for
+  a rename, by the runner reporting the same result on the affected commands before and after,
+  in its report, never by the lock. § 15.2's "no lock write" for the measurement now covers the
+  whole sitting.
+- Order of work: (1) compile and run the four books (each its own module; `--parse` first);
+  report every row; (2) the official-budget measurement of the seven timing-out commands, report
+  only (§ 15.2); (3) § 18.3's renames, one commit each; (4) kills for the unkilled green laws,
+  `sparing` first, by the `allInForceTrueExcept` pattern; (5) a tooling-chafe section in its
+  report. No lock is written.
+- No subagents under it. No scope edit except a `bookScope_<book>` a book needs to seat its own
+  atoms, and then only upward to the count the world names.
