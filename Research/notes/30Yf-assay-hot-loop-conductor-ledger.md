@@ -21,7 +21,13 @@ solving and the rest is JVM start, parse, and translation.
 
 State: the lane `ai/r30-assay-hot-loop` is the build; it runs in parallel with the 311
 mechanization arc, which keeps using `--parse`, `--check`, `--write`, and `mise run alloy` as they
-are until the lane lands. The runner already refuses a `--command` that names nothing, honours
+are until the lane lands. Measured at the lane's report over the frozen strawman-3 (92 rows, one
+red): a full `--write` went from 425 s (one JVM per command) to 126 s at the gate tier (40 rows
+solved, 62 green by entailment) and 71 s at the official tier with two children; `--check` with
+nothing changed 4 s; one book's world fact edited 10 s; one law edited 4 s; every verdict
+identical across the old path, the new path, and every command solved singly; pre-commit on the
+311 specification 2.36 s. The lane also repaired a hook case the 311 arc's `.assay.md` rename had
+left red. The runner already refuses a `--command` that names nothing, honours
 `expect`, keeps the expect text out of a row's `scope`, and quiets kodkod's stderr (landed
 2026-09-28 from the praxis lane).
 
@@ -200,9 +206,19 @@ compile-time string check).
   lint; 3 the runner could not run (75 for contention surfaces as 3); 4 no mismatch but rows
   unmeasured or owed, distinct from 1 because the reader's next act differs (run the official
   tier, versus fix the model); rows the hot tier defers by design do not count toward 4.
-- **Official** (nightly or CI): from scratch, keys ignored, 900 to 3600 s per command, K children
-  under preflight's RAM bound; writes a candidate lock and prints the diff; a human commits it. CI
-  standup (runner choice) is separate work.
+- **Official** (nightly or CI): from scratch, which means keys ignored, no replay, and no
+  entailment [CONDUCTOR, ruled at the lane's report]: every per-line check is solved individually
+  and the conjunction runs as a row of its own, so a disagreement between a conjunction's verdict
+  and its lines' verdicts is reported as a finding against the construction, the permanent form of
+  the one-time individual cross-check the lane ran. 1800 CPU s per command (the ceiling), K
+  children under preflight's RAM bound with the official heap at 4096 MB; writes a candidate lock
+  and prints the diff; a human commits it. CI standup (runner choice) is separate work.
+- **The batch cap is a hard bound** [CONDUCTOR, ruled at the lane's report]: a command starts only
+  with a wall cap of the smaller of its tier's and the batch's remaining time, and one cut by the
+  clip is a `timeout` at the budget it actually got, which the early-versus-full rule reads as
+  early and owed; `not-run` is for commands never started. A started command never outlives the
+  batch cap. Contention exits 75 directly from assay, the repository's convention for heavy tasks
+  (an earlier ruling had it surface as 3).
 
 ## § 9-architecture-rust-with-a-four-verb-java-adapter
 
@@ -252,8 +268,10 @@ or an error.
 Excluded as risky or not obviously sound [ACKED by the owed-change list]: scope escalation (exact
 scopes and `util/ordering` break monotonicity); any size-equality pass; sharing translation between
 a check and its twin (a check is its twin's problem plus one conjunct, exactly Kodkod's incremental
-monotone case, but Alloy exposes no path to it); partial-instance inference (an experimental
-option; only after a differential run over the strawmen); Platinum-style slice reuse of unsat
+monotone case, but Alloy exposes no path to it); partial-instance inference as a *choice*: the
+lane found it is the API's default and on for every verdict ever recorded, the 311 lock included,
+so it stays on as shipped, the key records it, and turning it off would re-key every row
+[CONDUCTOR, from the lane's finding]; Platinum-style slice reuse of unsat
 results (a 2020 prototype with a lossy canonicalisation). A deterministic budget unit (a SAT
 conflict limit, in the manner of Lean's heartbeats, making "unmeasured at K conflicts" machine
 independent) is a later refinement of `budget`, not owed. Spec-side restructurings (the memo-table
@@ -273,8 +291,10 @@ the human, who decides what reaches `notes/312d`.
 
 ## § 13-landing-checklist
 
-When the lane lands: `notes/30Y` rewritten to what is (the lock's kinds and columns, the key, the
-tiers, the adapter and its verbs, the platform rule), never as a build-against-future;
+When the lane lands, a documentation lane (a fresh builder briefed with the lane's report): `notes/30Y`
+rewritten to what is (the lock's kinds and columns, the key, the tiers, the adapter and its verbs,
+the platform rule, the four per-module orderings and the deferral threshold as set), never as a
+build-against-future;
 `LIVING_STATUS` current; `.claude/skills/using-alloy/SKILL.md`'s how-to-run bullet updated if the
 invocation or the red rule changed; the chafe register in `notes/30Yc` current; this ledger
 compressed to what a reader of `30Y` still needs.
