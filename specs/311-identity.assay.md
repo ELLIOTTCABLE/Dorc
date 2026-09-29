@@ -390,7 +390,7 @@ fact {
 }
 
 pred withinOneParent[a, b: mKey] {
-   a.parent = b.parent
+   (some a.parent and a.parent = b.parent)
    or (a.parent + b.parent in mKey and some a.parent.reaches and a.parent.reaches = b.parent.reaches)
 }
 
@@ -714,7 +714,7 @@ fact { all f: VerdictFact | f.underObservers = mSort.(f.topic.at.ambient) }
 
 pred engineVouchIsTrue {
    all v: mVantage | no v.through implies
-      all k: mKey | k.at = v and isNaturalKey[k] and k.parent = v.ambient[catalogSortOf[k.scheme]] implies
+      all k: mKey | k.at = v and isNaturalKey[k] and some k.parent and k.parent = v.ambient[catalogSortOf[k.scheme]] implies
          k.reaches in k.parent.reaches.passes
 }
 ```
@@ -822,7 +822,7 @@ pred true_DeclaresYields[d: DeclaresYields] {
 }
 
 fun naturalKeyAnswer[x, y: mKey]: one Answer {
-   (x.scheme = y.scheme and some x.parent and x.parent = y.parent) implies
+   (some x.scheme and x.scheme = y.scheme and some x.parent and x.parent = y.parent) implies
       (sameAtOneLevel[x, y] implies SAME
        else twoTopsWay[x, y] implies DISJOINT
        else UNKNOWN)
@@ -1361,7 +1361,7 @@ pred coveredBy[D, x: mKey] {
 }
 
 pred lookupTraversalOfSort[l: mKey, G: mSort] {
-   some traversalMembers[l] and sortOfKey[traversalMembers[l]] in G
+   some G and some traversalMembers[l] and sortOfKey[traversalMembers[l]] in G
 }
 
 pred outsideByTraversals[D, x: mKey] {
@@ -1462,7 +1462,7 @@ fact { all d: ClosesLookedUpIn | d.speaker = d.routeSort.sortOwner }
 pred places[G, T: mSort] { some DeclaresPlaces & InForce & placingSort.G & placedSort.T }
 
 fun placedIn[x: mKey, G: mSort]: set mKey {
-   {g: (RecordsLookedUpIn & InForce & placedKey.x).inKey | sortOfKey[g] = G}
+   {g: (RecordsLookedUpIn & InForce & placedKey.x).inKey | some G and sortOfKey[g] = G}
 }
 
 pred lookedUpInClosed[x: mKey, G: mSort] { some ClosesLookedUpIn & InForce & closedKey.x & routeSort.G }
@@ -1871,7 +1871,7 @@ pred tokenInvalidatedBy[l: Line, k: mKey] {
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l] | w.parent in mWorld and w in identity[k].^parent
+   some w: lineWriteset[l] | some w.parent and w.parent in mWorld and w in identity[k].^parent
 }
 
 pred staleAt[s: Line, k: mKey] {
