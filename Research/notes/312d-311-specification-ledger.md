@@ -1842,3 +1842,117 @@ whole, both shared halves, the `using-alloy` skill with its examples, and the de
   by scratch probes, reported and repaired by nobody; the recorded results set beside
   today's. It edits nothing. The official write follows the conductor's reading of that
   report.
+
+## § 25-the-close-of-this-ledger-and-the-state-a-successor-inherits
+
+2026-09-29, the same conductor. This is the last section of this ledger. A clean-context
+successor conducts from here and starts a new ledger of its own.
+
+### § 25.1-typed-at-the-close
+
+- **[TYPED]** the change of direction: seven sessions deep, the work does not function
+  in-window after about 600k tokens of standup reading. This conductor triages its documents
+  into a reading list for a clean-context successor, waits for its builder, writes this
+  section, and hands over.
+- **[TYPED]** the successor operates under the prior split. The conductor does the initial raw
+  authorship of large chunks. Opus does everything else, and is authorized for small local
+  mutations within whatever narrow guardrails the conductor chooses. The conductor then does a
+  full pass over the Opus's diff. The human steps back, for now, from the edge where Opus does
+  all of it, since the successor has more room. The conductor's proposal of a wider Opus remit,
+  made in chat the same day, was not taken.
+- **[TYPED]** `plans/30Z` and the `using-alloy` skill are non-optional reading for the
+  successor. The reading list omits 311 itself; the human gates it.
+- The reading list is the root file `_tmp-311-successor-reading-list.md`: explicit reads with
+  line ranges, sized on this machine, in three groups (read now; conduct for a dispatch; on
+  demand, each with its trigger). It is ephemeral and gitignored.
+
+### § 25.2-what-is-measured-at-the-tip
+
+The specification last changed at `ed70650f`; `ai/main` has carried only this ledger since.
+Leg two ran at `bdbaf062`, whose `specs/` equals `ed70650f`'s. Every row below is a hot-tier
+measurement at 120 s of CPU per command, reported by the builder and written to no lock.
+
+- The document parses clean; all twelve lint lists are empty.
+- The laws module holds 48 commands: 13 checks, 13 twins, 14 kills, 6 hole witnesses, 2 probes.
+- No counterexample. Six laws read no-counterexample with a sat twin each: `natural_same`,
+  `natural_disjoint`, `sparing` (at four atoms and ten statements), `same`, `nobody_spoke`,
+  `different_sorts_never_same`.
+- All 13 twins are sat. Both probes are sat. All 6 hole witnesses are sat.
+- 13 of 14 kills are sat as written. `kill_disjoint_is_sound_aliases_nothing_else` is a
+  timeout while solving, 777,594 clauses at nine statements.
+- Seven laws were deferred by the hot tier and have no measurement above 120 s anywhere:
+  `exclusion_readings_agree`, `region_disjoint`, `compare_same`, `compare_disjoint`,
+  `disjoint`, `unstale_route_is_untouched`, `disjoint_by_two_tops_rests_on_one_scheme_owner`.
+  They are the DISJOINT and `compare()` core.
+- No definite result moved against the schema-1 lock, across the three renames and the two
+  widenings of the universe (§ 18.2, § 21.2).
+- The books were measured at `0264b5da`, under the old names, and not again at the tip
+  (§ 24): five answer as expected; three are unmeasured, translation-bound.
+
+### § 25.3-what-is-owed-next-in-the-conductors-order
+
+Nothing here is owed by this ledger's author. It is the field a successor sees.
+
+- `owed-the-official-write-from-scratch` — one `--write --official` pass. It is the first
+  measurement of the seven laws, the one kill, and the three books, at 1800 s of CPU per
+  command. It holds the machine's heavy-work lock for hours. Writing records a row; the commit
+  that carries the lock to `ai/main` accepts it. Any edit to a fence or a hole changes every
+  law's key, so text is settled before the pass, never during it.
+- `owed-kills-for-ten-species` — ten species with a non-empty truth predicate have no kill:
+  `DeclaresIdentifiedIn`, `DeclaresRoot`, `SuppliesParent`, `ClosesMayRead`,
+  `FinishesEntailment`, `EmitsAliasNothingElse`, `RecordsLookedUpIn`,
+  `DeclaresObserverIndependence`, `DeclaresLends`, `ClosesLends`. § 3.1's
+  `str-truth-predicates-are-transcriptions` asks one per species. The crash handoff's author
+  expected three of them to be unsat against the sparing and region laws and authored none.
+- `owed-books-for-the-untouched-sections` — no book touches the region test, `:places`,
+  lifecycle invalidation, the sentinel under the flag, a cell, or a composite.
+  `fnd-book-cost-climbs-with-the-key-count` (§ 24) bounds what a book may hold at the hot tier.
+- `owed-the-cost-question` — § 16.4's S1 and S2 stand unproposed. The official pass says which
+  commands are unaffordable at the ceiling; each restructuring is the human's call singly.
+- `owed-the-accounting-close` — the tri-partition's final counts (§ 13), over a specification
+  that has since gained eight books, ten kills, and § 1.3.1.
+- Held for the design sitting, untouched: the six holes (§ 9, § 11); the thirteen marked sites
+  (§ 7, less § 21.2's); the readings found without a mark (§ 12);
+  `burn-primary-coherence-sentence` (§ 21.2); `fnd-in-force-is-book-global` (§ 19.2); the
+  five questions on the world stratum (§ 17.1).
+- Later passes, unstarted: the `311u` entries as rejection runs (§ 5.2); the support-form law
+  and the `horizon_` prefix (§ 18.3).
+
+### § 25.4-suspicions-unmeasured-and-unposed
+
+Each is a hand-walk of the fences. None was put to the human, and no solver has seen one.
+
+- `sus-a-contained-write-touches-its-store` (§ 22.3; ~SUSPECT) — its book,
+  `stage_five_the_list_file_named`, is one of the three unmeasured.
+- `sus-finished-record-for-a-natural-shape-is-vacuous` (+SURE of the text; ~SUSPECT of its
+  weight) — `true_FinishesEntailment` ranges over `keysOfSort`, which holds no natural mKey,
+  while `entailmentFinished` reads the writeset member's own shape. A record for a natural
+  shape is therefore true of every world. Both list-file books declare such a record.
+- `sus-top-test-follows-entries-from-the-marked-read-only` (+SURE of the text; ~SUSPECT of
+  its weight) — `readsetMemberIsTop` follows may-read entries from the marked read. Where the
+  marked read is a natural mKey and the entries are declared on its identity, the test does
+  not follow them.
+- `sus-thin-tessa-is-one-choice-of-world` — § 3.2.5's Tessa declares
+  `:guarantees-unique-name` and withholds `:guarantees-unique-referent`. That world is the
+  book author's choice and is unacked.
+
+### § 25.5-the-tree-the-builder-and-the-tooling
+
+- `ai/main` is at `5b9444cb` and the commit that carries this section. Every commit of this
+  sitting was by pathspec. The committed lock is schema 1, stale, and unwritten since
+  `a212975c`.
+- The builder is agent `a9db46ba9df571cf3`, an Opus, in the worktree
+  `C:\Users\ec\Sync\Code\Dorc\.claude\worktrees\agent-a9db46ba9df571cf3` on
+  `ai/312d-books-leg` at `bdbaf062`, clean, with no commit of its own. It waits for a message
+  and holds both legs in context. A new session may be unable to address it; a successor then
+  dispatches its own. Its logs are in a session scratch directory and are ephemeral.
+- Three worktrees of this arc remain in place, unpruned: `agent-a03007ade2e0378bf`,
+  `agent-a70159e5c19f3608a`, and the builder's.
+- The builder flagged that `specs/AGENTS.md` bars a builder from editing a specification. The
+  human's typed split (§ 25.1) authorizes small local mutations by Opus in this arc; the
+  file's line is the human's to amend or leave.
+- Tooling chafe from both legs, for the assay owner: a report row omits the command's
+  `expect`, so a kill cannot be judged from the report alone; `--help` prints no flags; the
+  hot tier's deferral note does not say which measurement was too large; a hot slice of a
+  large book and a pass over the laws both outrun the 600 s foreground limit; the 540 s batch
+  cap clipped one book's run to 72 s.
