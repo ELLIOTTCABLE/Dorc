@@ -1014,3 +1014,143 @@ official-budget measurement of the seven timing-out commands, report only, no lo
 books, each transcribed from the brief's world, run, and any red reported with its instance and
 its § 2.5 class; kills for the unkilled green laws (`sparing` first). Excluded from the brief:
 any scope edit; the split; any lock-format change; anything the two queued turns decide.
+
+## § 16-the-hot-loop-sitting-and-the-assay-handoff
+
+2026-09-29, the same conductor, the first of the two queued turns. **[TYPED]** the ask, sent
+mid-turn: dig deeply into the performance-against-correctness mechanics; theorize how to speed
+the hot loop, which fixes belong in the tooling (assay and the runner), and what hot, gate, and
+CI should each contain. CI is not stood up; GitHub's free runners were floated (the human
+recalled a ~10-minute limit; the conductor's +SURE-ish correction: six hours per job, but ~7 GB
+RAM), with a cheap Vultr runner, the human's dedicated server, or the sibling Mac as
+alternatives; the how of CI is set aside as standup work. **[TYPED]** a tool call to read
+assay's CLI surface was NACKED: theorize from context. So every claim below about assay's
+current flags is from `notes/30Y`, the § 10 chafe register, the lock read at `a212975c`, and the
+`using-alloy` skill, and is graded accordingly. **[TYPED]** at the close: ledger; then a HANDOFF
+for the assay builder, written as a peer document and not a brief (the human's goals first,
+verbatim; the conductor's analysis included whole but softened, its goals never encoded as
+demands; the builder is Fable-class and knows Alloy better; the conductor's uniquely valuable
+content is the Dorc, project, and spec context); the assay builder runs in parallel in its own
+worktree under the human's separate prompting; from here on the conductor and the human move
+forward on the CURRENT tooling. The handoff is the uncommitted root file
+`_tmp-assay-hot-loop-handoff.md`.
+
+### § 16.1-result-against-non-result-and-the-locks-blind-spot
+
+- A command yields a DEFINITE result (`sat`, `unsat`, `counterexample`, `no-counterexample`) or a
+  NON-RESULT (`timeout`, in translation or in solving; `not-run` under the batch cap). A definite
+  result is a fact about the model at that scope and is budget-independent. A non-result is the
+  absence of a measurement at that budget.
+- The lock at `a212975c` treats `timeout` as a result: row-for-row equality, so `timeout` matches
+  `timeout`. Cosmetic consequence: rows flip with machine speed (one already has). Unsound
+  consequence (+SURE): a `timeout` row can hide a red indefinitely: a later edit that gives
+  `law_disjoint_is_sound` a real counterexample at six, on a machine that still times out at
+  120 s, matches the lock and passes the gate. The seven timeouts ARE the DISJOINT and compare
+  core, so this blind spot sits on the arc's purpose.
+- Schema the conductor proposes per row: `scope` (exists), `result`, `budget` (the per-command
+  cap the result was measured under, as a tier name or seconds), `size` (Alloy's primary
+  variables and clauses after translation, deterministic given the jar), and for a timeout
+  `phase` (`translating` or `solving`); `premise` derived from the twin row at report time, not
+  stored.
+- Asymmetric matching, the whole fix, no scope touched: `rule-definite-beats-nonresult` (a
+  definite result found at any budget may be written; a non-result never overwrites one and never
+  matches one; it is reported "unmeasured at this tier"); `rule-counterexample-always-mismatches`
+  (a counterexample at any budget against a locked `no-counterexample` is a mismatch);
+  `rule-size-tells-machine-from-encoding` (a timeout against a locked definite result at the same
+  or lower budget is machine noise when the clause count is unchanged, warn and pass, and an
+  encoding regression when it grew, mismatch, a finding); `rule-timeout-rows-are-owed` (the lock
+  may carry a timeout so the document is not blocked, listed as residue of a different kind from
+  an accepted red).
+
+### § 16.2-the-incremental-lock-and-its-attack
+
+- The claim: a row is skipped on `--check` or `--write` when it has a definite result and its KEY
+  matches. Key = hash over every input the child JVM receives: the text of every generated module
+  the command's module transitively opens (`assay.als`, `shared.als`, `species.als`; for a book
+  also `words.als`, `claims.als`, the book module), each with its command blocks stripped; the
+  command's own generated text; the row's scope string; the Alloy jar's digest (mise-pinned); the
+  runner's option set (solver, skolem depth, symmetry breaking, whatever the Java passes to
+  `A4Options`). Computable by assay without parsing Alloy: it generated the modules, wrote the
+  `open` lines, and emitted the command blocks so it knows their extents.
+- Why laws and books decouple: `laws.als` opens `species` only (`30Y` § 2.3); `words.als` and
+  `claims.als` are opened only by book modules and the corpus book. A book edit changes a book
+  module, `words.als`, and `claims.als`, and no law's key. A hole predicate or fence edit changes
+  `species.als`, hence every key, correctly. A new kill run changes its own row only. This is what
+  turns the book loop from a full pass into one module (~SUSPECT from ~25 minutes to under two).
+- Why skipping is sound: same module texts, command, scope, jar, and options give the same
+  Kodkod translation (deterministic) and, under SAT4J, a deterministic sequential solver, the
+  same verdict; a parallel solver could vary the INSTANCE shown, never the verdict, and the lock
+  records verdicts. Definite results only; timeouts are always re-attempted at their tier.
+- The attack (under-invalidation is the only failure that matters): JVM inputs enumerated as
+  module files, command, scope, jar with Alloy's `util/*` library inside it, runner options; the
+  runner reads no environment for semantics; hole predicates, `Tables` facts, and shared halves
+  are module text; an assay codegen change alters module text so every key changes and one full
+  pass follows, self-correcting; a stale module in the out directory is inert unless opened, and
+  assay should clean the directory on compile; a hand-edited lock row is trusted until the
+  from-scratch tier, which ignores keys (the belt to this brace); the current sixteen-hex hash is
+  fine for change detection, a truncated SHA-256 costs nothing. Residuals: -GUESS whether any
+  runner option varies by platform (the WSL leg choosing a different solver would make the lock
+  per-platform; the option set must be pinned in one place and hashed); the runner must select a
+  command by NAME not position (the lock's row identity is module plus name); assay must refuse
+  two commands of one name in one module.
+- **[TYPED]** "defend": stripping commands rests on "a command never constrains the model". The
+  defense as given: a command is a query (`run {P} for S` asks for facts ∧ P; `check {P} for S`
+  for facts ∧ ¬P), and nothing in the grammar lets a command introduce a usable name, add a
+  constraint another command inherits, declare an atom, or open a module; facts alone remove
+  worlds and cannot sit inside a command block. Two channels by which one command's text DOES
+  reach another row, both covered: (1) a malformed command makes the whole module graph fail to
+  compile, so every row would be `error`; therefore keys are consulted only AFTER the graph
+  compiles, a precondition, and a compile failure trusts nothing; (2) assay-generated commands
+  embed authored formulas (a book line's check carries every line above as premises; a book's run
+  conjoins every outcome; the corpus book's run conjoins every unscoped authored check; `run
+  bookScope {}` is copied onto other rows as their scope), covered because the key hashes the
+  GENERATED command text and the row's scope string, not the authored `#=` line. Checked also:
+  `expect 1` disables symmetry breaking per command, which prunes isomorphic instances and never
+  changes a verdict; unused signatures consume scope in every command regardless. Residual:
+  -GUESS Alloy 6.2's grammar has no command-level partial-instance or bounds annotation (Forge's
+  `inst`; Kodkod's API); were there one it would still be local to its command.
+- Superseded: the § 10 per-law-modules suggestion buys nothing once commands are stripped from
+  the module hash, and would not touch the `Tables` tax (species facts are global to every module
+  that opens species).
+
+### § 16.3-the-tiers
+
+- Pre-commit unchanged: assay's solver-free lints, no JVM, under three seconds.
+- `tier-hot`: `--only <command>` and `--module <book>` by name (the praxis's smallest run, `30Z`
+  § 5; -GUESS assay does not expose it though `mise run alloy -- --command` does); incremental
+  `--check` over changed rows only; cheap-first ordering by recorded `size`; a deterministic size
+  threshold above which a row is `deferred`, never attempted, so the hot loop never produces a
+  timeout; ~120 s per command; the 540 s batch cap kept for the harness's foreground window;
+  exit 0 when every re-measured row matches, deferred rows listed.
+- `tier-gate` (builder completion): incremental over changed keys; ~600 s per command; a batch
+  cap derived from rows-to-run times the cap; background under the machine lock; rows still over
+  the cap recorded `timeout` with `budget: gate` and `size`; exit under the asymmetric rules (a
+  size-grown timeout fails as a cost regression; same-size warns).
+- `tier-official` (nightly or CI): from scratch, keys ignored; 900 to 3600 s per command; K
+  parallel children with K times the heap cap under preflight's RAM bound (the machine lock
+  protects against two tasks, not one task's children; K of four plausible on this box; ~7 GB on
+  GitHub caps K at one or two); writes a candidate lock and prints the diff against the committed
+  one; a human commits it; larger scopes as separate commands belong here (`30Y` § 3.1), which
+  needs assay to accept an alternate scope clause per tier, a later design item.
+- The invariant across tiers: a lower tier never makes the lock worse (it writes only definite
+  results and never overwrites one with a non-result); only the official tier makes it whole.
+
+### § 16.4-what-belongs-to-whom
+
+- Tooling candidates, none touching Alloy semantics, in the conductor's value order for the
+  mechanization side's loop: T3 `--only`/`--module`, cheap-first ordering, deterministic deferral
+  · T1 the incremental key and skip · T2 the schema and asymmetric match · T6 `--write` printing
+  its diff so write-then-check is one pass (the 45-minute call) · T7 a plain-text instance per red
+  in a directory (the builder's costliest loop step was 8 kB JSON lines) · T5 parallel children
+  under the RAM budget (official tier) · T4 the derived batch cap with `deferred` never mismatching
+  · T8 refusing an unscoped `run` not named `_premise` (today silently a corpus outcome;
+  correctness-adjacent) · T9 cleaning the out directory on compile.
+- Spec-side, the conductor's and the human's, each a reword the lock must show moves nothing:
+  S1 the two `Tables` defining facts become a predicate `tablesAgree` used as a premise by exactly
+  the commands that read a table, so the ~20 commands that never read one stop paying ~17 s each
+  (~6 minutes per full pass); meaning unchanged for readers and non-readers alike. S2, NOT
+  proposed now: genuine cost restructurings of the walk (integers out of `height`; `meet` as a
+  table rather than per pair), only after the official-budget measurement says which laws are
+  unaffordable at six, each under `check { old iff new }`, each the human's call individually.
+- Unsettled by the sitting: whether the seven are slow or unaffordable at six (the next
+  dispatch's first item); the platform-option question; alternate scopes per tier.
