@@ -792,3 +792,34 @@ marks (§ 7); the tooling items of § 10 for the assay owner, the deterministic 
 adversarial crosscheck over the platform, under the human's instruction; the `AGENTS.md`
 opaque-review gate, which binds a Fable conductor at the end of this work and needs the human's
 typed ack to dispatch.
+
+## § 14-the-rewound-conductors-standup-and-the-fold
+
+A rewound conductor, 2026-09-29, holding the ledger, the specification at `a212975c` whole, both
+shared halves, the lock, and the `using-alloy` skill with its examples. Typed this sitting and
+banked; the conductor's proposals of the same sitting stay in chat until the human reacts.
+
+- **[TYPED]** no opaque-review this arc: nothing in it touches memetic-hazard material. § 13's
+  last line is superseded on that point.
+- **[TYPED]** the fold: acked and done. `ai/312d-mechanize-311-b` rebased clean over `ai/main`'s
+  two ledger commits and `ai/main` fast-forwarded to `7177558a`; the tree is clean. Both builder
+  worktrees (`agent-a03007ade2e0378bf`, `agent-a70159e5c19f3608a`) remain in place, unpruned.
+- **[TYPED]** the ledger carries no question for the human, ever: it is for historical surgery and
+  failure investigation and is not read by a human. A question is put in chat or nowhere.
+- **[TYPED]** the books are acked as the arc's main destination.
+- **[TYPED]** the human is on the fence about dispatching a builder with a remit to make the
+  solving faster (the fear: quietly vacuous results) and leaves the call to the conductor.
+- **[TYPED]** the human is tempted to switch builders to Opus, three serial Fable builders being
+  a first for the project, and to lean on a Fable-tier adversarial review at the end.
+- **[TYPED]** the world stratum has not been explained to the human and is owed in chat, next
+  turn, on the human's ack; nothing about it was ever "put to" them.
+- Correction to § 13: "the seven UNACKED READING marks" is wrong. The specification carries
+  fourteen marks (§ 1.1, § 1.3, § 1.5, § 1.6, § 2.1, § 2.2, § 2.5, § 2.6, § 2.8, § 2.9, § 2.11,
+  § 3.2, § 3.4, § 3.5), about nineteen readings between them; § 7's site list is the accurate one.
+- The successor's accounting tables survive, uncommitted, at the session scratchpad
+  `…\Temp\claude\C--Users-ec-Sync-Code-Dorc\542b14fc-6170-4a07-bdec-8925ebc76c29\scratchpad\b\`
+  (`tri-partition.tsv`, `-v2`, `-v3`, `additions*.tsv`); the directory is ephemeral.
+- Coverage read off the lock at the fold: of thirteen checks, six no-counterexample and seven
+  `timeout`; kills exist for four laws only (`natural_same`, `natural_disjoint`, `same`,
+  `nobody_spoke`); the other nine checks, `sparing` and `different_sorts_never_same` included,
+  carry no kill. No `sh` fence exists.
