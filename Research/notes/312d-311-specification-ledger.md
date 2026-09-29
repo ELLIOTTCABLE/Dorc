@@ -1618,3 +1618,67 @@ compiles and parses the staged document. The four books were committed before th
 and have met no parser. § 19.6's order of work stands with two substitutions: the books run as
 `--module book_<name>` slices at the hot tier, and the measurement of the seven timing-out
 commands is an `--official --check`, which writes nothing.
+
+## § 21-the-primary-coherence-ruling-and-the-state-at-the-rewind
+
+2026-09-29, the same conductor; the last section before the rewind. The dispatch of the builder
+is the rewound successor's, on the human's typed ack then.
+
+### § 21.1-typed-this-sitting
+
+- **[TYPED]** for now every relevant book stays in the specification document, with
+  duplication where it is needed; the specifics of sharing are punted. Owed work, named by the
+  human: moving excessive or less important examples, those that do not flow for a human
+  reader, out of the document.
+- **[TYPED]** "which worlds the checker considers" IS design: it stays exactly equivalent to
+  which worlds Dorc promises to work in. The only worlds the checker may be boxed out of are
+  the worlds chosen, and documented, as horizon.
+- **[TYPED]** a nit that cannot be acted on now: the coherence sentence of § 1.3 (a primary
+  mScheme yields into its mSort for at least one shape) may not be sane as a modelling
+  constraint. In any given run the arms are singular, because argv is concrete and a fixed set
+  of paths is taken, so whether the spelling carries a word on some branch not taken cannot be
+  meaningful to the model. It was intended more as a lint than as a constraint on the truth of
+  the model. No design change is ruled in this sitting; 311 as written is what is wanted.
+- **[TYPED]** the ruling on `fnd-primary-yields-reading-forbids-thin-stdlibs`: the third option,
+  temporarily. The checker stops drawing any restriction from the sentence; the sentence stays
+  in the specification word for word; the item joins the burn-down list with an explicit lean,
+  to remove the sentence from the specification entirely. For now the one-to-one mapping wins.
+
+### § 21.2-applied
+
+- The specification, one commit: the fact of § 1.3 that demanded `:identified-in` or `:root` on
+  some shape of a primary mScheme is deleted; its sentence leaves § 1.3's translation block; the
+  mark `enc-primary-yields-into-its-sort` is deleted, its reading being replaced and not acked;
+  a new non-mechanical § 1.3.1 carries 311's sentence verbatim from the baseline
+  (`1af7e0d9^`, line 153) under `<!-- normative -->`. § 7's list of marks is one site shorter:
+  thirteen sites remain. The change widens every law's universe, so rows may move, and a red
+  that appears is a finding the narrower universe hid.
+- `burn-primary-coherence-sentence` — the burn-down item: the sentence of § 1.3.1, held for the
+  design sitting, lean to remove. Its ground is the human's nit above.
+
+### § 21.3-the-one-tooling-need-as-answered
+
+Asked by the human what, of the sharing discussion, is universal whatever shape is later
+chosen; the conductor's answer, which drew no reaction and binds nothing: atoms that every book
+of a document sees and no law does, the mirror of what the claims module already is for claim
+atoms. Today the only place outside a book for a shared world atom is an `alloy` fence, which
+lands in the module every law opens and changes every law's universe and every row's key.
+Urgency low while books are self-contained.
+
+### § 21.4-what-a-rewound-successor-does-first
+
+- Reads this ledger's § 19 to § 21, the specification whole, `notes/30Y` § 2 and § 3 as
+  rewritten, `plans/30Z`, and the `using-alloy` skill.
+- Dispatches one Opus builder off `ai/main`, on the human's typed ack, under § 19.6 with
+  § 20.4's substitutions: parse; the four books as slices; the official-tier check of the seven
+  timing-out laws, reported, never written; § 18.3's renames; kills, `sparing` first; no lock
+  written until the human says otherwise. The document has met no parser since the four books
+  and the § 1.3 edit, unless the pre-commit step of the commit that carries this section ran one.
+- Authors, in its own context and before or beside that dispatch: the thin twins the ruling
+  makes writable (`two_files_scoped_in_the_route`: DISJOINT by `:guarantees-unique-name` with
+  the inodes scoped in the mRoute, no SAME, and a writing line whose fact is never spared, the
+  readset being ⊤ at the mRoute; a stage-five twin of the same shape), and the fifth book of
+  § 19.5 (`stage_five_the_list_files_named`), each beside its rooted sibling, none replacing it.
+- Holds for the sitting, untouched: the six holes, the thirteen marked sites, § 12's found
+  readings, `burn-primary-coherence-sentence`, `fnd-in-force-is-book-global`, and § 19.5's
+  suspicion once a book shows it.
