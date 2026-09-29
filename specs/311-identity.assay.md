@@ -1200,7 +1200,8 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
 check law_sparing_is_sound {
    everyStatementInForceIsTrue and storesAreWellFounded
       and not hole_world_scoped_top_aliases_into_a_store
-      and not hole_region_closure_with_unknown_leaf_pair implies
+      and not hole_region_closure_with_unknown_leaf_pair
+      and not hole_composite_keys_with_same_parts_reach_differently implies
       all l: Line, f: VerdictFact & InForce | spared[l, f] implies
          no (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim
@@ -1209,6 +1210,7 @@ run law_sparing_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_reach_differently
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
 }
@@ -1407,7 +1409,7 @@ fun regionTest[D, x: mKey]: one Answer {
 fun beneath[D: mKey]: set mKey { {x: mKey | coveredBy[D, x]} }
 
 pred hole_region_closure_with_unknown_leaf_pair {
-   some D, x: mKey | tabledCompare[x, D] = UNKNOWN and regionTest[D, x] = DISJOINT
+   some D, x: mKey | tabledCompare[x, D] in UNKNOWN + KNOWN_UNSPOKEN and regionTest[D, x] = DISJOINT
 }
 
 run hole_region_closure_with_unknown_leaf_pair_witness {
@@ -1995,7 +1997,8 @@ run hole_natural_key_catalog_off_the_route_witness {
 check law_unstale_route_is_untouched {
    everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
       and not hole_unclosed_traversal_without_a_key_catalog
-      and not hole_natural_key_catalog_off_the_route implies
+      and not hole_natural_key_catalog_off_the_route
+      and not hole_region_closure_with_unknown_leaf_pair implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
          no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
 } for 6 but 4 Int, 9 Claim
@@ -2004,6 +2007,7 @@ run law_unstale_route_is_untouched_premise {
    everyStatementInForceIsTrue and storesAreWellFounded and routesAreStrict
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
+   not hole_region_closure_with_unknown_leaf_pair
    some s: Line, k: mKey, l: s.above |
       not routingInvalidatedBy[l, k] and atMostClosed[l] and some World.lineWrites[l] and some crossed[levelsOf[k]]
 }
