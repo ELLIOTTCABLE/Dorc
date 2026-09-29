@@ -344,8 +344,50 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         summary.push(("status".to_owned(), Json::str(status)));
         code
     };
+    let disagreeing = if ask.tier == super::tier::Tier::Official {
+        disagreements(&rows, &compiled.conjunctions)
+    } else {
+        Vec::new()
+    };
+    if !disagreeing.is_empty() {
+        eprintln!(
+            "assay: the conjunction disagrees with its lines' own verdicts in: {}",
+            disagreeing.join(", ")
+        );
+    }
+    let code = if disagreeing.is_empty() { code } else { RED };
+    summary.push((
+        "construction_disagreements".to_owned(),
+        Json::Arr(disagreeing.into_iter().map(Json::Str).collect()),
+    ));
     fields.push(("lock".to_owned(), Json::Obj(summary)));
     emit_report(fields, code)
+}
+
+fn disagreements(rows: &[Computed], conjunctions: &[(String, Vec<String>)]) -> Vec<String> {
+    let result = |module: &str, name: &str| {
+        rows.iter()
+            .find(|c| c.row.module == module && c.row.name == name)
+            .map(|c| c.row.result)
+    };
+    conjunctions
+        .iter()
+        .filter(|(module, members)| {
+            let Some(every) = result(module, super::book::EVERY_LINE).filter(|o| o.definite())
+            else {
+                return false;
+            };
+            let lines: Vec<lock::Outcome> = members
+                .iter()
+                .filter_map(|m| result(module, m))
+                .filter(|o| o.definite())
+                .collect();
+            lines.len() == members.len()
+                && (every == lock::Outcome::NoCounterexample)
+                    != lines.iter().all(|o| *o == lock::Outcome::NoCounterexample)
+        })
+        .map(|(module, _)| module.clone())
+        .collect()
 }
 
 fn resolve_target(target: &Target, modules: &[(String, emit::Rendered)]) -> Result<Target, String> {
@@ -549,6 +591,42 @@ mod tests {
             note: None,
             index: 0,
         }
+    }
+
+    #[test]
+    fn a_conjunction_disagreeing_with_its_individually_solved_lines_is_found() {
+        let conj = vec![(
+            "book_b".to_owned(),
+            vec!["line_1".to_owned(), "line_2".to_owned()],
+        )];
+        let rows = |every: Outcome, second: Outcome| {
+            vec![
+                computed("book_b", "line_1", "check", Outcome::NoCounterexample),
+                computed("book_b", "line_2", "check", second),
+                computed("book_b", "every_line", "check", every),
+            ]
+        };
+        let green = Outcome::NoCounterexample;
+        assert!(super::disagreements(&rows(green, green), &conj).is_empty());
+        assert!(
+            super::disagreements(
+                &rows(Outcome::Counterexample, Outcome::Counterexample),
+                &conj
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            super::disagreements(&rows(green, Outcome::Counterexample), &conj),
+            vec!["book_b"]
+        );
+        assert_eq!(
+            super::disagreements(&rows(Outcome::Counterexample, green), &conj),
+            vec!["book_b"]
+        );
+        assert!(
+            super::disagreements(&rows(Outcome::Timeout, Outcome::Counterexample), &conj)
+                .is_empty()
+        );
     }
 
     #[test]

@@ -322,7 +322,8 @@ fn run_group(
     let mut conjunction_green = false;
     let mut out = Vec::new();
     for e in group {
-        let entailed = conjunction_green && members.contains(&e.info.label);
+        let entailed =
+            job.tier != Tier::Official && conjunction_green && members.contains(&e.info.label);
         let c = decide(adapter, job, &e, entailed, deadline);
         if e.info.label == EVERY_LINE && c.row.result == Outcome::NoCounterexample {
             conjunction_green = true;
@@ -433,14 +434,20 @@ fn decide(
         c.note = None;
         return c;
     }
-    if deadline.is_some_and(|d| Instant::now() >= d) {
-        return unrun(
-            e,
-            Outcome::NotRun,
-            job,
-            "the batch cap was reached before this command started",
-        );
+    let mut budget = job.caps.budget;
+    if let Some(d) = deadline {
+        let left = d.saturating_duration_since(Instant::now()).as_secs();
+        if left == 0 {
+            return unrun(
+                e,
+                Outcome::NotRun,
+                job,
+                "the batch cap was reached before this command started",
+            );
+        }
+        budget.wall_s = budget.wall_s.min(left);
     }
+    let clipped = budget != job.caps.budget;
     let root = job
         .out
         .join(format!("{}{}", e.module, super::MODULE_SUFFIX));
@@ -451,7 +458,7 @@ fn decide(
         && job.tier.trusts_keys()
         && *guard == stored
         && replay::fits(&xml, e.info.bitwidth, &e.info.scope, &e.sigs)
-        && adapter.eval(&root, e.info.index, &xml, job.caps.budget) == Some(true)
+        && adapter.eval(&root, e.info.index, &xml, budget) == Some(true)
     {
         return Computed {
             row: row(e, found(e, true), job),
@@ -468,7 +475,7 @@ fn decide(
         xml: true,
         text: false,
     };
-    let solved = adapter.solve(&root, &[], &ask, job.caps.budget);
+    let solved = adapter.solve(&root, &[], &ask, budget);
     let wall_ms = Some(elapsed(started));
     let mut c = Computed {
         row: row(e, Outcome::Error, job),
@@ -512,6 +519,9 @@ fn decide(
             translated_ms,
         } => {
             c.row.result = Outcome::Timeout;
+            if clipped {
+                c.row.budget = Some(budget.cpu_s.min(budget.wall_s));
+            }
             c.row.phase = Some(phase.name().to_owned());
             c.row.size = size;
             c.row.heap = Some(job.caps.machine.heap_mb);
