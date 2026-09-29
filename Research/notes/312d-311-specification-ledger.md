@@ -1682,3 +1682,85 @@ Urgency low while books are self-contained.
 - Holds for the sitting, untouched: the six holes, the thirteen marked sites, § 12's found
   readings, `burn-primary-coherence-sentence`, `fnd-in-force-is-book-global`, and § 19.5's
   suspicion once a book shows it.
+
+## § 22-the-second-opus-sitting-standup-and-strategy
+
+2026-09-29, a rewound conductor over `09a5a85d`. The prompt is the one § 19 answered, reproduced
+for reinforcement; the typed items of § 19.1 stand and are not repeated. Written before any
+authoring, per the prompt's order.
+
+### § 22.1-standup-findings
+
+- The tree is clean at the tip. The four books of § 19.4 have met no solver. The committed lock
+  is schema 1 and stale by design (§ 19.6); nothing writes a lock this sitting.
+- `fnd-the-commit-hook-parses-staged-specification-bytes` (+SURE of `hk.pkl`, the `assay` step) —
+  committing specification text compiles and parses the staged bytes, so a commit is the first
+  parse a new book meets, and a refusal arrives as the commit's own. The conductor still runs no
+  parse and no solve by hand (§ 5.5).
+- `fnd-opus-dispatch-is-read-as-typed` (the conductor's reading of the prompt) — "we're going to
+  try to proceed with Opus builders" is read as the typed authorization for Opus builder
+  dispatches in this arc. Fable-tier and Astra-tier dispatches stay gated on a typed ack each.
+
+### § 22.2-strategy
+
+Each line is process, never design. § 19.3's book forms and § 19.6's clamps stand.
+
+- `str-author-in-context-solve-in-the-builder` — the conductor writes every book, translation,
+  and ledger line; one Opus builder runs every parse and every solve, reports rows, and edits
+  only inside § 19.6's clamps.
+- `str-legs-with-a-report-between` — the builder's remit is cut into legs, each ending in a
+  report the conductor reads before the next leg is sent: the parse and the books as hot-tier
+  module slices; § 18.3's renames; kills, `sparing` first; the official-tier check of the laws
+  that read `timeout`, last because it holds the machine for hours. One agent, its context kept
+  across legs.
+- `str-evidence-over-summary` — a builder's claim counts only with its evidence in the report: the
+  row as the tool printed it, the instance rebuilt by hand for a red, the diff for an edit. The
+  conductor reads the branch's diff itself before any fold. A claim that contradicts a result
+  this ledger records is escalated with its evidence and applied by nobody.
+- `str-a-red-book-is-first-the-hand-walk` — § 19.3's order of suspicion stands. To find the false
+  conjunct of a red outcome the builder checks each conjunct alone, in a scratch module beside
+  the generated ones, never in the specification.
+- `str-syntax-repairs-are-lexical-and-shown` — the builder may repair what stops a module
+  parsing only where the repair is lexical (a token's spelling, a parenthesis Alloy demands),
+  each shown as the line before and the line after; a repair that needs a choice between two
+  meanings is reported and made by nobody.
+- `str-books-are-appended-never-renumbered` — a new book takes the next free number in its
+  family, so no cited slug moves.
+- `str-both-worlds-stay` — a thin world sits beside its rooted sibling and replaces nothing
+  (§ 20.1). A book's answer is the fences' answer in that world; where that answer rests on a
+  suspected hole, the book's commentary says so in one sentence and the hole is held.
+
+### § 22.3-the-books-authored-this-sitting-and-their-expected-answers
+
+Authored into `specs/311-identity.assay.md` before the dispatch; each expected answer is the
+conductor's hand-walk of the fences over the stated world, unrun. The worlds, in words, are in
+the specification's translation blocks.
+
+- `two_files_scoped_in_the_route` (§ 3.2.5), the thin sibling of `two_files_one_filesystem`:
+  Tessa describes files and nothing above them; the inode number's shape carries
+  `:guarantees-unique-name` alone, no `:identified-in`, no `:root`, no
+  `:guarantees-unique-referent` (an inode has one number; a number alone does not say which
+  filesystem it is of); nothing says where a path is looked up, so a path's mKey has no mParent.
+  Line 2 against line 1: DISJOINT by the two-tops way at the mRoute; the natural-key license
+  UNKNOWN; not one mTopic. Line 3 against line 1, the same path again: the walk and `compare()`
+  UNKNOWN, where the rooted world reads SAME; not one mTopic.
+- `stage_five_the_list_file_named` (§ 2.6.3), § 19.5's fifth book, the rooted world of § 2.6.2
+  with Anna naming one list file by its path: `compare()` DISJOINT (two inodes of one
+  filesystem); the readset not ⊤; the writeset not ⊤; the status path stale at line 2, by the
+  routing rule (its unclosed lookup has the filesystem given whole as its mTraversal, and the
+  region test reads the written path as covered) and by the token rule (the written path
+  compares UNKNOWN with the filesystem, the status inode's mParent-Store); not spared.
+- `stage_five_the_list_file_named_in_the_route` (§ 2.6.4), its thin sibling: `compare()` DISJOINT
+  at the mRoute; the writeset not ⊤; nothing stale, since no level has an mKey for an mParent;
+  the readset ⊤, since the status inode's mFullyQualifiedKey ends at the mRoute; not spared.
+- `two_volumes_of_one_issuer` (§ 2.6.5): Petra roots the volume id; Ravi's tool writes one
+  volume above a fact on another. `compare()` DISJOINT by the two-tops way at the volume id's
+  mWorld; neither set ⊤; nothing stale; spared, and in the world the write reaches nothing the
+  fact depended on. The one book in which the sparing test is reached.
+- `sus-a-contained-write-touches-its-store` (~SUSPECT; a hand-walk, unrun; it sharpens § 19.5 and
+  is posed in chat, with no reaction yet) — the walk reads an mKey against its own container
+  UNKNOWN (§ 3.2 step 2), and § 3.3's fences read every answer other than DISJOINT as a touch,
+  for a mTraversal member and for a mParent-Store alike. So a write to any mKey inside a store
+  invalidates the mToken of every mKey scoped in that store and in every store above it, and
+  the sparing test is reached only by read mKeys scoped directly in a mRoot's mWorld. § 2.6.3
+  shows the shape and § 2.6.5 the exception. Held; repaired by nobody.
