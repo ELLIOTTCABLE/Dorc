@@ -1968,7 +1968,7 @@ pred tokenInvalidatedBy[l: Line, k: mKey] {
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l] | some w.parent & mWorld and w in identity[k].^parent
+   some w: lineWriteset[l] | some w.parent & mRootWorld and w in identity[k].^parent
 }
 
 pred staleAt[s: Line, k: mKey] {
