@@ -1490,7 +1490,7 @@ pred true_RecordsLookedUpIn[d: RecordsLookedUpIn] {
 }
 
 pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
-   all g: keysOfSort[d.routeSort] | d.closedKey.reaches in g.reaches.passes implies
+   all g: keysOfSort[d.routeSort] | some d.closedKey.reaches and d.closedKey.reaches in g.reaches.passes implies
       some r: placedIn[d.closedKey, d.routeSort] | r.reaches = g.reaches
 }
 ```
