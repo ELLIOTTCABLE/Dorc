@@ -7,12 +7,13 @@ use super::alloy::{self, Head};
 /// The conjunction's label; the duplicate-label lint refuses a book whose own names take it.
 pub(super) const EVERY_LINE: &str = "every_line";
 
-/// `check every_line { (b1) and (b2) ... } for <clause>`, when at least two checks join it.
+/// `check every_line { { b1 } and { b2 } ... } for <clause>`, when at least two checks join it: each
+/// body is a block, since a body may juxtapose formulas, which only a block conjoins.
 pub(super) fn every_line(members: &[(String, String)], clause: &str) -> Option<String> {
     (members.len() >= 2).then(|| {
         let bodies: Vec<String> = members
             .iter()
-            .map(|(_, body)| format!("({body})"))
+            .map(|(_, body)| format!("{{ {body} }}"))
             .collect();
         format!(
             "check {EVERY_LINE} {{ {} }} for {clause}",
@@ -72,7 +73,7 @@ mod tests {
         ];
         assert_eq!(
             every_line(&members, "5 but exactly 3 Line").as_deref(),
-            Some("check every_line { ((a)) and ((a) implies (b)) } for 5 but exactly 3 Line")
+            Some("check every_line { { (a) } and { (a) implies (b) } } for 5 but exactly 3 Line")
         );
         assert_eq!(every_line(&members[..1], "5"), None);
     }
