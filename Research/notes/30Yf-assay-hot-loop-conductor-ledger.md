@@ -91,7 +91,12 @@ The list every lever below is measured against [CONDUCTOR; read by the human, un
   on the same key and message.
 - **`lock-tier-invariant`** [ACKED] — a lower tier never makes the lock worse: it writes only
   definite results and never overwrites one with an unmeasurement; only the official tier makes
-  the lock whole. Committing the lock stays the ceremony; rows are never hand-edited to invent a
+  the lock whole. Precisely [CONDUCTOR, ruled at the documentation lane's finding of a defect]: at
+  `--official --write` a computed unmeasurement never replaces a committed definite row whose key
+  is unchanged (the verdict is known; the row is carried); where the key changed or no row
+  exists, the official tier writes the computed row, unmeasurement included, so that a full
+  timeout on new text is recordable for acceptance. Hot and gate `--write` never write an
+  unmeasurement. Committing the lock stays the ceremony; rows are never hand-edited to invent a
   budget.
 - Prior art, for the record: Why3 sessions (each attempt stores prover, version, limits, status;
   a changed task marks the attempt obsolete; a parse error detaches rather than deletes; replay
@@ -113,9 +118,9 @@ The list every lever below is measured against [CONDUCTOR; read by the human, un
 - **`key-hashes-what-the-jvm-parses`** [CONDUCTOR, ruled at the breakpoint] — the bytes hashed are
   exactly the bytes the JVM parses; a normalisation that is not emitted is never hashed, so a
   normaliser defect surfaces as a parse error or a verdict change in the emitted module rather
-  than as a silent false key match. Items are emitted as their tokens joined by single spaces, one
-  item per line, string literals verbatim, and anything the tokenizer is unsure of is a lint
-  refusal; the sidecar maps by column.
+  than as a silent false key match. Items are emitted one per line with a single space only where
+  the source had a gap and adjacent tokens kept adjacent (`this/A`, `1..3`), string literals
+  verbatim, and anything the tokenizer is unsure of is a lint refusal; the sidecar maps by column.
 - **`key-platform-recorded-not-keyed`** [CONDUCTOR] — verdicts are platform-independent, parse
   failures are not; the platform is a row attribute, a cross-platform hit says so, and
   `platform-fail` is its own unmeasurement.
@@ -192,8 +197,9 @@ compile-time string check).
 
 - **Pre-commit** [TYPED: parse and key-diff belong there; path-filtered to `specs/**` so the
   1.5 s JVM rarely shares a commit set with anything else]: the solver-free compile lints; the
-  parse lint through the adapter's parse verb, which uses a live child when one exists and spawns
-  one when not [TYPED: "ideally pre-commit uses the daemon if it exists"]; the key-diff against
+  parse lint through the adapter's parse verb, in a fresh child at a 1024 MB heap (there is no
+  cross-invocation daemon to reuse; the human's "ideally pre-commit uses the daemon if it exists"
+  is satisfied vacuously and stands as the rule should one ever exist); the key-diff against
   the committed lock over the *staged* bytes, reporting "N rows go unmeasured with this commit".
   The key-diff warns; the completion gate refuses. Nothing solver-shaped. Tune by measurement.
 - **Hot** (the author's loop): targeted runs; incremental `--check` over changed keys;
