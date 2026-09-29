@@ -5327,6 +5327,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## oracle/CLAUDE:polarity-to-transitions
 - defined: spike/crates/oracle/CLAUDE.md:253 — — the lifted effect is a binary bit at HEAD;
 
+## pos-halo-is-the-hazard
+- defined: —
+- cited: 30Yf 30Z (2)
+
 ## spike/CLAUDE:posix-in-spirit-default
 - defined: spike/CLAUDE.md:730 — (`271:rul-posix-in-spirit-defaults`, standing) — for
 
