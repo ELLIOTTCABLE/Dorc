@@ -1198,7 +1198,9 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
 }
 
 check law_sparing_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
+   everyStatementInForceIsTrue and storesAreWellFounded
+      and not hole_world_scoped_top_aliases_into_a_store
+      and not hole_region_closure_with_unknown_leaf_pair implies
       all l: Line, f: VerdictFact & InForce | spared[l, f] implies
          no (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim
@@ -1206,6 +1208,7 @@ check law_sparing_is_sound {
 run law_sparing_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
    not hole_world_scoped_top_aliases_into_a_store
+   not hole_region_closure_with_unknown_leaf_pair
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
 }
@@ -1401,14 +1404,23 @@ fun regionTest[D, x: mKey]: one Answer {
 
 fun beneath[D: mKey]: set mKey { {x: mKey | coveredBy[D, x]} }
 
+pred hole_region_closure_with_unknown_leaf_pair {
+   some D, x: mKey | tabledCompare[x, D] = UNKNOWN and regionTest[D, x] = DISJOINT
+}
+
+run hole_region_closure_with_unknown_leaf_pair_witness {
+   hole_region_closure_with_unknown_leaf_pair and everyStatementInForceIsTrue and storesAreWellFounded
+} for 6 but 4 Int expect 1
+
 check law_region_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded implies
+   everyStatementInForceIsTrue and storesAreWellFounded and not hole_region_closure_with_unknown_leaf_pair implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.reaches & (D.reaches + D.reaches.passes)
 } for 6 but 4 Int
 
 run law_region_disjoint_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
+   not hole_region_closure_with_unknown_leaf_pair
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
 }
