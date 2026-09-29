@@ -1215,7 +1215,7 @@ run law_sparing_is_sound_premise {
 
 check law_exclusion_readings_agree {
    all l: Line, f: VerdictFact & InForce | spared[l, f] iff sparedAtTest[l, f]
-} for 6 but 4 Int
+} for 4 but 4 Int, 10 Claim
 
 run law_exclusion_readings_agree_premise {
    some l: Line, f: VerdictFact & InForce, m: atMostEntries[l], r: readset[f] |
@@ -1239,6 +1239,8 @@ run law_exclusion_readings_agree_premise {
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 
 Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten.
+
+Scope: the exclusion-readings law runs at the sparing law's four atoms and ten statements for the same reason, since both of its sides are the sparing test over a writeset, and it does not finish translating at six.
 
 UNACKED READING, temporary (`312d:ask-both-exclusion-readings-are-mechanized`): 311's exclusion
 sentence admits two readings (`notes/312ch` item 11), and the fence mechanizes both rather than
