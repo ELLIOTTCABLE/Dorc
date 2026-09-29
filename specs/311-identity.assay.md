@@ -1201,7 +1201,7 @@ check law_sparing_is_sound {
    everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
       all l: Line, f: VerdictFact & InForce | spared[l, f] implies
          no (World.lineWrites[l]).*affects & f.dependsOn
-} for 6 but 4 Int
+} for 4 but 4 Int, 10 Claim
 
 run law_sparing_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
@@ -1234,6 +1234,8 @@ run law_exclusion_readings_agree_premise {
 > A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
 > A sparing is never false while every statement in force is true and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
+
+Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten.
 
 UNACKED READING, temporary (`312d:ask-both-exclusion-readings-are-mechanized`): 311's exclusion
 sentence admits two readings (`notes/312ch` item 11), and the fence mechanizes both rather than
@@ -1978,7 +1980,7 @@ check law_unstale_route_is_untouched {
       and not hole_natural_key_catalog_off_the_route implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
          no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
-} for 6 but 4 Int
+} for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
@@ -1998,6 +2000,8 @@ run law_unstale_route_is_untouched_premise {
 > A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
 > While every statement in force is true and no store is among its own contents, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+
+Scope: the untouched-route law runs at nine statements because its twin's witness needs seven in force at once (three traversal closures, one emitted member, the line's at-most entry and its completion, and the name warrant that separates the written key from the crossed one) and is unsat at the six every other command shares.
 
 #### § 3.3.1-what-invalidation-withdraws
 
