@@ -983,8 +983,8 @@ mise run verify:kani      # OPT-IN, Linux/WSL: the bounded-verification lane (on
 mise run verify:kani-check # compile the detached harness without invoking Kani
 mise run verify:kani-setup  # one-time, Linux/WSL: fetch Kani's engine bundle into ~/.kani
 mise run alloy -- FILES   # Alloy 6 headless over .als files or a directory: one adapter JVM per
-                          #   file, parsed once, every command under CPU/wall/heap caps with the
-                          #   child respawned at a cap; JSON rows, `expect` judged by agreement;
+                          #   invocation, each file parsed once, every command under CPU/wall/heap
+                          #   caps, the child respawned only at a cap; JSON rows, `expect` judged;
                           #   preflight + the heavy-work lock ride it (`notes/30Y` § 3)
 mise run assay -- SPEC.assay.md # compile a specification's fences into Alloy modules under
                           #   target/alloy/<stem>/; `--parse` checks them, `--check`/`--write`
