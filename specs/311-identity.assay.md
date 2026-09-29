@@ -1188,13 +1188,14 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
 }
 
 check law_sparing_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded implies
+   everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
       all l: Line, f: VerdictFact & InForce | spared[l, f] implies
          no (World.lineWrites[l]).*affects & f.dependsOn
 } for 6 but 4 Int
 
 run law_sparing_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
+   not hole_world_scoped_top_aliases_into_a_store
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
 }
@@ -1694,23 +1695,57 @@ fun tabledWalk[x, y: mKey]: one Answer { Tables.walkTable[x][y] }
 
 fun tabledCompare[x, y: mKey]: one Answer { Tables.compareTable[x][y] }
 
+pred hole_cell_keys_under_same_parents_reach_differently {
+   some disj a, b: mKey | some a.cellSort & b.cellSort and a.parent != b.parent
+      and some a.parent.reaches & b.parent.reaches and a.reaches != b.reaches
+}
+
+run hole_cell_keys_under_same_parents_reach_differently_witness {
+   hole_cell_keys_under_same_parents_reach_differently and everyStatementInForceIsTrue
+} for 6 but 4 Int expect 1
+
+pred hole_world_scoped_top_aliases_into_a_store {
+   some x, s: mKey | some x.parent & mWorld and some s.parent & x.parent and s != x
+      and some x.reaches and x.reaches in s.reaches.^holds
+}
+
+run hole_world_scoped_top_aliases_into_a_store_witness {
+   hole_world_scoped_top_aliases_into_a_store and everyStatementInForceIsTrue and storesAreWellFounded
+} for 6 but 4 Int expect 1
+
+pred hole_composite_keys_with_same_parts_reach_differently {
+   some disj a, b: CompositeKey | compositeSame[a, b] and a.reaches != b.reaches
+}
+
+run hole_composite_keys_with_same_parts_reach_differently_witness {
+   hole_composite_keys_with_same_parts_reach_differently and everyStatementInForceIsTrue
+} for 6 but 4 Int expect 1
+
 check law_compare_same_is_sound {
-   everyStatementInForceIsTrue implies
+   everyStatementInForceIsTrue
+      and not hole_cell_keys_under_same_parents_reach_differently
+      and not hole_composite_keys_with_same_parts_reach_differently implies
       all x, y: mKey | compare[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_compare_same_is_sound_premise {
    everyStatementInForceIsTrue
+   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_composite_keys_with_same_parts_reach_differently
    some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.reaches
 }
 
 check law_compare_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded implies
+   everyStatementInForceIsTrue and storesAreWellFounded
+      and not hole_world_scoped_top_aliases_into_a_store
+      and not hole_composite_keys_with_same_parts_reach_differently implies
       all x, y: mKey | compare[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
+   not hole_world_scoped_top_aliases_into_a_store
+   not hole_composite_keys_with_same_parts_reach_differently
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
 }
 
@@ -1751,22 +1786,24 @@ pred everyStatementInForceIsTrue { allInForceTrueExcept[none] }
 pred storesAreWellFounded { no r: mReferent | r in r.^holds }
 
 check law_same_is_sound {
-   everyStatementInForceIsTrue implies
+   everyStatementInForceIsTrue and not hole_cell_keys_under_same_parents_reach_differently implies
       all x, y: mKey | walkOfKeys[x, y] = SAME implies x.reaches = y.reaches
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
    everyStatementInForceIsTrue
+   not hole_cell_keys_under_same_parents_reach_differently
    some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.reaches
 }
 
 check law_disjoint_is_sound {
-   everyStatementInForceIsTrue and storesAreWellFounded implies
+   everyStatementInForceIsTrue and storesAreWellFounded and not hole_world_scoped_top_aliases_into_a_store implies
       all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
+   not hole_world_scoped_top_aliases_into_a_store
    some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches and some y.reaches
       and some (x.^parent + y.^parent) & mKey
 }
@@ -1896,14 +1933,35 @@ fun compareAt[s: Line, x, y: mKey]: one Answer {
    (staleAt[s, x] or staleAt[s, y]) implies UNKNOWN else tabledCompare[x, y]
 }
 
+pred hole_unclosed_traversal_without_a_key_catalog {
+   some k: mKey, l: levelsOf[k] | not traversalClosed[l] and no l.parent & mKey
+}
+
+run hole_unclosed_traversal_without_a_key_catalog_witness {
+   hole_unclosed_traversal_without_a_key_catalog and everyStatementInForceIsTrue and storesAreWellFounded
+} for 6 but 4 Int expect 1
+
+pred hole_natural_key_catalog_off_the_route {
+   some k: mKey | isNaturalKey[k] and some k.parent & mKey and some k.reaches
+      and k.reaches not in k.parent.reaches.passes
+}
+
+run hole_natural_key_catalog_off_the_route_witness {
+   hole_natural_key_catalog_off_the_route and everyStatementInForceIsTrue and storesAreWellFounded
+} for 6 but 4 Int expect 1
+
 check law_unstale_route_is_untouched {
-   everyStatementInForceIsTrue and storesAreWellFounded implies
+   everyStatementInForceIsTrue and storesAreWellFounded
+      and not hole_unclosed_traversal_without_a_key_catalog
+      and not hole_natural_key_catalog_off_the_route implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
          no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
 } for 6 but 4 Int
 
 run law_unstale_route_is_untouched_premise {
    everyStatementInForceIsTrue and storesAreWellFounded
+   not hole_unclosed_traversal_without_a_key_catalog
+   not hole_natural_key_catalog_off_the_route
    some s: Line, k: mKey, l: s.above |
       not routingInvalidatedBy[l, k] and atMostClosed[l] and some World.lineWrites[l] and some crossed[levelsOf[k]]
 }
