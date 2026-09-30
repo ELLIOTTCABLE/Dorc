@@ -1311,12 +1311,21 @@ run hole_two_separated_things_hold_one_part_witness {
    hole_two_separated_things_hold_one_part and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
+pred hole_a_write_affects_through_a_third_thing {
+   some disj a, b, c: mReferent | b in a.affects and c in b.affects and c not in a.affects
+}
+
+run hole_a_write_affects_through_a_third_thing_witness {
+   hole_a_write_affects_through_a_third_thing and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
 check law_sparing_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
       and not hole_composite_keys_with_same_parts_reach_differently
-      and not hole_two_separated_things_hold_one_part implies
+      and not hole_two_separated_things_hold_one_part
+      and not hole_a_write_affects_through_a_third_thing implies
       sparingIsSound
 } for 4 but 4 Int, 10 Claim
 
@@ -1326,6 +1335,7 @@ run law_sparing_is_sound_premise {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
 }
@@ -1335,7 +1345,8 @@ check law_sparing_is_sound_with_a_store_on_the_chain {
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
       and not hole_composite_keys_with_same_parts_reach_differently
-      and not hole_two_separated_things_hold_one_part implies
+      and not hole_two_separated_things_hold_one_part
+      and not hole_a_write_affects_through_a_third_thing implies
       sparingIsSound
 } for 4 but 4 Int, 14 Claim, 5 mLevel
 
@@ -1345,6 +1356,7 @@ run law_sparing_is_sound_with_a_store_on_the_chain_premise {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    some l: Line, f: VerdictFact & InForce, r: readset[f] |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
          and some identity[r].^parent & mKey
@@ -1356,6 +1368,7 @@ run kill_sparing_is_sound_closes_may_write {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    axiomaticByDifferentialTest
    some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1368,6 +1381,7 @@ run kill_sparing_is_sound_verdict_fact {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    axiomaticByDifferentialTest
    some d: VerdictFact & InForce | axiomaticByContractExcept[d] and not true_VerdictFact[d]
       and some l: Line | spared[l, d] and some (World.lineWrites[l]).*affects & d.dependsOn
@@ -1379,6 +1393,7 @@ run kill_sparing_is_sound_closes_may_read {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    axiomaticByDifferentialTest
    some d: ClosesMayRead & InForce | axiomaticByContractExcept[d] and not true_ClosesMayRead[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1391,6 +1406,7 @@ run kill_sparing_is_sound_finishes_entailment {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    axiomaticByDifferentialTest
    some d: FinishesEntailment & InForce | axiomaticByContractExcept[d] and not true_FinishesEntailment[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1403,6 +1419,7 @@ run kill_sparing_is_sound_supplies_parent {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_two_separated_things_hold_one_part
+   not hole_a_write_affects_through_a_third_thing
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1457,17 +1474,18 @@ run law_exclusion_readings_agree_premise {
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
 > The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
 > A held hole: two mKeys that `compare()` reads DISJOINT reach two mReferents that hold one part in common, directly or through others.
+> A held hole: a write to one mReferent affects a third mReferent through a second, and does not affect the third directly.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents.
 > Under those premises, for every sparing, no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
-> The sparing law is asked outside the world-scoped-top hole, the region hole, the composite hole, and the shared-part hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
+> The sparing law is asked outside the world-scoped-top hole, the region hole, the composite hole, the shared-part hole, and the third-thing hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > Two commands ask the same law.
 > The first command asks it over worlds of four levels.
 > The second command asks it over worlds of five levels and fourteen statements, where a spared fact's read mKey can have a store on its chain.
-> The premise twins of the two sparing commands also ask for the sparing law's premises and ask outside its four holes.
+> The premise twins of the two sparing commands also ask for the sparing law's premises and ask outside its five holes.
 > The premise twin of `law_sparing_is_sound` asks for a world where a fact that depended on something is spared past a writing line with an at-most entry.
 > The premise twin of `law_sparing_is_sound_with_a_store_on_the_chain` asks for a world where the first twin's spared fact has a readset member with a store on its chain.
 > The sparing law dies with a statement it rests on.
-> Each kill of the sparing law asks outside the four holes, with the engine's axioms holding and no store among its own contents.
+> Each kill of the sparing law asks outside the five holes, with the engine's axioms holding and no store among its own contents.
 > With one completion record false and every other statement in force true, a false sparing is reachable.
 > With one vouch false and every other statement in force true, a false sparing is reachable.
 > Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false.
