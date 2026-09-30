@@ -2008,7 +2008,7 @@ run hole_region_closure_with_unknown_leaf_pair_witness {
 } for 6 but 4 Int expect 1
 
 check law_region_disjoint_is_sound {
-   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair implies
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair and not hole_composite_keys_with_same_parts_reach_differently implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.reaches & (D.reaches + D.reaches.passes)
 } for 6 but 4 Int
@@ -2016,6 +2016,7 @@ check law_region_disjoint_is_sound {
 run law_region_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_reach_differently
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
 }
@@ -2023,6 +2024,7 @@ run law_region_disjoint_is_sound_premise {
 run kill_region_disjoint_is_sound_closes_looked_up_in {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
       and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
@@ -2031,6 +2033,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
 run kill_region_disjoint_is_sound_alias_nothing_else {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
       and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
@@ -2064,12 +2067,12 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > The region law has three premises: every statement in force is true, the engine's axioms hold, and no store is among its own contents.
 > Under those premises, a DISJOINT of the region test is never false.
 > Such a DISJOINT for D and x is false when x reaches D's mReferent, or an mReferent that a route through D's mReferent passes to.
-> The region law is asked outside that hole.
+> The region law is asked outside that hole and outside the composite hole (3.2-compare-one-chokepoint-four-answers).
 > The premise twin of `law_region_disjoint_is_sound` asks for a world where the region test reads DISJOINT for D and x.
 > In that world, x reaches an mReferent, D's mReferent passes to an mReferent, and a level of x has mTraversal members.
-> The twin also asks for the region law's premises, outside the hole.
+> The twin also asks for the region law's premises, outside both holes.
 > The region law dies with a statement it rests on.
-> Each kill of the region law asks outside the hole, with the engine's axioms holding and no store among its own contents.
+> Each kill of the region law asks outside both holes, with the engine's axioms holding and no store among its own contents.
 > With one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
 > One more kill asks whether the law also dies with one `alias nothing-else` false.
 > An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
