@@ -31,6 +31,10 @@ dorc-testbed = { path = "../testbed", version = "0.0.0" }
 dorc-transport = { path = "../transport", version = "0.0.0" }
 # `assay` lexes book lines with the product's own lexer (`notes/30Y` § 2.2).
 dorc-syntax = { path = "../syntax", version = "0.0.0" }
+# `assay`'s progress lines on stderr, at exactly `dorc-loom`'s specification, so the graph gains
+# no new feature set.
+tracing = { version = "0.1.44", default-features = false, features = ["std"] }
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["fmt"] }
 
 [lints]
 workspace = true

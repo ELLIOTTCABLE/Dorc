@@ -10,6 +10,7 @@ mod emit;
 mod key;
 mod lock;
 mod pass;
+mod progress;
 mod replay;
 mod sh;
 mod tier;
@@ -18,7 +19,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use crate::alloy_jvm::adapter::Progress;
 use crate::json::{Json, Value};
 use alloy::{Head, Item};
 use emit::ORIGIN;
@@ -169,17 +169,21 @@ struct Ask {
     tier: tier::Tier,
     target: drive::Target,
     caps: Vec<String>,
-    progress: Progress,
 }
 
-pub(crate) fn run(args: &[String]) -> ExitCode {
-    let (ours, caps) = match args.iter().position(|a| a == "--") {
+/// Assay's own arguments, and the runner caps after its `--`.
+fn split_caps(args: &[String]) -> (&[String], &[String]) {
+    match args.iter().position(|a| a == "--") {
         Some(at) => {
             let (ours, rest) = args.split_at(at);
             (ours, rest.get(1..).unwrap_or_default())
         }
         None => (args, &[][..]),
-    };
+    }
+}
+
+pub(crate) fn run(args: &[String]) -> ExitCode {
+    let (ours, caps) = split_caps(args);
     let mut specs = Vec::new();
     let mut out = None;
     let mut ask = Ask {
@@ -187,8 +191,8 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         tier: tier::Tier::Gate,
         target: drive::Target::All,
         caps: caps.to_vec(),
-        progress: Progress::Stderr,
     };
+    let mut quiet = false;
     let mut it = ours.iter();
     while let Some(arg) = it.next() {
         let wanted = match arg.as_str() {
@@ -197,7 +201,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
                 continue;
             }
             "--quiet" => {
-                ask.progress = Progress::Silent;
+                quiet = true;
                 continue;
             }
             "--help" | "-h" => {
@@ -266,6 +270,9 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     }
     if out.is_some() && specs.len() > 1 {
         return usage("--out names one document's directory, and more than one was named");
+    }
+    if matches!(ask.mode, Mode::Check | Mode::Write) {
+        progress::install(quiet);
     }
     let worst = specs
         .iter()

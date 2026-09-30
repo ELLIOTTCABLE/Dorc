@@ -11,7 +11,7 @@ use super::lock::{Outcome, Row};
 use super::replay;
 use super::tier::{Caps, DEFER_CLAUSES, Tier};
 use crate::alloy_jvm::adapter::{
-    Adapter, Ask, Budget, CommandInfo, Parsed, Progress, Refusal, Solved, Watch, human,
+    Adapter, Ask, Budget, CommandInfo, Parsed, Refusal, Solved, human,
 };
 use crate::alloy_jvm::{self, Jvm};
 
@@ -67,8 +67,6 @@ pub(super) struct Job<'a> {
     pub(super) caps: Caps,
     pub(super) target: &'a Target,
     pub(super) stem: &'a str,
-    pub(super) progress: Progress,
-    pub(super) began: Instant,
 }
 
 /// Rows answered so far across every child, for the `[n/total]` on each solve's end line.
@@ -93,11 +91,6 @@ pub(super) struct Entry {
 impl Entry {
     fn kind(&self) -> &'static str {
         if self.info.check { "check" } else { "run" }
-    }
-
-    /// Concurrent children interleave by line, so every line names its document and command.
-    fn progress_name(&self, stem: &str) -> String {
-        format!("{stem}: {}.{}", self.module, self.info.label)
     }
 
     fn cost(&self) -> u64 {
@@ -263,12 +256,7 @@ fn slice(entries: Vec<Entry>, target: &Target) -> Vec<Entry> {
 pub(super) type Ran = (Vec<Computed>, Vec<(String, Refusal)>);
 
 pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
-    let watch = Watch {
-        progress: job.progress,
-        began: job.began,
-        name: job.stem,
-    };
-    let mut adapter = Adapter::new(jvm, job.caps.machine, watch)?;
+    let mut adapter = Adapter::new(jvm, job.caps.machine)?;
     let survey = survey(&mut adapter, job)?;
     if !survey.refusals.is_empty() {
         return Ok((Vec::new(), survey.refusals));
@@ -302,12 +290,12 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
     let mut adapters = vec![adapter];
     if job.tier == Tier::Official {
         for _ in 1..parallelism(job.caps) {
-            adapters.push(Adapter::new(jvm, job.caps.machine, watch)?);
+            adapters.push(Adapter::new(jvm, job.caps.machine)?);
         }
     }
-    job.progress.say(
-        job.began,
-        &plan_line(
+    tracing::info!(
+        "{}",
+        plan_line(
             job,
             &Plan {
                 commands: tally.total,
@@ -315,7 +303,7 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
                 children: adapters.len(),
                 capped_before,
             },
-        ),
+        )
     );
     let queue = Mutex::new(groups.into_iter().rev().collect::<Vec<_>>());
     let done = Mutex::new(Vec::new());
@@ -357,8 +345,7 @@ fn plan_line(job: &Job<'_>, plan: &Plan) -> String {
         .batch_s
         .map_or_else(|| "no batch cap".to_owned(), |s| format!("batch {s}s"));
     format!(
-        "{}: {} tier, {} commands in {} modules, {} children, cpu {}s wall {}s per command, {batch}, {} last recorded timeout or out-of-memory",
-        job.stem,
+        "{} tier, {} commands in {} modules, {} children, cpu {}s wall {}s per command, {batch}, {} last recorded timeout or out-of-memory",
         job.tier.name(),
         plan.commands,
         plan.modules,
@@ -369,7 +356,7 @@ fn plan_line(job: &Job<'_>, plan: &Plan) -> String {
     )
 }
 
-fn solve_starts_line(name: &str, budget: Budget, committed: Option<&Row>) -> String {
+fn solve_starts_line(budget: Budget, committed: Option<&Row>) -> String {
     let last = committed.map_or_else(String::new, |c| {
         let size = c
             .size
@@ -377,12 +364,12 @@ fn solve_starts_line(name: &str, budget: Budget, committed: Option<&Row>) -> Str
         format!(", last {}{size}", c.result.name())
     });
     format!(
-        "{name}: solving, cpu {}s wall {}s{last}",
+        "solving, cpu {}s wall {}s{last}",
         budget.cpu_s, budget.wall_s
     )
 }
 
-fn solve_ends_line(name: &str, c: &Computed, finished: usize, total: usize) -> String {
+fn solve_ends_line(c: &Computed, finished: usize, total: usize) -> String {
     let phase = c
         .row
         .phase
@@ -391,10 +378,7 @@ fn solve_ends_line(name: &str, c: &Computed, finished: usize, total: usize) -> S
     let wall = c.wall_ms.map_or_else(String::new, |ms| {
         format!(" in {}", human(Duration::from_millis(ms)))
     });
-    format!(
-        "{name}: {}{phase}{wall} [{finished}/{total}]",
-        c.row.result.name()
-    )
+    format!("{}{phase}{wall} [{finished}/{total}]", c.row.result.name())
 }
 
 /// Rows by provenance, then by result: the pass-end line's body.
@@ -452,6 +436,15 @@ fn run_group(
     for e in group {
         let entailed =
             job.tier != Tier::Official && conjunction_green && members.contains(&e.info.label);
+        // Concurrent children interleave by line, so every line inside names document and command;
+        // a row answered without a solve emits nothing, so its span prints nothing.
+        let _span = tracing::info_span!(
+            "solve",
+            stem = %job.stem,
+            module = %e.module,
+            label = %e.info.label
+        )
+        .entered();
         let c = decide(adapter, job, &e, entailed, deadline);
         if e.info.label == EVERY_LINE && c.row.result == Outcome::NoCounterexample {
             conjunction_green = true;
@@ -461,10 +454,7 @@ fn run_group(
             .fetch_add(1, Ordering::Relaxed)
             .saturating_add(1);
         if c.provenance == Provenance::Fresh {
-            job.progress.say(
-                job.began,
-                &solve_ends_line(&e.progress_name(job.stem), &c, finished, tally.total),
-            );
+            tracing::info!("{}", solve_ends_line(&c, finished, tally.total));
         }
         out.push(c);
     }
@@ -630,17 +620,8 @@ fn decide(
         xml: true,
         text: false,
     };
-    let name = e.progress_name(job.stem);
-    job.progress.say(
-        job.began,
-        &solve_starts_line(&name, budget, e.committed.as_ref()),
-    );
-    let watch = Watch {
-        progress: job.progress,
-        began: job.began,
-        name: &name,
-    };
-    let solved = adapter.solve(&root, &[], &ask, budget, watch);
+    tracing::info!("{}", solve_starts_line(budget, e.committed.as_ref()));
+    let solved = adapter.solve(&root, &[], &ask, budget);
     let wall_ms = Some(elapsed(started));
     let mut c = Computed {
         row: row(e, Outcome::Error, job),

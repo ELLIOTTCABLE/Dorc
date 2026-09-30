@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::time::Instant;
 
 use super::drive::{self, Computed, Job, Target};
 use super::lock::{self, Row, Standing};
@@ -9,57 +8,49 @@ use super::{
     write_modules,
 };
 use crate::alloy_jvm::Jvm;
-use crate::alloy_jvm::adapter::{Adapter, Machine, Progress, Refusal, Watch};
+use crate::alloy_jvm::adapter::{Adapter, Machine, Refusal};
 use crate::json::Json;
 
 type Fields = Vec<(String, Json)>;
 
 /// A solving pass's first and last progress lines. The last is said on drop, so every exit path
-/// says how long the pass ran, refusals and runner failures included.
-struct PassLog<'a> {
-    progress: Progress,
-    began: Instant,
-    stem: &'a str,
+/// says how long the pass ran, refusals and runner failures included. Inside `_span`, so both
+/// name the document.
+struct PassLog {
+    solving: bool,
     counts: Option<String>,
+    _span: tracing::span::EnteredSpan,
 }
 
-impl<'a> PassLog<'a> {
-    fn begin(stem: &'a str, ask: &Ask) -> Self {
+impl PassLog {
+    fn begin(stem: &str, ask: &Ask) -> Self {
         let mode = match ask.mode {
             Mode::Check => Some("check"),
             Mode::Write => Some("write"),
             Mode::Compile | Mode::Parse | Mode::Staged => None,
         };
-        let log = Self {
-            progress: if mode.is_some() {
-                ask.progress
-            } else {
-                Progress::Silent
-            },
-            began: Instant::now(),
-            stem,
+        let span = tracing::info_span!("assay", stem = %stem).entered();
+        if let Some(mode) = mode {
+            tracing::info!("{mode} at the {} tier, begins", ask.tier.name());
+        }
+        Self {
+            solving: mode.is_some(),
             counts: None,
-        };
-        log.progress.say(
-            log.began,
-            &format!(
-                "{stem}: {} at the {} tier, begins",
-                mode.unwrap_or_default(),
-                ask.tier.name()
-            ),
-        );
-        log
+            _span: span,
+        }
     }
 }
 
-impl Drop for PassLog<'_> {
+impl Drop for PassLog {
     fn drop(&mut self) {
-        let counts = self
-            .counts
-            .take()
-            .unwrap_or_else(|| "no rows answered".to_owned());
-        self.progress
-            .say(self.began, &format!("{}: ended, {counts}", self.stem));
+        if self.solving {
+            let counts = self
+                .counts
+                .take()
+                .unwrap_or_else(|| "no rows answered".to_owned());
+            // `_span` is still entered: fields drop after this body runs.
+            tracing::info!("ended, {counts}");
+        }
     }
 }
 
@@ -218,10 +209,8 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             caps,
             target: &target,
             stem: &stem,
-            progress: Progress::Silent,
-            began: log.began,
         };
-        let mut adapter = match Adapter::new(&jvm, caps.machine, Watch::silent()) {
+        let mut adapter = match Adapter::new(&jvm, caps.machine) {
             Ok(a) => a,
             Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
         };
@@ -287,8 +276,6 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         caps,
         target: &target,
         stem: &stem,
-        progress: log.progress,
-        began: log.began,
     };
     let (rows, refusals) = match drive::run(&jvm, &job) {
         Ok(ran) => ran,
