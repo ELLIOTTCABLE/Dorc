@@ -58,10 +58,8 @@ typos = "latest"
 
 # Opt-in `dorc lint` real-external-tools test lane ONLY (human-authorized 2026-07-18;
 # spike/CLAUDE.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
-# live-fire is reproducible. shellcheck is INERT for every default gate/suite: the default
-# `sh e2e/run.sh` lint-cases scrub PATH to an empty dir and the unit tier runs a fake runner,
-# so nothing spawns it unless `DORC_E2E_REAL_TOOLS` opts in. It does not touch the rust
-# toolchain or any existing gate. (checkbashisms is a Debian perl script absent from every mise
+# live-fire is reproducible. Nothing spawns it unless `DORC_E2E_REAL_TOOLS` opts in, which only
+# `test:real-tools` does. (checkbashisms is a Debian perl script absent from every mise
 # backend — the lane provisions it out-of-band into the git-ignored `spike/e2e/.real-tools/`.)
 shellcheck = "0.11.0"
 
@@ -282,21 +280,21 @@ run = [
   "cargo nextest run --workspace --no-fail-fast {{ usage.filter | join(sep=' ') }}",
 ]
 
-# Full gate: human output or quiet agent output; both preserve failures.
+# ── gates ────────────────────────────────────────────────────────────────────────────────────
+# A GATE is what you must pass before you may do something: pre-commit before a commit,
+# `gate:full*` before calling work complete, `gate:arc` before closing an arc. A gate checks what
+# YOU changed — your branch against hk.pkl's `default_branch`, plus staged and unstaged work — and
+# hk routes each step in by the paths it covers, so an untouched area is not re-checked. `check`
+# lints the whole tree and is not a gate; `gate:step` re-runs one gate step over the whole tree.
 
 [tasks."gate:full-quiet"]
-description = "ACCEPTANCE, agent-facing: everything `gate:full` runs bar the hook self-test, at minimum token cost — ~95 lines against ~2000. Silent on success, LOUD and complete on failure. The one to run before calling work complete; `mise run both gate:full-quiet` covers the other platform too."
+description = "The completion gate, agent-facing: exactly what `gate:full` checks, at minimum token cost. Silent on success, LOUD and complete on failure. The one to pass before calling work complete; `mise run both gate:full-quiet` covers the other platform too."
 raw = true
 dir = "spike"
-# REMIT: minimal token burn, and it MUST NOT swallow a failure. Every flag suppresses SUCCESS
-# chatter only — `--status-level fail` still prints failing trials, `--failure-output final`
-# defers their output rather than dropping it, every step keeps its nonzero exit. A flag that
-# could hide a failure does not belong here, whatever it saves. `--no-fail-fast` is the same
-# rule: nextest otherwise abandons ~650 trials at the first failure, and "we never ran them" is
-# a fact this task may not withhold.
-# `test:hooks` is deliberately ABSENT: it exercises hk.pkl, which changes about quarterly, so
-# paying for it every agent gate buys nothing. `gate:full` still runs it, and an hk.pkl edit
-# calls for that one. Doctests have no quiet knob past cargo's and set the output floor.
+# REMIT: minimal token burn, and it MUST NOT swallow a failure. `--quiet` suppresses hk's
+# SUCCESS chatter only: a failed step still prints its whole output, and every step keeps its
+# nonzero exit. A flag that could hide a failure does not belong here, whatever it saves.
+# `--no-fail-fast` is the same rule: "we never ran them" is a fact this task may not withhold.
 #
 # HEAVY-WORK LOCK: this task and every other one that rides `preflight` (gate:full, gate:arc, the
 # bless family, verify:kani/lean/translate, alloy) runs its body as a hidden `<task>:held` twin
@@ -348,14 +346,14 @@ raw = true
 run = "cargo test -p dorc-cli --test e2e --"
 
 [tasks."test:real-tools"]
-description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. Off in every default gate. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."
+description = "The opt-in real-external-linter lane — the one sanctioned real-invocation path, read-only tools over repo-local fixtures. The gates route it in when the lint crate, the cli tests or `spike/e2e` change. checkbashisms is a perl script Command::new cannot spawn on Windows, so the tool list narrows there; the *nix half provisions it via e2e/lint-real-tools-setup.sh."
 raw = true
 dir = "spike"
 env = { DORC_E2E_REAL_TOOLS = "{% if os() == 'windows' %}shellcheck{% else %}shellcheck,checkbashisms{% endif %}" }
 run = "cargo test -p dorc-cli --test e2e"
 
 [tasks."test:floor"]
-description = "The opt-in two-binary-floor DIFFERENTIAL (gate-9): every case carrying an expected.emitted section has its STRIPPED book run as a sentinel manifest under each named floor binary, and they must agree with each other and with the committed bytes. Off in every default gate. posh is not in git's Windows userland, so there the lane is dash alone and measures a HALF floor — run it under WSL for the real posh-∩-dash answer."
+description = "The opt-in two-binary-floor DIFFERENTIAL (gate-9): every case carrying an expected.emitted section has its STRIPPED book run as a sentinel manifest under each named floor binary, and they must agree with each other and with the committed bytes. The gates route it in when the crates or `spike/e2e` change. posh is not in git's Windows userland, so there the lane is dash alone and measures a HALF floor — run it under WSL for the real posh-∩-dash answer."
 raw = true
 dir = "spike"
 env = { DORC_E2E_FLOOR_SHELLS = "{% if os() == 'windows' %}dash{% else %}dash,posh{% endif %}" }
@@ -368,13 +366,12 @@ dir = "spike"
 run = "cargo clippy --workspace --all-targets -- -D warnings"
 
 [tasks."clippy:clean"]
-description = "Clippy from a WIPED, dedicated target dir — ~7s cold, and unsatisfiable by anything another worktree, branch, or platform left in the shared cache. Rides the `gate:full*` pair; run it alone when you suspect a stale clean."
+description = "Clippy from a WIPED, dedicated target dir — ~7s cold, and unsatisfiable by anything another worktree, branch, or platform left in the shared cache. A manual escape hatch: run it when you suspect a stale clean."
 raw = true
 dir = "spike"
-# Deliberately redundant with `check`'s clippy, and the redundancy is the point: that one is the
-# pre-commit gate (warm, fast, catches the common case), this one is the acceptance check, and it
-# holds only because its cache cannot have been touched by another environment. `cargo clean`
-# here wipes ONLY the lint dir below, never the shared build cache the rest of the gate needs.
+# The routed clippy step (`hk.pkl` `cargo_clippy`) shares the warm cache and still re-lints; this
+# one answers only "could the shared cache have hidden a warning?". `cargo clean` here wipes ONLY
+# the lint dir below, never the shared build cache.
 #
 # `--quiet` is cargo's, and suppresses build PROGRESS only — verified against a planted lint:
 # every diagnostic still prints and the exit stays 101. So it costs the human nothing, and the
@@ -390,7 +387,7 @@ run = ["cargo clean", "cargo clippy --workspace --all-targets --quiet -- -D warn
 CARGO_TARGET_DIR = "{{ env.CARGO_TARGET_DIR }}/clippy-clean"
 
 [tasks.check]
-description = "All lint gates including whole-workspace clippy (`--profile quick`); pre-commit uses the bounded, clippy-less subset."
+description = "Every lint step over the whole tree, workspace clippy included. Not a gate: nothing is routed by what changed. Pre-commit runs the same lints minus clippy, over staged paths only."
 raw = true
 run = "hk check --all --profile medium"
 
@@ -415,7 +412,7 @@ HK_FIX = "1"
 
 [tasks."gate:full"]
 alias = "gate"
-description = "ACCEPTANCE, human-facing: everything due before a commit, in order — the four lint gates, the commit-msg hook's self-test, a fresh build, then the whole suite, all unabridged. Agents want `gate:full-quiet`."
+description = "The completion gate, human-facing: every lint and test step your changes route in, unabridged. Agents want `gate:full-quiet`."
 raw = true
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
@@ -434,7 +431,7 @@ run = [
 ]
 
 [tasks."gate:step"]
-description = "Run one hk gate step over all matching paths."
+description = "Re-run one step a gate reported, by name, over the whole tree rather than your changes."
 raw = true
 usage = 'arg "step" help="hk step name from the failed gate output"'
 run = "hk check --all --profile medium --profile slow --profile arc --step {{ usage.step }} --no-fail-fast"
@@ -449,7 +446,7 @@ dir = "spike"
 run = "cargo run -q --profile tooling -p internal-tooling -- gate-floor --profile medium --profile slow"
 
 [tasks."gate:arc"]
-description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
+description = "CONDUCTOR-ONLY, the arc-close gate: the completion gate on both platforms, then the heavy verifiers (Kani, Lean, translation) your changes route in, then the RustSec audit."
 raw = true
 run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:arc -- mise run gate:arc:held --"
 
@@ -466,7 +463,7 @@ run = [
 ]
 
 [tasks."test:hooks"]
-description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
+description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; the gates route it in whenever hk.pkl, mise.toml, .githooks or internal-tooling change, because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
 raw = true
 dir = "spike"
 run = "cargo run -q --profile tooling -p internal-tooling -- hook-selftest"
@@ -627,9 +624,9 @@ run = "cargo run -q --profile tooling -p internal-tooling -- coverage"
 # host-evidence-admission-refused, so the family reads 0.00. Fixing it means porting
 # that framing — or, better, moving the measurement into the runner that already has it.
 # ── verify (the minispec law corpus and its binder) ──────────────────────────────────────────
-# `verify:check` is CHEAP and rides the ordinary gate on both platform legs with zero external
-# toolchains — a box with no Lean and no aeneas gates green, because those are opt-in lanes that
-# are loud only when explicitly asked for.
+# `verify:check` is CHEAP and needs zero external toolchains, so the completion gate routes it in
+# on both platform legs — a box with no Lean and no aeneas passes it, because those are opt-in
+# lanes that are loud only when explicitly asked for.
 #
 # Everything below `verify:check` is that opt-in lane, and it is LINUX/WSL ONLY: upstream ships
 # no Windows aeneas asset. The translator half lives in a NESTED config
@@ -639,7 +636,7 @@ run = "cargo run -q --profile tooling -p internal-tooling -- coverage"
 # cross-config idiom (`task-bodies-are-shell-free`).
 
 [tasks."verify:check"]
-description = "The binder's CHEAP gate: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, the byte-budget tripwire, and whether minispec/REPORT.md still matches what the cheap tier renders (engine-tier cells are exempt by construction — they render as not-recomputed-here either way). No Lean, no Kani, no mutants — rides `gate:full-quiet` on both legs."
+description = "The binder's CHEAP check: unit parse, slug discipline, seat-citation resolution, catalogue coherence, the binding two-way agreement, the Generated/ hole census, the byte-budget tripwire, and whether minispec/REPORT.md still matches what the cheap tier renders (engine-tier cells are exempt by construction — they render as not-recomputed-here either way). No Lean, no Kani, no mutants — the completion gate routes it in when minispec, verify, analysis or core change."
 raw = true
 dir = "spike"
 run = "cargo run -q -p dorc-verify -- check"
