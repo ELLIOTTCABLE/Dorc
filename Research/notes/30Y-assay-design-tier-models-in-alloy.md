@@ -404,10 +404,12 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
 
 - **The lock** [ACKED, with the human's nack of a generated index in the `SLUGS.md` style]: one
   committed JSON file per document beside it, `<stem>.lock.json` for `<stem>.assay.md`: an array
-  whose first element is `{"schema": 2}` and then one row per command, one per line, so its git
-  diff is a row diff. It is compared in both directions; the commit that carries it is the
-  ceremony, as with `301`'s catalogue lock, and rows are never hand-edited. Not merged with that
-  lock in this experiment.
+  whose first element is the header `{"schema": 2, "commit": "<HEAD hash>"}` and then one row per
+  command, one per line, so its git diff is a row diff. The header's `commit` is the commit the
+  measured text belongs to [TYPED 2026-09-29: "so it's clear what precise text it's
+  with-reference-to"]; the tool alone writes it, and a header without it reads the same. It is
+  compared in both directions; the commit that carries it is the ceremony, as with `301`'s
+  catalogue lock, and rows are never hand-edited. Not merged with that lock in this experiment.
 - **Results** [ACKED `30Yf:lock-definite-versus-unmeasured`]. A *definite* result, `sat`,
   `unsat`, `counterexample`, or `no-counterexample`, is a fact about the model at that scope that
   no budget changes. An *unmeasurement* says nothing about the model and is recorded as its own
@@ -478,24 +480,40 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   definite row whose key is unchanged, since that verdict is known and the row is carried with
   its old key and result; on a changed key or a new row the official tier writes the
   unmeasurement, so a full timeout on new text is recordable for acceptance. Rows the document no
-  longer has are dropped. `--write` prints the rows it changed on stderr (`+` new, `~` moved,
-  `-` gone) and exits 0 once the lock is written, or 1 on the official tier's construction
-  finding (§ 2.5). A targeted run never writes.
+  longer has are dropped. `--write` locks committed text only [TYPED 2026-09-29: "fail-fast if
+  given --write and it isn't in a quiet, committed tree"]: before compiling or solving it refuses
+  (exit 2, one stderr line naming the paths) when the document or either shared half differs from
+  `HEAD` in any way (staged, unstaged, deleted, untracked, ignored), or when no repository with a
+  commit holds them; the lock file's own modification and every other path never refuse, so
+  write, look, write again stays possible, and `--check` never refuses on this. It lists the rows
+  it changed (`+` new, `~` moved, `-` gone) in the stdout summary under the lock's repo-relative
+  path, or on stderr under `--json -`, and exits 0 once the lock is written, or 1 on the official
+  tier's construction finding (§ 2.5). A targeted run never writes.
 - **A schema-1 lock** (no `schema` element) is read for its results alone: its `budget`, `heap`,
   `size`, and `key` read as unknown, and its `premise` and `hash` columns are ignored. No such row
   matches a key, so nothing is cached, carried, or owed from it: every row re-solves, a definite
   result matches by equality, and an unmeasurement against it is `unmeasured` until a run records
   a definite result or an official tier records the row. Any `--write` renders schema 2.
-- **The report** is one JSON object per document on stdout: the spec, the out directory, the
-  generated files, the word table, the class table, the corpus and books summaries, the lint
-  results, and on `--check` or `--write` every command's row with its `premise`, `provenance`
-  (`fresh`, `cached`, `entailed`, `replayed`, or `unrun`), `standing`, `wall_ms`, `solve_ms`, and
-  a `note` (on a timeout, how far translation got), then the lock's summary: the tier, the
-  status (`matches`, `mismatch`, `unmeasured`, `missing`, `unreadable`, `written`), and the rows
-  under each standing, the `gone` rows, and the official tier's `construction_disagreements`.
-  `--staged` adds `key_diff`. No prose, no suspicion, no ranking [TYPED]. A person or model who
-  wants the counterexample opens the generated `.als` in the Analyzer, or runs `mise run alloy
-  -- --instances --command <name> <module.als>` on it.
+- **The report** is one JSON object per document: the spec, the out directory, the `commit`
+  a solving pass ran on (`HEAD`; `null` outside git), the generated files, the word table, the
+  class table, the corpus and books summaries, the lint results, and on `--check` or `--write`
+  every command's row with its `premise`, `provenance` (`fresh`, `cached`, `entailed`,
+  `replayed`, or `unrun`), `standing`, `expect` where the command has one, `wall_ms`,
+  `solve_ms`, and a `note` (on a timeout, how far translation got; on a deferral, the measurement
+  that deferred it), then the lock's summary: the tier, the status (`matches`, `mismatch`,
+  `unmeasured`, `missing`, `unreadable`, `written`), and the rows under each standing, the `gone`
+  rows, and the official tier's `construction_disagreements`. `--staged` adds `key_diff`. No
+  prose, no suspicion, no ranking [TYPED]. Where it goes [TYPED 2026-09-29: a person had to save
+  an hour-and-a-half pass's stdout by hand]: `--parse`, `--staged`, and a bare compile print it
+  on stdout, as sub-second hook and agent surfaces; `--check` and `--write` write it to
+  `<repo root>/.tmp/assay/<stem>-<UTC stamp>.json` (`--json <path>` names the file, a directory
+  when several documents are named; `--json -` keeps stdout), and stdout carries a plain summary
+  per document instead: stem and tier, rows and the pass's wall time, the commit, counts by
+  result and by standing, runner and lint stops, the lock's status and `gone` rows, construction
+  disagreements, the rows `--write` changed, and the report's path as the last line. A report
+  file that cannot be written falls back to stdout. A person or model who wants the
+  counterexample opens the generated `.als` in the Analyzer, or runs `mise run alloy --
+  --instances --command <name> <module.als>` on it.
 - **Progress** is stderr's, loud by default like any tool [TYPED 2026-09-29: agents and hooks
   pass `--quiet`, and an agent that forgets is a praxis defect, not the tool's]. A `--check` or
   `--write` prints a start line before the survey; a plan line after it (tier, commands,
@@ -511,8 +529,10 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   Rows answered without a solve print nothing and advance the count. Nothing predicts: no
   estimate, no fraction of work done, only effort against the caps [TYPED: a cap-derived bound
   reads as a prediction]. `--parse`, `--staged`, and a bare compile print none of it. `--quiet`
-  silences progress and never a finding: the preflight line, the diff, the key-diff warning, and
-  errors stay. `--help` lists the flags and the trailing caps. The lines are `tracing` events
+  silences progress and never a finding: the preflight line, the key-diff warning, and errors
+  stay, and stdout is untouched; `mise run assay-quiet` is the task that carries it, the
+  repository's `-quiet` convention, and is what hooks and agents run. `--help` lists the flags
+  and the trailing caps. The lines are `tracing` events
   [TYPED 2026-09-29: the workspace's logging stack, not a hand-rolled sink] under a subscriber
   `assay/progress.rs` installs on stderr for `--check` and `--write` only: plain text, prefixed
   `assay +<elapsed>` and the span the event falls in, `assay{stem=…}` for a document's begin,
@@ -523,7 +543,8 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
 - **Exit codes**: `0` every row green or accepted residue [TYPED 2026-09-28: a set of reds fully
   acked by the lock is a pass] · `1` a mismatch (a moved result, a new row, a row gone, a
   missing lock) or the official tier's construction finding · `2` a lint refusal, compile or
-  parse, or a usage error · `3` the solver could not run (no JVM, a refused adapter compile,
+  parse, a usage error, or a `--write` over uncommitted input · `3` the solver could not run (no
+  JVM, a refused adapter compile,
   preflight's refusal) · `4` no mismatch, but rows went unmeasured or are owed a run at the
   ceiling, distinct from 1 because the reader's next act differs: run the official tier, where 1
   says fix the model [CONDUCTOR, ruled at the breakpoint]; rows the hot tier defers do not count
@@ -723,9 +744,10 @@ The builder has latitude on everything not marked.
   `<out>/instances/<module>/<label>.xml`, and the fit belts); `assay/tier.rs` (tiers, caps, the
   ceiling, the deferral threshold); `assay/lock.rs` (the lock's rows, schemas, matching, and
   writing); `assay/drive.rs` (the survey, slices, ordering, and the per-row decision of § 2.5);
-  `assay/pass.rs` (one document's pass, the report, the diff, the exit); `assay/progress.rs`
-  (the `tracing` subscriber and the human duration). `json.rs` and `sha256.rs` are the crate's
-  own, standard library only. The tooling binary builds and runs under its own cargo profile
+  `assay/pass.rs` (one document's pass, the report, the exit); `assay/progress.rs` (the
+  `tracing` subscriber and the human duration); `assay/report.rs` (where the report goes, and the
+  stdout summary rendered from it); `assay/commit.rs` (`HEAD`, and the uncommitted-input check
+  `--write` refuses on). `json.rs` and `sha256.rs` are the crate's own, standard library only. The tooling binary builds and runs under its own cargo profile
   (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`), so a long assay pass never holds the
   executable a workspace build would replace.
 - **Gate placement.** Pre-commit, hk's `assay` step over staged `specs/**/*.assay.md` and
@@ -733,8 +755,8 @@ The builder has latitude on everything not marked.
   the staged bytes into `<stem>.staged/`, parses every module through a fresh adapter child at a
   1024 MB heap, and diffs the keys against the staged lock, warning on stderr how many rows the
   commit leaves unmeasured; it never solves, takes no heavy-work lock, and exits 0 unless a lint
-  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `--check --quiet` at
-  the gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no
+  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `mise run
+  assay-quiet -- --check` at the gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no
   heavy-work lock. `--check` and `--write` preflight in-process for the tier's heap plus one
   child's overhead, take the heavy-work lock, and exit 75 when another task holds it. The
   official tier's standup in CI (runner choice) is separate work.

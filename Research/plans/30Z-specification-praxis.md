@@ -407,8 +407,10 @@ Mechanics, flags, and layout are `30Y`'s and are not repeated.
 - **`lock-results-beside-the-spec`** — every command's result is recorded in `<stem>.lock.json`
   beside its document, one row per command: module, name, kind, scope, result, and the budget,
   heap, size, key, and platform it was measured under; never a timing; the premise twin's result
-  is read from the twin's own row. `--write` records the run; `--check` answers a row whose key is
-  unchanged from the lock and recomputes the rest, comparing in both directions.
+  is read from the twin's own row. `--write` records the run and the commit the text belongs to,
+  and refuses text that is not committed, so a lock is always with reference to one precise
+  revision of its document and shared halves: commit, then write. `--check` answers a row whose
+  key is unchanged from the lock and recomputes the rest, comparing in both directions.
 - **`lock-unmeasured-is-not-a-pass`** — a run that finds no mismatch but leaves rows unmeasured,
   or owed a run at the ceiling, exits 4: a request to run the official tier, never a red and
   never a green. An unmeasurement never matches or overwrites a definite result, and on a changed

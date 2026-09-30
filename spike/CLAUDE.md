@@ -990,8 +990,12 @@ mise run assay -- SPEC.assay.md # compile a specification's fences into Alloy mo
                           #   target/alloy/<stem>/; `--parse` checks them, `--check`/`--write`
                           #   run them against <stem>.lock.json beside the spec, incrementally by
                           #   key; `--only`/`--module` for one slice; `--hot|--gate|--official`
-                          #   tiers; progress on stderr, so agents and hooks pass `--quiet`;
-                          #   exit 4 = unmeasured rows, 75 = contention (`notes/30Y` § 2)
+                          #   tiers; a solving pass writes its JSON report under .tmp/assay/ and
+                          #   prints a summary ending in its path (`--json <path|->` overrides);
+                          #   `--write` wants committed text; progress on stderr, so agents and
+                          #   hooks run `assay-quiet`; exit 4 = unmeasured rows, 75 = contention
+                          #   (`notes/30Y` § 2)
+mise run assay-quiet -- SPEC.assay.md # the same, agent spelling: no progress lines
 mise run check-quiet      # the lint gates, agent spelling: 0 bytes on success, loud on failure
 mise run test:e2e-quiet   # the case corpus, agent spelling: terse per-case on success,
                           #   failures unabridged; same selection the bare task takes

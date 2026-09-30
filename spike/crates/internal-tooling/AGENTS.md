@@ -8,4 +8,5 @@ assay lives here: its design is `Research/notes/30Y`, the praxis for writing aga
 - assay knows shell and nothing about dorc; avoid teaching it a dorc-aware lint or default
 - it reads alloy only as far as sig heads and binders; alloy itself does the rest
 - the lock holds results; a set of reds the committed lock already records (with no new ones) is a pass
-- stdout is the report alone; whatever a solving pass says about itself is a `tracing` event under the subscriber `assay/progress.rs` installs on stderr, and `--quiet` is that subscriber's level filter and silences only that
+- a solving pass's JSON report goes to a file (`assay/report.rs`) and stdout carries only the summary that names it; the non-solving modes keep the JSON on stdout; whatever a pass says about itself is a `tracing` event under the subscriber `assay/progress.rs` installs on stderr, and `--quiet` is that subscriber's level filter and silences only that
+- `--write` locks committed text only (`assay/commit.rs`): the document and shared halves must match `HEAD`, and the header records that commit

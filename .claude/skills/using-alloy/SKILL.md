@@ -377,7 +377,9 @@ only reliable reviewer in the loop, and it can only review what is asked of it.
   run is unsatisfiable or a check finds a counterexample; exit 75 is the machine-wide heavy-work
   lock, so do other work and retry. A specification runs through `mise run assay` instead, whose
   `--only`, `--module`, and tiers are the hot loop (`Research/notes/30Y`); it reports progress on
-  stderr for a person at a terminal, so an agent passes `--quiet` and reads the JSON report.
+  stderr for a person at a terminal, so an agent runs `mise run assay-quiet` instead, and reads
+  the JSON report from the file the stdout summary's last line names (or passes `--json -` to
+  keep it on stdout). `--write` wants the document committed first.
 - Higher-order quantification is accepted by the grammar and solved only where Skolemization
   applies; anything else is an error, not a slow run.
 - Rare shapes worth copying (hand-written order without `util/ordering`, generator and uniqueness
