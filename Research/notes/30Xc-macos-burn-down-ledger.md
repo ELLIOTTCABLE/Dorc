@@ -210,28 +210,67 @@
    that the sandbox redirects every variable any platform's root rule reads.
 3. `[PROPOSED]` The `pinned_roots` doc loses its two false claims (`fnd-stale-root-layout-comments`).
 
-## §3 — open decisions
+## §3 — decisions (living: each carries its state)
 
 - **ask-reopen-through-harness-roots** — plan item 1 as proposed. `standard_roots` coverage then
-  lives in the shipped-binary test and in unit tests only.
+  lives in the shipped-binary test and in unit tests only. RULED §4: apply.
 - **ask-restate-or-derive-macos-rule** — the shipped-binary test restates the macOS location
-  (independent of production; proposed) or derives it from `standard_roots` (one source).
+  (independent of production) or derives it from `standard_roots` (one source). RULED §4: derive,
+  where a route exists.
 - **ask-platform-home-steering-line** — one line in `spike/CLAUDE.md` that names the platform
-  home.
+  home. RULED §4: yes.
 - **ask-one-home-precedence** — where a test already has a one-home rule (receipt state lives in
-  `receipt_state.rs`), that home wins and `platform.rs` takes the rest.
+  `receipt_state.rs`), that home wins and `platform.rs` takes the rest. §4: the human leans to
+  the `platform.rs` pattern, maybe moving existing platform tests into it; investigate and
+  report.
 - **ask-duplicate-declarer-priority** — whether tracing and fixing
   `fnd-duplicate-declarer-composes-contested-helper` comes before the rest of the burn-down, and
-  whether it also takes a row in `ANALYZER-NEEDS.md`.
+  whether it also takes a row in `ANALYZER-NEEDS.md`. OPEN.
 - **ask-engine-fix-before-green** — resolving the e2e scratch root would turn both looms green
   and hide the engine finding on every platform. Proposed: land the engine fix, or an `xfail:`
-  pin for it, first.
-- **ask-key-identity-at-edge** — whether one file under two spellings (`/var` and
-  `/private/var`; different case on a case-insensitive volume) is one source to Dorc, resolved by
-  file identity at the CLI edge and fed to a still-lexical kernel, or stays two sources that
-  withhold once the engine finding is fixed.
-- **ask-floor-shell-on-macos** — install `posh` on macOS, provide it through mise, or run a
-  dash-only half floor there, as on Windows.
-- **ask-annotate-30xb-misattribution** — an adjacent correction note at `30Xb` §5.
-- **ask-kagi-setup-here** — set up Kagi on this machine, allow another search tool for the
-  macOS reading, or defer the reading.
+  pin for it, first. OPEN.
+- **ask-key-identity-at-edge** — whether one file under two spellings is one source to Dorc.
+  RULED §4 (`rul-one-file-one-identity-at-the-edge`); queued.
+- **ask-floor-shell-on-macos** — CLOSED §4: the floor differential runs on Linux.
+- **ask-annotate-30xb-misattribution** — an adjacent correction note at `30Xb` §5. OPEN.
+- **ask-kagi-setup-here** — the human is setting Kagi up (§4).
+- **ask-living-status-pointer** — a one-line pointer to this ledger in `LIVING_STATUS.md`. OPEN.
+
+## §4 — sitting three (2026-09-30): rulings, and scope held to macOS
+
+### Typed record
+
+- `[TYPED]` Keep reports short; the human pulls on threads. Close items rather than carry many.
+- `[TYPED]` Scope is macOS-only items. The impact of a bug past macOS still counts.
+- **rul-one-file-one-identity-at-the-edge** `[TYPED]` — one file under two spellings (a link, a
+  case-insensitive name, and whatever other platforms do) is not handled case by case. A
+  principled mechanism at the filesystem edge resolves it: a dependency, if the standard library
+  has none. The platform user's own expectations govern. Queued as a standalone fix; a short
+  `spike/CLAUDE.md` invariant follows it.
+- `[TYPED]` The macOS default location of the per-user roots waits on online research, once
+  Kagi works here.
+- `[TYPED]` The floor differential runs on Linux; its local macOS reds are expected, and an
+  unrelated floor fix is in flight elsewhere. A floor failure is language-design and compiler
+  work. A failure in the cross-platform target tests (not yet built) is orchestrator work:
+  executor translation, feature detection, or documentation.
+- `[TYPED]` Include the hostsim sandbox fix. Unifying the sandboxes is report-only unless
+  trivial.
+- `[TYPED]` The `cli-help-receipt-kept` prose is Slop tier, so it is mine to edit. Prose tagged as
+  human-written is not.
+- `[TYPED]` Derive the sandbox's per-user directories from an existing source, if a route
+  exists.
+- `[TYPED]` Platform test modules are `for_<platform>` and `on_<platform>`. They hold only
+  strictly platform-specific tests; a change with broader effects gets ordinary tests.
+- `[TYPED]` Apply `ask-reopen-through-harness-roots`; add the steering line.
+- `[TYPED]` Standing: fix a doc comment that is obviously wrong. Very basic STE100, much briefer
+  than the local style; remove where that is justified.
+
+### Findings
+
+- **fnd-slug-index-skips-backticked-bold** — `SLUGS.md` indexes a bold slug that leads a list
+  item, but not one written as bold around a code span: about 870 definitions in 78 files are
+  missing from it (`30X`'s
+  `pri-breadth-is-the-constraint`, all of `30Xb`). The likely fix is in `list_bold_def`
+  (`internal-tooling/src/slugs.rs`). Not macOS: recorded, not pursued.
+- **fnd-md-wrap-holds-map-edits** — the `ai/md-wrap` worktree holds an uncommitted rewrap of
+  `Research/README.md` and `SLUGS.md`; this ledger's map entry needs re-applying when it lands.

@@ -611,7 +611,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 270 275 277 279f (8)
 
 ## 30Xc:ask-annotate-30xb-misattribution
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:235 — — an adjacent correction note at `30Xb` §5.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:235 — — an adjacent correction note at `30Xb` §5. OPEN.
 
 ## 28I:ask-apply-header-vs-byte-floor
 - defined: Research/notes/28I-webhost-redline-extraction.md:52 — (design tension, flag not fold): the
@@ -660,17 +660,17 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:152 — — the 16 pure `sm {{detail}}` codes can never be
 
 ## 30Xc:ask-duplicate-declarer-priority
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:223 — — whether tracing and fixing
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:226 — — whether tracing and fixing
 
 ## 30Xc:ask-engine-fix-before-green
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:226 — — resolving the e2e scratch root would turn both looms green
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:229 — — resolving the e2e scratch root would turn both looms green
 
 ## ask-flag-boundary-recut
 - defined: —
 - cited: 279f 27A (4)
 
 ## 30Xc:ask-floor-shell-on-macos
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:233 — — install `posh` on macOS, provide it through mise, or run a
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:234 — — CLOSED §4: the floor differential runs on Linux.
 
 ## ask-full-driver-this-arc-or-r30
 - defined: —
@@ -680,10 +680,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:185 — — I minted `solver-consistency-plan-demoted` as a SIBLING of
 
 ## 30Xc:ask-kagi-setup-here
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:236 — — set up Kagi on this machine, allow another search tool for the
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:236 — — the human is setting Kagi up (§4).
 
 ## 30Xc:ask-key-identity-at-edge
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:229 — — whether one file under two spellings (`/var` and
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:232 — — whether one file under two spellings is one source to Dorc.
 
 ## Research/notes/r26-glue-strawmen/nix-machine.note:ask-kind-namespace-squatting-policy
 - defined: Research/notes/r26-glue-strawmen/nix-machine.note.md:182 — — a third-party oracle author describing nix mints `org.nixos.*` kinds for a project they do not own…
@@ -691,6 +691,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## ask-kind-species-verdict-member
 - defined: —
 - cited: 30Ta (1)
+
+## 30Xc:ask-living-status-pointer
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:237 — — a one-line pointer to this ledger in `LIVING_STATUS.md`. OPEN.
 
 ## ask-may-read-is-declared-per-key
 - defined: —
@@ -701,7 +704,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 311 312d (2)
 
 ## 30Xc:ask-one-home-precedence
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:221 — — where a test already has a one-home rule (receipt state lives in
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:222 — — where a test already has a one-home rule (receipt state lives in
 
 ## 307b:ask-out-param-versus-eighth-tuple-element
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:198 — — I threaded the latch as a `&mut CertifierTrip`
@@ -715,7 +718,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 276 279f (3)
 
 ## 30Xc:ask-platform-home-steering-line
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:219 — — one line in `spike/CLAUDE.md` that names the platform
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:220 — — one line in `spike/CLAUDE.md` that names the platform
 
 ## ask-promote-task-14
 - defined: —
@@ -3214,6 +3217,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Xc:fnd-macos-root-arm-untested
 - defined: Research/notes/30Xc-macos-burn-down-ledger.md:164 — — `durable.rs` tests the XDG arm (`:694`) and the Windows arm
 
+## 30Xc:fnd-md-wrap-holds-map-edits
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:275 — — the `ai/md-wrap` worktree holds an uncommitted rewrap of
+
 ## fnd-measured-today
 - defined: Research/notes/30Qc-load-plane-lane-report.md:40 — — what the code actually does
 - defined: Research/notes/30Qf-blind-act-retrofit-lane-report.md:39 — — what the code actually does
@@ -3455,6 +3461,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28M:fnd-single-token-dialects-cannot-spare
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:563 — [conductor, from the scout's flip-set +
+
+## 30Xc:fnd-slug-index-skips-backticked-bold
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:270 — — `SLUGS.md` indexes a bold slug that leads a list
 
 ## fnd-smoke-book-never-reloads-nginx
 - defined: —
@@ -7496,6 +7505,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-one-checkpoint-after-machinery
 - defined: —
 - cited: 28A (2)
+
+## 30Xc:rul-one-file-one-identity-at-the-edge
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:245 — `[TYPED]` — one file under two spellings (a link, a
 
 ## rul-one-load-account-separate-projections
 - defined: —
