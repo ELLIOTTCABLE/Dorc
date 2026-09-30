@@ -3146,6 +3146,137 @@ authoritative, held only until acked or replaced (`notes/312d` § 7).
 
 Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a network namespace. A lend that depends on the guest: sudoers matches the guest command.
 
+#### § 3.4.2-a-book-one-file-across-sudo-under-the-sentinel
+
+Tessa's thin world of 3.2.5-a-book-two-files-scoped-in-the-route, read once from the host and
+once through `sudo`. Wanda describes `sudo` as a wrapper that lends nothing and declares its
+completion sentinel; the flag is set, so the vantage entered through the wrapper inherits the
+caller's mRoute, and the two inode mKeys are scoped in one mRoute. The book asks whether the
+sentinel is in the SAME's support. The sibling book 3.4.3-a-book-one-file-across-sudo-without-the-flag
+withholds the flag.
+
+```alloy
+run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
+```
+
+```sh
+# one_file_across_sudo_under_the_sentinel.sh
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig tessa, carl, wanda extends Speaker {}
+#= one sig sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig inode_17 extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig v1 extends mVantage {} { enteredFrom = v0  through = sudo }
+#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  reaches = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  reaches = inode_17 }
+#= Speaker = tessa + carl + wanda
+#= mSort = sm_File
+#= mScheme = sm_Inode + sm_Path
+#= mShape = inode_shape + slash_path_shape
+#= mReferent = inode_17
+#= mKey = k_ino_17_at_line_1 + k_ino_17_at_line_2 + k_srv_a_at_line_1 + k_srv_a_at_line_2
+#= mVantage = v0 + v1 and mRoute = r0 and no mRootWorld and Wrapper = sudo
+#= no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= no holds and no owns and no passes and no affects
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda  closedWrapper = sudo }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0)
+
+   sudo cmp -s ./golden.conf /srv/a/app.conf
+#} sudo cmp dash_s golden_conf srv_a_app_conf
+#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_2  atLine = this  markedReads = k_srv_a_at_line_2  dependsOn = inode_17 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | inherits[v1] and v1.route = r0 and tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g] and wanda__sudo_lends_nothing_else in sameSupport[f.topic, g.topic]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is five atoms of every kind the specification owns.
+> Tessa owns the file, as in 3.2.5-a-book-two-files-scoped-in-the-route, with `:guarantees-unique-referent` on the inode number's shape and no other warrant.
+> Wanda owns the wrapper `sudo`.
+> It lends nothing, and Wanda declares its completion sentinel.
+> The world holds one inode.
+> No store holds it, nothing passes, no write affects another mReferent, and no line writes.
+> The first line runs from the host's mVantage, which holds no ambient instance.
+> The second line runs from a mVantage entered through the wrapper.
+> The flag is set, so that mVantage inherits the caller's mRoute and its instances.
+> Both inode mKeys are scoped in the one mRoute.
+> Line 1, `cmp` from the host: every statement in force is true and the engine's axioms hold.
+> The path's identity is the inode mKey its lookup emitted, whose chain ends at the mRoute.
+> Line 2, `cmp` through `sudo`, against line 1: the entered mVantage inherits, and its mRoute is the caller's.
+> `compare()` answers SAME, the two facts are about one mTopic, and Wanda's sentinel is in the SAME's support.
+
+#### § 3.4.3-a-book-one-file-across-sudo-without-the-flag
+
+The world of 3.4.2-a-book-one-file-across-sudo-under-the-sentinel with the flag withheld.
+Nothing inherits, so the vantage entered through the wrapper has a mRoute of its own, and the
+two inode mKeys are scoped in two mRoutes.
+
+```alloy
+run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
+```
+
+```sh
+# one_file_across_sudo_without_the_flag.sh
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig tessa, carl, wanda extends Speaker {}
+#= one sig sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig inode_17 extends mReferent {}
+#= one sig r0, r1 extends mRoute {}
+#= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = sudo }
+#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  reaches = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  reaches = inode_17 }
+#= Speaker = tessa + carl + wanda
+#= mSort = sm_File
+#= mScheme = sm_Inode + sm_Path
+#= mShape = inode_shape + slash_path_shape
+#= mReferent = inode_17
+#= mKey = k_ino_17_at_line_1 + k_ino_17_at_line_2 + k_srv_a_at_line_1 + k_srv_a_at_line_2
+#= mVantage = v0 + v1 and mRoute = r0 + r1 and no mRootWorld and Wrapper = sudo
+#= no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= no holds and no owns and no passes and no affects
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda  closedWrapper = sudo }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0)
+
+   sudo cmp -s ./golden.conf /srv/a/app.conf
+#} sudo cmp dash_s golden_conf srv_a_app_conf
+#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_2  atLine = this  markedReads = k_srv_a_at_line_2  dependsOn = inode_17 }
+#= let f = atLine.this, g = carl__srv_a_matches_golden | not inherits[v1] and v1.route = r1 and tabledCompare[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is six atoms of every kind the specification owns.
+> Tessa, Wanda, and Carl speak as in 3.4.2-a-book-one-file-across-sudo-under-the-sentinel.
+> The flag is not set.
+> The mVantage entered through the wrapper inherits nothing, so its mRoute is another mRoute.
+> Line 1, `cmp` from the host: every statement in force is true and the engine's axioms hold.
+> The path's identity is the inode mKey its lookup emitted, whose chain ends at the host's mRoute.
+> Line 2, `cmp` through `sudo`, against line 1: the two inode mKeys are scoped in two mRoutes.
+> `compare()` answers UNKNOWN, and the two facts are not about one mTopic.
+
 ### § 3.5-committee-law-and-attribution
 
 Every statement species in this document carries one speaker (the shared `Spoken`), and
