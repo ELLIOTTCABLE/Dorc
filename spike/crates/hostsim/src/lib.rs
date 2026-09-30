@@ -227,7 +227,7 @@ pub mod fault {
         let at = line.find(needle)?;
         let after = at.checked_add(needle.len())?;
         let rest = line.get(after..)?;
-        let end = rest.find(' ').map_or(rest.len(), |offset| offset);
+        let end = rest.find(' ').unwrap_or(rest.len());
         let head = line.get(..after)?;
         let tail = rest.get(end..)?;
         Some(format!("{head}{forged}{tail}"))

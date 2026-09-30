@@ -340,7 +340,7 @@ const DEVICE_STEMS: [&str; 22] = [
     "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
 ];
 
-const FORBIDDEN_PATH_BYTES: [u8; 8] = [b'\\', b':', b'<', b'>', b'"', b'|', b'?', b'*'];
+const FORBIDDEN_PATH_BYTES: [u8; 8] = *b"\\:<>\"|?*";
 
 impl RecordedApplyPath {
     /// Validate one path against the V1 grammar, applied identically at live construction,

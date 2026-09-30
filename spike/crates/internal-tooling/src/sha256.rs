@@ -109,11 +109,11 @@ impl Sha256 {
                 self.compress(&block);
             }
         }
-        let mut blocks = rest.chunks_exact(64);
-        for block in &mut blocks {
+        let (blocks, remainder) = rest.as_chunks::<64>();
+        for block in blocks {
             self.compress(block);
         }
-        self.pending.extend_from_slice(blocks.remainder());
+        self.pending.extend_from_slice(remainder);
     }
 
     pub(crate) fn field(&mut self, bytes: &[u8]) {
@@ -129,7 +129,7 @@ impl Sha256 {
             tail.push(0);
         }
         tail.extend_from_slice(&bits.to_be_bytes());
-        for block in tail.chunks_exact(64) {
+        for block in tail.as_chunks::<64>().0 {
             self.compress(block);
         }
         self.state.iter().fold(String::new(), |mut out, w| {
@@ -144,13 +144,8 @@ impl Sha256 {
     )]
     fn compress(&mut self, block: &[u8]) {
         let mut w = [0u32; 64];
-        for (slot, word) in w.iter_mut().zip(block.chunks_exact(4)) {
-            *slot = u32::from_be_bytes([
-                word.first().copied().unwrap_or(0),
-                word.get(1).copied().unwrap_or(0),
-                word.get(2).copied().unwrap_or(0),
-                word.get(3).copied().unwrap_or(0),
-            ]);
+        for (slot, word) in w.iter_mut().zip(block.as_chunks::<4>().0) {
+            *slot = u32::from_be_bytes(*word);
         }
         for i in 16_usize..64 {
             let at = |j: usize| w.get(j).copied().unwrap_or(0);

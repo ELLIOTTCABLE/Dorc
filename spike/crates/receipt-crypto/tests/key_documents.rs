@@ -72,7 +72,7 @@ fn published_signature() -> [u8; 64] {
     let hex = RFC_8032_TEST_1_PUBLISHED_SIGNATURE.as_bytes();
     assert_eq!(hex.len(), 128, "a signature is 64 bytes of hexadecimal");
     let mut out = [0_u8; 64];
-    for (slot, pair) in out.iter_mut().zip(hex.chunks_exact(2)) {
+    for (slot, pair) in out.iter_mut().zip(hex.as_chunks::<2>().0) {
         let text = core::str::from_utf8(pair).expect("hexadecimal is ascii");
         *slot = u8::from_str_radix(text, 16).expect("the published signature is hexadecimal");
     }

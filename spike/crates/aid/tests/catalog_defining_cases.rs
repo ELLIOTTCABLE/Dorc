@@ -199,7 +199,7 @@ fn count_ratchet_entries(src: &str) -> usize {
         return usize::MAX; // unreadable ⇒ never trips the <= assert (conservative)
     };
     let body = &src[start..];
-    let end = body.find("];").map_or(body.len(), |i| i);
+    let end = body.find("];").unwrap_or(body.len());
     body[..end]
         .lines()
         .filter(|l| {

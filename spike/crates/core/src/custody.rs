@@ -103,7 +103,7 @@ impl CustodyClosures {
     /// against an unknown file must fail in.
     #[must_use]
     pub fn reaches(&self, asker: usize, target: usize) -> bool {
-        u32::try_from(target).ok().is_some_and(|target| {
+        u32::try_from(target).is_ok_and(|target| {
             self.reaches
                 .get(asker)
                 .is_some_and(|reached| reached.contains(&target))
