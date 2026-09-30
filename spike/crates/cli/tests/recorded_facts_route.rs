@@ -1,12 +1,10 @@
 //! The recorded-facts derivation — the PIPELINE TIER (`30X` §3): typed in-process decisions of the
 //! `RecordedWhyFacts` model and its `why_total`/`why_json` render coverage.
 //!
-//! This is a pipeline-tier battery that spawns the harness ONLY to produce its fixture receipt: the
-//! spawn is SETUP, never the assertion. It then reopens that store in process the way `dorc why`
-//! does — standard roots, real keyset, real store, real signature check, real region — and derives
-//! the model, so what it pins is that the model comes from material a real run wrote rather than a
-//! fixture that agrees with itself. The byte-exact receipt-rooted renders are the loom's
-//! (`why30-receipt-rooted-surface`); the surface's relations and refusals are `receipt_state.rs`'s.
+//! The harness writes one receipt; that run is setup, not an assertion. The test opens the store
+//! through the harness's roots, with the real keyset, store, signature check and region, and
+//! derives the model from what a real run wrote. Byte-exact renders are the loom's
+//! (`why30-receipt-rooted-surface`); relations and refusals are `receipt_state.rs`'s.
 
 #![expect(
     clippy::expect_used,
@@ -14,7 +12,7 @@
     reason = "fixture helpers beside the cases, where the in-tests allowance does not reach them"
 )]
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 use dorc_aid::RenderCtx;
@@ -81,7 +79,7 @@ fn seam_env(command: &mut Command) {
     command.env("DORC_SEAM_SOURCE_MATCH", "pinned:off");
 }
 
-/// Publish one plan receipt through the shipped binary, into `sandbox`'s own profile.
+/// Publish one plan receipt through the harness, into `sandbox`'s roots.
 fn publish(sandbox: &ProfileSandbox, scratch: &Scratch) {
     let stdin = scratch.path.join("records.txt");
     std::fs::write(&stdin, records()).expect("write the records");
@@ -102,28 +100,22 @@ fn publish(sandbox: &ProfileSandbox, scratch: &Scratch) {
     );
 }
 
-/// Reopen the sandbox store the way `dorc why` does, and hand back the edge.
+/// Open the store through the roots the harness wrote into.
 fn reopen(sandbox: &ProfileSandbox) -> (LocalReceiptEdgeV1, NativeIo) {
-    let roots = dorc_cli::durable::standard_roots(
-        dorc_cli::durable::host_platform(),
-        &SandboxEnvironment(sandbox.root_for_env()),
-    )
-    .expect("the sandbox names both roots");
-    (LocalReceiptEdgeV1::of(roots), NativeIo::new())
+    let seams: dorc_cli::seam::Seams = dorc_cli::seam::HarnessSeams::from_env(sandbox)
+        .expect("the pinned roots parse")
+        .into();
+    let edge = dorc_cli::compose::production_receipt_edge_over(&seams, None, &NoRootVariables)
+        .expect("the pinned roots resolve");
+    (edge, NativeIo::new())
 }
 
-/// The sandbox's own environment, as the root resolver's one query.
-struct SandboxEnvironment(PathBuf);
+/// Pinned roots read no platform variable.
+struct NoRootVariables;
 
-impl dorc_cli::durable::RootEnvironment for SandboxEnvironment {
-    fn var(&self, name: &str) -> Option<String> {
-        let leaf = match name {
-            "APPDATA" | "XDG_CONFIG_HOME" => "config",
-            "LOCALAPPDATA" | "XDG_STATE_HOME" => "state",
-            "HOME" => "home",
-            _ => return None,
-        };
-        Some(self.0.join(leaf).to_string_lossy().into_owned())
+impl dorc_cli::durable::RootEnvironment for NoRootVariables {
+    fn var(&self, _name: &str) -> Option<String> {
+        None
     }
 }
 
@@ -270,20 +262,6 @@ fn an_address_resolves_or_refuses_against_the_real_recorded_source() {
         None,
         "a moved line never answers the address it moved away from"
     );
-}
-
-/// The sandbox's root, for the environment shim above.
-trait RootForEnv {
-    fn root_for_env(&self) -> PathBuf;
-}
-
-impl RootForEnv for ProfileSandbox {
-    fn root_for_env(&self) -> PathBuf {
-        self.config_root()
-            .parent()
-            .map(Path::to_path_buf)
-            .expect("the sandbox config root sits under the sandbox")
-    }
 }
 
 /// THE TOTAL SURFACE over a document the binary published: every datum reaches the render exactly

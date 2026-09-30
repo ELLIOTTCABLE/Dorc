@@ -96,7 +96,18 @@ const ROOTS_ENV: &str = dorc_testbed::seam_vars::ROOTS_ENV;
 /// A literal directory, not the platform variables: the harness reads no `APPDATA`/`HOME`/`XDG_*`,
 /// so a scrubbed spawn still resolves (`30Xa:rul-roots-pinned-is-a-literal`).
 pub(crate) fn pin_roots_at(command: &mut std::process::Command, root: &std::path::Path) {
-    command.env(ROOTS_ENV, format!("pinned:{}", root.display()));
+    command.env(ROOTS_ENV, pinned(root));
+}
+
+fn pinned(root: &std::path::Path) -> String {
+    format!("pinned:{}", root.display())
+}
+
+/// What a harness spawn in this sandbox reads: its roots seam, pinned here.
+impl dorc_cli::seam::SeamEnv for ProfileSandbox {
+    fn var(&self, name: &str) -> Option<String> {
+        (name == ROOTS_ENV).then(|| pinned(&self.root))
+    }
 }
 
 /// Scrub a harness spawn to a credential-free environment and pin its roots at `root`
