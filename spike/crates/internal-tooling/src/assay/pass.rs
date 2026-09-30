@@ -28,6 +28,7 @@ impl PassLog {
     fn begin(stem: &str, ask: &Ask) -> Self {
         let mode = match ask.mode {
             Mode::Check => Some("check"),
+            Mode::Write if ask.checked => Some("check and write"),
             Mode::Write => Some("write"),
             Mode::Compile | Mode::Parse | Mode::Staged => None,
         };
@@ -431,6 +432,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         ),
     ));
     let computed: Vec<Row> = rows.iter().map(|c| c.row.clone()).collect();
+    let (verdict, verdict_code) = match (committed_text.is_some(), mismatched, unmeasured) {
+        (false, _, _) => ("missing", RED),
+        (true, true, _) => ("mismatch", RED),
+        (true, false, true) => ("unmeasured", UNMEASURED),
+        (true, false, false) => ("matches", 0),
+    };
     let code = if ask.mode == Mode::Write {
         let next = lock::next(
             &committed,
@@ -441,7 +448,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         match std::fs::write(&lock_path, lock::render(&next, commit.as_deref())) {
             Ok(()) => {
                 summary.push(("status".to_owned(), Json::str("written")));
-                0
+                if ask.checked {
+                    summary.push(("verdict".to_owned(), Json::str(verdict)));
+                    verdict_code
+                } else {
+                    0
+                }
             }
             Err(e) => {
                 eprintln!("assay: writing {}: {e}", lock_path.display());
@@ -450,14 +462,8 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             }
         }
     } else {
-        let (status, code) = match (committed_text.is_some(), mismatched, unmeasured) {
-            (false, _, _) => ("missing", RED),
-            (true, true, _) => ("mismatch", RED),
-            (true, false, true) => ("unmeasured", UNMEASURED),
-            (true, false, false) => ("matches", 0),
-        };
-        summary.push(("status".to_owned(), Json::str(status)));
-        code
+        summary.push(("status".to_owned(), Json::str(verdict)));
+        verdict_code
     };
     let disagreeing = if ask.tier == super::tier::Tier::Official {
         disagreements(&rows, &compiled.conjunctions)

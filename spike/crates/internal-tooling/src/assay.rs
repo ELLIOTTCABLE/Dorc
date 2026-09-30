@@ -168,6 +168,8 @@ fn severity(code: u8) -> u8 {
 #[derive(Debug, Clone)]
 struct Ask {
     mode: Mode,
+    /// `--check` given with `--write`: the lock is written, and the exit is the check's verdict.
+    checked: bool,
     tier: tier::Tier,
     target: drive::Target,
     caps: Vec<String>,
@@ -195,6 +197,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let mut out = None;
     let mut ask = Ask {
         mode: Mode::Compile,
+        checked: false,
         tier: tier::Tier::Gate,
         target: drive::Target::All,
         caps: caps.to_vec(),
@@ -257,7 +260,19 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             }
         };
         if ask.mode != Mode::Compile {
-            return usage("--parse, --staged, --check, and --write exclude each other");
+            // The one pair: a single solve that both judges the lock and yields the one that
+            // would pass, which is what an expensive run hands back when it fails.
+            if !matches!(
+                (&ask.mode, &wanted),
+                (Mode::Check, Mode::Write) | (Mode::Write, Mode::Check)
+            ) {
+                return usage(
+                    "--parse, --staged, --check, and --write exclude each other, bar --check --write",
+                );
+            }
+            ask.mode = Mode::Write;
+            ask.checked = true;
+            continue;
         }
         ask.mode = wanted;
     }
@@ -353,7 +368,8 @@ const HELP: &str = "usage: assay <spec.assay.md>... [flags] [-- <caps>]
   --staged                     the pre-commit form: staged bytes, parse and key diff, never solves
   --check                      solve and compare against <stem>.lock.json
   --write                      solve and rewrite <stem>.lock.json
-  --hot                        tier: 120s CPU per command, deferral, 540s batch
+  --check --write              both: rewrite the lock, and exit with --check's verdict
+  --hot                       tier: 120s CPU per command, deferral, 540s batch
   --gate                       tier (default): 600s CPU per command, 540s batch
   --official                   tier: 1800s CPU per command, 4096 MB, keys ignored, 8h batch
   --module <m>                 solve every command of one module; never writes
@@ -374,7 +390,7 @@ caps, after a second --:
 fn usage(problem: &str) -> ExitCode {
     eprintln!(
         "assay: {problem}
-usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--json <path|->] [--quiet] [-- <runner caps>]"
+usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write | --check --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--json <path|->] [--quiet] [-- <runner caps>]"
     );
     ExitCode::from(REFUSED)
 }
