@@ -477,19 +477,19 @@ pred parentRefused[k: mKey] { some disj p, q: supplies[k] | p != q }
 
 pred supplyFits[k: mKey] {
    one supplies[k]
-   some identifiedIn[k.shape] implies primaryOf[supplies[k].scheme] = identifiedIn[k.shape]
+   some identifiedIn[k.shape] implies sortOfKey[supplies[k]] = identifiedIn[k.shape]
    some k.cellSort implies sortOfKey[supplies[k]] = cellParentSort[k.cellSort]
 }
 
 fact {
    all k: mKey {
       (no k.shape and no k.cellSort) implies no k.parent
-      some k.cellSort implies k.parent = (supplyFits[k] implies supplies[k] else none)
+      some k.cellSort implies k.parent = (supplyFits[k] implies identity[supplies[k]] else none)
       isRoot[k.shape] implies k.parent = rootShape.(k.shape)
       (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape] and no yieldsTo[k.shape])
          implies k.parent = k.at.route
       some identifiedIn[k.shape]
-         implies k.parent = (supplyFits[k] implies supplies[k] else none)
+         implies k.parent = (supplyFits[k] implies identity[supplies[k]] else none)
       some yieldsTo[k.shape]
          implies k.parent = (let seats = supplies[k] + k.at.ambient[catalogSortOf[k.scheme]] |
                              one seats implies seats else none)
@@ -504,13 +504,13 @@ pred true_SuppliesParent[s: SuppliesParent] {
 <!-- prose-translation -->
 > Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
 > An mKey matching no shape has no mParent.
-> A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
+> A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort), scoped in that mKey's identity (3.1-identity-of-a-key).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
 > A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute of the mKey's mVantage (1.10-vantage-route-placeholder-witness).
 > For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance: the instance is the one the seats supply, and there is none where they supply none or disagree.
 > The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
 > A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
-> For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort: an mKey of the primary mScheme of the mSort declared for the shape.
+> For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort, of any of that mSort's mSchemes; the mKey is scoped in the identity of that instance (3.1-identity-of-a-key), and where the instance has no identity the mFullyQualifiedKey is unknown from that level.
 > Two seats that disagree are a contradiction.
 > Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
 > A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
