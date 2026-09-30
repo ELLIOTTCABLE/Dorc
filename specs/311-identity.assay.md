@@ -2038,7 +2038,7 @@ fun walk[x, y: mKey]: one Answer {
    else sameChains[x, y] implies SAME
    else (some a: meet[x, y].mLevel, b: mLevel.(meet[x, y]) | x = a or y = b) implies UNKNOWN
    else (some a: meet[x, y].mLevel, b: mLevel.(meet[x, y]) | separatedAt[x, y, a, b]) implies DISJOINT
-   else x.scheme != y.scheme implies KNOWN_UNSPOKEN
+   else (x.scheme + x.cellSort) != (y.scheme + y.cellSort) implies KNOWN_UNSPOKEN
    else UNKNOWN
 }
 
@@ -2252,11 +2252,11 @@ run kill_nobody_spoke_declines_unique_referent {
 } for 6 but 4 Int expect 1
 
 check law_different_sorts_never_same {
-   all x, y: mKey | x.scheme != y.scheme implies walk[x, y] != SAME
+   all x, y: mKey | (x.scheme + x.cellSort) != (y.scheme + y.cellSort) implies walk[x, y] != SAME
 } for 6 but 4 Int
 
 run law_different_sorts_never_same_premise {
-   some x, y: mKey | x.scheme != y.scheme and knownChain[x] and knownChain[y] and worldOf[x] = worldOf[y]
+   some x, y: mKey | (x.scheme + x.cellSort) != (y.scheme + y.cellSort) and knownChain[x] and knownChain[y] and worldOf[x] = worldOf[y]
 }
 ```
 
@@ -2271,7 +2271,7 @@ run law_different_sorts_never_same_premise {
 > Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with differing mValues.
 > One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some other shape, `:identified-in` the mSort of the other side's top.
 > Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
-> Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
+> Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN; two mKeys are of different mSorts here when they carry different mSchemes, or different cell mSorts, or one an mScheme and the other a cell mSort (1.4-key-and-its-two-views).
 > Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key); an mKey with no identity reads UNKNOWN.
 > `compare(x, y)`: SAME is "or" across mDerivations, the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles), and "and" within one mFullyQualifiedKey; SAME composes transitively.
 > A warranted SAME and a warranted DISJOINT on one pair is a contradiction: the pair reads UNKNOWN, and the refusal with its attribution is 3.5-committee-law-and-attribution's.
