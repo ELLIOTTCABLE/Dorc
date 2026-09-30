@@ -367,6 +367,7 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 <!-- prose-translation -->
 > An mKey has three parts: an mValue, its mScheme, and its mParent (1.6-parent-one-per-key).
 > The mScheme is always declared, with one exception.
+> An mValue with no mScheme is nothing.
 > A cell's mKey has its cell mSort in place of an mScheme and matches no shape (1.9-cell-a-singleton-sort).
 > There is no default mScheme.
 > A bind or a mark always names one.
@@ -464,6 +465,7 @@ scoped in an mParent (1.6-parent-one-per-key). How long a warrant holds is
 > One lookup rests on the engine's own axiom, discharged by differential test and never spoken: the local mRoute under no wrapper (1.10-vantage-route-placeholder-witness).
 > Across a wrapper, the wrapper's author speaks (3.4-entry-and-lends), and everything else is measured and witnessed.
 > It is a statement about one mKey, from the thing's end, made on the path that measured it.
+> Any path the dialect admits may decline it.
 > Where the lookup knows other entries, it emits them first, and a listed alias is checked as the first entry is.
 > The closure and the per-shape warrant are two statements.
 > A grade governs every consumer of the answer it grades, corroboration and contradiction included.
@@ -532,13 +534,13 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance.
 > For a shape that yields, the instance is the one the seats supply.
 > For a shape that yields, there is no instance where the seats supply none or disagree.
-> The mParent instance is an mValue that exactly one of three seats supplies.
+> The mParent instance is an mKey that the seats supply, and the seats supply one instance.
 > The first seat is the bind that minted the mKey (1.4-key-and-its-two-views).
 > The second seat is the lookup that yielded the mKey (2.1-yields-into-another-scheme).
 > The third seat is the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in).
 > For a secondary mScheme's mKey, the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
 > A supply from the yield seat is the yielding lookup's owner's line.
-> A supply from the declaration seat is the primary mScheme's owner's line.
+> A supply from the declaration seat is the line of the owner of the mKey's own mScheme.
 > For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort, of any of that mSort's mSchemes.
 > The mKey's mParent is the identity of that instance (3.1-identity-of-a-key).
 > Where the instance has no identity, the mFullyQualifiedKey is unknown from that level.
@@ -656,7 +658,7 @@ fact { all s: mShape | isRoot[s] implies one rootShape.s }
 
 fact { no l: mLevel | l in l.^parent }
 
-fun fullyQualifiedKey[k: mKey]: set mLevel { k.*parent }
+fun fullyQualifiedKey[k: mKey]: set mLevel { identity[k].*parent }
 
 fun terminus[k: mKey]: lone mLevel { {l: k.*parent | no l.parent} }
 
@@ -669,6 +671,7 @@ fun height[l: mLevel]: Int { #(l.^parent) }
 
 <!-- prose-translation -->
 > A mFullyQualifiedKey is the recursive identity of an mKey: the mKey scoped in its mParent, whose identity is itself a mFullyQualifiedKey, up through the mParents.
+> The mFullyQualifiedKey of a natural mKey is its identity's (3.1-identity-of-a-key).
 > The recursion terminates: no level is above itself.
 > It terminates at a mRoot, at the mRoute (1.10-vantage-route-placeholder-witness), or at an unknown link, an mKey with no mParent.
 > An mWorld is a terminus of a mFullyQualifiedKey: each mRoot shape is one mWorld, and each mRoute is one mWorld.
@@ -723,13 +726,21 @@ pred true_DeclaresCell[d: DeclaresCell] {}
 
 <!-- prose-translation -->
 > A cell is a singleton mSort identified in its mParent: its owner declares it `:identified-in` the mParent's mSort (2.2-primary-of-and-identified-in), one mParent mSort per cell.
-> The singleton mSort has no mScheme of its own.
 > Its mKeys carry the cell mSort in place of an mScheme (1.4-key-and-its-two-views).
 > Under any one mParent instance it has exactly one mKey.
 > A cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key, 3.2-compare-one-chokepoint-four-answers).
 > Declaring a cell claims nothing about the world.
 
 Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot only where its mParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
+
+#### § 1.9.1-a-cell-sort-and-a-scheme
+
+The sentence below is about a well-formed description, and no fence draws a restriction from
+it: the checker considers a description that declares a primary mScheme on a cell mSort, on the
+ruling of `notes/312d` § 21 for 1.3.1-a-primary-scheme-and-its-sort.
+
+<!-- normative -->
+> The singleton mSort has no mScheme of its own.
 
 ### § 1.10-vantage-route-placeholder-witness
 
@@ -790,7 +801,6 @@ pred shellResolvesInTheAmbientInstance {
 > The mRoute is an address.
 > The mRoute holds no mState and declares no may-read set.
 > For execution under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom.
-> Differential test discharges that axiom, and nobody speaks it.
 > Each of the mRoute and those instances is resolved once per mEntryChain and shared: one mPlaceholder.
 > The mValue is a literal, or a mPlaceholder for a captured mValue.
 > The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a mPlaceholder.
@@ -1419,7 +1429,7 @@ run law_exclusion_readings_agree_premise {
 <!-- prose-translation -->
 > A line's writeset against a read mKey is the set of mKeys the line may write or may change.
 > The writeset is the least set that four rules close.
-> Rule 1: every may-write entry that the verb's author, or the filesystem binder, declared per matched shape is in the writeset.
+> Rule 1: every may-write entry declared for the line is in the writeset.
 > The completion record closes those entries.
 > Rule 2 applies where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K.
 > Under rule 2, every mKey that K's may-write entailment names is in the writeset.
@@ -1429,6 +1439,7 @@ run law_exclusion_readings_agree_premise {
 > Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test).
 > Where the mKey given whole has a finished enumeration, the mKeys reached beneath it are that enumeration's members (2.10-places-the-upward-lookup).
 > Where the mKey given whole has no finished enumeration, the mKeys reached beneath it are its enumeration's members and every mKey its region covers besides.
+> P itself stays an entry of that test.
 > Rule 4 applies where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k.
 > Under rule 4, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers).
 > Rule 4 compares a may-read entry given whole by the region test.
@@ -1494,6 +1505,7 @@ conductor's readings, not acked, not authoritative, held only until acked or rep
 
 <!-- normative -->
 > The test spares narrowly and collides widely: whatever is not DISJOINT collides.
+> A may-write entry is declared by the verb's author, or the filesystem binder, per matched shape.
 > The entailment generates no DISJOINT: "nothing else" is no other thing, never no other mKey for the thing written.
 > The finished definition is a within-mWorld sentence.
 > The finished definition never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
@@ -2077,6 +2089,7 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > A mTraversal is also of D's mSort when it is a placing route of that mSort.
 > For an mKey D given whole against an mKey x, step 1: if x's leaf compares SAME with D, SAME.
 > Step 2: else if any level of a mTraversal compares SAME with D, D's region covers x, and the pair reads UNKNOWN.
+> Where a placing route places x in an mKey that compares SAME with D, D's region covers x, whatever D's enumeration holds.
 > Step 3: else if x carries a closure for D's mSort, DISJOINT, in one of two forms.
 > First form: x has at least one mTraversal of D's mSort.
 > In the first form, every level on every such mTraversal compares DISJOINT with D.
@@ -2118,8 +2131,7 @@ replaced (`notes/312d` § 7).
 > Only the lookup's owner can say which, in the body that meets it.
 > An undeclared indexical routing mKey reads unknown.
 > Containment is membership in a mTraversal.
-> A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it.
-> In the test of 2.6-may-write-the-writeset, such an mKey reads UNKNOWN against every mKey that its mScheme can yield in the same mParent-Catalog instance.
+> In the test of 2.6-may-write-the-writeset, a routing mKey named whole reads UNKNOWN against every mKey that its mScheme can yield in the same mParent-Catalog instance.
 > That answer holds whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings.
 > That UNKNOWN is the floor, which the region test refines.
 
@@ -2178,7 +2190,7 @@ pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
 <!-- prose-translation -->
 > An mSort G may declare that it `:places` another mSort T.
 > G's owner declares `:places`.
-> For an mKey of T, the placing lookup emits `looked-up-in G:key`, a record G's owner speaks.
+> For an mKey, the placing lookup emits `looked-up-in G:key`, a record G's owner speaks.
 > The record is true when the mKey's mReferent is one that a route through G:key's mReferent passes to.
 > The placing lookup emits a closure `looked-up-in nothing-else`, scoped to routes of mSort G.
 > The closure is true when every G-thing a route to the mKey's mReferent passes through is one a record names.
@@ -2394,7 +2406,6 @@ observers are 2.11-composite-sorts-and-roles's, 1.9-cell-a-singleton-sort's, and
 <!-- normative -->
 > Each `resolve()` runs from k's mVantage.
 > Each emission supplies the mParent instance for the mKey it yields.
-> A mCompositeSort's identity is its owner's function of its parts' identities.
 > An mKey of an observer-dependent mSort carries the O-instance in its mTopic.
 > The mVantage is consulted only to know where to run `resolve()` calls and which ambient mParents to bind.
 
@@ -2825,7 +2836,7 @@ run law_different_sorts_never_same_premise {
 > With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT of the walk is reachable.
 > With one `:aliases-nothing-else` false and every other statement in force true, a false DISJOINT of the walk is reachable.
 > With one mCorrespondence false and every other statement in force true, a false SAME of `compare()` is reachable.
-> With one mCorrespondence false and every other statement in force true, a false DISJOINT of `compare()` is reachable.
+> With one mCorrespondence false and every other statement in force true, a false DISJOINT of `compare()` that the walk does not give is reachable.
 > With a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
 > The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
 > Six more kills ask whether the walk's laws also die with one more statement false.
@@ -3592,7 +3603,7 @@ Scope: the untouched-route law runs at nine statements because its twin's witnes
 > Cells whose mFullyQualifiedKeys do not pass through it are untouched.
 > "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not declarations.
 
-Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change, a write to any environment variable, cwd, or configuration a lookup reads. `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle mutations: a reboot, a re-provision.
+Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change, a write to any environment variable, cwd, or configuration a lookup reads. `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle mutations: a reboot, a re-provision; the mRoot-adjacent mKey they write is a boot's or a tenure's.
 
 #### § 3.3.2-a-book-a-reboot-between-two-reads
 
