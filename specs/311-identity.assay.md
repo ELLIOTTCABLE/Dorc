@@ -1956,6 +1956,107 @@ Invocations are not in the fences; a record either is in force or is not.
 
 Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
 
+#### § 2.10.2-a-book-a-directory-removed-beside-a-file
+
+A directory written whole, against a file the placing lookup says is in another directory. Dan
+describes directories and that a directory `:places` a file; his placing lookup records the
+file's route and closes it. Rick describes `rm -rf`. Tessa's world is thin: the filesystem is
+scoped in the mRoute, so the file's readset is ⊤ and no sparing is reached. The book shows the
+region test's DISJOINT through the placing route, the store-given-whole floor invalidating the
+path's mResolution and the inode's mToken all the same, and that the world sits inside
+`hole_region_closure_with_unknown_leaf_pair`: the file's inode and the directory's inode are
+mKeys of two mSorts that the walk never separated.
+
+```alloy
+run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
+```
+
+```sh
+# a_directory_removed_beside_a_file.sh
+   rm -rf /srv/b
+#} rm dash_rf srv_b
+#= one sig tessa, dan, rick, carl extends Speaker {}
+#= one sig sm_Filesystem, sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_Directory extends mSort {} { sortOwner = dan }
+#= one sig sm_FsId, sm_Inode, sm_Path extends mScheme {} { schemeOwner = tessa }
+#= one sig sm_DirInode extends mScheme {} { schemeOwner = dan }
+#= one sig fsid_shape extends mShape {} { ofScheme = sm_FsId }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig slash_path_shape extends mShape {} { ofScheme = sm_Path }
+#= one sig dir_shape extends mShape {} { ofScheme = sm_DirInode }
+#= one sig fs_1, dir_a, dir_b, inode_a extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
+#= one sig k_dir_a extends mKey {} { value = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  reaches = dir_a }
+#= one sig k_dir_b extends mKey {} { value = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  reaches = dir_b }
+#= one sig k_ino_a extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_a }
+#= one sig k_srv_a_path extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  reaches = inode_a }
+#= Speaker = tessa + dan + rick + carl
+#= mSort = sm_Filesystem + sm_File + sm_Directory
+#= mScheme = sm_FsId + sm_Inode + sm_Path + sm_DirInode
+#= mShape = fsid_shape + inode_shape + slash_path_shape + dir_shape
+#= mReferent = fs_1 + dir_a + dir_b + inode_a
+#= mKey = k_fs_1 + k_dir_a + k_dir_b + k_ino_a + k_srv_a_path
+#= mVantage = v0 and mRoute = r0 and no mRootWorld
+#= no Wrapper and no CompositeKey and no Role and some RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen
+#= World.lineWrites = (rick__rm_writes_srv_b).writeLine->dir_b
+#= GivenWhole = rick__rm_writes_srv_b
+#= holds = fs_1->dir_a + fs_1->dir_b + fs_1->inode_a
+#= owns = holds
+#= passes = fs_1->inode_a + dir_a->inode_a
+#= no affects
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
+#= one sig tessa__ino_a_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_a  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig dan__the_directory_inode_is_primary_of_the_directory extends DeclaresPrimaryOf {} { speaker = dan  primaryScheme = sm_DirInode  ofSort = sm_Directory }
+#= one sig dan__a_directory_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = dan  onShape = dir_shape  inSort = sm_Filesystem }
+#= one sig dan__a_directory_inode_reaches_one_directory extends DeclaresUniqueReferent {} { speaker = dan  referentShape = dir_shape }
+#= one sig dan__a_directory_has_one_inode extends DeclaresUniqueName {} { speaker = dan  nameShape = dir_shape }
+#= one sig dan__dir_a_is_in_fs_1 extends SuppliesParent {} { speaker = dan  forKey = k_dir_a  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig dan__dir_b_is_in_fs_1 extends SuppliesParent {} { speaker = dan  forKey = k_dir_b  instance = k_fs_1  seat = DeclarationSeat }
+#= one sig dan__a_directory_places_a_file extends DeclaresPlaces {} { speaker = dan  placingSort = sm_Directory  placedSort = sm_File }
+#= one sig dan__srv_a_app_conf_is_looked_up_in_dir_a extends RecordsLookedUpIn {} { speaker = dan  placedKey = k_srv_a_path  inKey = k_dir_a }
+#= one sig dan__srv_a_app_conf_is_looked_up_in_no_other_directory extends ClosesLookedUpIn {} { speaker = dan  closedKey = k_srv_a_path  routeSort = sm_Directory }
+#= one sig dan__writing_a_directory_entails_nothing_else extends FinishesEntailment {} { speaker = dan  finishedSort = sm_Directory  finishedShape = dir_shape }
+#= one sig rick__rm_writes_srv_b extends DeclaresMayWrite {} { speaker = rick  writeLine = this  writeEntry = k_dir_b }
+#= one sig rick__rm_writes_nothing_else extends ClosesMayWrite {} { speaker = rick  closedLine = this }
+#= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and wholeWriteEntries[this] = k_dir_b and entailmentFinished[k_dir_b]
+
+   cmp -s ./golden.conf /srv/a/app.conf
+#} cmp dash_s golden_conf srv_a_app_conf
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_path  atLine = this  markedReads = k_srv_a_path  dependsOn = inode_a }
+#= let f = atLine.this, l = (rick__rm_writes_srv_b).writeLine | regionTest[k_dir_b, f.topic] = DISJOINT and tabledCompare[f.topic, k_dir_b] = KNOWN_UNSPOKEN and hole_region_closure_with_unknown_leaf_pair and routingInvalidatedBy[l, f.topic] and tokenInvalidatedBy[l, f.topic] and staleAt[this, f.topic] and readsetIsTop[f] and not spared[l, f]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is six atoms of every kind the specification owns.
+> Tessa owns the filesystem and the file.
+> The filesystem id's mScheme is `:primary-of` the filesystem, and its shape is scoped in the mRoute.
+> The inode number's mScheme is `:primary-of` the file, and its shape is `:identified-in` the filesystem with both warrants.
+> A slash path `:yields` an inode and is looked up in a filesystem.
+> Dan owns the directory.
+> The directory inode's mScheme is `:primary-of` the directory, and its shape is `:identified-in` the filesystem with both warrants.
+> A directory `:places` a file, and writing a directory entails nothing else.
+> Dan's placing lookup records that `/srv/a/app.conf` is looked up in the directory `/srv/a`, and closes the record.
+> Rick's `rm -rf` may-writes the directory `/srv/b`, given whole, and writes nothing else.
+> The world holds one filesystem with two directories and one inode in it, each owned by the filesystem.
+> A route through the filesystem passes to the inode, and a route through the first directory passes to the inode.
+> No write affects another mReferent, and the first line writes the second directory.
+> Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> Line 1, `rm -rf /srv/b`: every statement in force is true and the engine's axioms hold.
+> The line's at-most set is closed, its one entry is the second directory's mKey given whole, and that entry's mSort and shape have a finished record.
+> Line 2, `cmp` against `/srv/a/app.conf`, against line 1: the region test answers DISJOINT for the directory against the file's path, through the placing route.
+> `compare()` answers KNOWN_UNSPOKEN for the two, so this world is inside the held hole for the region test.
+> The line invalidates the path's mResolution and the inode's mToken, since the filesystem given whole is the path's mTraversal and the inode's mParent-Store.
+> The path is stale at line 2, the fact's readset is ⊤, and the fact is not spared past the line.
+
 ### § 2.11-composite-sorts-and-roles
 
 The author who knows the roles mints the mCompositeSort, normally the tool author. Plurality of
