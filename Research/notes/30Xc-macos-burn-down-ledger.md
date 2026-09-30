@@ -4,16 +4,17 @@
 > beside `30Xb`, which left macOS red by ruling. This ledger records the burn-down toward a green
 > macOS `rust` lane. One section per sitting. `[TYPED]` items are the human's rulings; `[PROPOSED]`
 > items are mine and carry no ack until one is typed. Authority: `IMPLEMENTATION.md`,
-> `spike/CLAUDE.md`, `30X` and `30Xa` outrank this file. Line numbers are at `49085b27`.
+> `spike/CLAUDE.md`, `30X` and `30Xa` outrank this file. Line numbers are as of the sitting that
+> cites them.
 
 ## §0 — state
 
-- `ai/main` at `49085b27`, two commits past `77df48b5`: `30487a89` (the staging-store fixture) and
-  `49085b27` (the first platform-regression tests). macOS reds: 19 → 8.
-- Left: the six receipt-root tests (`fnd-receipt-roots-diverge-on-macos`; the §2 plan awaits the
-  human's ack) and the two looms (`fnd-load-keys-split-by-spelling`; held behind
-  `fnd-duplicate-declarer-composes-contested-helper`, `ask-engine-fix-before-green`).
-- A local `gate:full*` on macOS also needs `ask-floor-shell-on-macos`.
+- macOS reds: 19 → 2, after the §1, §2 and §4 landings.
+- Left: the two looms (`fnd-load-keys-split-by-spelling`). They wait on
+  `rul-one-file-one-identity-at-the-edge` (queued) and on
+  `fnd-duplicate-declarer-composes-contested-helper` (`ask-duplicate-declarer-priority`,
+  `ask-engine-fix-before-green`).
+- A local `gate:full*` on macOS stays red on the floor lane, by design (§4).
 
 ## §1 — sitting one (2026-09-30): the first macOS run
 
@@ -190,9 +191,10 @@
     the typed spelling); both breaks were reverted.
   - Not caught on Linux: a revert of `30487a89` itself. The twelve staging unit tests catch it,
     on macOS only.
-- **dec-platform-home-per-crate** `[PROPOSED]` — `crates/<crate>/tests/platform.rs`, with
-  `for_<platform>` modules (they make the platform's condition in a scratch directory and run
-  wherever they can) and `<platform>` modules (gated to the platform). One per crate, not one
+- **dec-platform-home-per-crate** — RULED §4, with the §4 names and scope.
+  `crates/<crate>/tests/platform.rs`, with `for_<platform>` modules (they make the platform's
+  condition in a scratch directory and run wherever they can) and `on_<platform>` modules (gated to
+  the platform). One per crate, not one
   central crate: a central crate would name every crate it tests, and human-ack rosters fence
   some of those names (`receipt-local/tests/crate_fences.rs` lets only `cli` name
   `dorc_receipt_local`).
@@ -264,6 +266,26 @@
 - `[TYPED]` Apply `ask-reopen-through-harness-roots`; add the steering line.
 - `[TYPED]` Standing: fix a doc comment that is obviously wrong. Very basic STE100, much briefer
   than the local style; remove where that is justified.
+- `[TYPED]` No LLM-written text reaches a user; a hard constraint. `sm` marks machine-written
+  user-facing text so that it is rewritten before a release.
+
+### Landed
+
+- `356f5947` — `recorded_facts_route` reopens its store through the harness's roots
+  (`HarnessSeams::from_env` over the sandbox, then `production_receipt_edge_over`). Its two
+  standard-roots shims are gone; its wrong doc comments are fixed.
+- `80cfcf04` — the sandbox creates each base the platform's own rule (`standard_roots`) resolves
+  in it: on macOS, `home/Library/Application Support`. One table of platform variables sets a
+  spawn's environment and models it for the rule. The shipped-binary test reads the platform's
+  locations. New: `every_platform_root_rule_resolves_inside_the_sandbox`.
+- `a6c5858f` — the hostsim differential's profile gets the same macOS base, restated: hostsim
+  cannot reach `standard_roots` (it may not depend on the cli library).
+- `7fb8fb37` — the `pinned_roots` doc loses its false claim.
+- `6fa12c69` — the two `dorc-loom` link tests from `49085b27` move to the tests of what they
+  cover (`staging_store` unit tests; `tests/roots.rs`); `dorc-loom/tests/platform.rs` is gone.
+- `18283420` — `cli/tests/platform.rs`, `for_macos`: the macOS arm of `standard_roots`.
+- `41706475` — `spike/CLAUDE.md:platform-tests-live-in-the-crate-platform-file`.
+- The `cli-help-receipt-kept` row names the macOS location, `sm`-marked, published as slop.
 
 ### Findings
 
@@ -274,3 +296,20 @@
   (`internal-tooling/src/slugs.rs`). Not macOS: recorded, not pursued.
 - **fnd-md-wrap-holds-map-edits** — the `ai/md-wrap` worktree holds an uncommitted rewrap of
   `Research/README.md` and `SLUGS.md`; this ledger's map entry needs re-applying when it lands.
+- **fnd-test-filter-is-not-quoted** — `mise run test` templates its filter into both commands
+  unquoted, so a nextest filter expression (`-E 'binary(x)'`) breaks the shell. Worked around
+  with a direct `cargo nextest run`.
+- **fnd-sandbox-unification-is-not-trivial** — the cli tests' sandbox and hostsim's
+  `sandbox_profile` share a job. One sandbox for both would need the platform root rule outside
+  the cli library, which only the cli may name (`cli/CLAUDE:lib-target-is-a-loom-seam`), so the
+  macOS base would still be restated somewhere. Report only.
+- **fnd-platform-test-census** (`ask-one-home-precedence`) — about twenty existing tests are
+  platform-specific:
+  - Seven `cfg(windows)` `staging_store` unit tests use private seams (`with_operations`, the
+    file-operations trait). They cannot move to a `tests/` file without making those public.
+  - Cfg-gated integration tests in `receipt-local` (`native_store.rs`, `native_keyset.rs`) are
+    grouped by subject; some model a Windows shape on every platform.
+  - Pure per-platform rule tests: `durable.rs` (the XDG and Windows arms of `standard_roots`),
+    `loadpath.rs` (Windows spellings), `receipt/src/image.rs`, `preflight.rs`.
+  - Clean movers: the two `durable.rs` arm tests, beside the macOS arm in `cli/tests/platform.rs`.
+    The rest stay, or take the module names in place.
