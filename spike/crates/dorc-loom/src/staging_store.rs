@@ -463,7 +463,10 @@ mod tests {
 
     impl TestRoot {
         fn new(name: &str) -> Self {
-            let path = std::env::temp_dir()
+            // Canonical, as `Roots::at` hands the store its root: the store refuses a link anywhere
+            // on the path, and macOS's temp dir sits under the `/var` link.
+            let path = fs::canonicalize(std::env::temp_dir())
+                .expect("temp dir")
                 .join("dorc-loom-staging-store-tests")
                 .join(name);
             let _ = fs::remove_dir_all(&path);
