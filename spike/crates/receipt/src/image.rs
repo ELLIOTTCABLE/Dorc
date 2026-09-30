@@ -1429,21 +1429,26 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn windows_hostile_component_shapes_refuse() {
-        // A component ending in space or dot, and the reserved device stems, are silently
-        // rewritten or rejected by one platform's filesystem and not the other's, so a path
-        // carrying them could not materialize identically on both.
-        assert_eq!(refusal("a /b.sh"), PathRefusal::ComponentTrailingSpace);
-        assert_eq!(refusal("a./b.sh"), PathRefusal::ComponentTrailingDot);
-        for text in [
-            "CON", "con", "Con.txt", "aux/x.sh", "a/NUL", "com1.sh", "LPT9",
-        ] {
-            assert_eq!(refusal(text), PathRefusal::DeviceStem, "{text:?}");
-        }
-        // Not device stems: the list is exact, not a prefix rule.
-        for text in ["console.sh", "com0.sh", "com10.sh", "auxiliary"] {
-            assert_eq!(ok(text).text(), text);
+    /// Windows changes or refuses some file names; a path must refuse them on every platform.
+    mod for_windows {
+        use super::*;
+
+        #[test]
+        fn windows_hostile_component_shapes_refuse() {
+            // A component ending in space or dot, and the reserved device stems, are silently
+            // rewritten or rejected by one platform's filesystem and not the other's, so a path
+            // carrying them could not materialize identically on both.
+            assert_eq!(refusal("a /b.sh"), PathRefusal::ComponentTrailingSpace);
+            assert_eq!(refusal("a./b.sh"), PathRefusal::ComponentTrailingDot);
+            for text in [
+                "CON", "con", "Con.txt", "aux/x.sh", "a/NUL", "com1.sh", "LPT9",
+            ] {
+                assert_eq!(refusal(text), PathRefusal::DeviceStem, "{text:?}");
+            }
+            // Not device stems: the list is exact, not a prefix rule.
+            for text in ["console.sh", "com0.sh", "com10.sh", "auxiliary"] {
+                assert_eq!(ok(text).text(), text);
+            }
         }
     }
 
