@@ -199,6 +199,26 @@ pub(crate) fn human(d: Duration) -> String {
     }
 }
 
+/// sat4j's own counters, which a tick carries only while a sat4j solve is in flight.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Effort {
+    conflicts: u64,
+    restarts: u64,
+    learned: u64,
+    decisions: u64,
+}
+
+impl Effort {
+    fn read(tick: &Value) -> Option<Self> {
+        Some(Self {
+            conflicts: tick.u64("conflicts")?,
+            restarts: tick.u64("restarts")?,
+            learned: tick.u64("learned")?,
+            decisions: tick.u64("decisions")?,
+        })
+    }
+}
+
 fn still_alive_due(waited: Duration, last_said: Duration) -> bool {
     waited.saturating_sub(last_said) >= ALIVE_EVERY
 }
@@ -210,6 +230,7 @@ fn still_alive_line(
     cpu_ms: Option<u64>,
     budget: Budget,
     translated: Option<&Value>,
+    effort: Option<Effort>,
 ) -> String {
     let Some(cpu_ms) = cpu_ms else {
         return format!(
@@ -221,8 +242,14 @@ fn still_alive_line(
         Some(clauses) => format!("solving {clauses} clauses"),
         None => "translating".to_owned(),
     };
+    let effort = effort.map_or_else(String::new, |e| {
+        format!(
+            ", {} conflicts, {} restarts, {} learned, {} decisions",
+            e.conflicts, e.restarts, e.learned, e.decisions
+        )
+    });
     format!(
-        "alive, {} waited, cpu {} of {}s, {phase}",
+        "alive, {} waited, cpu {} of {}s, {phase}{effort}",
         human(waited),
         human(Duration::from_millis(cpu_ms)),
         budget.cpu_s
@@ -322,6 +349,7 @@ impl Adapter {
         let mut base_cpu: Option<u64> = None;
         let mut translated: Option<Value> = None;
         let mut cpu_used: Option<u64> = None;
+        let mut effort: Option<Effort> = None;
         let mut last_said = Duration::ZERO;
         loop {
             let Some(LiveHandle(live)) = self.live.as_mut() else {
@@ -345,6 +373,7 @@ impl Adapter {
                             translated = Some(value);
                         }
                         Some(_) => {
+                            effort = Effort::read(&value);
                             if let (Some(b), Some(now), Some(budget)) =
                                 (base_cpu, value.u64("cpu_ms"), budget)
                             {
@@ -372,6 +401,7 @@ impl Adapter {
                         cpu_used,
                         budget,
                         translated.as_ref(),
+                        effort,
                     ));
                 }
             }
@@ -663,7 +693,8 @@ fn compiled(jvm: &Jvm, watch: Watch<'_>) -> Result<PathBuf, String> {
 mod tests {
     use std::time::Duration;
 
-    use super::{Progress, human, still_alive_due};
+    use super::{Budget, Effort, Progress, human, still_alive_due, still_alive_line};
+    use crate::json::Value;
 
     #[test]
     fn still_alive_speaks_once_per_five_minutes_from_the_last_line() {
@@ -677,6 +708,54 @@ mod tests {
         assert!(!still_alive_due(s(301), said));
         assert!(!still_alive_due(s(600), said));
         assert!(still_alive_due(Duration::from_millis(600_200), said));
+    }
+
+    #[test]
+    fn still_alive_adds_solver_effort_only_when_a_tick_carries_it() {
+        // Only the adapter's sat4j factory puts counters on a tick; any other tick must leave the
+        // line exactly as it was, and a counted one must carry each count after the phase.
+        let budget = Budget {
+            cpu_s: 1800,
+            wall_s: 3600,
+        };
+        let translated = Value::parse(r#"{"event":"translated","clauses":2381046}"#);
+        let plain = Value::parse(r#"{"event":"tick","cpu_ms":5}"#).expect("json");
+        assert_eq!(Effort::read(&plain), None);
+        let without = still_alive_line(
+            Duration::from_mins(10),
+            Some(420_000),
+            budget,
+            translated.as_ref(),
+            None,
+        );
+        assert!(without.ends_with("solving 2381046 clauses"));
+
+        let counted = Value::parse(
+            r#"{"event":"tick","cpu_ms":5,"conflicts":1204331,"restarts":88,"learned":40213,"decisions":9912345}"#,
+        )
+        .expect("json");
+        let with = still_alive_line(
+            Duration::from_mins(10),
+            Some(420_000),
+            budget,
+            translated.as_ref(),
+            Effort::read(&counted),
+        );
+        let tail = with
+            .strip_prefix(&without)
+            .expect("the counts follow the phase");
+        for count in ["1204331", "88", "40213", "9912345"] {
+            assert!(tail.contains(count), "{count} missing from {with}");
+        }
+
+        let unstarted = still_alive_line(
+            Duration::from_mins(10),
+            None,
+            budget,
+            None,
+            Effort::read(&counted),
+        );
+        assert!(!unstarted.contains("1204331"));
     }
 
     #[test]
