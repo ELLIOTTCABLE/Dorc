@@ -3860,7 +3860,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-three-kinds-and-their-idioms
 - defined: —
-- cited: 30Z 312d specs/shared.assay (4)
+- cited: 30Z 312d 312e specs/shared.assay (5)
 
 ## hole-unmodeled-wrappers
 - defined: —

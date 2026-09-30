@@ -285,6 +285,64 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   compile output, `spike/target/alloy/311-identity.staged/`, whose files carry the timestamp of
   each commit in both worktrees. Every spec commit of this arc has therefore been compiled and
   parsed by Alloy at commit time.
+- `msr-the-official-pass-over-ed70650f` — the human's `--write --official` pass (Windows, two
+  children, 1800 s CPU and 4096 MB per command) over the text at `ed70650f`, read by an Opus
+  from copies of `out.json` (a PowerShell transcript wrapping the report), the schema-2 lock
+  (83 rows, matching the report row for row), and the stored instances. Affordability at the
+  ceiling: everything is definite except the two `compare()` laws, which time out SOLVING at
+  1800 s (translated in about 19 s, about 650k clauses, the size of siblings that solve in 20
+  to 293 s; solve-bound, not translation-bound). Of the seven laws never measured above 120 s:
+  `region` 76 s and `two_tops` 82 s (under the hot budget; the hot tier had deferred them on
+  their old timeout rows), `exclusion` 124 s, `unstale` 168 s, `disjoint` 293 s
+  (no-counterexample, twin sat), the two `compare()` laws unaffordable. The kill by
+  `:aliases-nothing-else` is sat at 269 s. The three translation-bound books are definite:
+  `two_files_one_filesystem` at 428 to 456 s per row (2.6M clauses, the largest in the
+  document), the two stage-five books at 61 to 184 s. No definite result flipped against
+  `312d` § 25.2; no construction disagreement; no unsat run. The lock the pass wrote sits
+  uncommitted in the primary checkout beside `out.json`; it records the text at `ed70650f`,
+  which `ai/main` still carries, and every key of it moves under this branch's repairs. Whether
+  it is committed to `ai/main` as the measured baseline of that text is the human's; this
+  branch cannot carry it.
+- `red-the-two-exclusion-readings-disagree` — `law_exclusion_readings_agree` found a
+  counterexample (124 s): a world of no mReferents, an entailment cycle between two shapeless
+  primary mKeys, a natural at-most entry yielding the read mKey itself, a finished record on
+  the natural shape (vacuously true under the old text), and a closed `looked-up-in` making the
+  region test DISJOINT. Under the exclusion-as-built reading the fact is spared; under the
+  exclusion-at-the-test reading the writeset is ⊤. `30Z` § 2.5 kind 4, and the answer to the
+  question the law asks: the two readings of `311` § 2.6's exclusion sentence do disagree
+  (`312ch` item 11; `hold-exclusion-keyed-on-the-container`). Nothing changed: the law stays
+  as the question, its red is the honest form (`30Z:hole-three-kinds-and-their-idioms`, the
+  expected-red idiom), and the lock's commit accepts it as residue. The world also sits inside
+  `hole_region_closure_with_unknown_leaf_pair`, which this law's premise does not exclude on
+  purpose, and shows `sus-finished-record-for-a-natural-shape-is-vacuous` live under the old
+  text (repaired since, § 5).
+- `red-region-reached-through-the-composite-hole` — `law_region_disjoint_is_sound` found a
+  counterexample (76 s): a composite mKey whose one part is itself, SAME by parts with another
+  composite that reaches a different mReferent, lifting the walk's UNKNOWN into `compare()`'s
+  DISJOINT, which the region test then consumed. Every statement in force true. The world
+  satisfies `hole_composite_keys_with_same_parts_reach_differently`, which the sparing and
+  `compare()` laws exclude and the region law did not. Applied under the hole protocol at
+  `ffea0bef`: the composite hole added to the region law's premise, its twin, and its two
+  kills, the translation saying so. A composite whose part is itself is representable in the
+  fences (`part: Role -> lone mKey` allows it); noted for the sitting, not narrowed.
+- `red-a-thing-reachable-by-a-route-nobody-emitted` — `law_unstale_route_is_untouched` found a
+  counterexample (168 s): a natural mKey with a closed-catalog mParent whose mReferent is
+  passed to by two mReferents, the catalog's and another's; a line writes the other; the
+  unclosed traversal is the catalog given whole, whose region test reads the written mKey
+  DISJOINT; nothing is invalidated, and the write sat on a route to the thing. Every statement
+  in force true; `hole_natural_key_catalog_off_the_route` is false in it (the catalog does pass
+  to the thing). Kind 4: no unit says a thing is reached only through its catalog, the route
+  side of the § 5.1 OPEN "no other home" cell (`held-shared-parts-across-separated-things` in
+  the held-work file). NOT applied, by the human's stop: the owed act is a new hole, candidate
+  `hole_a_route_off_the_catalog_reaches_the_thing` — `some k: mKey | not traversalClosed[k] and
+  some passes.(k.reaches) - (k.parent & mKey).reaches - crossed[k].reaches` — with its witness
+  run at six, added to the untouched-route law's premise, its twin, and its two kills, and a
+  translation sentence for the hole. A successor authors it; nothing else is owed for this red.
+- Reader chafe for the assay owner, beyond `312d` § 25.5's: the report and transcript carry no
+  exit code; no row points to its instance file; the lock summary's `mismatches` merges new
+  and moved; the two `compare()` timeouts printed no stderr diff line though their rows moved
+  from schema 1 to 2; instance XML carries only the two tables, so a red's writeset and region
+  answers are hand-evaluated with no evaluator short of a solve.
 - `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
   words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
   present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are
