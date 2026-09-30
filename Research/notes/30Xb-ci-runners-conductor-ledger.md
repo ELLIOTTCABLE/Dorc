@@ -8,12 +8,13 @@
 
 ## §0 — state
 
-Branch `ai/ci-runners` (pushed), worktree `.tmp/trees/ci-runners`, cut from the published
-`ai/main`. On the branch: the gate wording; the cloud-setup hook install; cargo-deny and nextest
-from checksummed release binaries; the `ci:` tasks, composed by the local heavy tasks; actionlint
-as an hk step; the workflow, with the heavy lanes filtered by globs read out of `hk.pkl` at run
-time. Not yet run on GitHub: no trigger reaches the branch without §3's pull request. Next: the
-floor binaries (§4), once publication is settled.
+Branch `ai/ci-runners`, worktree `.tmp/trees/ci-runners`, cut from the published `ai/main`; draft
+PR #4 into `ai/main`. On the branch: the gate wording; the cloud-setup hook install; cargo-deny and
+nextest from checksummed release binaries; the `ci:` tasks, composed by the local heavy tasks;
+actionlint as an hk step; `assay-lock` routed by assay's own solver path; the `ci` workflow, its
+heavy lanes filtered by globs read out of `hk.pkl` at run time; the `floor-shells` workflow, whose
+pre-release `floor-shells-dash-0.5.12-posh-0.14.1` is published and which nothing consumes yet.
+The first CI results are §5.
 
 ## §1 — the plan
 
@@ -82,10 +83,6 @@ floor binaries (§4), once publication is settled.
 
 ## §3 — open decisions
 
-- **`ask-open-draft-pull-request`** — whether the conductor may open a draft PR from
-  `ai/ci-runners` into `ai/main`, which is what triggers runs under the ruled triggers.
-- **`ask-floor-publication-shape`** — whether a clearly labelled, non-latest pre-release on this
-  repository counts as "obviously not a release of the tool".
 - **`ask-floor-proves-its-binary`** — how the floor lane shows it ran the pinned binaries.
 
 ## §4 — typed record, 2026-09-29 (second sitting)
@@ -104,3 +101,24 @@ floor binaries (§4), once publication is settled.
   release of Dorc, or kept explicitly separate; failing that, they are built and published with
   each semver-minor Dorc release. Building and testing other platforms is valuable, and a
   separate question.
+
+## §5 — typed record and first results, 2026-09-30
+
+- `[TYPED]` `assay-lock` also routes on assay's own code, narrowly: no ordinary internal-tooling
+  edit may trigger it.
+- `[TYPED]` The pull request: opened with `gh`, a short title, no body.
+- `[TYPED]` The floor build is tried in CI and published as described; the release is deletable if
+  it pans out badly. Its trigger is a placeholder until semver-minor releases exist, and nothing
+  depends on it yet.
+- `[TYPED]` macOS stays red; no attempt to fix it.
+- Agent pushes: an `ai/` branch onto an `ai/` branch, unforced or leased, remote and refs in full.
+- First results, PR #4. Linux and Windows `rust`: green end to end. `livetest`, `translate`:
+  green. `kani`: 107 of 107 harnesses green in about twelve minutes. `lean`: mathlib's cache
+  fetched, `lake build` green, badges compared. `assay`: correctly not selected (nothing on its
+  paths changed). `changes`: the filters rendered from `hk.pkl` on the first run. `floor-shells`:
+  static x64 and arm64 builds, published after two fixes (posh's generated autotools files predate
+  its `acinclude.m4`, so they are regenerated; a release tag aimed at the pull request's head
+  commit got a bare HTTP 500, and the default branch as target did not).
+- macOS `rust`, observed only: 19 of 3145 trials red — two e2e looms whose probe records or
+  transcripts diverge, and the receipt/staging stores refusing their temp roots ("unsafe staging
+  target root"; macOS's temp directory sits under `/var`, a symlink).
