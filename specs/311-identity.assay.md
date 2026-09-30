@@ -3402,6 +3402,13 @@ one sig Engine { lookupReadSetOpen: set mScheme }
 
 fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
 
+pred lineWritesetIsTop[l: Line] { writesetIsTop[l, lineWriteset[l]] }
+
+pred hasTraversalMembers[k: mKey] {
+   (some l: levelsOf[k] | some crossed[l] or (not traversalClosed[l] and some l.parent & mKey))
+   or some (RecordsLookedUpIn & InForce & placedKey.k).inKey
+}
+
 pred touchesTraversal[w: mKey, k: mKey] {
    (some l: levelsOf[k] |
       (some m: crossed[l] | tabledCompare[w, m] != DISJOINT)
@@ -3410,16 +3417,19 @@ pred touchesTraversal[w: mKey, k: mKey] {
 }
 
 pred routingInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l] | touchesTraversal[w, k]
-   or (some lineWriteset[l] and some (levelsOf[k] + k).scheme & Engine.lookupReadSetOpen)
+   (lineWritesetIsTop[l] and hasTraversalMembers[k])
+   or (some w: lineWriteset[l] | touchesTraversal[w, k])
+   or ((lineWritesetIsTop[l] or some lineWriteset[l]) and some (levelsOf[k] + k).scheme & Engine.lookupReadSetOpen)
 }
 
 pred tokenInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l], p: identity[k].^parent & mKey | tabledCompare[w, p] != DISJOINT
+   (lineWritesetIsTop[l] and some identity[k].^parent & mKey)
+   or (some w: lineWriteset[l], p: identity[k].^parent & mKey | tabledCompare[w, p] != DISJOINT)
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
-   some w: lineWriteset[l] | some w.parent & mRootWorld and w in identity[k].^parent
+   (lineWritesetIsTop[l] and some w: identity[k].^parent & mKey | some w.parent & mRootWorld)
+   or (some w: lineWriteset[l] | some w.parent & mRootWorld and w in identity[k].^parent)
 }
 
 pred staleAt[s: Line, k: mKey] {
@@ -3509,6 +3519,9 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > Any write invalidates a mResolution whose read set is open.
 > A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
 > Invalidation reads the line's writeset with every container contributing, there being no read mKey to exclude against.
+> For invalidation as for the sparing test, a line's writeset is ⊤ where its at-most set is unclosed or a member has no reached finished record (2.6-may-write-the-writeset).
+> ⊤ touches every mTraversal member, every mParent-Store, and every mRoot-adjacent mKey, since ⊤ is DISJOINT from nothing.
+> A line whose writeset is ⊤ is a write for a mResolution whose read set is open.
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
 > A lifecycle mutation writes a mRoot-adjacent mKey, and invalidates every mKey whose identity's chain passes through that mKey.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
