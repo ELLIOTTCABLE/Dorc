@@ -140,7 +140,11 @@ jobs:
     concurrency:
       group: assay-${{ github.ref }}
     steps:
+      # The pull request's own head, not GitHub's merge commit: the lock this pass writes records
+      # the commit it was measured at, and a merge commit is on no branch.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
@@ -148,11 +152,15 @@ jobs:
           shared-key: rust
           save-if: false
       - run: mise run ci:assay
+      # Pass or fail, the lock this pass measured leaves with the run: only a commit accepts a lock
+      # change, so a red run's way forward is to review this one and commit it.
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: assay-report
-          path: .tmp/assay/
+          name: assay-lock
+          path: |
+            specs/*.lock.json
+            .tmp/assay/
           if-no-files-found: warn
 
   livetest:
