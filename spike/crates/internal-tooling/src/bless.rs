@@ -127,24 +127,12 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// Move this process's own executable aside, so the build it is about to drive can replace it.
+/// Move this process's own executable aside, so a nested tooling build can replace it.
 ///
-/// `bless` drives `gate:full-quiet`, whose `cargo build --workspace` re-uplifts every workspace
-/// binary — this one included. Windows refuses to REMOVE a running image (`os error 5`), and
-/// removing the old artifact is cargo's first step in an uplift, so the gate died before it began
-/// (`300:finding-bless-driver-self-lock-on-windows`). Windows does permit RENAMING one: the
-/// directory entry moves, this process keeps the image it already mapped, and the real path is
-/// free for cargo to create fresh.
-///
-/// Copying and then re-execing the copy — the obvious shape — does NOT work: whoever waits for
-/// the child is still the parent, still running from the real path, still the lock. The process
-/// that drives the gate has to be the one that is no longer at the real path, and a rename is how
-/// a running process gets there without a second process or a lost exit status.
-///
-/// Unconditional rather than `cfg(windows)`: gating it would leave the one platform that needs it
-/// as the one platform that never exercises it — `one-platform-green-is-not-cross-platform-green`.
-/// A failure here is a warning, not a refusal: it restores exactly today's behaviour rather than
-/// blocking the conductor's only blessing path over a step that is a no-op on *nix anyway.
+/// Workspace builds no longer touch this exe (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`);
+/// this is a belt for the tooling's own sources changing under a running bless, when the gate's
+/// nested `cargo run --profile tooling` must re-uplift it and Windows refuses to remove a running
+/// image but permits renaming one. A failure warns rather than refuses.
 fn vacate_own_image() {
     let Ok(current) = std::env::current_exe() else {
         eprintln!(
