@@ -266,6 +266,25 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   the key change is in; (5) the panel, on the human's typed ack, after the human's word on the
   marks. The human's pass over `ed70650f` is the affordability measurement of the seven laws
   and the three unmeasured books, nothing more, since the text has moved under it.
+- `act-ste-rewrite-folded` — the Opus's five per-section commits, squashed to one (a mechanical
+  reflow; the builder's messages named sections) and rebased over this branch, then the
+  conductor's own commit for the eight translation mismatches the builder's audit found and
+  left: a cell's mParent in the two-cells book, the aligned-SAME range including the pair
+  itself, `sameTopic`'s matching in each direction (not one to one), the vantage cycle through
+  other vantages, "a matched shape is a control-flow path" moved to § 1.3.1's normative block
+  (no fence holds it), "names a new mReferent afterward" moved to § 3.3.1's (`lifecycleInvalidatedBy`
+  holds no new mReferent), the sudo-without-the-flag outcome in the fence's words, the shared
+  half's derived argv clamp and its consequence sentence moved to commentary, and every book
+  ceiling naming its bitwidth. At the tip: 975 normative lines, 13,330 words, zero hard
+  violations, 111 passive advisories, 2 present-perfect kept for current relevance. The
+  builder's other interpretations (a sentence per `#=` line, twins named by fence name, the
+  `owns` line of the pid book completed to the fence) were read and stand.
+- `fnd-the-commit-hook-parses-in-silence` (+SURE) — the builder reported that the `assay`
+  pre-commit step "never ran" because no line for it appeared; under `HK_FIX=0` the hook runs
+  `hk run -q`, which prints nothing for a passing step. The evidence that it ran is the staged
+  compile output, `spike/target/alloy/311-identity.staged/`, whose files carry the timestamp of
+  each commit in both worktrees. Every spec commit of this arc has therefore been compiled and
+  parsed by Alloy at commit time.
 - `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
   words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
   present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are
