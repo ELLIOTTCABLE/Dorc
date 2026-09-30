@@ -64,9 +64,10 @@ For this exercise, `jsonslot` and `inictl` have these precise contracts:
 - `inictl set-bit KEY BIT` handles only an existing, unique key with a one-character `0` or `1`
   value in the supported INI profile. It preserves every other decoded character. It emits the
   resulting document and returns zero. Unsupported input produces an error and no replacement.
-- The adapter handles only a byte-for-byte recognized envelope profile with two admitted bit
-  slots. It translates a one-digit change into a one-byte in-place patch. It neither reformats
-  JSON nor replaces the inode. No change means no write, including no timestamp update.
+- The adapter uses a fixed envelope profile with two one-byte data slots. It checks the
+  structural bytes outside those slots. It translates a one-digit change into a one-byte
+  in-place patch. It neither reformats JSON nor replaces the inode. No change means no write,
+  including no timestamp update.
 - A failed guest causes no patch. Malformed output, several changes, a changed length, or a
   change outside an admitted bit slot causes no patch. An I/O failure after a patch begins is
   still a failure and makes no claim of transactional rollback.
@@ -77,10 +78,22 @@ For this exercise, `jsonslot` and `inictl` have these precise contracts:
   status without applying output. `inictl is-bit KEY BIT` answers 0 for a match, 1 for a
   mismatch, and at least 2 for a refusal. It emits no successful bytes.
 
+Both the reader and the setter use that fixed-layout profile. They check the selected bit,
+not the other bit's validity. Location means a slot of this profile, not a successful parse of
+an arbitrary document. This permits a repair tool to address one slot even when another value
+is damaged. It promises no whole-document validation. In the valid fixture, the exposed
+characters are exactly the JSON-decoded INI characters.
+
+This distinction matters: a generic parser that rejects the entire document because another
+value is malformed can depend on that value. Merely proving that our particular patch preserves
+syntax would not remove that read dependency from its general description. The example selects
+targeted profile tools to avoid that additional obstacle, rather than silently omitting the
+parser's reads.
+
 The narrow patch mode is not a claim that a generic `jq` rewrite has these properties. A
 serializer that replaces the file, reorders fields, or normalizes whitespace belongs to a
-coarser case below. The narrow mode is plausible tool design and requires no engine knowledge
-of either language. The tools themselves enforce their supported profile.
+coarser case below. The narrow mode requires no engine knowledge of either language. The tools
+themselves enforce their supported structural profile.
 
 Both outer invocations have unused successful stdout and status compatible with `set -e`.
 Their own verdicts can license their own elision. The inner guest's replacement stdout is
@@ -130,8 +143,8 @@ case, and this exercise introduces no new property, region, or range species.
 
 The helpers below are fictional read-only queries with explicit result contracts. They are not
 unexplained permission mints. Their job is to expose the evidence a knowledgeable author could
-obtain. `DORC_REPORT` below means `${DREP_V1:-/dev/null}`. Instance arguments are shown explicitly
-for readability; this is not a decision about the eventual callback ABI.
+obtain. Instance arguments are shown explicitly for readability; this is not a decision about
+the eventual callback ABI.
 
 ### § 4.1-inez-knows-the-inner-language
 

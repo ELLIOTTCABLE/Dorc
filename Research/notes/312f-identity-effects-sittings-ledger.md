@@ -146,3 +146,24 @@ including LF. The enabled and trace digits occupy zero-based carrier positions 4
 and decoded positions 17 and 25. Replacing byte 48 with `1` changes exactly that byte, preserves
 JSON and decoded length, and leaves `trace=0`. No shell fixture or hypothetical tool was run.
 The Windows `python` command was unavailable; Node supplied this check without installation.
+
+A second precision correction arose while constructing the evidence. A precise setter is not
+sufficient if the verdict uses a general parser that validates every other value. That parser
+can genuinely depend on the supposedly independent slot. The exercise now explicitly selects
+fixed-profile reader and setter tools. They validate structural bytes and the selected slot,
+not the other slot's value, and promise no whole-document validation. The valid JSON/INI
+fixture is one supported instance. A generic parser remains a separate, potentially coarser
+case. This narrows the example, not Dorc's admitted world or a specification law.
+
+Assay has no cross-document import or book-append command. The experiment therefore assembles
+an ignored temporary document from unchanged 311 plus four book fragments, with the unchanged
+shared halves beside it. No specification file or committed result lock changes. The assembly
+script is `_tmp-312f-build-study.cjs` in this worktree, and its output is `.tmp/312f-study/`.
+The canonical-key slice compresses the upstream identity into a supplied rooted carrier and
+uses explicitly closed empty primary-key traversals. It does not mechanize JSON, INI, helper
+custody, or the actual layout probes. The metadata write is retained as a separate part.
+
+The first parse refused a new map name for literal `1`, which 311 already names `pid_1`.
+Reusing the existing word atom repaired that join-key conflict. The assembled document then
+passed every parse lint. This was a spelling repair, not a model change. The untouched 311
+source hash is recorded in `.tmp/312f-study/baseline.json`.
