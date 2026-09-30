@@ -127,3 +127,17 @@ fn a_root_that_is_not_a_directory_refuses() {
     assert!(absent.contains("-C"), "{absent}");
     let _ = std::fs::remove_dir_all(&base);
 }
+
+#[cfg(unix)]
+#[test]
+fn a_tree_named_through_a_link_resolves_before_the_store_checks_it() {
+    let base = scratch("through-link");
+    std::fs::create_dir_all(base.join("real").join("target")).expect("the tree");
+    let link = base.join("link");
+    std::os::unix::fs::symlink(base.join("real"), &link).expect("the link");
+
+    let roots =
+        Roots::at(link.to_str().expect("the scratch path is UTF-8")).expect("-C resolves the link");
+    assert!(dorc_loom::FsStagingStore::new(roots.staging_root()).is_ok());
+    let _ = std::fs::remove_dir_all(&base);
+}

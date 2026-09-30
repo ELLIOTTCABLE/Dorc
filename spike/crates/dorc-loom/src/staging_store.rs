@@ -974,6 +974,21 @@ mod tests {
         assert_eq!(fs::read(outside).expect("outside bytes"), b"outside");
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn a_link_above_the_root_refuses_until_the_path_is_resolved() {
+        use std::os::unix::fs::symlink;
+
+        let root = TestRoot::new("a-link-above-the-root-refuses-until-the-path-is-resolved");
+        fs::create_dir_all(root.0.join("private").join("root")).expect("root");
+        symlink(root.0.join("private"), root.0.join("var")).expect("link");
+        let through_link = root.0.join("var").join("root");
+
+        assert!(FsStagingStore::new(&through_link).is_err());
+        let resolved = fs::canonicalize(&through_link).expect("resolve");
+        assert!(FsStagingStore::new(resolved).is_ok());
+    }
+
     #[cfg(windows)]
     #[test]
     fn linked_parent_refuses_when_link_creation_is_permitted() {
