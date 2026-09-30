@@ -14,10 +14,11 @@ showed one preflight line and then nothing, with no bound; the person could not 
 would return in a minute or tomorrow. The rule for the build [TYPED]: "don't overengineer, start
 small; MVP." The second tune arrives from the 311 mechanization conductor and is not yet here.
 
-State: built on `ai/r30-alloy-praxis-conductor`, Rust only, `AlloyAdapter.java` and the wire
-protocol untouched so no lock key moves. Smoked on the crate's fixture at a small heap under the
-lock bypass of § 4; the completion gate on both legs is owed, held by memory, not by the lock
-(§ 4). `notes/30Y` § 2.7 and § 3 describe what is.
+State: built on `ai/r30-alloy-praxis-conductor`. Everything below the two effort-counter
+commits is Rust only, leaves `AlloyAdapter.java` and the wire protocol untouched, and moves no
+lock key; the two on top do (§ 5). Smoked on the crate's fixture at a small heap under the lock
+bypass of § 4; the completion gate on both legs is owed, held by memory, not by the lock (§ 4).
+`notes/30Y` § 2.7 and § 3 describe what is, the counters excepted until their landing is timed.
 
 ## § 1-what-a-pass-says
 
@@ -88,10 +89,21 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   subcommands re-execute from a copy of their own executable (rustup's move), which retires the
   hazard for any dependency graph; then adopt `tracing` with the subscriber's uptime timer.
   Awaiting the human.
-- **`open-effort-counters`** [TYPED: "try it if it's easy and drop it if it chafes"] — sat4j's
-  conflicts and restarts on the heartbeat would be the one honest enrichment; it needs the
-  adapter, and any adapter change moves every lock key, so it rides the next key-moving moment.
-  Feasibility inside the pinned jar is being read.
+- **`open-effort-counters-fold-timing`** [TYPED: "try it if it's easy and drop it if it
+  chafes"] — built, as the two top commits of the branch, separable from everything below:
+  the adapter wraps sat4j in an adapter-local subclass of `SAT4JRef` (same id, so the
+  effective-options text is unchanged) that keeps the solver it creates, and each tick carries
+  its `conflicts`, `restarts`, `learned`, and `decisions` when readable; the still-alive line
+  shows them once translation has ended. Read from the pinned jar's bytecode, +SURE and not
+  exercised: the temporal path shares the factory. The Java commit moves every lock key, so
+  when it lands is the human's; the Rust commit alone is inert. The first cut broke every parse
+  through a Kodkod class-initialisation order (the ticker thread touched the factory's subclass
+  before anything had touched the factory); the fix, moving the static off the subclass, is
+  loud-if-wrong and untested live for want of memory.
+- **`finding-fmt-runs-a-jvm`** (~SUSPECT the mechanism of the earlier "Access is denied") —
+  `mise run fmt` is hk's fix over all files, so its `assay --staged` step parses every spec in
+  a 1 GB JVM, in parallel with the cargo steps; a rebuild of `internal-tooling` racing that
+  parse cannot replace the running executable. Bites whoever edits the tooling crate.
 - `open-fmt-races-its-own-rebuild` (~SUSPECT, the builder's diagnosis: an hk step running
   `internal-tooling.exe` while a sibling step rebuilds it) and
   `open-respawn-parse-eats-wall-budget` (a child after a spawn or kill re-parses inside its next
