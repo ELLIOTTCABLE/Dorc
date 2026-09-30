@@ -365,7 +365,9 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
-> mKey-Primary is an mKey of the primary mScheme, on a shape that yields nothing, meaningful only relative to its mParent-Store, or a cell's mKey (1.9-cell-a-singleton-sort); mKey-Natural is any other mKey, what tool authors and books write.
+> mKey-Primary is an mKey of the primary mScheme on a shape that yields nothing, or a cell's mKey (1.9-cell-a-singleton-sort).
+> It is meaningful only relative to its mParent-Store.
+> mKey-Natural is any other mKey, what tool authors and books write.
 
 ### § 1.5-token-and-the-two-warrants
 
@@ -505,13 +507,16 @@ pred true_SuppliesParent[s: SuppliesParent] {
 <!-- prose-translation -->
 > Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
 > An mKey matching no shape has no mParent.
-> A cell's mKey has the mParent its mark supplied, an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort), scoped in that mKey's identity (3.1-identity-of-a-key).
+> A cell's mKey has the mParent its mark supplied: an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
+> The cell's mKey has that mKey's identity as its mParent (3.1-identity-of-a-key).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
 > A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute of the mKey's mVantage (1.10-vantage-route-placeholder-witness).
 > For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance: the instance is the one the seats supply, and there is none where they supply none or disagree.
 > The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
 > A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
-> For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort, of any of that mSort's mSchemes; the mKey is scoped in the identity of that instance (3.1-identity-of-a-key), and where the instance has no identity the mFullyQualifiedKey is unknown from that level.
+> For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort, of any of that mSort's mSchemes.
+> The mKey's mParent is the identity of that instance (3.1-identity-of-a-key).
+> Where the instance has no identity, the mFullyQualifiedKey is unknown from that level.
 > Two seats that disagree are a contradiction.
 > Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
 > A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
@@ -1327,12 +1332,17 @@ run law_exclusion_readings_agree_premise {
 > A may-write entry and an entailment entry license nothing alone.
 > K's owner declares the entailment; the written mSort's owner declares the finished record.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
-> A finished record is true when, for every mKey whose mSort and shape are the record's and that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
+> A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
+> The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
-> The same law is asked twice: over worlds of four levels, and over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
+> Two commands ask the same law.
+> The first command asks it over worlds of four levels.
+> The second command asks it over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
 > The sparing law dies with a statement it rests on: with one completion record false, or one vouch false, and every other statement in force true, a false sparing is reachable.
-> Whether it also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false is asked; an unsatisfiable kill says that no sparing rests on that statement alone.
-> The kill by a supplied mParent instance runs at five levels, since its witness needs a store on the read mKey's chain beside the two mWorlds.
+> Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false.
+> An unsatisfiable kill says that no sparing rests on that statement alone.
+> The kill by a supplied mParent instance runs at five levels.
+> Its witness needs a store on the read mKey's chain beside the two mWorlds.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 
 Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten. Four levels seat an mRoute, a mRoot mWorld, and two mKeys, so no spared world at that scope holds a store on a read mKey's chain; the second command asks the same law at five levels, where its twin demands such a store, and its result is the measurement of whether that claim is affordable.
@@ -1859,7 +1869,8 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
 > A DISJOINT of the region test is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
 > The region law dies with a statement it rests on: with one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
-> Whether it also dies with one `alias nothing-else` false is asked; an unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
+> One more kill asks whether the law also dies with one `alias nothing-else` false.
+> An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
 
 UNACKED READING, temporary (`312d:ask-alias-closure-instance-scope`): 311 scopes `alias
 nothing-else` to "the instance the lookup ran in"; the fence's truth ranges over every mKey of
@@ -2383,7 +2394,11 @@ run law_different_sorts_never_same_premise {
 > Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with differing mValues.
 > One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some other shape, `:identified-in` the mSort of the other side's top.
 > Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
-> Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN; two mKeys are of different mSorts here when they carry different mSchemes, or different cell mSorts, or one an mScheme and the other a cell mSort (1.4-key-and-its-two-views).
+> Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
+> Here, two mKeys are of different mSorts in three cases (1.4-key-and-its-two-views).
+> Their mSchemes differ.
+> Their cell mSorts differ.
+> One carries an mScheme and the other carries a cell mSort.
 > Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key); an mKey with no identity reads UNKNOWN.
 > `compare(x, y)`: SAME is "or" across mDerivations, the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles), and "and" within one mFullyQualifiedKey; SAME composes transitively.
 > A warranted SAME and a warranted DISJOINT on one pair is a contradiction: the pair reads UNKNOWN, and the refusal with its attribution is 3.5-committee-law-and-attribution's.
@@ -2403,7 +2418,8 @@ run law_different_sorts_never_same_premise {
 > mKeys of different mSorts never read SAME.
 > Each law dies with a statement it rests on: with one statement false and every other statement in force true, a false SAME of the walk is reachable where the false one is a `:guarantees-unique-referent` or a `:yields`; a false DISJOINT of the walk where it is a `:guarantees-unique-name` or an `:aliases-nothing-else`; a false SAME and a false DISJOINT of `compare()` where it is a mCorrespondence; and with a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
 > The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
-> Whether the walk's laws also die with one `:identified-in`, one `:root`, one supplied mParent instance, or one wrapper's completion sentinel false is asked; an unsatisfiable kill says that no SAME or DISJOINT of the walk rests on that statement alone.
+> Six more kills ask whether the walk's laws also die with one of these false: an `:identified-in`, a `:root`, a supplied mParent instance, a wrapper's completion sentinel.
+> An unsatisfiable kill says that no SAME or DISJOINT of the walk rests on that statement alone.
 
 UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
 and the laws' premise): 311 says a contradiction is "refuse both and attribute both authors",
