@@ -238,18 +238,17 @@ fn still_alive_line(
             human(waited)
         );
     };
-    let phase = match translated.and_then(|t| t.u64("clauses")) {
-        Some(clauses) => format!("solving {clauses} clauses"),
-        None => "translating".to_owned(),
-    };
-    let effort = effort.map_or_else(String::new, |e| {
-        format!(
-            ", {} conflicts, {} restarts, {} learned, {} decisions",
+    // The solver exists before translation ends, so its counts read zero until then.
+    let phase = match (translated.and_then(|t| t.u64("clauses")), effort) {
+        (Some(clauses), Some(e)) => format!(
+            "solving {clauses} clauses, {} conflicts, {} restarts, {} learned, {} decisions",
             e.conflicts, e.restarts, e.learned, e.decisions
-        )
-    });
+        ),
+        (Some(clauses), None) => format!("solving {clauses} clauses"),
+        (None, _) => "translating".to_owned(),
+    };
     format!(
-        "alive, {} waited, cpu {} of {}s, {phase}{effort}",
+        "alive, {} waited, cpu {} of {}s, {phase}",
         human(waited),
         human(Duration::from_millis(cpu_ms)),
         budget.cpu_s
@@ -713,7 +712,8 @@ mod tests {
     #[test]
     fn still_alive_adds_solver_effort_only_when_a_tick_carries_it() {
         // Only the adapter's sat4j factory puts counters on a tick; any other tick must leave the
-        // line exactly as it was, and a counted one must carry each count after the phase.
+        // line exactly as it was, and a counted one must carry each count after the phase, but
+        // only once translation is over, since the counts read zero until then.
         let budget = Budget {
             cpu_s: 1800,
             wall_s: 3600,
@@ -747,6 +747,10 @@ mod tests {
         for count in ["1204331", "88", "40213", "9912345"] {
             assert!(tail.contains(count), "{count} missing from {with}");
         }
+
+        let translating =
+            |effort| still_alive_line(Duration::from_mins(10), Some(420_000), budget, None, effort);
+        assert_eq!(translating(Effort::read(&counted)), translating(None));
 
         let unstarted = still_alive_line(
             Duration::from_mins(10),
