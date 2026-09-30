@@ -1294,11 +1294,12 @@ no task covers, and consider adding the task instead.
   before it is trusted: `mise run both <task>` runs it on both sides in series — whichever
   you started from, it adds the other — and fails if either leg does. No lint enforces it;
   the run is the mechanism.
-- **platform-tests-live-in-the-crate-platform-file** (`30Xc:dec-platform-home-per-crate`) — a
-  strictly platform-specific test goes in its crate's `tests/platform.rs`. A `for_<platform>`
-  module makes the condition of that platform and runs on each platform that can; an
-  `on_<platform>` module runs only on that platform. A test of general behaviour stays an ordinary
-  test, even when one platform found the bug.
+- **platform-tests-live-in-named-regions** (`30Xc:dec-platform-tests-in-named-regions`) — a
+  strictly platform-specific test goes in a module beside the other tests of the same code. A
+  `for_<platform>` module makes that platform's condition and runs on every platform; an
+  `on_<platform>` module is gated to that platform. A one-line doc on the module says what differs
+  there. `grep -rn 'mod \(for\|on\)_'` lists them all. A test of general behaviour stays an
+  ordinary test, even when one platform found the bug.
 - **wsl-needs-a-modern-git** — the repo enables the `relativeWorktrees` extension
   (git ≥ 2.48); an older git (Ubuntu 24.04 ships 2.43) refuses the WHOLE repository
   with `fatal: unknown repository extension found`, so every git-touching step —

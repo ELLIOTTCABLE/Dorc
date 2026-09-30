@@ -191,7 +191,8 @@
     the typed spelling); both breaks were reverted.
   - Not caught on Linux: a revert of `30487a89` itself. The twelve staging unit tests catch it,
     on macOS only.
-- **dec-platform-home-per-crate** — RULED §4, with the §4 names and scope.
+- **dec-platform-home-per-crate** — RULED §4, with the §4 names and scope; SUPERSEDED §5
+  (`dec-platform-tests-in-named-regions`).
   `crates/<crate>/tests/platform.rs`, with `for_<platform>` modules (they make the platform's
   condition in a scratch directory and run wherever they can) and `on_<platform>` modules (gated to
   the platform). One per crate, not one
@@ -313,3 +314,25 @@
     `loadpath.rs` (Windows spellings), `receipt/src/image.rs`, `preflight.rs`.
   - Clean movers: the two `durable.rs` arm tests, beside the macOS arm in `cli/tests/platform.rs`.
     The rest stay, or take the module names in place.
+
+## §5 — sitting four (2026-09-30): platform tests as regions
+
+### Typed record
+
+- `[TYPED]` A separate platform file forces tests onto the public API, which is too much
+  ceremony. Keep a platform-specific test in a region of the file it already belongs in; the goal
+  is only that a visiting agent sees the test is specific to a platform it may not be on, and
+  where to add the next one.
+- `[TYPED]` Keep the `for_`/`on_` names. Commit the repair as new commits, and mirror the pattern
+  for the Windows tests, gently, as separate commits.
+- `[TYPED]` This work should have run in a worktree: the primary checkout is synced. Too late to
+  rewrite history; continue with new commits.
+
+### Decisions
+
+- **dec-platform-tests-in-named-regions** — a strictly platform-specific test goes in a
+  `for_<platform>` module (makes the condition; runs everywhere) or an `on_<platform>` module
+  (gated to the platform), beside the other tests of the same code, with a one-line doc saying
+  what differs. `grep -rn 'mod \(for\|on\)_'` finds them all
+  (`spike/AGENTS:platform-tests-live-in-named-regions`).
+

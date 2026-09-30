@@ -749,6 +749,27 @@ mod tests {
         );
     }
 
+    /// macOS keeps both roots in one directory below `HOME`, and reads no XDG variable.
+    mod for_macos {
+        use super::*;
+
+        #[test]
+        fn both_roots_are_application_support_below_home() {
+            let roots = standard_roots(
+                RootPlatform::MacOs,
+                &environment(&[
+                    ("HOME", "/Users/x"),
+                    ("XDG_CONFIG_HOME", "/xdg/config"),
+                    ("XDG_STATE_HOME", "/xdg/state"),
+                ]),
+            )
+            .expect("HOME is set");
+            for role in RootRole::ALL {
+                assert_eq!(roots.base(role), "/Users/x/Library/Application Support");
+            }
+        }
+    }
+
     #[test]
     fn no_dorc_specific_variable_appears_in_the_resolution() {
         // The stop condition in its own words: a Dorc-specific variable selecting a provider, a

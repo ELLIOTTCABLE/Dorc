@@ -611,7 +611,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 270 275 277 279f (8)
 
 ## 30Xc:ask-annotate-30xb-misattribution
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:237 — — an adjacent correction note at `30Xb` §5. OPEN.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:238 — — an adjacent correction note at `30Xb` §5. OPEN.
 
 ## 28I:ask-apply-header-vs-byte-floor
 - defined: Research/notes/28I-webhost-redline-extraction.md:52 — (design tension, flag not fold): the
@@ -660,17 +660,17 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:152 — — the 16 pure `sm {{detail}}` codes can never be
 
 ## 30Xc:ask-duplicate-declarer-priority
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:228 — — whether tracing and fixing
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:229 — — whether tracing and fixing
 
 ## 30Xc:ask-engine-fix-before-green
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:231 — — resolving the e2e scratch root would turn both looms green
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:232 — — resolving the e2e scratch root would turn both looms green
 
 ## ask-flag-boundary-recut
 - defined: —
 - cited: 279f 27A (4)
 
 ## 30Xc:ask-floor-shell-on-macos
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:236 — — CLOSED §4: the floor differential runs on Linux.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:237 — — CLOSED §4: the floor differential runs on Linux.
 
 ## ask-full-driver-this-arc-or-r30
 - defined: —
@@ -680,10 +680,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:185 — — I minted `solver-consistency-plan-demoted` as a SIBLING of
 
 ## 30Xc:ask-kagi-setup-here
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:238 — — the human is setting Kagi up (§4).
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:239 — — the human is setting Kagi up (§4).
 
 ## 30Xc:ask-key-identity-at-edge
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:234 — — whether one file under two spellings is one source to Dorc.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:235 — — whether one file under two spellings is one source to Dorc.
 
 ## Research/notes/r26-glue-strawmen/nix-machine.note:ask-kind-namespace-squatting-policy
 - defined: Research/notes/r26-glue-strawmen/nix-machine.note.md:182 — — a third-party oracle author describing nix mints `org.nixos.*` kinds for a project they do not own…
@@ -693,7 +693,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ta (1)
 
 ## 30Xc:ask-living-status-pointer
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:239 — — a one-line pointer to this ledger in `LIVING_STATUS.md`. OPEN.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:240 — — a one-line pointer to this ledger in `LIVING_STATUS.md`. OPEN.
 
 ## ask-may-read-is-declared-per-key
 - defined: —
@@ -704,7 +704,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 311 312d (2)
 
 ## 30Xc:ask-one-home-precedence
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:224 — — where a test already has a one-home rule (receipt state lives in
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:225 — — where a test already has a one-home rule (receipt state lives in
 
 ## 307b:ask-out-param-versus-eighth-tuple-element
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:198 — — I threaded the latch as a `&mut CertifierTrip`
@@ -718,7 +718,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 276 279f (3)
 
 ## 30Xc:ask-platform-home-steering-line
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:222 — — one line in `spike/CLAUDE.md` that names the platform
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:223 — — one line in `spike/CLAUDE.md` that names the platform
 
 ## ask-promote-task-14
 - defined: —
@@ -735,10 +735,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:175 — — the census proved a lookup (§2), so
 
 ## 30Xc:ask-reopen-through-harness-roots
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:217 — — plan item 1 as proposed. `standard_roots` coverage then
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:218 — — plan item 1 as proposed. `standard_roots` coverage then
 
 ## 30Xc:ask-restate-or-derive-macos-rule
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:219 — — the shipped-binary test restates the macOS location
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:220 — — the shipped-binary test restates the macOS location
 
 ## ask-route-for-any-path-without-identified-in
 - defined: —
@@ -1580,7 +1580,11 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 283 (1)
 
 ## 30Xc:dec-platform-home-per-crate
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:194 — — RULED §4, with the §4 names and scope.
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:194 — — RULED §4, with the §4 names and scope; SUPERSEDED §5
+- superseded: - **dec-platform-home-per-crate** — RULED §4, with the §4 names and scope; SUPERSEDED §5
+
+## 30Xc:dec-platform-tests-in-named-regions
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:333 — — a strictly platform-specific test goes in a
 - cited: spike/AGENTS (1)
 
 ## 28O:dec-precedence-fix-in-two-commits
@@ -2150,7 +2154,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ne (1)
 
 ## spike/AGENTS:emitted-is-measure-once-ground-truth
-- defined: spike/AGENTS.md:1350 — (r30, closing a gap that bit three lanes) — an
+- defined: spike/AGENTS.md:1351 — (r30, closing a gap that bit three lanes) — an
 - cited: 30P 30Xa cli/AGENTS (3)
 
 ## cli/AGENTS:empty-ran-has-two-stable-spellings
@@ -2884,7 +2888,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Q (1)
 
 ## spike/AGENTS:floor-differential-lane-opt-in
-- defined: spike/AGENTS.md:1329 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
+- defined: spike/AGENTS.md:1330 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
 - cited: TODO-ADDTL (1)
 
 ## analysis/AGENTS:floors-are-whole-window-and-demote-only
@@ -3219,7 +3223,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/30Xc-macos-burn-down-ledger.md:165 — — `durable.rs` tests the XDG arm (`:694`) and the Windows arm
 
 ## 30Xc:fnd-md-wrap-holds-map-edits
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:297 — — the `ai/md-wrap` worktree holds an uncommitted rewrap of
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:298 — — the `ai/md-wrap` worktree holds an uncommitted rewrap of
 
 ## fnd-measured-today
 - defined: Research/notes/30Qc-load-plane-lane-report.md:40 — — what the code actually does
@@ -3316,7 +3320,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30N 30Nd 30Ne (4)
 
 ## 30Xc:fnd-platform-test-census
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:306 — (`ask-one-home-precedence`) — about twenty existing tests are
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:307 — (`ask-one-home-precedence`) — about twenty existing tests are
 
 ## 30Xc:fnd-posh-absent-on-macos
 - defined: Research/notes/30Xc-macos-burn-down-ledger.md:81 — — `mise.toml:365` gives `test:floor` `dash,posh` everywhere but
@@ -3426,7 +3430,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/312cb-identity-model-crosscheck-fable-a.md:302
 
 ## 30Xc:fnd-sandbox-unification-is-not-trivial
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:302 — — the cli tests' sandbox and hostsim's
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:303 — — the cli tests' sandbox and hostsim's
 
 ## 30Ba:fnd-seat-citation-ignores-everything-between
 - defined: Research/notes/30Ba-minispec-review-neutral.md:136 — (+SURE)
@@ -3470,7 +3474,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:563 — [conductor, from the scout's flip-set +
 
 ## 30Xc:fnd-slug-index-skips-backticked-bold
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:292 — — `SLUGS.md` indexes a bold slug that leads a list
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:293 — — `SLUGS.md` indexes a bold slug that leads a list
 
 ## fnd-smoke-book-never-reloads-nginx
 - defined: —
@@ -3513,7 +3517,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 305a 307 307c 308 (7)
 
 ## 30Xc:fnd-test-filter-is-not-quoted
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:299 — — `mise run test` templates its filter into both commands
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:300 — — `mise run test` templates its filter into both commands
 
 ## fnd-the-canon-does-not-destructure-plan
 - defined: —
@@ -3634,7 +3638,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## foreground-final-verification
 - defined: Research/notes/27U-user-aid-build-phase.md:192 — — a builder's last verification runs
-- defined: spike/AGENTS.md:1461 — (`27U` §2) — a builder's FINAL verification
+- defined: spike/AGENTS.md:1462 — (`27U` §2) — a builder's FINAL verification
 - cited: 280 28Vb 30Q (3)
 
 ## FORFEITS:forfeit-ambient-dependency-vouch-composition
@@ -4733,7 +4737,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:730
 
 ## spike/AGENTS:lexical-fences-are-human-ack-instruments
-- defined: spike/AGENTS.md:1367 — (human-typed 2026-08-31; scope
+- defined: spike/AGENTS.md:1368 — (human-typed 2026-08-31; scope
 - cited: 30Va 30Vd 30X 30Xa (5)
 
 ## cli/AGENTS:lib-target-is-a-loom-seam
@@ -4846,7 +4850,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## map-then-execute-split
 - defined: Research/notes/27U-user-aid-build-phase.md:184 — — a big-bang dispatch splits map-and-rule (proposal,
-- defined: spike/AGENTS.md:1457 — (`27U` §4) — big-bang dispatches split map-and-rule
+- defined: spike/AGENTS.md:1458 — (`27U` §4) — big-bang dispatches split map-and-rule
 - cited: 283 28B 28Va 28Vb 30Xa (6)
 
 ## oracle/AGENTS:marker-and-names
@@ -5497,8 +5501,8 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30R:plain-and-rich-projections
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:251
 
-## spike/AGENTS:platform-tests-live-in-the-crate-platform-file
-- defined: spike/AGENTS.md:1297 — (`30Xc:dec-platform-home-per-crate`) — a
+## spike/AGENTS:platform-tests-live-in-named-regions
+- defined: spike/AGENTS.md:1297 — (`30Xc:dec-platform-tests-in-named-regions`) — a
 - cited: 30Xc (1)
 
 ## analysis/AGENTS:polarity-becomes-transitions
@@ -5834,7 +5838,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:105
 
 ## spike/AGENTS:real-tools-lane-opt-in
-- defined: spike/AGENTS.md:1313 — (human-authorized 2026-07-18) — the ONE sanctioned
+- defined: spike/AGENTS.md:1314 — (human-authorized 2026-07-18) — the ONE sanctioned
 - cited: 27R 27T 28P (3)
 
 ## reason-dedup-is-not-execution-dedup
@@ -7521,7 +7525,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 28A (2)
 
 ## 30Xc:rul-one-file-one-identity-at-the-edge
-- defined: Research/notes/30Xc-macos-burn-down-ledger.md:247 — `[TYPED]` — one file under two spellings (a link, a
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:248 — `[TYPED]` — one file under two spellings (a link, a
 
 ## rul-one-load-account-separate-projections
 - defined: —
@@ -9967,7 +9971,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## worktree-file-access-law
 - defined: Research/notes/27U-user-aid-build-phase.md:181 — — worktree agents: every Read/Grep/Edit/cite
-- defined: spike/AGENTS.md:1445 — (`27U` §2 — two incidents, one root cause) — a
+- defined: spike/AGENTS.md:1446 — (`27U` §2 — two incidents, one root cause) — a
 - cited: 300 300b 307 30C 30Va (7)
 
 ## 283:world-as-payload
@@ -10004,7 +10008,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Q (1)
 
 ## spike/AGENTS:wsl-needs-a-modern-git
-- defined: spike/AGENTS.md:1302 — — the repo enables the `relativeWorktrees` extension
+- defined: spike/AGENTS.md:1303 — — the repo enables the `relativeWorktrees` extension
 - cited: 289 (1)
 
 ## spike/AGENTS:wsl-trust-per-worktree
@@ -10016,5 +10020,5 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 300 (1)
 
 ## spike/AGENTS:xfail-pins-ride-one-seat
-- defined: spike/AGENTS.md:1390 — (`30A` d3; r30) — target behavior the engine does not
+- defined: spike/AGENTS.md:1391 — (`30A` d3; r30) — target behavior the engine does not
 - cited: 30Na 30Qf 30Xa (4)
