@@ -243,7 +243,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   heavy-work lock around the gates) · `notes/30Yf` (the hot-loop lane's conductor ledger: the
   correctness properties a fast loop must keep, the lock's definite-versus-unmeasured semantics,
   the incremental key, the whole-book conjunction, replay and its guard, the tiers, the
-  Rust-over-adapter split, and the measured before and after) · **`plans/30Z`** (specification
+  Rust-over-adapter split, and the measured before and after) · `notes/30Yg` (the progress
+  lane's conductor ledger: what a solving pass says about itself, the official tier's cap and
+  why it is not resumable, preflight sized from the heap, the conduct around a live run) ·
+  **`plans/30Z`** (specification
   praxis: the posture and firewall, the authoring loop with held-open holes, the soundness
   habits, the document form; generic to any Alloy-checked specification, with assay's own
   vocabulary confined to one section; § 6 the lock and the gates).
