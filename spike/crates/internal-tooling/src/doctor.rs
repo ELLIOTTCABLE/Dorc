@@ -503,42 +503,12 @@ fn short(path: &Path) -> String {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(windows)]
-    use super::vhdxs_under;
     use super::{
         cache_state, children_with_sizes, parse_worktree_list, short, tree_size,
         tree_size_excluding,
     };
     use std::collections::BTreeSet;
     use std::path::Path;
-
-    #[cfg(windows)]
-    #[test]
-    fn a_vhdx_is_found_and_sized_under_its_packages_entry() {
-        let root =
-            std::env::temp_dir().join(format!("dorc-doctor-vhdx-test-{}", std::process::id()));
-        let local_state = root
-            .join("Packages")
-            .join("SomeDistro_abc123")
-            .join("LocalState");
-        let _ = std::fs::remove_dir_all(&root);
-        std::fs::create_dir_all(&local_state).expect("scratch dir");
-        std::fs::write(local_state.join("ext4.vhdx"), [0_u8; 4096]).expect("scratch vhdx");
-
-        let found = vhdxs_under(&root.join("Packages"));
-        let _ = std::fs::remove_dir_all(&root);
-
-        assert_eq!(found.len(), 1);
-        assert!(found[0].0.contains("SomeDistro_abc123"));
-        assert_eq!(found[0].1, 4096);
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn an_absent_packages_directory_finds_nothing() {
-        let absent = dorc_testbed::repo_root().join("no-such-packages-dir");
-        assert!(vhdxs_under(&absent).is_empty());
-    }
 
     /// Real `git worktree list --porcelain` output, trimmed to the shapes that matter: a
     /// detached checkout, a branch, and a lock.
@@ -651,5 +621,37 @@ locked
     #[test]
     fn paths_shorten_to_their_tail() {
         assert_eq!(short(Path::new("/a/b/c/d")), "c/d");
+    }
+
+    /// Windows keeps each WSL distribution's disk image below the user's `Packages` directory.
+    #[cfg(windows)]
+    mod on_windows {
+        use super::super::vhdxs_under;
+
+        #[test]
+        fn a_vhdx_is_found_and_sized_under_its_packages_entry() {
+            let root =
+                std::env::temp_dir().join(format!("dorc-doctor-vhdx-test-{}", std::process::id()));
+            let local_state = root
+                .join("Packages")
+                .join("SomeDistro_abc123")
+                .join("LocalState");
+            let _ = std::fs::remove_dir_all(&root);
+            std::fs::create_dir_all(&local_state).expect("scratch dir");
+            std::fs::write(local_state.join("ext4.vhdx"), [0_u8; 4096]).expect("scratch vhdx");
+
+            let found = vhdxs_under(&root.join("Packages"));
+            let _ = std::fs::remove_dir_all(&root);
+
+            assert_eq!(found.len(), 1);
+            assert!(found[0].0.contains("SomeDistro_abc123"));
+            assert_eq!(found[0].1, 4096);
+        }
+
+        #[test]
+        fn an_absent_packages_directory_finds_nothing() {
+            let absent = dorc_testbed::repo_root().join("no-such-packages-dir");
+            assert!(vhdxs_under(&absent).is_empty());
+        }
     }
 }
