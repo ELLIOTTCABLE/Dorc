@@ -10,6 +10,8 @@ pub(super) enum Tier {
 pub(super) const CEILING_CPU_S: u64 = 1800;
 pub(super) const CEILING_HEAP_MB: u64 = 4096;
 pub(super) const DEFER_CLAUSES: u64 = 2_000_000;
+/// A conductor's figure, not a measured one: an unattended official pass still ends.
+const OFFICIAL_BATCH_S: u64 = 8 * 3600;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct Caps {
@@ -31,7 +33,7 @@ impl Tier {
         let (cpu_s, heap_mb, batch_s) = match self {
             Self::Hot => (120, 2048, Some(540)),
             Self::Gate => (600, 2048, Some(540)),
-            Self::Official => (CEILING_CPU_S, CEILING_HEAP_MB, None),
+            Self::Official => (CEILING_CPU_S, CEILING_HEAP_MB, Some(OFFICIAL_BATCH_S)),
         };
         Caps {
             budget: Budget {
@@ -110,6 +112,6 @@ mod tests {
             "a wall cap alone caps CPU too, as `mise run alloy` reads it"
         );
         assert!(with_overrides(Tier::Hot.caps(), &["--cpu".to_owned()]).is_err());
-        assert!(!Tier::Official.trusts_keys() && Tier::Official.caps().batch_s.is_none());
+        assert!(!Tier::Official.trusts_keys());
     }
 }
