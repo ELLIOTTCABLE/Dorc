@@ -8,3 +8,4 @@ assay lives here: its design is `Research/notes/30Y`, the praxis for writing aga
 - assay knows shell and nothing about dorc; avoid teaching it a dorc-aware lint or default
 - it reads alloy only as far as sig heads and binders; alloy itself does the rest
 - the lock holds results; a set of reds the committed lock already records (with no new ones) is a pass
+- stdout is the report alone; whatever a solving pass says about itself goes through the `Progress` sink to stderr, and `--quiet` silences only that

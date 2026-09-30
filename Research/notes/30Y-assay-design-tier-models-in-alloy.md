@@ -4,8 +4,9 @@
 > to the root docs and `spike/CLAUDE.md`; sibling of `notes/301` (minispec and dorc-verify, the
 > code-tier instrument this extends downward to the design tier) and of `notes/30X` (the testing
 > architecture the correspondence half will eventually ride). Its ledger is `notes/30Ya`, and its
-> build ledgers are `notes/30Yc` (with the chafe register) and `notes/30Yf` (the lock's
-> semantics, the key, and the tiers); its evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
+> build ledgers are `notes/30Yc` (with the chafe register), `notes/30Yf` (the lock's
+> semantics, the key, and the tiers), and `notes/30Yg` (progress reporting and the official
+> tier's cap); its evidence base is `.claude/research/design-model-mechanisation-prior-art/` (four fronts, every
 > source graded); the worked fixtures are `notes/30Ya-strawman-2/` and `notes/30Ya-strawman-3/`,
 > both run (`notes/30Yb`). Grades: **[TYPED]** the human typed
 > it · **[ACKED]** confirmed in dialogue · **[CONDUCTOR]** conductor-derived, unratified. Every
@@ -495,6 +496,22 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   `--staged` adds `key_diff`. No prose, no suspicion, no ranking [TYPED]. A person or model who
   wants the counterexample opens the generated `.als` in the Analyzer, or runs `mise run alloy
   -- --instances --command <name> <module.als>` on it.
+- **Progress** is stderr's, loud by default like any tool [TYPED 2026-09-29: agents and hooks
+  pass `--quiet`, and an agent that forgets is a praxis defect, not the tool's]. A `--check` or
+  `--write` prints a start line before the survey; a plan line after it (tier, commands,
+  modules, children, the per-command caps, the batch cap, and how many rows the committed lock
+  last recorded as a timeout or an out-of-memory); for each fresh solve its start (the budget it
+  has, the row's last result and size), its translation's end (clauses, primary variables), a
+  still-alive line every five minutes (wall time waited; CPU against the budget once the child
+  has started; translating, or solving with the clause count), and its result with the count of
+  rows answered so far over the total; and an end line on every exit path, with counts by
+  provenance and by result. Every line carries the time since the pass began, so the last line
+  on a dead terminal says how long it ran; durations render as `41.3s`, `12m08s`, `2h14m05s`.
+  Rows answered without a solve print nothing and advance the count. Nothing predicts: no
+  estimate, no fraction of work done, only effort against the caps [TYPED: a cap-derived bound
+  reads as a prediction]. `--parse`, `--staged`, and a bare compile print none of it. `--quiet`
+  silences progress and never a finding: the preflight line, the diff, the key-diff warning, and
+  errors stay. `--help` lists the flags and the trailing caps.
 - **Exit codes**: `0` every row green or accepted residue [TYPED 2026-09-28: a set of reds fully
   acked by the lock is a pass] · `1` a mismatch (a moved result, a new row, a row gone, a
   missing lock) or the official tier's construction finding · `2` a lint refusal, compile or
@@ -651,8 +668,10 @@ The builder has latitude on everything not marked.
   after which commands not yet started are `not-run`; the runner's batch cap stops new starts
   only. The runner kills the live child as it exits. An out-of-memory is an `error` row there.
   It takes a directory as well as files, and skips a module whose only command is the `Default`
-  Alloy synthesizes for a command-less module. The task rides `mise run preflight alloy` for disk
-  and RAM, and runs under the repository's global heavy-work lock (`internal-tooling exclusive`),
+  Alloy synthesizes for a command-less module. It preflights in-process, before the lock, for
+  disk and for the memory its own `--heap` implies (the heap plus the 512 MB a child costs beside
+  it; one table in `preflight.rs` stays the home of every bound), and runs under the
+  repository's global heavy-work lock (`internal-tooling exclusive`),
   a file in the user's cache directory that names its holder, so a second heavy task on the same
   machine is refused with the holder's name (exit 75) and told to do other work rather than wait.
 - **The tiers' caps** [ACKED; the ceiling CONDUCTOR, ruled at the breakpoint]:
@@ -661,17 +680,26 @@ The builder has latitude on everything not marked.
   | --- | --- | --- | --- | --- | --- |
   | `--hot` | 120 s | 240 s | 2048 MB | 540 s | 1 |
   | `--gate` (default) | 600 s | 1200 s | 2048 MB | 540 s | 1 |
-  | `--official` | 1800 s, the ceiling | 3600 s | 4096 MB, the ceiling | none | 1 to 4 |
+  | `--official` | 1800 s, the ceiling | 3600 s | 4096 MB, the ceiling | 8 h | 1 to 4 |
 
   Each child may use two processors. The official tier runs as many children as the machine's
   available RAM holds at the heap plus 512 MB each, at least one and at most four, each taking
-  whole modules from one queue. The batch cap is a hard bound on wall time [CONDUCTOR, ruled at
+  whole modules from one queue; the pass preflights for one child's worth before it starts. The
+  batch cap is a hard bound on wall time [CONDUCTOR, ruled at
   the lane's report]: a command starts only with its wall cap clipped to what the batch has left,
   one cut short by the clip is a `timeout` at the budget it had (which reads as early and owed),
   and `not-run` is for a command never started, so a started command never outlives the batch.
-  Caps after assay's own `--` override the tier: `--cpu` (alone, it sets the wall cap to twice
-  itself), `--timeout` (the wall cap; alone, it sets the CPU cap to itself too), `--heap`,
-  `--procs`, `--batch-timeout`. Assay always solves with sat4j.
+  The official tier's cap exists because a from-scratch pass over a grown specification is
+  otherwise unbounded in hours [TYPED 2026-09-29: "clearly the official tier needs some kind of
+  cap"]; eight hours is a conductor's figure. The tier is not resumable, on purpose: the
+  per-command ceiling is the shared law that makes a timeout a design-meaningful residue rather
+  than a reason to churn the Alloy, and the batch cap means only "stop and move on". A capped
+  `--write --official` writes what it measured, records the rows it never started as `not-run`
+  where the key changed or no row existed, keeps a committed definite row otherwise, and exits 0;
+  the next `--check` reads those rows as owed, and the route to them is a longer
+  `--batch-timeout`. Caps after assay's own `--` override the tier: `--cpu` (alone, it sets the
+  wall cap to twice itself), `--timeout` (the wall cap; alone, it sets the CPU cap to itself too),
+  `--heap`, `--procs`, `--batch-timeout`. Assay always solves with sat4j.
 - **Ordering and deferral.** Modules run cheapest first, by the smallest translation size the
   lock records for any of their commands (a module with none recorded runs last); within a
   module the `every_line` conjunction runs first, then its commands by recorded size. The hot
@@ -694,10 +722,11 @@ The builder has latitude on everything not marked.
   the staged bytes into `<stem>.staged/`, parses every module through a fresh adapter child at a
   1024 MB heap, and diffs the keys against the staged lock, warning on stderr how many rows the
   commit leaves unmeasured; it never solves, takes no heavy-work lock, and exits 0 unless a lint
-  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `--check` at the
-  gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no heavy-work
-  lock. `--check` and `--write` ride `preflight alloy` and the heavy-work lock, and exit 75 when
-  another task holds it. The official tier's standup in CI (runner choice) is separate work.
+  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `--check --quiet` at
+  the gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no
+  heavy-work lock. `--check` and `--write` preflight in-process for the tier's heap plus one
+  child's overhead, take the heavy-work lock, and exit 75 when another task holds it. The
+  official tier's standup in CI (runner choice) is separate work.
 - **Platforms** [TYPED `30Yf:arch-three-platforms`]: Windows, Linux, and macOS must be
   supportable; WSL is secondary. sat4j is pure Java and the default, and no design depends on a
   bundled native: minisat and glucose ship for Windows and Linux, the core-producing minisat and
