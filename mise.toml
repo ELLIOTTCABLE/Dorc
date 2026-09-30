@@ -148,7 +148,7 @@ CARGO_TARGET_DIR = "{% if env.WSL_DISTRO_NAME %}{{ xdg_cache_home }}/dorc-wsl-ta
 # put them on PATH, so such a task dies with `'sh' is not recognized` from native
 # PowerShell/cmd. Anything that wanted a script goes in `crates/internal-tooling`
 # — the repo's cargo-xtask-pattern tooling crate, NOT product code — spelled
-# `cargo run -q -p internal-tooling -- <task>`. That crate also owns the ONE
+# `cargo run -q --profile tooling -p internal-tooling -- <task>`. That crate also owns the ONE
 # answer to "where is a POSIX shell", shared with the e2e corpus so the two
 # cannot drift. (Only git HOOKS still get a POSIX environment for free, because
 # git supplies it before hk/mise are involved — see hk.pkl.)
@@ -303,7 +303,7 @@ dir = "spike"
 # under `internal-tooling exclusive`, which refuses with exit 75 while another heavy task on this
 # machine holds the lock. Exit 75 is contention, not a failure. A heavy task started from inside
 # another (gate:arc's gate:full-quiet, a gate step's alloy) runs under its ancestor's hold.
-run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full-quiet -- mise run gate:full-quiet:held --"
+run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full-quiet -- mise run gate:full-quiet:held --"
 
 [tasks."gate:full-quiet:held"]
 description = "gate:full-quiet's body, without the heavy-work lock; run gate:full-quiet instead."
@@ -419,7 +419,7 @@ description = "ACCEPTANCE, human-facing: everything due before a commit, in orde
 raw = true
 # REMIT: a human reading a terminal. Never quieten this to save an agent tokens; that is
 # `gate:full-quiet`'s entire job, and the pair exists so neither has to compromise.
-run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full -- mise run gate:full:held --"
+run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:full -- mise run gate:full:held --"
 
 [tasks."gate:full:held"]
 description = "gate:full's body, without the heavy-work lock; run gate:full instead."
@@ -446,12 +446,12 @@ dir = "spike"
 # Sited before the hk checks because hk cannot fail this way itself: an empty selection and a
 # clean pass share one exit code. The profiles MUST match the `hk check` lines above — they are
 # what the floor measures the selection under, and a drift would measure a different gate.
-run = "cargo run -q -p internal-tooling -- gate-floor --profile medium --profile slow"
+run = "cargo run -q --profile tooling -p internal-tooling -- gate-floor --profile medium --profile slow"
 
 [tasks."gate:arc"]
 description = "CONDUCTOR-ONLY: run completion, arc checks, and RustSec audit."
 raw = true
-run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:arc -- mise run gate:arc:held --"
+run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task gate:arc -- mise run gate:arc:held --"
 
 [tasks."gate:arc:held"]
 description = "gate:arc's body, without the heavy-work lock; run gate:arc instead."
@@ -469,26 +469,26 @@ run = [
 description = "Self-tests for the hooks hk runs: the commit-msg gate's matchers, and whether pre-commit's `e2e` step still SEES each shape a whole-product case comes in. Cheap; rides `gate` because both checks fail OPEN — a broken matcher stops refusing, and a glob that matches nothing is skipped in silence. The commit-msg hook stays sh (git runs it that way); only the harness is Rust, which is what lets this run from a native Windows shell."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- hook-selftest"
+run = "cargo run -q --profile tooling -p internal-tooling -- hook-selftest"
 
 [tasks.preflight]
 description = "Bounds-check this machine against a profile's expected disk and RAM usage BEFORE spending either: `mise run preflight gate|bless|kani|lean|alloy`. One line on pass, one LOUD line and a nonzero exit on refusal. Rides the heavy tasks automatically (gate:full*, bless*, verify:kani, verify:lean, verify:translate, alloy); the hot loop is deliberately unburdened. Each leg checks its OWN environment, so `mise run both preflight gate` is what covers the WSL VM's separate memory cap. DORC_PREFLIGHT=skip bypasses it — emergencies only, and it says so in the output."
 raw = true
 dir = "spike"
 usage = 'arg "<profile>" help="gate, bless, kani, lean, or alloy"'
-run = "cargo run -q -p internal-tooling -- preflight {{ usage.profile }}"
+run = "cargo run -q --profile tooling -p internal-tooling -- preflight {{ usage.profile }}"
 
 [tasks.doctor]
 description = "READ-ONLY inventory of what is eating the disk: every registered worktree with its size and clean/dirty/locked state, this leg's target dir broken down, and the lane caches. Deletes nothing. ~10s, because the sizes are real directory walks. Each leg sees only its own filesystem — `mise run both doctor` is what shows the WSL lane caches alongside the Windows worktrees."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- doctor"
+run = "cargo run -q --profile tooling -p internal-tooling -- doctor"
 
 [tasks."doctor:unused"]
 description = "READ-ONLY inventory of what is sitting around UNUSED: every worktree with its clean/dirty and landed state, every local branch with its merged state and whether anything has it checked out, and every lane cache with whether its worktree still exists. Deletes nothing, ever. Sorted, sizeless and timestampless ON PURPOSE — run it at the start and the end of a session and the difference IS that session's residue. Sub-second; `mise run doctor` is the separate, slower question of what is eating the disk. Each leg sees only its own filesystem, so `mise run both doctor:unused` is what puts the WSL caches beside the Windows worktrees."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- doctor unused"
+run = "cargo run -q --profile tooling -p internal-tooling -- doctor unused"
 
 [tasks.clean]
 description = "cargo clean over the spike workspace — build artifacts only. Deliberately touches NOTHING in the working tree: no `git clean`, no untracked sweep. Dirty and untracked paths here are routinely a human's in-flight work, and a task that eats them is worth more than it saves."
@@ -525,27 +525,27 @@ run = [
 description = "ORCHESTRATOR-ONLY: re-bless goldens after the acceptance gate."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- exclusive --task bless -- mise run bless:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task bless -- mise run bless:held --"
 
 [tasks."bless:held"]
 description = "bless's body, without the heavy-work lock; run bless instead."
 hide = true
 raw = true
 dir = "spike"
-run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless"]
+run = ["mise run preflight bless", "cargo run -q --profile tooling -p internal-tooling -- bless"]
 
 [tasks."bless:dry"]
 description = "Builder-safe dry blessing; no golden writes."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- exclusive --task bless:dry -- mise run bless:dry:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task bless:dry -- mise run bless:dry:held --"
 
 [tasks."bless:dry:held"]
 description = "bless:dry's body, without the heavy-work lock; run bless:dry instead."
 hide = true
 raw = true
 dir = "spike"
-run = ["mise run preflight bless", "cargo run -q -p internal-tooling -- bless --dry"]
+run = ["mise run preflight bless", "cargo run -q --profile tooling -p internal-tooling -- bless --dry"]
 
 [tasks.loom]
 description = "The loom CLI, on this workspace's own toolchain: `publish CASE…` regenerates both generated locks plus the affected cases, `vars`/`sections`/`keys` discover, `add-register` seeds one. A bare `cargo run` here resolves the WRONG rustc and dies before it reads a case, which is the whole reason this task exists. Trailing args reach `dorc-loom` verbatim."
@@ -557,7 +557,7 @@ run = "cargo run -q -p dorc-loom --bin dorc-loom --"
 description = "The SCOPED re-bless: BLESS=1 over exactly the named cases, and nothing else. `bless` above verifies the WHOLE suite first and refuses while anything is red, which is right for a conductor's close and a deadlock for the one job this exists for — a change that legitimately moves a case's golden cannot bless it while that case is the red one. Same selection `test:e2e` takes (ONE bare substring, or any number of case PATHS), same runner, same gates, and the trial filter is what keeps every other golden byte-identical. Verify the scope yourself afterwards: `git status --short` must show only the cases you named. A case carrying `expected.emitted` is still refused here — that is `bless:floor`'s."
 dir = "spike"
 raw = true
-run = "cargo run -q -p internal-tooling -- exclusive --task bless:case -- mise run bless:case:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task bless:case -- mise run bless:case:held --"
 
 [tasks."bless:case:held"]
 description = "bless:case's body, without the heavy-work lock; run bless:case instead."
@@ -575,50 +575,50 @@ BLESS = "1"
 description = "ORCHESTRATOR-ONLY: the ONE sanctioned way to mint or amend a floor case's `expected.emitted` — the manifest measured under dash AND posh, the transcript, and the book=<sha256> inside it, all written from one run, so nothing is hand-computed. Ordinary `bless` REFUSES such a case by design: expected.emitted is measure-once ground truth (the shells' own answer), never an engine render. Scope it to the case you are minting, exactly like `bless`. Refuses where the pair cannot be resolved — git's Windows userland ships no posh, so run this from WSL. Verifies with the full gate plus `test:floor` afterwards."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- exclusive --task bless:floor -- mise run bless:floor:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task bless:floor -- mise run bless:floor:held --"
 
 [tasks."bless:floor:held"]
 description = "bless:floor's body, without the heavy-work lock; run bless:floor instead."
 hide = true
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- bless --floor"
+run = "cargo run -q --profile tooling -p internal-tooling -- bless --floor"
 
 [tasks."lint:docids"]
 description = "READ-ONLY, WHOLE-TREE: every docID cross-reference in the corpus, the steering files and the root docs, checked against the document it names, with no path scoping (the `docids` hk step is the scoped sibling — it checks only the files hk hands it). Silent when every target resolves. Matches only the three unambiguous spellings — letter-bearing IDs (28Q, 30Ba), explicit notes//plans/ paths, and colon-slug forms (271:rul-sin-ordering) — because a bare three-digit run is a line number far more often than a docID. Quarantined targets resolve by FILENAME alone; nothing there is opened. Writes nothing, ever."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- docids"
+run = "cargo run -q --profile tooling -p internal-tooling -- docids"
 
 [tasks.slugs]
 description = "Regenerate the root SLUGS.md: the machine-generated index of every slug the corpus defines or cites (grep it, do not edit it). Reads the WHOLE corpus every run. Trailing args reach the endpoint — `-- --near-all` recomputes every advisory `near:` line, `-- --no-near` carries them all forward and computes none, `-- --check` compares only the committed file's mechanical lines and writes nothing (what the pre-commit hook runs), `-- --stats` prints corpus counts and residue samples. The `near:` lines are SEMANTIC and per-machine (the external `ck` tool + its model, resolved via mise); absent that backend they are silently carried forward, so a bare run needs no network."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- slugs"
+run = "cargo run -q --profile tooling -p internal-tooling -- slugs"
 
 [tasks."prose:census"]
 description = "INSTRUMENT, never a gate: per-tier register counts across both generated locks, plus every register marked as written by a person. The burn-down view — migrated text awaits a rewrite, slop is whatever the loom loop minted, and the human column only grows under `dorc-loom publish --human`."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- prose-census"
+run = "cargo run -q --profile tooling -p internal-tooling -- prose-census"
 
 [tasks."prose:orphans"]
 description = "INSTRUMENT, never a gate: arrangement-lock rows no living source declares — no case's frontmatter edits them and no seat's literal renders them. Report-only, sorted and comparable, and it REAPS NOTHING (`doctor-inventories-never-reaps`): removing a user-facing string is a conductor decision, and a red gate would make deleting one the shortest path."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- arrangement-census"
+run = "cargo run -q --profile tooling -p internal-tooling -- arrangement-census"
 
 [tasks."xfail:census"]
 description = "INSTRUMENT: every live xfail pin grouped by round horizon, with its greening trigger — 'what is owed, and by when' in one screen. The GATE is the `xfail_census` unit test, which shares this renderer; expiry is measured against xfail.rs's CURRENT_ROUND, which a conductor bumps at round-open."
 dir = "spike"
 raw = true
-run = "cargo run -q -p internal-tooling -- xfail-census"
+run = "cargo run -q --profile tooling -p internal-tooling -- xfail-census"
 
 [tasks.coverage]
 description = "INSTRUMENT, never a gate (it cannot fail a build): the analyzer-coverage rollup over the e2e corpus. Needs dorc-coverage built. Pass --full for the per-site table, or a book plus its oracles for a one-off."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- coverage"
+run = "cargo run -q --profile tooling -p internal-tooling -- coverage"
 
 # BROKEN as of 2026-07-26, and not by this wiring: the script pipes the raw
 # probe-results.txt to dorc, but the round-trip now consumes a framed `dorc-records/1`
@@ -659,7 +659,7 @@ run = "cargo run -q -p dorc-verify -- promote"
 [tasks."verify:translate"]
 description = "OPT-IN, Linux/WSL only: regenerate minispec/Generated/ from the real algebra sources through charon+aeneas, then materialize the externals and run the sorry census. STRICT — a construct the translator cannot model is a refusal, never a silent `sorry`. The output is committed, so the diff IS the drift alarm."
 raw = true
-run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task verify:translate -- mise run verify:translate:held --"
+run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- exclusive --task verify:translate -- mise run verify:translate:held --"
 run_windows = "wsl -- mise run verify:translate"
 
 [tasks."verify:translate:held"]
@@ -706,19 +706,19 @@ run = "elan-init -y --no-modify-path --default-toolchain none"
 [tasks.alloy]
 description = "Run every command in each `.als` file given after `--`, in sequence in one adapter JVM that is killed and respawned whenever a command reaches a cap, and print one JSON row per command (module, command, kind, scope, result, wall-clock). Exit 1 on any counterexample, unsat run, error (an out-of-memory child is reported as `error`), timeout, or command left unrun; a command carrying `expect 0` or `expect 1` is instead red exactly when its verdict disagrees (`expect 1` wants sat or a counterexample, `expect 0` unsat or none), its row carries the `expect`, and an error, timeout, or unrun command stays red regardless; exit 2 on a usage error, a `--command` that names no command included. Every solver is bounded: `-- --timeout <seconds>` caps each command's wall-clock (default 120), `-- --cpu <seconds>` its CPU time (default the wall cap), `-- --heap <MB>` the child JVM's heap (default 2048), `-- --procs <n>` the processors it may use (default 2), and `-- --batch-timeout <seconds>` the whole run (default 540, under an agent harness's 600s foreground ceiling; commands not started by then report `not-run`); the caps in force print on stderr first; the runner kills the live child as it exits, and the child halts itself once its parent is gone. A DIRECTORY argument stands for its `.als` files in sorted order (`mise run alloy -- .` from an assay out dir needs no shell glob); a module whose only command is Alloy's synthesized `Default` yields no row. Preflights in-process for disk and for its own `--heap` (the line prints on stderr, before the lock), then rides the machine-global heavy-work lock (`internal-tooling exclusive`, exit 75 while another heavy task holds it: do other work, never wait in a loop). `-- --command <name>` runs one command; `-- --instances` adds Alloy's instance (the counterexample, for a check) to each row that has one; `-- --solver <id>` picks the SAT solver (default sat4j; the jar also carries glucose and minisat natives). Alloy resolves every `open X` to `X.als` beside the ROOT file (minus the root's own `module a/b` path); `-- --open X=<file.als>` serves a file living elsewhere at that spot, and Alloy's messages then name the spot, not the file. Relative paths resolve against the directory you ran mise from."
 raw = true
-run = "cargo run -q -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- alloy"
+run = "cargo run -q --profile tooling -p internal-tooling --manifest-path {{ config_root }}/spike/Cargo.toml -- alloy"
 
 [tasks.assay]
 description = "Compile spec documents into Alloy modules and check them against their locks (`notes/30Y`, `notes/30Yf`): `-- <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--quiet] [-- <caps>]`. Reads each document's `alloy` and `sh` fences plus `shared.assay.md` and `shared-laws.assay.md` beside it (every document is spelled `<stem>.assay.md`), writes one flat directory of comment-free `.als` modules, one item per line, with the line map in `assay-map.json` beside them (default `<cargo target dir>/alloy/<stem>/`; `--out` only with one document), and prints one JSON report per document. A shared half stands for every document beside it, and `<stem>.lock.json` for `<stem>.assay.md`. Bare, it compiles only. `--parse` adds Alloy's own parse lint (one JVM, no heavy-work lock). `--staged` is the pre-commit form: the parse lint and the key-diff over the staged bytes against the staged lock, warning on stderr how many rows the commit leaves unmeasured; it never solves and always exits 0 unless a lint refuses. `--check` and `--write` solve under the preflight (sized for the tier's heap) and the heavy-work lock, one adapter JVM per document, and report progress on stderr: a start line, a plan line (commands, modules, children, caps, how many rows last timed out), each fresh solve's start, translation end, and result, a still-alive line every five minutes per in-flight command, and an end line on every exit path, every line stamped with the time since the pass began; stdout stays the report. `--quiet` silences the progress lines and nothing else; every non-interactive caller (hooks, gates, agents) passes it. `--help` lists the flags. a row whose committed result is definite and whose key (the loaded closure without commands, the command's own text, its scope, the jar, the adapter, and the effective options) is unchanged is not re-solved; a book's `every_line` conjunction runs first and, green, entails its lines; a row whose last instance still satisfies it under unchanged declarations is answered by evaluation. Tiers: `--gate` (default: 600 s CPU per command, 540 s batch, incremental), `--hot` (120 s, 540 s batch, incremental, rows last measured as too large or timed out are deferred), `--official` (1800 s, 4096 MB, an 8 h batch cap, keys ignored, no replay, no entailment: every line is solved on its own beside its conjunction, and a conjunction disagreeing with its lines exits 1; several children in parallel; not resumable, so a capped pass is finished by a longer `--batch-timeout`). The batch cap is a hard bound on wall time: a command starts with its wall cap clipped to the time the batch has left, one cut short is recorded `timeout` with the budget it got, and one never started is `not-run`. Caps after a second `--` override the tier: `--cpu` (alone, it sets the wall cap to twice itself), `--timeout` (the wall cap; alone, it sets the CPU cap to itself too), `--heap`, `--procs`, `--batch-timeout`. `--module` and `--only` run a slice (the command, its premise twin, its book's run) and never write. The lock holds results and the budget, heap, size, key, and platform they were measured under, never timing; `--write` writes definite results at any tier, never replaces a definite row whose key is unchanged with an unmeasurement, writes unmeasurements only at `--official` (over a changed key or a missing row), and prints the rows it changed. Exit 0 every row green, an accepted red, or accepted residue (a full timeout or out-of-memory, a platform failure, an unsupported command, an error the lock records as itself) · 1 a mismatch (a moved result, a new row, a row gone, or a missing lock) · 2 a lint refusal, compile or parse · 3 the solver could not run · 4 no mismatch, but rows went unmeasured or are owed a run at the ceiling (run the official tier) · 75 the heavy-work lock is held elsewhere: contention, not a failure; do other work. Relative paths resolve against the directory you ran mise from."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- assay"
+run = "cargo run -q --profile tooling -p internal-tooling -- assay"
 
 [tasks."verify:kani"]
 description = "OPT-IN Linux/WSL Kani verification; Windows routes through WSL."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- exclusive --task verify:kani -- mise run verify:kani:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task verify:kani -- mise run verify:kani:held --"
 run_windows = "wsl -- mise run verify:kani"
 
 [tasks."verify:kani:held"]
@@ -744,7 +744,7 @@ run_windows = "wsl -- mise run verify:kani-setup"
 description = "OPT-IN, Linux/WSL only: stage minispec/ to an ext4 build root and typecheck it with lake. First run fetches a Lean toolchain and mathlib's olean cache (gigabytes, tens of minutes); later runs are incremental. Staging is load-bearing — lake on drvfs is unusably slow for a dependency store this size."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- exclusive --task verify:lean -- mise run verify:lean:held --"
+run = "cargo run -q --profile tooling -p internal-tooling -- exclusive --task verify:lean -- mise run verify:lean:held --"
 run_windows = "wsl -- mise run verify:lean"
 
 [tasks."verify:lean:held"]
@@ -772,31 +772,31 @@ description = "LIVE ACCEPTANCE, never a gate: provisions a throwaway Debian cont
 raw = true
 dir = "spike"
 depends = ["build"]
-run = "cargo run -q -p internal-tooling -- livetest run"
+run = "cargo run -q --profile tooling -p internal-tooling -- livetest run"
 
 [tasks."livetest:baselines"]
 description = "Re-derive Research/trial/r26/renders/ — the hermetic baselines `livetest` asserts its live plan summaries against — from the current engine, and print the resulting plan-summary lines. Runs `dorc probe`/`dorc plan` only; executes no book and no oracle bytes. A moved summary is a real engine change: register it in the kit's predictions.md rather than committing it bare."
 raw = true
 dir = "spike"
 depends = ["build"]
-run = "cargo run -q -p internal-tooling -- baselines"
+run = "cargo run -q --profile tooling -p internal-tooling -- baselines"
 
 [tasks."livetest:target"]
 description = "Provision the same container livetest uses and LEAVE IT RUNNING, printing the ssh destination, the per-run key, and a ready-to-paste dorc invocation. The shortcut for poking at a real endpoint by hand; `livetest:clean` removes it."
 raw = true
 dir = "spike"
 depends = ["build"]
-run = "cargo run -q -p internal-tooling -- livetest target"
+run = "cargo run -q --profile tooling -p internal-tooling -- livetest target"
 
 [tasks."livetest:clean"]
 description = "Remove every container livetest created, and its run directories. Safe to run at any time; touches nothing it did not create."
 raw = true
 dir = "spike"
-run = "cargo run -q -p internal-tooling -- livetest clean"
+run = "cargo run -q --profile tooling -p internal-tooling -- livetest clean"
 
 [tasks."livetest:remote"]
 description = "Drive the livetest loop against a destination YOU supply -- `mise run livetest:remote -- root@host` (or `root@host:2222`). Provisions nothing and tears down nothing, so it will really mutate whatever you point it at. LIVETEST_SSH_KEY names an identity file if your ssh config does not already reach the host."
 raw = true
 dir = "spike"
 depends = ["build"]
-run = "cargo run -q -p internal-tooling -- livetest remote"
+run = "cargo run -q --profile tooling -p internal-tooling -- livetest remote"

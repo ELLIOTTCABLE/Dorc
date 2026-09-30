@@ -64,3 +64,8 @@ allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 # Module style: `foo.rs`, never `foo/mod.rs`.
 mod_module_files = "warn"
+
+# The tooling binary's own output dir: no `--workspace` build writes here, so feature unification
+# can never relink the running tooling exe, which Windows refuses to replace mid-run.
+[profile.tooling]
+inherits = "dev"

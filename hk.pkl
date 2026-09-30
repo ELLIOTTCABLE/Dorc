@@ -54,8 +54,8 @@ local linters = new Mapping<String, Step> {
         glob = List("spike/verify/kani/**/*.rs", "spike/verify/aeneas/**/*.rs")
         stage = List("spike/verify/kani/**/*.rs", "spike/verify/aeneas/**/*.rs")
         depends = List("cargo_fmt")
-        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached --check"
-        fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached"
+        check = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached --check"
+        fix = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- fmt-detached"
     }
     ["cargo_clippy"] {
         glob = "spike/**/*.rs"
@@ -94,7 +94,7 @@ local linters = new Mapping<String, Step> {
     // `NO_LINT_DOCIDS=1` is the escape hatch, honored by the tool itself.
     ["docids"] {
         glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md")
-        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- docids {{files}}"
+        check = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- docids {{files}}"
     }
     // The generated slug index `SLUGS.md`, regenerated from the WHOLE corpus (never `{{files}}`: a
     // citation count is a whole-corpus fact). `--check`, what agent sessions run under `HK_FIX=0`,
@@ -104,8 +104,8 @@ local linters = new Mapping<String, Step> {
     ["slugs"] {
         glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md", "SLUGS.md")
         stage = List("SLUGS.md")
-        check = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
-        fix = "cargo run -q -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"
+        check = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
+        fix = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"
     }
     // The key-diff over STAGED bytes only warns; the completion gate refuses (`30Yf` § 8).
     ["assay"] {
