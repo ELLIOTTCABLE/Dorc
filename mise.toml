@@ -617,12 +617,6 @@ raw = true
 dir = "spike"
 run = "cargo run -q --profile tooling -p internal-tooling -- coverage"
 
-# BROKEN as of 2026-07-26, and not by this wiring: the script pipes the raw
-# probe-results.txt to dorc, but the round-trip now consumes a framed `dorc-records/1`
-# stream that the e2e runner builds by first running the compiled probe
-# (`framed_results` in crates/cli/tests/e2e.rs). Every case is refused at intake with
-# host-evidence-admission-refused, so the family reads 0.00. Fixing it means porting
-# that framing — or, better, moving the measurement into the runner that already has it.
 # ── verify (the minispec law corpus and its binder) ──────────────────────────────────────────
 # `verify:check` is CHEAP and needs zero external toolchains, so the completion gate routes it in
 # on both platform legs — a box with no Lean and no aeneas passes it, because those are opt-in
