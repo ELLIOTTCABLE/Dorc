@@ -1013,7 +1013,18 @@ no task covers, and consider adding the task instead.
   does not put it on PATH, so such a task dies from PowerShell/cmd. Work that wanted a
   script goes in `crates/internal-tooling` (repo plumbing, NOT product code; the
   cargo-xtask pattern — it has NO dependents: the suite's shared seats live in the
-  dependency-free `crates/testbed` below `cli`) as `cargo run -q -p internal-tooling -- <task>`.
+  dependency-free `crates/testbed` below `cli`) as
+  `cargo run -q --profile tooling -p internal-tooling -- <task>`.
+- **tooling-runs-under-its-own-profile** — every invocation of the tooling binary carries
+  `--profile tooling`, and a new task or hook step carries it too. Cargo unifies a shared
+  dependency's features over the crates in a build, so a `-p internal-tooling` build and a
+  `--workspace` build can resolve different feature sets and each re-copy its own artifact to
+  the same `target/debug/internal-tooling.exe`; Windows cannot replace a running exe, so a
+  workspace build died whenever a long tooling process (a bless, an official assay pass) was
+  alive (`300:finding-bless-driver-self-lock-on-windows`). Under its own profile the tooling
+  exe lives in `target/tooling/`, which no workspace build writes; measured 2026-09-29, a
+  `cargo build --workspace` leaves it untouched. Tests keep the dev profile. The crate's
+  dependency bar is therefore disk and cold-build cost, not feature unification.
 - **one-shell-answer** — `dorc_transport::Posix::find()` is the ONLY place that answers
   "where is a POSIX shell": git's own userland on Windows (derived from `git --exec-path`,
   never hardcoded, never PATH-searched), plain PATH lookup elsewhere. The runner's sessions

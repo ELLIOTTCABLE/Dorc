@@ -503,7 +503,8 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   last recorded as a timeout or an out-of-memory); for each fresh solve its start (the budget it
   has, the row's last result and size), its translation's end (clauses, primary variables), a
   still-alive line every five minutes (wall time waited; CPU against the budget once the child
-  has started; translating, or solving with the clause count), and its result with the count of
+  has started; translating, or solving with the clause count and, when a tick carries them, the
+  solver's conflicts, restarts, learned clauses, and decisions), and its result with the count of
   rows answered so far over the total; and an end line on every exit path, with counts by
   provenance and by result. Every line carries the time since the pass began, so the last line
   on a dead terminal says how long it ran; durations render as `41.3s`, `12m08s`, `2h14m05s`.
@@ -511,7 +512,14 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   estimate, no fraction of work done, only effort against the caps [TYPED: a cap-derived bound
   reads as a prediction]. `--parse`, `--staged`, and a bare compile print none of it. `--quiet`
   silences progress and never a finding: the preflight line, the diff, the key-diff warning, and
-  errors stay. `--help` lists the flags and the trailing caps.
+  errors stay. `--help` lists the flags and the trailing caps. The lines are `tracing` events
+  [TYPED 2026-09-29: the workspace's logging stack, not a hand-rolled sink] under a subscriber
+  `assay/progress.rs` installs on stderr for `--check` and `--write` only: plain text, prefixed
+  `assay +<elapsed>` and the span the event falls in, `assay{stem=…}` for a document's begin,
+  plan, javac, and end lines and `solve{stem=… module=… label=…}` for a fresh solve's lines;
+  `--quiet` is the subscriber's level filter (progress is `info`; quiet admits `warn`). The
+  runner installs no subscriber. The wording is strawman and lies where it fell [TYPED: no
+  bikeshedding while it reports honestly and usefully].
 - **Exit codes**: `0` every row green or accepted residue [TYPED 2026-09-28: a set of reds fully
   acked by the lock is a pass] · `1` a mismatch (a moved result, a new row, a row gone, a
   missing lock) or the official tier's construction finding · `2` a lint refusal, compile or
@@ -715,8 +723,11 @@ The builder has latitude on everything not marked.
   `<out>/instances/<module>/<label>.xml`, and the fit belts); `assay/tier.rs` (tiers, caps, the
   ceiling, the deferral threshold); `assay/lock.rs` (the lock's rows, schemas, matching, and
   writing); `assay/drive.rs` (the survey, slices, ordering, and the per-row decision of § 2.5);
-  `assay/pass.rs` (one document's pass, the report, the diff, the exit). `json.rs` and
-  `sha256.rs` are the crate's own, standard library only.
+  `assay/pass.rs` (one document's pass, the report, the diff, the exit); `assay/progress.rs`
+  (the `tracing` subscriber and the human duration). `json.rs` and `sha256.rs` are the crate's
+  own, standard library only. The tooling binary builds and runs under its own cargo profile
+  (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`), so a long assay pass never holds the
+  executable a workspace build would replace.
 - **Gate placement.** Pre-commit, hk's `assay` step over staged `specs/**/*.assay.md` and
   `specs/**/*.lock.json`, runs `--staged` [TYPED: parse and key-diff belong there]: it compiles
   the staged bytes into `<stem>.staged/`, parses every module through a fresh adapter child at a
