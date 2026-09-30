@@ -2527,6 +2527,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
+## finding-fmt-runs-a-jvm
+- defined: —
+- cited: 30Yg Research/LIVING_STATUS (3)
+
 ## 26L:finding-future-values-remain-future
 - defined: Research/notes/26L-native-orchestration-and-contingent-progression.md:434
 - cited: ROADMAP (1)

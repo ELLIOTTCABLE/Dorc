@@ -32,21 +32,26 @@
 
 The assay progress lane (`notes/30Yg`, Fable conductor, worktree
 `.tmp/trees/r30-alloy-praxis-conductor` kept) folded into `ai/main` the evening of 2026-09-29
-with both gate legs green: a `--check`/`--write` reports itself on stderr as `tracing` events
-(a begin line, a plan line, each fresh solve's start, translation, five-minute still-alive, and
-result, an end line on every exit path, all stamped `assay +<elapsed>`; `--quiet` silences
-exactly that, and hooks, gates, and agents pass it); `--help` lists the flags; the official tier
-has an eight-hour batch cap and is not resumable by ruling; preflight is sized from the tier's
-heap; the tooling binary builds under `--profile tooling` so no workspace build can replace a
-running tooling exe (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`). Above `ai/main`
-sits `ai/r30-assay-effort-counters`, one Java commit that puts sat4j's conflicts, restarts,
-learned clauses, and decisions on the still-alive line (confirmed live on a 311 slice); it moves
-every lock key, so it lands when the next official run is due anyway (the Rust half is already
-in `ai/main`, inert). The human's official pass over 311 finished the same evening on the
-pre-lane binary and left a schema-2 lock, keyed under the pre-counters adapter, uncommitted in
-the primary checkout. Posed, unfixed: `30Yg:finding-gate-e2e-harness-uplift-race` (the
+with both gate legs green, in two folds: a `--check`/`--write` reports itself on stderr as
+`tracing` events (a begin line, a plan line, each fresh solve's start, translation, five-minute
+still-alive with sat4j's conflicts, restarts, learned clauses, and decisions once solving, and
+result, an end line on every exit path, all stamped `assay +<elapsed>`; `mise run assay-quiet`
+is the hook and agent spelling and silences exactly that); its JSON report goes to
+`.tmp/assay/<stem>-<UTC stamp>.json` (`--json <path|->`) and stdout is a summary ending in that
+path, carrying the `HEAD` commit; `--write` refuses uncommitted document or shared-half text
+(exit 2) and writes the commit into the lock's header (`{"schema": 2, "commit": …}`); `--help`
+lists the flags; the official tier has an eight-hour batch cap and is not resumable by ruling;
+preflight is sized from the tier's heap; the tooling binary builds under `--profile tooling` so
+no workspace build can replace a running tooling exe (`spike/CLAUDE.md`
+`tooling-runs-under-its-own-profile`). The adapter's digest moved with the counters, so the
+committed 311 lock (`(test new) Lock the specs for the first time`, written by the human's
+1 h 34 m official pass on the pre-lane binary) no longer matches any key; the 311 mechanization
+conductor owns regenerating it from scratch on the landed adapter, together with its own spec
+changes [human-typed]. Posed, unfixed: `30Yg:finding-gate-e2e-harness-uplift-race` (the
 completion gate's concurrent steps can re-uplift `dorc-harness.exe` under the e2e tests once in
-a while) and `30Yg:open-respawn-parse-eats-wall-budget`. The lane's second tune, from the 311
+a while), `30Yg:finding-fmt-runs-a-jvm` (two hk steps racing on the tooling exe after a
+tooling-source edit; an hk `depends` would close it), and
+`30Yg:open-respawn-parse-eats-wall-budget`. The lane's second tune, from the 311
 mechanization conductor's needs list (a shared world module for books; an instance text form;
 two lints), is not yet started; its three small chafes (`--help`, deferral notes naming their
 measurement, `expect` on report rows) landed here.
