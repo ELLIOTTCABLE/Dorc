@@ -247,6 +247,15 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
 - **[TYPED]** 2026-09-29: the conductor runs no `--official`, and no second official pass runs
   before a pending tooling change that invalidates the official lock's keys has landed. The
   human's in-flight run lands tomorrow and is read for what it measures.
+- **[TYPED]** 2026-09-29: a brief authorization for small, width-one solver work beside the
+  official run was withdrawn the same hour: a sibling conductor is also working around or
+  tuning the heavy-work lock, and three concurrent solver users is too ambitious. No solver
+  work on either leg from this conductor while the official run holds the Windows lock.
+  Measured before the withdrawal, for the record: the Windows lock held by the human's `assay`
+  (pid 51604); the WSL leg unlocked, 19 GB free of 20; the host 12.5 GB free of 32 beside two
+  JVMs. A measurement worktree was created and removed with no commit.
+- **[TYPED]** a sibling conductor is working on the tooling and may fast-forward `ai/main` when
+  done; this branch rebases over it at the fold.
 - `pln-the-road-to-the-panel` (the conductor's plan, process only) — (1) the STE pass lands and
   is read line by line; (2) nothing touches a solver while the human's pass holds the
   heavy-work lock; afterward a builder measures the settled text at the gate tier, in a
