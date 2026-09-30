@@ -291,7 +291,6 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 <!-- prose-translation -->
 > An mScheme is a way of writing down which mReferent is meant, with one accountable owner.
 > Every shape belongs to one mScheme.
-> A matched shape is a control-flow path of the owner's body.
 > The mSort's owner declares `:primary-of`, on the primary mScheme (2.2-primary-of-and-identified-in).
 > An mSort has at most one primary mScheme.
 > An mScheme is `:primary-of` at most one mSort.
@@ -302,13 +301,16 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 
 #### § 1.3.1-a-primary-scheme-and-its-sort
 
-The sentence below is about a well-formed description, and no fence draws a restriction from
-it: the checker considers every world, those with a primary mScheme that never yields into its
-mSort among them, since a description that fails a rule of form is still one Dorc must be safe
-under. It is held for the design sitting with a lean to remove it (`notes/312d` § 21).
+The first sentence below is about a well-formed description, and no fence draws a restriction
+from it: the checker considers every world, those with a primary mScheme that never yields into
+its mSort among them, since a description that fails a rule of form is still one Dorc must be
+safe under. It is held for the design sitting with a lean to remove it (`notes/312d` § 21). The
+second sentence says what a shape is; the fences hold a shape as an atom of its mScheme and
+nothing of the body it is a path of.
 
 <!-- normative -->
 > Where an mSort has a primary mScheme, that mScheme yields into the mSort for at least one shape.
+> A matched shape is a control-flow path of the owner's body.
 
 ### § 1.4-key-and-its-two-views
 
@@ -774,7 +776,8 @@ pred shellResolvesInTheAmbientInstance {
 > A mVantage says where a `resolve()` executes.
 > A mVantage supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort.
 > For a shape with no `:identified-in`, a mVantage is the mRoute, the last-resort mParent (1.6-parent-one-per-key).
-> A vantage entered through a wrapper is entered from the caller's vantage, and no vantage is entered from itself.
+> A vantage entered through a wrapper is entered from the caller's vantage.
+> No vantage is entered from itself, directly or through other vantages.
 > The observers a fact was measured under are the instances its mEntryChain holds (2.8-observer-dependence-and-independence).
 > For execution under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves.
 > Differential test discharges that axiom, and nobody speaks it.
@@ -1563,7 +1566,7 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is eight atoms of every kind the specification owns.
+> This book's ceiling is eight atoms of every kind the specification owns and integers of four bits.
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem and closes the boot's may-read set.
 > Tessa speaks as in that book and closes the file's and the filesystem's may-read sets.
 > Anna owns the package index.
@@ -1667,7 +1670,7 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is eight atoms of every kind the specification owns.
+> This book's ceiling is eight atoms of every kind the specification owns and integers of four bits.
 > The stdlib, Tessa, and Deb speak as in 2.6.2-a-book-stage-five-the-index-given-whole.
 > Tessa's declaration also supplies the filesystem as the list file's inode's mParent.
 > Tessa also declares the finished record for a file written by its path.
@@ -1744,7 +1747,7 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is five atoms of every kind the specification owns.
+> This book's ceiling is five atoms of every kind the specification owns and integers of four bits.
 > Tessa owns the file.
 > The inode number's mScheme is `:primary-of` the file.
 > Its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`.
@@ -1819,7 +1822,8 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is four atoms of every kind the specification owns, its two mKeys, one mRoute, and one mRoot mWorld among them.
+> This book's ceiling is four atoms of every kind the specification owns and integers of four bits.
+> The atoms include its two mKeys, one mRoute, and one mRoot mWorld.
 > Petra owns the volume.
 > The volume id's mScheme is `:primary-of` the volume, and its one shape is `:root` and carries `:guarantees-unique-name`.
 > Petra closes the volume's may-read set and declares the finished record for a volume written by its id.
@@ -1914,7 +1918,7 @@ pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
 > By default, a cell measured under a lent mKey of O is assumed to depend on it.
 > Its fact is then about (mReferent, O-instance).
 > That fact stands for another fact only when `compare()` answers SAME for the two mKeys.
-> That fact stands for another fact only when each fact's observer instances are matched, one to one in each direction, by instances `compare()` answers SAME for.
+> That fact stands for another fact only when every observer instance of either fact has an observer instance of the other that `compare()` answers SAME for.
 > `:observer-independence` of O is true when no answer about a K-cell depended on the O-instance it was taken under.
 
 UNACKED READING, temporary (`312d:enc-observers-are-the-vantage-ambients`): 311 says a cell is
@@ -2250,7 +2254,7 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is six atoms of every kind the specification owns.
+> This book's ceiling is six atoms of every kind the specification owns and integers of four bits.
 > Tessa owns the filesystem and the file.
 > The filesystem id's mScheme is `:primary-of` the filesystem, and its shape is scoped in the mRoute.
 > The inode number's mScheme is `:primary-of` the file, and its shape is `:identified-in` the filesystem with both warrants.
@@ -2719,7 +2723,7 @@ run law_different_sorts_never_same_premise {
 > In the third case, they are two mKeys of one cell mSort (1.9-cell-a-singleton-sort).
 > Two chains are aligned-SAME at a pair of levels when two conditions hold.
 > The two levels have one height.
-> Every pair of levels above them of one height is SAME by the one-level rule.
+> The two levels, and every pair of levels above them of one height, are SAME by the one-level rule.
 > Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
 > Step 1: if either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN.
 > Step 1: if one mFullyQualifiedKey terminates at an mWorld the other does not share, the pair reads UNKNOWN.
@@ -2917,7 +2921,8 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is ten atoms of every kind the specification owns, its eight mKeys, one mRoute, and one mRoot mWorld among them.
+> This book's ceiling is ten atoms of every kind the specification owns and integers of four bits.
+> The atoms include its eight mKeys, one mRoute, and one mRoot mWorld.
 > The stdlib roots the boot: the boot id's mScheme is `:primary-of` the boot's mSort, and its one shape is `:root`.
 > Tessa owns the filesystem and the file.
 > The filesystem id's mScheme is `:primary-of` the filesystem, and its shape is `:identified-in` the boot.
@@ -3010,7 +3015,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is eight atoms of every kind the specification owns.
+> This book's ceiling is eight atoms of every kind the specification owns and integers of four bits.
 > The stdlib, Tessa, and Carl speak as in 3.2.2-a-book-two-files-in-one-filesystem, and Tessa also declares `:guarantees-unique-name` on the slash path shape.
 > The book holds no world object besides those its lines name.
 > The world holds one boot, one filesystem in it, and one inode in the filesystem.
@@ -3103,7 +3108,7 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is eight atoms of every kind the specification owns.
+> This book's ceiling is eight atoms of every kind the specification owns and integers of four bits.
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
 > Pia owns the pid namespace and the process.
 > The namespace id's mScheme is `:primary-of` the pid namespace.
@@ -3192,7 +3197,8 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is seven atoms of every kind the specification owns, its six mKeys and one mRoute among them.
+> This book's ceiling is seven atoms of every kind the specification owns and integers of four bits.
+> The atoms include its six mKeys and one mRoute.
 > Tessa owns the file.
 > The inode number's mScheme is `:primary-of` the file.
 > Its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`.
@@ -3272,7 +3278,7 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is six atoms of every kind the specification owns.
+> This book's ceiling is six atoms of every kind the specification owns and integers of four bits.
 > Sven owns the unit and two of its cells.
 > The unit name's mScheme is `:primary-of` the unit.
 > Its one shape carries `:guarantees-unique-referent` and neither `:identified-in` nor `:root`.
@@ -3283,7 +3289,8 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 > Nothing passes, no write affects another mReferent, and no line writes.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
 > The unit's mKey is scoped in the mRoute.
-> Each cell's mKey has the unit's mKey of its own line as its mParent, supplied by the mark that named it.
+> Each active cell's mKey has the unit's mKey of its own line as its mParent, supplied by the mark that named it.
+> The enabled cell's mKey has the unit's mKey of line 1 as its mParent, supplied by the mark that named it.
 > The book holds no composite mKey and no role.
 > No lookup's read set is open.
 > Line 1, `is-active`: every statement in force is true and the engine's axioms hold.
@@ -3353,7 +3360,7 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is six atoms of every kind the specification owns.
+> This book's ceiling is six atoms of every kind the specification owns and integers of four bits.
 > Tessa owns the file.
 > The inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-referent` and nothing else.
 > Cora owns the merged configuration, a mCompositeSort with a base role and an overlay role.
@@ -3487,8 +3494,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
 > Invalidation reads the line's writeset with every container contributing, there being no read mKey to exclude against.
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
-> A lifecycle mutation writes a mRoot-adjacent mKey.
-> Every mKey-Primary scoped in that mKey names a new mReferent afterward.
+> A lifecycle mutation writes a mRoot-adjacent mKey, and invalidates every mKey whose identity's chain passes through that mKey.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
 > A held hole: some level of an mKey has no closing act and no mKey for its mParent-Catalog.
 > A held hole: a natural mKey with an mKey for its mParent-Catalog reaches an mReferent that no route through the catalog's mReferent passes to.
@@ -3515,6 +3521,7 @@ Scope: the untouched-route law runs at nine statements because its twin's witnes
 <!-- normative -->
 > In all three species the engine withdraws authority.
 > The engine never computes the successor identity.
+> Every mKey-Primary scoped in a lifecycle-written mKey names a new mReferent afterward.
 > A routing mutation also touches shell state a `resolve()` read.
 > A write invalidates a mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the lookup body's read set.
 > That lookup body is the one that produced the mResolution (1.7-resolution-and-its-traversal).
@@ -3595,7 +3602,7 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is five atoms of every kind the specification owns.
+> This book's ceiling is five atoms of every kind the specification owns and integers of four bits.
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
 > Pia owns the process.
 > The pid's mScheme is `:primary-of` the process, and its shape is `:identified-in` the boot and carries `:guarantees-unique-referent`.
@@ -3772,7 +3779,7 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is five atoms of every kind the specification owns.
+> This book's ceiling is five atoms of every kind the specification owns and integers of four bits.
 > Tessa owns the file, as in 3.2.5-a-book-two-files-scoped-in-the-route, with `:guarantees-unique-referent` on the inode number's shape and no other warrant.
 > Wanda owns the wrapper `sudo`.
 > It lends nothing, and Wanda declares its completion sentinel.
@@ -3843,7 +3850,7 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 ```
 
 <!-- prose-translation -->
-> This book's ceiling is six atoms of every kind the specification owns.
+> This book's ceiling is six atoms of every kind the specification owns and integers of four bits.
 > Tessa, Wanda, and Carl speak as in 3.4.2-a-book-one-file-across-sudo-under-the-sentinel.
 > The book holds no world object besides those its lines name.
 > The world holds one inode.
@@ -3854,7 +3861,7 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 > The mVantage entered through the wrapper inherits nothing, and its mRoute is another mRoute.
 > Line 1, `cmp` from the host: every statement in force is true and the engine's axioms hold.
 > The path's identity is the inode mKey its lookup emitted, whose chain ends at the host's mRoute.
-> Line 2, `cmp` through `sudo`, against line 1: the two inode mKeys are scoped in two mRoutes.
+> Line 2, `cmp` through `sudo`, against line 1: the entered mVantage does not inherit, and its mRoute is the second mRoute.
 > `compare()` answers UNKNOWN, and the two facts are not about one mTopic.
 
 ### § 3.5-committee-law-and-attribution

@@ -47,6 +47,10 @@ fact { all l: Line | l.above.above in l.above }
 
 ## § 3-the-null-outcome-and-the-default-scope
 
+A held step's outcome being true of every line is what keeps the step in the book and hands a
+true premise to the lines below it (`30Z:hole-three-kinds-and-their-idioms`). The argv bound
+that assay derives from the bitwidth is assay's (`notes/30Y` § 2.4), not this fence's.
+
 ```alloy
 pred todo[l: Line] {}
 
@@ -55,5 +59,4 @@ run bookScope {} for 5 but 4 Int
 
 <!-- prose-translation -->
 > The outcome of a held step is true of every line.
-> So the step keeps its place in the book and adds a true premise to the lines below it.
-> A book's default ceiling is five atoms of every kind the specification owns, integers of four bits, and argv of at most seven words.
+> A book's default ceiling is five atoms of every kind the specification owns and integers of four bits.
