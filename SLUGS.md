@@ -643,7 +643,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ask-composite-parts-by-walk
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d 312e (4)
 
 ## ask-confluence-carve-choice
 - defined: —

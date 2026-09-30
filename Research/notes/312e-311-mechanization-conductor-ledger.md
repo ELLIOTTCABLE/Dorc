@@ -595,3 +595,73 @@ before the official write, as briefed.
   deleted; each is `312d` § 17.1's `ask-affects-and-the-chain`, `ask-passes`, and `ask-holds`.
 - Leg four re-measures the sparing commands under the seven holes and, if quiet, runs the
   official write at `cfd0f37b` plus this ledger's commit.
+
+## § 14-the-accounting-close-and-the-repairs-it-licensed
+
+2026-09-30. One Opus (worktree `.tmp/trees/r31-accounting-close`, no solver, no edit) closed the
+tri-partition at `57fbe4ee`, over the baseline note at `1af7e0d9^` and the whole span of
+commits since the last accounting (`a993d795` to `c0487fbe`, nineteen). Tables and scripts:
+`tri-partition-close.tsv`, `reverse-close.tsv`, `firewall-close.tsv`, `absent-close.txt`,
+`duplicates-close.txt`, copied to the conductor worktree's `.tmp/312e-accounting-close/` and the
+session scratchpad, neither durable; whether they become one is the human's (`312d` § 13).
+
+### § 14.1-the-counts
+
+- Of the 770 baseline sentences (§ 0 to § 4): commentary 211; mechanical with a named carrier
+  261; structural 32; carried differently or by an inert definition 31; residue 225; residue
+  duplicating a mechanized sentence 10; absent 0. § 6 is byte-identical to the baseline; § 5
+  differs only by `43b8d4dd`'s vouch-to-axiom rename and the `axiom` kind it added.
+- Of the 974 blockquote sentences of the specification (plus the shared half's 8): verbatim 190,
+  near-verbatim 147, reword 53, merge 29, move 21; additions of the mechanization 542, of which
+  book world 203, book answer 83, kill or twin 61, structural fact 57, truth predicate 34, law
+  31, scope or plumbing 24, marked reading 19, hole 11, premise 11, world stratum 6, probe 2.
+- Firewall: of the fifty carried findings 29 closed and 21 open (rank 1: 1 open, `compareAt`
+  the sole carrier of "reads unknown there" and read by one book only, a coverage gap already
+  recorded at `312d` § 12); 23 new (3 at rank 2, 20 at rank 3, the latter mostly commands and
+  hole witnesses with no sentence, and glosses with no fence).
+- Inert definitions the fences hold and nothing reads: `token`, `parentStore`, `parentCatalog`,
+  `parentRefused`, `places`, `disjointSupport`, `traversal` (§ 1.7).
+
+### § 14.2-applied
+
+`67052e63`, one commit, every item a translation-side act or a definitional no-op, none a
+change to what any law answers:
+
+- Duplicates struck under the one-copy rule: § 1.10.1's copy of "Differential test discharges
+  that axiom, and nobody speaks it"; § 3.1.1's composite-identity sentence (§ 2.11's
+  translation carries it); § 2.9.1's "a routing mKey named whole ... stands for whatever its
+  mScheme reaches beneath it" (§ 2.9's translation carries it). Three tier-A pairs left as
+  residue on purpose: the consumer map's "DISJOINT licenses sparing under the same flag", the
+  framing "spares narrowly and collides widely", and the "under ordinary effective-mWorld reach"
+  sentence whose qualifier is unmechanized.
+- Absent clauses restored: "Any path the dialect admits may decline it" (§ 1.5.1, normative);
+  "such as a boot or a tenure" (§ 3.3's examples); "An mValue with no mScheme is nothing"
+  (§ 1.4, the fact at `some k.scheme iff no k.cellSort`); "P itself stays an entry of that test"
+  (§ 2.6, the seed); the placing-route case of the region test's step 2 (§ 2.9, `coveredBy`'s
+  `placedIn` arm, stated as the fence has it: covered whatever the enumeration holds).
+- Sentences retuned to their fences: the mParent instance is an mKey and the seats supply one
+  instance (F17); a declaration-seat supply is the line of the owner of the mKey's own mScheme
+  (N01; see § 14.3); the identity of a primary mScheme's mKey is that mKey on a shape that yields
+  nothing (F19); rule 1 is every entry declared for the line, the author clause moved to § 2.6.1's
+  residue (F25); a record is emitted for an mKey, not "of T" (F21; see § 14.3); the
+  correspondence kill of `compare()`'s DISJOINT names its extra conjunct (N02).
+- `fullyQualifiedKey[k]` is `identity[k].*parent` (N03), its one consumer already passing an
+  identity, so nothing moves; § 1.8 says a natural mKey's mFullyQualifiedKey is its identity's.
+- § 1.9's "The singleton mSort has no mScheme of its own" moved from the translation to a new
+  normative § 1.9.1 on the § 1.3.1 precedent (F24): no fence forbids `:primary-of` on a cell
+  mSort, and boxing the checker out of that description is design.
+
+### § 14.3-recorded-for-the-sitting-not-fenced
+
+Each is a place where the fences admit a world the prose says does not arise; each could be one
+structural fact; none was added, since which worlds the checker considers is design
+(`312d` § 21.1) and a fact is the direction that hides counterexamples.
+
+- A `looked-up-in` record is admitted for an mKey of any mSort, with no `:places` declaration
+  gating it; `places` is read by nothing (F21). The invocation prose of § 2.10.1 is where the
+  gate lives.
+- A declaration-seat supply is admitted for a natural mKey, spoken by its secondary mScheme's
+  owner, where § 1.6 says a secondary mScheme's third seat is the mEntryChain (N01).
+- "Under any one mParent instance it has exactly one mKey" against the fence's at-most-one
+  (F23, recorded since `312d` § 12); rule 3 applied at the seed only (F26, likewise); composite
+  parts SAME by the walk only (F27, the mark `ask-composite-parts-by-walk`).
