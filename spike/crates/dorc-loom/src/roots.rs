@@ -3,7 +3,7 @@
 //! The corpus, both generated locks, the staging store and the repository this tool asks about
 //! all hang off ONE directory. Four separate sites used to re-derive it from the crate's own
 //! compile-time anchor, which is how the second copy of a resolution silently rots
-//! (`spike/CLAUDE.md` one-shell-answer says the same thing about interpreters). It is also what
+//! (`spike/AGENTS.md` one-shell-answer says the same thing about interpreters). It is also what
 //! made the `publish` write path untestable: reaching it wrote REAL sources, so three specified
 //! tests could not be written and a developer's in-progress loom edit could be published by
 //! `cargo test`.
@@ -82,7 +82,7 @@ impl Roots {
         &self.base
     }
 
-    /// The primary loom collection (`aid/CLAUDE.md` cases-live-here).
+    /// The primary loom collection (`aid/AGENTS.md` cases-live-here).
     #[must_use]
     pub fn corpus(&self) -> PathBuf {
         self.under("crates/aid/tests")

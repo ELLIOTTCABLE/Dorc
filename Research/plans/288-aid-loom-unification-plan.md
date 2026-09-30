@@ -3,7 +3,7 @@
 PLANS-TIER (promoted from `notes/288`, 2026-07-24, human-directed; the notes-tier copy is
 retired). Ahistorical and kept-current: if this document is wrong, rewrite it. AI-authored
 (Fable, design sittings WITH the human, 2026-07-24); §0 separates human-typed rulings from
-plan proposals. Authority: root docs, `spike/CLAUDE.md`, human-typed rulings outrank.
+plan proposals. Authority: root docs, `spike/AGENTS.md`, human-typed rulings outrank.
 Companions: `notes/287` (errorloom as-built) · `plans/282` (loom-pipeline design authority)
 · root `AID-NEEDS.md` (registry + law). Evidence bases banked herein: the string-trawl
 builder report (§6) and the kernel aid-threading scout report (§2e) — both 2026-07-24,
@@ -85,7 +85,7 @@ is loom-editable by arc close; native lint findings are registry codes like ever
 else; and the golden/behavior test tier converges onto looms run by one central runner.
 The DST seed-sweeps, differential harness, unit tests, and component-contract tests stay
 exactly where they are. Strawman names throughout; rename freely, no compat mapping,
-ever (standing human order, 2026-07-24; see also `spike/CLAUDE.md` at its next sync).
+ever (standing human order, 2026-07-24; see also `spike/AGENTS.md` at its next sync).
 
 ## §2 — Architecture: crates, types, seams
 
@@ -310,7 +310,7 @@ bypasses it at the trawl tip (`aaddb106`; line numbers drift — re-grep by stri
   self-cleaning). Free-text needles legal, rare, reason-carrying.
 - **Sanctioned-executor transfer** — retiring `sh e2e/run.sh` into the central runner
   moves the ONE-sanctioned-fixture-executor role: a deliberate safety-law edit in
-  `spike/CLAUDE.md` + every brief's safety block, landing with the porting phase.
+  `spike/AGENTS.md` + every brief's safety block, landing with the porting phase.
 
 ### §7b — The arrangement/chrome home (SETTLED; built at phase 7)
 
@@ -332,7 +332,7 @@ computed). A value-bearing chrome line renders as ONE editable SECTION holding i
 fragments — never split ACROSS sections, whose computed fences would break the transport's
 anchoring for every other prose section in the same render (the 2026-07-24 lesson, preserved).
 The line-field path re-splits an edit on the STAMPED fragment series (landed at the W4 span
-lane; `28H`, `aid/CLAUDE.md` a-chrome-line-is-one-section), so multi-word entries are
+lane; `28H`, `aid/AGENTS.md` a-chrome-line-is-one-section), so multi-word entries are
 transcript-editable wherever a driven replay stamps them.
 
 ## §8 — Phases (each one lane; granular; gates green; atomic where marked)
@@ -370,10 +370,10 @@ Riders that attach wherever cheap: prop-mint-completeness-hardening (§2c) · th
 
 ## §9 — Steering-sync (lands with the phases, never before)
 
-`spike/CLAUDE.md`: the strawman-formats bullet (stability-ledger region) · User-aid
+`spike/AGENTS.md`: the strawman-formats bullet (stability-ledger region) · User-aid
 block relocation pointer + narrative rename (phase 1) · safety-block executor line
 (phase 5) · loom-placement law (phase 5). `AID-NEEDS.md`: lint-namespace caveats out
-(phase 3); CLI-error rows in (phase 4). New `crates/aid/CLAUDE.md` at phase 1.
+(phase 3); CLI-error rows in (phase 4). New `crates/aid/AGENTS.md` at phase 1.
 `AGENTS.md` opaque-review annotation: the human's own hand.
 
 ## §10 — Open asks

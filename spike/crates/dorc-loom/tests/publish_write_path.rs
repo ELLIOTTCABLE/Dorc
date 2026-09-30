@@ -8,7 +8,7 @@
 //!
 //! The case is CHOSEN, never named, and its bytes are re-rendered from the current engine rather
 //! than copied: a fixture that named a slug would make this file a second owner of prose the loom
-//! flow exists to let somebody rewrite (`aid/CLAUDE.md` prose-pins-live-where-the-prose-does).
+//! flow exists to let somebody rewrite (`aid/AGENTS.md` prose-pins-live-where-the-prose-does).
 
 #![expect(
     clippy::expect_used,

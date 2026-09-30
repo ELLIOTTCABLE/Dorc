@@ -1772,7 +1772,7 @@ fn value_not_recognized(flag: &str, got: &str, expected: &'static str) -> Invoca
 // ── the why-report render seam (`28H:prop-drifted-why-is-the-thin-driver`) ────────────────────
 
 /// The consent flag as the BINARY spells it. The corpus names this lever
-/// `--risk-faultless-skips` (`spike/CLAUDE.md` survive-license, `271:rul-flag-is-razor-residue`); the
+/// `--risk-faultless-skips` (`spike/AGENTS.md` survive-license, `271:rul-flag-is-razor-residue`); the
 /// cli implements `--risk-faultless-skips`. A why-surface pointer must be copy-paste-true (`28E` §7
 /// held-placement-reread), so the render prints what the parser accepts and the rename is flagged
 /// upward rather than papered over here.

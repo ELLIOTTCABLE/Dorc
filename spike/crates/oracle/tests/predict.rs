@@ -623,7 +623,7 @@ fn naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard() {
     // (`inv-referent-agnostic`); the multi-operand refusal is the ORACLE's job, spelled
     // `if [ "$2" = "" ]; then probe "$pkg"; fi` (which degrades a 2nd-operand argv to
     // Top ⇒ run — see `test_context_past_end_positional_is_empty_string`). The defense
-    // lives in the oracle-quality bar (oracle/CLAUDE.md), and the example authors copy
+    // lives in the oracle-quality bar (oracle/AGENTS.md), and the example authors copy
     // (19H §2.1's annotation). This test pins the naive drop as a DATUM so it can't be
     // mistaken for correct, and so a future engine-side "fix" (which would re-introduce
     // the deleted engine-side argparse) is visibly the wrong layer.

@@ -178,7 +178,7 @@ two - annotations hidden inside opaque strings, cleverness about quoting - is
 refused at plan time. Code is either invited in, or walled out, never smuggled.
 
 <!-- quoted: plans/27C sections 0-3, 6; 273 wrapper surface; plans/281 mark
-     grammar v0.2 (safe-across, lends spellings); spike/CLAUDE.md
+     grammar v0.2 (safe-across, lends spellings); spike/AGENTS.md
      role-menu lend_map, rho-claim-ladder, wrapper-law, dorc-sh-trio,
      context-entry-probing; 274 reentry trio; 271 rul-lend-map,
      rul-env-claim-inversion, rul-dorc-prefix-head-synthesis;

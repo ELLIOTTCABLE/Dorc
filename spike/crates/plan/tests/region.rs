@@ -694,7 +694,7 @@ fn differing_reproduced_statuses_run() {
 
 /// Two routes admitting the SAME parametric guard meet to Guard — and a Guard leaves the authored
 /// bytes able to execute, so its act is may-mutate exactly as a Run's is
-/// (`plan/CLAUDE.md only-a-proof-retires-a-wall`).
+/// (`plan/AGENTS.md only-a-proof-retires-a-wall`).
 #[test]
 fn agreeing_guards_meet_to_one_guard_that_still_walls() {
     let census =
@@ -876,7 +876,7 @@ fn one_influenced_route_influences_the_shared_decision() {
 
 /// The joined account does not depend on WHICH route carried the influence — the
 /// order-independence half of `30L:pin-influence-joins-most`, and what
-/// `core/CLAUDE.md pin-set-meet-order-independence` asks of every universal meet.
+/// `core/AGENTS.md pin-set-meet-order-independence` asks of every universal meet.
 ///
 /// The shape: one closed two-route population, decided twice, with the influenced route moved from
 /// the tail to the head. A join that answered from its FIRST contributor alone would give two

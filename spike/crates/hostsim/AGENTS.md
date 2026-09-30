@@ -1,8 +1,8 @@
-# spike/crates/hostsim — CLAUDE.md
+# spike/crates/hostsim — AGENTS.md
 
 Role: the seeded, deterministic DST host-model + the `kFAIL-withhold` monitor —
 the ONLY sanctioned home of nondeterminism (seeded, injected), and the one DI
-seam; the kernel crates depend on none of this. Read `spike/CLAUDE.md` first.
+seam; the kernel crates depend on none of this. Read `spike/AGENTS.md` first.
 Registry discipline: one rule per bullet, slugged; append to the matching
 section.
 

@@ -245,7 +245,7 @@ impl<P> Influenced<HostInfluenced, P> {
 ///
 /// `AuthoredBeforeContact ⊏ HostInfluenced ⊏ Untracked`. A total order gives commutativity,
 /// associativity and idempotence for free, so the order-independence
-/// `core/CLAUDE.md pin-set-meet-order-independence` asks of every universal meet is a property of
+/// `core/AGENTS.md pin-set-meet-order-independence` asks of every universal meet is a property of
 /// the SHAPE here rather than of a proof.
 ///
 /// `Untracked` sits at the TOP because "we did not compute it" is strictly less informative than

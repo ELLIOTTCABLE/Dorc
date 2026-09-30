@@ -110,7 +110,7 @@ reducible, honesty-scaffold where qualitative, (c) confound-isolation (so "it di
 Synthetic/strawman measurement only, never the corpus (round-24 method, inherited).
 
 **Head (skim / on-demand):** `000` [skim] · `076` · `111` · `17N`.
-**Middle (current-state law):** `spike/CLAUDE.md` · `16P` §3 + ⭐`16Q` · `23D` · `23O` · `239` ·
+**Middle (current-state law):** `spike/AGENTS.md` · `16P` §3 + ⭐`16Q` · `23D` · `23O` · `239` ·
 ⭐`233` (human crisis log, #1-cited) · `24A` + `24C` + `24D` · ⭐`19H` (value-plane).
 **Tail (evaluation core + ballast):** ⏳`055` · ⏳`099` · ⏳`077` · `087` + `088` · `086` · `151`
 (+`150`) · `238` · `23M` + `23N` · ⭐`124` + ⭐`125` (DST-seam / containerizability — the

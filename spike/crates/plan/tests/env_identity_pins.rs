@@ -1,7 +1,7 @@
 //! Reds for `30S` — environment identity (`30S:finding-prefix-stripped-at-dispatch` ·
 //! `30S:finding-rho-fold-value-blind` · `30S:finding-export-never-fences`). Target
 //! behaviour the engine does not implement yet; every test rides
-//! `dorc_testbed::xfail::xfail_until` per `spike/CLAUDE.md xfail-pins-ride-one-seat`.
+//! `dorc_testbed::xfail::xfail_until` per `spike/AGENTS.md xfail-pins-ride-one-seat`.
 //!
 //! Harness idiom lifted from `plan/tests/observable_matrix.rs`'s `plan_for`: one fixture
 //! provider (`wombat`, verb `ensure`, establishes kind `instance`) driven through the

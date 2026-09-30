@@ -60,7 +60,7 @@ typos = "latest"
 "github:nextest-rs/nextest" = { version = "0.9", version_prefix = "cargo-nextest-" }
 
 # Opt-in `dorc lint` real-external-tools test lane ONLY (human-authorized 2026-07-18;
-# spike/CLAUDE.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
+# spike/AGENTS.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
 # live-fire is reproducible. Nothing spawns it unless `DORC_E2E_REAL_TOOLS` opts in, which only
 # `test:real-tools` does. (checkbashisms is a Debian perl script absent from every mise
 # backend — the lane provisions it out-of-band into the git-ignored `spike/e2e/.real-tools/`.)

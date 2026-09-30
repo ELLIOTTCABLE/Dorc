@@ -15,7 +15,7 @@
 //!
 //! DISCLOSED SCOPE CUT: the Spine here comes from `WhyWorld`, the sanctioned second driver, rather
 //! than from the binary's own pipeline, which no test target can reach. Both are real runs over
-//! the same definition table (`cli/CLAUDE.md one-definition-table-two-drivers`); what is not proven
+//! the same definition table (`cli/AGENTS.md one-definition-table-two-drivers`); what is not proven
 //! here is the binary's own assembly of its world. The e2e corpus is where that lives.
 //!
 //! The capabilities are INJECTED here so this battery can drive the publication seats directly.

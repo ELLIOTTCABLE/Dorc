@@ -80,9 +80,9 @@ Read, in this order, IN FULL:
    their topic: `04` for kinds/marks/binds, `06` for predict, `07` for
    footprints, `08` for wrappers/contexts, `09` for kind ownership, `12` for
    publishing.
-4. If you are working inside the spike: `spike/CLAUDE.md` (binding invariants;
+4. If you are working inside the spike: `spike/AGENTS.md` (binding invariants;
    its "authored surface" section is the densest correct summary of the member
-   semantics) and the `CLAUDE.md` of any crate you touch.
+   semantics) and the `AGENTS.md` of any crate you touch.
 
 Do not skim these and reconstruct from your priors. Dorc's contract is unusual
 in specific, deliberate ways (silence-as-wall, decline-as-first-class,
@@ -198,7 +198,7 @@ speculatively - not because they are forbidden, but because you lack the
 engine's knowledge of what is actually missing. The workflow that replaces
 speculation: land the verdict member; then, if a runnable Dorc is available
 (build with `mise run build`; invocation details in the cli crate's
-`CLAUDE.md` and `spike/crates/cli/tests/e2e.rs`), run a plan over
+`AGENTS.md` and `spike/crates/cli/tests/e2e.rs`), run a plan over
 the motivating book and READ IT. The plan's reason strings and hints name what
 is limiting it - which sites stayed unmodeled, which wall degrades the tail,
 what one description would recover - with topology-knowledge you do not have.
@@ -346,7 +346,7 @@ Everything below points into `Research/` - the project's internal planning
 corpus. Know what you are getting into: it is LLM-generated, vast, dense with
 project jargon and superseded layers; documents are only lightly annotated when
 later work overrides them. The rule inside: `Research/README.md` is the map;
-newest supersedes oldest; the root docs and `spike/CLAUDE.md` outrank all of it.
+newest supersedes oldest; the root docs and `spike/AGENTS.md` outrank all of it.
 Enter for a specific question, extract the answer, and get out - do not
 skill-up on the corpus wholesale from inside this task. NEVER enter
 `Research/notes/quarantine-DO-NOT-READ/` or `Research/corpora/`.

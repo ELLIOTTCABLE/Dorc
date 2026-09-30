@@ -87,6 +87,6 @@ That is the whole arc. From here, the contract reference is your working
 companion: every obligation and license from these twelve pages, collected in
 one place, for the days you are writing something you intend strangers to trust.
 
-<!-- quoted: 278 section 3 strip semantics; spike/CLAUDE.md strip-is-pure-erasure,
+<!-- quoted: 278 section 3 strip semantics; spike/AGENTS.md strip-is-pure-erasure,
      stability-ledger, two-binary-floor; 276 rul-verdicts-never-stable;
      USER_STORY.md stage 4 publication; 24M names-permanent -->

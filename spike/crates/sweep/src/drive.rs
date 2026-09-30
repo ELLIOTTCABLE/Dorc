@@ -587,7 +587,7 @@ fn establish_fact_of(classes: &[(CfgNodeId, SkipClass)], node: CfgNodeId) -> Opt
 /// Which source index's `<want>__disturbs` answers at this site — the sweep's use of the ONE
 /// resolution rule ([`dorc_core::answering_file`]), not a second copy of it
 /// (`307c:fnd-sweep-duplicates-the-footprint-resolution`; the failure
-/// `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` names).
+/// `oracle/AGENTS.md the-frame-lookup-is-the-only-resolution-seat` names).
 ///
 /// The sweep loads exactly ONE oracle source and solves no function environment, so the honest
 /// posture is [`LiveDefinitions::unsolved`](dorc_analysis::funcenv::LiveDefinitions::unsolved) and

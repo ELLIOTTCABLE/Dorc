@@ -688,7 +688,7 @@ impl RecordsFault {
     /// The records-lane diagnostic this fault names.
     ///
     /// Every arm spells its payload literally, because the spanless-mint gate greps for exactly
-    /// that shape (`aid/CLAUDE.md` spanless-gate-is-lexical). The line counts are `1` because the
+    /// that shape (`aid/AGENTS.md` spanless-gate-is-lexical). The line counts are `1` because the
     /// strict walk stops at the first offending line rather than surveying the stream — an honest
     /// report of what was seen before the refusal, and no consumer may read it as a total.
     #[must_use]

@@ -1027,7 +1027,7 @@ Before publishing, walk the file once against each line:
 - The file as a shipped artifact: header comment stating coverage, declines,
   and judgment rationale; kinds documented; names treated as permanent.
 
-<!-- quoted: spike/CLAUDE.md invariants (license-and-trust, separation,
+<!-- quoted: spike/AGENTS.md invariants (license-and-trust, separation,
      observables, authored-surface, language-law blocks), decline-class-emission,
      report-lane-versioned-entry, report-surface-massaging-carve; 271 rulings
      ledger; plans/281 mark grammar v0.2 (sections 2-3 mark-block, 8 bind forms;

@@ -29,7 +29,7 @@
 //! catastrophic render bug is a syntactically-broken or
 //! observable-changing artifact (`ap-2` / `an-render-runnable`: spike-1 shipped
 //! `if true; then # …; fi`, a `dash -n` error, green only because the harness
-//! string-diffed). The `e2e` harness `dash -n` + exec gates (`spike/CLAUDE.md`
+//! string-diffed). The `e2e` harness `dash -n` + exec gates (`spike/AGENTS.md`
 //! "Build / test / run") are the live proof; a guarantee that names its gate is one a
 //! reviewer can check.
 //!
@@ -139,7 +139,7 @@ pub mod probe {
     use crate::records::{self, Nonce};
 
     /// `rul-scratch-root-never-read-from-host` · `rul-probe-writes-only-what-it-owns`
-    /// (`spike/CLAUDE.md`) — the report-scratch root is a controller-supplied LITERAL. It is never
+    /// (`spike/AGENTS.md`) — the report-scratch root is a controller-supplied LITERAL. It is never
     /// read from the host environment: not `TMPDIR`, not `HOME`, not `XDG_*`. Making it
     /// host-configurable is forbidden, not unimplemented — read those invariants first. (An
     /// admin-supplied override is out of scope for now, and would arrive as a controller value.)

@@ -5,7 +5,7 @@
 > paths behave IF BUILT, each item graded — **[TYPED]** the human typed the substance ·
 > **[ACKED]** the substance was put and the human acked it as read · **[LEAN]** the human's
 > stated lean, not a ruling · **[RULED]** ruled earlier, cited · **[PROPOSED]** conductor
-> synthesis. Authority: root docs, `spike/CLAUDE.md`, and the welds (`KNOBS:kFAIL`,
+> synthesis. Authority: root docs, `spike/AGENTS.md`, and the welds (`KNOBS:kFAIL`,
 > `kLANG`, `kBACKFLIPS`) outrank this; it extends and never re-opens `plans/142`
 > (executorless-OOB), `plans/260` §5 (the transport spec), `plans/262` §2 (the records lane),
 > `plans/27C` (context entry), `plans/30W` (index-kinds), `notes/26N` (capabilities, delivery,
@@ -234,7 +234,7 @@ tri-state with unmeasured reading as absent, keyed by context
   the security-posture setting (NYI, discussed elsewhere). Failures route to `dorc why`,
   possibly run in full on a mid-mutation failure; that pull needs the on-host capture, which
   is `fs-write`-gated. Streaming apply is a debugging aid, not the product. Consistent with
-  `inv-unaccounted-output-stays-remote-by-default` (`cli/CLAUDE.md`): this is that law's
+  `inv-unaccounted-output-stays-remote-by-default` (`cli/AGENTS.md`): this is that law's
   default half, with one stream returned.
 - `mode-apply-streaming` **[ACKED]** — both raw streams pass through, split, identity
   kept, no cursor; an opt-in for a human at a terminal.
@@ -360,5 +360,5 @@ Register state (pointers only; content lives here): `ROADMAP` (the r31 gate text
 `arc-host-capabilities` gains stream demand) · `plans/310` (lane 3's gate) ·
 `KNOBS:kCOMMS` and `kBOOT` (pointers) · `ANALYZER-NEEDS` (`an-stream-demand-per-leaf`,
 `an-link-and-context-capability-supply`) · `notes/26N` §10 (superseded pointer) ·
-`plans/26K` §0c · `TODO-ADDTL` (the unowned arrangements). Steering (`spike/CLAUDE.md`)
+`plans/26K` §0c · `TODO-ADDTL` (the unowned arrangements). Steering (`spike/AGENTS.md`)
 waits for the lane that builds.

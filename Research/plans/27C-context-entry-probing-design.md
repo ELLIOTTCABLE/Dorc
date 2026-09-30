@@ -3,7 +3,7 @@
 Plan-tier, kept-current: the implementor-facing spec for how Dorc answers wrapped
 sites — probing inside contexts, the two admin flags, the oracle-side vouches, and the
 fallback consumption of facts across dimension boundaries. Authority: root docs,
-`spike/CLAUDE.md` rulings, and `plans/271` outrank this; §10 is the status ledger
+`spike/AGENTS.md` rulings, and `plans/271` outrank this; §10 is the status ledger
 (ruled vs STRAWMAN — every sh spelling here is STRAWMAN unless §10 says otherwise).
 Companions: `notes/273` (the wrapper surface this extends: `cmd__predict()` +
 `cmd__lend_map()`) · `notes/272` (store topology) · `notes/27A` (the transport-lane

@@ -1,4 +1,4 @@
-# minispec — CLAUDE.md
+# minispec
 
 Conductor-authored (r30, per `301`). This directory is the project's reviewable
 statement of the few kernel laws it opts to verify — internal instrument, never

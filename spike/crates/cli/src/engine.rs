@@ -2176,7 +2176,7 @@ pub enum WhyRegister {
 /// The READ — roots, a keyset, a bounded walk, a bounded read per entry, the file the address
 /// named — is an edge act and is already spent when this is called; what is left is the
 /// RECONSTRUCTION and the render, and they sit here so the binary and the loom driver share one
-/// (`cli/CLAUDE.md one-definition-table-two-drivers`). Both report states travel the ordinary typed
+/// (`cli/AGENTS.md one-definition-table-two-drivers`). Both report states travel the ordinary typed
 /// diagnostic route, because a report about the operator's own profile is aid rather than a line of
 /// the answer.
 ///
@@ -2815,7 +2815,7 @@ fn ship_predict_stage(
     };
     // A composed stage is a SITE like any other (`28K` §2), through the SHARED seat rather than a
     // second copy of it — the open-coded twin this replaces was the same rule spelled twice, which
-    // is the failure `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records.
+    // is the failure `oracle/AGENTS.md the-frame-lookup-is-the-only-resolution-seat` records.
     let idx = shipping_source(
         checks.len(),
         node,
@@ -3700,7 +3700,7 @@ fn book_digest(book_src: &str) -> String {
 /// never invokes its command at all, or every invocation's argv declined.
 ///
 /// `oracle_paths`/`verdict_sets` are index-paired: oracle files sort FIRST in the source-wide
-/// vectors the verdict lift consumes, with the book last (`cli/CLAUDE.md
+/// vectors the verdict lift consumes, with the book last (`cli/AGENTS.md
 /// the-book-is-a-definition-source`), and `oracle_paths` names only the oracle-only prefix — so
 /// zipping them walks exactly the loaded oracle files, in order, never the book. `vouches` is the
 /// run's FINAL, frozen vouch set.
@@ -3709,7 +3709,7 @@ fn book_digest(book_src: &str) -> String {
 /// level (the munged `<name>__is_converged`), so a family whose command word DOES appear in the
 /// book but whose argv every shape declines still correctly reads as zero-matched (no vouch
 /// reached) — but a book-defined verdict that SHADOWS an oracle's same-named family
-/// (`oracle/CLAUDE.md visibility-is-full-positional`: at most one definition is live per name) is
+/// (`oracle/AGENTS.md visibility-is-full-positional`: at most one definition is live per name) is
 /// indistinguishable from the oracle's own vouch by `fn_name` alone, so a shadowed oracle can read
 /// as matched when its own body never ran. A rare edge, not chased here.
 fn oracle_matched_zero_sites_diagnostics(

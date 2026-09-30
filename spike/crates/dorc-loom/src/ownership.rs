@@ -16,7 +16,7 @@ pub const OWNS_KEY: &str = "owns";
 
 /// The frontmatter key naming which of the CLI's report seats really prints this case's code. The
 /// driver otherwise picks one from the command SHAPE, which is wrong for every code `run` returns
-/// as `Err` (`crates/cli/CLAUDE.md` invocation-errors-are-registry-codes).
+/// as `Err` (`crates/cli/AGENTS.md` invocation-errors-are-registry-codes).
 pub const ENVELOPE_KEY: &str = "envelope";
 
 /// [`ENVELOPE_KEY`]: render the plan route's whole stderr envelope.

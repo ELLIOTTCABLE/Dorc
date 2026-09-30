@@ -187,7 +187,7 @@ Human-acked as real; no date. Arcs first, then the sittings the human owes.
 - **`lane-flux-engine-hardening`** — UNSCHEDULED (human 2026-08-21); `300:lane-flux-engine-hardening`;
   any typesystem change it needs rides the Aeneas-prep facade work, never a Flux lane.
 - **`rc-vs-genkill-permanent-law`** — revisit, not now, never strike (human 2026-08-23); the
-  `spike/CLAUDE.md` clarifier stands until the wider law lands (the influence-carriage lane
+  `spike/AGENTS.md` clarifier stands until the wider law lands (the influence-carriage lane
   does not produce it — `30Qd`).
 - **`30L:pin-book-argv-value-plane`** — book positionals (`main "$@"`) read ⊤ in body flow;
   admitting book argv to the static value plane is a winner-shifting licensure widening

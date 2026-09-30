@@ -84,5 +84,5 @@ author wrote can be mechanically reduced to plain portable shell. The exit was
 designed before the entrance.
 
 <!-- quoted: DESIGN.md priorities + approach; IMPLEMENTATION.md to-execute-or-not;
-     spike/CLAUDE.md rul-attention-honesty, no-reorder-ever, inv-kfail,
+     spike/AGENTS.md rul-attention-honesty, no-reorder-ever, inv-kfail,
      rul-divergence-proceed; USER_STORY.md stage 0-1 -->

@@ -15,7 +15,7 @@
 //!
 //! `30Qb:rul-a-loaded-definitions-placement-is-its-load-position` — a definition cannot stand
 //! anywhere its own file's bytes do not. A `--pre-source` root is AMBIENT
-//! (`cli/CLAUDE.md only-invocation-roots-are-ambient`): the analysis already models its bindings as
+//! (`cli/AGENTS.md only-invocation-roots-are-ambient`): the analysis already models its bindings as
 //! live before the book's first line, so hoisting it is faithful and needs no predicate. A source a
 //! book `.` reaches binds AT that `.`, and since the bundling
 //! (`30Ng:rul-bundle-at-dorc-lang-boundaries`) the artifact already carries its bytes there — so

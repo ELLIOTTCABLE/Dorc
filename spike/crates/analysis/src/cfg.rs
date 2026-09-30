@@ -8,7 +8,7 @@
 //! same worklist solves forward (may-mutate, ambient-gate, `ShellEnvState`) and
 //! backward (apply-minimization slice) over it.
 //!
-//! Five properties are load-bearing (the spike invariants, `spike/CLAUDE.md`):
+//! Five properties are load-bearing (the spike invariants, `spike/AGENTS.md`):
 //!
 //! * **`inv-no-throw`** — [`build`] is **total**: any AST (including
 //!   [`NodeKind::Unsupported`] ⊤-nodes and pathologically deep nesting) yields a
@@ -1640,7 +1640,7 @@ impl<'a> Builder<'a> {
     ///                                        └─► merge (cond ends the loop)
     /// ```
     ///
-    /// dash-fidelity (analysis/CLAUDE.md T9 / item-2(a)): a failing command in the
+    /// dash-fidelity (analysis/AGENTS.md T9 / item-2(a)): a failing command in the
     /// `while`/`until` CONDITION region does NOT abort under `set -e` (the same
     /// errexit-exemption as an `if`/`elif` test — extended here via
     /// [`lower_condition_region`]); a failing BODY command DOES abort (its failure-edge

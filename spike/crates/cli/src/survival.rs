@@ -30,7 +30,7 @@ use crate::world::ship_predict_body;
 /// diagnostics out as data rather than printing them from inside the lift (`io-at-edges-only`).
 ///
 /// The lift WITHDRAWS `contested` on the way out, like every other lifted set
-/// (`cli/CLAUDE.md withdrawal-is-applied-once-never-consulted`): a two-author at-most claim is
+/// (`cli/AGENTS.md withdrawal-is-applied-once-never-consulted`): a two-author at-most claim is
 /// exactly the naked-trust input the survival tier must not read, and withdrawal removes claims,
 /// which is the over-execute direction. Taking the fact by parameter rather than consulting it
 /// per-seat is the point — no downstream footprint consumer has to remember to ask.
@@ -186,7 +186,7 @@ type ResolvedFootprint = (
 /// second question is the retired decline-fallthrough cascade (`28K` §6). The candidate vector is
 /// oracle-only here, and the definition table sites the book one PAST it, so a site whose
 /// `__disturbs` a BOOK defines resolves to a definition this vector cannot hold and answers nowhere
-/// — no footprint, the site walls (`cli/CLAUDE.md the-book-is-a-definition-source` names the widening
+/// — no footprint, the site walls (`cli/AGENTS.md the-book-is-a-definition-source` names the widening
 /// as its own dispatch; withholding is the safe half).
 fn touches_answering_source(
     count: usize,
@@ -1247,7 +1247,7 @@ fn entry_tolerance(
 /// consent was lifted from `__is_converged` while the predict could ship, a consent mark on a function
 /// that does not run. And `build_wrapped_vouches` mints its guard from THIS body
 /// (`composed.inner_fn`/`inner_sh`), so a predict body could reach apply-time guard position, which
-/// `plan/CLAUDE.md never-synthesized-never-mutating` refuses: the vouch traced the verdict while the
+/// `plan/AGENTS.md never-synthesized-never-mutating` refuses: the vouch traced the verdict while the
 /// guard ran the model.
 ///
 /// Hence the deliberate asymmetry — when the verdict vouches but its body cannot ship (a contested
@@ -1825,7 +1825,7 @@ mod tests {
     /// direction (`inv-kfail`).
     ///
     /// This pins the SEAT. Whether a two-file world of this shape survives the cli's contested
-    /// withdrawal is that edge's separate question (`cli/CLAUDE.md
+    /// withdrawal is that edge's separate question (`cli/AGENTS.md
     /// withdrawal-is-applied-once-never-consulted`).
     /// A CROSS-FILE resolved pair whose `"$@"` reach different tail positions walls the word, and a
     /// SAME-FILE one does not (`308:rul-resolved-pair-coherence-walls`).

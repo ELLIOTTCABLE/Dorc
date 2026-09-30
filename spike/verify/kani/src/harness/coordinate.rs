@@ -1,7 +1,7 @@
 //! The coordinate chokepoints and the ternary they mint — `core::coord`.
 //!
 //! Seats: `dorc_core::coord::{selector_covers, selector_identifies, compare}` (the
-//! `selector-chokepoint` and `relational-compare-chokepoint` of `core/CLAUDE.md`).
+//! `selector-chokepoint` and `relational-compare-chokepoint` of `core/AGENTS.md`).
 //! Laws: `sparing-algebra` · `set-lifting-universal-meet` · `pin-set-meet-order-independence` ·
 //! `pin-no-outcome-as-generator` · `never-derive-separation` · `top-identifies-with-nothing` ·
 //! `empty-world-byte-identical`.
@@ -386,7 +386,7 @@ fn the_consumer_map_is_exhaustive_and_exclusive() {
 
 // ── The universal meet over backing-SETS (`277` §5) ─────────────────────────────────────────
 //
-// Backing-sets are a RESERVED seam (`core/CLAUDE.md` seam-backing-sets — singletons at v1), so
+// Backing-sets are a RESERVED seam (`core/AGENTS.md` seam-backing-sets — singletons at v1), so
 // the fold below is the harness's, exactly as `coord.rs`'s own test writes it. What is being
 // pinned is the LAW the seam must be built to, before there is anything to get wrong. The fold
 // is a PURE map-and-conjunction: no member's outcome is ever an input to another's, which is

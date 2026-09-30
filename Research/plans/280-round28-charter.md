@@ -2,7 +2,7 @@
 
 AI-authored (Fable conductor, 2026-07-19; human-acked in-dialogue the same day — the
 lane topology, the lane names, and the `#:` carrier are all human-typed). Authority:
-root docs, `spike/CLAUDE.md`, and human-typed rulings outrank. The two seed specs this
+root docs, `spike/AGENTS.md`, and human-typed rulings outrank. The two seed specs this
 charter executes: **`plans/281`** (the annotation mark-grammar, THE spec) and
 **`plans/282`** (the transcript-case prose pipeline). Companions: `notes/27U` (the
 aid-phase as-built this round builds on) · `notes/27Q` (block-stdlib preconditions) ·
@@ -42,7 +42,7 @@ brace-alternation as a general payload combinator, continuation lines, rc-arity,
 the new strip semantics (marks erase to NOTHING; `#:` strips iff valid, diagnosed
 otherwise). BOTH carriers ship. Then the corpus respell off `281`'s closing
 grep-map (fixtures, e2e cases), goldens re-blessed at lane close
-(conductor-exclusive bless), and the crate-`CLAUDE.md` authored-surface blocks
+(conductor-exclusive bless), and the crate-`AGENTS.md` authored-surface blocks
 updated. New parse-diagnostic codes mint with EMPTY prose per
 `27V:rul-error-authorship-tier`. Slug discipline: existing `DiagCode` slugs stay
 (wire permanence); spelling-mentions inside `sm `-prose update; any genuine
@@ -59,7 +59,7 @@ rewires catalog ownership) → the case-corpus backport (`282` phase 5, authored
 the NEW mark grammar, embedding respelled sources) → de-passthrough (`282` phase 6,
 the type-gated foreign-text audit) → ONE docs/steering/registry re-synthesis pass
 covering both changes (the `spike/docs` quoted-footer grep-sweep · the
-`spike/CLAUDE.md` authored-surface rewrite · `AID-NEEDS.md` law wording ·
+`spike/AGENTS.md` authored-surface rewrite · `AID-NEEDS.md` law wording ·
 `spike/skills/author-oracle`). Branch: `ai/r28-errorloom-unify`.
 
 Post-foundation continuation (human-ruled 2026-07-21): `282` now interposes
@@ -116,7 +116,7 @@ measurement → the r25 field-trial revival (+ `26B:ask-trial-counts-capture-wal
 
 ## §7 — Dispatch law (pointers, not restatement)
 
-Standing brief law rides every lane: the `spike/CLAUDE.md` safety block verbatim ·
+Standing brief law rides every lane: the `spike/AGENTS.md` safety block verbatim ·
 worktree step-zero onto the stated `ai/r27-aid`-lineage tip + step-0.5 + step-one ·
 the sonnet sub-spawn clamp · the comment budget + counting command · four gates +
 foreground e2e per commit-chunk · granular `(AI …)` commits · builders author zero

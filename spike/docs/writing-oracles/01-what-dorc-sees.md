@@ -117,5 +117,5 @@ writing eleven lines of shell. That is the ecosystem you are joining, and the ne
 page gets you your first working oracle.
 
 <!-- quoted: DESIGN.md inference-limitations; IMPLEMENTATION.md guarding + collaboration;
-     23O frame-problem narrative; spike/CLAUDE.md silence-licenses-nothing,
+     23O frame-problem narrative; spike/AGENTS.md silence-licenses-nothing,
      inv-top-reject, structural-vouch-only; 24M bare munged names -->

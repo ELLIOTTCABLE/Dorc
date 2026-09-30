@@ -5,7 +5,7 @@
 > **[ACKED]** substance confirmed in dialogue · **[PROPOSED]** conductor synthesis. Ahistorical:
 > this document describes the product as it should exist — §10 (implementation sketch) is the
 > one exception and is explicitly pending a successor's rewrite. Subordinate to the root docs,
-> `spike/CLAUDE.md`, `KNOBS.md`. Sibling of `plans/30T` (authored file semantics). Remit: the
+> `spike/AGENTS.md`, `KNOBS.md`. Sibling of `plans/30T` (authored file semantics). Remit: the
 > `disturbance_reaches` role member and its `disturbs nothing-else` record — the survival
 > tier's wider law stays where it lives (`KNOBS:kSURVIVAL` · USER_STORY's bought-unsoundness
 > receipt); §7 names the components this design constrains.

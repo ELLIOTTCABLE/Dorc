@@ -135,7 +135,7 @@ mornings stop costing everyone the rest of the book.
 
 <!-- quoted: USER_STORY.md stage 5 + bought-unsoundness; plans/281 mark grammar
      v0.2 (disturbs verb, @{a,b} brace); 277 sections 3, 4c;
-     spike/CLAUDE.md rul-flag-is-razor-residue, sparing-algebra,
+     spike/AGENTS.md rul-flag-is-razor-residue, sparing-algebra,
      set-lifting-universal-meet; 271 rul-touches-becomes-disturbs,
      rul-at-most-family-names; plans/30U section 5 (the completion record
      in dynamic disturbs bodies) -->

@@ -2,7 +2,7 @@
 
 > Tier: LLM-authored mechanical spec (Fable conductor, from the 2026-08-14/15 certifier
 > design sittings with the human; census input `notes/303`). Subordinate to root docs,
-> `spike/CLAUDE.md`, and the crate CLAUDE.mds; `notes/300` §2 carries staffing (spec →
+> `spike/AGENTS.md`, and the crate AGENTS.mds; `notes/300` §2 carries staffing (spec →
 > conductor; implementation → an Opus builder, map-then-execute). Grades: [SPEC] binding
 > on the build · [BUILDER] confirmed/priced during the build · [HUMAN?] the human may
 > overrule at fold · [TYPED] the human typed it. Names STRAWMAN per
@@ -257,7 +257,7 @@ state, and the license plane consumes only the closed outcome.
 - **Narrative records carry scalars only** — the DEGRADE act at each consumer is the
   safety-narrowing and mints the record (`collapse-mints-narrative`):
   `CollapseKind::SolverConsistencyFailure`, `SpeechAct::Derived`, operands per
-  `aid/CLAUDE.md:operands-are-pure-and-capped` — stage, indices, shown/total, advisory
+  `aid/AGENTS.md:operands-are-pure-and-capped` — stage, indices, shown/total, advisory
   `converged`/`rounds` — never lattice values, never `ProvId`-bearing types
   (`303:fnd-witness-operands-cannot-enter-narrative`); full-value items live in the
   in-memory `SolveConsistency` and reach people through pull surfaces,
@@ -346,7 +346,7 @@ state, and the license plane consumes only the closed outcome.
   Kani-lane territory, not this seat's.
 - Comment budget: ≤45 non-doc comment lines across changed files (counting command:
   `rg -n '^\s*//' <changed files>`); public-item doc-comments billed separately per
-  `spike/CLAUDE.md` code style.
+  `spike/AGENTS.md` code style.
 - Kani/property follow-ups route to lane-kani (the checker's own inequality walk, and
   `Reach::eq`'s cause-exclusion, join its target list once landed); minispec/
   `dorc-verify` badge wiring is deferred to the enrichment era — nothing here blocks

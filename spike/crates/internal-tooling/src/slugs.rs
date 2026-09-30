@@ -9,7 +9,7 @@
 //! never updates a document it never saw. So this file is DERIVED from the corpus on every commit
 //! and committed beside it: a row exists exactly when the corpus defines or cites its slug, so the
 //! list and the corpus stay synonymous. It is an INSTRUMENT that reports, never a gate on content
-//! (`spike/CLAUDE.md:lexical-fences-are-human-ack-instruments` — scans over textual material are
+//! (`spike/AGENTS.md:lexical-fences-are-human-ack-instruments` — scans over textual material are
 //! ordinary instruments). To "remove" a slug you mark it superseded where it is defined, and the
 //! row then shows that. The way it earns its keep is greppability: a grep for a slug, or a word in
 //! a slug, lands on the compact row beside the prose hits.
@@ -323,9 +323,9 @@ fn following_paragraph(lines: &[&str], n: usize) -> String {
 // ── extraction ───────────────────────────────────────────────────────────────────────────────
 
 /// The docID a corpus filename or steering path encodes: `271-block-….md` → `271`; a root/steering
-/// stem (`KNOBS.md` → `KNOBS`, `spike/CLAUDE.md` → `spike/CLAUDE`); and a crate's steering file by
-/// the crate-relative spelling the corpus already uses in prose (`spike/crates/oracle/CLAUDE.md` →
-/// `oracle/CLAUDE`). Headings and `cited:` share this one derivation, so a `docID:slug` grep hits both.
+/// stem (`KNOBS.md` → `KNOBS`, `spike/AGENTS.md` → `spike/AGENTS`); and a crate's steering file by
+/// the crate-relative spelling the corpus already uses in prose (`spike/crates/oracle/AGENTS.md` →
+/// `oracle/AGENTS`). Headings and `cited:` share this one derivation, so a `docID:slug` grep hits both.
 pub(crate) fn doc_id_of(display: &str) -> String {
     let filename = display.rsplit('/').next().unwrap_or(display);
     if let Some(id) = id_of(filename) {
@@ -912,7 +912,7 @@ mod tests {
     #[test]
     fn a_heading_docref_is_the_lone_defining_document() {
         // Singly-defined ⇒ the defining doc's ID (the same `doc_id_of` derivation `cited:` uses):
-        // a numeric corpus doc, a root stem, and a crate CLAUDE.md all round-trip.
+        // a numeric corpus doc, a root stem, and a crate AGENTS.md all round-trip.
         let numeric = SlugRow {
             defs: vec![def("Research/plans/271-block-settle-rulings-ledger.md")],
             ..Default::default()
@@ -926,10 +926,10 @@ mod tests {
         assert_eq!(heading_docref(&root).as_deref(), Some("KNOBS"));
 
         let crate_claude = SlugRow {
-            defs: vec![def("spike/crates/why/CLAUDE.md")],
+            defs: vec![def("spike/crates/why/AGENTS.md")],
             ..Default::default()
         };
-        assert_eq!(heading_docref(&crate_claude).as_deref(), Some("why/CLAUDE"));
+        assert_eq!(heading_docref(&crate_claude).as_deref(), Some("why/AGENTS"));
 
         // Several SITES in ONE document ⇒ still one docref.
         let twice = SlugRow {

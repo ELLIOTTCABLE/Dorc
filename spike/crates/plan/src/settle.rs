@@ -929,7 +929,7 @@ fn region_routes(
         match leaf_of.get(&call).copied() {
             // The member rides the key, because N evaluations of ONE invocation are N
             // contributors and N identical rows would read as an account of N invocations
-            // (`core/CLAUDE.md a-record-says-what-its-population-holds`). `SiteId` already
+            // (`core/AGENTS.md a-record-says-what-its-population-holds`). `SiteId` already
             // carries the axis, so nothing is re-keyed to say so.
             Some(leaf) => keyed.push(dorc_core::spine::RegionRoute {
                 invocation: dorc_core::SiteId {

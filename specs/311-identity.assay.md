@@ -2,7 +2,7 @@
 
 The identity model, mechanized. AI-authored (Fable, the `r31-prep-design-duck` sittings and the
 `312d` mechanization arc, the human present and adjudicating). Specification-tier and
-ahistorical; nothing here is ruled. The root docs, `spike/CLAUDE.md`, and the welds outrank this
+ahistorical; nothing here is ruled. The root docs, `spike/AGENTS.md`, and the welds outrank this
 document. Where it disagrees with a prior document, it is a deliberate proposal to re-litigate
 that document, and 4.2-supersessions-pending-in-prior-documents registers the disagreement until
 the document is rewritten. Ledgers and reviews cite the note this document replaces as `311j`.
@@ -4094,12 +4094,12 @@ that carry the claim are the ones the entry cites.
 > `plans/30W` §4 "Containment among index-kinds": containment among stores is a `reaches` relation their owners declare.
 > Here: containment among stores is the mParent chain (1.6-parent-one-per-key, 1.8-fully-qualified-key-topic-and-derivation).
 > The may-write entailment carries effects, never identity (2.6-may-write-the-writeset).
-> `notes/277` §3 (the selector dialect, the survival-license algebra), `plans/30J` §12 (dialect keying), and the `spike/CLAUDE.md` sparing-algebra invariant make one claim.
+> `notes/277` §3 (the selector dialect, the survival-license algebra), `plans/30J` §12 (dialect keying), and the `spike/AGENTS.md` sparing-algebra invariant make one claim.
 > A same-entity claim spares a backing only when both carry minted selectors of one dialect and the two selectors differ.
 > Here: the model excludes a selector dialect (4.1-boundary-of-this-model).
 > Two cells of one mParent are two mSorts.
 > They separate only as 3.2-compare-one-chokepoint-four-answers separates any two mSorts (1.9-cell-a-singleton-sort).
-> `spike/CLAUDE.md` compare-consumer-map and `311a:note-transport-single-consented-sparing-double`: every SAME is vouch-tier and unflagged.
+> `spike/AGENTS.md` compare-consumer-map and `311a:note-transport-single-consented-sparing-double`: every SAME is vouch-tier and unflagged.
 > Here: the engine consumes a SAME that rests on a wrapper's sentinel under `--risk-faultless-skips` (3.4-entry-and-lends, 3.2-compare-one-chokepoint-four-answers).
 > Every other SAME generator is vouch-tier.
 > `KNOBS:kSURVIVAL` and `ANALYZER-NEEDS:an-mode-gate`: the flag gates the survival tier's sparing.
@@ -4290,7 +4290,7 @@ This section says only which name to use when. It keeps no status and no history
 Use the name of § 1 to § 5. Never write the dead name in new text.
 
 The application will likely be partial. Core, critical, and living documents (the root
-documents, `plans/`, `spike/` code and its `CLAUDE.md` files) get one commit that makes them
+documents, `plans/`, `spike/` code and its `AGENTS.md` files) get one commit that makes them
 current: a mechanical replacement, or a Sonnet pass. Historical documents (`notes/`) will likely
 keep the dead name. A slug is the exception: when a slug is renamed in a new or important
 document, every reference to that slug is renamed everywhere, historical documents included.

@@ -31,7 +31,7 @@
 //! It reads the SOURCE-LITERAL plane only — see [`SourceLiteralPlane`]. It also names no records,
 //! effect-vector, erasure, or verdict type, by signature: the environment is computed ONCE from
 //! the origin model, before the validity fixpoint, and nothing a later round learns may flow back
-//! into which definition was live (`cli/CLAUDE.md` the-fixpoint-owns-the-rounds; the fold's ratchet
+//! into which definition was live (`cli/AGENTS.md` the-fixpoint-owns-the-rounds; the fold's ratchet
 //! erases EFFECTS and has no authority over BINDINGS).
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -1384,7 +1384,7 @@ fn command_head(ast: &Ast, simple: AstId) -> Option<&str> {
 ///
 /// This entry asserts a HOST fact out of CONTROLLER state, and it is sound solely under cwd-parity
 /// with the file in the shipped manifest — so where the cwd at this line is not determinate it must
-/// refuse (`analysis/CLAUDE.md the-fold-decides-conditions-never-shapes`;
+/// refuse (`analysis/AGENTS.md the-fold-decides-conditions-never-shapes`;
 /// `30P:law-no-unsoundness-below-a-blind-act`: no cwd-dependent decision below a line whose effect
 /// on the shell Dorc cannot see). Nothing else catches a wrong TRUE here — `cd` is a blessed
 /// target-state-pure builtin and forms no wall — and what it costs is an arm masked dead, a

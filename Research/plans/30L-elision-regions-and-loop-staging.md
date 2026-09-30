@@ -1,7 +1,7 @@
 # 30L - Elision regions: universal descent into function bodies, staged for loop propagation
 
 > Tier: focused design plan, minted from the human's direct rulings in the 2026-08-20
-> design sitting. Root docs and `spike/CLAUDE.md` outrank it. **[TYPED]** means
+> design sitting. Root docs and `spike/AGENTS.md` outrank it. **[TYPED]** means
 > human-stated; **[DERIVED]** is a mechanical consequence of typed law; **[PROPOSED]**
 > remains implementation latitude. Every type/field name herein renames freely
 > (`rul-strawman-formats-no-compat`).
@@ -155,7 +155,7 @@ RouteInstance {
 composes with `30I`'s loci once sourced books project. `LeafId` remains the outer
 call's execution/probe identity, untouched: existing `site N.M` records stay the
 per-call/member evidence namespace, and this plan neither widens `LeafId` nor lets
-analysis-internal nodes masquerade as plan leaves. `spike/CLAUDE.md inv-leaf-seam`
+analysis-internal nodes masquerade as plan leaves. `spike/AGENTS.md inv-leaf-seam`
 gains the matching amendment when this lands: execution leaves and elision regions are
 distinct identities; the Step-level map stays injective.
 
@@ -244,7 +244,7 @@ Nothing in this plan may assume probe results arrive as one shipped set: the pro
 phase remains a single phase between dispatch and plan-quiesce, but may someday
 comprise multiple dispatch sets, later ones answering questions raised by earlier
 ones. Equally, nothing here designs that — repeated/multi-dispatch probing carries its
-own review gate (`spike/CLAUDE.md rul-repeated-probing-reviewed-before-design`). The
+own review gate (`spike/AGENTS.md rul-repeated-probing-reviewed-before-design`). The
 obligation on this stage is purely representational: dispatch-count never appears in a
 route proof, witness, or record key.
 
@@ -647,9 +647,9 @@ The stage is complete only when all hold:
 - `FORFEITS`: partial function-body elision remains forfeited until the stage lands;
   after staging, a row for loop populations Open-until-propagation (capture: the
   propagation lane); aggregate verdict primacy is a correctness repair, not a row;
-- `spike/CLAUDE.md`: the `inv-leaf-seam` amendment (execution leaves vs elision
+- `spike/AGENTS.md`: the `inv-leaf-seam` amendment (execution leaves vs elision
   regions, site-keyed results unweakened);
-- crate steering: `analysis/CLAUDE.md seam-interproc`'s all-or-nothing CALL license
+- crate steering: `analysis/AGENTS.md seam-interproc`'s all-or-nothing CALL license
   sentence rewritten to the region truth; `plan`/`cli` steering gains
   shared-edit-before-erasure and no-specialization;
 - `28Q`/`30I` status: the exact stage boundary relative to artifact-form closure.

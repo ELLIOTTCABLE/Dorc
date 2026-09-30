@@ -187,7 +187,7 @@ impl RegionCensus {
 /// (`30N:rul-census-inputs-are-non-optional`).
 ///
 /// Literal command WORDS only, the discrimination
-/// `oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector` records: a dynamic command position is
+/// `oracle/AGENTS.md a-top-reject-is-not-a-definition-vector` records: a dynamic command position is
 /// already a `DynamicExecution` ⊤-reject and reading that as a string-execution site would put every
 /// peeling wrapper in the world into this trigger. Deliberately not narrowed to "names a function":
 /// deciding which function a trap's action string could reach means parsing a string the engine has
@@ -576,7 +576,7 @@ pub(crate) enum SharedConclusion {
 /// What a region's shared decision establishes about whether its instances can still mutate.
 ///
 /// The settlement-facing half of the conclusion, minted BESIDE the public outcome and never read
-/// off it (`plan/CLAUDE.md acts-and-dispositions-mint-together`; `pin-no-outcome-as-generator`).
+/// off it (`plan/AGENTS.md acts-and-dispositions-mint-together`; `pin-no-outcome-as-generator`).
 /// There is deliberately no conversion from [`SharedOutcome`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SharedRegionAct {

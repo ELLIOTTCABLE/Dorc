@@ -3,7 +3,7 @@ ORACLE_PROVIDES: the map of what an oracle hands Dorc
 
 > AI-authored, AI-maintained, UNAUDITED (no human has reviewed it line by line). Current as of the
 > r30 designs (2026-09-02). A MAP, not the contract: the contract an author reads is
-> `spike/docs/reference/oracle-contract.md`; the law an engine builder obeys is `spike/CLAUDE.md` (its
+> `spike/docs/reference/oracle-contract.md`; the law an engine builder obeys is `spike/AGENTS.md` (its
 > "The authored surface" and "Language & off-ramp law" sections); the design-of-record for each shape
 > is the document its entry points at. Use it like `Research/README.md`: grep the slug, follow the
 > pointer, never take a paraphrase here over the document it names.
@@ -27,8 +27,8 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 - WHAT: the argparse — ordinary control-flow (`verb="$1"; shift; case "$verb" in …`) a site's resolved
   argv flows THROUGH; it defines reached-path scoping for every other shape and type-checks the vouch
   (declines included). The engine parses no tool argv, ever.
-- DESIGN: `spike/CLAUDE.md` identity-declared-never-inferred · rul-argv-flows-bytes-do-not ·
-  `271:rul-only-oracle-bytes-ship`; quality bar `spike/crates/oracle/CLAUDE.md` (R2-MULTIOP). STATUS: built.
+- DESIGN: `spike/AGENTS.md` identity-declared-never-inferred · rul-argv-flows-bytes-do-not ·
+  `271:rul-only-oracle-bytes-ship`; quality bar `spike/crates/oracle/AGENTS.md` (R2-MULTIOP). STATUS: built.
 - TRUST: near self-defeating when wrong (resolves nothing ⇒ ⊤ ⇒ run: not-sin); the live bite is the
   half-checked multi-operand yes (cardinal-sin at the author's own site).
 - DEGRADES: no decoder ⇒ wall + run; each decoded arm buys exactly its paths. Monotone.
@@ -52,7 +52,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 - WHAT: the recipes inside any role body (`dpkg-query -W "$pkg"`), shipped strip-only into the probe lane
   and, byte-identical, into apply guards. Writing sh in an oracle body at all vouches its probe-position
   inertness — the structural self-vouch, the only source of probe safety.
-- DESIGN: `spike/CLAUDE.md` structural-vouch-only · rul-probe-mutation-ownership-split (`plans/27C` §3) ·
+- DESIGN: `spike/AGENTS.md` structural-vouch-only · rul-probe-mutation-ownership-split (`plans/27C` §3) ·
   rul-unprovable-rides-the-vouch · rul-no-mutating-guards · `KNOBS:kVOLATILES` · `23O`. STATUS: built.
 - TRUST: the sharpest non-license liability; a mutating probe is contract collapse (no gradient).
   Enforced structurally + by the falsification-first effect check (never a completeness gate).
@@ -120,7 +120,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
   runs). Declining is control-flow (`*) return 2 ;;`); DREP is optional, but a named decline must agree
   with a >=2 shell result. Record-only success is a contract conflict, not convergence. The markless
   verdict-only oracle is the typeless floor.
-- DESIGN: `plans/239` · `23O` §2 · `spike/CLAUDE.md` rul-rc-partition · rul-vouch-is-verdict-authoring ·
+- DESIGN: `plans/239` · `23O` §2 · `spike/AGENTS.md` rul-rc-partition · rul-vouch-is-verdict-authoring ·
   `plans/24L` · `plans/30D` §3. STATUS: built (predicate); `ruled, unbuilt` (DREP agreement).
   CONSUMED BY (license-free): drift display, hints; (licensed): see next.
 - TRUST: an ANSWER carrying the adequacy gap (converged ≠ no-op; `an-adequacy-bite`): a wrong yes
@@ -144,7 +144,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
   `predicts <channel-set>` / `predicts none …`
   (load-bearing, sub-shape 1) · `disturbs nothing-else` (load-bearing: at-most completion witness and
   finished-definition act). Heads are closed grammar; tails are free and decision-inert.
-- DESIGN: `27W` · `plans/30D` §§2–5 · `plans/30U` §4 · `spike/CLAUDE.md` decline-class-emission.
+- DESIGN: `27W` · `plans/30D` §§2–5 · `plans/30U` §4 · `spike/AGENTS.md` decline-class-emission.
   STATUS: built (decline narration; live per-attempt capture); `ruled, unbuilt` (decline control/agreement,
   `predicts`, `nothing-else`).
 - TRUST: a misclass misdirects attention only (mild-sin); the load-bearing verbs carry their shapes' knives.
@@ -156,7 +156,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 ### provides-context-vouch — "this body stays read-only when executed shifted along DIM"
 - WHAT: the standalone mark `: safe-across user` (`{user,fs-view}`), per function, path-scoped — read-only
   BY DESIGN, not by privilege-starvation; claims nothing about answers or other functions.
-- DESIGN: `plans/27C` §2 · `plans/281` §5 · `spike/CLAUDE.md` context-entry-probing. STATUS: built
+- DESIGN: `plans/27C` §2 · `plans/281` §5 · `spike/AGENTS.md` context-entry-probing. STATUS: built
   (`oracle::entry`; e2e `context-entry-*`). TRUST: a false vouch is a probe break in an entered context
   (attributed to the three consents). DEGRADES: no vouch ⇒ never entered ⇒ guard/run. Monotone.
 
@@ -178,7 +178,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
 
 ### provides-kind-resolution — "these two names are one entity of my kind"
 - WHAT: `kind__resolve()`: prints the canonical name, falls through to the input; one per kind per world.
-- DESIGN: `24F`/`24G` · USER_STORY stage 6 · `core/CLAUDE.md` canonical-coord-continuity. STATUS: built.
+- DESIGN: `24F`/`24G` · USER_STORY stage 6 · `core/AGENTS.md` canonical-coord-continuity. STATUS: built.
 - TRUST: a wrong merge over-verifies (not-sin); a wrong split re-opens the silent skip (cardinal-sin).
 - DEGRADES: no resolver ⇒ plain name comparison; can't-answer ⇒ may-alias ⇒ run. Monotone.
 
@@ -251,7 +251,7 @@ sets, families — is DERIVED and never declared. Entries run in dependency orde
   supported sh that withhold custody until their load model lands. Two live definitions of one family's member
   in a frame withhold that family's licenses unless the admin blesses the replacement.
 - DESIGN: `plans/30I` §2.2/§3.4/§15 · `plans/28K` §1/§4 · `plans/28M` · `plans/30P` (the load principles;
-  `law-no-unsoundness-below-a-blind-act`) · `notes/30Ic` · `spike/crates/oracle/CLAUDE.md`
+  `law-no-unsoundness-below-a-blind-act`) · `notes/30Ic` · `spike/crates/oracle/AGENTS.md`
   rul-vouch-reaches-own-custody-only. STATUS: built (custody closures, exact and guarded-source speaker
   edges, `unset -f`, subshell loading, bundles); `open` (`30I:pin-command-v-load-model`; `30I` §4.2).
 - TRUST: a mis-composed custody blames the voucher for a helper they never selected (pope-sin) — hence every

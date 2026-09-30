@@ -23,9 +23,9 @@ All of the following should recieve frequent edits whenever work progresses:
 
 - `LIVING_STATUS.md` should always be kept up-to-date, it's nearly *always* valid to update it when your work pregresses. (It's occasionally managed by sibling conductors in one worktree, so be mildly defensive about concurrent edits.)
 - `ANALYZER-NEEDS.md`, `AID-NEEDS.md`, and similar LLM-authored report-table siblings should be kept current; they're an authoritative place to record cross-cutting information. Don't turn them into play-by-plays; no chronological commentary, that's what git is for. Just always make them current, and correct.
-- the `CLAUDE.md` files under `spike/` are all conductor-LLM-managed; they are the correct place to site implementation-specific information that must make its way to implementing agents. (These should generally be updated as the last step, when a design has *firmed*; they're a place for firm implementation specifics and fully-ruled *invariants* that apply to code, not for general design-language.)
-  - use judgement in deciding between the crate-specific / topic-focused `CLAUDE.md`s, vs. the spike-root `spike/CLAUDE.md`, for a given invariant;
-  - repetition in the `CLAUDE.md`s is valid, but only for genuinely deeply-critical invariants, esp. ones that agents have gotten wrong before
+- the `AGENTS.md` files under `spike/` are all conductor-LLM-managed; they are the correct place to site implementation-specific information that must make its way to implementing agents. (These should generally be updated as the last step, when a design has *firmed*; they're a place for firm implementation specifics and fully-ruled *invariants* that apply to code, not for general design-language.)
+  - use judgement in deciding between the crate-specific / topic-focused `AGENTS.md`s, vs. the spike-root `spike/AGENTS.md`, for a given invariant;
+  - repetition in the `AGENTS.md`s is valid, but only for genuinely deeply-critical invariants, esp. ones that agents have gotten wrong before
 
 For genuinely critical design-direction-changes, when such happen, recall the above and update plans/notes as necessary:
 

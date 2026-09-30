@@ -4,7 +4,7 @@ AI-drafted for human ruling, 2026-07-02. This is step 2 of the acked back-to-ear
 formal act that ends the 233 design-crisis, if signed. Structure: §1 what "closed" means · §2
 what explicitly does NOT block · §3 the proposed re-weld deltas, each engaging the ORIGINAL
 ruling's rationale (the 236c letter-vs-reasons discipline) · §4 the ask. Ownership per delta:
-worktree-root human docs (KNOBS/DESIGN/TODO/233) are YOURS to apply by hand; `spike/CLAUDE.md`
+worktree-root human docs (KNOBS/DESIGN/TODO/233) are YOURS to apply by hand; `spike/AGENTS.md`
 is conductor-editable ON YOUR WORD (it is not in the human-docs boundary list; its rulings
 sections have always been conductor-recorded human rulings).
 
@@ -50,7 +50,7 @@ Everything else fails toward run. Nothing rests on silence.
 
 ## §3 The re-weld deltas
 
-### delta-1 · spike/CLAUDE.md — new "Standing human rulings (round-23)" block  [conductor applies on GO]
+### delta-1 · spike/AGENTS.md — new "Standing human rulings (round-23)" block  [conductor applies on GO]
 
 > - **rul-ternary-verdict.** The per-site verdict vocabulary is {elide, guard, run}. A `guard`
 >   is an observable-preserving insertion — `<oracle-check-invocation> || <original bytes>` —
@@ -113,7 +113,7 @@ human's ground-truth — whole-oracle body ships in both lanes — this is nearl
 remains a live constraint only for the optional lifted-subset form, where the shipped substring
 must also have shipped and been exercised at probe time to qualify.)*
 
-### delta-2 · spike/CLAUDE.md — amend the TOCTOU standing ruling  [conductor applies on GO]
+### delta-2 · spike/AGENTS.md — amend the TOCTOU standing ruling  [conductor applies on GO]
 
 Append to the existing ruling ("TOCTOU … deferred-to-actively-WONTFIX …"):
 
@@ -131,7 +131,7 @@ evidence of interference." A guard is not paranoia — it fires only where the a
 *identified* a possible interferer this run and a vouch + converged-probe licensed the site;
 open-world drift-machinery remains banned on the original reasoning.
 
-### delta-3 · spike/CLAUDE.md — carve-out clause on inv-probe-sourced-values  [conductor applies on GO]
+### delta-3 · spike/AGENTS.md — carve-out clause on inv-probe-sourced-values  [conductor applies on GO]
 
 Append to the invariant:
 
@@ -177,7 +177,7 @@ with-the-two-halves-doctrine). The stamped text above the annotation is untouche
 
 ## §4 The ask
 
-Rule GO or NO-GO on §1. On GO: I apply deltas 1–3 to spike/CLAUDE.md verbatim (or as you amend
+Rule GO or NO-GO on §1. On GO: I apply deltas 1–3 to spike/AGENTS.md verbatim (or as you amend
 them), you apply 4–6 at leisure, and step 3 begins — the guard-tier xfail set derived and pinned
 red against a stub spelling, then the one planned crosscheck (a neutral+adversarial pair over
 the pin-set: "find the pin that licenses a wrong-elision; find the licensing hole no pin

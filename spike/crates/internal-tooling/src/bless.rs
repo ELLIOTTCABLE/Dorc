@@ -3,7 +3,7 @@
 //!
 //! Remit: the conductor's tokens are the expensive ones, so this is silent on success bar
 //! a single tally line plus the diffstat of what the bless moved, and loud-and-complete on
-//! failure. BLESS is orchestrator-exclusive (`spike/CLAUDE.md`) — never run by a builder,
+//! failure. BLESS is orchestrator-exclusive (`spike/AGENTS.md`) — never run by a builder,
 //! never while a build-agent is in flight.
 //!
 //! Deliberately thinner than the script it replaces: that predated `gate:full-quiet` and
@@ -129,7 +129,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
 
 /// Move this process's own executable aside, so a nested tooling build can replace it.
 ///
-/// Workspace builds no longer touch this exe (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`);
+/// Workspace builds no longer touch this exe (`spike/AGENTS.md` `tooling-runs-under-its-own-profile`);
 /// this is a belt for the tooling's own sources changing under a running bless, when the gate's
 /// nested `cargo run --profile tooling` must re-uplift it and Windows refuses to remove a running
 /// image but permits renaming one. A failure warns rather than refuses.

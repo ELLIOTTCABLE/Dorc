@@ -12,7 +12,7 @@
 //! gates tolerated-and-reported while the transcript stays enforced), and BLESS. A loom's
 //! diagnostic assertions ride its session transcript compare and `defined_code_fired`, so the
 //! dir-form needle scans (gate-3/7/hint/8) and the `head-expected.ran` pin retired with the dir
-//! path. The per-gate rationale lives in `crates/cli/CLAUDE.md`'s harness contract and in each
+//! path. The per-gate rationale lives in `crates/cli/AGENTS.md`'s harness contract and in each
 //! gate's doc comment here; the sh source is git history.
 //!
 //! DELIBERATE DEVIATIONS from the sh original, all noted at their site:
@@ -2753,7 +2753,7 @@ fn debug_argv(harness: &Harness, dir: &Path, args: &[String], framed: &Path) -> 
 const FLOOR_SHELLS_ENV: &str = "DORC_E2E_FLOOR_SHELLS";
 
 /// The floor lane's own WRITE authority — the second half of the mint's double opt-in, alongside
-/// [`FLOOR_SHELLS_ENV`] (`mise run bless:floor`; `spike/CLAUDE.md`
+/// [`FLOOR_SHELLS_ENV`] (`mise run bless:floor`; `spike/AGENTS.md`
 /// emitted-is-measure-once-ground-truth).
 ///
 /// `expected.emitted` is what the floor BINARIES said, so an ordinary `BLESS=1` has no authority
@@ -2915,7 +2915,7 @@ fn dual_rail_check(
 // ---------------------------------------------------------------------------
 // the lint case drivers
 
-/// The opt-in real-external-tools lint lane (`spike/CLAUDE.md` real-tools-lane-opt-in).
+/// The opt-in real-external-tools lint lane (`spike/AGENTS.md` real-tools-lane-opt-in).
 /// Registered ONLY when `DORC_E2E_REAL_TOOLS` is set; the LIST is the coverage assertion,
 /// so a listed tool with no fixture, or an absent tool, fails loudly.
 fn run_lint_real(

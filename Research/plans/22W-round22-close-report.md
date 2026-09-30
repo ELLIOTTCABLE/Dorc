@@ -19,7 +19,7 @@
 > report (what r22 *did*, not what's next).
 
 Read order for a future agent: this report top-to-bottom is ~5 minutes and tells you
-"what r22 settled." Then `spike/CLAUDE.md` for the welded `inv-*` invariants + the
+"what r22 settled." Then `spike/AGENTS.md` for the welded `inv-*` invariants + the
 standing round-22 rulings verbatim; the source seams cited inline to ground anything
 load-bearing (`core/src/diag.rs`, `core/src/prov.rs`, `plan/src/erasability.rs`,
 `cli/src/main.rs`); and `IMPLEMENTATION.md` "Correctness vs. best-effort: a band" for
@@ -38,7 +38,7 @@ that a give-up site must be a registered code to ship. +SURE — built, green, s
 WHY IT MATTERS. This is the error-reporting spine the real Dorc inherits. ru-17 made
 it BATTLEFIELD-BOUND: the human ruled it "could become The Product of the spike, and
 one of the first bits of actual code to write for the real codebase" — a sanctioned
-exception to the spike's disposability charter (`spike/CLAUDE.md` held-4). The spike
+exception to the spike's disposability charter (`spike/AGENTS.md` held-4). The spike
 PROVES the shape; the real codebase extracts/reimplements it (diag is a leaf module,
 extraction is cheap). Design-for-keeps applies to this module and NOTHING ELSE by analogy.
 
@@ -130,7 +130,7 @@ honor. The governing ruling:
   re-derived as a first-class FACT first. The why-lens (§3) is the only consumer, and
   it is a RENDERER (exempt-plane), never a decider.
 
-- **THE TWO SURFACES (rec-1, ru-12 + ru-20; `spike/CLAUDE.md` standing rulings).** Two
+- **THE TWO SURFACES (rec-1, ru-12 + ru-20; `spike/AGENTS.md` standing rulings).** Two
   PLANES, contracts are plane-based:
   - the shipped/off-ramp `.sh` ARTIFACT is **byte-floored and receipt-free** —
     byte-identical under receipt-stripping, *including its comments* (the ru-12 floor);
@@ -403,7 +403,7 @@ Fable (no higher tier to catch cross-cutting error), VERIFY-SURVIVORS-IN-SOURCE 
 non-negotiable; dial UP adversarial-crosscheck precisely because same-model passes are
 less potent and more necessary.
 
-ru-26 DISCIPLINE (welded, `spike/CLAUDE.md`): any implementation shaped by a "would
+ru-26 DISCIPLINE (welded, `spike/AGENTS.md`): any implementation shaped by a "would
 churn unnecessarily" scope-cut MUST carry a nearby inline note saying so, so the cut
 can NEVER leak silently into greenfield work referencing the spike. Live instances: the
 two needle-shape scan honesty notes (single-line-arm-only; non-core-cfg(test) basis) and
@@ -438,7 +438,7 @@ TUI-dashboard / CLI-narrative / OOB-lane).
 
 ## 8. Standing rulings + welded invariants a future agent MUST respect
 
-THE ROUND-22 RULINGS (compact; full text `224` §7 + `spike/CLAUDE.md`):
+THE ROUND-22 RULINGS (compact; full text `224` §7 + `spike/AGENTS.md`):
 
 - **ru-11** — receipts FULLY one-way / decision-inert; any receipt-prompted behavior is
   a weld re-litigation (§2).
@@ -458,7 +458,7 @@ THE ROUND-22 RULINGS (compact; full text `224` §7 + `spike/CLAUDE.md`):
   future security re-pass `flag-security-round-2`; **ru-28/29** the live-plan reframe →
   deferred to r23.)
 
-THE WELDED `inv-*` INVARIANTS (do not violate; `spike/CLAUDE.md`): `inv-no-throw`
+THE WELDED `inv-*` INVARIANTS (do not violate; `spike/AGENTS.md`): `inv-no-throw`
 (every stage returns `Carrier<T>`, never panics — errors are data); `inv-determinism`
 (the kernel is a pure function; ordered collections only, no `HashMap` iterated into
 output, no async/clock/RNG/fs/net directly or transitively); `inv-kfail` (Probe → never

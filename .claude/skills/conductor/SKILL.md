@@ -105,7 +105,7 @@ There is no agent-facing quick completion gate.
 ## Steering-prose authorship (the expensive files)
 
 Only Fable- and Sol-class conductors may author high-blast-radius ML-model
-steering documents: `spike/CLAUDE.md`, the crate `CLAUDE.md`s, AGENTS-tier
+steering documents: `spike/AGENTS.md`, the crate `AGENTS.md`s, AGENTS-tier
 steering prose, and skills. If your model class or applicable rules are
 uncertain, stop and ask the human before editing one.
 
@@ -136,7 +136,7 @@ harness:
   settled.
 - USER_STORY.md, KNOBS.md, SIBLINGS.md: AI-voice, human-reviewed, high authority
   must-reads nonetheless.
-- spike/CLAUDE.md
+- spike/AGENTS.md
 
 These are nearly as important, but large; you should *probably* load both,
 unless it's quite clear from your remit that one or both is irrelevant to your

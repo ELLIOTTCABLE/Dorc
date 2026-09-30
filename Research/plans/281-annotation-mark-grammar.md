@@ -6,7 +6,7 @@ written to be implemented from directly; Part II is the design rationale; the cl
 grep-map records prior spellings for corpus migration. This document is authoritative on the
 mark grammar and its verb vocabulary. It supersedes the worked-minimum grammar of `277` §4
 and takes over the grammar `278` §6 deferred to `277`. Authority order: root docs,
-`spike/CLAUDE.md` rulings, `plans/271`, and any human-typed ruling outrank this. Companion
+`spike/AGENTS.md` rulings, `plans/271`, and any human-typed ruling outrank this. Companion
 specs it does not restate: coordinate/entity algebra `277`; wrapper/context members
 `273`/`plans/27C`; store/topology members `272`; base-dialect floor `276`/`278`. Open
 cross-cutting reconciliations (kOOB, KNOBS) are listed in §12.

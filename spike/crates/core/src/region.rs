@@ -8,7 +8,7 @@
 //! authored source span every invocation of a function body would rewrite. They are different
 //! questions and they answer differently — a body region has many executions and exactly one edit,
 //! which is the whole reason a per-call decision cannot be the unit
-//! (`spike/CLAUDE.md inv-leaf-seam`).
+//! (`spike/AGENTS.md inv-leaf-seam`).
 //!
 //! # Why the universe is a value, and why it is checked at the mint
 //!

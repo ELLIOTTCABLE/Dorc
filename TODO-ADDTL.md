@@ -52,7 +52,7 @@ in `30O:register-and-steering-debt`, not here.
 * [ ] **posh-leg-of-the-floor-is-unexercised** — `printf` is not a posh builtin, so under the
   corpus's `PATH=mocks-only` rail no shipped oracle body's emissions have ever run under posh;
   the opt-in `mise run test:floor` lane proves six sentinel manifests only
-  (`spike/CLAUDE.md` floor-differential-lane-opt-in, `28P`).
+  (`spike/AGENTS.md` floor-differential-lane-opt-in, `28P`).
 
 ## Smaller, still model-flagged
 

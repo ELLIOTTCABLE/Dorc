@@ -96,7 +96,7 @@ counterexample until reproduced under headroom — the harness driver gates verd
 on the memory result (keep it gated; a regression test pins it), and an
 over-budget harness is *recorded as over-budget*, never reported refuted and
 never waited out. Heavy solver work runs memory-gated (`timeout` + `ulimit -v` +
-exact-name reaping, serialized across lanes — `spike/CLAUDE.md`
+exact-name reaping, serialized across lanes — `spike/AGENTS.md`
 background-wsl-children-outlive-taskstop).
 
 ## Which instrument, when (the decision map)
@@ -122,7 +122,7 @@ statement of the few laws it opts to verify: English-authoritative prose + a
 shipping Rust — zero transcription drift) + a concretely-evaluated instance
 battery, badge-tracked by `dorc-verify`. It is deliberately expensive:
 
-- **Content is frontier+human only** (`minispec/CLAUDE.md` access laws). A
+- **Content is frontier+human only** (`minispec/AGENTS.md` access laws). A
   builder NEVER edits a unit, the Vocabulary, or the catalogue expectations —
   builders build tooling, surface chafe, and stop. This is what makes it an
   acceptance surface the worker cannot game.
@@ -145,7 +145,7 @@ battery, badge-tracked by `dorc-verify`. It is deliberately expensive:
   generic law says what it assumes (`LawfulClone`/`LawfulEq`); concrete battery
   dictionaries prove them outright. The translated-code discipline that keeps the
   pipeline alive: keep borrows out of closure returns and Option-combinators off
-  the algebra path — spell the `match` cousin (`core/CLAUDE.md`).
+  the algebra path — spell the `match` cousin (`core/AGENTS.md`).
 
 ## Praxis per tier
 
@@ -220,9 +220,9 @@ conductor; minispec chafe is a report-and-stop, never a workaround.
 
 ## In this repository
 
-Binding local law outranks this skill's generic phrasing: `spike/CLAUDE.md` and
-the per-crate `CLAUDE.md` files (notably `core`, `analysis`, `plan`) plus
-`minispec/CLAUDE.md` carry the project-specific invariants and always win on
+Binding local law outranks this skill's generic phrasing: `spike/AGENTS.md` and
+the per-crate `AGENTS.md` files (notably `core`, `analysis`, `plan`) plus
+`minispec/AGENTS.md` carry the project-specific invariants and always win on
 conflict. The verified core spans `core`/`analysis` plus the checker/reference
 surfaces (`analysis/src/certify.rs`, `crates/sparing-reference`,
 `plan/src/rederive.rs`); the spec corpus is `minispec/` (the Lean model's home —

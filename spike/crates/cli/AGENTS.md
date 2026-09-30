@@ -1,8 +1,8 @@
-# spike/crates/cli — CLAUDE.md
+# spike/crates/cli — AGENTS.md
 
 Role: the round-trip driver (book + oracles → read-only probe → results → eliding
 apply) and the e2e acceptance harness's contract. The ONE place determinism is
-relaxed — real I/O at the edges only. Read `spike/CLAUDE.md` first. Registry
+relaxed — real I/O at the edges only. Read `spike/AGENTS.md` first. Registry
 discipline: one rule per bullet, slugged; append to the matching section.
 
 ## Law
@@ -290,7 +290,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   guard lane (`build_vouches`) and the probe's three ship seats (`ship_predict_body` /
   `ship_verdict_body` / `ship_predict_stage`). Building it per site would re-parse every source per
   site and, worse, leave two copies of the resolution rule to drift — the failure
-  `oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat` records for the role lane. Since
+  `oracle/AGENTS.md the-frame-lookup-is-the-only-resolution-seat` records for the role lane. Since
   the emission stage the SURVIVAL/kind/entry-form lanes (`ship_touches_body`,
   `compile_resolvers`, `collect_reach_probes`, `strip_enter`) carry snapshots too, and the
   wrapper lane consumes the SHARED index rather than building a second one. The remaining
@@ -463,8 +463,8 @@ discipline: one rule per bullet, slugged; append to the matching section.
   second seed, naming the first differing block and the pin remedy.
 - **bless-never-first** — `BLESS=1` regenerates transcripts; gates run before bless, but bless cannot
   prove an elision RIGHT: fresh verified binary, orchestrator-only, diff inspected case-by-case (BLESS
-  exclusivity — `spike/CLAUDE.md`).
-- **bless-writes-renders-not-measurements** (`spike/CLAUDE.md` emitted-is-measure-once-ground-truth) —
+  exclusivity — `spike/AGENTS.md`).
+- **bless-writes-renders-not-measurements** (`spike/AGENTS.md` emitted-is-measure-once-ground-truth) —
   bless has authority over what the ENGINE produced (transcripts, `expected.ran` sections) and none
   over what the floor BINARIES produced: a case carrying `expected.emitted` is REFUSED by `BLESS=1`
   through the one pure `floor_bless_refusal` seat, and is writable only under the `BLESS_FLOOR=1` +

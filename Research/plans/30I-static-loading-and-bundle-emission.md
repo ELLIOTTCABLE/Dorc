@@ -3,7 +3,7 @@
 > Tier: LLM-authored plan from the 2026-08-18 human design dialogue. The
 > rulings marked **[TYPED]** were typed by the human; **[ACKED]** means the
 > human accepted the stated substance; **[PROPOSED]** is implementation shape
-> left to builders. Root human documents, `spike/CLAUDE.md`, and earlier typed
+> left to builders. Root human documents, `spike/AGENTS.md`, and earlier typed
 > law outrank this plan.
 >
 > This is the single design home for: working-directory-faithful oracle

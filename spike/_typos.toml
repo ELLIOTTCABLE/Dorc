@@ -4,7 +4,7 @@
 extend-ignore-re = [
    # `fnd-…` is the Research-corpus slug for a finding — the numbered old form (fnd-1,
    # fnd-4) and the full-word form the naming law now requires
-   # (fnd-decline-class-is-push-only). Used across the CLAUDE.mds and note
+   # (fnd-decline-class-is-push-only). Used across the AGENTS.mds and note
    # cross-references; not a misspelt "find".
    "\\bfnd-[0-9a-z-]+\\b",
    # `mis-` is the English prefix written with a hyphen (mis-chosen, mis-reads,
@@ -13,7 +13,7 @@ extend-ignore-re = [
    # reads "mis" as "miss".
    "\\b[Mm]is-",
    # "the two nevers" is round-23 ruling vocabulary (rul-ternary-verdict's pair of
-   # never-clauses; spike/CLAUDE.md + notes/23A) — a plural noun, not a misspelt "never".
+   # never-clauses; spike/AGENTS.md + notes/23A) — a plural noun, not a misspelt "never".
    "\\bnevers\\b",
    # DELIBERATE near-miss fixtures of the CLI mode/flag fuzzy-matcher test (`nearest`, cli/main.rs):
    # `aply`/`tust`/`boook` are the one-edit-away typos the suggester must resolve to
@@ -24,7 +24,7 @@ extend-ignore-re = [
    # `NAMEs` = the plural of the POSIX term NAME (bare munged POSIX NAMEs); typos
    # tokenizes the uppercase-then-`s` as `NAM`+`Es` and mis-flags `NAM`->`NAME`.
    "\\bNAMEs\\b",
-   # "unparseable" — the -eable spelling, used across the CLAUDE.mds; typos disputes
+   # "unparseable" — the -eable spelling, used across the AGENTS.mds; typos disputes
    # it for "unparsable" but both are accepted English.
    "\\bunparseable\\b",
    # `book=<hex>` (262 §2 records-lane digest, e2e goldens): a machine-generated FNV

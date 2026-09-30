@@ -1,8 +1,8 @@
-# spike/crates/syntax — CLAUDE.md
+# spike/crates/syntax — AGENTS.md
 
 Role: hand-rolled lexer + recursive-descent parser + arena AST for the modeled sh
 subset. A **disposable test front-end** with a **non-disposable boundary
-discipline**. Read `spike/CLAUDE.md` first. Registry discipline: one rule per
+discipline**. Read `spike/AGENTS.md` first. Registry discipline: one rule per
 bullet, slugged; append to the matching section.
 
 ## Law — boundary discipline (durable even though the subset's contents are not)

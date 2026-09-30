@@ -114,7 +114,7 @@ on someone else's machine. The system-wide rule - everything fails toward run -
 only holds if your body routes its own confusion into the can't-say row rather
 than swallowing it.
 
-<!-- quoted: spike/CLAUDE.md structural-vouch-only, rul-no-mutating-guards,
+<!-- quoted: spike/AGENTS.md structural-vouch-only, rul-no-mutating-guards,
      rul-proven-mutation-fails-fast, rul-unprovable-rides-the-vouch,
      hermeticity-precondition; 27C vouch-tolerates rationale; KNOBS kPROBING
      check-tax; IMPLEMENTATION.md correctness-band -->

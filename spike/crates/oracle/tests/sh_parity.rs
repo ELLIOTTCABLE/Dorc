@@ -37,7 +37,7 @@ fn voucher_owning_dest(tag: &str) -> String {
 /// an engine preference.
 ///
 /// HOW the engine gets there: `unset -f` is admitted at a marked top level
-/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"), and
+/// (`oracle/AGENTS.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"), and
 /// `HelperIndex::record` MODELS the removal rather than merely tolerating it — which is what lets
 /// the cross-file cousin below come out right too.
 ///

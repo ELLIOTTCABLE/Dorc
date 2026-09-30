@@ -3,7 +3,7 @@
 > Tier: LLM-authored plan (Fable conductor, from the 2026-08-15 human design sitting,
 > session `r30-conductor-4`); DRAFT pre-ack as a document — the individual rulings
 > inside carry their own grades and many are [TYPED]. Subordinate to root docs and
-> `spike/CLAUDE.md`. Grades: **[TYPED]** human typed it · **[ACKED]** substance
+> `spike/AGENTS.md`. Grades: **[TYPED]** human typed it · **[ACKED]** substance
 > confirmed in dialogue · **[PROPOSED]** conductor-derived, awaiting ratification.
 > Softness the human voiced is preserved inline ("tentative", "gut feel", "for now").
 >

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Provision a version-PINNED checkbashisms into the git-ignored e2e/.real-tools/ dir, for the
-# OPT-IN real-tools lint lane ONLY (spike/CLAUDE.md real-tools-lane-opt-in; Research/notes/27T).
+# OPT-IN real-tools lint lane ONLY (spike/AGENTS.md real-tools-lane-opt-in; Research/notes/27T).
 # NEVER run by a default `sh e2e/run.sh` — run.sh calls this only inside its DORC_E2E_REAL_TOOLS
 # block. shellcheck comes from mise (registry aqua:koalaman/shellcheck); checkbashisms is a Debian
 # devscripts PERL script absent from every mise backend, so it is fetched here (task fallback (b)):

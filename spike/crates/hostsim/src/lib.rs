@@ -335,7 +335,7 @@ pub struct Host {
     /// The DECLARED derived-footprint manifests (24E §6 / fork-s4-declaredtrue): per escalated
     /// wall-site cell, the modeled entity-set its host-run `touches()` would emit — the SAME shape
     /// discipline as [`verdict`](Host::verdict): DECLARED scenario data, deterministic, no ssh, and
-    /// emphatically NOT a `dpkg` simulation (the `hostsim/CLAUDE.md` fidelity-vs-coverage line — a
+    /// emphatically NOT a `dpkg` simulation (the `hostsim/AGENTS.md` fidelity-vs-coverage line — a
     /// declared-data oracle, never a re-implemented tool). Entity-granular (selector ignored by the
     /// plan's `disjoint`). This rides the sweep's declared-vs-true split: a manifest NARROWER than a
     /// site's TRUE [`CellDelta`] is the LYING derived footprint (⊂ true) that under-declares what the

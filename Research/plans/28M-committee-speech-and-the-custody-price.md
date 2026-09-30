@@ -73,7 +73,7 @@ refused; one surveyor per `only`). It converts multi-author danger into single-a
 trust. Family names fail all three legs: collision is the ecosystem's success condition,
 no norm is violated, nothing can be renamed. The end-state that re-applies the kind move
 to vocabulary: **kind-level token registration** (words move into the owned namespace;
-already queued as the registered-verdict-selector dispatch, `analysis/CLAUDE.md`).
+already queued as the registered-verdict-selector dispatch, `analysis/AGENTS.md`).
 
 ## §3. The subdivision map (the walls, then the residue)
 

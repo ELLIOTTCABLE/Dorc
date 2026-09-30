@@ -1,10 +1,10 @@
-# spike/crates/core — CLAUDE.md
+# spike/crates/core — AGENTS.md
 
 Role: the shared vocabulary every crate agrees on FIRST (dac-B: agree the types
 before consumers build, or two incompatible graphs grow) — the DECIDE plane. The
 DESCRIBE plane (diagnostics, catalog, render, narrative records, `Carrier`) is
 `crates/aid`, which deps this crate and is never depended upon BY it (`288` §2a).
-Read `spike/CLAUDE.md` first — its invariant clusters are this crate's law; this file
+Read `spike/AGENTS.md` first — its invariant clusters are this crate's law; this file
 carries only the core-local sharpenings. Registry discipline: one rule per bullet, slugged; append
 new entries to the matching section.
 
@@ -45,7 +45,7 @@ new entries to the matching section.
   sharpening of what the environment can prove. It briefly also carried the cli's per-file
   never-live withdrawal, which is why "write-once" is a property of the VALUE and not of how
   many are built — keep that property even though that second use retired with the frame
-  conversion (`analysis/CLAUDE.md never-live-feeds-the-dialect-fold-only`). The DiagCode
+  conversion (`analysis/AGENTS.md never-live-feeds-the-dialect-fold-only`). The DiagCode
   derives FROM the fact; licensure never reads a diagnostic (`two-plane-aid-law`).
 
 ## Law — the coordinate (`notes/277` is THE spec; `plans/271` the rulings)

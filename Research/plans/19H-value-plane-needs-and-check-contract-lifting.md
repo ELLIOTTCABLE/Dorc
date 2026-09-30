@@ -180,7 +180,7 @@ must gate its probe on `if [ "$2" = "" ]; then dpkg-query -W "$pkg"; fi` — wit
 multi-target `apt-get install nginx curl` binds entity=nginx ALONE and ships a probe for nginx
 only, silently dropping curl (a priority-1 under-execute; the naive-drop is pinned in
 oracle/tests/predict.rs::naive_oracle_without_operand_guard_drops_trailing_operands_known_hazard,
-and the guard is an oracle-quality-bar line `R2-MULTIOP` in oracle/CLAUDE.md). */ -->
+and the guard is an oracle-quality-bar line `R2-MULTIOP` in oracle/AGENTS.md). */ -->
 
 What the engine does:
 

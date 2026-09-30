@@ -172,4 +172,4 @@ function you would have wanted in your shell library anyway.
 <!-- quoted: plans/281 mark grammar v0.2 (sections 1, 3-6, 8; @ selector, carriers,
      sugar-vs-verb); 277 sections 1, 3, 4a-4f; 278 authored-additions; 271
      rul-binds-entity-only-provisional; 24M reverse-dns kinds; USER_STORY.md
-     stage 3; spike/CLAUDE.md coordinate-semantics, marker-gates-syntax-only -->
+     stage 3; spike/AGENTS.md coordinate-semantics, marker-gates-syntax-only -->

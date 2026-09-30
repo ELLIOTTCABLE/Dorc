@@ -205,6 +205,6 @@ classed it, that the line named is the line you wrote.
      rul-flagless-selection, rul-report-noise-tolerant, rul-report-surface-massaging;
      AID-NEEDS:aid-authored-decline-classes, aid-lint-oracle-solo-mode,
      aid-lint-unmodeled-inventory, aid-lint-verdict-body-mechanicals,
-     aid-why-decline-narration; spike/CLAUDE.md decline-class-emission,
+     aid-why-decline-narration; spike/AGENTS.md decline-class-emission,
      report-lane-versioned-entry; 27R sect-0/2/4/5 lint surface;
      27V:rul-output-form-unwelded -->

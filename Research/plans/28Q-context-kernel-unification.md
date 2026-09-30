@@ -1,7 +1,7 @@
 # 28Q — The context-kernel unification: frames, closures, availability (THE refactor plan)
 
 > Tier: LLM-authored plan (Fable conductor, from a human design dialogue, session
-> `r28-megamerge`); subordinate to root docs and `spike/CLAUDE.md`. Grades as in
+> `r28-megamerge`); subordinate to root docs and `spike/AGENTS.md`. Grades as in
 > `28K`/`28M`: **[TYPED]** human typed it · **[ACKED]** substance confirmed in dialogue ·
 > **[PROPOSED]** conductor-derived, awaiting ratification. The three-pillar direction is
 > ACKED; §4 is this plan's ack-ledger; mechanics are PROPOSED unless marked otherwise.
@@ -100,7 +100,7 @@ another's; pope-sin, invisible to goldens). The fix is a FACTORING, not per-fram
    per `(file, role)`, so where a file holds two definitions of one role the earlier
    produces no row and its frames withhold (safe; `p-x-definition-grade-keying` pins the
    target and says so). `rul-rc-reaches-genkill-only-through-decisions` (HUMAN-TYPED
-   2026-08-16, `spike/CLAUDE.md` observables-&-rc) is answered beside it: the
+   2026-08-16, `spike/AGENTS.md` observables-&-rc) is answered beside it: the
    verdict-record's subject and the site's establish are separate VALUES —
    `analysis::effect::Measurement`, minted at one crossing that spells
    `307:rul-primacy-moves-the-body-never-the-cell` as the RULING making them name one cell,
@@ -135,7 +135,7 @@ Consequences:
   NOT dissolved — it GENERALIZES: under true resolution every funcenv precision bug is
   winner-shifting (it selects whose judgment governs a site, with no agreement veto
   behind it), so the whole frame solver is license-review-tier forever; funcenv
-  precision work is never ordinary value-add. `oracle/CLAUDE.md
+  precision work is never ordinary value-add. `oracle/AGENTS.md
   live-source-is-the-only-resolution-seat` becomes "the frame-lookup is the only
   resolution seat".
 - bitem1's hash-munge is WITNESSED (the emission stage's
@@ -457,7 +457,7 @@ entire (local-exec, scope/incarnation slot, wait-loops, inverse wait →
 `stage-iii-world-scopes`) · the wrapped-vouch and whyworld/survival seat asymmetries
 (→ `stage-i-definition-factoring`) · the ship-seam verdict-primacy re-cut (→
 `stage-0-ship-seam`; rulings in
-§4) · `res-survival-lanes-still-ship-closure-less` (`cli/CLAUDE.md
+§4) · `res-survival-lanes-still-ship-closure-less` (`cli/AGENTS.md
 one-helper-index-two-lanes` → a rider on the emission stage's closure machinery) ·
 `res-host-conditional-loading` gains its eventual story
 (per-host frames keyed by decidable host facts) but STAYS v0-refused — named, not
@@ -597,7 +597,7 @@ own byte-identity gate.
   the rider's four closure-less seats carry snapshots, wrapper lane on the
   shared index; ONE decline code `vouched-composition-not-present` + 4-variant
   reason enum, prose `[unwritten:]`; defensive mode literal-word-only per
-  `oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`; hash-consing
+  `oracle/AGENTS.md a-top-reject-is-not-a-definition-vector`; hash-consing
   skipped, capture-noted, empty population; the wrapped guard's inline
   snapshot blob is the disclosed residue).
 - **stage-ii-closure-custody** (P2, infrastructure LANDED; runtime projection in
@@ -662,7 +662,7 @@ own byte-identity gate.
   book renders honestly in both world-states.
 
 Builder on-ramp (read in order): this document → `28M` §§7–11 → `28K` (executed lane
-record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/CLAUDE.md` invariant
+record; §10's as-built bitem ledger `28P`) → `27C` → the `spike/AGENTS.md` invariant
 sections cited in §6/§7 → `notes/300` §2 + `notes/301` (the checker/facade/minispec
 riders) + the
 `verified-core-discipline` skill (loads itself when a builder nears the strict core).
@@ -719,7 +719,7 @@ longer parked (implementation target `30K`) · `tc-inert-mocks-rail-is-dash-shap
     subshell-wrap for the once-used-collider-vs-many-use-alternative case.
     Alpha-rename joins the moment helper-munging first fires in the apply (its
     call sites live in authored bodies). Licensing law above it:
-    `spike/CLAUDE.md rul-happy-path-is-a-closed-set`. The `30A` battery pins the
+    `spike/AGENTS.md rul-happy-path-is-a-closed-set`. The `30A` battery pins the
     target semantics first (failing pins with named greening triggers).
 
 ## §10 — The authored surface (RESERVED)

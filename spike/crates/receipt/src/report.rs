@@ -309,7 +309,7 @@ impl SiteFacts {
     ///
     /// One value rather than two integers, because the pair is otherwise substitutable with any
     /// other pair and two same-command sites must not collapse
-    /// (`spike/CLAUDE.md:inv-site-keyed-results`).
+    /// (`spike/AGENTS.md:inv-site-keyed-results`).
     #[must_use]
     pub const fn site(&self) -> RecordedSite {
         self.site

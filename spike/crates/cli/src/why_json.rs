@@ -15,7 +15,7 @@
 //!
 //! # Keys are hardcoded and out of the registry
 //!
-//! The arrangement registry is a RENDER-plane home (`aid/CLAUDE.md artifact-plane-strings-stay-out`):
+//! The arrangement registry is a RENDER-plane home (`aid/AGENTS.md artifact-plane-strings-stay-out`):
 //! a machine format's key is not chrome anybody edits. The two surfaces share their VALUE spellings
 //! (`why_total`'s text seats) so a token cannot read one way here and another there.
 

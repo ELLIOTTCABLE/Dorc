@@ -2,12 +2,12 @@
 
 AI-authored (Fable conductor, 2026-07-19, from the two-day design dialogue with the
 human; every §0 ruling is human-typed unless marked as a lean). PLAN-OF-RECORD for an
-implementor. Authority: root docs, `spike/CLAUDE.md`, root `AID-NEEDS.md` outrank.
+implementor. Authority: root docs, `spike/AGENTS.md`, root `AID-NEEDS.md` outrank.
 Companions: `notes/27U` (aid as-built ledger) · `notes/27V` (evidence plane) ·
 `notes/27W` (decline classes) · `plans/281` (authored mark grammar) · `plans/280`
 (round charter).
 
-Implementor read-first: root `README.md`/`DESIGN.md` → `spike/CLAUDE.md` (User-aid
+Implementor read-first: root `README.md`/`DESIGN.md` → `spike/AGENTS.md` (User-aid
 law block + Boundaries + Build/test/run) → root `AID-NEEDS.md` (Law section) →
 `spike/crates/errorloom/README.md` → current `errorloom` transport/bless code +
 `dorc-loom` consumer/fixpoint code + `core` catalog/tagged-render code → this plan
@@ -163,7 +163,7 @@ $ dorc plan --book=book.sh --format=jsonl < probe-results.txt
   defining slug; absent for non-defining corpus cases), `when-fires`, `why`, and the
   registry-metadata keys that survive `30X:loom-frontmatter-is-registry-metadata-only` — the
   closed thirteen-key vocabulary is `dorc_loom::FRONTMATTER_KEYS` (`dorc-loom keys` prints it;
-  `crates/cli/CLAUDE.md` thirteen-keys-by-criterion). Run knobs are never frontmatter: they are
+  `crates/cli/AGENTS.md` thirteen-keys-by-criterion). Run knobs are never frontmatter: they are
   spelled in the session. Params are NOT declared here — they derive from the typed payload and
   templates into the generated catalog lock. Keep the key set minimal; every addition is a
   format commitment.
@@ -394,7 +394,7 @@ enforces defining-case ownership and applies edits to the catalog lock.
   fire, closing `27U:finding-corpus-blind-edge-codes`; the e2e corpus and its
   plan-render goldens (different product surface); machine-envelope shape
   assertions (move to a bytes-only replay block or stay unit-tier; latitude).
-- Registry/law sync (root `AID-NEEDS.md` law wording, `spike/CLAUDE.md` aid block)
+- Registry/law sync (root `AID-NEEDS.md` law wording, `spike/AGENTS.md` aid block)
   rides the INTEGRATION landing, not this plan-mint — one sync commit when the
   direction is built truth, not paper truth.
 

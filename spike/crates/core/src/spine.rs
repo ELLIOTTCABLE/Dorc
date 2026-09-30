@@ -238,7 +238,7 @@ pub enum AccountCarriage {
     /// absence. Empty today, and growth here is the signal the discipline exists to watch.
     UntrackedAdapter,
     /// The species has no writer, so there is no population whose account could have been joined
-    /// (`core/CLAUDE.md a-record-says-what-its-population-holds`: an unminted species says so at
+    /// (`core/AGENTS.md a-record-says-what-its-population-holds`: an unminted species says so at
     /// the type). Classifying these `Joined` would be a claim about a mint that does not exist.
     Unminted,
 }
@@ -1454,7 +1454,7 @@ impl RegionRoutes {
 /// [`SiteId`](crate::SiteId), and that is the species' reason for existing: a region has MANY
 /// executions and exactly ONE edit, so a leaf-keyed record cannot hold it without either collapsing
 /// the instances or inventing a leaf the edit does not have
-/// (`30L:rul-two-identities-never-conflated`; `spike/CLAUDE.md inv-leaf-seam`).
+/// (`30L:rul-two-identities-never-conflated`; `spike/AGENTS.md inv-leaf-seam`).
 ///
 /// `routes` is the attribution that makes `dorc why` bidirectional: definition region → the
 /// invocations that licensed this edit, and (read backwards) call instance → the shared edits it

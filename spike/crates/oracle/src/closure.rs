@@ -101,7 +101,7 @@ pub struct Closure {
     /// nothing. Kept as declarations rather than one blob because the apply artifact hoists ONE
     /// shared preamble above the whole book, so two guards that reach one helper must emit it once
     /// — two same-named funcdefs in the emitted preamble is the shape
-    /// `plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding` forbids. The probe lane, which
+    /// `plan/AGENTS.md pinned-definitions-are-the-artifact's-binding` forbids. The probe lane, which
     /// re-emits per site immediately before each invocation, just joins them ([`Closure::sh`]).
     decls: Vec<ClosureDecl>,
     /// The external command words the closure's own bodies reach, in name order.
@@ -268,7 +268,7 @@ impl<'a> SiteFrame<'a> {
 /// Built ONCE per unit and shared by every seat that pins a definition (the guard preamble's vouch
 /// lift and the probe's two ship seams), because re-deriving it per site would re-parse every
 /// source per site and, worse, leave two copies of the resolution rule to drift — the failure
-/// `oracle/CLAUDE.md live-source-is-the-only-resolution-seat` records for the role lane.
+/// `oracle/AGENTS.md live-source-is-the-only-resolution-seat` records for the role lane.
 #[derive(Debug, Clone, Default)]
 pub struct HelperIndex {
     /// Helper funcdef name → its declarations across the loaded sources, in load order.
@@ -767,7 +767,7 @@ fn slice(src: &str, span: Span) -> String {
 /// Under-collecting is the dangerous direction (a missed helper ships a body that cannot run), so the
 /// walk descends through every construct that can hold a command, command substitutions included. A
 /// dynamic command word contributes nothing here because the parser ⊤-rejects it upstream
-/// (`syntax/CLAUDE.md syntactic-top-triggers`) — and reading that ⊤-reject as a definition vector is
+/// (`syntax/AGENTS.md syntactic-top-triggers`) — and reading that ⊤-reject as a definition vector is
 /// the trap [`is_definition_vector`] documents.
 fn called_names(body: &str) -> Vec<String> {
     let ast = dorc_syntax::parse(body).value;
@@ -1369,7 +1369,7 @@ mod tests {
 
     /// A role funcdef is never closure material: the role lane resolves those through
     /// `live_source`, and capturing one here would be a second, unblessed resolution seat
-    /// (`oracle/CLAUDE.md live-source-is-the-only-resolution-seat`).
+    /// (`oracle/AGENTS.md live-source-is-the-only-resolution-seat`).
     #[test]
     fn a_role_member_is_not_captured_as_a_helper() {
         let src = format!(

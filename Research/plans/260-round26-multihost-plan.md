@@ -175,7 +175,7 @@ Two new crates + additive extensions. Names follow the existing flat convention.
   `fleet::step`, execute returned commands), per-host artifact emission, fleet summary render,
   new exit codes (§6). Single-host stdin/`--results` paths stay byte-identical (regression
   fence).
-- **`hostsim` (extended, additive).** Grows the pre-declared fault seam (`hostsim/CLAUDE.md`
+- **`hostsim` (extended, additive).** Grows the pre-declared fault seam (`hostsim/AGENTS.md`
   an-host-fault-model): per-host synthetic record-streams derived from `Host` state, plus
   seeded faults — unreachable / connect-timeout / wedged (no records, no close) /
   truncated-stream (records stop mid-way, no sentinel) / forged-verdict / duplicate-delivery /

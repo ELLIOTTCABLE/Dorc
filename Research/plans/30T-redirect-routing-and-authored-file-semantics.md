@@ -1,7 +1,7 @@
 # 30T — Authored file semantics: redirect routing, the filesystem binder, and the ask-the-world discipline
 
 > Design of record for redirect routing, filesystem binding, and file-identity discipline.
-> Subordinate to the root docs, `spike/CLAUDE.md`, `KNOBS.md`, `plans/30I`, and
+> Subordinate to the root docs, `spike/AGENTS.md`, `KNOBS.md`, `plans/30I`, and
 > `plans/30P`; read with `plans/30U`, which defines the cross-kind finished-definition
 > gate consumed here. Sections 0–9 state product semantics and deliberate limitations;
 > §10 records implementation components and dependencies. Shell examples are illustrative;

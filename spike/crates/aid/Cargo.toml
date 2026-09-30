@@ -9,7 +9,7 @@ publish = false
 # the no-throw `Carrier`. DST-clean by construction (no clock, RNG, filesystem, or network,
 # directly or transitively), so the whole pipeline stays a pure function of its inputs inside
 # deterministic-simulation tests. Adding a dependency here requires proving it carries no
-# nondeterminism (see spike/CLAUDE.md `inv-determinism`).
+# nondeterminism (see spike/AGENTS.md `inv-determinism`).
 #
 # `weft` is the layout engine the describe plane renders through. It is zero-dependency and a
 # pure function of (tree, frame), so it clears the determinism bar; and the edge points the

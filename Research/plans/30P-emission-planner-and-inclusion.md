@@ -2,7 +2,7 @@
 
 > Tier: LLM-authored plan (Fable conductor, from the 2026-08-22 design sitting with the
 > human; third pass the same day, after the floor atlas was minted and the graded prior-art
-> round landed). Subordinate to root docs, `spike/CLAUDE.md`, and `KNOBS.md` (`kBACKFLIPS`
+> round landed). Subordinate to root docs, `spike/AGENTS.md`, and `KNOBS.md` (`kBACKFLIPS`
 > is the registry entry this plan details). Grades: **[TYPED]** human typed it · **[ACKED]**
 > substance confirmed in dialogue · **[PROPOSED]** conductor-derived, awaiting ratification ·
 > **[SIDENOTE]** a floated curiosity, explicitly not a plan. Prior-art citations are
@@ -533,7 +533,7 @@ reported, none worked around, NO tooling work scheduled [TYPED]: `gap-early-exit
 · `gap-locale-dependent-glob-order` · `gap-atlas-mode` (footnote: per-shell recorded texts
 would make a divergence a committed, re-checked artifact — `work-atlas-divergence-manifests`,
 unscheduled) · `gap-pinned-shell-matrix`. Steering lag: `gate:full-quiet` DOES route
-`test:floor` when floor paths are staged; `spike/CLAUDE.md` says the lane is off in every
+`test:floor` when floor paths are staged; `spike/AGENTS.md` says the lane is off in every
 default gate.
 
 ## what-landed — the executable specification

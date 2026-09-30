@@ -102,7 +102,7 @@ pub(crate) fn item_is_load_inert(ast: &Ast, item: AstId) -> bool {
 /// # Why the branches may not DEFINE
 ///
 /// A role funcdef inside a conditional branch is a MEASURED wrong-elision route, not a taste
-/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"): the
+/// (`oracle/AGENTS.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL"): the
 /// dialect lift recognizes a role header only as a TOP-LEVEL ITEM, so a definition nested in a
 /// branch is registered by `dorc_syntax` and by the definition table while producing ZERO lifted
 /// rows and zero detected headers — silently, with the marks-lost backstop quiet about it too. The

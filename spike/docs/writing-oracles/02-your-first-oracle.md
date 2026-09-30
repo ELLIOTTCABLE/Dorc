@@ -134,6 +134,6 @@ this oracle knew that `chezmoi update` pulls from a remote first, so local
 verification cannot answer for it - a `return 2` is that knowledge, expressed in
 one line. Delegation is a shape, not a free lunch; the judgment stays yours.
 
-<!-- quoted: USER_STORY.md stage 3 + chezmoi story; spike/CLAUDE.md
+<!-- quoted: USER_STORY.md stage 3 + chezmoi story; spike/AGENTS.md
      rul-vouch-is-verdict-authoring, rul-rc-partition, rc-naming-discipline;
      23O rul-role-split; 27Q teach-marked-command-not-cmdsub -->

@@ -15,7 +15,7 @@ visible. Many rows look small from the user's side and need deep machinery (evid
 threading, provenance, replay) to produce *correctly*; the mechanism column is the point.
 
 Engine-side build law for this category (narrative plane, receipt-backed why, the error catalog and
-its authoring pipeline) lives in `Research/notes/27V`, `Research/plans/30R`, and `spike/CLAUDE.md`'s user-aid
+its authoring pipeline) lives in `Research/notes/27V`, `Research/plans/30R`, and `spike/AGENTS.md`'s user-aid
 block — not here. This file is the row-registry plus only the law needed to mint and
 consume rows.
 

@@ -2,7 +2,7 @@
 //! lint and the `slugs` index so the two cannot drift on WHICH files are the corpus or on what a
 //! docID looks like. A naive recursive walk is wrong here: the primary checkout carries sibling
 //! worktrees under `.tmp/` and `.claude/`, so the walk is anchored at `Research/`, `specs/`,
-//! `spike/**/CLAUDE.md` and the root `*.md` files alone, and a `quarantine-DO-NOT-READ` directory
+//! `spike/**/AGENTS.md` and the root `*.md` files alone, and a `quarantine-DO-NOT-READ` directory
 //! is harvested for its filenames but never opened for content.
 
 use std::path::{Path, PathBuf};
@@ -120,7 +120,7 @@ fn markdown_under(dir: &Path, files: &mut Vec<PathBuf>, quarantined: &mut Vec<St
 }
 
 /// The four scanned surfaces, sorted: the `Research/` corpus, the `specs/` tier (a mechanised
-/// note moves there under its own ID, `Research/README.md`), the `spike/**/CLAUDE.md` steering
+/// note moves there under its own ID, `Research/README.md`), the `spike/**/AGENTS.md` steering
 /// files, and the root docs. `quarantined` receives the quarantine filenames the walk skipped.
 pub(crate) fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf> {
     let mut files = Vec::new();
@@ -131,7 +131,7 @@ pub(crate) fn scanned(root: &Path, quarantined: &mut Vec<String>) -> Vec<PathBuf
     files.extend(
         spike
             .into_iter()
-            .filter(|path| path.file_name().is_some_and(|name| name == "CLAUDE.md")),
+            .filter(|path| path.file_name().is_some_and(|name| name == "AGENTS.md")),
     );
     files.extend(
         dir_entries(root)

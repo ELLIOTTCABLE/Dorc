@@ -1,9 +1,9 @@
-# spike/crates/aid — CLAUDE.md
+# spike/crates/aid — AGENTS.md
 
 Role: the DESCRIBE plane (`288` §2a) — narrative records, the diagnostic catalog and its
 generated lock, the render seats, the why-lens, and the no-throw `Carrier`. Everything a
 user ever READS is minted or rendered here; nothing here may ever license anything. Read
-`spike/CLAUDE.md` first (its **User-aid & diagnostics law** block is this crate's law);
+`spike/AGENTS.md` first (its **User-aid & diagnostics law** block is this crate's law);
 this file carries only the aid-local sharpenings. Registry discipline: one rule per
 bullet, slugged; append new entries to the matching section.
 
@@ -238,7 +238,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   `.rs` tests. That siting is deliberate — it makes THIS file the registry that fires on
   every loom edit (`288:rul-claudemd-fires-per-directory`). Cargo compiles only `tests/*.rs`,
   so the data files are inert here; the ONE runner that drives them is
-  `crates/cli/tests/e2e.rs` (`crates/cli/CLAUDE.md`, the acceptance harness).
+  `crates/cli/tests/e2e.rs` (`crates/cli/AGENTS.md`, the acceptance harness).
 - **ownership-is-declaration-union** (`28L` loom-final; supersedes the old
   filename-match reading) — a case's owned prose-components are its FILENAME's implicit
   entry (when the stem matches a registered slug) UNION its `owns:` frontmatter list
@@ -279,7 +279,7 @@ crate's charter) · `notes/287` (errorloom as-built).
   class of change it found (frontmatter · replay command · file section · unnamed residue) and the
   one way out of each, `dump_rescue_hint` included.
 - **seam-tolerated-nondeterminism-stops-at-the-run-log** — the declared `tolerate:` vocabulary
-  (`crates/cli/CLAUDE.md` thirteen-keys-by-criterion) normalizes the RUN LOG only (the
+  (`crates/cli/AGENTS.md` thirteen-keys-by-criterion) normalizes the RUN LOG only (the
   `expected.ran` section — the exec rail's real concurrent pipeline stages race their log
   lines, and no seam can own kernel scheduling); no normalizer is applied to a transcript's
   bytes, either stream. So a rendered surface that ever acquires an honest nondeterminism has NO

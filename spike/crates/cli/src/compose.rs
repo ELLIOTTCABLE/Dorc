@@ -26,7 +26,7 @@
 //!           = the rest. Stable grammar (a parse target — plans/240 Stage-1 yardstick).
 //! ```
 //!
-//! rec-1 TWO SURFACES (ru-12 + ru-20, spike/CLAUDE.md): the shipped `.sh` artifact on
+//! rec-1 TWO SURFACES (ru-12 + ru-20, spike/AGENTS.md): the shipped `.sh` artifact on
 //! stdout is byte-floored and receipt-free — `plan` and `apply` emit BYTE-IDENTICAL
 //! apply bytes. The only difference is the RENDER surface (stderr): `plan` overlays the
 //! per-line why-lens + advisory disclosure there; `apply` (the off-ramp) suppresses the
@@ -42,7 +42,7 @@
 //! I/O edge: `inv-determinism` exempts `cli`; the analyzer kernel it calls is pure.
 //! Diagnostics go to stderr so stdout stays the artifact. The mode dispatch is a thin
 //! driver over ONE pipeline call ([`analyze`]) — no kernel logic moves here (the
-//! thin-driver mandate, crates/cli/CLAUDE.md).
+//! thin-driver mandate, crates/cli/AGENTS.md).
 
 // The composition root is the sanctioned I/O edge (workspace Cargo.toml: "I/O-edge crates may
 // `#[expect]` these at the crate root, with reason"): stdout carries the probe-then-apply artifact,
@@ -1592,7 +1592,7 @@ mod the_store_walk_hands_the_graph_real_documents {
 
 #[cfg(test)]
 mod fixpoint_freezes_the_environment_tests {
-    /// The validity fixpoint must not reach the function environment (`28K` §2; `cli/CLAUDE.md`
+    /// The validity fixpoint must not reach the function environment (`28K` §2; `cli/AGENTS.md`
     /// the-fixpoint-owns-the-rounds-and-builds-nothing-else).
     ///
     /// Env resolution is computed ONCE from the ORIGIN model and joins the frozen set alongside

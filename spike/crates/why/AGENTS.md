@@ -2,7 +2,7 @@
 
 The receipt-backed why RECONSTRUCTION plane (`30V` §3/§5): recorded facts joined onto one
 typed model, a pure function of injected inputs. Report-plane only — nothing here may ever
-feed a decision (`two-plane-aid-law`). Read `spike/CLAUDE.md` first; registry discipline:
+feed a decision (`two-plane-aid-law`). Read `spike/AGENTS.md` first; registry discipline:
 one rule per bullet, slugged, append.
 
 - **inv-why-deps-stay-report-side** — deps are `dorc-receipt` + `dorc-aid` ONLY: never

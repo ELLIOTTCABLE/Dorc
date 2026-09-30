@@ -1,5 +1,5 @@
 //! Integration tests for `dorc-syntax::parse`. Brutal + targeted over exhaustive
-//! (spike/CLAUDE.md testing policy): each test pins a specific invariant the
+//! (spike/AGENTS.md testing policy): each test pins a specific invariant the
 //! analyzer downstream depends on. Repetition is intentional — no DRY ceremony.
 
 // An integration-test crate is a separate crate to clippy, so the `allow-*-in-tests`

@@ -4,7 +4,7 @@ PLANS-TIER, ahistorical, kept-current: if wrong, rewrite it. AI-authored (Fable
 conductor, session close 2026-07-25). Phases the `28E` design record (+ its §8
 convergence round, the `28G` strawman corpus, `28D`'s gates, and the
 `.claude/research/dag-explanation-ux/` adjudication at `28E` §7) toward code.
-Authority: root docs, `spike/CLAUDE.md`, human-typed rulings outrank. The human's
+Authority: root docs, `spike/AGENTS.md`, human-typed rulings outrank. The human's
 framing at close: reports and errors ARE the product in many ways; some of this
 is slightly blocking for first-blooding — worth effort to get right, up to a
 point of happiness, not perfection.

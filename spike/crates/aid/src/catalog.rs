@@ -128,7 +128,7 @@ pub use catalog_lock::CATALOG;
 /// The catalog entry for `slug`, or `None` when the slug has no entry (dead code path pre-sweep;
 /// the phase-2 completeness gate makes a missing entry a test failure once every variant is
 /// populated). Linear scan — the table is small and analysis-side big-O never constrains
-/// (`spike/CLAUDE.md perf-doctrine`).
+/// (`spike/AGENTS.md perf-doctrine`).
 #[must_use]
 pub fn entry(slug: &str) -> Option<&'static CatalogEntry> {
     CATALOG.iter().find(|e| e.slug == slug)

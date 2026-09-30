@@ -87,6 +87,6 @@ an elided one. The set of lines that elide is not a stable interface. If you fin
 yourself wanting to alarm on the plan's shape in CI, alarm on what it says about the
 world (converged or diverged) instead.
 
-<!-- quoted: USER_STORY.md stages 1-3; spike/CLAUDE.md rul-ternary-verdict,
+<!-- quoted: USER_STORY.md stages 1-3; spike/AGENTS.md rul-ternary-verdict,
      rul-attention-honesty; 276:rul-verdicts-never-stable (plan-as-API);
      IMPLEMENTATION.md guarding-and-elision -->

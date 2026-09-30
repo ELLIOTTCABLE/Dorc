@@ -4,7 +4,7 @@
 > present and adjudicating; banking human-directed). Ahistorical: mechanics, effects,
 > limitations, UX, and the safety story, as they hold IF BUILT. Ratification status is
 > per-item in §10; the sitting's trail lives in `notes/26M`. Authority: root docs,
-> `spike/CLAUDE.md`, and the standing welds outrank this. Extends — never re-opens —
+> `spike/AGENTS.md`, and the standing welds outrank this. Extends — never re-opens —
 > `notes/272` (kind topology), `notes/273` (the wrapper surface), `plans/30T` (authored
 > file semantics and the ask-the-world discipline), `plans/30U` (finished definitions),
 > `plans/30S` (witness envelopes), `plans/27C` (measurement in the denoted context).

@@ -38,7 +38,7 @@ use crate::{Disposition, Plan, PlanAuthority, Spine};
 /// (`30M:rec-dissolve-trip-must-remember-structurally`).
 ///
 /// **A type, not a roster** — the same shape [`PlanAuthority`] wears, for the same reason. The
-/// cleanup used to be a must-remember-to-ask surface: `plan/CLAUDE.md` said "EVERY plan-producing
+/// cleanup used to be a must-remember-to-ask surface: `plan/AGENTS.md` said "EVERY plan-producing
 /// driver", and four producers had already forgotten (`30Md:fnd-discarded-trip-retains-elisions`).
 /// The reification moved the cleanup's RESULT into the decision plane but left the ACT a call
 /// somebody had to remember; this dissolves the act. [`crate::project_plan`] demands one by value,

@@ -72,7 +72,7 @@ two Fable passes ≈ 410k tokens bought all four priority-1s).
   `spike/target/`; `BLESS=1` re-blesses ALL cases from whatever binary exists at that
   instant — a sibling's mid-flight buggy binary got baked into a golden, caught only
   because the builder diffed its own untouched cases. Now a standing rule in
-  `spike/CLAUDE.md`: BLESS is orchestrator-only, never with agents in flight, diff
+  `spike/AGENTS.md`: BLESS is orchestrator-only, never with agents in flight, diff
   inspected case-by-case.
 - **SyncThing ghost-resurrection**: another device pushed back `*.sync-conflict-*`
   copies of a case dir task-L1 had legitimately deleted, leaving a husk directory that

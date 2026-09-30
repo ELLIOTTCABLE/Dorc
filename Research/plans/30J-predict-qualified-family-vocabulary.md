@@ -4,7 +4,7 @@
 > ruling is **[TYPED/ACKED]** by the human. Supporting mechanics are marked
 > **[ACKED]** where the dialogue settled their substance and **[PROPOSED]** where
 > implementation remains builder latitude. Root human documents and
-> `spike/CLAUDE.md` outrank this plan.
+> `spike/AGENTS.md` outrank this plan.
 >
 > This is the authoritative home for the selector-vocabulary ("dialect")
 > corner: which authored marks mint a family's survival vocabulary (sections

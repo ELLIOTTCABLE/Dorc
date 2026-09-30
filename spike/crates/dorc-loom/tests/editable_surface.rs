@@ -80,7 +80,7 @@ fn a_case_whose_help_register_is_absent(consumer: &DorcConsumer) -> (String, Cas
 /// shape a placeholder mechanic needs, handed back with that blanking already applied.
 ///
 /// SYNTHESIZED, not found. `[unwritten:]` is a legal resting state rather than a pin, and
-/// `aid/CLAUDE.md`'s `prose-pins-live-where-the-prose-does` puts the placeholder MECHANIC on a
+/// `aid/AGENTS.md`'s `prose-pins-live-where-the-prose-does` puts the placeholder MECHANIC on a
 /// synthesized row for exactly this reason: hunting the corpus for a code nobody has words for yet
 /// made these tests hostages of the prose burn-down, and when its last unwritten message register
 /// was authored the candidate pool went empty and both of them panicked. Blanking a mirror row

@@ -413,7 +413,7 @@ pub fn demote_on_certifier_trip(
 /// resolution mechanism, with oracle/book differences as POLICY and never as mechanism). The
 /// retired table held role names alone, which meant the engine had two unrelated answers to "which
 /// body does this name bind here" — a solved environment for roles, and last-declaration-wins over
-/// the loaded set for helpers (`oracle/CLAUDE.md only-load-inert-sources-contribute` names that
+/// the loaded set for helpers (`oracle/AGENTS.md only-load-inert-sources-contribute` names that
 /// second one as an interim that dies here). Sh has one answer, and
 /// `rul-unsure-falls-toward-sh-parity` makes sh's the one to have.
 ///

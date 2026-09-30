@@ -2764,7 +2764,7 @@ pub fn registry(code: &DiagCode) -> CodeSpec {
             remediation: RemediationClass::DeclareIdentity,
         },
         // Refuses rather than degrades: a partial load is a WRONG environment, not a narrow one
-        // (`inv-top-reject`; `oracle/CLAUDE.md declarations-only-files`).
+        // (`inv-top-reject`; `oracle/AGENTS.md declarations-only-files`).
         DiagCode::OracleFileNotLoadInert(_) => CodeSpec {
             severity: Severity::Error,
             floor: Floor::WarnOrDeny,

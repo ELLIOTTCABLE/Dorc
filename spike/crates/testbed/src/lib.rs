@@ -5,7 +5,7 @@
 //! `DORC_SEED`/`DORC_SEAM_*` names; `cli::seam` owns the parser and imports these). [`run_seed`] is
 //! the ONE run-seed seat — "what is this run's seed", drawn once, printed and named the same way
 //! everywhere. [`xfail`] is the workspace's ONE xfail-pin seat and its census
-//! (`spike/CLAUDE.md xfail-pins-ride-one-seat`); it and [`repo_root`] sit here so every crate can
+//! (`spike/AGENTS.md xfail-pins-ride-one-seat`); it and [`repo_root`] sit here so every crate can
 //! dev-depend one seat and a second copy cannot silently rot.
 
 use std::path::Path;

@@ -97,7 +97,7 @@ impl NativeIo {
     /// Unix-gated at the MEMBER rather than allowed as dead code: Windows retains no directory
     /// handle to be relative to, and a cross-platform caller reaching for one should fail to
     /// resolve loudly rather than compile into a question the platform cannot answer
-    /// (`spike/CLAUDE.md one-platform-green-is-not-cross-platform-green`).
+    /// (`spike/AGENTS.md one-platform-green-is-not-cross-platform-green`).
     #[cfg(unix)]
     fn parent_handle(&self, path: &str) -> Option<&File> {
         let parent = Path::new(path).parent()?.to_str()?;

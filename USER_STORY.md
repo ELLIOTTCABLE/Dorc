@@ -5,7 +5,7 @@
 > settled, and what the renders are drawn to obey: the plan is the whole book, in original
 > order, as plain sh; elided lines are present-but-commented-out; anything that will execute is
 > never hidden; every surviving line carries its reason. ("rul-attention-honesty",
-> `spike/CLAUDE.md`.)
+> `spike/AGENTS.md`.)
 
 The gradual-enhancement walkthrough
 ===================================

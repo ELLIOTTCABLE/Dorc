@@ -1,8 +1,8 @@
-# spike/crates/analysis — CLAUDE.md
+# spike/crates/analysis — AGENTS.md
 
 Role: the engine — CFG construction (`cfg.rs`), the monotone-dataflow worklist
 (`lattice.rs` + `solve.rs`), effect/classify (`effect.rs`). The densest crate and
-the entity-algebra's largest consumer. Read `spike/CLAUDE.md` first; deep design
+the entity-algebra's largest consumer. Read `spike/AGENTS.md` first; deep design
 rationale: `Research/notes/163`. The built machinery is code-visible — read the
 code; this file carries only the dangerous, easy-to-miss parts. Registry
 discipline: one rule per bullet, slugged; append to the matching section.
@@ -54,7 +54,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   (errexit-exempt, blocks unconditionally); `if`/`elif` conditions are
   `StatusRelaxable`; loop bodies are flagged `in_loop_body` (the per-SITE floor
   `plan` honors; the one thing that lifts it is a universally-quantified region edit
-  over a closed member population — `plan/CLAUDE.md the-in-loop-floor-is-route-aware`).
+  over a closed member population — `plan/AGENTS.md the-in-loop-floor-is-route-aware`).
 - **member-population-has-one-enumerating-seat** (`30L` §7; built `30Qa`) —
   `cfg::loop_evaluations` is the ONE answer to "which members does this loop have":
   the region census takes the COUNT, the value plane the member TEXTS; a second
@@ -87,7 +87,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   every variable read through the plane; `$0` is a controller-held constant on
   `DefinitionTable` (`ScriptSpellings`, both live spellings), never a variable —
   fence `the_load_head_evaluator_names_no_value_plane_accessor`.
-- **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/CLAUDE.md`
+- **funcenv-is-a-pre-pass-not-a-round** (`28K` §2; `cli/AGENTS.md`
   the-fixpoint-owns-the-rounds-and-builds-nothing-else) — env resolution is computed
   ONCE from the ORIGIN model and joins the frozen set; the validity fixpoint's ratchet
   erases EFFECTS and holds NO authority over BINDINGS. A records-proven-dead branch
@@ -181,7 +181,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   no consumer left.
 - **translation-fence-binds-lattice-too** (`304`) — `lattice.rs` is inside the TRANSLATED
   algebra tier (`spike/verify/aeneas/src/lib.rs` `#[path]`-includes this very file), so
-  `core/CLAUDE.md`'s `keep-borrows-out-of-closure-returns` binds it verbatim: no
+  `core/AGENTS.md`'s `keep-borrows-out-of-closure-returns` binds it verbatim: no
   Option-combinator whose closure RETURNS a borrow of its argument, no `mem::replace`
   inside `.map`, no `unwrap_or_else(<trait method>)` — spell the `match` cousin. A
   reintroduction breaks Aeneas translation SILENTLY (an ill-typed emission only
@@ -378,7 +378,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   nothing clears it. It threads as an OUT-PARAM through the fixpoint drivers so
   unobserved intermediate rounds still latch — a round-2 failure must not be
   invisible to readers of the settled round. All four consumer floors latch it;
-  the cross-window CLEANUP consumer is plan-crate law (`plan/CLAUDE.md`).
+  the cross-window CLEANUP consumer is plan-crate law (`plan/AGENTS.md`).
 - **floors-are-whole-window-and-demote-only** — an `Inconsistent` demotes the ENTIRE
   analysis window; summaries (first-break, unstable components) explain, never scope.
   The funcenv floor BREAKS the fold at the failing round with `folded_edges = ∅` — every

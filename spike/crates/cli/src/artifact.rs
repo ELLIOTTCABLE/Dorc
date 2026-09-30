@@ -8,7 +8,7 @@
 //! from one already-settled [`Plan`](dorc_plan::Plan) and one already-resolved
 //! [`BundleProjection`](crate::bundle::BundleProjection): this module resolves nothing, reads no
 //! file, and decides nothing the plan already decided. A form READS the decision plane
-//! (`plan/CLAUDE.md the-render-decides-nothing`) and does its own typesetting.
+//! (`plan/AGENTS.md the-render-decides-nothing`) and does its own typesetting.
 //!
 //! # Why the dependency layout is the authored one
 //!

@@ -1,8 +1,8 @@
-# spike/crates/oracle — CLAUDE.md
+# spike/crates/oracle — AGENTS.md
 
 Role: lifts an oracle's sh **statically** (never sources or runs it) into the
 engine's index; home of the authored-surface contract and the stdlib-oracle
-quality bar. Read `spike/CLAUDE.md` first — its license & trust cluster IS this
+quality bar. Read `spike/AGENTS.md` first — its license & trust cluster IS this
 crate's law; specs: `notes/277` (coordinate/grammar) · `notes/273` (wrappers) ·
 `notes/274` (eval'ers) · `notes/278` (the one-page dialect reference). Registry
 discipline: one rule per bullet, slugged; append to the matching section.
@@ -184,7 +184,7 @@ discipline: one rule per bullet, slugged; append to the matching section.
   per FILE — widening them is a licensure act, owed its own ruling
   (`30Qc:dev-lift-arity-lands-but-the-seats-still-enumerate-per-file`).
 
-## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/CLAUDE.md`)
+## The authored surface — worked minimum (the one syntax anchor; semantics live in `spike/AGENTS.md`)
 
 ```sh
 # dorc-lang/v0.2

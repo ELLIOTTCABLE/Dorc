@@ -78,8 +78,8 @@ Terminology: run / `Replace` / `Omit`. Avoid "elide".
 The original contract leaned on `hostsim` for "a seeded logical clock ordering concurrent
 arrivals." It does not exist (+SURE, both crosscheck passes + the crate docs): `hostsim` is a
 synchronous, SINGLE-host, CLOCKLESS set-membership oracle; its seeded PRNG seeds initial host
-STATE, not arrival TIME (`hostsim/CLAUDE.md`); no async, no streams, no per-host plan emission
-(`cli` emits one `Plan`; `cli/CLAUDE.md`: multi-host fan-in is out of *spike* scope). So this
+STATE, not arrival TIME (`hostsim/AGENTS.md`); no async, no streams, no per-host plan emission
+(`cli` emits one `Plan`; `cli/AGENTS.md`: multi-host fan-in is out of *spike* scope). So this
 is real engine-building, NOT a thin surface — r23 must build:
 - a deterministic ARRIVAL-ORDERING seam — a DI'd, seeded logical clock over N arrival streams,
   under `inv-determinism` (the only nondeterminism; its own fuzz/`an-sometimes-assert` coverage);

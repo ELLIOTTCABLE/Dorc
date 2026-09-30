@@ -4,7 +4,7 @@
 //! graph and the locus DAG — and two are not: derivation operands and program topology reach the
 //! durable in families `dorc_receipt::report` does not project, so they surface as typed absence
 //! carrying `CarrierAbsence::ReportApiLacks` rather than as empty vectors nobody explains
-//! (`core/CLAUDE.md a-record-says-what-its-population-holds`: a field says what its population
+//! (`core/AGENTS.md a-record-says-what-its-population-holds`: a field says what its population
 //! actually holds).
 
 use dorc_receipt::durable_locator::RecordedStageKind;

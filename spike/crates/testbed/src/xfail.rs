@@ -299,7 +299,7 @@ pub const PINS: &[Pin] = &[
     Pin {
         name: "p-x-blessed-toplevel-conditional",
         trigger: "the oracle-side blessing of read-only top-level commands \
-                  (`oracle/CLAUDE.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \
+                  (`oracle/AGENTS.md only-load-inert-sources-contribute`: INERTNESS IS DYING IN \
                   LITERAL) — the same ruling that makes the file legal must make its binding May",
         horizon: Horizon::Unscheduled {
             marker: "end-of-r31",

@@ -104,7 +104,7 @@ fn corpus_sources() -> Vec<CorpusSource> {
                 .map(|n| n.to_string_lossy().into_owned())
                 .unwrap_or_default();
             if name.contains(".sync-conflict-") {
-                continue; // sync residue is never a case (`crates/cli/CLAUDE.md`)
+                continue; // sync residue is never a case (`crates/cli/AGENTS.md`)
             }
             if path.is_dir() {
                 collect_dir_sources(&path, &name, &mut out);
@@ -321,7 +321,7 @@ fn every_lifted_role_row_carries_its_parsed_definitions_span() {
 ///
 /// The oracle set is the `*.oracle.sh` glob the e2e runner itself turns into `-o` arguments
 /// (`shared_args`), so this is the runner's own rule rather than a second reading of it; the book is
-/// a definition source too (`cli/CLAUDE.md the-book-is-a-definition-source`) and sits one past the
+/// a definition source too (`cli/AGENTS.md the-book-is-a-definition-source`) and sits one past the
 /// oracle vector exactly as `source_table` places it.
 struct CaseWorld {
     /// The case's directory or loom name.
@@ -608,7 +608,7 @@ struct FloorCell {
     /// The book text.
     book: String,
     /// The committed `expected.emitted` lines — dash∩posh's own answers, measured once and never
-    /// churned (`spike/CLAUDE.md emitted-is-measure-once-ground-truth`).
+    /// churned (`spike/AGENTS.md emitted-is-measure-once-ground-truth`).
     emitted: Vec<String>,
 }
 

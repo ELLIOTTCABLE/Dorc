@@ -236,7 +236,7 @@ fn finalize_cmdsub_tops(
 /// WHAT a verdict-lane site's shipped body MEASURES — the cells whose convergence its rc asserts.
 ///
 /// A separate species from the site's ESTABLISH, and separately represented because they are
-/// (`spike/CLAUDE.md rul-rc-reaches-genkill-only-through-decisions`, human-typed): a verdict rc is a
+/// (`spike/AGENTS.md rul-rc-reaches-genkill-only-through-decisions`, human-typed): a verdict rc is a
 /// MEASUREMENT and carries probe-invocation influence per se, while gen/kill is description-derived
 /// TOPOLOGY and is influence-free. Merging them breaks influence-threading for reasons independent
 /// of any question about which body ships, which is why the shared slot this replaces was a NAMED
@@ -316,7 +316,7 @@ impl Measurement {
 ///
 /// The definition arrives RESOLVED ([`live_verdict`]), because verdict primacy asks two questions of
 /// one body — does it vouch this argv, and which cell does it key — and asking the frame twice is how
-/// two readings of one environment come to disagree (`oracle/CLAUDE.md
+/// two readings of one environment come to disagree (`oracle/AGENTS.md
 /// the-frame-lookup-is-the-only-resolution-seat`).
 ///
 /// The backing's minting family is threaded EXACTLY (`Some(provider)`), never left for

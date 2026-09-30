@@ -116,7 +116,7 @@ the shared vocabulary that the footprint machinery (page seven) reasons with.
 Until then those names still address your own facts; after it they can also
 keep other people's lines elided. The contract reference has the exact rule.
 
-<!-- quoted: spike/CLAUDE.md rul-only-oracle-bytes-ship, rul-argv-flows-bytes-do-not,
+<!-- quoted: spike/AGENTS.md rul-only-oracle-bytes-ship, rul-argv-flows-bytes-do-not,
      inv-one-observable, role-menu predict vocabulary; 23O rul-role-split;
      USER_STORY.md stage 4 predict-lane note; 273 predict-absorbs-wrapper-modeling;
      notes/30D (channel defaults; predicts records; status keeps every value);

@@ -153,4 +153,4 @@ debt, disclosed at landing) · `plans/271` rul-env-claim-inversion (the ladder �
 read body-side too) · `plans/27C` (context-entry; this is its ambient sibling) ·
 the 2026-08-24 brainstorm ledger (session-local) (the minting sitting) ·
 `ANALYZER-NEEDS:an-env-identity-carriage` (the
-row) · `spike/CLAUDE.md` rho-claim-ladder (a steering entry lands when a build firms).
+row) · `spike/AGENTS.md` rho-claim-ladder (a steering entry lands when a build firms).

@@ -12,7 +12,7 @@
 //! | `<case>/book.sh` + more  | not a recognized case (make it a loom) — RED      |
 //! | anything else            | an `.rs` test's fixture space — not a case         |
 //!
-//! `paths-are-manifest-relative` (`crates/aid/CLAUDE.md`): [`case_roots`] is resolved from
+//! `paths-are-manifest-relative` (`crates/aid/AGENTS.md`): [`case_roots`] is resolved from
 //! `CARGO_MANIFEST_DIR` and is depth-coupled to `crates/<c>/` — move this crate and the
 //! walk finds nothing, silently. `crates/cli/tests/e2e.rs`'s discovery-floor trial is the
 //! tripwire that makes that failure loud.

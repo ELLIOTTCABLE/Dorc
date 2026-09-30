@@ -7,7 +7,7 @@ publish = false
 
 # Dependency-free by design: `core` must be deterministic (no clock, RNG, or I/O)
 # so it is safe inside deterministic-simulation tests. Adding a dependency here
-# requires proving it carries no nondeterminism (see spike/CLAUDE.md).
+# requires proving it carries no nondeterminism (see spike/AGENTS.md).
 
 [lints]
 workspace = true

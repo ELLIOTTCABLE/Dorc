@@ -2,7 +2,7 @@
 
 Governs the binder itself (the Rust under `spike/verify/`) and the artifacts it
 generates: `minispec/REPORT.md` and `src/catalogue_lock.rs`. The spec content it reads
-— `minispec/**/*.lean` — is NOT ours: it stays under `minispec/CLAUDE.md`'s
+— `minispec/**/*.lean` — is NOT ours: it stays under `minispec/AGENTS.md`'s
 `law-spec-touch-frontier-human-only`. Registry discipline: one rule per bullet,
 greppable slugs, APPEND to sections.
 

@@ -1196,7 +1196,7 @@ pub struct VerdictVouch {
     /// The SNAPSHOT the body needs beside it (helpers, file-level constants), as DECLARATIONS rather
     /// than a blob: the apply artifact hoists one shared preamble above the whole book, so two guards
     /// that reached the same helper must emit it once
-    /// (`plan/CLAUDE.md pinned-definitions-are-the-artifact's-binding`).
+    /// (`plan/AGENTS.md pinned-definitions-are-the-artifact's-binding`).
     closure: Vec<dorc_oracle::closure::ClosureDecl>,
     /// `closure` and `body` concatenated — DERIVED at the one seat that can set either
     /// ([`VerdictVouch::with_closure`]), never assignable on its own, so the two spellings of "what
@@ -2178,7 +2178,7 @@ pub fn build_vouches_from_sets(
 /// the sixth and last seat to join the regime (`28P:tc-wrapped-vouch-seat-has-no-positional-gate`).
 /// The whole-unit winner vouches here only where it is the definition a shell would have live AT
 /// the wrapped site: the withhold-not-re-resolve shape bitem0 ruled
-/// (`analysis/CLAUDE.md visibility-is-full-positional`), through bitem3's ONE custody crossing.
+/// (`analysis/AGENTS.md visibility-is-full-positional`), through bitem3's ONE custody crossing.
 /// Custody was already honest about WHOSE judgment speaks; this makes it honest about WHERE.
 #[must_use]
 pub fn build_wrapped_vouches(
@@ -6616,7 +6616,7 @@ fn subtree_leaves_all(
 /// The selector is ALWAYS rendered (`@selector`, `281` §R4): it is the per-entity facet the
 /// re-key added (`an-per-entity-selector`), and dropping it would let an `is-active`
 /// probe-verdict discharge an unmet `@enabled` cell — a wrong-elision under apply's
-/// `kFAIL` (`cli/CLAUDE.md` "stdin re-key gotcha"). The label is injective over
+/// `kFAIL` (`cli/AGENTS.md` "stdin re-key gotcha"). The label is injective over
 /// distinct `FactKey`s modulo a `:`/`@` collision in an interned name (a disposable-
 /// parser limitation, `ch-scope`; book operands like `nginx` don't carry them).
 #[must_use]

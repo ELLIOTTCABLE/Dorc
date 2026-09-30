@@ -76,7 +76,7 @@ Prose carries zero corpus references. Instead, a major section may end with a si
 HTML comment footer citing the corpus slugs and documents it was synthesized from, for
 machine grepping when the design moves:
 
-    <!-- quoted: spike/CLAUDE.md rul-rc-partition; 271:rul-zero-one-inversion-pair -->
+    <!-- quoted: spike/AGENTS.md rul-rc-partition; 271:rul-zero-one-inversion-pair -->
 
 These footers are maintenance metadata, invisible to rendered output. Keep them terse;
 one line where possible. They are the mechanism by which a later agent finds every doc
@@ -93,7 +93,7 @@ order:
 
 1. Root docs: `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`,
    `KNOBS.md` (human-audited).
-2. `spike/CLAUDE.md` (the invariant registry; densest correct summary - its
+2. `spike/AGENTS.md` (the invariant registry; densest correct summary - its
    "The authored surface" and "Language & off-ramp law" sections first).
 3. The design-of-record documents, newest ruling first on any topic:
    - the mark grammar: `Research/plans/281` (THE grammar, dorc-lang v0.2 - supersedes

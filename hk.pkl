@@ -93,7 +93,7 @@ local linters = new Mapping<String, Step> {
     // unrelated commit. The one gate reaching outside `spike/**`, alongside `minispec`.
     // `NO_LINT_DOCIDS=1` is the escape hatch, honored by the tool itself.
     ["docids"] {
-        glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md")
+        glob = List("Research/**/*.md", "spike/**/AGENTS.md", "*.md")
         check = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- docids {{files}}"
     }
     // The generated slug index `SLUGS.md`, regenerated from the WHOLE corpus (never `{{files}}`: a
@@ -102,7 +102,7 @@ local linters = new Mapping<String, Step> {
     // hook needs no embedding backend; fix mode (humans) rewrites the file and stages it. Pre-commit
     // tier — no profile, ~like `docids`.
     ["slugs"] {
-        glob = List("Research/**/*.md", "spike/**/CLAUDE.md", "*.md", "SLUGS.md")
+        glob = List("Research/**/*.md", "spike/**/AGENTS.md", "*.md", "SLUGS.md")
         stage = List("SLUGS.md")
         check = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- slugs --check"
         fix = "cargo run -q --profile tooling -p internal-tooling --manifest-path spike/Cargo.toml -- slugs"

@@ -8,7 +8,7 @@
 //! (`282:rul-transcript-is-the-authoring-surface`); text no case can drive is text nobody rereads.
 //!
 //! This is INTERNAL-TOOL text, not product prose: it is a const here rather than a registry entry,
-//! and `aid/CLAUDE.md`'s registry law does not reach it.
+//! and `aid/AGENTS.md`'s registry law does not reach it.
 
 use crate::invocation::{self, Invocation};
 

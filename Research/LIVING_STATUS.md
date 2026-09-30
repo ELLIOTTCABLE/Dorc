@@ -4,7 +4,7 @@
 > for a fresh conductor. This file is *state*, never history (the numbered `notes/` are the
 > chronological record; `Research/README.md`'s per-round map says what each closed document
 > did) and never authority (the human-written root docs, stamped `plans/`, and
-> `spike/CLAUDE.md` rulings outrank it). **Nothing important may live ONLY here** — rulings and
+> `spike/AGENTS.md` rulings outrank it). **Nothing important may live ONLY here** — rulings and
 > findings get a durable numbered-note home; this file carries pointers.
 >
 > **This file and root `ROADMAP.md` are mutually exclusive.** A piece of work appears here
@@ -42,7 +42,7 @@ path, carrying the `HEAD` commit; `--write` refuses uncommitted document or shar
 (exit 2) and writes the commit into the lock's header (`{"schema": 2, "commit": …}`); `--help`
 lists the flags; the official tier has an eight-hour batch cap and is not resumable by ruling;
 preflight is sized from the tier's heap; the tooling binary builds under `--profile tooling` so
-no workspace build can replace a running tooling exe (`spike/CLAUDE.md`
+no workspace build can replace a running tooling exe (`spike/AGENTS.md`
 `tooling-runs-under-its-own-profile`). The adapter's digest moved with the counters, so the
 committed 311 lock (`(test new) Lock the specs for the first time`, written by the human's
 1 h 34 m official pass on the pre-lane binary) no longer matches any key; the 311 mechanization
@@ -107,7 +107,7 @@ The load plane's correctness posture is RULED (`30P:the-load-plane-stays-correct
 mirrored; controller-evaluated predicts are verified at probe standup, artifact integrity at
 apply standup; no per-line load verifier exists. Below a BLIND ACT Dorc claims nothing
 (`30P:law-no-unsoundness-below-a-blind-act`; built in `30Qf`). Influence is causal
-accounting carried by every stable object (`30Qd`; `core/CLAUDE.md
+accounting carried by every stable object (`30Qd`; `core/AGENTS.md
 the-influence-account-is-carried-never-stamped`), licenses nothing at v0, and its durable
 export is built but DISABLED. `gate:full-quiet` routes `test:floor` when floor paths are
 staged (a floor case must agree on both platform legs). The opaque-review gate is
@@ -129,7 +129,7 @@ probe lane never holds a pty.
 
 ## Conduct fences (standing; bind any successor)
 
-Repo-durable conduct law lives in `spike/CLAUDE.md` (Safety · Boundaries · Spawning
+Repo-durable conduct law lives in `spike/AGENTS.md` (Safety · Boundaries · Spawning
 subagents · Build/test/run) — read it there. Fences living only here: git surgery relaxed
 2026-07-19 (branch-scoped, reflog-recoverable surgery is permitted in autonomous mode; push,
 stash-drop/clear, `clean -f`, force-delete, tag-delete, filter-*, update-ref stay blocked;

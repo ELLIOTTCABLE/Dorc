@@ -145,7 +145,7 @@ tool's own authors maintain your check for you. Where it is not quite honest,
 model around it or decline; a famous example is any orchestrator whose check mode
 skips the parts it cannot check, which makes its yes worthless to stand on.
 
-<!-- quoted: USER_STORY.md stage 4 + rung-3 ansible decline; spike/CLAUDE.md
+<!-- quoted: USER_STORY.md stage 4 + rung-3 ansible decline; spike/AGENTS.md
      rul-rc-partition, rul-zero-one-inversion-pair, sigpipe-flap-class,
      identity-declared-never-inferred, decline-class-emission; 276 pipefail
      quality-bar rider; 27W:rul-report-noise-tolerant (breadcrumb -> classed) -->

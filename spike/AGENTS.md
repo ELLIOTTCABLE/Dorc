@@ -16,7 +16,7 @@ place, not bracket-annotated.
 **Reading order** (do not skip): root `README.md` / `DESIGN.md` / `IMPLEMENTATION.md`
 (human-authored ground truth — they outrank everything, including this file) →
 `Research/LIVING_STATUS.md` (the live arc: charter pointers, dispatch state, current
-gates) → this file → `spike/crates/<c>/CLAUDE.md` for the crate you touch. Root
+gates) → this file → `spike/crates/<c>/AGENTS.md` for the crate you touch. Root
 `KNOBS.md` = the named design-tension registry (reuse its slugs; never re-derive a
 tension under a new name); root `AGENTS.md` = repo-wide agent law (terminology
 firming, exclusion-check discipline).
@@ -421,7 +421,7 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   connection, in ANY direction, without a `Must`-grade analysis result feeding that
   transfer. There is never prospective or hopeful shipping of content. The ONE
   exception: bytes that are (1) UNINFLUENCED — influenced by no host in any way,
-  engine loading and selection decisions included (`core/CLAUDE.md
+  engine loading and selection decisions included (`core/AGENTS.md
   the-influence-account-is-carried-never-stamped`) — AND (2) pure, non-mutative,
   PUBLIC dorc-lang bytes: oracles, and nothing else. Over-shipping is never "merely
   waste": the engine does not know what user bytes contain, so a book, plan, config,
@@ -491,8 +491,8 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   this section governs (`Research/notes/306b` §1b/§8). Again: nothing here asks for the
   work to start.
 - **influence-is-carried-by-the-object** (cross-crate pointer; the law lives in
-  `core/CLAUDE.md the-influence-account-is-carried-never-stamped` +
-  `the-account-never-enters-compared-state`, the mint rider in `plan/CLAUDE.md
+  `core/AGENTS.md the-influence-account-is-carried-never-stamped` +
+  `the-account-never-enters-compared-state`, the mint rider in `plan/AGENTS.md
   sole-mint-witnesses`) — host influence is causal ACCOUNTING, orthogonal to AUTHORITY: every
   stable semantic object carries its own immutable `InfluenceAccount`; nothing stamps, fills,
   or lowers one; no consumer reads it for a decision at v0 (a future one is a typed human
@@ -733,7 +733,7 @@ planner may act on. Everything here binds the INTAKE edge, never the kernel.
   Conservative for the spike; characters once granted can never be clawed back.
 
 ## User-aid & diagnostics law (registry + laws: root `AID-NEEDS.md`; build phase: `27V`; the
-describe-plane CRATE and its crate-local sharpenings: `spike/crates/aid/CLAUDE.md` — every
+describe-plane CRATE and its crate-local sharpenings: `spike/crates/aid/AGENTS.md` — every
 type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-extraction`)
 
 - **two-plane-aid-law** (`26C` §5b, human hard-ack) — the license plane fails toward
@@ -818,7 +818,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   deliberate `when-fires`/`why` change (silent metadata drift refuses). `message: None`
   renders `[unwritten: <slug>]` wearing its register's FACE (overtype IS the words-mint
   path — the empty loop finally closed); a pure-hole register's section wears its
-  component's face (`aid/CLAUDE.md` substitution-face-for-pure-holes). Sibling codes come
+  component's face (`aid/AGENTS.md` substitution-face-for-pure-holes). Sibling codes come
   from world-state/license variants ONLY, never grammar-fit; N same-world reason-sentences
   are COMPONENTS via a typed reason enum beside the payload, never sibling codes
   (`28L:rul-reason-enums-not-sibling-codes`). Foreign text is TYPE-sealed
@@ -847,13 +847,13 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   round-trip case with its `NAME=value` marker grammar, the `X/cmd` lint case, and the
   multi-file `X/X.loom` shape are GONE (`[TYPED 2026-09-02: "no legacy e2e"]`). Placement is
   MECHANICAL: a canonical loom for a REGISTERED aid-slug lives in the ONE primary collection,
-  `crates/aid/tests/`, so `crates/aid/CLAUDE.md` is the registry that auto-loads on every loom
+  `crates/aid/tests/`, so `crates/aid/AGENTS.md` is the registry that auto-loads on every loom
   edit (`288:rul-claudemd-fires-per-directory`); a tertiary loom pinning UNREGISTERED
   behaviour stays in its causative crate's `tests/`. ONE central runner
   (`crates/cli/tests/e2e.rs`, `harness = false`, targets declared explicitly under
   `autotests = false`) walks every `crates/*/tests/` and mints one named, filterable trial per
   case — so case DATA and `.rs` tests coexist in one flat dir; which driver proves a session is
-  DERIVED and reported (`crates/cli/CLAUDE.md`). The runner carries a DISCOVERY FLOOR over both
+  DERIVED and reported (`crates/cli/AGENTS.md`). The runner carries a DISCOVERY FLOOR over both
   populations: walking the wrong roots finds zero cases, and a suite of zero trials would
   otherwise exit GREEN. Never pin a case COUNT (`count-drifts`); non-empty is the floor.
 - **error-authorship-tier** (human-typed 2026-07-18) — builders mint codes and
@@ -913,7 +913,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
   display-sh must never masquerade as runnable.
 - **error-prose-conductor-flow** (`27U` §4/§5; `282`-flip retired the roster,
   `28A` §2p) — prose provenance is FOUR typed states, shared by the catalog and the
-  arrangement registry under one absence idiom (`aid/CLAUDE.md`
+  arrangement registry under one absence idiom (`aid/AGENTS.md`
   prose-provenance-states): `None` → `[unwritten: <slug>]` · `ProseTier::Migrated`
   (pre-pipeline builder text, frozen verbatim, never re-minted) ·
   `ProseTier::Slop` (loom-authored without `--human`; the DEFAULT mint, whoever is
@@ -1066,7 +1066,7 @@ no task covers, and consider adding the task instead.
   (`background-wsl-children-outlive-taskstop`) — and opens with a toolchain-less
   `cargo check` of the DETACHED harness crate, the only compile standing between a
   `core`/`analysis` signature change and a silently-rotted battery. `minispec/` is
-  SPEC SURFACE under its own CLAUDE.md's access laws — content is touched ONLY by a
+  SPEC SURFACE under its own AGENTS.md's access laws — content is touched ONLY by a
   frontier-class model AND only with explicit human authorization
   (`law-spec-touch-frontier-human-only`, a two-part lock; conductors are not
   exempt, and builders never edit content there at all); the catalogue lock's
@@ -1075,7 +1075,7 @@ no task covers, and consider adding the task instead.
   survive — deleting the manifest sends lake back to the network) and is keyed
   PER WORKTREE: a shared, accreting root is how a root module naming a deleted
   unit survived a green `lake build` (the r30 review pair; `30B`). The binder's own
-  registry is `spike/verify/CLAUDE.md`; `dorc-verify promote` exists and is the only
+  registry is `spike/verify/AGENTS.md`; `dorc-verify promote` exists and is the only
   sanctioned lock-writer.
 - **kani-coverage-has-measured-walls** (r30) — harnesses declare EXACT concrete
   sizes (a symbolic length under reallocation is unaffordable, and the shape also
@@ -1389,7 +1389,7 @@ no task covers, and consider adding the task instead.
   repetition in tests is fine. Honor anti-masking-tests (above).
 - **xfail-pins-ride-one-seat** (`30A` d3; r30) — target behavior the engine does not
   yet implement is pinned through `dorc_testbed::xfail::xfail_until` (a loom pins the same
-  registry through its `xfail: <pin-slug>` key — `crates/cli/CLAUDE.md`), registered
+  registry through its `xfail: <pin-slug>` key — `crates/cli/AGENTS.md`), registered
   in its `PINS` with a semantic trigger and a ROUND-MARKER horizon (never a date —
   unrepresentable by type); `CURRENT_ROUND` there is bumped by a conductor at
   round-open, and an expired horizon reddens `xfail_census` until the pin greens or
@@ -1427,7 +1427,7 @@ no task covers, and consider adding the task instead.
     Name no branch here — the brief carries it. **step-0.5**: `mise trust`, and
     again inside WSL before the first `mise run both` (`wsl-trust-per-worktree`).
   - **step-one**: an EXPLICIT read of root `README.md` + `DESIGN.md`, this
-    `spike/CLAUDE.md`, and the crate's `CLAUDE.md` — before any task material.
+    `spike/AGENTS.md`, and the crate's `AGENTS.md` — before any task material.
     Then exactly the note-slugs the orchestrator hands it. Pass absolute paths.
 - Hand it the specific invariant slugs it must honor; require it to flag (never
   resolve) any `tc-*`-shaped judgment call; require it to report back context

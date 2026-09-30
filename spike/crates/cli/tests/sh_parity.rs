@@ -44,7 +44,7 @@ use dorc_analysis::effect::SkipClass;
 ///
 /// Copied in shape from `definition_frames.rs`'s `classes_of` rather than shared with it, because
 /// these cases need to vary the ORACLE set and that one pins a single oracle constant. Tests earn
-/// repetition (`spike/CLAUDE.md` Code style).
+/// repetition (`spike/AGENTS.md` Code style).
 fn classes_of(oracles: &[&str], book_src: &str) -> Vec<SkipClass> {
     let mut interner = dorc_core::Interner::default();
     let mut arena = dorc_core::ProvArena::new();
@@ -113,7 +113,7 @@ hork__predict() {
 
 /// The same description, defined ONLY IF the name is free — the polyfill idiom, at oracle top level.
 ///
-/// This is the shape `oracle/CLAUDE.md only-load-inert-sources-contribute` names as it discusses
+/// This is the shape `oracle/AGENTS.md only-load-inert-sources-contribute` names as it discusses
 /// inertness dying in literal: `command -v jq || jq() { … }`. As an oracle top level it is a
 /// COMMAND, so the file is not load-inert.
 const HORK_CONDITIONAL: &str = "# dorc-lang/v0.2
@@ -166,7 +166,7 @@ fn lifted_and_detected(src: &str) -> (Vec<String>, Vec<String>) {
 /// (`oracle::validate`) stays quiet about it too.
 ///
 /// Why an engine choice depends on this: the blessing of read-only top-level commands
-/// (`oracle/CLAUDE.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL") makes
+/// (`oracle/AGENTS.md only-load-inert-sources-contribute`, "INERTNESS IS DYING IN LITERAL") makes
 /// this file legal oracle text and retires the first refusal. Whoever lands it must not make the lift
 /// see the funcdef WITHOUT also making the binding `May` — that combination is a wrong-elision route,
 /// and it is what `p-x-blessed-toplevel-conditional` pins.
@@ -929,7 +929,7 @@ fn regional_ships(book_src: &str) -> bool {
 /// in `dorc_oracle::closure` is depth-blind by construction, so nothing inside that crate can tell
 /// a regional definition from an ambient one. The frame can, and the frame is a solved
 /// function-environment — which is what `SiteFrame` carries across the seam
-/// (`oracle/CLAUDE.md the-frame-lookup-is-the-only-resolution-seat`).
+/// (`oracle/AGENTS.md the-frame-lookup-is-the-only-resolution-seat`).
 #[test]
 fn a_regional_book_helper_leaves_an_unreachable_description_alone() {
     assert!(
@@ -954,7 +954,7 @@ fn a_regional_book_helper_leaves_an_unreachable_description_alone() {
 /// The role the two cells below redefine across frames, in one file.
 const REKEY_ROLE: &str = "wombat__is_converged";
 
-/// A book that is its own oracle (`cli/CLAUDE.md the-book-is-a-definition-source`) and defines one
+/// A book that is its own oracle (`cli/AGENTS.md the-book-is-a-definition-source`) and defines one
 /// role TWICE across frames — the `unset -f`-then-redefine shape `contest28-unset-f-blesses-elision`
 /// establishes as blessed rather than contested.
 const REKEY_BOOK: &str = "wombat__is_converged() {\n   wombat cmp -- \"$1\"\n}\n\

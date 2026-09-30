@@ -201,7 +201,7 @@ requirements: fixed, never produced by the inner grammar, cheap to append in one
   warning per host.
 - The **inner** `site N effect=… rc=…` / `deriv N coord=…` grammar is deliberately NOT owned
   here — it belongs to the existing emitter/parser pair and is expected to move with the
-  entity re-key (`cli/CLAUDE.md` ap-1) — but the framing now constrains its edges: terminal
+  entity re-key (`cli/AGENTS.md` ap-1) — but the framing now constrains its edges: terminal
   token on every line, free-content fields last-to-token.
 - **Test tier (26A stop-1 — the granularity fix):** no test tier in the prior draft operated
   at the byte granularity where any of this lives. The sim driver feeds BYTES through the

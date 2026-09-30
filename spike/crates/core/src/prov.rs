@@ -3,7 +3,7 @@
 //!
 //! Every abstract value can answer "where did you come from": a [`ProvArena`] is an
 //! append-only, per-run, hash-consed store of [`OriginNode`]s; a value carries one
-//! [`ProvId`] receipt. This is the `seam-prov` locator-DAG made concrete (`plan/CLAUDE.md`
+//! [`ProvId`] receipt. This is the `seam-prov` locator-DAG made concrete (`plan/AGENTS.md`
 //! `an-locator-dag`; `111` dac-A) — a PROV-shaped DAG of located nodes + bounded parent
 //! edges, resolved to human text lazily controller-side (rustc `Span`→`SourceMap`, `111`).
 //!
@@ -32,7 +32,7 @@
 //! and the diagnostic/render layers build on it, or they grow two incompatible provenance
 //! graphs. `core` is dependency-free, so the arena uses only `std` collections; its internal
 //! dedup [`HashMap`] is never iterated to produce output (the same discipline `Interner`
-//! holds — `core/CLAUDE.md` `inv-determinism`), and node assignment is append-order, never
+//! holds — `core/AGENTS.md` `inv-determinism`), and node assignment is append-order, never
 //! hashed/random.
 
 use std::num::NonZeroU32;

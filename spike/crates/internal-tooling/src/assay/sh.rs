@@ -197,7 +197,7 @@ pub(super) fn words(line: &str) -> Vec<String> {
 }
 
 /// Walks command structure only, never into a word: a substitution's inner commands carry spans
-/// relative to their own body (`syntax/CLAUDE.md` `tn-coarse-subst-provenance`).
+/// relative to their own body (`syntax/AGENTS.md` `tn-coarse-subst-provenance`).
 fn collect(ast: &Ast, kind: &NodeKind, out: &mut Vec<(usize, usize)>) {
     let span = |node: &dorc_syntax::Node| {
         let at = |pos: u32| usize::try_from(pos).unwrap_or(usize::MAX);

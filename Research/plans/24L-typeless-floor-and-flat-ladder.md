@@ -3,7 +3,7 @@
 > Tier: AI-authored (Fable, the `r24-language-review` design-synthesis session), 2026-07-07.
 > **PROPOSAL — pending the human's final review; do not build until stamped.** Captures the
 > post-24Kc design dialogue on cluster-authored-surface. Trust order: root docs +
-> `spike/CLAUDE.md` rulings > this document > everything it supersedes. Confidence-marked
+> `spike/AGENTS.md` rulings > this document > everything it supersedes. Confidence-marked
 > per house discipline. Human-typed inputs from the dialogue are cited as such; everything
 > else is conductor-synthesis. KNOBS slugs are referenced, never redefined.
 >

@@ -362,7 +362,7 @@ pub enum LoadStep {
 /// is a measured wrong-elision route: the dialect lift recognizes a role header only as a
 /// TOP-LEVEL ITEM, so a nested definition is registered by the definition table while producing
 /// ZERO lifted rows — described nowhere, detected nowhere, and licensing off a body the lift never
-/// read (`oracle/CLAUDE.md only-load-inert-sources-contribute`; pinned by `sh_parity.rs`'s
+/// read (`oracle/AGENTS.md only-load-inert-sources-contribute`; pinned by `sh_parity.rs`'s
 /// `a_host_conditional_oracle_definition_licenses_nothing` and its expected-fail twin).
 ///
 /// The admission gate refuses that shape too. Having BOTH is deliberate: the gate is what an

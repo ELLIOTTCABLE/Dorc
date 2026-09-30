@@ -145,6 +145,6 @@ usefulness:
   filter its advice through the dialect before importing it.
 
 <!-- quoted: 276 rul-base-dialect-ruling-list, rul-spec-two-binary-floor,
-     rul-pipefail-four-lanes; 278 section 1; spike/CLAUDE.md
+     rul-pipefail-four-lanes; 278 section 1; spike/AGENTS.md
      dialect-quality-law, two-binary-floor, emit-never-class; KNOBS kWHICHSH;
      etalabs sh_tricks; SC2155/SC2086 rationale -->

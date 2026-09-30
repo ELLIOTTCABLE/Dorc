@@ -1,9 +1,9 @@
-# spike/crates/plan — CLAUDE.md
+# spike/crates/plan — AGENTS.md
 
 Role: elision/replacement, the probe→apply compiler, and render — the crate where
 irreversible verdicts are MINTED. Owns `PhasedVerdict`/`Bias`, the license
 witnesses, `Disposition`/`Step`/`Plan`, `compile_probe`/`ProbePlan`, `build_plan`,
-and the renders. Read `spike/CLAUDE.md` first; root `DESIGN.md` (plan/apply UX)
+and the renders. Read `spike/AGENTS.md` first; root `DESIGN.md` (plan/apply UX)
 and `IMPLEMENTATION.md` ("To execute, or not to execute?") outrank `Research/`.
 Registry discipline: one rule per bullet, slugged; append to the matching section.
 
@@ -22,7 +22,7 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   `InfluenceAccount` beside the vouch and join it into the licence; `Plan::decided` carries
   the join of every record `project_plan` read; `certifier_trip`'s demotion is a RE-MINT that
   joins the trip witness into the record's own account, never a field poke
-  (`core/CLAUDE.md the-influence-account-is-carried-never-stamped`). `SpineLoadDecision` is
+  (`core/AGENTS.md the-influence-account-is-carried-never-stamped`). `SpineLoadDecision` is
   minted at the PRE-INTAKE seat (`mint_load_decisions`; `record_new_arm` only transcribes), so
   its authored account is a fact about where the seat stands, never an asserted label.
 - **aggregate-mints-carry-the-same-demand** — the demand follows the MUTATION,
@@ -114,8 +114,8 @@ Registry discipline: one rule per bullet, slugged; append to the matching sectio
   construction, and made ALREADY-IN-PLACE answerable (pre-split, the blob comparison never
   matched and a copy of the BOOK's own body hoisted above the book — corpus-reached, pinned
   twice). Whole-artifact DEFENSIVE emission (every emitted name munges) triggers on real
-  definition vectors only (`oracle/CLAUDE.md a-top-reject-is-not-a-definition-vector`) —
-  and per `spike/CLAUDE.md rul-happy-path-is-a-closed-set`, every idiomatic tier above the
+  definition vectors only (`oracle/AGENTS.md a-top-reject-is-not-a-definition-vector`) —
+  and per `spike/AGENTS.md rul-happy-path-is-a-closed-set`, every idiomatic tier above the
   defensive floor is licensed only by PROVEN enumeration, never assumption.
   `PinnedDefinitions` is SPLIT along the line a second artifact form forces: `invoked`
   is the DECISION (which body a guard calls, under what name — what the Spine records,

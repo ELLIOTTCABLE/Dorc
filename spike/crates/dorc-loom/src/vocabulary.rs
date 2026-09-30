@@ -2,7 +2,7 @@
 //!
 //! One definition with two readers: the corpus runner refuses a key outside this set, and
 //! `dorc-loom keys` prints it so an author can FIND the set without first provoking a refusal
-//! (`crates/cli/CLAUDE.md` loom-form-is-the-same-battery). It lives here rather than in the runner
+//! (`crates/cli/AGENTS.md` loom-form-is-the-same-battery). It lives here rather than in the runner
 //! because a `harness = false` runner is not importable and the tool that mints cases has to be able
 //! to say what a case may say.
 //!

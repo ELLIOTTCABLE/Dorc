@@ -7,7 +7,7 @@ superseded. Companions: `notes/24U` (the round-24 close-out this charter succeed
 it first for what-happened-and-why), `notes/24C` (residue ledger), `plans/24S`/`24T`
 (the design keystones this round builds), `plans/262` §2 (the wire contract this round
 partially imports). Authority: root docs and human-typed rulings outrank this;
-`spike/CLAUDE.md` rulings bind every builder.
+`spike/AGENTS.md` rulings bind every builder.
 
 > **⚠ CHARTER STATUS (2026-07-16):** this charter froze at its 2026-07-10 creation
 > while its opens resolved. `block-settle` is CLOSED (last sittings 2026-07-12;
@@ -138,7 +138,7 @@ Contents, in build order:
    (floor + algebra + reshape + wire framing), each contributor's predicted delta
    narrow and named in its brief.
 
-Standing fences ride every brief: the `spike/CLAUDE.md` safety block · step-zero
+Standing fences ride every brief: the `spike/AGENTS.md` safety block · step-zero
 worktree reset + tip-gate · step-one root-docs read · `mise trust` ·
 rider-comment-budget (`24P` §8) · foreground final e2e · BLESS exclusivity · granular
 `(AI …)` commits · the sonnet no-subagent clamp · §1 naming discipline.

@@ -91,7 +91,7 @@
 ### absent (r22 builds from scratch; nearest seams named)
 
 - **Derivation DAG.** Nearest seam: `plan` `Derivation{fact, via, ambient, grade,
-  verdict}` — a flat ONE-TIER record per license (plan/CLAUDE.md names it "the
+  verdict}` — a flat ONE-TIER record per license (plan/AGENTS.md names it "the
   degenerate one-tier case"), constructed only in `prove_replaceable`. Not a linked
   DAG; no located-nodes/typed-edges; `Reach::Top` carries no origin. r22 shape: grow
   Derivation into the `loc-*` multi-locator list (110/111's N-tier, per-host-forking

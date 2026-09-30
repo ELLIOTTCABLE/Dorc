@@ -50,7 +50,7 @@ use crate::{DefinitionCustody, SourceFileId, Span};
 /// defining file today, and `28M` §10 `dir-ownership-is-transitive-inclusion` (UNRULED) may re-key
 /// it to an entry file's transitive sourcing-closure; deriving it keeps that re-key a change to one
 /// method body, where storing it would mint a second field that could disagree with the first.
-/// `core/CLAUDE.md` `custody-is-one-newtype-and-one-crossing` is the standing rule this honours.
+/// `core/AGENTS.md` `custody-is-one-newtype-and-one-crossing` is the standing rule this honours.
 ///
 /// [`file`](Self::file) and [`span`](Self::span) are PROVENANCE AND DISPLAY only — resolving a
 /// definition's text for an emission, framing a diagnostic's caret. Branching on the raw file id to

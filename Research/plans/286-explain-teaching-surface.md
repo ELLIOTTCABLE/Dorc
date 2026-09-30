@@ -3,7 +3,7 @@
 AI-authored (Fable, design rubber-duck sitting WITH the human, 2026-07-20; every §0
 ruling is human-typed unless marked strawman/lean). DESIGN-TIER, BUILD-PUNTED — no
 round owns the build; banked because the design firmed enough to preserve. Serial ID
-claimed per `28A` §0b. Authority: root docs, `spike/CLAUDE.md`, root `AID-NEEDS.md`
+claimed per `28A` §0b. Authority: root docs, `spike/AGENTS.md`, root `AID-NEEDS.md`
 Law outrank this. Companions: `plans/282` (the errorloom transcript-case pipeline this
 extends) · `notes/27U`/`27V`/`27W` (the aid as-built this sits atop) · `notes/28A`
 (the r28 ledger; generation-flip state) · USER_STORY "Recovery". Research base:

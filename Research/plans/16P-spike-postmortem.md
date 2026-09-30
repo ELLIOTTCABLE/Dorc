@@ -16,7 +16,7 @@
 ## 1. Frame
 
 The round-16 work was a spike: a deliberately disposable Rust workspace whose stated job (per
-`notes/quarantine-DO-NOT-READ/spike/CLAUDE.md`) was to *surface design problems by building*, not to
+`notes/quarantine-DO-NOT-READ/spike/AGENTS.md`) was to *surface design problems by building*, not to
 become the shipped tool. Round 16 ran `notes/quarantine-DO-NOT-READ/160`→`16O` (25 append-only notes);
 notes `000`–`128` are the earlier research rounds and are background, not the subject here.
 
@@ -38,7 +38,7 @@ must not be read as a shipped decision. The findings in §4 are tagged against t
 
 The ground-truth design documents are the first-party `README.md` / `DESIGN.md` / `KNOBS.md`; trust them
 over this postmortem where they conflict, and over the quarantined notes (and
-`notes/quarantine-DO-NOT-READ/spike/CLAUDE.md`'s `inv-*` slugs, which are AI-authored convention)
+`notes/quarantine-DO-NOT-READ/spike/AGENTS.md`'s `inv-*` slugs, which are AI-authored convention)
 absolutely — a trust order the spike itself had to relearn mid-stream (T11, §5).
 
 ---
@@ -511,7 +511,7 @@ outright.
 *Anchor:* `cfg::{Cfg::consumed_observables, Builder::mark_consumed_range}`, `plan::prove_replaceable<P>`;
 `notes/quarantine-DO-NOT-READ/16J` (spec) + `notes/quarantine-DO-NOT-READ/16K` (landed). *Note:*
 `inv-superposition` was cited throughout the `cfg`/`plan` code but absent from
-`notes/quarantine-DO-NOT-READ/spike/CLAUDE.md`'s invariant registry
+`notes/quarantine-DO-NOT-READ/spike/AGENTS.md`'s invariant registry
 (`notes/quarantine-DO-NOT-READ/16K` left it proposed-not-pasted); it was retrofitted into the registry (human-authorized) so an agent reading the
 list finds what the code is written against.
 
@@ -676,7 +676,7 @@ adjudicate; none is a decision the spike made.
 - **The compaction-sourcing lesson (`notes/quarantine-DO-NOT-READ/16J`):** re-read the primary
   `README`/`DESIGN`/`KNOBS`/`TODO` after any context compaction. The round-16 notes are AI-authored
   working notes (trust less than primary docs), and even
-  `notes/quarantine-DO-NOT-READ/spike/CLAUDE.md`'s `inv-*` slugs are AI-authored convention, not
+  `notes/quarantine-DO-NOT-READ/spike/AGENTS.md`'s `inv-*` slugs are AI-authored convention, not
   first-party ground truth.
 
 ### Open human ruling

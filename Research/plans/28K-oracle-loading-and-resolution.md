@@ -1,7 +1,7 @@
 # 28K — Oracle loading and resolution: the function-environment pass
 
 > Tier: LLM-authored plan, conductor-synthesized from a human design dialogue (2026-07-28,
-> session `r28-name-conflict-design`); subordinate to the root docs and `spike/CLAUDE.md`.
+> session `r28-name-conflict-design`); subordinate to the root docs and `spike/AGENTS.md`.
 > Ruling grades used throughout: **[TYPED]** = human typed it (in the dialogue, or in the
 > CLI-inputs round note it descends from); **[ACKED]** = human confirmed the substance in
 > dialogue, exact wording unratified; **[PROPOSED]** = conductor-derived, consistent with

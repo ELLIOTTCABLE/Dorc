@@ -10,7 +10,7 @@
 > unit points at its design-of-record; the only content written out in full is where this
 > remit SPLITS a design along a seam its document did not have (§4). Rulings the human owes
 > are not steps of this plan: where a lane is gated on one, the gate is cited by slug and
-> the lane waits. Root docs, `spike/CLAUDE.md`, the stamped designs, and `ROADMAP.md` (the
+> the lane waits. Root docs, `spike/AGENTS.md`, the stamped designs, and `ROADMAP.md` (the
 > direction-level cut, the owed rulings) outrank this file. Sizing words (small / medium /
 > large) are relative to each other, never to wall-clock; the conductor sizes dynamically.
 
@@ -55,11 +55,11 @@ and touches lanes), the report-lane intake in `plan::records`. Entry condition: 
 - `unit-taught-decline-idiom` (small; FIRST) — the USER_STORY stage-3 shape
   `[ "$2" = "" ] || return 2` must decline exactly as the `if …; fi` spelling does; today it
   renders Run with no diagnostic. Design: the shape is human-authored teaching
-  (`USER_STORY.md` stage 3; `oracle/CLAUDE.md` R2-MULTIOP), so the tracer is wrong, not the
+  (`USER_STORY.md` stage 3; `oracle/AGENTS.md` R2-MULTIOP), so the tracer is wrong, not the
   idiom. Acceptance: one loom pinning both spellings to the same disposition, plus the
   diagnostic when a decline is reached.
 - `unit-local-leaves-the-deny-list` (small) — the ruled dialect is POSIX + `local`
-  (`spike/CLAUDE.md` dialect-quality-law) while `notes/26J`'s tracer deny-list ⊤-degrades
+  (`spike/AGENTS.md` dialect-quality-law) while `notes/26J`'s tracer deny-list ⊤-degrades
   it. Model `local` in both tracers as a frame-scoped binding (it is `export`-shaped in the
   tracer's own terms, without the environment half); the rest of the deny-list stands.
   Acceptance: a loom whose verdict body uses `local` lifts and elides.
@@ -120,7 +120,7 @@ consumes the harness seam).
   `30P:law-no-unsoundness-below-a-blind-act` — `26N:fnd-blind-act-fixture-is-guard-at-most`)
   together with the unresolvable-load refusal (`26N:rul-unresolvable-book-load-refuses`: one
   pre-network code for a computed or relative-below-a-clobber book-custody `.`, naming the
-  load line, the clobbering line, and the `${0%/*}` remedies; `cli/CLAUDE.md`'s ¬EXACT ship
+  load line, the clobbering line, and the `${0%/*}` remedies; `cli/AGENTS.md`'s ¬EXACT ship
   rule gains that pointer); the hoist ACTION's T2 tier (`tc-hoisted-dot-line-spelling`,
   `tc-t2-is-narrower-than-the-ladder-says`; `30Ng` §7's ladder); and whatever
   `30I:pin-command-v-load-model` rules. The gated ones wait on their ruling and build in
@@ -156,7 +156,7 @@ the whole lane waits; `unit-env-identity` alone may start before them (§4b).
   a product over referenced index-kinds; `HostDefault` becomes the empty product; the
   wrapper-entered key and the value-carried env key become entries in it. Every reader on
   the audit's list converts in one lane; no adapter (`rul-strawman-formats-no-compat`).
-  The compare chokepoint stays the one seat (`core/CLAUDE.md` relational-compare-chokepoint).
+  The compare chokepoint stays the one seat (`core/AGENTS.md` relational-compare-chokepoint).
   One seat RESERVED, nothing built: a per-context measured-supply projection keyed by the new
   key, beside a per-chunk requirement set (`26N` §4.4) and the per-leaf stream demands of
   `26O:5-the-routing-planner` — the capability system's representation, built under
@@ -186,7 +186,7 @@ the whole lane waits; `unit-env-identity` alone may start before them (§4b).
   `unit-env-identity`'s envelope rails.
 - `unit-unrelated-and-settle-gate` (small) — `plans/30U` §7: the compare answer gains
   `unrelated`; cross-kind pairs answer it before canonicalization
-  (`core/CLAUDE.md` kind-fence-movable); the settle gate spares a cross-kind pair only
+  (`core/AGENTS.md` kind-fence-movable); the settle gate spares a cross-kind pair only
   through the footprint kind's finished-status witness from lane 1's recognition unit; the
   store-declaration collide-only consumer; the incentive-inversion regression pin. Lands
   BEFORE lane 1's recognition if the schedules cross (§4a).
@@ -256,7 +256,7 @@ stdlib's authorship having feedback (`30T` §10 external couplings).
   conductor's worktree with lane 3's tail.
 - Merge-point rule for the whole arc: every fold re-runs `mise run both gate:full-quiet`
   on the folded result before the next lane dispatches; `gate:arc` once, from the populated
-  branch, at close (`spike/CLAUDE.md` four-rung-gate-ladder).
+  branch, at close (`spike/AGENTS.md` four-rung-gate-ladder).
 
 ## §3 — the two seams (where the arc can be cut, without restructuring)
 
@@ -294,7 +294,7 @@ sound and the gate is never the one waiting.
 
 The handoff type — a finished-status witness keyed by (kind, reached shape) — is minted in
 `core` by whichever unit lands first and is the only shared surface. Neither unit re-lifts
-or re-traces the other's material (`oracle/CLAUDE.md` the-frame-lookup-is-the-only-resolution-seat).
+or re-traces the other's material (`oracle/AGENTS.md` the-frame-lookup-is-the-only-resolution-seat).
 
 ### §4b — `30S` builds on the existing slot, before `30W` widens it
 
@@ -355,4 +355,4 @@ says gets its own ruling; it is not in this arc.
 - Register currency: `ANALYZER-NEEDS` rows `an-env-identity-carriage`, `an-kind-reach`,
   `an-compare-chokepoint`, `an-coordinate-context-slot`, `an-atmost-completion-signal`
   re-graded to what landed; `ORACLE_PROVIDES` STATUS words likewise; `FORFEITS` rows whose
-  capture landed rewritten or removed; crate `CLAUDE.md`s for every crate a lane touched.
+  capture landed rewritten or removed; crate `AGENTS.md`s for every crate a lane touched.
