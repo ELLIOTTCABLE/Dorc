@@ -2130,7 +2130,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-one-instance-is-one-atom-for-now
 - defined: —
-- cited: 311 312d (3)
+- cited: 311 312d 312e (4)
 
 ## enc-primary-owner-is-sort-owner
 - defined: —
@@ -4673,7 +4673,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## lock-asymmetric-match
 - defined: —
-- cited: 30Y 30Yc 30Yf (3)
+- cited: 30Y 30Yc 30Yf 312e (4)
 
 ## lock-definite-versus-unmeasured
 - defined: —

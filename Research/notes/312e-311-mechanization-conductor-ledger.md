@@ -455,3 +455,87 @@ hand-walk each; none posed, none acted on.
   conclusion, and the untouched-route law's conclusion read shallower than "a route through"
   in English. A world-modelling convention the panel may name; sits on
   `312d` § 17.1's `ask-passes`.
+
+## § 11-the-gate-measurement-over-the-repaired-text-and-its-triage
+
+2026-09-30. One Opus (worktree `.tmp/trees/r31-311-slices`, branch `ai/r31-311-slices` at
+`95b5abff`, no edit, no commit, no `--write`) measured the document at the gate tier, 600 s of
+CPU per command, as `--module` slices after a whole-document pass was cut at the harness's two-hour
+background cap with no report written. Reports in its session scratchpad, not durable; the rows
+are in its hand-back and are summarized here.
+
+### § 11.1-what-was-measured
+
+- Laws: 61 rows in 1 h 02 m. 42 green; the two accepted reds (`exclusion_readings_agree`,
+  `region_disjoint`); `law_sparing_is_sound` moved from no-counterexample to counterexample;
+  `law_compare_same_is_sound` moved from a 1800 s timeout to no-counterexample in 513 s;
+  four unmeasured at 600 s of solving (`compare_disjoint`, `unstale_route` at 800k clauses,
+  `kill_region_disjoint_is_sound_alias_nothing_else`, `kill_disjoint_is_sound_identified_in`);
+  eleven rows new to the lock. All 13 twins sat but one; all 7 hole witnesses sat; 11 of 14
+  measured kills sat.
+- Books: every row of every book green as walked, the ⊤ repair having moved none; the six
+  books authored since the lock are new rows. `two_files_one_filesystem` took 16 m 38 s at the
+  gate tier and `stage_five_the_index_given_whole` 6 m 21 s.
+- Prediction P2 (the untouched-route twin starving by one statement) did not occur: sat at nine.
+  P3 (a book red) did not occur.
+
+### § 11.2-the-reds-and-what-each-became
+
+- `red-sparing-through-a-shared-part` — `law_sparing_is_sound` and
+  `law_sparing_is_sound_with_a_store_on_the_chain`, both P1 exactly: two root-scoped sibling
+  mKeys under `:guarantees-unique-name` with a finished record, whose mReferents both hold a third
+  mReferent; the line writes one, its write affects the shared part, which affects the other; the
+  fact depends on the other; DISJOINT by the two-tops way; spared; every statement true by hand
+  (the finished record and both may-read closures hold because the part is held on each side).
+  `30Z` § 2.5 kind 4, the thing's-end "no other home" cell of § 5.1. Applied under the hole
+  protocol at `8d46d614`: `hole_two_separated_things_hold_one_part` (two mKeys `compare()`
+  reads DISJOINT whose mReferents share a held part, directly or through others), its witness at
+  six, the two sparing laws, their twins, and the five sparing kills asked outside it, the
+  translation saying so. Held for the sitting; repaired by nobody.
+- `red-region-through-the-world-scoped-top-hole` — `law_region_disjoint_is_sound`'s new
+  counterexample (the lock's was the composite one, closed at `ffea0bef`): a route-scoped top
+  with `:aliases-nothing-else` whose mReferent owns the mReferent a sibling top and a cell key
+  both reach; the leaf pair DISJOINT and false by the two-tops way; the region test DISJOINT by
+  the placing form, its closure vacuous with nothing passing. The world sits inside
+  `hole_world_scoped_top_aliases_into_a_store`, which the DISJOINT laws exclude and the region
+  law did not. Applied at `8d46d614`: that hole added to the region law's premise, its twin, and
+  its two kills. The builder's scratch run of the law so premised timed out at 600 s (665k
+  clauses); the official pass measures it.
+- `red-with-a-store-twin-starved` — `law_sparing_is_sound_with_a_store_on_the_chain_premise`
+  unsat at ten statements: a store on the read mKey's chain needs its own `:primary-of`, `:root`,
+  `:identified-in`, a second supplied mParent, and a second closed may-read set, thirteen in force
+  by the builder's hand count (~SUSPECT). The law had never been read. Applied at `8d46d614`: the
+  second command and its twin run at fourteen, the least count that seats the witness plus one,
+  the reason beside the scope paragraph (`30Z` § 2.8: raise a bound only when a twin is unsat
+  for want of atoms). If fourteen still starves, the count is the sitting's.
+- `red-exclusion-readings-a-new-shape` — the accepted red's instance moved shape (one mReferent;
+  a shaped and a shapeless primary mKey in an entailment cycle; the natural at-most entry yields
+  the read mKey itself). The question the law asks keeps its answer. Nothing applied.
+- `red-three-kills-unsat` — `kill_same_is_sound_identified_in`, `kill_same_is_sound_root`,
+  `kill_same_is_sound_closes_lends` unsat at five, each carrying `expect 1`; they land as
+  accepted reds. The first two are § 6's `fnd-two-truths-are-never-the-sole-support` measured: the
+  walk reads `:identified-in` only as a sort match and `:root` only as the world atom the shape
+  is scoped in, so a SAME still needs `:guarantees-unique-referent`, whose truth over one parent
+  forces equal reaches. The third is evidence about a marked reading, not about 311: under
+  `312d:enc-one-instance-is-one-atom-for-now` an inheriting vantage holds the caller's mRoute
+  ATOM, so a false sentinel and a true `:guarantees-unique-referent` over that atom contradict,
+  and no world exists in which the sentinel alone is the false statement behind a SAME. Under the
+  letter the sentinel is what makes two instances one, and its falsity should be expressible
+  alone. The marks in § 3.2 and § 3.4 already hold this; the unsat kill is its measurement.
+  The `expect 1` stays: the document says these kills ask whether the law dies, and the residue
+  records that it does not.
+- `msr-compare-same-now-definite` — `law_compare_same_is_sound` no-counterexample at scope six in
+  513 s, where the lock's row was a 1800 s timeout: a definite result replacing an unmeasurement,
+  legal under `30Yf:lock-asymmetric-match`; ~SUSPECT the repairs since `ed70650f` shrank its
+  problem. `law_compare_disjoint_is_sound` still times out.
+
+### § 11.3-tooling-chafe-from-the-builder
+
+- A whole-document gate pass (laws about an hour, books about half an hour more) outruns the
+  harness's two-hour background cap, and a killed pass writes no partial report; only the stored
+  instances survive it. The builder fell back to per-module slices, each `--json`'d, and the
+  replay of those instances made the slices cheap.
+- `assay-quiet` prints nothing for two hours; the only progress signal was new files under
+  `instances/`.
+- `--module` takes one module per invocation; a sweep needs a wrapper loop.
+- The runner's caps go after a SECOND `--` (`mise run assay-quiet -- --check <spec> -- --batch-timeout N`); § 10.2's spelling with one `--` was wrong.
