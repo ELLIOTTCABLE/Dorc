@@ -3672,6 +3672,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Z 312d (2)
 
+## fw-every-fence-change-changes-the-translation
+- defined: —
+- cited: 30Z 312e (2)
+
 ## fw-fences-are-purely-mechanical
 - defined: —
 - cited: 30Z 312d (2)
@@ -5220,6 +5224,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 26C:outcomes-schedule-never-evidence
 - defined: Research/notes/26C-fixpoint-semantics-audit-and-revival-plan.md:740 — (§2; R2) — dispositions and
+
+## owed-kills-for-ten-species
+- defined: —
+- cited: 312d 312e (2)
 
 ## aid/CLAUDE:ownership-is-declaration-union
 - defined: spike/crates/aid/CLAUDE.md:242 — (`28L` loom-final; supersedes the old

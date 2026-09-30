@@ -137,3 +137,62 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   "suspected hole" commentary are self-flagged weak points inside the document a fidelity panel
   would read; stripping them before dispatch contradicts `312d` § 7's typed order that they sit
   inline. Put to the human as the first blocker; undecided.
+
+## § 7-the-path-to-the-panel-as-typed
+
+- **[TYPED]** 2026-09-29, walking back the "blockers only" framing of § 4 in one respect: the
+  end-of-project correctness and soundness constraint is not softened. The human's lean: any
+  significant work before the design decisions is running in place, since a design change on
+  shifting sand opens holes as easily as it closes one. The hope: a one-to-one mechanization, a
+  mechanical green, and an adversarial review that says the green means what the text looks like
+  it says. Then a design sitting can know that a thing is not so, and a red counterexample says
+  so too, and progress is monotone. The conductor gets from here to there, asks only when
+  blocked, one question at a time, in simple language, and defers what it can to after the
+  review.
+- **[TYPED]** the official pass runs in the human's terminal for many hours, in parallel with all
+  of the conductor's work.
+- **[TYPED]** every line of normative specification text must be fully, strictly ASD-STE100
+  compliant. The human added that line to `specs/AGENTS.md` in the primary checkout. Neither
+  this conductor nor its predecessors had applied the `asd-ste100` skill to the specification's
+  blockquotes.
+- Conductor's reading, unasked: Opus builders are dispatched under `312d` § 24's typed
+  authorization for this arc, without a per-dispatch ack; a Fable or Astra dispatch, the panel
+  included, still takes one.
+
+## § 8-work-toward-the-panel
+
+- `act-accounting-close-dispatched` — an Opus in `.tmp/trees/r31-accounting-close` on
+  `ai/r31-accounting-close` off `6d1ca99f`, seeded with the surviving tables: the tri-partition
+  at the tip, the reverse account, a fence-against-sentence firewall audit, and the absent
+  sentences; it edits nothing and runs no solver. Its brief is in the conductor's session
+  scratchpad, not durable.
+- `rep-seat-supplies-any-scheme-of-the-sort` — § 1.6: `supplyFits` demanded an instance of the
+  mParent mSort's primary mScheme, where 311 says "one of the mParent's mSort's mSchemes" (the
+  narrowing `312d` § 12 found without a mark); the fit is now by `sortOfKey`, and the child's
+  mParent is the identity of the instance (3.1's "scoped in the identity of its mParent"), for
+  the `:identified-in` and the cell cases alike. Widens the worlds; no answer can move green.
+- `rep-referent-key-fact-becomes-prose` — § 1.1: `fact { all r: mReferent | some reaches.r }` is
+  deleted; "An mReferent has one or more mKeys" moves to § 1.1.1's normative block with the
+  reason beside it, on the § 1.3.1 precedent (`312d` § 21.1). The checker now considers worlds
+  holding an unkeyed piece. Predicted consequence: the sparing law's premise twin can seat the
+  shared-part world of § 6 at its own scope, so `law_sparing_is_sound` is expected RED at the
+  next run; that red is the arc's protocol firing and becomes a hole for the sitting, not a fix.
+- `act-ten-kills-asked` — kills for the species whose truths no kill exercised
+  (`312d:owed-kills-for-ten-species`), each `expect 1`, placed by the law `311` § 5.2 names as
+  the consumer: `:identified-in`, `:root`, a supplied mParent instance, and a wrapper's sentinel
+  against the walk laws; a closed may-read set, a finished record, and a supplied instance
+  against the sparing law; `alias nothing-else` against the region law. ~SUSPECT most come back
+  unsat, which then says mechanically that no answer rests on that statement alone; the
+  translation sentences say so. `:observer-independence` and `:lends` have no consuming law
+  (no fact-transport law exists) and got none.
+- `act-sparing-law-asked-at-five-levels` — the law's body is a named predicate; a second check
+  asks it at `4 but 4 Int, 10 Claim, 5 mLevel`, whose twin demands a store on the read mKey's
+  chain, the world the four-level scope cannot seat. Its result is the affordability
+  measurement.
+- `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
+  words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
+  present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are
+  clean. The bulk rewrite is a translation-only pass (legal without ceremony under
+  `30Z:fw-every-fence-change-changes-the-translation`), to run after the accounting audit lands
+  so that the audit and the rewrite do not cross, by an Opus with the linter as its gate, the
+  fence as the authority, and the conductor reading every changed line.
