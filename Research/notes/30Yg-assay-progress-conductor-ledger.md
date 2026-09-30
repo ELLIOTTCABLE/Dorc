@@ -100,8 +100,12 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   `cargo build --workspace` leaves its mtime alone; the cold profile build cost 6 s on a warm
   dependency cache and 229 MiB). Then `tracing` at `dorc-loom`'s specification replaced the
   hand-rolled sink; `--quiet` is a level filter. The manifest's dependency bar is restated:
-  disk and cold-build cost, no longer feature unification. This also closes
-  `finding-fmt-runs-a-jvm`'s race by construction.
+  disk and cold-build cost, no longer feature unification. It does not close
+  `finding-fmt-runs-a-jvm`: that race is between two hk steps that both run the tooling exe
+  while one of them rebuilds it after a tooling-source edit, inside the tooling's own profile
+  directory, and it recurred once after the profile landed (a `fmt` step could not remove
+  `target\tooling\internal-tooling.exe`; the immediate re-run was green). An hk `depends`
+  ordering would close it; posed, unfixed.
 - **`open-effort-counters-fold-timing`** [TYPED: "try it if it's easy and drop it if it
   chafes"] — built, as the two top commits of the branch, separable from everything below:
   the adapter wraps sat4j in an adapter-local subclass of `SAT4JRef` (same id, so the
@@ -140,7 +144,43 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   welcome under that posture ("will help untangle errors caused by my aggressive 'go away'
   posture") [TYPED].
 
-## § 6-the-sibling's-needs
+## § 6-the-second-sitting-the-report-and-the-commit
+
+The human's rulings of the late evening of 2026-09-29, all [TYPED], and what each became:
+
+- **`rep-report-goes-to-a-file`** — "if that's important information that the lock doesn't
+  hold, it should default to writing a temp-file … with `--json <path>` to specify an out.
+  stdout should instead contain a relatively simple summary, and the path to the JSON report."
+  Built for the solving modes only: `.tmp/assay/<stem>-<UTC stamp>.json` by default, `--json`
+  a file or a directory or `-` for stdout, and a plain summary that is rendered from the report
+  file itself so it can state only what the file holds. The non-solving modes keep stdout JSON;
+  they are sub-second hook and agent surfaces. The `--write` diff moved into the summary under
+  the lock's repo-relative path, which retired the noisy per-line absolute path ("fix the
+  noisy full-path if you can easily"). Report files accumulate under `.tmp/assay/`, one per
+  document per solving run, hk's `assay-lock` included; nothing prunes them [CONDUCTOR: left
+  as is, flagged].
+- **`rep-lock-records-the-commit`** — "lock should gain the git-hash it started running on (and
+  fail-fast if given --write and it isn't in a quiet, committed tree), so it's clear what
+  precise text it's with-reference-to." The header became `{"schema": 2, "commit": …}`, the
+  report and summary carry `commit`, and `--write` refuses (exit 2) when the document or a
+  shared half differs from `HEAD` in any way; "quiet, committed tree" was narrowed
+  [CONDUCTOR] to the inputs the lock is with reference to, so the lock's own modification and
+  unrelated files never refuse and write-look-write stays possible. A first cut missed ignored
+  copies because `git status --ignored=matching` reports a directory, not its files;
+  `--ignored=traditional` lists the file.
+- **`rep-quiet-is-a-task`** — "ensure there's -quiet tasks for assay-related work": `mise run
+  assay-quiet` carries the flag, per the repository's `-quiet` convention, and hk's
+  `assay-lock` runs it; the runner has no progress to silence.
+- **`rep-counters-landed-sibling-regenerates`** — "land the java piping, now that we're safe";
+  the human committed the pre-counters lock (`(test new) Lock the specs for the first time`)
+  before the Java landed, and ruled that the 311 mechanization conductor owns regenerating the
+  lock from scratch on the new adapter, which its own substantial spec changes owe anyway. The
+  Java commit landed through its own green gate on both legs; the counters branch and its
+  worktree are gone. Conductor error recorded against itself: the counters worktree was removed
+  in the same command as the containment test, unchained, before the fold had happened; the
+  branch was intact and nothing was lost, but the order was wrong.
+
+## § 7-the-sibling's-needs
 
 From the 311 mechanization conductor's list, folded here as the same vein: `--help` printing the
 flags, a deferral note naming the measurement that deferred the row, and `expect` on report
