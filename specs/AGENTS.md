@@ -6,3 +6,4 @@ the specification tier: normative design, mechanized in alloy and checked by ass
 - a red you won't close is a `hole_` premise, never a fact; no scope widening
 - commits lint, completion runs `--check`; exit 75 is contention: do other work
 - every document in the 30Z format is spelled `<stem>.assay.md`; `shared.assay.md`/`shared-laws.assay.md` beside a document open into it; only what every spec shares, and in the same format
+- every line of normative text must be fully, strictly ASD-STE100 compliant. no exceptions; reword carefully to *both* adhere *and* carry your critical correctness-content
