@@ -72,6 +72,10 @@ jobs:
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
           filters: .tmp/ci/path-filters.yml
+          # A push is judged by what it pushed: naming the pushed branch makes dorny diff against
+          # the commit before the push, where its default diffs against the default branch.
+          # Pull requests ignore this and diff against their base.
+          base: ${{ github.ref_name }}
 
   # The heavy lanes run to completion; a newer push replaces only the pending run, so the latest
   # commit is always tested without a long lane being cancelled over and over.
