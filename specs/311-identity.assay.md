@@ -872,12 +872,6 @@ run kill_natural_disjoint_is_sound_unique_name {
 <!-- prose-translation -->
 > mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort; S's owner declares it; one T per shape.
 > Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares; the declaration claims nothing about the world.
-
-UNACKED READING, temporary (`312d:ask-catalog-sort-declaration`): 311 names three seats that
-supply the mParent-Catalog INSTANCE and presupposes its mSort ("the mEntryChain's instance for
-that mSort") without a declaration of it; `DeclaresCatalogSort` is the conductor's addition so
-that the entry-chain seat can be read. Not acked, not authoritative, held only until acked or
-replaced (`notes/312d` § 7).
 > A shape that yields carries no `:identified-in` and no `:root`.
 > `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
 > S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
@@ -885,6 +879,12 @@ replaced (`notes/312d` § 7).
 > A SAME licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
 > A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
 > Each of the two dies with the warrant it rests on: with one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary mScheme is reachable, and with one `:guarantees-unique-name` false, a false DISJOINT.
+
+UNACKED READING, temporary (`312d:ask-catalog-sort-declaration`): 311 names three seats that
+supply the mParent-Catalog INSTANCE and presupposes its mSort ("the mEntryChain's instance for
+that mSort") without a declaration of it; `DeclaresCatalogSort` is the conductor's addition so
+that the entry-chain seat can be read. Not acked, not authoritative, held only until acked or
+replaced (`notes/312d` § 7).
 
 #### § 2.1.1-the-chain-and-the-decline
 
@@ -2280,14 +2280,6 @@ run law_different_sorts_never_same_premise {
 > SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
 > `compare()` never reaches a false SAME while every statement in force is true and the engine's axioms hold.
 > `compare()` never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents.
-
-UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
-and the laws' premise): 311 says a contradiction is "refuse both and attribute both authors",
-which is not one of the four answers, so the fence answers UNKNOWN there; "one instance" is one
-atom, the sharing of 1.10-vantage-route-placeholder-witness being by construction; and every
-law premises EVERY statement in force true where 311 says "every statement behind it", the
-support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
-readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
 > Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate.
 > Every statement in force is true when that holds with the empty set named; the contract makes it axiomatic.
 > The engine's axioms hold when the engine's axiom about where the shell resolves holds (1.10-vantage-route-placeholder-witness); differential test makes them axiomatic, and nobody speaks them.
@@ -2299,6 +2291,14 @@ readings, not acked, not authoritative, held only until acked or replaced (`note
 > mKeys of different mSorts never read SAME.
 > Each law dies with a statement it rests on: with one statement false and every other statement in force true, a false SAME of the walk is reachable where the false one is a `:guarantees-unique-referent` or a `:yields`; a false DISJOINT of the walk where it is a `:guarantees-unique-name` or an `:aliases-nothing-else`; a false SAME and a false DISJOINT of `compare()` where it is a mCorrespondence; and with a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
 > The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
+
+UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
+and the laws' premise): 311 says a contradiction is "refuse both and attribute both authors",
+which is not one of the four answers, so the fence answers UNKNOWN there; "one instance" is one
+atom, the sharing of 1.10-vantage-route-placeholder-witness being by construction; and every
+law premises EVERY statement in force true where 311 says "every statement behind it", the
+support of 3.5-committee-law-and-attribution being unused in the premise. The conductor's
+readings, not acked, not authoritative, held only until acked or replaced (`notes/312d` § 7).
 
 #### § 3.2.1-what-the-answers-mean-to-their-consumers
 
