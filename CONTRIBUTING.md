@@ -31,7 +31,7 @@ mise run hello                # briefly setup project-local tooling (repo-local)
 Compile and test:
 
 ```sh
-mise run both gate            # runs a full build: unit-tests, E2E, and looms
+mise run both gate            # checks what your branch changed: lints, unit-tests, E2E, looms
 mise run dorc --help          # run Dorc! (args are passed in raw.)
 
 # rerun a single test-case
@@ -41,8 +41,8 @@ mise run test errexit_unknown_is_conservative
 Our tests are [errorloom][]s (executable, *authoritative* txtar files — each one a
 shell session against the tool, which you edit in-place; see below) plus a few Rust
 batteries asserting state, exits, and relations that a transcript cannot; one runner
-drives all of them under the above `mise run gate`. `mise run tests` runs *only* the
-Rust unit-tests, and is less valuable. `mise run` will list all available tasks.
+drives all of them. `mise run test` runs the whole suite, whatever your branch changed.
+`mise run` will list all available tasks.
 
    [mise]: <https://mise.jdx.dev/getting-started.html> "mise-en-place, a cross-platform tool/version manager and dev-environment manager"
    [errorloom]: <https://github.com/ELLIOTTCABLE/Dorc/tree/main/spike/crates/errorloom> "our format for e2e tests and prose-authorship"
