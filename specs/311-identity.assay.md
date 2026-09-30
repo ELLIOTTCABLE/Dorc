@@ -364,7 +364,7 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
-> mKey-Primary is an mKey of the primary mScheme, on a shape that yields nothing, meaningful only relative to its mParent-Store; mKey-Natural is any other mKey, what tool authors and books write.
+> mKey-Primary is an mKey of the primary mScheme, on a shape that yields nothing, meaningful only relative to its mParent-Store, or a cell's mKey (1.9-cell-a-singleton-sort); mKey-Natural is any other mKey, what tool authors and books write.
 
 ### § 1.5-token-and-the-two-warrants
 
@@ -420,7 +420,7 @@ pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
 > The lookup's owner declares each warrant per matched shape, and the floor of 1.3-scheme-a-way-of-writing carries neither.
 > A warrant holds for every mKey of that shape inside any one mParent; a path that does not reach a warrant has not given it, so an mKey has a warrant when the shape it matched carries it.
 > Two mKeys are within one mParent when they have one mParent, or when their mParents reach one mReferent.
-> `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent: the lookup is a function.
+> `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent, or both reach none: the lookup is a function.
 > `:guarantees-unique-name` is true when, within one mParent, one mReferent reached by an mKey of the shape has one mKey of the lookup.
 
 UNACKED READING, temporary (`312d:ask-unique-name-ranges-over-the-scheme`): 311's "one mReferent
@@ -955,7 +955,7 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 > The primary mScheme's owner is the mSort's owner.
 > `:identified-in` M is true when every mKey of the shape that reaches an mReferent reaches one held by an mReferent that some mKey of M reaches.
 > P's owner declares `:root` per matched shape, absent by default: the shape declares no mParent, so it carries no `:identified-in`, and thereby claims global comparability.
-> `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent.
+> `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent, or both reach none.
 > For a `:root` shape, the world is the store: the shape's mWorld (1.8-fully-qualified-key-topic-and-derivation).
 
 UNACKED READING, temporary (`312d:enc-primary-owner-is-sort-owner`): 311 has `:identified-in`
