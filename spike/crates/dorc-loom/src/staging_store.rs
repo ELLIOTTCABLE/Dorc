@@ -729,229 +729,6 @@ mod tests {
         assert_eq!(fs::read(hostile).expect("hostile temp bytes"), b"hostile");
     }
 
-    #[cfg(windows)]
-    struct WindowsFailureOperations {
-        rename_calls: std::sync::Mutex<usize>,
-        fail_renames: Vec<usize>,
-        fail_backup_cleanup: bool,
-        fail_final_removal: bool,
-    }
-
-    #[cfg(windows)]
-    impl StagingFileOperations for WindowsFailureOperations {
-        fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()> {
-            let call = {
-                let mut calls = self
-                    .rename_calls
-                    .lock()
-                    .expect("test rename counter poisoned");
-                let call = calls.checked_add(1).expect("test rename counter overflow");
-                *calls = call;
-                call
-            };
-            if self.fail_renames.contains(&call) {
-                return Err(std::io::Error::other("injected rename failure"));
-            }
-            fs::rename(from, to)
-        }
-
-        fn remove_file(&self, path: &Path) -> std::io::Result<()> {
-            if self.fail_backup_cleanup
-                && path
-                    .file_name()
-                    .is_some_and(|name| name == STAGING_BACKUP_FILE)
-            {
-                return Err(std::io::Error::other("injected backup cleanup failure"));
-            }
-            if self.fail_final_removal && path.file_name().is_some_and(|name| name == STAGING_FILE)
-            {
-                return Err(std::io::Error::other("injected final removal failure"));
-            }
-            fs::remove_file(path)
-        }
-    }
-
-    #[cfg(windows)]
-    fn windows_store(
-        root: &TestRoot,
-        fail_renames: Vec<usize>,
-        fail_backup_cleanup: bool,
-        fail_final_removal: bool,
-    ) -> FsStagingStore {
-        FsStagingStore::with_operations(
-            &root.0,
-            Arc::new(WindowsFailureOperations {
-                rename_calls: std::sync::Mutex::new(0),
-                fail_renames,
-                fail_backup_cleanup,
-                fail_final_removal,
-            }),
-        )
-        .expect("trusted root")
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_replacement_publishes_and_removes_the_validated_backup() {
-        let root = TestRoot::new("windows-replacement-publishes-and-removes-validated-backup");
-        FsStagingStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first packet");
-
-        windows_store(&root, vec![1], false, false)
-            .publish(&packet("second"))
-            .expect("replacement packet");
-
-        assert_eq!(
-            fs::read(root.final_path()).expect("final bytes"),
-            packet("second")
-        );
-        assert!(!root.backup_path().exists());
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_second_rename_failure_restores_the_prior_final() {
-        let root = TestRoot::new("windows-second-rename-failure-restores-prior-final");
-        FsStagingStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first packet");
-
-        assert!(
-            windows_store(&root, vec![1, 3], false, false)
-                .publish(&packet("second"))
-                .is_err()
-        );
-        assert_eq!(
-            fs::read(root.final_path()).expect("restored final"),
-            packet("first")
-        );
-        assert!(!root.backup_path().exists());
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_failed_publication_and_restore_retains_a_recoverable_backup() {
-        let root =
-            TestRoot::new("windows-failed-publication-and-restore-retains-recoverable-backup");
-        FsStagingStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first packet");
-        let store = windows_store(&root, vec![1, 3, 4], false, false);
-
-        assert!(store.publish(&packet("second")).is_err());
-        assert!(!root.final_path().exists());
-        assert_eq!(
-            fs::read(root.backup_path()).expect("retained backup"),
-            packet("first")
-        );
-        assert_eq!(
-            store
-                .read()
-                .expect("backup recovery read")
-                .expect("the backup is present"),
-            packet("first")
-        );
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_cleanup_failure_retains_backup_and_refuses_later_writes() {
-        let root = TestRoot::new(
-            "windows-cleanup-failure-keeps-the-published-packet-and-refuses-later-writes",
-        );
-        FsStagingStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first packet");
-
-        let store = windows_store(&root, vec![1], true, true);
-        assert_eq!(
-            store.publish(&packet("second")),
-            Ok(StagingWriteOutcome::CleanupPending)
-        );
-        assert_eq!(
-            fs::read(root.final_path()).expect("published final"),
-            packet("second")
-        );
-        assert_eq!(
-            fs::read(root.backup_path()).expect("retained stale backup"),
-            packet("first")
-        );
-        assert_eq!(
-            store
-                .read()
-                .expect("reader prefers final")
-                .expect("the final is present"),
-            packet("second")
-        );
-
-        assert!(store.publish(&packet("third")).is_err());
-        assert_eq!(
-            fs::read(root.final_path()).expect("unmodified final"),
-            packet("second")
-        );
-        assert_eq!(
-            fs::read(root.backup_path()).expect("unmodified stale backup"),
-            packet("first")
-        );
-        for attempt in 0..TEMP_ATTEMPTS {
-            assert!(
-                !root
-                    .staging_directory()
-                    .join(format!(".staged.publication.{attempt}.tmp"))
-                    .exists()
-            );
-        }
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_hostile_backup_refuses_without_touching_the_final() {
-        let root = TestRoot::new("windows-hostile-backup-refuses-without-touching-the-final");
-        FsStagingStore::new(&root.0)
-            .expect("trusted root")
-            .publish(&packet("first"))
-            .expect("first packet");
-        fs::write(root.backup_path(), b"hostile backup").expect("hostile backup");
-
-        assert!(
-            windows_store(&root, vec![1], false, false)
-                .publish(&packet("second"))
-                .is_err()
-        );
-        assert_eq!(
-            fs::read(root.final_path()).expect("prior final"),
-            packet("first")
-        );
-        assert_eq!(
-            fs::read(root.backup_path()).expect("hostile backup"),
-            b"hostile backup"
-        );
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn windows_reader_recovers_only_an_absent_final_from_a_valid_backup() {
-        let root = TestRoot::new("windows-reader-recovers-only-an-absent-final-from-valid-backup");
-        fs::create_dir(root.staging_directory()).expect("staging directory");
-        fs::write(root.backup_path(), packet("prior")).expect("valid backup");
-        let store = FsStagingStore::new(&root.0).expect("trusted root");
-
-        assert_eq!(
-            store
-                .read()
-                .expect("backup recovery")
-                .expect("the backup is present"),
-            packet("prior")
-        );
-        fs::write(root.final_path(), b"malformed final").expect("malformed final");
-        assert!(store.read().is_err());
-    }
-
     #[cfg(unix)]
     #[test]
     fn linked_parent_and_final_refuse_without_following_links() {
@@ -989,17 +766,239 @@ mod tests {
         assert!(FsStagingStore::new(resolved).is_ok());
     }
 
+    /// Windows: a rename onto an existing file fails, so publish backs up the old file first.
+    /// Making a link needs a privilege the test may not have.
     #[cfg(windows)]
-    #[test]
-    fn linked_parent_refuses_when_link_creation_is_permitted() {
-        use std::os::windows::fs::symlink_dir;
+    mod on_windows {
+        use super::*;
 
-        let root = TestRoot::new("linked-parent-refuses-when-link-creation-is-permitted");
-        let target = root.0.join("target");
-        fs::create_dir(&target).expect("target directory");
-        let linked_parent = root.0.join("linked-parent");
-        if symlink_dir(&target, &linked_parent).is_ok() {
-            assert!(FsStagingStore::new(linked_parent).is_err());
+        struct WindowsFailureOperations {
+            rename_calls: std::sync::Mutex<usize>,
+            fail_renames: Vec<usize>,
+            fail_backup_cleanup: bool,
+            fail_final_removal: bool,
+        }
+
+        impl StagingFileOperations for WindowsFailureOperations {
+            fn rename(&self, from: &Path, to: &Path) -> std::io::Result<()> {
+                let call = {
+                    let mut calls = self
+                        .rename_calls
+                        .lock()
+                        .expect("test rename counter poisoned");
+                    let call = calls.checked_add(1).expect("test rename counter overflow");
+                    *calls = call;
+                    call
+                };
+                if self.fail_renames.contains(&call) {
+                    return Err(std::io::Error::other("injected rename failure"));
+                }
+                fs::rename(from, to)
+            }
+
+            fn remove_file(&self, path: &Path) -> std::io::Result<()> {
+                if self.fail_backup_cleanup
+                    && path
+                        .file_name()
+                        .is_some_and(|name| name == STAGING_BACKUP_FILE)
+                {
+                    return Err(std::io::Error::other("injected backup cleanup failure"));
+                }
+                if self.fail_final_removal
+                    && path.file_name().is_some_and(|name| name == STAGING_FILE)
+                {
+                    return Err(std::io::Error::other("injected final removal failure"));
+                }
+                fs::remove_file(path)
+            }
+        }
+
+        fn windows_store(
+            root: &TestRoot,
+            fail_renames: Vec<usize>,
+            fail_backup_cleanup: bool,
+            fail_final_removal: bool,
+        ) -> FsStagingStore {
+            FsStagingStore::with_operations(
+                &root.0,
+                Arc::new(WindowsFailureOperations {
+                    rename_calls: std::sync::Mutex::new(0),
+                    fail_renames,
+                    fail_backup_cleanup,
+                    fail_final_removal,
+                }),
+            )
+            .expect("trusted root")
+        }
+
+        #[test]
+        fn windows_replacement_publishes_and_removes_the_validated_backup() {
+            let root = TestRoot::new("windows-replacement-publishes-and-removes-validated-backup");
+            FsStagingStore::new(&root.0)
+                .expect("trusted root")
+                .publish(&packet("first"))
+                .expect("first packet");
+
+            windows_store(&root, vec![1], false, false)
+                .publish(&packet("second"))
+                .expect("replacement packet");
+
+            assert_eq!(
+                fs::read(root.final_path()).expect("final bytes"),
+                packet("second")
+            );
+            assert!(!root.backup_path().exists());
+        }
+
+        #[test]
+        fn windows_second_rename_failure_restores_the_prior_final() {
+            let root = TestRoot::new("windows-second-rename-failure-restores-prior-final");
+            FsStagingStore::new(&root.0)
+                .expect("trusted root")
+                .publish(&packet("first"))
+                .expect("first packet");
+
+            assert!(
+                windows_store(&root, vec![1, 3], false, false)
+                    .publish(&packet("second"))
+                    .is_err()
+            );
+            assert_eq!(
+                fs::read(root.final_path()).expect("restored final"),
+                packet("first")
+            );
+            assert!(!root.backup_path().exists());
+        }
+
+        #[test]
+        fn windows_failed_publication_and_restore_retains_a_recoverable_backup() {
+            let root =
+                TestRoot::new("windows-failed-publication-and-restore-retains-recoverable-backup");
+            FsStagingStore::new(&root.0)
+                .expect("trusted root")
+                .publish(&packet("first"))
+                .expect("first packet");
+            let store = windows_store(&root, vec![1, 3, 4], false, false);
+
+            assert!(store.publish(&packet("second")).is_err());
+            assert!(!root.final_path().exists());
+            assert_eq!(
+                fs::read(root.backup_path()).expect("retained backup"),
+                packet("first")
+            );
+            assert_eq!(
+                store
+                    .read()
+                    .expect("backup recovery read")
+                    .expect("the backup is present"),
+                packet("first")
+            );
+        }
+
+        #[test]
+        fn windows_cleanup_failure_retains_backup_and_refuses_later_writes() {
+            let root = TestRoot::new(
+                "windows-cleanup-failure-keeps-the-published-packet-and-refuses-later-writes",
+            );
+            FsStagingStore::new(&root.0)
+                .expect("trusted root")
+                .publish(&packet("first"))
+                .expect("first packet");
+
+            let store = windows_store(&root, vec![1], true, true);
+            assert_eq!(
+                store.publish(&packet("second")),
+                Ok(StagingWriteOutcome::CleanupPending)
+            );
+            assert_eq!(
+                fs::read(root.final_path()).expect("published final"),
+                packet("second")
+            );
+            assert_eq!(
+                fs::read(root.backup_path()).expect("retained stale backup"),
+                packet("first")
+            );
+            assert_eq!(
+                store
+                    .read()
+                    .expect("reader prefers final")
+                    .expect("the final is present"),
+                packet("second")
+            );
+
+            assert!(store.publish(&packet("third")).is_err());
+            assert_eq!(
+                fs::read(root.final_path()).expect("unmodified final"),
+                packet("second")
+            );
+            assert_eq!(
+                fs::read(root.backup_path()).expect("unmodified stale backup"),
+                packet("first")
+            );
+            for attempt in 0..TEMP_ATTEMPTS {
+                assert!(
+                    !root
+                        .staging_directory()
+                        .join(format!(".staged.publication.{attempt}.tmp"))
+                        .exists()
+                );
+            }
+        }
+
+        #[test]
+        fn windows_hostile_backup_refuses_without_touching_the_final() {
+            let root = TestRoot::new("windows-hostile-backup-refuses-without-touching-the-final");
+            FsStagingStore::new(&root.0)
+                .expect("trusted root")
+                .publish(&packet("first"))
+                .expect("first packet");
+            fs::write(root.backup_path(), b"hostile backup").expect("hostile backup");
+
+            assert!(
+                windows_store(&root, vec![1], false, false)
+                    .publish(&packet("second"))
+                    .is_err()
+            );
+            assert_eq!(
+                fs::read(root.final_path()).expect("prior final"),
+                packet("first")
+            );
+            assert_eq!(
+                fs::read(root.backup_path()).expect("hostile backup"),
+                b"hostile backup"
+            );
+        }
+
+        #[test]
+        fn windows_reader_recovers_only_an_absent_final_from_a_valid_backup() {
+            let root =
+                TestRoot::new("windows-reader-recovers-only-an-absent-final-from-valid-backup");
+            fs::create_dir(root.staging_directory()).expect("staging directory");
+            fs::write(root.backup_path(), packet("prior")).expect("valid backup");
+            let store = FsStagingStore::new(&root.0).expect("trusted root");
+
+            assert_eq!(
+                store
+                    .read()
+                    .expect("backup recovery")
+                    .expect("the backup is present"),
+                packet("prior")
+            );
+            fs::write(root.final_path(), b"malformed final").expect("malformed final");
+            assert!(store.read().is_err());
+        }
+
+        #[test]
+        fn linked_parent_refuses_when_link_creation_is_permitted() {
+            use std::os::windows::fs::symlink_dir;
+
+            let root = TestRoot::new("linked-parent-refuses-when-link-creation-is-permitted");
+            let target = root.0.join("target");
+            fs::create_dir(&target).expect("target directory");
+            let linked_parent = root.0.join("linked-parent");
+            if symlink_dir(&target, &linked_parent).is_ok() {
+                assert!(FsStagingStore::new(linked_parent).is_err());
+            }
         }
     }
 }
