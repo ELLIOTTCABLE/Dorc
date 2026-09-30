@@ -224,7 +224,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   review of the pre-rewrite `30T` draft) · `30V` (why-surface state-space re-exploration;
   §6 the deferred set) + `30Va` (conduct) / `30Vb`,`30Vc` (strawmen — raw, read-optional) /
   `30Vd` (lane ledger) · `30Xa` (the rebuild's conductor ledger: every checkpoint ruling, the
-  lane table, the typed acks of the close, the post-review repair lane). The design-model
+  lane table, the typed acks of the close, the post-review repair lane) · `30Xb` (the CI
+  runners' conductor ledger: the lanes, the typed rulings, the first results) · `30Xc` (the
+  macOS burn-down's working ledger: the first macOS run's causes, the fixes and platform tests
+  landed, the open decisions). The design-model
   mechanisation work: **`notes/30Y`** (assay as it is: the design-tier checker over literate
   specifications in Alloy 6, its generated modules, lock, key, tiers, and adapter; tooling only,
   praxis deliberately excluded) · `notes/30Ya` (its

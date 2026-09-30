@@ -610,6 +610,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 270 275 277 279f (8)
 
+## 30Xc:ask-annotate-30xb-misattribution
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:235 — — an adjacent correction note at `30Xb` §5.
+
 ## 28I:ask-apply-header-vs-byte-floor
 - defined: Research/notes/28I-webhost-redline-extraction.md:52 — (design tension, flag not fold): the
 - cited: 28H (1)
@@ -656,9 +659,18 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28L:ask-de-passthrough-lane-ownership
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:152 — — the 16 pure `sm {{detail}}` codes can never be
 
+## 30Xc:ask-duplicate-declarer-priority
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:223 — — whether tracing and fixing
+
+## 30Xc:ask-engine-fix-before-green
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:226 — — resolving the e2e scratch root would turn both looms green
+
 ## ask-flag-boundary-recut
 - defined: —
 - cited: 279f 27A (4)
+
+## 30Xc:ask-floor-shell-on-macos
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:233 — — install `posh` on macOS, provide it through mise, or run a
 
 ## ask-full-driver-this-arc-or-r30
 - defined: —
@@ -666,6 +678,12 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 307b:ask-is-a-sibling-code-right-here
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:185 — — I minted `solver-consistency-plan-demoted` as a SIBLING of
+
+## 30Xc:ask-kagi-setup-here
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:236 — — set up Kagi on this machine, allow another search tool for the
+
+## 30Xc:ask-key-identity-at-edge
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:229 — — whether one file under two spellings (`/var` and
 
 ## Research/notes/r26-glue-strawmen/nix-machine.note:ask-kind-namespace-squatting-policy
 - defined: Research/notes/r26-glue-strawmen/nix-machine.note.md:182 — — a third-party oracle author describing nix mints `org.nixos.*` kinds for a project they do not own…
@@ -682,6 +700,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 311 312d (2)
 
+## 30Xc:ask-one-home-precedence
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:221 — — where a test already has a one-home rule (receipt state lives in
+
 ## 307b:ask-out-param-versus-eighth-tuple-element
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:198 — — I threaded the latch as a `&mut CertifierTrip`
 
@@ -692,6 +713,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## ask-pipefail-emit-never
 - defined: —
 - cited: 276 279f (3)
+
+## 30Xc:ask-platform-home-steering-line
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:219 — — one line in `spike/CLAUDE.md` that names the platform
 
 ## ask-promote-task-14
 - defined: —
@@ -706,6 +730,12 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 307b:ask-remove-the-guard-forfeit-row
 - defined: Research/notes/307b-certifier-trip-policy-lane-report.md:175 — — the census proved a lookup (§2), so
+
+## 30Xc:ask-reopen-through-harness-roots
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:215 — — plan item 1 as proposed. `standard_roots` coverage then
+
+## 30Xc:ask-restate-or-derive-macos-rule
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:217 — — the shipped-binary test restates the macOS location
 
 ## ask-route-for-any-path-without-identified-in
 - defined: —
@@ -1259,7 +1289,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## core/CLAUDE:contested-is-write-once
 - defined: spike/crates/core/CLAUDE.md:37 — (`28K` §1 `rul-silent-shadowing-refuses`) —
-- cited: 307c (1)
+- cited: 307c 30Xc (2)
 
 ## spike/CLAUDE:context-entry-probing
 - defined: spike/CLAUDE.md:258 — (`plans/27C` — THE wrapper/context spec) — a wrapped site
@@ -1546,6 +1576,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 283 (1)
 
+## 30Xc:dec-platform-home-per-crate
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:193 — `[PROPOSED]` — `crates/<crate>/tests/platform.rs`, with
+
 ## 28O:dec-precedence-fix-in-two-commits
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:151
 
@@ -1800,6 +1833,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## dev-replacement-death-does-not-erase-effects
 - defined: —
 - cited: 30Ia 30Ka 30Kb (3)
+
+## dev-roots-nominal-fence
+- defined: —
+- cited: 30Xa 30Xc (2)
 
 ## 30Qd:dev-run-identity-grouped-out-of-the-invocation-mint
 - defined: Research/notes/30Qd-influence-carriage-lane-report.md:777 — — a design choice the MAP did not foresee
@@ -2940,6 +2977,9 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28L:fnd-case-frontmatter-overwrites-lock-metadata
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:404 — (X2a, +SURE) — a new
 
+## 30Xc:fnd-case-variant-spelling-splits-keys
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:160 — — this volume is case-insensitive.
+
 ## 28L:fnd-class-b-is-one-hundred-components
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:851 — (x2g at the merged state, +SURE
 
@@ -3035,12 +3075,18 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Md 30Mg 30Na plan/CLAUDE (5)
 
+## 30Xc:fnd-discriminating-tmpdir-run
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:77 — — with `TMPDIR` spelled `/private/var/…`, the staging tests
+
 ## 311l:fnd-disjoint-clause-over-demands-and-under-delivers
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:107
 
 ## fnd-dot-source-remains-an-execution-frame
 - defined: —
 - cited: 30P 30Pb FORFEITS (3)
+
+## 30Xc:fnd-duplicate-declarer-composes-contested-helper
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:63 — — the engine finding under emit30,
 
 ## fnd-earned-badges-are-unchecked
 - defined: —
@@ -3095,8 +3141,14 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28P:fnd-hash-munge-has-no-reachable-input-today-and-is-built-anyway
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:429
 
+## 30Xc:fnd-help-page-omits-macos-location
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:169 — — `cli-help-receipt-kept`
+
 ## 30Ba:fnd-hole-number-counts-files-not-holes
 - defined: Research/notes/30Ba-minispec-review-neutral.md:466 — (+SURE)
+
+## 30Xc:fnd-hostsim-sandbox-lacks-macos-base
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:166 — — `hostsim::differential::sandbox_profile`
 
 ## 30Ba:fnd-hypothesis-strengthening-is-mechanically-invisible
 - defined: Research/notes/30Ba-minispec-review-neutral.md:82 — (+SURE)
@@ -3143,12 +3195,24 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 312ca:fnd-link-count-is-not-closure-evidence
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:265
 
+## 30Xc:fnd-load-keys-split-by-spelling
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:46 — (two looms: `emit30-ambient-dependency-narrates`,
+
 ## 28R:fnd-load-plane-bet-priced
 - defined: Research/notes/28R-context-kernel-review.md:32 — (~SUSPECT overall) — corpus numbers favor P1 (`.` is
 
 ## 28O:fnd-loom-cases-are-invisible-to-directory-surveys
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:358
 - cited: 28P (1)
+
+## 30Xc:fnd-macos-ci-later-steps-unexercised
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:177 — — after `test`, the macOS job runs `test:hooks`,
+
+## 30Xc:fnd-macos-first-run-nineteen-reds
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:32 — — CI run `36741484726` (`ai/main` at `b5748323`): only
+
+## 30Xc:fnd-macos-root-arm-untested
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:164 — — `durable.rs` tests the XDG arm (`:694`) and the Windows arm
 
 ## fnd-measured-today
 - defined: Research/notes/30Qc-load-plane-lane-report.md:40 — — what the code actually does
@@ -3244,6 +3308,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30N 30Nd 30Ne (4)
 
+## 30Xc:fnd-posh-absent-on-macos
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:80 — — `mise.toml:365` gives `test:floor` `dash,posh` everywhere but
+
 ## fnd-possible-singleton-is-not-exact-selection
 - defined: —
 - cited: 30P 30Pb (3)
@@ -3275,6 +3342,9 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 312ca:fnd-readset-closure-undefined-at-the-terminus
 - defined: Research/notes/312ca-identity-model-crosscheck-fable-n.md:456
+
+## 30Xc:fnd-receipt-roots-diverge-on-macos
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:142 — (from §1) — three layouts meet:
 
 ## fnd-redirect-guard-mint-is-absent
 - defined: —
@@ -3404,6 +3474,12 @@ row's `near:` line refreshes only when that row's other lines change.
 ## fnd-stage-zero-is-not-built
 - defined: —
 - cited: 28Q 305a 307 307c 308b (8)
+
+## 30Xc:fnd-staging-root-behind-var-link
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:36 — (11 `dorc-loom` `staging_store` unit tests, "unsafe
+
+## 30Xc:fnd-stale-root-layout-comments
+- defined: Research/notes/30Xc-macos-burn-down-ledger.md:173 — — the `pinned_roots` doc (`seam.rs`) says the pinned roles
 
 ## 26I:fnd-state-builtins-silently-mis-key
 - defined: Research/notes/26I-adversarial-kernel-review.md:20 — (SEV: wrong-yes-capable — the `271:rul-sin-ordering`
@@ -7762,6 +7838,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/23L-interface-rulings.md:8 — (STAMPED)
 - cited: 23H 23O 24A 24C 24D (8)
 
+## rul-roots-pinned-is-a-literal
+- defined: —
+- cited: 30Xa 30Xc cli/CLAUDE (4)
+
 ## 30Qd:rul-row-boundaries-moved-under-the-sealing
 - defined: Research/notes/30Qd-influence-carriage-lane-report.md:710 — — the one thing to rule on
 
@@ -9833,7 +9913,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/CLAUDE:withdrawal-is-applied-once-never-consulted
 - defined: spike/crates/cli/CLAUDE.md:245 — (`28K` §1; carve CLOSED at `28Q` §1's
-- cited: 307c 308b 30E (4)
+- cited: 307c 308b 30E 30Xc (5)
 
 ## oracle/CLAUDE:withdrawing-drops-detected-too
 - defined: spike/crates/oracle/CLAUDE.md:41 — (`28K` §1) — `PredictSet::withdrawing` (and the
