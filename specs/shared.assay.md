@@ -54,5 +54,6 @@ run bookScope {} for 5 but 4 Int
 ```
 
 <!-- prose-translation -->
-> The outcome of a held step is true of every line, so the step keeps its place in the book and adds a true premise to the lines below it.
+> The outcome of a held step is true of every line.
+> So the step keeps its place in the book and adds a true premise to the lines below it.
 > A book's default ceiling is five atoms of every kind the specification owns, integers of four bits, and argv of at most seven words.

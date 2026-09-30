@@ -148,10 +148,13 @@ fact { owns in holds }
 
 <!-- prose-translation -->
 > An mReferent is a persisting piece of the world.
-> A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
+> A store is an mReferent.
+> What a store holds is identified in it.
+> What a store owns, it holds by its own construction.
 > A write to an mReferent affects the mState of the mReferents it affects (2.5-may-read-the-readset).
-> A route to an mReferent passes through the mReferents that pass to it; what an mReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
-> It is not an mKey, and not an mSort.
+> A route to an mReferent passes through the mReferents that pass to it.
+> What an mReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
+> An mReferent is not an mKey, and not an mSort.
 
 UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
 `312d:ask-world-relations-for-effects`): the world relations `holds`, `owns`, `affects`, and
@@ -182,19 +185,22 @@ be safe under (the ruling of `notes/312d` § 21 for the sentence of 1.3.1-a-prim
 <!-- normative -->
 > An mReferent has one or more mKeys.
 > An mReferent survives changes to its mState.
-> It has the mSort of the mKey that reaches it.
+> An mReferent has the mSort of the mKey that reaches it.
 > Two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
-> It may have parts.
+> An mReferent may have parts.
 > Every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
-> It does not survive destruction and recreation under its old mKey.
-> It does not survive a lifecycle write to what it is scoped in (3.3-invalidation-three-mutator-species).
+> An mReferent does not survive destruction and recreation under its old mKey.
+> An mReferent does not survive a lifecycle write to what it is scoped in (3.3-invalidation-three-mutator-species).
 > Before a lookup binds an mKey, that mKey names a may-set of mReferents (1.5-token-and-the-two-warrants).
 > An mState is the condition of one mReferent at one instant: what a write changes and what a read observes.
 > An mState is known only through a read, which yields an mValue.
 > Two mReferents may have equal mStates and stay two.
 > One mReferent's mState changes and it stays one.
 > An mValue is bytes a shell holds or will hold, with an exit status where one is produced.
-> There are three kinds of mValue: an mKey's mValue, bytes that name an mReferent, bound at a bind; a captured mValue, bytes a read copied out of an mState, graded by provenance (`notes/275`); and a verdict's exit status.
+> There are three kinds of mValue.
+> The first kind is an mKey's mValue: bytes that name an mReferent, bound at a bind.
+> The second kind is a captured mValue: bytes a read copied out of an mState, graded by provenance (`notes/275`).
+> The third kind is a verdict's exit status.
 > An mValue is what a read yields from an mState, and it is never the mState.
 > Two reads of one mReferent at two instants may yield two mValues.
 
@@ -286,10 +292,12 @@ pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
 > An mScheme is a way of writing down which mReferent is meant, with one accountable owner.
 > Every shape belongs to one mScheme.
 > A matched shape is a control-flow path of the owner's body.
-> `:primary-of` is declared by the mSort's owner, on the primary mScheme (2.2-primary-of-and-identified-in).
+> The mSort's owner declares `:primary-of`, on the primary mScheme (2.2-primary-of-and-identified-in).
 > An mSort has at most one primary mScheme.
 > An mScheme is `:primary-of` at most one mSort.
-> The floor: an mScheme that declares neither `:primary-of` nor `:yields` is the primary mScheme of an mSort nobody has named, and no shape of it carries `:identified-in` or `:root`.
+> An mScheme that declares neither `:primary-of` nor `:yields` is the floor.
+> The floor is the primary mScheme of an mSort that nobody named.
+> No shape of the floor carries `:identified-in` or `:root`.
 > A `:primary-of` declaration claims nothing about the world.
 
 #### § 1.3.1-a-primary-scheme-and-its-sort
@@ -356,12 +364,17 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 
 <!-- prose-translation -->
 > An mKey has three parts: an mValue, its mScheme, and its mParent (1.6-parent-one-per-key).
-> The mScheme is always declared, except that a cell's mKey has its cell mSort in place of an mScheme and matches no shape (1.9-cell-a-singleton-sort); there is no default mScheme, and a bind or a mark always names one.
+> The mScheme is always declared, with one exception.
+> A cell's mKey has its cell mSort in place of an mScheme and matches no shape (1.9-cell-a-singleton-sort).
+> There is no default mScheme.
+> A bind or a mark always names one.
 > The mValue is a literal: the shell word bound at the bind.
 > The mParent is the instance one of the seats of 1.6-parent-one-per-key supplies, or none, which leaves the mFullyQualifiedKey unknown from that level.
 > A lookup chooses among the shapes its mScheme declares, never outside them: the shape an mKey matches is a shape of its own mScheme.
 > Which shape an mValue matches is a function of the mKey's own bytes: two mKeys of one mScheme with equal mValues match one shape (1.6-parent-one-per-key).
-> An mKey may carry the mKey its lookup emitted for it, minted at the emission point the `resolve()` declares: an mKey of the mScheme its shape `:yields` (2.1-yields-into-another-scheme), and none where the shape yields nothing.
+> An mKey may carry the mKey its lookup emitted for it, minted at the emission point the `resolve()` declares.
+> That emitted mKey is an mKey of the mScheme its shape `:yields` (2.1-yields-into-another-scheme).
+> An mKey whose shape yields nothing carries no emitted mKey.
 > Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
@@ -419,9 +432,12 @@ pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
 
 <!-- prose-translation -->
 > A mToken is an mKey-Primary's mValue: bytes a `resolve()` returned.
-> Any lookup, a secondary mScheme's or a primary mScheme's, may carry two warrants per matched shape; they are independent, separately declared, and absent by default.
+> Any lookup, a secondary mScheme's or a primary mScheme's, may carry two warrants per matched shape.
+> The two warrants are independent, separately declared, and absent by default.
 > The lookup's owner declares each warrant per matched shape, and the floor of 1.3-scheme-a-way-of-writing carries neither.
-> A warrant holds for every mKey of that shape inside any one mParent; a path that does not reach a warrant has not given it, so an mKey has a warrant when the shape it matched carries it.
+> A warrant holds for every mKey of that shape inside any one mParent.
+> A path that does not reach a warrant does not give it.
+> So an mKey has a warrant when the shape it matched carries it.
 > Two mKeys are within one mParent when they have one mParent, or when their mParents reach one mReferent.
 > `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent, or both reach none: the lookup is a function.
 > `:guarantees-unique-name` is true when, within one mParent, one mReferent reached by an mKey of the shape has one mKey of the lookup.
@@ -511,16 +527,27 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > The cell's mKey has that mKey's identity as its mParent (3.1-identity-of-a-key).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
 > A shape with neither `:identified-in` nor `:yields` is scoped in the mRoute of the mKey's mVantage (1.10-vantage-route-placeholder-witness).
-> For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance: the instance is the one the seats supply, and there is none where they supply none or disagree.
-> The mParent instance is an mValue supplied by exactly one of three seats: the bind that minted the mKey (1.4-key-and-its-two-views); the lookup that yielded it (2.1-yields-into-another-scheme); the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in); for a secondary mScheme's mKey the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
-> A supply from the yield seat is the yielding lookup's owner's line; a supply from the declaration seat is the primary mScheme's owner's line.
+> For a shape that yields, the mVantage's ambient instance for the mScheme's catalog mSort (2.1-yields-into-another-scheme) is one seat among those that supply the mParent-Catalog instance.
+> For a shape that yields, the instance is the one the seats supply.
+> For a shape that yields, there is no instance where the seats supply none or disagree.
+> The mParent instance is an mValue that exactly one of three seats supplies.
+> The first seat is the bind that minted the mKey (1.4-key-and-its-two-views).
+> The second seat is the lookup that yielded the mKey (2.1-yields-into-another-scheme).
+> The third seat is the primary mScheme's declaration for the matched shape (2.2-primary-of-and-identified-in).
+> For a secondary mScheme's mKey, the third seat is the mEntryChain's instance (2.1-yields-into-another-scheme).
+> A supply from the yield seat is the yielding lookup's owner's line.
+> A supply from the declaration seat is the primary mScheme's owner's line.
 > For a shape with `:identified-in`, the seat names the instance as an mKey of the mParent's mSort, of any of that mSort's mSchemes.
 > The mKey's mParent is the identity of that instance (3.1-identity-of-a-key).
 > Where the instance has no identity, the mFullyQualifiedKey is unknown from that level.
 > Two seats that disagree are a contradiction.
-> Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
+> Where no seat supplied an instance, the mKey has no mParent.
+> Where two seats disagree, the mKey has no mParent.
+> Where the supplied mKey is not of the declared mSort, the mKey has no mParent.
+> In each of these three cases, the mKey's mFullyQualifiedKey is unknown from that level.
 > A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
-> A supplied mParent-Catalog instance claims nothing in this model; that the catalog is on the route to the mKey's mReferent is a held hole (3.3-invalidation-three-mutator-species).
+> A supplied mParent-Catalog instance claims nothing in this model.
+> That the catalog is on the route to the mKey's mReferent is a held hole (3.3-invalidation-three-mutator-species).
 
 UNACKED READING, temporary (`312d:ask-route-for-any-path-without-identified-in`,
 `312d:ask-mismatched-supply-reads-unknown`): the fence scopes every shape with neither
@@ -537,8 +564,11 @@ mParent are 2.10-places-the-upward-lookup's.
 
 <!-- normative -->
 > A disagreement between seats is refused and attributed to both.
-> An emitter (a secondary mScheme, possibly a stranger's) can be wrong only about what it supplied: its lookup, and the mParent instance where it is the seat that supplied it.
-> An mKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup); none of them is its mParent.
+> An emitter is a secondary mScheme, possibly a stranger's.
+> An emitter can be wrong only about what it supplied.
+> What it supplied is its lookup, and the mParent instance where it is the seat that supplied that instance.
+> An mKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup).
+> None of these routes is the mKey's mParent.
 
 Examples of a mParent-Catalog: a directory for a path's entry, a passwd database for a login name, a process table for a pid. Examples of a mParent-Store: a DNS zone for a record's owner name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a mRoot: the DNS mRoot, or a cloud instance-id whose issuer never repeats one.
 
@@ -577,7 +607,8 @@ pred true_ClosesTraversal[d: ClosesTraversal] {
 > A mResolution is a fact with a backing, and the backing is the mTraversal: the chain of routing mKeys the lookup crossed.
 > The lookup emits that chain, one member per routing mKey (2.9-the-traversal-and-the-region-test), as the lookup owner's speech.
 > The emission is an at-most set, and an emitted member licenses nothing alone.
-> The lookup's owner closes it by an explicit act; the closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one an emitted member reaches.
+> The lookup's owner closes the emission by an explicit act.
+> The closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one an emitted member reaches.
 > A lookup that emits no member and no closing act has its mParent-Catalog, given whole, as its mTraversal.
 > A lookup that emits members without the closing act has those members and its mParent-Catalog, given whole.
 > A lookup that emits the closing act has exactly the members it emitted as its mTraversal.
@@ -589,7 +620,9 @@ The read set of a lookup body is not in the fences.
 <!-- normative -->
 > The lookup emits the chain in the order it crossed the members, and the chain is ordered.
 > Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
-> Its target object is not its backing: an mKey can stop reaching an object without the object changing, and an object can change without its mKey changing.
+> A mResolution's target object is not its backing.
+> An mKey can cease to reach an object without the object changing.
+> An object can change without its mKey changing.
 > A mResolution also depends on the read set of the lookup body that produced it.
 > The engine derives that set from the body.
 > Shell parity supplies the reads of sh constructs.
@@ -688,7 +721,8 @@ pred true_DeclaresCell[d: DeclaresCell] {}
 
 <!-- prose-translation -->
 > A cell is a singleton mSort identified in its mParent: its owner declares it `:identified-in` the mParent's mSort (2.2-primary-of-and-identified-in), one mParent mSort per cell.
-> The singleton mSort has no mScheme of its own; its mKeys carry the cell mSort in place of an mScheme (1.4-key-and-its-two-views).
+> The singleton mSort has no mScheme of its own.
+> Its mKeys carry the cell mSort in place of an mScheme (1.4-key-and-its-two-views).
 > Under any one mParent instance it has exactly one mKey.
 > A cell's identity is its mParent's plus its mSort (3.1-identity-of-a-key, 3.2-compare-one-chokepoint-four-answers).
 > Declaring a cell claims nothing about the world.
@@ -734,25 +768,36 @@ pred shellResolvesInTheAmbientInstance {
 ```
 
 <!-- prose-translation -->
-> A mVantage is the mEntryChain: a finite map from mParent-Catalog mSorts to the instances in effect, each an mKey of that mSort, with its mRoute; it is not part of any mKey's identity.
+> A mVantage is the mEntryChain: a finite map from mParent-Catalog mSorts to the instances in effect, each an mKey of that mSort, with its mRoute.
+> A mVantage is not part of any mKey's identity.
 > Every mKey is resolved from one mVantage, and an mKey a lookup emits is resolved from the vantage of the mKey it was emitted for.
-> A mVantage says where a `resolve()` executes, supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort, and is the mRoute, the last-resort mParent, for a shape with no `:identified-in` (1.6-parent-one-per-key).
+> A mVantage says where a `resolve()` executes.
+> A mVantage supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort.
+> For a shape with no `:identified-in`, a mVantage is the mRoute, the last-resort mParent (1.6-parent-one-per-key).
 > A vantage entered through a wrapper is entered from the caller's vantage, and no vantage is entered from itself.
 > The observers a fact was measured under are the instances its mEntryChain holds (2.8-observer-dependence-and-independence).
-> For execution under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves, discharged by differential test and never spoken: it holds when every mKey of a secondary mScheme the engine scoped in an ambient instance reaches what a route through that instance's mReferent passes to.
+> For execution under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves.
+> Differential test discharges that axiom, and nobody speaks it.
+> The axiom concerns every mKey of a secondary mScheme that the engine scoped in an ambient instance under no wrapper.
+> The axiom holds when every such mKey reaches what a route through that instance's mReferent passes to.
 
 #### § 1.10.1-placeholder-and-witness
 
 <!-- normative -->
-> The mRoute is an address; it holds no mState and declares no may-read set.
-> For execution under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom, discharged by differential test and never spoken.
-> Each is resolved once per mEntryChain and shared: one mPlaceholder.
+> The mRoute is an address.
+> The mRoute holds no mState and declares no may-read set.
+> For execution under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom.
+> Differential test discharges that axiom, and nobody speaks it.
+> Each of the mRoute and those instances is resolved once per mEntryChain and shared: one mPlaceholder.
 > The mValue is a literal, or a mPlaceholder for a captured mValue.
 > The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a mPlaceholder.
-> A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey, ambient mParents, mEntryChain); the probe standup binds it.
-> The apply standup re-reads it through the same entry and `compare()`s the two; that re-read is the `witness()`.
+> A mFullyQualifiedKey whose mTokens are not yet measured is a mPlaceholder keyed by (mKey, ambient mParents, mEntryChain).
+> The probe standup binds it.
+> The apply standup re-reads it through the same entry and `compare()`s the two.
+> That re-read is the `witness()`.
 > A mismatch is integrity, never a verdict input.
-> The `witness()` cannot see a recycled mKey; that stays on the outside-churn horizon.
+> The `witness()` cannot see a recycled mKey.
+> That stays on the outside-churn horizon.
 
 A recycled mKey the `witness()` cannot see: a reissued pid or inode.
 
@@ -783,7 +828,8 @@ sig VerdictFact extends Spoken {
 ```
 
 <!-- prose-translation -->
-> A verdict fact is the measured answer to a read of an mKey, a cell's mKey included, taken at a mSite, under the instances its mEntryChain lent (3.4-entry-and-lends).
+> A verdict fact is the measured answer to a read of an mKey, a cell's mKey included.
+> A verdict fact is taken at a mSite, under the instances its mEntryChain lent (3.4-entry-and-lends).
 > Its readset is the body's marked reads (2.5-may-read-the-readset).
 > The tool-oracle author vouches it: the vouch is the fact's speaker.
 
@@ -879,15 +925,27 @@ run kill_natural_disjoint_is_sound_unique_name {
 ```
 
 <!-- prose-translation -->
-> mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort; S's owner declares it; one T per shape.
-> Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares; the declaration claims nothing about the world.
+> mScheme S `:yields` mScheme T, per matched shape, where T is of any mSort.
+> S's owner declares `:yields`.
+> A shape yields into at most one T.
+> Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares.
+> That declaration claims nothing about the world.
 > A shape that yields carries no `:identified-in` and no `:root`.
 > `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
-> S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached: within one mParent-Catalog, two mKeys of S read SAME by the one-level rule and DISJOINT by the two-tops way of 3.2-compare-one-chokepoint-four-answers, and UNKNOWN otherwise.
-> They never license across mParent-Catalogs: two mKeys not in one mParent-Catalog read UNKNOWN.
+> S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached.
+> Within one mParent-Catalog, two mKeys of S read SAME by the one-level rule (3.2-compare-one-chokepoint-four-answers).
+> Within one mParent-Catalog, two mKeys of S read DISJOINT by the two-tops way (3.2-compare-one-chokepoint-four-answers).
+> Within one mParent-Catalog, two mKeys of S read UNKNOWN otherwise.
+> S's lookup warrants never license across mParent-Catalogs: two mKeys not in one mParent-Catalog read UNKNOWN.
 > A SAME licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
+> Each premise twin in this section asks for a world where every statement in force is true and the engine's axioms hold.
+> The premise twin of `law_natural_same_is_sound` asks for a world where a natural mKey reads SAME with another mKey by the natural-key license and reaches an mReferent.
 > A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
-> Each of the two dies with the warrant it rests on: with one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary mScheme is reachable, and with one `:guarantees-unique-name` false, a false DISJOINT.
+> The premise twin of `law_natural_disjoint_is_sound` asks for a world where the natural-key license reads a natural mKey DISJOINT with an mKey, and each reaches an mReferent.
+> Each of the two laws dies with the warrant it rests on.
+> Each kill in this section asks with the engine's axioms holding.
+> With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary mScheme is reachable.
+> With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT licensed before the primary mScheme is reachable.
 
 UNACKED READING, temporary (`312d:ask-catalog-sort-declaration`): 311 names three seats that
 supply the mParent-Catalog INSTANCE and presupposes its mSort ("the mEntryChain's instance for
@@ -902,10 +960,12 @@ strangers write; the fences read a chain that reaches no primary mKey as an unkn
 (3.1-identity-of-a-key). A decline is an evaluation that emits nothing.
 
 <!-- normative -->
-> T is a primary mScheme, or a secondary mScheme that in turn yields one; the chain always terminates at a primary mScheme.
+> T is a primary mScheme, or a secondary mScheme that in turn yields one.
+> The chain always terminates at a primary mScheme.
 > Nothing else constrains where an mScheme yields.
 > An unknown input makes the instance unknown.
-> A `resolve()` declines on mReferents its mSort does not describe; this is the mechanical net against lazy borrowing.
+> A `resolve()` declines on mReferents its mSort does not describe.
+> This decline is the mechanical net against lazy borrowing.
 
 A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket, under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the directory entry, or the inode that the entry leads to. A tool that removes the entry binds under the first, and a tool that changes the file binds under the second.
 
@@ -960,7 +1020,8 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 ```
 
 <!-- prose-translation -->
-> P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M: the mParent's mSort for mKeys of that shape; one M per shape.
+> P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M: the mParent's mSort for mKeys of that shape.
+> A shape has at most one M.
 > The primary mScheme's owner is the mSort's owner.
 > `:identified-in` M is true when every mKey of the shape that reaches an mReferent reaches one held by an mReferent that some mKey of M reaches.
 > P's owner declares `:root` per matched shape, absent by default: the shape declares no mParent, so it carries no `:identified-in`, and thereby claims global comparability.
@@ -998,7 +1059,8 @@ pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
 ```
 
 <!-- prose-translation -->
-> A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own construction, also identified in another store: every mReferent the store holds, it owns, and no other store owns.
+> A store is `:aliases-nothing-else` when nothing identified in it is, by the store's own construction, also identified in another store.
+> Every mReferent the store holds, the store owns, and no other store owns.
 > The store gives its own mKeys to no other store's mReferents.
 > The warrant is declared per store, on the mKey that names it, and is absent by default.
 
@@ -1021,7 +1083,8 @@ fun parentCatalog[k: mKey]: lone mLevel { k.parent }
 
 <!-- prose-translation -->
 > `:parent` is one per mKey, never plural, never a species of its own.
-> Through the primary mScheme it is the mParent-Store, which carries identity; through a secondary mScheme it is the mParent-Catalog, which carries routing and never identity.
+> Through the primary mScheme, `:parent` is the mParent-Store, which carries identity.
+> Through a secondary mScheme, `:parent` is the mParent-Catalog, which carries routing and never identity.
 > At the primary mScheme, mParent-Catalog and mParent-Store are one mKey.
 > The far end is an ordinary mKey with an identity of its own, or an mWorld, never a string the engine composes.
 
@@ -1086,13 +1149,23 @@ pred true_VerdictFact[f: VerdictFact] {
 ```
 
 <!-- prose-translation -->
-> K `:may-read` these mKeys: K's mState is affected by writes to them; K's owner declares an entry per mKey of K, and closes the set per mSort with a completion sentinel.
+> K `:may-read` these mKeys: writes to them affect K's mState.
+> K's owner declares an entry per mKey of K.
+> K's owner closes the set per mSort with a completion sentinel.
 > An entry licenses nothing positive.
-> A closed may-read set is true when, for every mKey of K that reaches an mReferent, every mReferent whose write affects that mReferent is the mReferent itself, something it holds, something that holds it, or an mReferent one of the mKey's entries reaches.
-> A fact's readset is the marked reads of the body that answered it; for a verdict fact, the vouch closes them (`KNOBS:kCONTRACT-RUNGS`): the vouch is true when the measured answer depended on no mReferent outside what the marked reads reach.
+> A closed may-read set is true when every mKey of K that reaches an mReferent meets one condition.
+> The condition is that every mReferent whose write affects the mKey's mReferent is of one of four kinds.
+> The four kinds are the mKey's mReferent itself, something it holds, something that holds it, and an mReferent one of the mKey's entries reaches.
+> A fact's readset is the marked reads of the body that answered it.
+> For a verdict fact, the vouch closes the marked reads (`KNOBS:kCONTRACT-RUNGS`).
+> The vouch is true when the measured answer depended on no mReferent outside what the marked reads reach.
 > A body that marks no read has readset ⊤.
-> May-read entries are not in a readset; a write reaches K through them (2.6-may-write-the-writeset, rule 4).
-> A readset member is ⊤ where its mSort has no closed may-read set, where an mSort on its mFullyQualifiedKey has no closed may-read set, where a may-read entry through which rule 4 reaches it fails either test, transitively, or where its mFullyQualifiedKey, or that of such an entry, ends at the mRoute.
+> May-read entries are not in a readset.
+> A write reaches K through the may-read entries (2.6-may-write-the-writeset, rule 4).
+> A readset member is ⊤ where its mSort has no closed may-read set.
+> A readset member is ⊤ where an mSort on its mFullyQualifiedKey has no closed may-read set.
+> A readset member is ⊤ where a may-read entry through which rule 4 reaches it fails either test, transitively.
+> A readset member is ⊤ where its mFullyQualifiedKey, or that of a may-read entry through which rule 4 reaches it, ends at the mRoute.
 > A readset is ⊤ where the body marked no read or where any member is ⊤.
 
 UNACKED READING, temporary (`312d:ask-may-read-is-declared-per-key`): 311's may-read is "a
@@ -1327,31 +1400,61 @@ run law_exclusion_readings_agree_premise {
 ```
 
 <!-- prose-translation -->
-> A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set that four rules close.
-> Rule 1: every may-write entry the verb's author, or the filesystem binder, declared per matched shape is in the writeset; the completion record closes those entries.
-> Rule 2: where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey that K's may-write entailment names is in the writeset; a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
-> The entailment read for a written mKey is the one declared on that mKey and on each container on its identity's chain, the written mKey being excluded with its identity.
-> Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test): its finished enumeration's members where it has one (2.10-places-the-upward-lookup), and every mKey its region covers besides where it has none.
-> Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); a may-read entry given whole is compared by the region test; may-read entries feed rule 4 and no other rule.
-> Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
+> A line's writeset against a read mKey is the set of mKeys the line may write or may change.
+> The writeset is the least set that four rules close.
+> Rule 1: every may-write entry that the verb's author, or the filesystem binder, declared per matched shape is in the writeset.
+> The completion record closes those entries.
+> Rule 2 applies where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K.
+> Under rule 2, every mKey that K's may-write entailment names is in the writeset.
+> Under rule 2, a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
+> The entailment read for a written mKey is the one declared on that mKey and on each container on its identity's chain.
+> The written mKey is excluded with its identity.
+> Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test).
+> Where the mKey given whole has a finished enumeration, the mKeys reached beneath it are that enumeration's members (2.10-places-the-upward-lookup).
+> Where the mKey given whole has no finished enumeration, the mKeys reached beneath it are its enumeration's members and every mKey its region covers besides.
+> Rule 4 applies where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k.
+> Under rule 4, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers).
+> Rule 4 compares a may-read entry given whole by the region test.
+> May-read entries feed rule 4 and no other rule.
+> Under the second reading, the exclusion applies only at the test.
+> Under the second reading, the writeset is built with every container contributing.
+> Under the second reading, an mKey that only the last step excludes is dropped there.
 > An unclosed at-most set puts ⊤ in the writeset, and so does a member whose mSort and shape have no reached finished record.
-> ⊤ is DISJOINT from nothing: an elision is spared past a line only under `--risk-faultless-skips` (3.2-compare-one-chokepoint-four-answers), and only when the line is above the fact's site, neither the readset nor the writeset against any readset member is ⊤, no readset member is stale at the site (3.3-invalidation-three-mutator-species), and `compare()` answers DISJOINT for every pair of a writeset member and a readset member, of one mSort or of two, by the region test where the member is an entry given whole (2.9-the-traversal-and-the-region-test).
+> ⊤ is DISJOINT from nothing.
+> An elision is spared past a line only under `--risk-faultless-skips` (3.2-compare-one-chokepoint-four-answers).
+> An elision is spared past a line only when the line is above the fact's site.
+> An elision is spared past a line only when neither the readset nor the writeset against any readset member is ⊤.
+> An elision is spared past a line only when no readset member is stale at the site (3.3-invalidation-three-mutator-species).
+> An elision is spared past a line only when `compare()` answers DISJOINT for every pair of a writeset member and a readset member.
+> The pairs include pairs of one mSort and pairs of two mSorts.
+> Where the writeset member is an entry given whole, the region test gives that answer in place of `compare()` (2.9-the-traversal-and-the-region-test).
 > A may-write entry and an entailment entry license nothing alone.
-> K's owner declares the entailment; the written mSort's owner declares the finished record.
-> A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
+> K's owner declares the entailment.
+> The written mSort's owner declares the finished record.
+> A completion record is true when every mReferent the line writes is of one of two kinds.
+> The first kind is an mReferent that an at-most entry reaches.
+> The second kind is an mReferent that a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
 > The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
-> A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents.
+> Under those premises, for every sparing, no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > The sparing law is asked outside the world-scoped-top hole, the region hole, and the composite hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > Two commands ask the same law.
 > The first command asks it over worlds of four levels.
 > The second command asks it over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
-> The sparing law dies with a statement it rests on: with one completion record false, or one vouch false, and every other statement in force true, a false sparing is reachable.
+> The premise twins of the two sparing commands also ask for the sparing law's premises and ask outside its three holes.
+> The premise twin of `law_sparing_is_sound` asks for a world where a fact that depended on something is spared past a writing line with an at-most entry.
+> The premise twin of `law_sparing_is_sound_with_a_store_on_the_chain` asks for a world where the first twin's spared fact has a readset member with a store on its chain.
+> The sparing law dies with a statement it rests on.
+> Each kill of the sparing law asks outside the three holes, with the engine's axioms holding and no store among its own contents.
+> With one completion record false and every other statement in force true, a false sparing is reachable.
+> With one vouch false and every other statement in force true, a false sparing is reachable.
 > Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false.
 > An unsatisfiable kill says that no sparing rests on that statement alone.
 > The kill by a supplied mParent instance runs at five levels.
 > Its witness needs a store on the read mKey's chain beside the two mWorlds.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
+> The premise twin of `law_exclusion_readings_agree` asks for a world where an at-most entry has an entailing level and a contributing container against a read mKey.
 
 Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten. Four levels seat an mRoute, a mRoot mWorld, and two mKeys, so no spared world at that scope holds a store on a read mKey's chain; the second command asks the same law at five levels, where its twin demands such a store, and its result is the measurement of whether that claim is affordable.
 
@@ -1369,7 +1472,8 @@ conductor's readings, not acked, not authoritative, held only until acked or rep
 <!-- normative -->
 > The test spares narrowly and collides widely: whatever is not DISJOINT collides.
 > The entailment generates no DISJOINT: "nothing else" is no other thing, never no other mKey for the thing written.
-> The finished definition is a within-mWorld sentence; it never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
+> The finished definition is a within-mWorld sentence.
+> The finished definition never speaks across mRoutes or mRoots (3.2-compare-one-chokepoint-four-answers).
 > A may-read entry that names an mKey of another mWorld enters rule 4 where a write in that mWorld reaches it (2.5-may-read-the-readset).
 
 Without the exclusion of containers at or above the shared level, a filesystem's entailment, which names its disk, would make two files in one filesystem collide through it. Examples of the entailment: a package's postinst enabling its unit, a restart killing a main process.
@@ -1462,12 +1566,27 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 > This book's ceiling is eight atoms of every kind the specification owns.
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem and closes the boot's may-read set.
 > Tessa speaks as in that book and closes the file's and the filesystem's may-read sets.
-> Anna owns the package index: the apt index's mScheme is `:primary-of` it, its shape `:identified-in` the boot, and its entailment for that shape is finished; her `apt-get update` may-writes the index, given whole, and writes nothing else.
+> Anna owns the package index.
+> The apt index's mScheme is `:primary-of` the package index, and its shape is `:identified-in` the boot.
+> Anna's declaration supplies the boot as the index's mParent.
+> Anna declares the finished record for the index's shape.
+> Anna's `apt-get update` may-writes the index, given whole, and writes nothing else.
 > Deb's `dpkg -s nginx` measures the package as a read of the status file's path, which yields the status file's inode in the filesystem.
-> The world holds one boot, one filesystem and the index in it, and the status file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; the first line writes the index.
+> Deb's fact marks the status file's path as its read and depends on the status file's inode.
+> The book holds no world object besides those its lines name.
+> The world holds one boot, one filesystem and the index in it, and the status file's inode in the filesystem.
+> Each of these mReferents is owned by what holds it.
+> A route through the filesystem passes to the inode.
+> No write affects another mReferent.
+> The first line writes the index.
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
-> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed and its one entry, the index, is given whole.
-> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers KNOWN_UNSPOKEN for the index against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the fact is not spared past the line.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold.
+> At line 1, the line's at-most set is closed and its one entry, the index, is given whole.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers KNOWN_UNSPOKEN for the index against the status file's path.
+> At line 2, the fact's readset is not ⊤, and line 1's writeset against it is not ⊤.
+> At line 2, the fact is not spared past line 1.
 
 #### § 2.6.3-a-book-stage-five-the-list-file-named
 
@@ -1549,18 +1668,34 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 
 <!-- prose-translation -->
 > This book's ceiling is eight atoms of every kind the specification owns.
-> The stdlib, Tessa, and Deb speak as in 2.6.2-a-book-stage-five-the-index-given-whole, and Tessa also declares the finished record for a file written by its path.
+> The stdlib, Tessa, and Deb speak as in 2.6.2-a-book-stage-five-the-index-given-whole.
+> Tessa's declaration also supplies the filesystem as the list file's inode's mParent.
+> Tessa also declares the finished record for a file written by its path.
 > Anna's `apt-get update` may-writes one list file, named by its slash path and not given whole, and writes nothing else.
-> The world holds one boot, one filesystem in it, and the status file's inode and the list file's inode in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; the first line writes the list file's inode.
+> The book holds no world object besides those its lines name.
+> The world holds one boot, one filesystem in it, and the status file's inode and the list file's inode in the filesystem.
+> Each of these mReferents is owned by what holds it.
+> A route through the filesystem passes to each inode.
+> No write affects another mReferent.
+> The first line writes the list file's inode.
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
-> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
-> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the fact's readset is not ⊤ and the line's writeset against it is not ⊤; the line invalidates the status path's mResolution and its mToken, so the status path is stale at the fact's site; the fact is not spared past the line.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open, and no entry is given whole.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold.
+> At line 1, the line's at-most set is closed, and its one entry is the list file's path.
+> That entry's mSort and shape have a finished record.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path.
+> At line 2, the fact's readset is not ⊤, and line 1's writeset against it is not ⊤.
+> Line 1 invalidates the status path's mResolution and its mToken.
+> The status path is stale at the fact's site.
+> At line 2, the fact is not spared past line 1.
 
 #### § 2.6.4-a-book-stage-five-the-list-file-named-in-the-route
 
 The thin sibling of 2.6.3-a-book-stage-five-the-list-file-named: Tessa describes files and
 nothing above them, as in 3.2.5-a-book-two-files-scoped-in-the-route, so both inodes are scoped
-in the mRoute and no mKey has an mKey for an mParent.
+in the mRoute and no mKey has an mKey for an mParent. The status inode's mFullyQualifiedKey
+ends at the mRoute, which is why the fact's readset is ⊤.
 
 ```alloy
 run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
@@ -1610,13 +1745,28 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 
 <!-- prose-translation -->
 > This book's ceiling is five atoms of every kind the specification owns.
-> Tessa owns the file: the inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`; a slash path `:yields` an inode, and nothing says where a path is looked up; she closes the file's may-read set and declares the finished record for a file written by its path.
+> Tessa owns the file.
+> The inode number's mScheme is `:primary-of` the file.
+> Its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`.
+> A slash path `:yields` an inode, and nothing says where a path is looked up.
+> Tessa closes the file's may-read set and declares the finished record for a file written by its path.
 > Nobody describes a filesystem or a boot.
 > Anna and Deb speak as in 2.6.3-a-book-stage-five-the-list-file-named.
-> The world holds the status file's inode and the list file's inode; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the list file's inode.
-> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
-> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is the list file's path, and that entry's mSort and shape have a finished record.
-> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path; the line's writeset against the fact is not ⊤ and the status path is not stale at the fact's site; the fact's readset is ⊤, since the status inode's mFullyQualifiedKey ends at the mRoute; the fact is not spared past the line.
+> The book holds no world object besides those its lines name.
+> The world holds the status file's inode and the list file's inode.
+> No store holds them, nothing passes, and no write affects another mReferent.
+> The first line writes the list file's inode.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> Each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open, and no entry is given whole.
+> Line 1, `apt-get update`: every statement in force is true and the engine's axioms hold.
+> At line 1, the line's at-most set is closed, and its one entry is the list file's path.
+> That entry's mSort and shape have a finished record.
+> Line 2, `dpkg -s nginx`, against line 1: `compare()` answers DISJOINT for the list file's path against the status file's path.
+> At line 2, line 1's writeset against the fact is not ⊤, and the status path is not stale at the fact's site.
+> At line 2, the fact's readset is ⊤.
+> At line 2, the fact is not spared past line 1.
 
 #### § 2.6.5-a-book-two-volumes-of-one-issuer
 
@@ -1670,12 +1820,29 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 
 <!-- prose-translation -->
 > This book's ceiling is four atoms of every kind the specification owns, its two mKeys, one mRoute, and one mRoot mWorld among them.
-> Petra owns the volume: the volume id's mScheme is `:primary-of` the volume, and its one shape is `:root` and carries `:guarantees-unique-name`; she closes the volume's may-read set and declares the finished record for a volume written by its id.
-> Ravi's `modify-volume` may-writes the one volume it names, not given whole, and writes nothing else; his `describe-volumes` measures the other volume as a read of its id.
-> The world holds two volumes; no store holds them, nothing passes, and no write affects another mReferent; the first line writes the second volume.
-> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set; each volume's mKey is scoped in the volume id's mWorld.
-> Line 1, `modify-volume` on `vol-0b2`: every statement in force is true and the engine's axioms hold; the line's at-most set is closed, its one entry is that volume's id, and that entry's mSort and shape have a finished record; the entry's mFullyQualifiedKey ends at the volume id's mWorld.
-> Line 2, `describe-volumes` on `vol-0a1`, against line 1: `compare()` answers DISJOINT for the two ids; neither the fact's readset nor the line's writeset against it is ⊤; the read id is not stale at the fact's site; the fact is spared past the line; and no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> Petra owns the volume.
+> The volume id's mScheme is `:primary-of` the volume, and its one shape is `:root` and carries `:guarantees-unique-name`.
+> Petra closes the volume's may-read set and declares the finished record for a volume written by its id.
+> Ravi's `modify-volume` may-writes the one volume it names, not given whole, and writes nothing else.
+> Ravi's `describe-volumes` measures the other volume as a read of its id.
+> Ravi's fact marks that id as its read and depends on the other volume.
+> The book holds no world object besides those its lines name.
+> The world holds two volumes.
+> No store holds them, nothing passes, and no write affects another mReferent.
+> The first line writes the second volume.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> Each volume's mKey is scoped in the volume id's mWorld.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open, and no entry is given whole.
+> Line 1, `modify-volume` on `vol-0b2`: every statement in force is true and the engine's axioms hold.
+> At line 1, the line's at-most set is closed, and its one entry is that volume's id.
+> That entry's mSort and shape have a finished record.
+> At line 1, the entry's mFullyQualifiedKey ends at the volume id's mWorld.
+> Line 2, `describe-volumes` on `vol-0a1`, against line 1: `compare()` answers DISJOINT for the two ids.
+> At line 2, neither the fact's readset nor line 1's writeset against it is ⊤.
+> At line 2, the read id is not stale at the fact's site.
+> At line 2, the fact is spared past line 1.
+> No mReferent that line 1 writes affects, directly or through others, an mReferent the fact's answer depended on.
 
 ### § 2.7-corresponds-across-a-transition
 
@@ -1742,8 +1909,12 @@ pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
 ```
 
 <!-- prose-translation -->
-> The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken under; K's owner declares the complement, `:observer-independence` of O, per mSort.
-> By default, a cell measured under a lent mKey of O is assumed to depend on it: its fact is then about (mReferent, O-instance), and it stands for another fact only when `compare()` answers SAME for the two mKeys and each fact's observer instances are matched, one to one in each direction, by instances `compare()` answers SAME for.
+> The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken under.
+> K's owner declares the complement, `:observer-independence` of O, per mSort.
+> By default, a cell measured under a lent mKey of O is assumed to depend on it.
+> Its fact is then about (mReferent, O-instance).
+> That fact stands for another fact only when `compare()` answers SAME for the two mKeys.
+> That fact stands for another fact only when each fact's observer instances are matched, one to one in each direction, by instances `compare()` answers SAME for.
 > `:observer-independence` of O is true when no answer about a K-cell depended on the O-instance it was taken under.
 
 UNACKED READING, temporary (`312d:enc-observers-are-the-vantage-ambients`): 311 says a cell is
@@ -1864,21 +2035,38 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 
 <!-- prose-translation -->
 > An entry's author marks it given whole.
-> A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants); it is true when no other mKey of that level's mScheme reaches the level's mReferent.
+> A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants).
+> That closure is true when no other mKey of that level's mScheme reaches the level's mReferent.
 > A lookup's mTraversal members are the routing mKeys it emitted, and its mParent-Catalog where the emission is not closed.
-> The mTraversals of x are those `identity(x)` produced, at every lookup on the way to the primary mKey and at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), and the routes of 2.10-places-the-upward-lookup.
-> A mTraversal is of D's mSort when it has a member and every member of it is of that mSort, or when it is a placing route of that mSort.
+> The mTraversals of x are those `identity(x)` produced, at every lookup toward the primary mKey and at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key).
+> The routes of 2.10-places-the-upward-lookup are also mTraversals of x.
+> A mTraversal is of D's mSort when it has a member and every member of it is of that mSort.
+> A mTraversal is also of D's mSort when it is a placing route of that mSort.
 > For an mKey D given whole against an mKey x, step 1: if x's leaf compares SAME with D, SAME.
 > Step 2: else if any level of a mTraversal compares SAME with D, D's region covers x, and the pair reads UNKNOWN.
 > Step 3: else if x carries a closure for D's mSort, DISJOINT, in one of two forms.
-> First form: x has at least one mTraversal of D's mSort, and on every such mTraversal every level compares DISJOINT with D and every level emitted its closure, `alias nothing-else` for a lookup's level or `looked-up-in nothing-else` for a placing route (2.10-places-the-upward-lookup), the lookup's emission being closed.
-> Second form: the placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no `looked-up-in` record; then x is in no region of that mSort.
+> First form: x has at least one mTraversal of D's mSort.
+> In the first form, every level on every such mTraversal compares DISJOINT with D.
+> In the first form, every level on every such mTraversal emitted its closure.
+> That closure is `alias nothing-else` for a lookup's level, or `looked-up-in nothing-else` for a placing route (2.10-places-the-upward-lookup).
+> In the first form, the lookup's emission is closed.
+> Second form: the placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no `looked-up-in` record.
+> In the second form, x is in no region of that mSort.
 > Step 4: otherwise UNKNOWN.
-> An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
+> An entry given whole names more than the mReferent of its mKey.
+> The entry given whole also names every mReferent reached beneath that mKey, through the mScheme's lookups or through a placing route.
+> An entry given whole names every mKey the region covers.
 > A held hole: some mKey D and some mKey x whose `compare()` reads UNKNOWN or KNOWN_UNSPOKEN, and whose region test reads DISJOINT.
-> A DISJOINT of the region test is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
+> The region law has three premises: every statement in force is true, the engine's axioms hold, and no store is among its own contents.
+> Under those premises, a DISJOINT of the region test is never false.
+> Such a DISJOINT for D and x is false when x reaches D's mReferent, or an mReferent that a route through D's mReferent passes to.
 > The region law is asked outside that hole.
-> The region law dies with a statement it rests on: with one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
+> The premise twin of `law_region_disjoint_is_sound` asks for a world where the region test reads DISJOINT for D and x.
+> In that world, x reaches an mReferent, D's mReferent passes to an mReferent, and a level of x has mTraversal members.
+> The twin also asks for the region law's premises, outside the hole.
+> The region law dies with a statement it rests on.
+> Each kill of the region law asks outside the hole, with the engine's axioms holding and no store among its own contents.
+> With one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
 > One more kill asks whether the law also dies with one `alias nothing-else` false.
 > An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
 
@@ -1893,9 +2081,14 @@ replaced (`notes/312d` § 7).
 
 <!-- normative -->
 > The mTraversals of x are walked leaf first.
-> A lookup may cross an indexical routing mKey, whose mResolution depends on the observing process; only the lookup's owner can say which, in the body that meets it, and an undeclared indexical routing mKey reads unknown.
+> A lookup may cross an indexical routing mKey, whose mResolution depends on the observing process.
+> Only the lookup's owner can say which, in the body that meets it.
+> An undeclared indexical routing mKey reads unknown.
 > Containment is membership in a mTraversal.
-> A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it; in the test of 2.6-may-write-the-writeset it reads UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings; that is the floor, which the region test refines.
+> A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it.
+> In the test of 2.6-may-write-the-writeset, such an mKey reads UNKNOWN against every mKey that its mScheme can yield in the same mParent-Catalog instance.
+> That answer holds whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings.
+> That UNKNOWN is the floor, which the region test refines.
 
 Lookups that cross several levels: a path yields a directory entry looked up in a shorter path. A hostname yields a resolver step from a mVantage. A dotted unit name yields an entry in its instance table. Lookups that cross one level: an inode number, a uid. An indexical routing mKey: `/proc/self`. A path prefix is not a store. A mutator that touches a directory needs to know nothing about files. An alias above the leaf: a bind mount of a directory above a file, or an alias entry above a leaf. A positional catalog: the resolution of position N depends on every position at or before it, and `ufw insert 1` gives every later rule a new number. The lookup emits positions 1 to N as its mTraversal, one line per member. A rowid table renumbered after ten thousand rows makes that emission large. A single emission that describes the set, spelled as sh, is work for the 312 series.
 
@@ -1950,20 +2143,30 @@ pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
 ```
 
 <!-- prose-translation -->
-> An mSort G may declare that it `:places` another mSort T; G's owner declares it.
-> For an mKey of T the placing lookup emits `looked-up-in G:key`, a record G's owner speaks, true when the mKey's mReferent is one that a route through G:key's mReferent passes to.
-> It emits a closure `looked-up-in nothing-else`, scoped to routes of mSort G, true when every G-thing a route to the mKey's mReferent passes through is one a record names.
+> An mSort G may declare that it `:places` another mSort T.
+> G's owner declares `:places`.
+> For an mKey of T, the placing lookup emits `looked-up-in G:key`, a record G's owner speaks.
+> The record is true when the mKey's mReferent is one that a route through G:key's mReferent passes to.
+> The placing lookup emits a closure `looked-up-in nothing-else`, scoped to routes of mSort G.
+> The closure is true when every G-thing a route to the mKey's mReferent passes through is one a record names.
 > The `looked-up-in` records of every invocation accumulate: x's routes of mSort G are every G:key recorded for x.
-> The store's end of the same relation is G's enumeration of its members, which the may-write entailment of 2.6-may-write-the-writeset carries as write reach: when that entailment is finished for P, its emitted members stand in, in the test of 2.6-may-write-the-writeset, for the mKeys reached beneath P (rule 3); an unfinished entailment widens the writeset only.
+> The store's end of the same relation is G's enumeration of its members.
+> The may-write entailment of 2.6-may-write-the-writeset carries that enumeration as write reach.
+> In the test of 2.6-may-write-the-writeset, when that entailment is finished for P, its emitted members stand in for the mKeys reached beneath P (rule 3).
+> An unfinished entailment widens the writeset only.
 
 #### § 2.10.1-invocation-and-refusal
 
 Invocations are not in the fences; a record either is in force or is not.
 
 <!-- normative -->
-> The engine invokes G's lookup only when all three hold: a writeset or readset entry names an mKey of G given whole; the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no route of mSort G; G declares that it places T.
-> It invokes the lookup with every mKey it holds for that mReferent.
-> A closure `looked-up-in nothing-else` from one invocation can contradict a record from another invocation; the engine then refuses both answers and attributes the refusal to G's owner.
+> The engine invokes G's lookup only when three conditions hold.
+> First, a writeset or readset entry names an mKey of G given whole.
+> Second, the mKey of T on the other side of that pair, a writeset entry or a readset entry, has no route of mSort G.
+> Third, G declares that it places T.
+> The engine invokes the lookup with every mKey it holds for that mReferent.
+> A closure `looked-up-in nothing-else` from one invocation can contradict a record from another invocation.
+> The engine then refuses both answers and attributes the refusal to G's owner.
 
 Matched shapes of a placing lookup: a path-shaped mValue answered, an inode number declined.
 
@@ -2056,17 +2259,24 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 > The directory inode's mScheme is `:primary-of` the directory, and its shape is `:identified-in` the filesystem with both warrants.
 > A directory `:places` a file, and writing a directory entails nothing else.
 > Dan's placing lookup records that `/srv/a/app.conf` is looked up in the directory `/srv/a`, and closes the record.
+> Tessa's declaration supplies the filesystem as the inode's mParent, and Dan's supplies it as each directory's mParent.
 > Rick's `rm -rf` may-writes the directory `/srv/b`, given whole, and writes nothing else.
+> Carl's `cmp` measures `/srv/a/app.conf` as a read of its path, marks that path as its read, and depends on the inode.
+> The book holds no world object besides those its lines name.
 > The world holds one filesystem with two directories and one inode in it, each owned by the filesystem.
 > A route through the filesystem passes to the inode, and a route through the first directory passes to the inode.
 > No write affects another mReferent, and the first line writes the second directory.
 > Every mKey is resolved from one mVantage on one mRoute, with the filesystem as its ambient instance, under no wrapper and with `--risk-faultless-skips` set.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
 > Line 1, `rm -rf /srv/b`: every statement in force is true and the engine's axioms hold.
-> The line's at-most set is closed, its one entry is the second directory's mKey given whole, and that entry's mSort and shape have a finished record.
-> Line 2, `cmp` against `/srv/a/app.conf`, against line 1: the region test answers DISJOINT for the directory against the file's path, through the placing route.
-> `compare()` answers KNOWN_UNSPOKEN for the two, so this world is inside the held hole for the region test.
-> The line invalidates the path's mResolution and the inode's mToken, since the filesystem given whole is the path's mTraversal and the inode's mParent-Store.
-> The path is stale at line 2, the fact's readset is ⊤, and the fact is not spared past the line.
+> The line's at-most set is closed, and its one entry is the second directory's mKey given whole.
+> That entry's mSort and shape have a finished record.
+> Line 2, `cmp` against `/srv/a/app.conf`, against line 1: the region test answers DISJOINT for the directory against the file's path.
+> `compare()` answers KNOWN_UNSPOKEN for the two.
+> This world is inside the held hole for the region test.
+> Line 1 invalidates the path's mResolution and the inode's mToken.
+> The path is stale at line 2, the fact's readset is ⊤, and the fact is not spared past line 1.
 
 ### § 2.11-composite-sorts-and-roles
 
@@ -2105,7 +2315,8 @@ pred true_DeclaresComposite[d: DeclaresComposite] {}
 
 <!-- prose-translation -->
 > A mTopic whose mReferent's mState depends on several inputs in roles is an mKey of a mCompositeSort: a composite mKey names one part per role.
-> That mSort's identity is its owner's function of its named parts: two composite mKeys of one mCompositeSort are SAME when they name the same roles and their parts are SAME role by role.
+> That mSort's identity is its owner's function of its named parts.
+> Two composite mKeys of one mCompositeSort are SAME when they name the same roles and their parts are SAME role by role.
 > The may-read set of a mCompositeSort is the union of its parts' may-read sets.
 > The mCompositeSort's owner, the author holding the roles, declares it.
 > Declaring a mCompositeSort claims nothing about the world.
@@ -2132,9 +2343,14 @@ fun identity[k: mKey]: lone mKey { {p: k.*yielded | isPrimaryKey[p]} }
 ```
 
 <!-- prose-translation -->
-> For k an mKey of mScheme S, follow S's `resolve()`'s emission, and each yielded mScheme's emission in turn, until an mKey of a primary mScheme is in hand: that mKey is the identity of k, and there is none where no emission reaches a primary mScheme.
+> For k an mKey of mScheme S, follow S's `resolve()`'s emission, and each yielded mScheme's emission in turn.
+> Follow the emissions until an mKey of a primary mScheme is in hand.
+> That mKey is the identity of k.
+> There is no identity of k where no emission reaches a primary mScheme.
 > The identity of an mKey of a primary mScheme is that mKey: the primary mScheme's `resolve()` is the identity on the mKey (2.2-primary-of-and-identified-in).
-> The result is that mKey-Primary scoped in the identity of its mParent, recursively through each level's primary mScheme, until a mRoot, the mRoute, or an unknown link: its mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation).
+> The result is that mKey-Primary scoped in the identity of its mParent, recursively through each level's primary mScheme.
+> The recursion terminates at a mRoot, the mRoute, or an unknown link.
+> The result is the mFullyQualifiedKey of k (1.8-fully-qualified-key-topic-and-derivation).
 
 #### § 3.1.1-what-identity-reads-beyond-the-chain
 
@@ -2497,48 +2713,93 @@ run law_different_sorts_never_same_premise {
 
 <!-- prose-translation -->
 > The walk answers one of SAME, DISJOINT, KNOWN_UNSPOKEN, or UNKNOWN.
-> One level: two levels are SAME iff they are one instance, or they are two mKeys with equal mValues whose shape carries `:guarantees-unique-referent`, or they are two mKeys of one cell mSort (1.9-cell-a-singleton-sort).
-> Two chains are aligned-SAME at a pair of levels when the two levels have one height and every pair of levels above them of one height is SAME by the one-level rule.
+> One level: two levels are SAME iff one of three cases holds.
+> In the first case, they are one instance.
+> In the second case, they are two mKeys with equal mValues whose shape carries `:guarantees-unique-referent`.
+> In the third case, they are two mKeys of one cell mSort (1.9-cell-a-singleton-sort).
+> Two chains are aligned-SAME at a pair of levels when two conditions hold.
+> The two levels have one height.
+> Every pair of levels above them of one height is SAME by the one-level rule.
 > Two mFullyQualifiedKeys are SAME iff they are SAME at every level down to the leaf.
-> Step 1: if either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN; if one terminates at an mWorld the other does not share, the pair reads UNKNOWN.
-> Step 2: otherwise walk downward from the top to the deepest level at which the two chains are SAME by the one-level rule, and call that level A; if either mKey is A itself, the pair reads UNKNOWN, since a write to a container collides with everything inside it.
-> Step 3: otherwise call the child of A on each side that side's top, the top being the mKey itself when its mParent is A; separation is concluded in one of two ways.
+> Step 1: if either mFullyQualifiedKey contains an unknown link, the pair reads UNKNOWN.
+> Step 1: if one mFullyQualifiedKey terminates at an mWorld the other does not share, the pair reads UNKNOWN.
+> Step 2: otherwise walk downward from the top to the deepest level at which the two chains are SAME by the one-level rule.
+> Call that level A.
+> If either mKey is A itself, the pair reads UNKNOWN, since a write to a container collides with everything inside it.
+> Step 3: otherwise call the child of A on each side that side's top.
+> The top is the mKey itself when its mParent is A.
+> Separation is concluded in one of two ways.
 > Two tops: both tops are mKeys of one mScheme, each carrying `:guarantees-unique-name`, with differing mValues.
-> One top: exactly one mKey is its own top, and the `resolve()` body of its primary mScheme declares, for some other shape, `:identified-in` the mSort of the other side's top.
-> Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A, down to either leaf's mParent, is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant); separation is decided once, at A.
+> One top: exactly one mKey is its own top.
+> In the one-top way, the `resolve()` body of that mKey's primary mScheme declares `:identified-in` the mSort of the other side's top, for some other shape.
+> Step 4: the pair reads DISJOINT iff one of the two ways holds and every store strictly below A is `:aliases-nothing-else` (2.3-aliases-nothing-else-the-store-warrant).
+> The stores strictly below A are those down to either leaf's mParent.
+> Separation is decided once, at A.
 > Otherwise, mKeys of different mSorts read KNOWN_UNSPOKEN, and mKeys of one mSort read UNKNOWN.
 > Here, two mKeys are of different mSorts in three cases (1.4-key-and-its-two-views).
 > Their mSchemes differ.
 > Their cell mSorts differ.
 > One carries an mScheme and the other carries a cell mSort.
-> Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key); an mKey with no identity reads UNKNOWN.
-> `compare(x, y)`: SAME is "or" across mDerivations, the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles), and "and" within one mFullyQualifiedKey; SAME composes transitively.
+> Two mKeys of any mScheme are walked by their identities (3.1-identity-of-a-key).
+> An mKey with no identity reads UNKNOWN.
+> `compare(x, y)`: SAME is "or" across mDerivations, and "and" within one mFullyQualifiedKey.
+> The mDerivations are the mFullyQualifiedKey walk, a mCorrespondence (2.7-corresponds-across-a-transition), and a mCompositeSort's function of its parts (2.11-composite-sorts-and-roles).
+> SAME composes transitively.
 > A warranted SAME and a warranted DISJOINT on one pair is a contradiction: the pair reads UNKNOWN, and the refusal with its attribution is 3.5-committee-law-and-attribution's.
 > Otherwise the strongest warranted answer stands: SAME, else DISJOINT, else what the walk answers.
-> The two tables hold the engine's walk answer and `compare()` answer over every pair of mKeys and equal those functions pair by pair; they are plumbing the other definitions read, not objects of the model.
-> SAME then DISJOINT composes to DISJOINT; DISJOINT then DISJOINT never chains.
+> The two tables hold the engine's walk answer and `compare()` answer over every pair of mKeys, and equal those functions pair by pair.
+> The tables are plumbing the other definitions read, not objects of the model.
+> SAME then DISJOINT composes to DISJOINT.
+> DISJOINT then DISJOINT never chains.
 > `compare()` never reaches a false SAME while every statement in force is true and the engine's axioms hold.
 > `compare()` never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents.
 > Every statement in force outside a named set is true when each statement in force outside that set satisfies its species' truth predicate.
-> Every statement in force is true when that holds with the empty set named; the contract makes it axiomatic.
-> The engine's axioms hold when the engine's axiom about where the shell resolves holds (1.10-vantage-route-placeholder-witness); differential test makes them axiomatic, and nobody speaks them.
+> Every statement in force is true when that holds with the empty set named.
+> The contract makes it axiomatic.
+> The engine's axioms hold when the engine's axiom about where the shell resolves holds (1.10-vantage-route-placeholder-witness).
+> Differential test makes them axiomatic, and nobody speaks them.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > No route passes through itself when no mReferent passes to itself, directly or through others.
 > A held hole: two cell mKeys of one cell mSort, under two mParents that reach one mReferent, reach two mReferents.
 > A held hole: an mKey scoped in an mWorld reaches an mReferent that a sibling mKey's mReferent holds, directly or through others.
 > A held hole: two composite mKeys that are SAME by their parts reach two mReferents.
 > Each hole has a witness run that shows it inhabited, and each law below is asked only outside the holes its sentence names.
-> The model never reaches a false SAME while every statement in force is true and the engine's axioms hold: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
+> The model never reaches a false SAME while every statement in force is true and the engine's axioms hold.
+> Under those premises, two mKeys the walk reads SAME reach one mReferent, or both reach none.
+> No counterexample at scope 6 is the claim, never a proof.
 > The SAME law of the walk is asked outside the cell hole.
-> The model never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
+> Each premise twin of a law with premises also asks for those premises, outside that law's holes.
+> The premise twin of `law_same_is_sound` asks for a world where the walk reads two distinct mKeys SAME and the first reaches an mReferent.
+> The model never reaches a false DISJOINT under three premises.
+> The premises are that every statement in force is true, the engine's axioms hold, and no store is among its own contents.
+> Under those premises, two mKeys the walk reads DISJOINT reach no common mReferent.
 > The DISJOINT law of the walk is asked outside the world-scoped-top hole.
+> The premise twin of `law_disjoint_is_sound` asks for a world where the walk reads a pair of mKeys DISJOINT and each reaches an mReferent.
+> In that world, one of the pair has an mKey above it.
 > The SAME law of `compare()` is asked outside the cell hole and the composite hole.
+> The premise twin of `law_compare_same_is_sound` asks for a world where `compare()` reads two distinct mKeys SAME, the walk does not, and the first reaches an mReferent.
 > The DISJOINT law of `compare()` is asked while no store is among its own contents, outside the world-scoped-top hole and the composite hole.
+> The premise twin of `law_compare_disjoint_is_sound` asks for a world where `compare()` reads a pair of mKeys DISJOINT, the walk does not, and each reaches an mReferent.
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
+> The premise twin of `law_nobody_spoke_declines` asks for a world where no warrant is in force and two distinct mKeys have known chains in one mWorld.
 > mKeys of different mSorts never read SAME by the walk.
-> Each law dies with a statement it rests on: with one statement false and every other statement in force true, a false SAME of the walk is reachable where the false one is a `:guarantees-unique-referent` or a `:yields`; a false DISJOINT of the walk where it is a `:guarantees-unique-name` or an `:aliases-nothing-else`; a false SAME and a false DISJOINT of `compare()` where it is a mCorrespondence; and with a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
+> The premise twin of `law_different_sorts_never_same` asks for a world where two mKeys of different mSorts have known chains in one mWorld.
+> Each law dies with a statement it rests on.
+> Each kill of a SAME law or a DISJOINT law asks with the engine's axioms holding.
+> Such a kill also asks outside its law's holes, and under its law's store premise where the law has one.
+> With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME of the walk is reachable.
+> With one `:yields` false and every other statement in force true, a false SAME of the walk is reachable.
+> With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT of the walk is reachable.
+> With one `:aliases-nothing-else` false and every other statement in force true, a false DISJOINT of the walk is reachable.
+> With one mCorrespondence false and every other statement in force true, a false SAME of `compare()` is reachable.
+> With one mCorrespondence false and every other statement in force true, a false DISJOINT of `compare()` is reachable.
+> With a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
 > The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
-> Six more kills ask whether the walk's laws also die with one of these false: an `:identified-in`, a `:root`, a supplied mParent instance, a wrapper's completion sentinel.
+> Six more kills ask whether the walk's laws also die with one more statement false.
+> Two of these kills try one `:identified-in` false against the SAME law and the DISJOINT law of the walk.
+> One kill tries one `:root` false against the SAME law of the walk.
+> Two kills try one supplied mParent instance false against the SAME law and the DISJOINT law of the walk.
+> One kill tries one wrapper's completion sentinel false against the SAME law of the walk.
 > An unsatisfiable kill says that no SAME or DISJOINT of the walk rests on that statement alone.
 
 UNACKED READING, temporary (`312d:ask-contradiction-reads-unknown`, `312d:enc-one-instance-is-one-atom-for-now`,
@@ -2563,7 +2824,7 @@ an mKey of a `:root` shape in this model.
 > DISJOINT licenses sparing under the same flag.
 > UNKNOWN and KNOWN_UNSPOKEN are the safe bottoms.
 > An omission is a distinction only inside the body that made it.
-> KNOWN_UNSPOKEN never spares and never transports, whatever either side has declared finished (2.6-may-write-the-writeset).
+> KNOWN_UNSPOKEN never spares and never transports, whatever either side declared finished (2.6-may-write-the-writeset).
 > Two mSchemes yielding one mKey-Primary is the sole same-referent generator across ways of naming.
 > Partial measurement never widens: a mDerivation with an unmeasured or mRoute-terminated link yields at most what it would yield with the link measured.
 > A contradiction is refused, and both authors are attributed.
@@ -2658,10 +2919,23 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 <!-- prose-translation -->
 > This book's ceiling is ten atoms of every kind the specification owns, its eight mKeys, one mRoute, and one mRoot mWorld among them.
 > The stdlib roots the boot: the boot id's mScheme is `:primary-of` the boot's mSort, and its one shape is `:root`.
-> Tessa owns the filesystem and the file: the filesystem id's mScheme is `:primary-of` the filesystem, its shape `:identified-in` the boot; the inode number's mScheme is `:primary-of` the file, its shape `:identified-in` the filesystem and carrying `:guarantees-unique-referent` and `:guarantees-unique-name`; a slash path `:yields` an inode and is looked up in a filesystem.
-> The world holds one boot, one filesystem in it, and two inodes in the filesystem, each owned by what holds it; a route through the filesystem passes to each inode; no write affects another mReferent; no line writes.
-> Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag; the seat that supplies each inode's and the filesystem's mParent is the primary mScheme's declaration.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold; the path's identity is the inode key its lookup emitted, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Tessa owns the filesystem and the file.
+> The filesystem id's mScheme is `:primary-of` the filesystem, and its shape is `:identified-in` the boot.
+> The inode number's mScheme is `:primary-of` the file, and its shape is `:identified-in` the filesystem.
+> The inode number's shape carries `:guarantees-unique-referent` and `:guarantees-unique-name`.
+> A slash path `:yields` an inode and is looked up in a filesystem.
+> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path reaches.
+> The book holds no world object besides those its lines name.
+> The world holds one boot, one filesystem in it, and two inodes in the filesystem.
+> Each of these mReferents is owned by what holds it.
+> A route through the filesystem passes to each inode.
+> No write affects another mReferent, and no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag.
+> The seat that supplies each inode's and the filesystem's mParent is the primary mScheme's declaration.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold.
+> At line 1, the path's identity is the inode key its lookup emitted, and its mFullyQualifiedKey ends at the boot's mWorld.
 > Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: `compare()` answers SAME, the natural-key license answers UNKNOWN, and the two facts are about one mTopic.
 
@@ -2671,6 +2945,7 @@ Tessa's world with one inode under two paths, and Tessa's `:guarantees-unique-na
 path shape in force although it is false in that world (a hardlink is that warrant's failure,
 2.3-aliases-nothing-else-the-store-warrant). The book asks the walk by identities and the
 natural-key license the same question, and asks which statement in force is the false one.
+The natural-key license's DISJOINT is the wrong answer that the one false statement licenses.
 
 ```alloy
 run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
@@ -2737,10 +3012,20 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 <!-- prose-translation -->
 > This book's ceiling is eight atoms of every kind the specification owns.
 > The stdlib, Tessa, and Carl speak as in 3.2.2-a-book-two-files-in-one-filesystem, and Tessa also declares `:guarantees-unique-name` on the slash path shape.
-> The world holds one boot, one filesystem in it, and one inode in the filesystem, each owned by what holds it; a route through the filesystem passes to the inode; no write affects another mReferent; no line writes.
+> The book holds no world object besides those its lines name.
+> The world holds one boot, one filesystem in it, and one inode in the filesystem.
+> Each of these mReferents is owned by what holds it.
+> A route through the filesystem passes to the inode.
+> No write affects another mReferent, and no line writes.
 > Two paths, `/srv/a/app.conf` and `/srv/mirror/app.conf`, each yield an inode key of the one inode's number, and both reach the one inode.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true except Tessa's `:guarantees-unique-name` on the path shape, which is false, and the engine's axioms hold; the path's identity is the inode key its lookup emitted.
-> Line 2, `cmp` against `/srv/mirror/app.conf`, against line 1: `compare()` answers SAME and the two facts are about one mTopic, while the natural-key license answers DISJOINT, the wrong answer the one false statement licenses.
+> Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true except Tessa's `:guarantees-unique-name` on the path shape.
+> That one statement is false, and the engine's axioms hold.
+> At line 1, the path's identity is the inode key its lookup emitted.
+> Line 2, `cmp` against `/srv/mirror/app.conf`, against line 1: `compare()` answers SAME and the two facts are about one mTopic.
+> At line 2, the natural-key license answers DISJOINT.
 
 #### § 3.2.4-a-book-nested-pid-namespaces
 
@@ -2749,7 +3034,10 @@ Guest pid 1 and host pid 4821 are one process (`311u:refuted-deriving-the-store-
 namespaces, which nest by shape, the initial one identified in the boot; the container's
 namespace declares no `:aliases-nothing-else`. The book's second line runs inside the container
 through Dora's `docker exec`, which lends the container's namespace; Dora declares the
-mCorrespondence, as the transition's owner.
+mCorrespondence, as the transition's owner. Nothing inherits without the sentinel and the flag,
+which is why the entered vantage has a mRoute of its own. The SAME comes through the
+mCorrespondence, and the two facts are not about one mTopic because a process is
+observer-dependent on its namespace by default and the two namespaces compare UNKNOWN.
 
 ```alloy
 run bookScope_nested_pid_namespaces {} for 8 but 4 Int
@@ -2817,12 +3105,34 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 <!-- prose-translation -->
 > This book's ceiling is eight atoms of every kind the specification owns.
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
-> Pia owns the pid namespace and the process: the namespace id's mScheme is `:primary-of` the pid namespace, its initial shape `:identified-in` the boot and its nested shape `:identified-in` the pid namespace; the pid's mScheme is `:primary-of` the process, its shape `:identified-in` the pid namespace and carrying both warrants; no store declares `:aliases-nothing-else`.
-> Dora owns the wrapper `docker exec`: it `:lends` the container's namespace as the pid-namespace instance and declares no sentinel, and Dora declares that guest pid 1 `:corresponds` to host pid 4821.
-> The world holds one boot, the initial namespace in it, the container's namespace and one process in the initial namespace, and that process in the container's namespace too; the initial namespace owns the process and the container's namespace owns nothing; nothing passes; no write affects another mReferent; no line writes.
-> The first line runs from the host's mVantage, whose ambient namespace is the initial one; the second runs from a mVantage entered through the wrapper, whose ambient namespace is the lent one and whose mRoute is another, since nothing inherits without the sentinel and the flag.
-> Line 1, `kill -0 4821`: every statement in force is true and the engine's axioms hold; the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
-> Line 2, `kill -0 1` inside the container, against line 1: the mFullyQualifiedKey walk answers UNKNOWN, `compare()` answers SAME through the mCorrespondence, and the two facts are not about one mTopic, since a process is observer-dependent on its namespace by default and the two namespaces compare UNKNOWN.
+> Pia owns the pid namespace and the process.
+> The namespace id's mScheme is `:primary-of` the pid namespace.
+> Its initial shape is `:identified-in` the boot, and its nested shape is `:identified-in` the pid namespace.
+> The pid's mScheme is `:primary-of` the process, and its shape is `:identified-in` the pid namespace and carries both warrants.
+> Pia's declaration supplies the boot as the initial namespace's mParent, and the initial namespace as the container namespace's mParent.
+> Pia's declaration supplies the initial namespace as host pid 4821's mParent, and the container's namespace as guest pid 1's mParent.
+> No store declares `:aliases-nothing-else`.
+> Dora owns the wrapper `docker exec`.
+> The wrapper `:lends` the container's namespace as the pid-namespace instance, and Dora declares no sentinel for it.
+> Dora declares that guest pid 1 `:corresponds` to host pid 4821.
+> Each of Pia's two facts marks the pid it reads as its read and depends on the process.
+> The book holds no world object besides those its lines name.
+> The world holds one boot and the initial namespace in it.
+> The initial namespace holds the container's namespace and one process.
+> The container's namespace holds that process too.
+> The boot owns the initial namespace, and the initial namespace owns the container's namespace and the process.
+> The container's namespace owns nothing.
+> Nothing passes, no write affects another mReferent, and no line writes.
+> The first line runs from the host's mVantage, whose ambient namespace is the initial one.
+> The second line runs from a mVantage entered through the wrapper.
+> That mVantage's ambient namespace is the lent one, and its mRoute is another mRoute.
+> The book holds no composite mKey and no role, and the flag is not set.
+> No lookup's read set is open.
+> Line 1, `kill -0 4821`: every statement in force is true and the engine's axioms hold.
+> At line 1, the pid's identity is itself, and its mFullyQualifiedKey ends at the boot's mWorld.
+> Line 2, `kill -0 1` inside the container, against line 1: the mFullyQualifiedKey walk answers UNKNOWN.
+> At line 2, `compare()` answers SAME.
+> At line 2, the two facts are not about one mTopic.
 
 #### § 3.2.5-a-book-two-files-scoped-in-the-route
 
@@ -2883,13 +3193,25 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 
 <!-- prose-translation -->
 > This book's ceiling is seven atoms of every kind the specification owns, its six mKeys and one mRoute among them.
-> Tessa owns the file: the inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`; a slash path `:yields` an inode, and nothing says where a path is looked up.
+> Tessa owns the file.
+> The inode number's mScheme is `:primary-of` the file.
+> Its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`.
+> A slash path `:yields` an inode, and nothing says where a path is looked up.
 > Nobody describes a filesystem or a boot.
-> The world holds two inodes; no store holds them, nothing passes, no write affects another mReferent, and no line writes.
-> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag; each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
-> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold; the path's identity is the inode key its lookup emitted, whose mFullyQualifiedKey ends at the mRoute; the path's own mKey has no mParent.
+> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path reaches.
+> The book holds no world object besides those its lines name.
+> The world holds two inodes.
+> No store holds them, nothing passes, no write affects another mReferent, and no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
+> Each inode's mKey is scoped in the mRoute, and each path's mKey has no mParent.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
+> Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold.
+> At line 1, the path's identity is the inode key its lookup emitted, whose mFullyQualifiedKey ends at the mRoute.
+> At line 1, the path's own mKey has no mParent.
 > Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
-> Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the mFullyQualifiedKey walk and `compare()` answer UNKNOWN, the natural-key license answers UNKNOWN, and the two facts are not about one mTopic.
+> Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the mFullyQualifiedKey walk and `compare()` answer UNKNOWN.
+> At line 3, the natural-key license answers UNKNOWN, and the two facts are not about one mTopic.
 
 #### § 3.2.6-a-book-two-cells-of-one-unit
 
@@ -2955,11 +3277,15 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 > The unit name's mScheme is `:primary-of` the unit.
 > Its one shape carries `:guarantees-unique-referent` and neither `:identified-in` nor `:root`.
 > The active cell and the enabled cell are each `:identified-in` the unit.
+> Sven's fact at each line marks the cell mKey that line reads as its read and depends on that cell's state.
+> The book holds no world object besides those its lines name.
 > The world holds one unit with its active state and its enabled state, each owned by the unit.
 > Nothing passes, no write affects another mReferent, and no line writes.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
 > The unit's mKey is scoped in the mRoute.
 > Each cell's mKey has the unit's mKey of its own line as its mParent, supplied by the mark that named it.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
 > Line 1, `is-active`: every statement in force is true and the engine's axioms hold.
 > The active cell's identity is its own mKey, its mParent is the unit's mKey, and its chain ends at the mRoute.
 > Line 2, `is-enabled`, against line 1: `compare()` answers KNOWN_UNSPOKEN, and the two facts are not about one mTopic.
@@ -2970,7 +3296,7 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 A composite mKey names one part per role (2.11-composite-sorts-and-roles), and the same two
 parts in swapped roles are another mKey (`composite-identity-is-structure-not-a-bag`). Cora
 describes a tool that merges a base file with an overlay; Tessa's files are thin, scoped in the
-mRoute.
+mRoute. The walk over the composites answers UNKNOWN because the merge shape carries no warrant.
 
 ```alloy
 run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
@@ -3036,12 +3362,17 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 > No store holds them, nothing passes, no write affects another mReferent, and no line writes.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
 > Every mKey is scoped in the mRoute.
+> Each composite mKey names one inode per role, and the second line's composite mKey names the two inodes in swapped roles.
+> Cora's fact at each line marks the composite mKey that line reads as its read and depends on that merged configuration.
+> The book holds no world object besides those its lines name.
+> No lookup's read set is open.
 > Line 1, `a.toml` under `b.toml`: every statement in force is true and the engine's axioms hold.
 > The composite mKey's identity is itself, and its chain ends at the mRoute.
-> Line 2, `b.toml` under `a.toml`, against line 1: the parts are the same two inodes in swapped roles, so the composites are not SAME by their parts.
+> Line 2, `b.toml` under `a.toml`, against line 1: the composites are not SAME by their parts.
 > `compare()` answers UNKNOWN, and the two facts are not about one mTopic.
-> Line 3, `a.toml` under `b.toml` again, against line 1: the walk over the composite mKeys answers UNKNOWN, since the merge shape carries no warrant.
-> The composites are SAME by their parts, role by role, so `compare()` answers SAME and the two facts are about one mTopic.
+> Line 3, `a.toml` under `b.toml` again, against line 1: the walk over the composite mKeys answers UNKNOWN.
+> The composites are SAME by their parts, role by role.
+> `compare()` answers SAME, and the two facts are about one mTopic.
 
 ### § 3.3-invalidation-three-mutator-species
 
@@ -3148,31 +3479,53 @@ run kill_unstale_route_is_untouched_closes_may_write {
 ```
 
 <!-- prose-translation -->
-> A routing mutation touches routing mKeys or a mParent-Catalog: a writeset entry touches a mTraversal member when `compare()` answers other than DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers), by the region test where the member is a mParent-Catalog given whole.
+> A routing mutation touches routing mKeys or a mParent-Catalog.
+> A writeset entry touches a mTraversal member when `compare()` answers other than DISJOINT for the pair (3.2-compare-one-chokepoint-four-answers).
+> Where the member is a mParent-Catalog given whole, the region test gives that answer.
 > A routing mutation invalidates a mResolution when its mTraversal includes a touched mKey.
 > Any write invalidates a mResolution whose read set is open.
 > A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
 > Invalidation reads the line's writeset with every container contributing, there being no read mKey to exclude against.
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
-> A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
+> A lifecycle mutation writes a mRoot-adjacent mKey.
+> Every mKey-Primary scoped in that mKey names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
 > A held hole: some level of an mKey has no closing act and no mKey for its mParent-Catalog.
 > A held hole: a natural mKey with an mKey for its mParent-Catalog reaches an mReferent that no route through the catalog's mReferent passes to.
-> While every statement in force is true, the engine's axioms hold, no store is among its own contents, and no route passes through itself, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+> The untouched-route law has four premises.
+> Every statement in force is true, and the engine's axioms hold.
+> No store is among its own contents, and no route passes through itself.
+> Under those premises, the law concerns a line that closed its at-most set and invalidates no mResolution of an mKey.
+> Such a line writes nothing that a route to that mKey's mReferents passes through.
 > The untouched-route law is asked outside those two holes and the region hole (2.9-the-traversal-and-the-region-test).
-> The untouched-route law dies with a statement it rests on: with one traversal's closing act false, or one completion record false, and every other statement in force true, a line that invalidates no mResolution of an mKey writes something that a route to that mKey's mReferents passes through.
+> The premise twin of `law_unstale_route_is_untouched` asks for a world where a line that closed its at-most set writes something and invalidates no mResolution of an mKey.
+> In that world, the line is above a site, and a level of that mKey has an emitted member.
+> The twin also asks for the law's premises, outside the law's three holes.
+> The untouched-route law dies with a statement it rests on.
+> Each kill of the untouched-route law asks outside the law's three holes, with the engine's axioms holding.
+> Each such kill also asks while no store is among its own contents and no route passes through itself.
+> The law dies with one traversal's closing act false and every other statement in force true.
+> The law dies with one completion record false and every other statement in force true.
+> In each such world, a line that invalidates no mResolution of an mKey writes something that a route to that mKey's mReferents passes through.
 
 Scope: the untouched-route law runs at nine statements because its twin's witness needs seven in force at once (three traversal closures, one emitted member, the line's at-most entry and its completion, and the name warrant that separates the written key from the crossed one) and is unsat at the six every other command shares.
 
 #### § 3.3.1-what-invalidation-withdraws
 
 <!-- normative -->
-> In all three species the engine withdraws authority; it never computes the successor identity.
-> A routing mutation also touches shell state a `resolve()` read: a write invalidates the mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the read set of the lookup body that produced it (1.7-resolution-and-its-traversal).
+> In all three species the engine withdraws authority.
+> The engine never computes the successor identity.
+> A routing mutation also touches shell state a `resolve()` read.
+> A write invalidates a mResolution when a writeset entry `compare()`s other than DISJOINT with a member of the lookup body's read set.
+> That lookup body is the one that produced the mResolution (1.7-resolution-and-its-traversal).
 > Dependent SAME conclusions lose authority, dependent elisions demote to guards, and dependent DISJOINT conclusions collide.
 > The touched object itself is untouched.
-> Creation, deletion, and rename of an mKey are routing writes; they change what the mKey reaches; the mKeys they write are the verb author's at-most claim, and a writeset that omits them is the ordinary at-most omission knife, now visibly covering routing mKeys.
-> Cells whose mFullyQualifiedKeys pass through a lifecycle-written mKey are new and unmeasured; cells whose mFullyQualifiedKeys do not are untouched.
+> Creation, deletion, and rename of an mKey are routing writes.
+> They change what the mKey reaches.
+> The mKeys they write are the verb author's at-most claim.
+> A writeset that omits them is the ordinary at-most omission knife, which now visibly covers routing mKeys.
+> Cells whose mFullyQualifiedKeys pass through a lifecycle-written mKey are new and unmeasured.
+> Cells whose mFullyQualifiedKeys do not pass through it are untouched.
 > "Keyed by Boot" and "invariant across Boot" are the shape of the mFullyQualifiedKey, not declarations.
 
 Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change, a write to any environment variable, cwd, or configuration a lookup reads. `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle mutations: a reboot, a re-provision.
@@ -3246,15 +3599,21 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 > The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
 > Pia owns the process.
 > The pid's mScheme is `:primary-of` the process, and its shape is `:identified-in` the boot and carries `:guarantees-unique-referent`.
+> Pia's declaration supplies the boot as each pid mKey's mParent.
 > Rob's `reboot` may-writes the boot's mKey, not given whole, and writes nothing else.
+> Pia's fact at each `kill -0` line marks the pid mKey that line reads as its read and depends on the process.
+> The book holds no world object besides those its lines name.
 > The world holds one boot and one process in it, owned by the boot.
 > Nothing passes, no write affects another mReferent, and the second line writes the boot.
 > Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open, and no entry is given whole.
 > Line 1, `kill -0 4821`: every statement in force is true and the engine's axioms hold.
 > The pid's identity is itself, its mParent is the boot's mKey, and its chain ends at the boot's mWorld.
 > Line 2, `reboot`: the line's at-most set is closed, its one entry is the boot's mKey, and that mKey is scoped in a mRoot mWorld.
 > Line 3, `kill -0 4821` again, against line 1: the timeless `compare()` answers SAME.
-> The reboot is a lifecycle write to an mKey on both pids' chains, so both pid mKeys are stale at line 3.
+> The reboot is a lifecycle write to an mKey on both pids' chains.
+> Both pid mKeys are stale at line 3.
 > `compare()` at line 3 answers UNKNOWN.
 
 ### § 3.4-entry-and-lends
@@ -3329,11 +3688,19 @@ pred true_ClosesLends[d: ClosesLends] {
 
 <!-- prose-translation -->
 > `--risk-faultless-skips` is set for a run, or it is not.
-> A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs, and nothing else; the wrapper owner declares each lend, one instance per lent mSort, and the completion sentinel.
+> A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs, and nothing else.
+> The wrapper owner declares each lend, one instance per lent mSort, and the completion sentinel.
 > An unlent mParent-Catalog mSort is ⊤ under the wrapper: a vantage entered through the wrapper holds no instance for it.
-> After the wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the caller's instances instead; otherwise the mRoute is unknown across the two vantages, another mRoute.
-> A lend is true when every mKey of a secondary mScheme looked up in the lent mSort under the wrapper reaches what a route through the lent instance's mReferent passes to.
-> The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute: it is true when every such mKey of an unlent mSort under the wrapper, where the caller holds an instance for that mSort, reaches what a route through the caller's instance passes to, and when an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
+> After the wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the caller's instances instead.
+> Otherwise the mRoute is unknown across the two vantages, another mRoute.
+> A lend concerns every mKey of a secondary mScheme looked up in the lent mSort under the wrapper.
+> A lend is true when every such mKey reaches what a route through the lent instance's mReferent passes to.
+> The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute.
+> The sentinel is true when two conditions hold.
+> The first condition concerns each mKey of a secondary mScheme looked up in an unlent mSort under the wrapper.
+> The first condition applies where the caller holds an instance for that mSort.
+> Under the first condition, each such mKey reaches what a route through the caller's instance passes to.
+> The second condition is that an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
 
 UNACKED READING, temporary (`312d:enc-lends-truth-is-routing`, `312d:enc-vantage-is-the-entry-chain`):
 311 says a wrapper lends instances "for the mParent-Catalog mSorts it perturbs, and nothing
@@ -3345,7 +3712,8 @@ authoritative, held only until acked or replaced (`notes/312d` § 7).
 #### § 3.4.1-guest-dependent-lends
 
 <!-- normative -->
-> A lend may depend on the guest; the wrapper author then declares the guest-insensitive default and supplies a policy read that declines on departure.
+> A lend may depend on the guest.
+> The wrapper author then declares the guest-insensitive default and supplies a policy read that declines on departure.
 
 Examples: a chroot lends a mount namespace. `sudo -u` lends a user. `ip netns exec` lends a network namespace. A lend that depends on the guest: sudoers matches the guest command.
 
@@ -3408,12 +3776,16 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 > Tessa owns the file, as in 3.2.5-a-book-two-files-scoped-in-the-route, with `:guarantees-unique-referent` on the inode number's shape and no other warrant.
 > Wanda owns the wrapper `sudo`.
 > It lends nothing, and Wanda declares its completion sentinel.
+> Carl's fact at each line marks the path that line reads as its read and depends on the inode.
+> The book holds no world object besides those its lines name.
 > The world holds one inode.
 > No store holds it, nothing passes, no write affects another mReferent, and no line writes.
 > The first line runs from the host's mVantage, which holds no ambient instance.
 > The second line runs from a mVantage entered through the wrapper.
-> The flag is set, so that mVantage inherits the caller's mRoute and its instances.
+> The flag is set.
 > Both inode mKeys are scoped in the one mRoute.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
 > Line 1, `cmp` from the host: every statement in force is true and the engine's axioms hold.
 > The path's identity is the inode mKey its lookup emitted, whose chain ends at the mRoute.
 > Line 2, `cmp` through `sudo`, against line 1: the entered mVantage inherits, and its mRoute is the caller's.
@@ -3473,8 +3845,13 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 <!-- prose-translation -->
 > This book's ceiling is six atoms of every kind the specification owns.
 > Tessa, Wanda, and Carl speak as in 3.4.2-a-book-one-file-across-sudo-under-the-sentinel.
+> The book holds no world object besides those its lines name.
+> The world holds one inode.
+> No store holds it, nothing passes, no write affects another mReferent, and no line writes.
+> The book holds no composite mKey and no role.
+> No lookup's read set is open.
 > The flag is not set.
-> The mVantage entered through the wrapper inherits nothing, so its mRoute is another mRoute.
+> The mVantage entered through the wrapper inherits nothing, and its mRoute is another mRoute.
 > Line 1, `cmp` from the host: every statement in force is true and the engine's axioms hold.
 > The path's identity is the inode mKey its lookup emitted, whose chain ends at the host's mRoute.
 > Line 2, `cmp` through `sudo`, against line 1: the two inode mKeys are scoped in two mRoutes.
@@ -3534,9 +3911,14 @@ run law_disjoint_by_two_tops_rests_on_one_scheme_owner_premise {
 ```
 
 <!-- prose-translation -->
-> The support of a SAME is the warrants at every level of the chains it rests on, the yields that reached them, the lends and sentinels that made instances one, and the mCorrespondences.
+> The support of a SAME has four parts.
+> The first part is the warrants at every level of the chains it rests on.
+> The second part is the yields that reached them.
+> The third part is the lends and sentinels that made instances one.
+> The fourth part is the mCorrespondences.
 > The support of a DISJOINT is the warrants at every level of the two chains.
 > A DISJOINT by the two-tops way rests on one mScheme's owner's `:guarantees-unique-name` declarations.
+> The premise twin of `law_disjoint_by_two_tops_rests_on_one_scheme_owner` asks for a world where the walk separates two mKeys by the two-tops way.
 
 UNACKED READING, temporary (`312d:enc-support-functions`): 311 lists what attribution names;
 the support functions above are the conductor's construction of "the statements an answer
@@ -3551,13 +3933,19 @@ absence of a support function for UNKNOWN and KNOWN_UNSPOKEN, which a reviewer r
 definitions and no check can state.
 
 <!-- normative -->
-> Every positive step is one author's line: a `:yields` and its lookup warrants, a shape's `:identified-in` and its warrants, a may-read set and its sentinel, a may-write entailment and its finished record, a mCorrespondence, an `:observer-independence`, a `:lends`.
+> Every positive step is one author's line.
+> The positive steps are these: a `:yields` and its lookup warrants, a shape's `:identified-in` and its warrants, and a may-read set and its sentinel.
+> The positive steps are also a may-write entailment and its finished record, a mCorrespondence, an `:observer-independence`, and a `:lends`.
 > So the speech needed grows with the number of authors, never with the number of pairs of them.
 > The engine only chains and meets.
-> Every statement an answer rests on is something one party can know about their own tool, store, or machine; that party says it alone, describes nothing they cannot see, and names no other author.
-> A granting composite is entailed jointly by one mScheme's `:yields` and the primary mScheme's declaration for that shape; each author speaks about their own lookup.
+> Every statement an answer rests on is something one party can know about their own tool, store, or machine.
+> That party says it alone, describes nothing they cannot see, and names no other author.
+> One mScheme's `:yields` and the primary mScheme's declaration for that shape jointly entail a granting composite.
+> Each author speaks about their own lookup.
 > A withholding composite names nobody and needs nobody's consent.
-> Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it rested on, the route closures it rested on (1.5-token-and-the-two-warrants, 2.10-places-the-upward-lookup), and the closed may-read sets its writeset rested on.
+> Every survival names the `:aliases-nothing-else` and `:guarantees-unique-name` declarations it rested on.
+> Every survival names the route closures it rested on (1.5-token-and-the-two-warrants, 2.10-places-the-upward-lookup).
+> Every survival names the closed may-read sets its writeset rested on.
 > Every SAME names the `resolve()` calls, the declarations, the sentinels and route claims that made instances one, and the mCorrespondences.
 > Every invalidated conclusion names the writeset that invalidated it.
 
@@ -3571,7 +3959,16 @@ The boundary is prose by nature: it names what other documents own and what this
 and no fence can hold an absence.
 
 <!-- normative -->
-> This model uses, and does not redefine: the verdict, vouch, and guard tier; the authored may-write entries, the completion record as the witness of a finished definition, and `--risk-faultless-skips`; the four-answer chokepoint and its consumer map, except that a sentinel-inherited SAME rides the flag (3.4-entry-and-lends); the universal meet; measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across` (`plans/27C`); the read-set closure as the falsification net for unmarked reads (`plans/27C` §4(a)(B)); binds as the mKey-minting act; the mPlaceholder and the standup `witness()`; the integrity plane; the committee law.
+> This model uses, and does not redefine, the verdict, vouch, and guard tier.
+> This model uses, and does not redefine, the authored may-write entries, the completion record as the witness of a finished definition, and `--risk-faultless-skips`.
+> This model uses, and does not redefine, the four-answer chokepoint and its consumer map.
+> The one exception in that consumer map is that a sentinel-inherited SAME rides the flag (3.4-entry-and-lends).
+> This model uses, and does not redefine, the universal meet.
+> This model uses, and does not redefine, measure-in-context, entry forms, siting vouches, the escalation dial, and `safe-across` (`plans/27C`).
+> This model uses, and does not redefine, the read-set closure as the falsification net for unmarked reads (`plans/27C` §4(a)(B)).
+> This model uses, and does not redefine, binds as the mKey-minting act.
+> This model uses, and does not redefine, the mPlaceholder and the standup `witness()`.
+> This model uses, and does not redefine, the integrity plane and the committee law.
 > The model excludes a selector dialect, an aspect species, an authored region predicate, an engine-side name floor, and an engine table that generates SAME.
 > The context slot is a mVantage and nothing else.
 
@@ -3587,7 +3984,8 @@ that carry the claim are the ones the entry cites.
 
 <!-- normative -->
 > Each entry below stands until its document is rewritten, and each "Here" is this model's claim against the passage the entry names.
-> `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator", and `30U:constraints-on-other-components` "The comparison", with `30T:rul-binder-claims-are-ordinary`: a finished definition generates cross-kind provably-disjoint verdicts, and a footprint cell is found disjoint from another kind's backing cell through it.
+> `30U:rul-cross-kind-sparing-needs-a-finished-definition`, `30U:the-record` "As a generator", and `30U:constraints-on-other-components` "The comparison", with `30T:rul-binder-claims-are-ordinary`: a finished definition generates cross-kind provably-disjoint verdicts.
+> The same passages say that a footprint cell is found disjoint from another kind's backing cell through a finished definition.
 > Here: a finished definition stays necessary for sparing across mSorts and generates no DISJOINT (2.6-may-write-the-writeset).
 > `compare()` decides every pair.
 > A cross-mSort pair the walk does not separate reads KNOWN_UNSPOKEN, whatever is finished (3.2-compare-one-chokepoint-four-answers).
@@ -3597,7 +3995,8 @@ that carry the claim are the ones the entry cites.
 > `plans/30W` §1 and §5, with `26Ob:res-per-index-relation-table`: a kind's owner declares the kind referent-transparent, one grade under which token equality gives same and token inequality gives disjoint.
 > Here: a lookup carries two independent warrants per matched shape, `:guarantees-unique-referent` and `:guarantees-unique-name`, each absent by default (1.5-token-and-the-two-warrants, 2.2-primary-of-and-identified-in).
 > `:root` is the separate per-shape claim of global comparability (§2.2).
-> `plans/30W` §1 index-kinds and §10 build item 1, with `26Ob:res-worlds-compare-through-the-chokepoint`: the context slot is a product over index-kinds, and a world is a coordinate in a cell's key.
+> `plans/30W` §1 index-kinds and §10 build item 1, with `26Ob:res-worlds-compare-through-the-chokepoint`: the context slot is a product over index-kinds.
+> The same passages say that a world is a coordinate in a cell's key.
 > Here: the context slot is a mVantage and nothing else, an address that is part of no mKey's identity (1.10-vantage-route-placeholder-witness, 4.1-boundary-of-this-model).
 > Identity is the mFullyQualifiedKey (1.8-fully-qualified-key-topic-and-derivation).
 > A world is an mWorld, a terminus of a mFullyQualifiedKey.
@@ -3607,19 +4006,25 @@ that carry the claim are the ones the entry cites.
 > Here: there is no authored region predicate (4.1-boundary-of-this-model).
 > Containment is membership in a mTraversal.
 > The region test over emitted mTraversals (2.9-the-traversal-and-the-region-test) and the `:places` lookup (2.10-places-the-upward-lookup) decide it.
-> `plans/30W` §2 to §4, `26Ob:res-cell-level-relation-is-the-filtered-meet` and `26Ob:10f-the-target-pin`, `plans/27C` §4(A), `ANALYZER-NEEDS:an-invariance-speech-act`, and `271:rul-invariance-speech-act` [TYPED]: the kind owner's invariance line (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport across an index or an axis, and the store member yields invariant, keyed, or ⊤ per (kind, selector, index-kind).
+> `plans/30W` §2 to §4, `26Ob:res-cell-level-relation-is-the-filtered-meet` and `26Ob:10f-the-target-pin`, `plans/27C` §4(A), `ANALYZER-NEEDS:an-invariance-speech-act`, and `271:rul-invariance-speech-act` [TYPED]: the kind owner's invariance line (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport across an index or an axis.
+> The same passages say that the store member yields invariant, keyed, or ⊤ per (kind, selector, index-kind).
 > Here: there is no invariance line and no per-kind table against axes (4.1-boundary-of-this-model).
 > Whether a lifecycle write or a lent instance reaches a cell is the shape of its mFullyQualifiedKey, not a declaration (3.3-invalidation-three-mutator-species, 3.4-entry-and-lends).
 > Leaf mKeys inherit across a wrapper with no further speech, under the flag (§3.4).
 > The observer half of the line is `:observer-independence` of O, declared per mSort and absent by default (2.8-observer-dependence-and-independence).
 > The store half is displaced by `:aliases-nothing-else` and measured mTokens (2.3-aliases-nothing-else-the-store-warrant, 3.2-compare-one-chokepoint-four-answers).
-> `notes/272` §3 (the carried-by table and emission-set non-interference) and `plans/27C` §4 (the who-am-I derivation as contradiction-checker): an engine-owned substrate-by-axis table and a taint over who-am-I ingredients derive keying and check declarations.
+> `notes/272` §3 (the carried-by table and emission-set non-interference) and `plans/27C` §4 (the who-am-I derivation as contradiction-checker) make one claim.
+> An engine-owned substrate-by-axis table and a taint over who-am-I ingredients derive keying and check declarations.
 > Here: the engine holds no table that generates SAME (4.1-boundary-of-this-model).
 > Keying is the mFullyQualifiedKey's shape (3.3-invalidation-three-mutator-species).
 > No `resolve()` can measure observer-dependence, so it remains speech (2.8-observer-dependence-and-independence).
-> The contradictions the engine refuses are two seats disagreeing on an mParent instance (1.6-parent-one-per-key), a warranted SAME against a warranted DISJOINT (3.2-compare-one-chokepoint-four-answers), and two disagreeing answers from one placing lookup (2.10-places-the-upward-lookup).
+> The contradictions the engine refuses are three.
+> The first is two seats that disagree on an mParent instance (1.6-parent-one-per-key).
+> The second is a warranted SAME against a warranted DISJOINT (3.2-compare-one-chokepoint-four-answers).
+> The third is two disagreeing answers from one placing lookup (2.10-places-the-upward-lookup).
 > `notes/272` §5 the fence: emitted locators feed only the dependence bit and the keying recipe, and are never compared against File facts.
-> Here: a may-read entry is an mKey that `compare()`s against every writeset entry, and an entry naming a store reaches every mKey relative to that store (2.5-may-read-the-readset, 2.6-may-write-the-writeset).
+> Here: a may-read entry is an mKey that `compare()`s against every writeset entry.
+> An entry naming a store reaches every mKey relative to that store (2.5-may-read-the-readset, 2.6-may-write-the-writeset).
 > `30T:file-identity` per-aspect identity: "same file" is one relation per aspect, and the identity tier carries an authored per-aspect relation mapping.
 > Here: there is no aspect species (4.1-boundary-of-this-model).
 > Each aspect is a cell, a singleton mSort with its own may-read set and its own `:observer-dependence` (1.9-cell-a-singleton-sort).
@@ -3633,7 +4038,8 @@ that carry the claim are the ones the entry cites.
 > `plans/30W` §4 "Containment among index-kinds": containment among stores is a `reaches` relation their owners declare.
 > Here: containment among stores is the mParent chain (1.6-parent-one-per-key, 1.8-fully-qualified-key-topic-and-derivation).
 > The may-write entailment carries effects, never identity (2.6-may-write-the-writeset).
-> `notes/277` §3 (the selector dialect, the survival-license algebra), `plans/30J` §12 (dialect keying), and the `spike/CLAUDE.md` sparing-algebra invariant: a same-entity claim spares a backing only when both carry minted selectors of one dialect and the two selectors differ.
+> `notes/277` §3 (the selector dialect, the survival-license algebra), `plans/30J` §12 (dialect keying), and the `spike/CLAUDE.md` sparing-algebra invariant make one claim.
+> A same-entity claim spares a backing only when both carry minted selectors of one dialect and the two selectors differ.
 > Here: the model excludes a selector dialect (4.1-boundary-of-this-model).
 > Two cells of one mParent are two mSorts.
 > They separate only as 3.2-compare-one-chokepoint-four-answers separates any two mSorts (1.9-cell-a-singleton-sort).
