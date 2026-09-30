@@ -120,3 +120,29 @@ The current-behavior witness must be inhabited. A desired-survival assertion sho
 the token-invalidation reason even after the other conservative causes are removed. A coarse
 carrier write must still defeat the read. These are proposed evidence obligations, not new
 product rulings.
+
+## § 5-example-authorship-and-the-experimental-check
+
+**[TYPED]** The human clarified the Alloy remit during authorship. The assay is primarily a
+precision and attention exercise, so that a later repair can be tested mechanically. It need
+not be committed if imperfect or if integration would require unrelated specification changes.
+The ledger and concrete exercise must be completed and committed. Eventual integration as a
+regression example is intended, not a requirement to force integration now.
+
+The concrete exercise is `312b-exercises/precise-writes-inside-an-opaque-carrier.md`. It uses a
+JSON carrier containing an INI string, one layout-preserving patch, and one already-converged
+sibling bit setter. The tools are explicitly hypothetical and narrowly contracted. The oracles
+separate INI location knowledge, JSON encoding and writeback, and canonical file-part identity.
+Jules explicitly sources Inez's plain-data helper and emits one complete invocation claim;
+there is no new protocol for merging completion records.
+
+A precision correction to the chat: the yielding mSchemes name the same storage byte at each
+step, not a logical boolean falsely equated with its encoding. Other encodings need different
+ordinary descriptions. Parser dependencies, inode replacement, timestamps, and consumed guest
+stdout are explicit. The exercise does not claim the two toy commands are production-ready.
+
+Static fixture check, using Node's JSON parser and byte arrays only: the carrier has 63 bytes
+including LF. The enabled and trace digits occupy zero-based carrier positions 48 and 57,
+and decoded positions 17 and 25. Replacing byte 48 with `1` changes exactly that byte, preserves
+JSON and decoded length, and leaves `trace=0`. No shell fixture or hypothetical tool was run.
+The Windows `python` command was unavailable; Node supplied this check without installation.
