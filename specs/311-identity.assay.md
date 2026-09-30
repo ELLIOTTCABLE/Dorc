@@ -466,7 +466,7 @@ default, and cloned identifiers are the standing witness.
 ```alloy
 abstract sig Seat {}
 
-one sig BindSeat, YieldSeat, DeclarationSeat, EntryChainSeat extends Seat {}
+one sig BindSeat, YieldSeat, DeclarationSeat extends Seat {}
 
 sig SuppliesParent extends Spoken { forKey: one mKey, instance: one mKey, seat: one Seat }
 
@@ -1013,7 +1013,7 @@ own.
 ```alloy
 fun parentStore[k: mKey]: lone mLevel { isPrimaryKey[k] implies k.parent else none }
 
-fun parentCatalog[k: mKey]: lone mLevel { isNaturalKey[k] implies k.parent else none }
+fun parentCatalog[k: mKey]: lone mLevel { k.parent }
 ```
 
 <!-- prose-translation -->
@@ -1157,8 +1157,11 @@ fun rule4[m: mKey]: set mKey { {k: mKey | some e: compositeMayRead[k] | entryAns
 
 fun seed[l: Line]: set mKey { atMostEntries[l] + {k: mKey | some P: wholeWriteEntries[l] | k in beneathFor[P]} }
 
+fun levelKeysOf[m: mKey]: set mKey { m + (identity[m].*parent & mKey) }
+
 fun contributingContainers[m, r: mKey]: set mKey {
-   (identity[m].*parent & mKey) - (meet[identity[m], identity[r]].mLevel).*parent
+   let excluded = (meet[identity[m], identity[r]].mLevel).*parent |
+      levelKeysOf[m] - excluded - (some identity[m] & excluded implies m else none)
 }
 
 fun spreadsTo[m, r: mKey]: set mKey { entailed[contributingContainers[m, r]] + rule4[m] }
@@ -1168,7 +1171,7 @@ fun writesetAgainst[l: Line, r: mKey]: set mKey {
 }
 
 fun writesetUnexcluded[l: Line]: set mKey {
-   seed[l].*({m, k: mKey | k in entailed[identity[m].*parent & mKey] + rule4[m]})
+   seed[l].*({m, k: mKey | k in entailed[levelKeysOf[m]] + rule4[m]})
 }
 
 fun writesetAtTest[l: Line, r: mKey]: set mKey {
@@ -1316,7 +1319,7 @@ check law_exclusion_readings_agree {
 
 run law_exclusion_readings_agree_premise {
    some l: Line, f: VerdictFact & InForce, m: atMostEntries[l], r: readset[f] |
-      some contributingContainers[m, r] and some entailed[identity[m].*parent & mKey]
+      some contributingContainers[m, r] and some entailed[levelKeysOf[m]]
 }
 ```
 
@@ -1324,6 +1327,7 @@ run law_exclusion_readings_agree_premise {
 > A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set that four rules close.
 > Rule 1: every may-write entry the verb's author declared per matched shape is in the writeset; the completion record closes those entries.
 > Rule 2: where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey that K's may-write entailment names is in the writeset; a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
+> The entailment read for a written mKey is the one declared on that mKey and on each container on its identity's chain, the written mKey being excluded with its identity.
 > Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test): its finished enumeration's members where it has one (2.10-places-the-upward-lookup), and every mKey its region covers besides where it has none.
 > Rule 4: where an mKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an mKey k, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers); a may-read entry given whole is compared by the region test; may-read entries feed rule 4 and no other rule.
 > Under the second reading the exclusion applies only at the test: the writeset is built with every container contributing, and an mKey excluded only by the last step is dropped there.
