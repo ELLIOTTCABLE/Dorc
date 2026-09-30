@@ -693,3 +693,26 @@ the five kills sat; the sparing laws red through a fourth shape.
   `passes`-transitivity and `holds`-in-`passes` questions of § 13 are no longer load-bearing for
   any law and stay `312d` § 17.1's.
 - Leg five re-measures the sparing commands and, if quiet, writes the lock at the tip.
+
+## § 16-leg-five-the-sparing-law-green-and-the-record-that-never-bears
+
+2026-09-30, at `2f6f4350`. `law_sparing_is_sound` no-counterexample at four levels and ten
+statements, twin sat, 60 s; the family hole's witness sat; the sudo book green (the
+`fullyQualifiedKey` change moved nothing); `law_sparing_is_sound_with_a_store_on_the_chain` a
+timeout at 600 s (translated in 273 s, twin sat) and `kill_sparing_is_sound_supplies_parent` a
+timeout (translation alone 207 s), both owed to the official ceiling; four kills sat.
+
+- `fnd-the-finished-records-truth-never-bears` — `kill_sparing_is_sound_finishes_entailment`
+  unsat at four and ten under the five-hole premise, where it was sat under fewer holes. The
+  builder's hand argument, re-derived by the conductor, +SURE at one step: a false sparing needs
+  the written mReferent to affect the depended-on one, which the vouch makes the read mKey's own
+  mReferent; the read closure, true, then makes the written thing a part of it, a holder of it, or
+  an entry's mReferent; part and holder are the one-thing-beneath hole, and an entry sends the read
+  mKey into the writeset by rule 4, where it reads SAME with itself and nothing spares. So the
+  record's truth is implied by the read closure's outside the hole; its presence still gates
+  (⊤ when absent, § 2.6). 311 prices "the premature finished record" as the sparing knife
+  (§ 2.6's danger line, § 5.2's row); as mechanized, the knife is the may-read closure, and the
+  record's knife lives exactly in the worlds the hole holds open. For the sitting, beside the
+  no-other-home cell: the two are one question. The kill keeps `expect 1` and lands as residue,
+  the translation already saying what an unsatisfiable kill says.
+- No edit follows; the text at `2f6f4350` is the settled text. Leg six is the official write.
