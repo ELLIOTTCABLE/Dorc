@@ -2963,7 +2963,8 @@ pred true_DeclaresLends[d: DeclaresLends] {
 
 pred true_ClosesLends[d: ClosesLends] {
    let w = d.closedWrapper {
-      all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]] implies
+      all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]]
+            and some k.at.enteredFrom.ambient[catalogSortOf[k.scheme]] implies
          k.reaches in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].reaches.passes
       all k: keysUnder[w], j: mKey | j.at = k.at.enteredFrom and k.scheme = j.scheme and k.value = j.value
          and k.parent = k.at.route and j.parent = j.at.route implies k.reaches = j.reaches
@@ -2977,7 +2978,7 @@ pred true_ClosesLends[d: ClosesLends] {
 > An unlent mParent-Catalog mSort is ⊤ under the wrapper: a vantage entered through the wrapper holds no instance for it.
 > After the wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the caller's instances instead; otherwise the mRoute is unknown across the two vantages, another mRoute.
 > A lend is true when every mKey of a secondary mScheme looked up in the lent mSort under the wrapper reaches what a route through the lent instance's mReferent passes to.
-> The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute: it is true when every such mKey of an unlent mSort under the wrapper reaches what a route through the caller's instance passes to, and when an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
+> The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute: it is true when every such mKey of an unlent mSort under the wrapper, where the caller holds an instance for that mSort, reaches what a route through the caller's instance passes to, and when an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
 
 UNACKED READING, temporary (`312d:enc-lends-truth-is-routing`, `312d:enc-vantage-is-the-entry-chain`):
 311 says a wrapper lends instances "for the mParent-Catalog mSorts it perturbs, and nothing
