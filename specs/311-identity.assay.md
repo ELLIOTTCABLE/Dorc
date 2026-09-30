@@ -3447,10 +3447,20 @@ run hole_natural_key_catalog_off_the_route_witness {
    hole_natural_key_catalog_off_the_route and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
+pred hole_a_route_off_the_catalog_reaches_the_thing {
+   some k: mKey | not traversalClosed[k]
+      and some passes.(k.reaches) - (k.parent & mKey).reaches - crossed[k].reaches
+}
+
+run hole_a_route_off_the_catalog_reaches_the_thing_witness {
+   hole_a_route_off_the_catalog_reaches_the_thing and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
 check law_unstale_route_is_untouched {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
       and not hole_unclosed_traversal_without_a_key_catalog
       and not hole_natural_key_catalog_off_the_route
+      and not hole_a_route_off_the_catalog_reaches_the_thing
       and not hole_region_closure_with_unknown_leaf_pair implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
          no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
@@ -3460,6 +3470,7 @@ run law_unstale_route_is_untouched_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
+   not hole_a_route_off_the_catalog_reaches_the_thing
    not hole_region_closure_with_unknown_leaf_pair
    some s: Line, k: mKey, l: s.above |
       not routingInvalidatedBy[l, k] and atMostClosed[l] and some World.lineWrites[l] and some crossed[levelsOf[k]]
@@ -3469,6 +3480,7 @@ run kill_unstale_route_is_untouched_closes_traversal {
    noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
+   not hole_a_route_off_the_catalog_reaches_the_thing
    not hole_region_closure_with_unknown_leaf_pair
    axiomaticByDifferentialTest
    some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not true_ClosesTraversal[d]
@@ -3480,6 +3492,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
    noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
    not hole_unclosed_traversal_without_a_key_catalog
    not hole_natural_key_catalog_off_the_route
+   not hole_a_route_off_the_catalog_reaches_the_thing
    not hole_region_closure_with_unknown_leaf_pair
    axiomaticByDifferentialTest
    some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
@@ -3501,17 +3514,19 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
 > A held hole: some level of an mKey has no closing act and no mKey for its mParent-Catalog.
 > A held hole: a natural mKey with an mKey for its mParent-Catalog reaches an mReferent that no route through the catalog's mReferent passes to.
+> A held hole: an mKey with no closing act reaches an mReferent that a third mReferent passes to.
+> That third mReferent is neither the mReferent of the mKey's mParent-Catalog nor an mReferent that an emitted member reaches.
 > The untouched-route law has four premises.
 > Every statement in force is true, and the engine's axioms hold.
 > No store is among its own contents, and no route passes through itself.
 > Under those premises, the law concerns a line that closed its at-most set and invalidates no mResolution of an mKey.
 > Such a line writes nothing that a route to that mKey's mReferents passes through.
-> The untouched-route law is asked outside those two holes and the region hole (2.9-the-traversal-and-the-region-test).
+> The untouched-route law is asked outside those three holes and the region hole (2.9-the-traversal-and-the-region-test).
 > The premise twin of `law_unstale_route_is_untouched` asks for a world where a line that closed its at-most set writes something and invalidates no mResolution of an mKey.
 > In that world, the line is above a site, and a level of that mKey has an emitted member.
-> The twin also asks for the law's premises, outside the law's three holes.
+> The twin also asks for the law's premises, outside the law's four holes.
 > The untouched-route law dies with a statement it rests on.
-> Each kill of the untouched-route law asks outside the law's three holes, with the engine's axioms holding.
+> Each kill of the untouched-route law asks outside the law's four holes, with the engine's axioms holding.
 > Each such kill also asks while no store is among its own contents and no route passes through itself.
 > The law dies with one traversal's closing act false and every other statement in force true.
 > The law dies with one completion record false and every other statement in force true.
