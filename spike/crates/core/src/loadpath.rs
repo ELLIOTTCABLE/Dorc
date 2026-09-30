@@ -313,18 +313,23 @@ mod tests {
         );
     }
 
-    /// Windows spellings reach the same normal form, and a drive-rooted operand counts as
-    /// absolute — the controller's own cwd is spelled that way on one of the two development
-    /// platforms, and joining a drive letter onto a drive letter would match nothing.
-    #[test]
-    fn windows_spellings_normalize_and_root() {
-        assert_eq!(normalize("oracles\\h.sh"), "oracles/h.sh");
-        let ops = Cwd::at("C:/ops");
-        assert_eq!(ops.resolve_dot("./h.sh").as_deref(), Some("C:/ops/h.sh"));
-        assert_eq!(
-            ops.resolve_dot("D:/other/h.sh").as_deref(),
-            Some("D:/other/h.sh")
-        );
+    /// Windows spells paths with `\` and drive letters.
+    mod for_windows {
+        use super::*;
+
+        /// Windows spellings reach the same normal form, and a drive-rooted operand counts as
+        /// absolute — the controller's own cwd is spelled that way on one of the two development
+        /// platforms, and joining a drive letter onto a drive letter would match nothing.
+        #[test]
+        fn windows_spellings_normalize_and_root() {
+            assert_eq!(normalize("oracles\\h.sh"), "oracles/h.sh");
+            let ops = Cwd::at("C:/ops");
+            assert_eq!(ops.resolve_dot("./h.sh").as_deref(), Some("C:/ops/h.sh"));
+            assert_eq!(
+                ops.resolve_dot("D:/other/h.sh").as_deref(),
+                Some("D:/other/h.sh")
+            );
+        }
     }
 
     /// Purely textual: `.` drops, `..` pops a real predecessor and survives where there is none,
