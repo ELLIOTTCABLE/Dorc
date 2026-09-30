@@ -140,6 +140,9 @@ pub(super) fn summary(report: &Value, ctx: &Context<'_>, report_path: &str) -> S
             commands.len()
         )
     };
+    if let Some(commit) = report.str("commit") {
+        let _ = writeln!(out, "commit: {commit}");
+    }
     if !commands.is_empty() {
         let field = |key: &'static str| commands.iter().filter_map(move |c| c.str(key));
         let _ = writeln!(out, "results: {}", counts(field("result")));
@@ -187,7 +190,7 @@ mod tests {
         // every fact it names must come out of the report it points at, and the pointer must be
         // the line a terminal leaves at the bottom.
         let report = Value::parse(
-            r#"{"spec": "specs/w.assay.md",
+            r#"{"spec": "specs/w.assay.md", "commit": "0123abcd",
                 "commands": [
                   {"module": "laws", "name": "a", "result": "no-counterexample", "standing": "green"},
                   {"module": "laws", "name": "b", "result": "no-counterexample", "standing": "mismatch-new"},
@@ -224,6 +227,7 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("gone: laws.d"), "{text}");
+        assert!(text.contains("0123abcd"), "{text}");
         let under_header: Vec<&str> = lines
             .iter()
             .skip_while(|l| !l.contains("specs/w.lock.json"))

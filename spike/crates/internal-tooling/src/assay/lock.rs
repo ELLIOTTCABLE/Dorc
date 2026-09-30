@@ -149,11 +149,12 @@ impl Row {
     }
 }
 
-pub(super) fn render(rows: &[Row]) -> String {
-    let mut lines = vec![format!(
-        "  {}",
-        Json::obj([("schema", Json::Num(SCHEMA))]).line()
-    )];
+/// `commit` names the text the rows were measured against; readers ignore it, so a header
+/// without one reads the same.
+pub(super) fn render(rows: &[Row], commit: Option<&str>) -> String {
+    let mut header = vec![("schema".to_owned(), Json::Num(SCHEMA))];
+    header.extend(commit.map(|c| ("commit".to_owned(), Json::str(c))));
+    let mut lines = vec![format!("  {}", Json::Obj(header).line())];
     lines.extend(rows.iter().map(|r| format!("  {}", r.json().line())));
     format!("[\n{}\n]\n", lines.join(",\n"))
 }
@@ -416,9 +417,26 @@ mod tests {
         let mut r = row("k", Outcome::Timeout, "a");
         r.phase = Some("translating".to_owned());
         let rows = vec![r, row("j", Outcome::Sat, "b")];
-        assert_eq!(parse(&render(&rows)), Some(rows));
+        assert_eq!(parse(&render(&rows, None)), Some(rows));
         let v1 = "[\n  {\"module\": \"laws\", \"name\": \"k\", \"kind\": \"check\", \"scope\": \"6\", \"result\": \"timeout\", \"premise\": \"sat\", \"hash\": \"0123456789abcdef\"}\n]\n";
         let old = parse(v1).expect("schema 1 reads");
         assert_eq!((old[0].key.as_deref(), old[0].budget), (None, None));
+    }
+
+    #[test]
+    fn the_header_carries_the_commit_and_the_rows_read_as_without_it() {
+        // The commit says which text the rows answer for; it must not disturb reading them, or
+        // every lock written before it (and the reader of any written after) would diverge.
+        let rows = vec![row("k", Outcome::Sat, "a")];
+        let text = render(&rows, Some("0123abcd"));
+        assert_eq!(parse(&text), Some(rows));
+        let header = crate::json::Value::parse(&text)
+            .and_then(|v| match v {
+                crate::json::Value::Arr(items) => items.into_iter().next(),
+                _ => None,
+            })
+            .expect("the header is the first element");
+        assert_eq!(header.u64("schema"), Some(2));
+        assert_eq!(header.str("commit"), Some("0123abcd"));
     }
 }

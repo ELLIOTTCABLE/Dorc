@@ -3,12 +3,12 @@ use std::time::Instant;
 
 use super::drive::{self, Computed, Job, Target};
 use super::lock::{self, Row, Standing};
-use super::report;
 use super::{
     Ask, CONTENTION, DOC_SUFFIX, Finding, Inputs, LAWS_HALF, LOCK_SUFFIX, Lint, Mode, RED, REFUSED,
     RUNNER_FAILED, SHARED_HALF, Source, UNMEASURED, compile, display_path, emit, lints_json,
     write_modules,
 };
+use super::{commit, report};
 use crate::alloy_jvm::Jvm;
 use crate::alloy_jvm::adapter::{Adapter, Machine, Refusal};
 use crate::json::Json;
@@ -83,6 +83,33 @@ impl Reporter<'_> {
     }
 }
 
+/// The `HEAD` a solving pass answers for. `--write` refuses, before any solve, while the text it
+/// would lock differs from that commit, so a lock never records verdicts about text no commit has.
+fn measured_against(spec: &Path, doc_name: &str, ask: &Ask) -> Result<Option<String>, ()> {
+    let dir = spec
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    match ask.mode {
+        Mode::Check => Ok(commit::head(dir)),
+        Mode::Write => match commit::dirty_inputs(dir, &[doc_name, SHARED_HALF, LAWS_HALF]) {
+            Ok(dirty) if dirty.is_empty() => Ok(commit::head(dir)),
+            Ok(dirty) => {
+                eprintln!(
+                    "assay: --write locks committed text only; uncommitted: {}",
+                    dirty.join(", ")
+                );
+                Err(())
+            }
+            Err(why) => {
+                eprintln!("assay: --write locks committed text only; {why}");
+                Err(())
+            }
+        },
+        Mode::Compile | Mode::Parse | Mode::Staged => Ok(None),
+    }
+}
+
 fn staged(path: &Path) -> Option<String> {
     let rel = display_path(path);
     let out = std::process::Command::new("git")
@@ -126,6 +153,9 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     let stem = doc_name
         .strip_suffix(DOC_SUFFIX)
         .map_or_else(|| lossy(spec.file_stem()), str::to_owned);
+    let Ok(commit) = measured_against(spec, &doc_name, ask) else {
+        return REFUSED;
+    };
     let mut reporter = Reporter {
         ask,
         stem: stem.clone(),
@@ -159,6 +189,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         ("spec".to_owned(), Json::str(&spec_path)),
         ("out".to_owned(), Json::str(out.display().to_string())),
     ];
+    if matches!(ask.mode, Mode::Check | Mode::Write) {
+        fields.push((
+            "commit".to_owned(),
+            commit.as_deref().map_or(Json::Null, Json::str),
+        ));
+    }
     let compiled = match compile(&inputs) {
         Ok(compiled) => compiled,
         Err(findings) => {
@@ -402,7 +438,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             ask.tier == super::tier::Tier::Official,
         );
         reporter.changes = lock_changes(&committed, &next);
-        match std::fs::write(&lock_path, lock::render(&next)) {
+        match std::fs::write(&lock_path, lock::render(&next, commit.as_deref())) {
             Ok(()) => {
                 summary.push(("status".to_owned(), Json::str("written")));
                 0

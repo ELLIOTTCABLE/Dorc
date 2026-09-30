@@ -5,6 +5,7 @@
 
 mod alloy;
 mod book;
+mod commit;
 mod drive;
 mod emit;
 mod key;
