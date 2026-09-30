@@ -665,3 +665,31 @@ structural fact; none was added, since which worlds the checker considers is des
 - "Under any one mParent instance it has exactly one mKey" against the fence's at-most-one
   (F23, recorded since `312d` § 12); rule 3 applied at the seed only (F26, likewise); composite
   parts SAME by the walk only (F27, the mark `ask-composite-parts-by-walk`).
+
+## § 15-leg-four-and-the-family-stated-once
+
+2026-09-30. Leg four at `d1e5c5c4` (the builder held before the official write on the
+conductor's message; both sparing laws were red anyway): both new witnesses sat, both twins sat,
+the five kills sat; the sparing laws red through a fourth shape.
+
+- `red-sparing-through-a-part-in-the-region` — the whole entry's mReferent passes to R0; the
+  read thing holds R0 and passes to it; R0 affects the read thing; the line writes R0. Outside all
+  seven holes: the shared part is reached by route on one side and held on the other, and both
+  world-shape holes are satisfied (R0 is passed to as well as held; the two-step route has its
+  direct edge). Every statement true, the region test DISJOINT by the vacuous placing form.
+- The family, seen whole after three rounds: a write lands on an mReferent that both the written
+  thing and the read thing reach beneath them, by holding or by route, and the engine's speech
+  (keys, entries, regions, one-step closures) never names that shared thing. Applied at
+  `c9fe5210` under `30Z` § 2.5's rule that the second pin lifts to the species:
+  `hole_two_separated_things_reach_one_thing_beneath` (two mKeys `compare()` reads DISJOINT whose
+  mReferents' reflexive-transitive `holds + passes` images intersect) REPLACES the shared-part,
+  held-thing, and one-step holes; the third-thing (affects) hole stays; `outsideTheSparingHoles`
+  is five. By hand, +SURE the new hole covers every world the three did that the sparing law
+  needs, and ~SUSPECT it is tied to the counterexample's structure where the two world-shape
+  holes excluded any such pair of mReferents anywhere in the world. It is § 5.1's OPEN cell,
+  "this mReferent has no other home", stated from the thing's end for the sparing test.
+- For the sitting, unposed: the two remaining world-stratum questions under the sparing law are
+  `ask-affects-and-the-chain` (the third-thing hole) and the no-other-home cell (this hole); the
+  `passes`-transitivity and `holds`-in-`passes` questions of § 13 are no longer load-bearing for
+  any law and stay `312d` § 17.1's.
+- Leg five re-measures the sparing commands and, if quiet, writes the lock at the tip.
