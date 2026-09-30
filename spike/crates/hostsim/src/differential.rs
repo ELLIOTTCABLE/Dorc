@@ -826,7 +826,10 @@ fn sandbox_profile(cmd: &mut Command, dir: &Path) {
     for key in ["LOCALAPPDATA", "XDG_STATE_HOME"] {
         cmd.env(key, &state);
     }
-    cmd.env("HOME", profile.join("home"));
+    // macOS keeps both roots below this directory, and the binary does not create it.
+    let home = profile.join("home");
+    let _ = std::fs::create_dir_all(home.join("Library").join("Application Support"));
+    cmd.env("HOME", home);
 }
 
 fn run_dorc(
