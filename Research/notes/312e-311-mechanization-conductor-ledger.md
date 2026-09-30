@@ -189,6 +189,29 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   asks it at `4 but 4 Int, 10 Claim, 5 mLevel`, whose twin demands a store on the read mKey's
   chain, the world the four-level scope cannot seat. Its result is the affordability
   measurement.
+- `rep-sentinel-truth-presupposes-a-callers-instance` — `true_ClosesLends` demanded that every
+  natural mKey of an unlent mSort under the wrapper reach what the caller's instance passes to,
+  with no guard that the caller holds one, so a natural mKey of an mScheme with no declared
+  catalog mSort made every sentinel false and hid every world with one. The truth now
+  presupposes the instance, as its sentence does ("the caller's instance").
+- `act-five-books-for-the-untouched-sections` — each a pinned world the conductor hand-walked,
+  its translation STE-strict, its answers the fences' answers as walked: § 3.2.6 two cells of
+  one unit (KNOWN_UNSPOKEN between cells, SAME for one cell read twice under two unit atoms);
+  § 3.2.7 one configuration merged in two orders (a composite SAME by parts and UNKNOWN by the
+  walk; swapped roles UNKNOWN); § 3.4.2 and § 3.4.3 one file through `sudo` with and without
+  the flag (SAME with the sentinel in the support, else UNKNOWN across two mRoutes); § 3.3.2 a
+  reboot between two reads (lifecycle invalidation withdrawing a timeless SAME); § 2.10.2 a
+  directory removed beside a file (the region test DISJOINT through the placing route; the
+  store-given-whole floor invalidating all the same; the world inside
+  `hole_region_closure_with_unknown_leaf_pair`, a file and a directory being mKeys of two
+  mSorts the walk never separated). Every book passed the commit hook's parse; none has met a
+  solver.
+- `fnd-invalidation-does-not-know-when-a-key-was-resolved` (+SURE of the text; a mechanization
+  limit, not 311's) — `staleAt[s, k]` marks an mKey stale at every site below a line that
+  touched its chain, whether the mKey was resolved above or below that line; the reboot book
+  shows the mKey resolved after the reboot marked stale too. 311 § 3.3 says "an mKey whose
+  mResolution ... a line above invalidated"; the fences hold no resolution time
+  (`312d:str-static-over-lines-not-temporal`). For the panel and the temporal latitude.
 - `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
   words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
   present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are

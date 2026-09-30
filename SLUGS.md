@@ -8821,6 +8821,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 307 30N 30Na 30Nd 30O 30Q 30Qd (13)
 
+## str-static-over-lines-not-temporal
+- defined: —
+- cited: 312d 312e (2)
+
 ## strain-coreference-crosskind
 - defined: —
 - cited: 24C 24G 24M 24O 24U 270 272 277 (9)
