@@ -8,8 +8,8 @@
 
 ## §0 — state
 
-Branch `ai/ci-runners`, worktree `.tmp/trees/ci-runners`, cut from the published `ai/main`; draft
-PR #4 into `ai/main`. On the branch: the gate wording; the cloud-setup hook install; cargo-deny and
+Folded into `ai/main` by fast-forward; PR #4 carried the runs, and the branch `ai/ci-runners` and
+worktree `.tmp/trees/ci-runners` remain for the arc's rest. Landed: the gate wording; the cloud-setup hook install; cargo-deny and
 nextest from checksummed release binaries; the `ci:` tasks, composed by the local heavy tasks;
 actionlint as an hk step; `assay-lock` routed by assay's own solver path; the `ci` workflow, its
 heavy lanes filtered by globs read out of `hk.pkl` at run time; the `floor-shells` workflow, whose
@@ -122,3 +122,10 @@ The first CI results are §5.
 - macOS `rust`, observed only: 19 of 3145 trials red — two e2e looms whose probe records or
   transcripts diverge, and the receipt/staging stores refusing their temp roots ("unsafe staging
   target root"; macOS's temp directory sits under `/var`, a symlink).
+- `[TYPED]` The CI assay lane runs `--check --write`: one solve both judges the committed lock and
+  writes the measured one, which leaves as the `assay-lock` artifact; only a commit accepts it.
+  First official run: 83 commands in 1h39m on three children; 78 green, 3 accepted reds, and 2
+  timeouts at the 1800 s CPU cap that the lock already records, so the lane exits 4. Every row of
+  the written lock differs from the committed one in `key` alone (results and sizes agree):
+  `[TYPED]` the lock format changed, expected.
+- `[TYPED]` Folded into `ai/main` by fast-forward, no merge commit.
