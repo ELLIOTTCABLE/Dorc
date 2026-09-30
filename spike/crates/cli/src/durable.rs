@@ -690,30 +690,36 @@ mod tests {
         Environment(pairs.iter().copied().collect())
     }
 
-    #[test]
-    fn the_unix_roots_prefer_the_xdg_variables_and_fall_back_to_the_home_defaults() {
-        // Both halves in one case, because the FALLBACK is the interesting half: an environment
-        // that sets neither variable is the ordinary one, and a resolution that only worked when
-        // XDG was set would leave the shipped binary with nowhere to write on most machines.
-        let named = standard_roots(
-            RootPlatform::OtherUnix,
-            &environment(&[
-                ("HOME", "/home/x"),
-                ("XDG_CONFIG_HOME", "/cfg"),
-                ("XDG_STATE_HOME", "/state"),
-            ]),
-        )
-        .expect("both bases are absolute");
-        assert_eq!(named.base(RootRole::Configuration), "/cfg");
-        assert_eq!(named.base(RootRole::State), "/state");
+    /// Linux and the other Unixes read the XDG variables, else fixed paths below `HOME`.
+    mod for_other_unix {
+        use super::*;
 
-        let bare = standard_roots(
-            RootPlatform::OtherUnix,
-            &environment(&[("HOME", "/home/x")]),
-        )
-        .expect("the home defaults are absolute");
-        assert_eq!(bare.base(RootRole::Configuration), "/home/x/.config");
-        assert_eq!(bare.base(RootRole::State), "/home/x/.local/state");
+        #[test]
+        fn the_unix_roots_prefer_the_xdg_variables_and_fall_back_to_the_home_defaults() {
+            // Both halves in one case, because the FALLBACK is the interesting half: an
+            // environment that sets neither variable is the ordinary one, and a resolution that
+            // only worked when XDG was set would leave the shipped binary with nowhere to write on
+            // most machines.
+            let named = standard_roots(
+                RootPlatform::OtherUnix,
+                &environment(&[
+                    ("HOME", "/home/x"),
+                    ("XDG_CONFIG_HOME", "/cfg"),
+                    ("XDG_STATE_HOME", "/state"),
+                ]),
+            )
+            .expect("both bases are absolute");
+            assert_eq!(named.base(RootRole::Configuration), "/cfg");
+            assert_eq!(named.base(RootRole::State), "/state");
+
+            let bare = standard_roots(
+                RootPlatform::OtherUnix,
+                &environment(&[("HOME", "/home/x")]),
+            )
+            .expect("the home defaults are absolute");
+            assert_eq!(bare.base(RootRole::Configuration), "/home/x/.config");
+            assert_eq!(bare.base(RootRole::State), "/home/x/.local/state");
+        }
     }
 
     #[test]
@@ -731,22 +737,27 @@ mod tests {
         );
     }
 
-    #[test]
-    fn the_windows_roots_come_from_the_two_distinct_profile_variables() {
-        let roots = standard_roots(
-            RootPlatform::Windows,
-            &environment(&[
-                ("APPDATA", "C:\\Users\\x\\AppData\\Roaming"),
-                ("LOCALAPPDATA", "C:\\Users\\x\\AppData\\Local"),
-            ]),
-        )
-        .expect("both bases are absolute");
-        assert_ne!(
-            roots.base(RootRole::Configuration),
-            roots.base(RootRole::State),
-            "the two roles are separate directories on Windows, which is what selective \
-             propagation of state without keys rests on"
-        );
+    /// Windows keeps the two roots in two separate profile directories.
+    mod for_windows {
+        use super::*;
+
+        #[test]
+        fn the_windows_roots_come_from_the_two_distinct_profile_variables() {
+            let roots = standard_roots(
+                RootPlatform::Windows,
+                &environment(&[
+                    ("APPDATA", "C:\\Users\\x\\AppData\\Roaming"),
+                    ("LOCALAPPDATA", "C:\\Users\\x\\AppData\\Local"),
+                ]),
+            )
+            .expect("both bases are absolute");
+            assert_ne!(
+                roots.base(RootRole::Configuration),
+                roots.base(RootRole::State),
+                "the two roles are separate directories on Windows, which is what selective \
+                 propagation of state without keys rests on"
+            );
+        }
     }
 
     /// macOS keeps both roots in one directory below `HOME`, and reads no XDG variable.
