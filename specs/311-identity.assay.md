@@ -506,7 +506,7 @@ pred true_SuppliesParent[s: SuppliesParent] {
 
 <!-- prose-translation -->
 > Every mKey has at most one mParent: the mKey it was resolved inside, or the mWorld its chain ends at (1.8-fully-qualified-key-topic-and-derivation).
-> An mKey matching no shape has no mParent.
+> An mKey that is not a cell's and matches no shape has no mParent.
 > A cell's mKey has the mParent its mark supplied: an mKey of the mSort the cell is `:identified-in` (1.9-cell-a-singleton-sort).
 > The cell's mKey has that mKey's identity as its mParent (3.1-identity-of-a-key).
 > A shape declared `:root` is scoped in its own mWorld (2.2-primary-of-and-identified-in).
@@ -520,6 +520,7 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > Two seats that disagree are a contradiction.
 > Where no seat supplied an instance, where two seats disagree, or where the supplied mKey is not of the declared mSort, the mKey has no mParent and its mFullyQualifiedKey is unknown from that level.
 > A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
+> A supplied mParent-Catalog instance claims nothing in this model; that the catalog is on the route to the mKey's mReferent is a held hole (3.3-invalidation-three-mutator-species).
 
 UNACKED READING, temporary (`312d:ask-route-for-any-path-without-identified-in`,
 `312d:ask-mismatched-supply-reads-unknown`): the fence scopes every shape with neither
@@ -577,14 +578,16 @@ pred true_ClosesTraversal[d: ClosesTraversal] {
 > The lookup emits that chain, one member per routing mKey (2.9-the-traversal-and-the-region-test), as the lookup owner's speech.
 > The emission is an at-most set, and an emitted member licenses nothing alone.
 > The lookup's owner closes it by an explicit act; the closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one an emitted member reaches.
-> A lookup that emits no member has its mParent-Catalog, given whole, as its mTraversal.
+> A lookup that emits no member and no closing act has its mParent-Catalog, given whole, as its mTraversal.
 > A lookup that emits members without the closing act has those members and its mParent-Catalog, given whole.
+> A lookup that emits the closing act has exactly the members it emitted as its mTraversal.
 
 #### § 1.7.1-the-lookup-body-and-its-reads
 
 The read set of a lookup body is not in the fences.
 
 <!-- normative -->
+> The lookup emits the chain in the order it crossed the members, and the chain is ordered.
 > Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
 > Its target object is not its backing: an mKey can stop reaching an object without the object changing, and an object can change without its mKey changing.
 > A mResolution also depends on the read set of the lookup body that produced it.
@@ -780,7 +783,7 @@ sig VerdictFact extends Spoken {
 ```
 
 <!-- prose-translation -->
-> A verdict fact is the measured answer to a read of a cell, taken at a mSite, under the instances its mEntryChain lent (3.4-entry-and-lends).
+> A verdict fact is the measured answer to a read of an mKey, a cell's mKey included, taken at a mSite, under the instances its mEntryChain lent (3.4-entry-and-lends).
 > Its readset is the body's marked reads (2.5-may-read-the-readset).
 > The tool-oracle author vouches it: the vouch is the fact's speaker.
 
@@ -1325,7 +1328,7 @@ run law_exclusion_readings_agree_premise {
 
 <!-- prose-translation -->
 > A line's writeset against a read mKey is the set of mKeys the line may write or may change: the least set that four rules close.
-> Rule 1: every may-write entry the verb's author declared per matched shape is in the writeset; the completion record closes those entries.
+> Rule 1: every may-write entry the verb's author, or the filesystem binder, declared per matched shape is in the writeset; the completion record closes those entries.
 > Rule 2: where an mKey of K is in the writeset, or an mKey identified beneath an mKey of K, every mKey that K's may-write entailment names is in the writeset; a container at or above the deepest level that the written mKey shares with the read mKey contributes no entailment.
 > The entailment read for a written mKey is the one declared on that mKey and on each container on its identity's chain, the written mKey being excluded with its identity.
 > Rule 3: where an mKey given whole is in the writeset, every mKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test): its finished enumeration's members where it has one (2.10-places-the-upward-lookup), and every mKey its region covers besides where it has none.
@@ -1339,6 +1342,7 @@ run law_exclusion_readings_agree_premise {
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
 > The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> The sparing law is asked outside the world-scoped-top hole, the region hole, and the composite hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > Two commands ask the same law.
 > The first command asks it over worlds of four levels.
 > The second command asks it over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
@@ -1373,7 +1377,7 @@ Without the exclusion of containers at or above the shared level, a filesystem's
 #### § 2.6.2-a-book-stage-five-the-index-given-whole
 
 USER_STORY stage 5's stale-index morning, with the index given whole: Anna's apt describer
-names the package index, a cell of her own mSort identified in the boot, finishes its
+names the package index, an mKey of her own mSort identified in the boot, finishes its
 entailment, and closes the line's at-most set; Tessa and the stdlib close every may-read set on
 the status file's chain; the flag is set. So every reason for a collision but one is removed,
 and the answer isolates that one: the index and the status file meet at the boot as mKeys of
@@ -1739,7 +1743,7 @@ pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
 
 <!-- prose-translation -->
 > The mValues that reads of K's cells yield depend on which mKey of mSort O the read was taken under; K's owner declares the complement, `:observer-independence` of O, per mSort.
-> By default, a cell measured under a lent mKey of O is assumed to depend on it: its fact is then about (mReferent, O-instance), and it stands for another fact only when the two are about one mReferent under O-instances that are SAME.
+> By default, a cell measured under a lent mKey of O is assumed to depend on it: its fact is then about (mReferent, O-instance), and it stands for another fact only when `compare()` answers SAME for the two mKeys and each fact's observer instances are matched, one to one in each direction, by instances `compare()` answers SAME for.
 > `:observer-independence` of O is true when no answer about a K-cell depended on the O-instance it was taken under.
 
 UNACKED READING, temporary (`312d:enc-observers-are-the-vantage-ambients`): 311 says a cell is
@@ -1863,7 +1867,7 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants); it is true when no other mKey of that level's mScheme reaches the level's mReferent.
 > A lookup's mTraversal members are the routing mKeys it emitted, and its mParent-Catalog where the emission is not closed.
 > The mTraversals of x are those `identity(x)` produced, at every lookup on the way to the primary mKey and at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key), and the routes of 2.10-places-the-upward-lookup.
-> A mTraversal is of D's mSort when every member of it is of that mSort, or when it is a placing route of that mSort.
+> A mTraversal is of D's mSort when it has a member and every member of it is of that mSort, or when it is a placing route of that mSort.
 > For an mKey D given whole against an mKey x, step 1: if x's leaf compares SAME with D, SAME.
 > Step 2: else if any level of a mTraversal compares SAME with D, D's region covers x, and the pair reads UNKNOWN.
 > Step 3: else if x carries a closure for D's mSort, DISJOINT, in one of two forms.
@@ -1871,7 +1875,9 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > Second form: the placing lookup of D's mSort emitted `looked-up-in nothing-else` for x with no `looked-up-in` record; then x is in no region of that mSort.
 > Step 4: otherwise UNKNOWN.
 > An entry given whole names, beyond the mReferent of its mKey, every mReferent reached beneath that mKey through the mScheme's lookups or through a placing route: every mKey the region covers.
+> A held hole: some mKey D and some mKey x whose `compare()` reads UNKNOWN or KNOWN_UNSPOKEN, and whose region test reads DISJOINT.
 > A DISJOINT of the region test is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: x reaches neither D's mReferent nor an mReferent a route through D's mReferent passes to.
+> The region law is asked outside that hole.
 > The region law dies with a statement it rests on: with one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
 > One more kill asks whether the law also dies with one `alias nothing-else` false.
 > An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
@@ -1886,6 +1892,7 @@ replaced (`notes/312d` § 7).
 #### § 2.9.1-indexicals-and-the-floor
 
 <!-- normative -->
+> The mTraversals of x are walked leaf first.
 > A lookup may cross an indexical routing mKey, whose mResolution depends on the observing process; only the lookup's owner can say which, in the body that meets it, and an undeclared indexical routing mKey reads unknown.
 > Containment is membership in a mTraversal.
 > A routing mKey named whole, in a writeset or as a may-read entry, stands for whatever its mScheme reaches beneath it; in the test of 2.6-may-write-the-writeset it reads UNKNOWN against every mKey that mScheme can yield in the same mParent-Catalog instance, whatever 3.2-compare-one-chokepoint-four-answers answers of the two as siblings; that is the floor, which the region test refines.
@@ -2517,10 +2524,18 @@ run law_different_sorts_never_same_premise {
 > The engine's axioms hold when the engine's axiom about where the shell resolves holds (1.10-vantage-route-placeholder-witness); differential test makes them axiomatic, and nobody speaks them.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > No route passes through itself when no mReferent passes to itself, directly or through others.
+> A held hole: two cell mKeys of one cell mSort, under two mParents that reach one mReferent, reach two mReferents.
+> A held hole: an mKey scoped in an mWorld reaches an mReferent that a sibling mKey's mReferent holds, directly or through others.
+> A held hole: two composite mKeys that are SAME by their parts reach two mReferents.
+> Each hole has a witness run that shows it inhabited, and each law below is asked only outside the holes its sentence names.
 > The model never reaches a false SAME while every statement in force is true and the engine's axioms hold: two mKeys the walk reads SAME reach one mReferent, or both reach none (no counterexample at scope 6 is the claim, never a proof).
+> The SAME law of the walk is asked outside the cell hole.
 > The model never reaches a false DISJOINT while every statement in force is true and the engine's axioms hold and no store is among its own contents: two mKeys the walk reads DISJOINT reach no common mReferent.
+> The DISJOINT law of the walk is asked outside the world-scoped-top hole.
+> The SAME law of `compare()` is asked outside the cell hole and the composite hole.
+> The DISJOINT law of `compare()` is asked while no store is among its own contents, outside the world-scoped-top hole and the composite hole.
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
-> mKeys of different mSorts never read SAME.
+> mKeys of different mSorts never read SAME by the walk.
 > Each law dies with a statement it rests on: with one statement false and every other statement in force true, a false SAME of the walk is reachable where the false one is a `:guarantees-unique-referent` or a `:yields`; a false DISJOINT of the walk where it is a `:guarantees-unique-name` or an `:aliases-nothing-else`; a false SAME and a false DISJOINT of `compare()` where it is a mCorrespondence; and with a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
 > The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
 > Six more kills ask whether the walk's laws also die with one of these false: an `:identified-in`, a `:root`, a supplied mParent instance, a wrapper's completion sentinel.
@@ -3141,7 +3156,10 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > A first write can also change an mKey-Primary, so a state mutation whose writeset touches a mParent-Store invalidates the mTokens scoped in it.
 > A lifecycle mutation writes a mRoot-adjacent mKey; every mKey-Primary scoped in it names a new mReferent afterward.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
+> A held hole: some level of an mKey has no closing act and no mKey for its mParent-Catalog.
+> A held hole: a natural mKey with an mKey for its mParent-Catalog reaches an mReferent that no route through the catalog's mReferent passes to.
 > While every statement in force is true, the engine's axioms hold, no store is among its own contents, and no route passes through itself, a line that invalidates no mResolution of an mKey and closed its at-most set writes nothing that a route to that mKey's mReferents passes through.
+> The untouched-route law is asked outside those two holes and the region hole (2.9-the-traversal-and-the-region-test).
 > The untouched-route law dies with a statement it rests on: with one traversal's closing act false, or one completion record false, and every other statement in force true, a line that invalidates no mResolution of an mKey writes something that a route to that mKey's mReferents passes through.
 
 Scope: the untouched-route law runs at nine statements because its twin's witness needs seven in force at once (three traversal closures, one emitted member, the line's at-most entry and its completion, and the name warrant that separates the written key from the crossed one) and is unsat at the six every other command shares.
