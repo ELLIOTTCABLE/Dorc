@@ -244,15 +244,19 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   one commit per top-level section, the linter as its gate, fidelity mismatches reported and
   not repaired, plus the rank-3 gaps above. The conductor reads every changed line before any
   fold. The accounting worktree and branch are removed (no commit of its own).
+- **[TYPED]** 2026-09-29: the conductor runs no `--official`, and no second official pass runs
+  before a pending tooling change that invalidates the official lock's keys has landed. The
+  human's in-flight run lands tomorrow and is read for what it measures.
 - `pln-the-road-to-the-panel` (the conductor's plan, process only) — (1) the STE pass lands and
-  is read line by line; (2) the text is settled and a builder runs `--write --official` on this
-  branch in a worktree of its own, hours; (3) every red is triaged under `30Z` § 2.5: a
-  transcription slip is repaired toward the letter, a design question becomes `hole_` with its
-  witness and premise exclusion; a hole changes every law's key, so the laws re-run at the gate
-  tier until no new red appears, then once more official; (4) the lock's commit to `ai/main`
-  accepts the rows; (5) the panel, on the human's typed ack, after the human's word on the marks.
-  The human's pass over `ed70650f` is the affordability measurement of the seven laws and the
-  three unmeasured books, nothing more, since the text has moved under it.
+  is read line by line; (2) nothing touches a solver while the human's pass holds the
+  heavy-work lock; afterward a builder measures the settled text at the gate tier, in a
+  worktree of its own; (3) every red is triaged under `30Z` § 2.5: a transcription slip is
+  repaired toward the letter, a design question becomes `hole_` with its witness and premise
+  exclusion; the laws re-run at the gate tier until no new red appears; (4) the official pass
+  and the lock's commit to `ai/main`, which accepts the rows, are scheduled by the human once
+  the key change is in; (5) the panel, on the human's typed ack, after the human's word on the
+  marks. The human's pass over `ed70650f` is the affordability measurement of the seven laws
+  and the three unmeasured books, nothing more, since the text has moved under it.
 - `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
   words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
   present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are
