@@ -8,7 +8,7 @@ use super::{
     write_modules,
 };
 use crate::alloy_jvm::Jvm;
-use crate::alloy_jvm::adapter::{Adapter, Machine, Refusal};
+use crate::alloy_jvm::adapter::{Adapter, Machine, Progress, Refusal, Watch};
 use crate::json::Json;
 
 type Fields = Vec<(String, Json)>;
@@ -166,8 +166,10 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             tier: ask.tier,
             caps,
             target: &target,
+            stem: &stem,
+            progress: Progress::Silent,
         };
-        let mut adapter = match Adapter::new(&jvm, caps.machine) {
+        let mut adapter = match Adapter::new(&jvm, caps.machine, Watch::SILENT) {
             Ok(a) => a,
             Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
         };
@@ -229,6 +231,8 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         tier: ask.tier,
         caps,
         target: &target,
+        stem: &stem,
+        progress: ask.progress,
     };
     let (rows, refusals) = match drive::run(&jvm, &job) {
         Ok(ran) => ran,

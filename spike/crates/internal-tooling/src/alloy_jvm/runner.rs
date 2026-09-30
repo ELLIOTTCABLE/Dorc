@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
 
-use super::adapter::{Adapter, Ask, Budget, Exceeded, Machine, Solved};
+use super::adapter::{Adapter, Ask, Budget, Exceeded, Machine, Solved, Watch};
 use super::{Jvm, expand};
 use crate::json::Json;
 
@@ -116,7 +116,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         Ok(hold) => hold,
         Err(code) => return ExitCode::from(code),
     };
-    let mut adapter = match Adapter::new(&jvm, o.machine) {
+    let mut adapter = match Adapter::new(&jvm, o.machine, Watch::SILENT) {
         Ok(a) => a,
         Err(why) => {
             eprintln!("alloy runner: {why}");
@@ -282,7 +282,7 @@ fn solve_all(adapter: &mut Adapter, o: &Opts) -> ExitCode {
                         xml: false,
                         text: o.instances,
                     };
-                    let solved = adapter.solve(file, &o.opens, &ask, budget);
+                    let solved = adapter.solve(file, &o.opens, &ask, budget, Watch::SILENT);
                     let wall = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                     match solved {
                         Solved::Found {

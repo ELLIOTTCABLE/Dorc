@@ -132,10 +132,76 @@ impl std::fmt::Debug for LiveHandle {
 
 const STDERR_TAIL: usize = 16 * 1024;
 const POLL: Duration = Duration::from_millis(200);
+const ALIVE_EVERY: Duration = Duration::from_mins(1);
+
+/// Where progress lines go: nowhere, or stderr. Never stdout, which carries the report.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Progress {
+    Silent,
+    Stderr,
+}
+
+impl Progress {
+    pub(crate) fn say(self, line: &str) {
+        if self == Self::Stderr {
+            let _ = self.write_to(&mut std::io::stderr().lock(), line);
+        }
+    }
+
+    /// One whole line in one write, so concurrent children interleave by line.
+    fn write_to(self, out: &mut impl std::io::Write, line: &str) -> std::io::Result<()> {
+        match self {
+            Self::Silent => Ok(()),
+            Self::Stderr => out.write_all(format!("assay {line}\n").as_bytes()),
+        }
+    }
+}
+
+/// What a caller hands the adapter so its lines name something; the adapter knows commands by
+/// index only.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Watch<'a> {
+    pub(crate) progress: Progress,
+    pub(crate) name: &'a str,
+}
+
+impl Watch<'_> {
+    pub(crate) const SILENT: Watch<'static> = Watch {
+        progress: Progress::Silent,
+        name: "",
+    };
+}
+
+pub(crate) fn secs(d: Duration) -> String {
+    format!("{:.1}s", d.as_secs_f64())
+}
+
+fn still_alive_due(elapsed: Duration, last_said: Duration) -> bool {
+    elapsed.saturating_sub(last_said) >= ALIVE_EVERY
+}
+
+fn still_alive_line(
+    name: &str,
+    elapsed: Duration,
+    cpu: Duration,
+    budget: Budget,
+    translated: Option<&Value>,
+) -> String {
+    let phase = match translated.and_then(|t| t.u64("clauses")) {
+        Some(clauses) => format!("solving {clauses} clauses"),
+        None => "translating".to_owned(),
+    };
+    format!(
+        "{name}: alive at {}, cpu {} of {}s, {phase}",
+        secs(elapsed),
+        secs(cpu),
+        budget.cpu_s
+    )
+}
 
 impl Adapter {
-    pub(crate) fn new(jvm: &Jvm, machine: Machine) -> Result<Self, String> {
-        let classes = compiled(jvm)?;
+    pub(crate) fn new(jvm: &Jvm, machine: Machine, watch: Watch<'_>) -> Result<Self, String> {
+        let classes = compiled(jvm, watch)?;
         let sep = if cfg!(windows) { ";" } else { ":" };
         Ok(Self {
             java: jvm.java.clone(),
@@ -208,7 +274,7 @@ impl Adapter {
         }
     }
 
-    fn call(&mut self, request: &Json, budget: Option<Budget>) -> Call {
+    fn call(&mut self, request: &Json, budget: Option<Budget>, watch: Watch<'_>) -> Call {
         let live = match self.spawn() {
             Ok(live) => live,
             Err(e) => return Call::Died(e),
@@ -225,6 +291,7 @@ impl Adapter {
         let sent = Instant::now();
         let mut base_cpu: Option<u64> = None;
         let mut translated: Option<Value> = None;
+        let mut last_said = Duration::ZERO;
         loop {
             let Some(LiveHandle(live)) = self.live.as_mut() else {
                 return Call::Died("adapter vanished".to_owned());
@@ -237,14 +304,36 @@ impl Adapter {
                     match value.str("event") {
                         // std reads no child's CPU portably, so the child reports its own.
                         Some("start") => base_cpu = value.u64("cpu_ms"),
-                        Some("translated") => translated = Some(value),
+                        Some("translated") => {
+                            watch.progress.say(&format!(
+                                "{}: translated in {}, {} clauses, {} primary vars",
+                                watch.name,
+                                secs(Duration::from_millis(value.u64("ms").unwrap_or(0))),
+                                value.u64("clauses").unwrap_or(0),
+                                value.u64("primary_vars").unwrap_or(0),
+                            ));
+                            translated = Some(value);
+                        }
                         Some(_) => {
                             if let (Some(b), Some(now), Some(budget)) =
                                 (base_cpu, value.u64("cpu_ms"), budget)
-                                && now.saturating_sub(b) >= budget.cpu_s.saturating_mul(1000)
                             {
-                                self.kill();
-                                return Call::Exceeded(Exceeded::Cpu(budget.cpu_s), translated);
+                                let used = now.saturating_sub(b);
+                                if used >= budget.cpu_s.saturating_mul(1000) {
+                                    self.kill();
+                                    return Call::Exceeded(Exceeded::Cpu(budget.cpu_s), translated);
+                                }
+                                let elapsed = sent.elapsed();
+                                if still_alive_due(elapsed, last_said) {
+                                    last_said = elapsed;
+                                    watch.progress.say(&still_alive_line(
+                                        watch.name,
+                                        elapsed,
+                                        Duration::from_millis(used),
+                                        budget,
+                                        translated.as_ref(),
+                                    ));
+                                }
                             }
                         }
                         None => return Call::Reply(value),
@@ -288,7 +377,7 @@ impl Adapter {
         solver: &str,
     ) -> Result<Parsed, Refusal> {
         let request = request("parse", root, opens, &[("solver", Json::str(solver))]);
-        let reply = match self.call(&request, None) {
+        let reply = match self.call(&request, None, Watch::SILENT) {
             Call::Reply(v) => v,
             other => return Err(other.refusal()),
         };
@@ -331,7 +420,11 @@ impl Adapter {
         root: &Path,
         opens: &[(String, PathBuf)],
     ) -> Result<String, Refusal> {
-        match self.call(&request("parse-only", root, opens, &[]), None) {
+        match self.call(
+            &request("parse-only", root, opens, &[]),
+            None,
+            Watch::SILENT,
+        ) {
             Call::Reply(v) if v.bool("ok") == Some(true) => {
                 Ok(v.str("module").unwrap_or_default().to_owned())
             }
@@ -346,6 +439,7 @@ impl Adapter {
         opens: &[(String, PathBuf)],
         ask: &Ask<'_>,
         budget: Budget,
+        watch: Watch<'_>,
     ) -> Solved {
         let extra = [
             ("index", Json::Num(ask.index)),
@@ -353,7 +447,7 @@ impl Adapter {
             ("xml", Json::Bool(ask.xml)),
             ("text", Json::Bool(ask.text)),
         ];
-        match self.call(&request("solve", root, opens, &extra), Some(budget)) {
+        match self.call(&request("solve", root, opens, &extra), Some(budget), watch) {
             Call::Reply(v) => match v.str("result") {
                 Some(r @ ("sat" | "unsat")) => Solved::Found {
                     sat: r == "sat",
@@ -395,7 +489,11 @@ impl Adapter {
             ("index", Json::Num(index)),
             ("instance_xml", Json::str(xml)),
         ];
-        match self.call(&request("eval", root, &[], &extra), Some(budget)) {
+        match self.call(
+            &request("eval", root, &[], &extra),
+            Some(budget),
+            Watch::SILENT,
+        ) {
             Call::Reply(v) if v.bool("ok") == Some(true) => v.bool("value"),
             _ => None,
         }
@@ -481,7 +579,7 @@ fn request(verb: &str, root: &Path, opens: &[(String, PathBuf)], extra: &[(&str,
     Json::Obj(fields)
 }
 
-fn compiled(jvm: &Jvm) -> Result<PathBuf, String> {
+fn compiled(jvm: &Jvm, watch: Watch<'_>) -> Result<PathBuf, String> {
     let digest = adapter_digest()?;
     let root = internal_tooling::target_dir().join("alloy");
     let dir = root.join(format!("adapter-{}", digest.get(..16).unwrap_or(&digest)));
@@ -495,6 +593,11 @@ fn compiled(jvm: &Jvm) -> Result<PathBuf, String> {
     ));
     let _ = std::fs::remove_dir_all(&scratch);
     std::fs::create_dir_all(&scratch).map_err(|e| format!("{}: {e}", scratch.display()))?;
+    watch.progress.say(&format!(
+        "{}: compiling the adapter with javac into {}",
+        watch.name,
+        dir.display()
+    ));
     let out = Command::new(&jvm.javac)
         .arg("-nowarn")
         .arg("-cp")
@@ -521,5 +624,45 @@ fn compiled(jvm: &Jvm) -> Result<PathBuf, String> {
             "{}: the compiled adapter did not land",
             dir.display()
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::{Progress, still_alive_due};
+
+    #[test]
+    fn still_alive_speaks_once_a_minute_from_the_last_line() {
+        // A tick arrives every second for hours; the throttle alone keeps that to one line a
+        // minute, measured from the last line said rather than from each tick.
+        let s = Duration::from_secs;
+        assert!(!still_alive_due(s(0), s(0)));
+        assert!(!still_alive_due(Duration::from_millis(59_900), s(0)));
+        assert!(still_alive_due(s(60), s(0)));
+        let said = Duration::from_millis(60_400);
+        assert!(!still_alive_due(s(61), said));
+        assert!(!still_alive_due(s(120), said));
+        assert!(still_alive_due(Duration::from_millis(120_400), said));
+    }
+
+    #[test]
+    fn silent_progress_writes_nothing_and_stderr_writes_one_whole_line() {
+        // `--quiet` is what CI and agents rely on for zero bytes; the audible form must be one
+        // write of one terminated line, or concurrent children could split each other's lines.
+        let mut silent = Vec::new();
+        Progress::Silent
+            .write_to(&mut silent, "doc: laws.k: solving")
+            .expect("a Vec accepts writes");
+        assert!(silent.is_empty());
+
+        let mut heard = Vec::new();
+        Progress::Stderr
+            .write_to(&mut heard, "doc: laws.k: solving")
+            .expect("a Vec accepts writes");
+        let text = String::from_utf8(heard).expect("utf-8");
+        assert_eq!(text.matches('\n').count(), 1);
+        assert!(text.ends_with('\n') && text.contains("doc: laws.k: solving"));
     }
 }

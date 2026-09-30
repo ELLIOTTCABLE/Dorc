@@ -18,6 +18,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use crate::alloy_jvm::adapter::Progress;
 use crate::json::{Json, Value};
 use alloy::{Head, Item};
 use emit::ORIGIN;
@@ -168,6 +169,7 @@ struct Ask {
     tier: tier::Tier,
     target: drive::Target,
     caps: Vec<String>,
+    progress: Progress,
 }
 
 pub(crate) fn run(args: &[String]) -> ExitCode {
@@ -185,12 +187,17 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         tier: tier::Tier::Gate,
         target: drive::Target::All,
         caps: caps.to_vec(),
+        progress: Progress::Stderr,
     };
     let mut it = ours.iter();
     while let Some(arg) = it.next() {
         let wanted = match arg.as_str() {
             "--out" => {
                 out = it.next().map(|d| resolve(d));
+                continue;
+            }
+            "--quiet" => {
+                ask.progress = Progress::Silent;
                 continue;
             }
             "--hot" | "--gate" | "--official" => {
@@ -312,7 +319,7 @@ const LAWS_HALF: &str = "shared-laws.assay.md";
 fn usage(problem: &str) -> ExitCode {
     eprintln!(
         "assay: {problem}
-usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [-- <runner caps>]"
+usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--quiet] [-- <runner caps>]"
     );
     ExitCode::from(REFUSED)
 }
