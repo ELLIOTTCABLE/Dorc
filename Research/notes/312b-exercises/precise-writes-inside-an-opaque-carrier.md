@@ -339,8 +339,16 @@ Removing the parent test unconditionally would therefore not be a justified repa
 The narrow mechanical study abstracts the upstream identity and format lookups into supplied
 canonical keys. It tests this token rule under unchanged 311. It is not a translation of the
 JSON parser, a proof of the hypothetical tools, or a new decision about `affects` transitivity.
-Its independent inhabited witness must distinguish a genuinely admitted world from a check that
-passes or fails only because the fixture contradicts itself.
+The experiment now has that independent witness. With unchanged 311, the canonical-key world
+is SAT on Windows and WSL. The assertion requesting sibling survival has a counterexample on
+both platforms. A strengthened diagnostic confirms that token invalidation is the remaining
+blocker: routing and lifecycle invalidation are false, both sets are closed, and every relevant
+pair is DISJOINT. Whole-carrier and same-member writes still collide in their control books.
+
+These are bounded results over the fixed fixture, not a proof of the hypothetical tools or a
+repair. The exact scopes, abstraction limits, report paths, and replay inputs are in
+`312f:6-measured-token-invalidation-without-a-routing-wall`. The experimental source remains
+uncommitted in the conductor worktree, by the human's direction.
 
 ## § 7-who-knows-and-who-pays
 

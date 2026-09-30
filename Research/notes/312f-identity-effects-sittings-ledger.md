@@ -158,7 +158,7 @@ case. This narrows the example, not Dorc's admitted world or a specification law
 Assay has no cross-document import or book-append command. The experiment therefore assembles
 an ignored temporary document from unchanged 311 plus four book fragments, with the unchanged
 shared halves beside it. No specification file or committed result lock changes. The assembly
-script is `_tmp-312f-build-study.cjs` in this worktree, and its output is `.tmp/312f-study/`.
+script is `.tmp/312f-study/build-study.cjs` in this worktree, beside its output.
 The canonical-key slice compresses the upstream identity into a supplied rooted carrier and
 uses explicitly closed empty primary-key traversals. It does not mechanize JSON, INI, helper
 custody, or the actual layout probes. The metadata write is retained as a separate part.
@@ -167,3 +167,80 @@ The first parse refused a new map name for literal `1`, which 311 already names 
 Reusing the existing word atom repaired that join-key conflict. The assembled document then
 passed every parse lint. This was a spelling repair, not a model change. The untouched 311
 source hash is recorded in `.tmp/312f-study/baseline.json`.
+
+## § 6-measured-token-invalidation-without-a-routing-wall
+
+The experimental books ran against unchanged 311. The conductor read the JSON reports and the
+wanted book's counterexample, then strengthened the current-behavior book to check every other
+sparing prerequisite. That strengthened book ran again on both platforms. No inference rule,
+truth predicate, hole exclusion, scope, or solver option was changed to obtain these results.
+
+Each book has two lines. Its fixed world has four mKeys: carrier, enabled byte, trace byte,
+and timestamp aggregate. The carrier is rooted; the three parts have it as their mParent.
+The primary part mScheme carries unique-name. Both sorts have closed may-read sets and finished
+entailments. All four primary-key traversals are explicitly closed-empty. The flag is set.
+The fact reads only the trace byte. The precise line writes the enabled byte and timestamps.
+
+The reported scope is `6 but 4 int, 7 seq, exactly 71 Shword, exactly 0 Class, exactly 2 Line`.
+There are exactly 20 claims, except in the whole-carrier case, which has 19. Each fresh command
+had a 120-second CPU budget. All results were definite; there was no timeout or construction
+disagreement.
+
+| book | line outcomes / conjunction | book run | platforms |
+| --- | --- | --- | --- |
+| `precise_sibling_current` | no counterexample at the stated scope | SAT | Windows and WSL |
+| `precise_sibling_wanted` | first line has no counterexample; second line and conjunction have counterexamples | UNSAT | Windows and WSL |
+| `whole_carrier_current` | no counterexample at the stated scope | SAT | Windows |
+| `same_member_current` | no counterexample at the stated scope | SAT | Windows |
+
+The two sibling books have byte-identical declarations and world facts; this was checked on
+the generated modules after excluding their module headers and commands. They also have the
+same first outcome. The current book's SAT run therefore witnesses the wanted book's world
+independently of its impossible wanted outcome. Assay reports the wanted book's own premise as
+UNSAT because that run conjoins all requested outcomes, including survival. That UNSAT is not
+an inconsistent world and is not a vacuous proof. The counterexample itself supplies another
+witness of the first outcome with the second false.
+
+The strengthened current book confirms these facts together (+SURE at the stated scope):
+
+- The written payload key and the read key compare DISJOINT.
+- The written payload key and the carrier compare UNKNOWN.
+- Neither the readset nor the relevant writeset is top.
+- Every writeset member compares DISJOINT with the read key.
+- Routing invalidation is false, and lifecycle invalidation is false.
+- The actual writes affect no dependency of the measured fact.
+- Token invalidation is true, and sparing is false.
+
+The counterexample's comparison table shows the same pattern for the timestamp key: it is
+DISJOINT from the trace key and UNKNOWN against their carrier. The carrier is the only mKey
+ancestor of the trace key. Thus the token rule is the remaining blocker in this fixed world.
+The whole-carrier and same-member controls retain the required collision behavior.
+
+This establishes a value gap in an admitted canonical-key world. It does not establish that the
+concrete oracles discharge all their contracts, or that a proposed repair is sound. In
+particular, the fixture does not decide whether aggregate parent state must include every child
+state, how actual changes compose, or what additional speech should license token stability.
+The world uses 311's existing `holds` abstraction and has no chronology of changed identities.
+These limits are recorded in the experiment's README, not hidden by a new model axiom.
+
+### § 6.1-replay-material-and-conduct
+
+The uncommitted experiment remains in this conductor worktree under `.tmp/312f-study/`:
+`build-study.cjs`, `books.assay.md`, `combined.assay.md`, the shared halves, `baseline.json`,
+`README.md`, and six JSON reports. `precise-current-report.json` and
+`precise-current-wsl-report.json` contain the strengthened diagnostic. The other reports retain
+their original measurements. The source 311 prefix in the assembled input was checked
+byte-for-byte against the untouched specification.
+
+Counterexample instances are under
+`spike/target/alloy/combined/instances/book_precise_sibling_wanted/`, notably `line_2.xml` and
+`every_line.xml`. The source fragments and assembly script are the replay inputs; generated
+modules and instances are disposable outputs. No result lock was written. Every check command
+returned exit 1 for new rows against a missing experimental lock, with the desired red reported
+separately as a counterexample. No result is described as an acceptance-gate pass.
+
+The first commit hook needed mise trust for the new worktree. The human explicitly authorized
+that trust on Windows and WSL, without installation. A later hook briefly stashed the untracked
+assembly script under hk's default policy and restored it. The script now lives in the ignored
+experiment directory. Subsequent hooks use `HK_STASH=none` and `HK_FIX=0`, the intended agent
+mode. No user stash was altered or removed.
