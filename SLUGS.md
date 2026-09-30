@@ -3676,6 +3676,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Z 312d (2)
 
+## fw-normative-prose-is-a-headed-blockquote
+- defined: —
+- cited: 30Z 312e (2)
+
 ## 27V:gap-ack6-sibling-hint-absent
 - defined: Research/notes/27V-user-aid-machinery-build-phase.md:70 — — the ruled unloaded-sibling-oracle hint has no
 
