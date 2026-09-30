@@ -43,7 +43,7 @@ pkl = "0.31.1"
 
 # Lint/audit toolbelt for the spike (wired as hk.pkl steps; see also
 # `mise run audit` for the network-touching advisories pass).
-"cargo:cargo-deny" = "latest"
+"github:EmbarkStudios/cargo-deny" = "latest"
 typos = "latest"
 
 # The `mise run test` runner. Pinned looser than the lanes above but tighter than the
@@ -54,7 +54,7 @@ typos = "latest"
 # ACROSS the crate seam. `mise run test` therefore pairs it with `cargo test --doc` and
 # that second step is not optional; a bare `cargo nextest run` is green with the seal
 # gone. Reach for the task, never the tool.
-"cargo:cargo-nextest" = "0.9"
+"github:nextest-rs/nextest" = { version = "0.9", version_prefix = "cargo-nextest-" }
 
 # Opt-in `dorc lint` real-external-tools test lane ONLY (human-authorized 2026-07-18;
 # spike/CLAUDE.md `real-tools-lane-opt-in`, `Research/notes/27T`). Pinned EXACT so the lane's
