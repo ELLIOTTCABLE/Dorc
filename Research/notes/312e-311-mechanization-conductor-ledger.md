@@ -716,3 +716,68 @@ timeout (translation alone 207 s), both owed to the official ceiling; four kills
   no-other-home cell: the two are one question. The kill keeps `expect 1` and lands as residue,
   the translation already saying what an unsatisfiable kill says.
 - No edit follows; the text at `2f6f4350` is the settled text. Leg six is the official write.
+
+## § 17-the-official-lock-and-the-close-of-the-arc
+
+2026-09-30. The from-scratch official write over the settled text ran 3 h 50 m on two children
+at 1800 s of CPU per command and exited 0; the builder committed the lock by pathspec. The
+conductor's branch fast-forwarded to it and was rebased over `ai/main` (ten sibling commits,
+clean), so the lock's header named the pre-rebase tip and a hot-tier `--write` re-pointed it,
+solving nothing. This is the last section; the arc stops here, right up to the panel, which is
+another lane's (§ 10.1).
+
+### § 17.1-what-the-lock-records
+
+125 rows. No construction disagreement, nothing gone, nothing owed.
+
+- Laws, 66 rows: thirteen checks. Green with a sat twin: `natural_same`, `natural_disjoint`,
+  `sparing` (four levels, ten statements), `compare_same`, `same`, `disjoint`, `nobody_spoke`,
+  `different_sorts_never_same`, `unstale_route` (six levels, nine statements, no counterexample
+  under its four holes and the ⊤ repair, where the old lock had a counterexample),
+  `disjoint_by_two_tops_rests_on_one_scheme_owner`. Accepted red: `exclusion_readings_agree`,
+  the question whose answer is that the two readings of § 2.6's exclusion disagree. Unmeasured
+  at the ceiling, solving: `sparing_with_a_store_on_the_chain` (fourteen statements, five
+  levels, twin sat), `region_disjoint` (its premise grew by two holes since it solved in 76 s),
+  `compare_disjoint` (never affordable). Every twin sat. Every hole witness sat, nine holes.
+  Kills: fourteen sat; five unsat with `expect 1`, landing as residue: the finished record
+  (§ 16), `:identified-in` against SAME and against DISJOINT, `:root` against SAME, the sentinel
+  against SAME (§ 11.2); two timeouts, `sparing_supplies_parent` (five levels) and
+  `region_alias_nothing_else`.
+- Books, 59 rows: fourteen books and the corpus, every line, every conjunction, every run
+  green, each answer as the conductor hand-walked it.
+
+### § 17.2-the-state-a-successor-inherits
+
+- `ai/main` carries the specification, the shared half, the lock, and this ledger, folded by
+  fast-forward; the conductor's and the builder's worktrees and branches are removed.
+- The specification at the tip: 4,351 lines, 42 `alloy` fences, 14 books, nine `hole_`
+  predicates, thirteen UNACKED READING sites. Every normative sentence is STE-strict at the
+  linter (§ 8). The accounting at `57fbe4ee` (§ 14) plus the two commits after it (the
+  family hole, the audit repairs) is the tri-partition of record; its tables are not durable.
+- The claim this arc hands the panel's lane: the mechanical 311 is, as far as this conductor
+  knows, one-to-one with the prose 311 at `1af7e0d9^`, with every departure in one of four
+  named places: the thirteen marks (readings hardened by the first pass, `312d` § 7); the nine
+  holes (design silences the solver found, each a premise exclusion with an inhabited witness);
+  the accounted gaps of § 14.3 and `312d` § 12 (worlds the fences admit that the prose says do
+  not arise, left admitted on purpose); and the residue (normative prose the checker cannot
+  reach, 225 baseline sentences). Nothing outside those four is a known meaning-shift.
+
+### § 17.3-held-for-the-design-sitting
+
+Nothing here is owed by this ledger's author; it is the field.
+
+- The nine holes, and the two questions they reduce to for the sparing law: the no-other-home
+  cell (§ 15) and whether a record's "affects" is the write's total effect (§ 12), with § 16's
+  consequence that as encoded the finished record's truth never bears.
+- The thirteen marks (`312d` § 7) and the five world-stratum questions (`312d` § 17.1).
+- The unsat kills as evidence: `:identified-in`, `:root`, and the sentinel never stand alone
+  behind an answer (§ 11.2); the sentinel's is a measurement of the one-atom reading.
+- The accounted gaps (§ 14.3): the `:places` gate, the declaration seat for a natural mKey,
+  exactly-one against at-most-one for a cell's mKey, rule 3 at the seed, composite parts by the
+  walk; and the inert definitions of § 14.1.
+- `burn-primary-coherence-sentence` (`312d` § 21.2); `fnd-in-force-is-book-global`
+  (`312d` § 19.2); `sus-passes-is-one-step-in-every-truth` (§ 10.4), now load-bearing for no
+  law; `sus-a-contained-write-touches-its-store` (`312d` § 22.3), shown by
+  2.6.3-a-book-stage-five-the-list-file-named.
+- The three ceiling timeouts, each a cost question for the assay owner or a restructuring
+  the human calls singly (`312d` § 16.4 S2).
