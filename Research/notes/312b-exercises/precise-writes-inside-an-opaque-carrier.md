@@ -348,7 +348,7 @@ pair is DISJOINT. Whole-carrier and same-member writes still collide in their co
 These are bounded results over the fixed fixture, not a proof of the hypothetical tools or a
 repair. The exact scopes, abstraction limits, report paths, and replay inputs are in
 `312f:6-measured-token-invalidation-without-a-routing-wall`. The experimental source remains
-uncommitted in the conductor worktree, by the human's direction.
+uncommitted in the conductor worktree, under the human's allowance for experimental work.
 
 ## § 7-who-knows-and-who-pays
 

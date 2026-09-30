@@ -244,3 +244,18 @@ that trust on Windows and WSL, without installation. A later hook briefly stashe
 assembly script under hk's default policy and restored it. The script now lives in the ignored
 experiment directory. Subsequent hooks use `HK_STASH=none` and `HK_FIX=0`, the intended agent
 mode. No user stash was altered or removed.
+
+## § 7-state-for-the-next-sitting
+
+The durable changes are this ledger, the concrete exercise, and their pointer in
+`Research/README.md`. All are committed on `ai/r31-identity-effects-conductor`.
+`mise run both gate:full-quiet` passed on Windows and WSL with the three applicable document
+checks selected. The worktree remains available because it holds the running sitting and the
+uncommitted experimental sources and reports. No branch was merged, no remote was changed,
+and `specs/311-identity.assay.md` and its lock are untouched.
+
+The design remains open. The experiment isolates the token rule's value cost even with
+canonical keys and ideal closed routing. It does not authorize deleting that rule: writes to
+a carrier and genuinely identity-changing member operations still require conservative
+handling. The next discussion can therefore examine what the current statements actually
+promise about a member token's lifetime, without first inventing a new region species.
