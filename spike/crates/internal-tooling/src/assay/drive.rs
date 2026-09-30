@@ -497,6 +497,28 @@ fn unrun(e: &Entry, result: Outcome, job: &Job<'_>, note: &str) -> Computed {
     }
 }
 
+/// Whether the hot tier defers a row, named by the recorded measurement that decided it.
+fn deferral(c: &Row) -> Option<String> {
+    match c.result {
+        Outcome::Timeout => Some(format!(
+            "deferred: last timeout at {}",
+            c.budget
+                .map_or_else(|| "an unrecorded budget".to_owned(), |b| format!("{b}s"))
+        )),
+        Outcome::OutOfMemory => Some(format!(
+            "deferred: last out-of-memory at {}",
+            c.heap
+                .map_or_else(|| "an unrecorded heap".to_owned(), |h| format!("{h} MB"))
+        )),
+        _ => c.size.filter(|s| s.clauses > DEFER_CLAUSES).map(|s| {
+            format!(
+                "deferred: {} clauses over the {DEFER_CLAUSES} threshold",
+                s.clauses
+            )
+        }),
+    }
+}
+
 fn found(e: &Entry, sat: bool) -> Outcome {
     match (sat, e.info.check) {
         (true, true) => Outcome::Counterexample,
@@ -547,17 +569,9 @@ fn decide(
         };
     }
     if job.tier.defers()
-        && e.committed.as_ref().is_some_and(|c| {
-            matches!(c.result, Outcome::Timeout | Outcome::OutOfMemory)
-                || c.size.is_some_and(|s| s.clauses > DEFER_CLAUSES)
-        })
+        && let Some(why) = e.committed.as_ref().and_then(deferral)
     {
-        return unrun(
-            e,
-            Outcome::Deferred,
-            job,
-            "deferred by the hot tier: its last measurement was too large",
-        );
+        return unrun(e, Outcome::Deferred, job, &why);
     }
     if entailed {
         let mut c = unrun(
@@ -703,4 +717,55 @@ pub(super) fn portable(message: &str, out: &Path) -> String {
         slashed(&out.display().to_string()).trim_end_matches('/')
     );
     slashed(message).replace(&dir, "")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::deferral;
+    use crate::alloy_jvm::adapter::Size;
+    use crate::assay::lock::{Outcome, Row};
+
+    fn row(result: Outcome, clauses: Option<u64>) -> Row {
+        Row {
+            module: "laws".to_owned(),
+            name: "k".to_owned(),
+            kind: "check".to_owned(),
+            scope: String::new(),
+            result,
+            phase: None,
+            budget: Some(1800),
+            heap: Some(4096),
+            size: clauses.map(|clauses| Size {
+                primary_vars: 1,
+                vars: 1,
+                clauses,
+            }),
+            key: None,
+            platform: None,
+            message: None,
+        }
+    }
+
+    #[test]
+    fn a_deferral_names_the_measurement_that_decided_it() {
+        // The hot tier's decision moved into this function when its note learned to name its
+        // cause, so the decision is pinned here along with the cause.
+        assert_eq!(
+            deferral(&row(Outcome::Timeout, None)).as_deref(),
+            Some("deferred: last timeout at 1800s")
+        );
+        assert_eq!(
+            deferral(&row(Outcome::OutOfMemory, None)).as_deref(),
+            Some("deferred: last out-of-memory at 4096 MB")
+        );
+        assert_eq!(
+            deferral(&row(Outcome::NoCounterexample, Some(2_381_046))).as_deref(),
+            Some("deferred: 2381046 clauses over the 2000000 threshold")
+        );
+        assert_eq!(
+            deferral(&row(Outcome::NoCounterexample, Some(2_000_000))),
+            None
+        );
+        assert_eq!(deferral(&row(Outcome::Sat, None)), None);
+    }
 }
