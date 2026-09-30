@@ -539,3 +539,33 @@ are in its hand-back and are summarized here.
   `instances/`.
 - `--module` takes one module per invocation; a sweep needs a wrapper loop.
 - The runner's caps go after a SECOND `--` (`mise run assay-quiet -- --check <spec> -- --batch-timeout N`); § 10.2's spelling with one `--` was wrong.
+
+## § 12-leg-two-and-the-third-thing-hole
+
+2026-09-30. The same Opus re-measured the eleven commands `8d46d614` touched, at `697a91ae`, as
+`--only` slices at the gate tier. The shared-part witness sat; the fourteen-statement twin sat
+(the starvation count held); the five sparing kills and the `looked-up-in` region kill sat; the
+region law and its `alias nothing-else` kill timed out at 600 s and are the official tier's.
+Both sparing laws were red again, through one new shape outside the shared-part hole.
+
+- `red-sparing-through-a-third-thing` — the written mReferent holds a part that no mKey reaches;
+  the write affects that part; the part affects the mReferent that holds the read thing; that
+  holder affects the read thing. Every closure in force is true, because each speaks one step of
+  `affects` (the finished record allows the held part; the may-read closure allows the holder),
+  and the law asks the transitive chain. Applied under the hole protocol at `c0487fbe`:
+  `hole_a_write_affects_through_a_third_thing` (some a, b, c with b in a's effects, c in b's,
+  and c not in a's), its witness at six, both sparing laws, their twins, and the five kills asked
+  outside it. Chosen over the narrower "an unkeyed thing carries the effect" because the same
+  chain runs through keyed things whose owner's record is not in force and whose mKey is not a
+  writeset member, and the narrow hole would miss that world.
+- Conductor's reading for the sitting, unposed (the human has no room): this is
+  `312d` § 17.1's `ask-affects-and-the-chain` made concrete. Under the reading that `affects`
+  is the TOTAL effect of a write (the relation closed under itself, which § 1.1's sentence "A
+  write to an mReferent affects the mState of the mReferents it affects" can carry), the written
+  thing's finished record is FALSE in these worlds (its write affects the read thing, which it
+  neither holds nor entails), so the record's owner is attributable, as 311 intends the knife to
+  cut. Under the reading that `affects` is one step, nobody is at fault and § 0's own terms
+  refute the model. The hole holds the choice; a ruling for the total reading is one world-stratum
+  fact (`^affects in affects`) and the hole's deletion, never the conductor's to write.
+- At `c0487fbe` the sparing laws are unmeasured under the new premise; the kills may starve under
+  one more conjunct. Leg three measures them and, if quiet, runs the official write at that tip.
