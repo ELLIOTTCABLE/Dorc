@@ -103,6 +103,10 @@ name = "invocation_route"
 path = "tests/invocation_route.rs"
 
 [[test]]
+name = "platform"
+path = "tests/platform.rs"
+
+[[test]]
 name = "publish_write_path"
 path = "tests/publish_write_path.rs"
 
