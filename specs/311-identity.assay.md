@@ -144,8 +144,6 @@ needs). The engine never reads these relations; the truth predicates do.
 sig mReferent { holds: set mReferent, owns: set mReferent, affects: set mReferent, passes: set mReferent }
 
 fact { owns in holds }
-
-fact { all r: mReferent | some reaches.r }
 ```
 
 <!-- prose-translation -->
@@ -153,7 +151,6 @@ fact { all r: mReferent | some reaches.r }
 > A store is an mReferent; what a store holds is identified in it; what a store owns it holds by its own construction.
 > A write to an mReferent affects the mState of the mReferents it affects (2.5-may-read-the-readset).
 > A route to an mReferent passes through the mReferents that pass to it; what an mReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
-> It has one or more mKeys.
 > It is not an mKey, and not an mSort.
 
 UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
@@ -177,9 +174,13 @@ Examples of an mReferent: an inode, a database row, a package record, a kernel p
 State and time are not in the fences: no fence holds an mState, and the sentences that say what
 an mReferent survives are read by the invalidation rules of 3.3-invalidation-three-mutator-species,
 which withdraw authority and never compute a successor. The value plane (`notes/275`) is outside
-this model. What is normative here is normative as prose.
+this model. What is normative here is normative as prose. The first sentence below is about the
+model's objects, and no fence draws a restriction from it: the checker considers worlds that hold
+a piece nobody has keyed, since a description that names only some of the world is one Dorc must
+be safe under (the ruling of `notes/312d` § 21 for the sentence of 1.3.1-a-primary-scheme-and-its-sort).
 
 <!-- normative -->
+> An mReferent has one or more mKeys.
 > An mReferent survives changes to its mState.
 > It has the mSort of the mKey that reaches it.
 > Two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
