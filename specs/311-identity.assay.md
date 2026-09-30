@@ -3054,6 +3054,86 @@ Scope: the untouched-route law runs at nine statements because its twin's witnes
 
 Routing mutations: a mount, a symlink replacement, a rename, a user added, a hostname change, a write to any environment variable, cwd, or configuration a lookup reads. `userdel alice; useradd alice` invalidates every mResolution of the old mKey. Lifecycle mutations: a reboot, a re-provision.
 
+#### § 3.3.2-a-book-a-reboot-between-two-reads
+
+A lifecycle write to a mRoot-adjacent mKey: Rob describes `reboot` as writing the boot's own
+mKey. Pia's pids are identified in the boot for this book. The fences hold no instant, so the
+world is one world and both pid mKeys reach one process; what the book shows is the engine
+withdrawing authority below the line, and that it withdraws it from the mKey resolved after the
+reboot as well, since no fence holds when an mKey was resolved.
+
+```alloy
+run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
+```
+
+```sh
+# a_reboot_between_two_reads.sh
+   kill -0 4821
+#} kill dash_0 pid_4821
+#= one sig stdlib, pia, rob extends Speaker {}
+#= one sig sm_Boot extends mSort {} { sortOwner = stdlib }
+#= one sig sm_Process extends mSort {} { sortOwner = pia }
+#= one sig sm_BootId extends mScheme {} { schemeOwner = stdlib }
+#= one sig sm_Pid extends mScheme {} { schemeOwner = pia }
+#= one sig boot_shape extends mShape {} { ofScheme = sm_BootId }
+#= one sig pid_shape extends mShape {} { ofScheme = sm_Pid }
+#= one sig the_boot, proc_web extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
+#= one sig k_pid_at_line_1, k_pid_at_line_3 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  reaches = proc_web }
+#= Speaker = stdlib + pia + rob
+#= mSort = sm_Boot + sm_Process
+#= mScheme = sm_BootId + sm_Pid
+#= mShape = boot_shape + pid_shape
+#= mReferent = the_boot + proc_web
+#= mKey = k_boot + k_pid_at_line_1 + k_pid_at_line_3
+#= mVantage = v0 and mRoute = r0 and mRootWorld = w_boot
+#= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no GivenWhole
+#= World.lineWrites = (rob__reboot_writes_the_boot).writeLine->the_boot
+#= holds = the_boot->proc_web
+#= owns = holds
+#= no passes and no affects
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
+#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_Pid  ofSort = sm_Process }
+#= one sig pia__a_pid_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia  onShape = pid_shape  inSort = sm_Boot }
+#= one sig pia__a_pid_reaches_one_process_in_its_boot extends DeclaresUniqueReferent {} { speaker = pia  referentShape = pid_shape }
+#= one sig pia__pid_4821_at_line_1_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_1  instance = k_boot  seat = DeclarationSeat }
+#= one sig pia__pid_4821_at_line_3_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_3  instance = k_boot  seat = DeclarationSeat }
+#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_at_line_1  atLine = this  markedReads = k_pid_at_line_1  dependsOn = proc_web }
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_at_line_1 and f.topic.parent = k_boot and worldOf[f.topic] = w_boot)
+
+   reboot
+#} reboot
+#= one sig rob__reboot_writes_the_boot extends DeclaresMayWrite {} { speaker = rob  writeLine = this  writeEntry = k_boot }
+#= one sig rob__reboot_writes_nothing_else extends ClosesMayWrite {} { speaker = rob  closedLine = this }
+#= atMostClosed[this] and atMostEntries[this] = k_boot and some k_boot.parent & mRootWorld
+
+   kill -0 4821
+#} kill dash_0 pid_4821
+#= one sig pia__web_is_running_again extends VerdictFact {} { speaker = pia  topic = k_pid_at_line_3  atLine = this  markedReads = k_pid_at_line_3  dependsOn = proc_web }
+#= let f = atLine.this, g = pia__web_is_running, l = (rob__reboot_writes_the_boot).writeLine | tabledCompare[f.topic, g.topic] = SAME and lifecycleInvalidatedBy[l, g.topic] and lifecycleInvalidatedBy[l, f.topic] and staleAt[this, g.topic] and staleAt[this, f.topic] and compareAt[this, f.topic, g.topic] = UNKNOWN
+```
+
+<!-- prose-translation -->
+> This book's ceiling is five atoms of every kind the specification owns.
+> The stdlib roots the boot as in 3.2.2-a-book-two-files-in-one-filesystem.
+> Pia owns the process.
+> The pid's mScheme is `:primary-of` the process, and its shape is `:identified-in` the boot and carries `:guarantees-unique-referent`.
+> Rob's `reboot` may-writes the boot's mKey, not given whole, and writes nothing else.
+> The world holds one boot and one process in it, owned by the boot.
+> Nothing passes, no write affects another mReferent, and the second line writes the boot.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
+> Line 1, `kill -0 4821`: every statement in force is true and the engine's axioms hold.
+> The pid's identity is itself, its mParent is the boot's mKey, and its chain ends at the boot's mWorld.
+> Line 2, `reboot`: the line's at-most set is closed, its one entry is the boot's mKey, and that mKey is scoped in a mRoot mWorld.
+> Line 3, `kill -0 4821` again, against line 1: the timeless `compare()` answers SAME.
+> The reboot is a lifecycle write to an mKey on both pids' chains, so both pid mKeys are stale at line 3.
+> `compare()` at line 3 answers UNKNOWN.
+
 ### § 3.4-entry-and-lends
 
 Dynamic binding: `parameterize`, `fluid-let`.
