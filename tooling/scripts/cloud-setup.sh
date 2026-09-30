@@ -51,3 +51,8 @@ git ls-files -- mise.toml '*/mise.toml' ':!:Research/quarantine-DO-NOT-READ' |
 if ! mise install --locked; then
 	printf 'cloud-setup: mise install --locked failed; continuing without the missing tools\n' >&2
 fi
+
+# A fresh clone carries no hooks, so without this every commit here skips the pre-commit lint floor
+# and the commit-msg gitlabels rules. This clone is the container's own; its .git/config is shared
+# with nothing.
+mise run hk-install || warn "could not install the git hooks; commits here are unchecked"
