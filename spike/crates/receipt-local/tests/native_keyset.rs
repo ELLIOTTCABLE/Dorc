@@ -317,28 +317,33 @@ fn a_keyset_reached_through_a_link_is_refused_without_being_followed() {
     );
 }
 
+/// Windows has no file modes and no directory sync; the keyset records the sync it could not do.
 #[cfg(windows)]
-#[test]
-fn the_windows_baseline_initializes_and_reports_the_operation_it_does_not_have() {
-    // The Windows half. There is no mode to assert, so what is measured is that the sequence
-    // completes under the inherited per-user access and that the platform's missing directory
-    // synchronization is RECORDED rather than simulated as a success of a stronger kind.
-    use dorc_receipt_local::io::LocalIo as _;
-    use dorc_receipt_local::store::DirectorySync;
+mod on_windows {
+    use super::*;
 
-    let sandbox = Sandbox::new("windows");
-    let _ = ready(write_open(&sandbox, 8), "first use");
-    assert!(
-        sandbox
-            .keyset_dir()
-            .join("keyset-manifest-v1.txt")
-            .is_file(),
-        "the completion marker was written"
-    );
-    assert_eq!(
-        NativeIo::new().directory_sync(),
-        DirectorySync::UnavailableOnPlatform
-    );
+    #[test]
+    fn the_windows_baseline_initializes_and_reports_the_operation_it_does_not_have() {
+        // The Windows half. There is no mode to assert, so what is measured is that the sequence
+        // completes under the inherited per-user access and that the platform's missing directory
+        // synchronization is RECORDED rather than simulated as a success of a stronger kind.
+        use dorc_receipt_local::io::LocalIo as _;
+        use dorc_receipt_local::store::DirectorySync;
+
+        let sandbox = Sandbox::new("windows");
+        let _ = ready(write_open(&sandbox, 8), "first use");
+        assert!(
+            sandbox
+                .keyset_dir()
+                .join("keyset-manifest-v1.txt")
+                .is_file(),
+            "the completion marker was written"
+        );
+        assert_eq!(
+            NativeIo::new().directory_sync(),
+            DirectorySync::UnavailableOnPlatform
+        );
+    }
 }
 
 #[test]

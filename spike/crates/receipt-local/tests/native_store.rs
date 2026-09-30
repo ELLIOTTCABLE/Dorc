@@ -564,42 +564,47 @@ mod object_identity {
     }
 }
 
+/// Windows has no file modes and no directory sync; the store records the sync it could not do.
 #[cfg(windows)]
-#[test]
-fn the_windows_baseline_publishes_and_reports_the_operation_it_does_not_have() {
-    // The Windows half. There is no mode to assert, so what is measured is that the publication
-    // completes under the inherited per-user access and that the platform's missing directory
-    // synchronization is RECORDED rather than simulated as a success of a stronger kind.
-    use dorc_receipt_local::io::LocalIo as _;
-    use dorc_receipt_local::store::DirectorySync;
+mod on_windows {
+    use super::*;
 
-    let sandbox = Sandbox::new("windows");
-    let roots = sandbox.roots();
-    let mut io = NativeIo::new();
-    let store =
-        LocalReceiptStoreV1::open_or_create(&roots, &mut io, StoreLimits::V1).expect("a store");
-    let id = plan_id(1);
-    let at = order(4_000);
-    let policy = store.required_policy();
-    let signed = document(id, at)
-        .serialize()
-        .expect("a plain draft serializes")
-        .sign(&Ed25519Signer::of_secret(FIXTURE_SECRET));
-    let proof = store
-        .publish_required_v1::<PlanReceipt, Plain>(&mut io, at, id, signed, policy)
-        .expect("the Windows baseline publishes");
-    assert_eq!(
-        proof.properties().directory(),
-        DirectorySync::UnavailableOnPlatform
-    );
-    assert_eq!(
-        NativeIo::new().directory_sync(),
-        DirectorySync::UnavailableOnPlatform
-    );
-    assert!(
-        sandbox
-            .store_dir()
-            .join(proof.file_name().spelled())
-            .is_file()
-    );
+    #[test]
+    fn the_windows_baseline_publishes_and_reports_the_operation_it_does_not_have() {
+        // The Windows half. There is no mode to assert, so what is measured is that the publication
+        // completes under the inherited per-user access and that the platform's missing directory
+        // synchronization is RECORDED rather than simulated as a success of a stronger kind.
+        use dorc_receipt_local::io::LocalIo as _;
+        use dorc_receipt_local::store::DirectorySync;
+
+        let sandbox = Sandbox::new("windows");
+        let roots = sandbox.roots();
+        let mut io = NativeIo::new();
+        let store =
+            LocalReceiptStoreV1::open_or_create(&roots, &mut io, StoreLimits::V1).expect("a store");
+        let id = plan_id(1);
+        let at = order(4_000);
+        let policy = store.required_policy();
+        let signed = document(id, at)
+            .serialize()
+            .expect("a plain draft serializes")
+            .sign(&Ed25519Signer::of_secret(FIXTURE_SECRET));
+        let proof = store
+            .publish_required_v1::<PlanReceipt, Plain>(&mut io, at, id, signed, policy)
+            .expect("the Windows baseline publishes");
+        assert_eq!(
+            proof.properties().directory(),
+            DirectorySync::UnavailableOnPlatform
+        );
+        assert_eq!(
+            NativeIo::new().directory_sync(),
+            DirectorySync::UnavailableOnPlatform
+        );
+        assert!(
+            sandbox
+                .store_dir()
+                .join(proof.file_name().spelled())
+                .is_file()
+        );
+    }
 }

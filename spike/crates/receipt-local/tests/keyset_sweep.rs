@@ -753,64 +753,69 @@ fn a_file_standing_where_the_keyset_directory_belongs_is_not_an_incomplete_keyse
     );
 }
 
-#[test]
-fn the_windows_baseline_is_accepted_and_is_not_the_unix_one() {
-    // The platform posture, both ways. A Windows-shaped disk answers nothing about group and
-    // other access and initializes anyway, under the explicitly weaker baseline; a Unix-shaped
-    // open of the SAME material refuses, because there the answer is required and absent.
-    let roots =
-        RootInputs::of(RootPlatform::Windows, "C:\\Roaming", "C:\\Local").expect("absolute bases");
-    let mut io = ModelIo::windows_shaped(FailureSchedule::intact())
-        .planting("C:\\Roaming", Node::private_directory())
-        .planting("C:\\Local", Node::private_directory());
-    let store = StorePresence::probe(&roots, &mut io, &LocalLimits::V1);
-    let mut generator = generator(70);
-    let outcome =
-        open_or_initialize_for_write(&roots, &mut io, &LocalLimits::V1, store, &mut generator);
-    assert!(
-        is_ready(&outcome),
-        "the Windows baseline initializes: {outcome:?}"
-    );
-    assert_eq!(
-        io.directory_sync(),
-        DirectorySync::UnavailableOnPlatform,
-        "and records the operation it does not have rather than simulating one"
-    );
+/// Windows answers nothing about group and other access, so it has its own, weaker baseline.
+mod for_windows {
+    use super::*;
 
-    // The other direction, stated where it actually lives — at the posture, not at the path
-    // spelling. An object that answers NOTHING about group and other access is accepted under the
-    // Windows baseline and refused under the Unix one, where that answer is required; and a Unix
-    // object answering "none" is refused under the Windows baseline, because a proof claiming a
-    // mode on a platform that has none is describing some other machine.
-    let mut base = clean(FailureSchedule::intact());
-    assert!(is_ready(&write_open(&mut base, 71)));
-    let signing_bytes = base
-        .at(SIGNING)
-        .and_then(Node::bytes)
-        .map(<[u8]>::to_vec)
-        .expect("a document was written");
+    #[test]
+    fn the_windows_baseline_is_accepted_and_is_not_the_unix_one() {
+        // The platform posture, both ways. A Windows-shaped disk answers nothing about group and
+        // other access and initializes anyway, under the explicitly weaker baseline; a Unix-shaped
+        // open of the SAME material refuses, because there the answer is required and absent.
+        let roots = RootInputs::of(RootPlatform::Windows, "C:\\Roaming", "C:\\Local")
+            .expect("absolute bases");
+        let mut io = ModelIo::windows_shaped(FailureSchedule::intact())
+            .planting("C:\\Roaming", Node::private_directory())
+            .planting("C:\\Local", Node::private_directory());
+        let store = StorePresence::probe(&roots, &mut io, &LocalLimits::V1);
+        let mut generator = generator(70);
+        let outcome =
+            open_or_initialize_for_write(&roots, &mut io, &LocalLimits::V1, store, &mut generator);
+        assert!(
+            is_ready(&outcome),
+            "the Windows baseline initializes: {outcome:?}"
+        );
+        assert_eq!(
+            io.directory_sync(),
+            DirectorySync::UnavailableOnPlatform,
+            "and records the operation it does not have rather than simulating one"
+        );
 
-    let mut unanswerable = base.restart(FailureSchedule::intact()).planting(
-        SIGNING,
-        Node::of(
-            NodeKind::File {
-                bytes: signing_bytes,
-                whole: true,
-            },
-            dorc_receipt_local::io::GroupAndOtherAccess::NotInspectable,
-        ),
-    );
-    match read_open(&mut unanswerable) {
-        LocalReadOpenV1::Unavailable(KeyAvailability::PermissionRefused { .. }) => {}
-        other => panic!("a Unix open of an unanswerable object gave {other:?}"),
+        // The other direction, stated where it actually lives — at the posture, not at the path
+        // spelling. An object that answers NOTHING about group and other access is accepted under
+        // the Windows baseline and refused under the Unix one, where that answer is required; and
+        // a Unix object answering "none" is refused under the Windows baseline, because a proof
+        // claiming a mode on a platform that has none is describing some other machine.
+        let mut base = clean(FailureSchedule::intact());
+        assert!(is_ready(&write_open(&mut base, 71)));
+        let signing_bytes = base
+            .at(SIGNING)
+            .and_then(Node::bytes)
+            .map(<[u8]>::to_vec)
+            .expect("a document was written");
+
+        let mut unanswerable = base.restart(FailureSchedule::intact()).planting(
+            SIGNING,
+            Node::of(
+                NodeKind::File {
+                    bytes: signing_bytes,
+                    whole: true,
+                },
+                dorc_receipt_local::io::GroupAndOtherAccess::NotInspectable,
+            ),
+        );
+        match read_open(&mut unanswerable) {
+            LocalReadOpenV1::Unavailable(KeyAvailability::PermissionRefused { .. }) => {}
+            other => panic!("a Unix open of an unanswerable object gave {other:?}"),
+        }
+        assert!(
+            matches!(
+                read_open(&mut base.restart(FailureSchedule::intact())),
+                LocalReadOpenV1::Ready(_)
+            ),
+            "the unedited keyset must read, or the refusal above proves nothing"
+        );
     }
-    assert!(
-        matches!(
-            read_open(&mut base.restart(FailureSchedule::intact())),
-            LocalReadOpenV1::Ready(_)
-        ),
-        "the unedited keyset must read, or the refusal above proves nothing"
-    );
 }
 
 #[test]

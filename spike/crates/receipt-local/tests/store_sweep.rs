@@ -400,34 +400,45 @@ fn a_synchronization_failure_is_reported_once_and_never_retried() {
     }
 }
 
-#[test]
-fn the_windows_shaped_store_publishes_and_records_the_operation_it_does_not_have() {
-    // The platform posture, end to end. The proof records the missing directory synchronization
-    // as a property rather than simulating a success of a stronger kind, and the required
-    // baseline it is judged against is the one this store validated its own root under.
-    let roots =
-        RootInputs::of(RootPlatform::Windows, "C:\\Roaming", "C:\\Local").expect("absolute bases");
-    let mut io = ModelIo::windows_shaped(FailureSchedule::intact())
-        .planting("C:\\Roaming", Node::private_directory())
-        .planting("C:\\Local", Node::private_directory());
-    let store = LocalReceiptStoreV1::open_or_create(&roots, &mut io, StoreLimits::V1)
-        .expect("a clean Windows profile opens a store");
+/// Windows has no directory sync; a Windows-shaped store records that as a property.
+mod for_windows {
+    use super::*;
 
-    let id = plan_id(4);
-    let at = order(77);
-    let policy = store.required_policy();
-    let proof = store
-        .publish_required_v1::<PlanReceipt, Plain>(&mut io, at, id, document(&id.hex(), at), policy)
-        .expect("the Windows baseline publishes");
-    assert_eq!(
-        proof.properties().directory(),
-        DirectorySync::UnavailableOnPlatform
-    );
-    assert!(proof.properties().file_is_durable());
+    #[test]
+    fn the_windows_shaped_store_publishes_and_records_the_operation_it_does_not_have() {
+        // The platform posture, end to end. The proof records the missing directory synchronization
+        // as a property rather than simulating a success of a stronger kind, and the required
+        // baseline it is judged against is the one this store validated its own root under.
+        let roots = RootInputs::of(RootPlatform::Windows, "C:\\Roaming", "C:\\Local")
+            .expect("absolute bases");
+        let mut io = ModelIo::windows_shaped(FailureSchedule::intact())
+            .planting("C:\\Roaming", Node::private_directory())
+            .planting("C:\\Local", Node::private_directory());
+        let store = LocalReceiptStoreV1::open_or_create(&roots, &mut io, StoreLimits::V1)
+            .expect("a clean Windows profile opens a store");
 
-    // And the walk sees it, which is the half a backslash-blind model would have called empty.
-    let walk = store.enumerate(&mut io).expect("the walk answers");
-    assert_eq!(walk.recognized().len(), 1);
+        let id = plan_id(4);
+        let at = order(77);
+        let policy = store.required_policy();
+        let proof = store
+            .publish_required_v1::<PlanReceipt, Plain>(
+                &mut io,
+                at,
+                id,
+                document(&id.hex(), at),
+                policy,
+            )
+            .expect("the Windows baseline publishes");
+        assert_eq!(
+            proof.properties().directory(),
+            DirectorySync::UnavailableOnPlatform
+        );
+        assert!(proof.properties().file_is_durable());
+
+        // And the walk sees it, which is the half a backslash-blind model would have called empty.
+        let walk = store.enumerate(&mut io).expect("the walk answers");
+        assert_eq!(walk.recognized().len(), 1);
+    }
 }
 
 #[test]
