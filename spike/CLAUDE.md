@@ -958,8 +958,8 @@ mise run test             # unit + the case corpus
 mise run test:e2e         # the case corpus alone: every loom as a shell session (both drivers
                           #   where both can run; `gate-two-drivers-agree`) + the Rust batteries
 mise run clippy           # workspace clippy, -D warnings
-mise run check            # all four lint gates, check-only
-mise run gate             # check + a fresh build + the whole suite (the pre-commit set)
+mise run check            # every lint step over the whole tree, check-only (not a gate)
+mise run gate             # the completion gate: the lint and test steps your changes route in
 mise run both gate:full-quiet # builder completion: path-routed, both platform legs
 mise run gate:arc         # conductor close: completion + applicable advanced verifiers
 mise run gate:step -- X   # re-run one failed hk step, without reclassifying the change
@@ -974,7 +974,7 @@ mise run loom -- ARGS     # the loom CLI on this workspace's toolchain (a bare `
 mise run coverage         # INSTRUMENT: analyzer-coverage rollup (never a gate)
 mise run lint:docids      # docID dangling-reference lint (rides check)
 mise run slugs            # regenerate root SLUGS.md, the generated slug index (the hook runs `slugs --check`)
-mise run verify:check     # the binder's CHEAP gate (rides gate:full-quiet; no external toolchain)
+mise run verify:check     # the binder's CHEAP check (the gates route it in; no external toolchain)
 mise run verify:promote   # regenerate catalogue_lock.rs from corpus + claims (review = the diff)
 mise run verify:translate-check # strict read-only comparison against committed Lean output
 mise run verify:lean-badges # recompute Lean-owned badge evidence (Windows routes through WSL)
@@ -1046,8 +1046,9 @@ no task covers, and consider adding the task instead.
   is a HARD dependency of this corpus — Dorc's product is sh and these gates execute what
   they render — so the fix is to resolve one explicitly, never to drop the requirement.
 - `DORC_E2E_QUIET=1` selects the terse per-case format (failures still print in full).
-- **four-rung-gate-ladder** (r30) — one path-routed hk graph serves four fixed
-  lifecycle rungs: blazing pre-commit · ordinary-resource builder completion
+- **four-rung-gate-ladder** (r30) — a GATE is what you must pass before you may do
+  something (commit, call work complete, close an arc), and it checks what YOU changed. One
+  path-routed hk graph serves four fixed lifecycle rungs: blazing pre-commit · ordinary-resource builder completion
   (`mise run both gate:full-quiet`) · resource-heavy conductor close (`gate:arc`) ·
   direct per-tool investigation. The contributor chooses the rung, never a
   change-to-command decision tree; hk conservatively chooses applicable checks and
@@ -1056,7 +1057,7 @@ no task covers, and consider adding the task instead.
   machine-global heavy-work lock (`internal-tooling exclusive`; one heavy task per machine,
   re-entrant for nested tasks): **exit 75 is CONTENTION, not a failure** — nothing was checked
   and nothing is broken; do other work and retry later, never poll, never delete the lock file.
-- **verify-lane-family** (r30) — `verify:check` rides builder completion on both legs
+- **verify-lane-family** (r30) — `verify:check` is routed into builder completion on both legs
   (cheap tier: catalogue coherence, unit/slug contracts, hole census, report currency;
   no external engine). `verify:translate-check`, `verify:lean-badges`, and
   `verify:kani` are path-routed arc-tier checks; their direct tasks remain independently
@@ -1134,8 +1135,9 @@ no task covers, and consider adding the task instead.
   banned-token rule, not a judgment call — and note the aggravating shape, since
   both incidents took it: the `-quiet` variants exist precisely so filtering is never
   needed, so a filtered `*-quiet` task is always the wrong reach.
-- Pre-commit gate set — `cargo fmt --check` · `cargo deny check licenses bans sources` ·
-  `typos` · the staged-path loom/e2e/minispec corpora. Whole-workspace Clippy is a
+- Pre-commit gate set — every `hk.pkl` `linters` step but clippy (`cargo fmt --check` ·
+  `cargo deny check licenses bans sources` · `typos` · the docID and slug indexes · the assay
+  key-diff) plus the staged-path loom/e2e/minispec corpora. Whole-workspace Clippy is a
   path-routed builder-completion check: its invalidation-sensitive rebuild cannot meet
   the 2–3s hook ceiling (measured hook: ~0.74s without it; ~9.1s on the caught rebuild).
   Agent shells carry
@@ -1144,7 +1146,7 @@ no task covers, and consider adding the task instead.
   harness (fix-mode and stashing stay on for humans). Verified falsifiably 2026-08-13:
   fix-off refuses without rewriting; stash-none skips the stash cycle; default mode
   rewrites. Still run `mise run check` yourself before every commit (`mise run gate` for
-  that plus a fresh build and the whole suite) — the hook is the backstop, not the habit.
+  the lint and test steps your changes route in) — the hook is the backstop, not the habit.
   Never `--no-verify`.
 - **known-broken-ack** — must commit a tree that will not compile:
   `DORC_KNOWN_BROKEN="<why>" git commit …`; the lint floor still refuses.
@@ -1407,7 +1409,7 @@ no task covers, and consider adding the task instead.
   a prior note; check the tree before minting an ID.
 - Commits: small + granular + frequent. `(AI <labels>) terse one-line message` per
   `.gitlabels`; the `AI` label is mandatory; no `Co-Authored-By` trailer; never
-  push. Run the four gates first.
+  push. Run `mise run check` first.
 
 ## Spawning subagents (supervisor law — mandatory)
 
