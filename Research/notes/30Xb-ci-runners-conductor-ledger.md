@@ -8,10 +8,12 @@
 
 ## §0 — state
 
-Branch `ai/ci-runners`, worktree `.tmp/trees/ci-runners`, cut from the published `ai/main`. Landed
-on the branch: the gate wording (what a gate is, and the task descriptions that promised steps
-they do not run) and the cloud-setup hook install. Next: the `ci:` tasks and the workflow files,
-once §3's open decisions are typed.
+Branch `ai/ci-runners` (pushed), worktree `.tmp/trees/ci-runners`, cut from the published
+`ai/main`. On the branch: the gate wording; the cloud-setup hook install; cargo-deny and nextest
+from checksummed release binaries; the `ci:` tasks, composed by the local heavy tasks; actionlint
+as an hk step; the workflow, with the heavy lanes filtered by globs read out of `hk.pkl` at run
+time. Not yet run on GitHub: no trigger reaches the branch without §3's pull request. Next: the
+floor binaries (§4), once publication is settled.
 
 ## §1 — the plan
 
@@ -80,14 +82,25 @@ once §3's open decisions are typed.
 
 ## §3 — open decisions
 
-- **`ask-floor-shell-provisioning`** — how CI (and every other place the floor runs) gets exactly
-  dash 0.5.12 and posh 0.14.1.
-- **`ask-heavy-lane-routing`** — how "only on relevant changes" is decided: GitHub's own `paths`
-  filter per lane (one workflow file per heavy lane) or hk's routing.
-- **`ask-ci-task-layering`** — whether a `ci:` task spells its tool invocation itself, or the local
-  `:held` twin composes it.
-- **`ask-prebuilt-cargo-tools`** — how `cargo-deny`, `cargo-nextest` and the Kani shim install
-  without compiling from source.
-- **`ask-hk-major-upgrade`** — whether hk 2 lands in this arc.
 - **`ask-open-draft-pull-request`** — whether the conductor may open a draft PR from
   `ai/ci-runners` into `ai/main`, which is what triggers runs under the ruled triggers.
+- **`ask-floor-publication-shape`** — whether a clearly labelled, non-latest pre-release on this
+  repository counts as "obviously not a release of the tool".
+- **`ask-floor-proves-its-binary`** — how the floor lane shows it ran the pinned binaries.
+
+## §4 — typed record, 2026-09-29 (second sitting)
+
+- CI path filtering is GitHub-side; drift between it and hk is unwanted — research first.
+- A task important enough to own a CI lane may take a bare word; names are not to be spread
+  through documentation, because they will be hand-tuned afterwards.
+- Try `mise lock` with prebuilt (binstall-style) cargo installs.
+- The hk 2 upgrade is deferred.
+- Pushes from agent sessions: an `ai/` branch onto an `ai/` branch, either unforced or as a leased
+  force-push, remote and refs spelled in full — made mechanical in the global push-deny hook.
+- The commit-message CI check is punted; this arc carries enough miscellany.
+- The floor is the OFFICIAL upstream releases (dash 0.5.12, posh 0.14.1); a distribution's patched
+  build is a bug. The local Windows floor runs through WSL, not Cygwin. Building and publishing the
+  floor binaries is acked if GitHub makes it easy to publish artifacts that are obviously not a
+  release of Dorc, or kept explicitly separate; failing that, they are built and published with
+  each semver-minor Dorc release. Building and testing other platforms is valuable, and a
+  separate question.
