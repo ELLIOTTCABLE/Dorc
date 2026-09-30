@@ -14,18 +14,32 @@ showed one preflight line and then nothing, with no bound; the person could not 
 would return in a minute or tomorrow. The rule for the build [TYPED]: "don't overengineer, start
 small; MVP." The second tune arrives from the 311 mechanization conductor and is not yet here.
 
-State: `ai/r30-alloy-praxis-conductor` carries everything that moves no lock key: the
-progress lines (now `tracing` events), `--quiet`, the official cap, per-heap preflight, the
-sibling's three fold-ins, the tooling profile, and the Rust half of the effort counters, which
-is inert until the adapter speaks. The adapter's counters commit, the one that re-keys every
-lock row, sits alone on `ai/r30-assay-effort-counters` directly above; the human is "fine with
-the work that will churn the lock-format sitting in a branch for the moment" [TYPED] and lands
-it when the next official run is due anyway. The human's official pass ended during the
-evening of 2026-09-29 and left a schema-2 lock, keyed under the pre-counters adapter,
-uncommitted in the primary checkout; its duration is the calibration for § 2's figure. The
-completion gate is green on both legs at the tip that folded into `ai/main`
-[TYPED: "land and fast-forward into ai/main the *non* lockchurn changes when your builder is
-done"]. `notes/30Y` § 2.7 and § 3 describe what is.
+State at the close of 2026-09-29, the first tune done: everything is in `ai/main`, folded in
+three fast-forwards, each through a green completion gate on both legs (the last fold's Windows
+leg measured the tip before two docs-only commits): the progress lines as `tracing` events, the
+quiet task, the official cap, per-heap preflight, the tooling profile, the sibling's three
+fold-ins, the effort counters (Java and Rust; the Java landed last, on the human's "land the
+java piping, now that we're safe" [TYPED]), the report file with the stdout summary, and the
+lock's `commit` with the committed-text refusal. No branch of this lane remains but
+`ai/r30-alloy-praxis-conductor`, equal to `ai/main`, whose worktree
+`.tmp/trees/r30-alloy-praxis-conductor` is kept for the second tune; the counters branch, its
+worktree, and its WSL build cache are gone. The human's official pass (1 h 34 m, two children,
+83 rows, 3 counterexamples, 2 ceiling timeouts) is committed as `(test new) Lock the specs for
+the first time` under the pre-counters adapter, so every one of its keys now mismatches; the 311
+mechanization conductor owns the from-scratch regeneration on the landed adapter, together
+with its own spec changes [TYPED], and was notified (a cross-session message queued 2026-09-29
+late evening) of the key move, the commit-then-write rule, the report file, the quiet task, the
+profile's cold first build, and the rebase points (`SLUGS.md`, `mise.toml`, `hk.pkl`). `notes/30Y`
+§ 2.7 and § 3 describe what is; `plans/30Z` § 6 carries the commit-then-write clause; the
+steering lines are in `spike/CLAUDE.md` (`tooling-runs-under-its-own-profile`, the task list),
+`spike/crates/internal-tooling/AGENTS.md`, and the `using-alloy` run bullet.
+
+What a successor inherits: the second tune, not started, from the sibling's needs list (§ 7);
+the posed findings of § 5 and § 6; four orphaned WSL build caches from earlier assay lanes
+(`r30-alloy-runner-fail-closed`, `r30-assay`, `r30-assay-hot-loop`, `r30-assay-hot-loop-docs`,
+about 11 GiB each) awaiting the human's word, reaping being human-owned; the conductor's
+worktree `md-wrap` and the human's `play` were left alone (dirty, not this lane's). Conduct for
+this thread [TYPED]: bank builder returns, report when asked; ledgering welcome.
 
 ## § 1-what-a-pass-says
 
@@ -106,17 +120,18 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   directory, and it recurred once after the profile landed (a `fmt` step could not remove
   `target\tooling\internal-tooling.exe`; the immediate re-run was green). An hk `depends`
   ordering would close it; posed, unfixed.
-- **`open-effort-counters-fold-timing`** [TYPED: "try it if it's easy and drop it if it
-  chafes"] — built, as the two top commits of the branch, separable from everything below:
-  the adapter wraps sat4j in an adapter-local subclass of `SAT4JRef` (same id, so the
-  effective-options text is unchanged) that keeps the solver it creates, and each tick carries
-  its `conflicts`, `restarts`, `learned`, and `decisions` when readable; the still-alive line
-  shows them once translation has ended. Read from the pinned jar's bytecode, +SURE and not
-  exercised: the temporal path shares the factory. The Java commit moves every lock key, so
-  when it lands is the human's; the Rust commit alone is inert. The first cut broke every parse
-  through a Kodkod class-initialisation order (the ticker thread touched the factory's subclass
-  before anything had touched the factory); the fix, moving the static off the subclass, is
-  loud-if-wrong and untested live for want of memory.
+- **`dec-effort-counters`** [TYPED: "try it if it's easy and drop it if it chafes"; then
+  "land the java piping"] — built and landed: the adapter wraps sat4j in an adapter-local
+  subclass of `SAT4JRef` (same id, so the effective-options text is unchanged) that keeps the
+  solver it creates, and each tick carries its `conflicts`, `restarts`, `learned`, and
+  `decisions` when readable; the still-alive line shows them once translation has ended,
+  confirmed live on a 311 slice (`… solving 677106 clauses, 19695 conflicts, 117 restarts,
+  19675 learned, 66685 decisions`). Read from the pinned jar's bytecode, +SURE and not
+  exercised: the temporal path shares the factory. The first cut broke every parse through a
+  Kodkod class-initialisation order (the ticker thread touched the factory's subclass before
+  anything had touched the factory); the fix, moving the static off the subclass, was verified
+  by a clean `--parse` of 311 on the new adapter. The Java commit moved every lock key; § 0
+  says who regenerates.
 - **`finding-gate-e2e-harness-uplift-race`** (~SUSPECT; seen once, 2026-09-29, at the tip
   that landed) — one `both` run failed on the Windows leg in hk's `test-real-tools`: a single
   e2e case (`glob-for-word-runs`) could not spawn `target\debug\dorc-harness.exe` ("The system

@@ -9428,7 +9428,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:tooling-runs-under-its-own-profile
 - defined: spike/CLAUDE.md:1022 — — every invocation of the tooling binary carries
-- cited: 30Y Research/LIVING_STATUS (2)
+- cited: 30Y 30Yg Research/LIVING_STATUS (3)
 
 ## spike/CLAUDE:top-identifies-with-nothing
 - defined: spike/CLAUDE.md:247 — — ⊤ identifies with nothing, including itself;
