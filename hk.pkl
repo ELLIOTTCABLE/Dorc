@@ -218,7 +218,7 @@ local gates = new Mapping<String, Step> {
     ["assay-lock"] {
         profiles = List("slow")
         glob = List("specs/**/*.assay.md", "specs/**/*.lock.json")
-        check = "mise run assay -- --check {{files}}"
+        check = "mise run assay -- --check --quiet {{files}}"
         output_summary = "combined"
     }
     ["verify-check"] {
