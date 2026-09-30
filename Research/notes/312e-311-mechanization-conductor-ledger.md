@@ -350,3 +350,25 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   `30Z:fw-every-fence-change-changes-the-translation`), to run after the accounting audit lands
   so that the audit and the rewrite do not cross, by an Opus with the linter as its gate, the
   fence as the authority, and the conductor reading every changed line.
+
+## § 9-the-rewound-conductor-and-the-hole-applied
+
+2026-09-29, a rewound conductor over `578eaeea`, stood up on § 1 to § 8 and the specification
+whole, then given the order to say what is next toward the end-state claim: that the mechanical
+311 is as close to the prose 311 as it can be got, and an adversarial review searching for subtle
+meaning-shifts is due.
+
+- **[TYPED]** the official pass is complete, its lock is committed to `ai/main` (`49841963`, the
+  human's own commit), and the predecessor surveyed it (§ 8, `msr-the-official-pass-over-ed70650f`).
+- State: `ai/main` carries three commits this branch lacks: the sibling's LIVING_STATUS pointer
+  (`083aceb7`), the lock, and the sat4j effort counters in the adapter (`034e5da1`). The lock
+  records the text at `ed70650f` under the pre-counters adapter; every one of its keys moved twice
+  since, under this branch's repairs and under the adapter's digest. It is evidence for that text
+  and for nothing at the tip. The counters commit is the tooling change § 8's typed rule waited
+  on before any second official pass (~SUSPECT it is the one meant; the LIVING_STATUS pointer
+  says it "lands when the next official run is due anyway").
+- `hole-a-route-off-the-catalog-applied` — `1aa60dd2`: `hole_a_route_off_the_catalog_reaches_the_thing`
+  as § 8 named it, its witness run at six, the untouched-route law, its twin, and its two kills
+  asked outside it, two translation sentences for the hole and the counts of holes retuned. The
+  pre-commit step compiled and parsed it. Nothing else of § 8's three reds is owed.
+- The road to the panel, as put to the human this sitting, stays in chat until reacted to.
