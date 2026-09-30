@@ -200,6 +200,10 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
                 ask.progress = Progress::Silent;
                 continue;
             }
+            "--help" | "-h" => {
+                print!("{HELP}");
+                return ExitCode::SUCCESS;
+            }
             "--hot" | "--gate" | "--official" => {
                 ask.tier = match arg.as_str() {
                     "--hot" => tier::Tier::Hot,
@@ -315,6 +319,27 @@ const DOC_SUFFIX: &str = ".assay.md";
 /// The two shared halves, found by these names beside a document (`30Y` § 2.2).
 const SHARED_HALF: &str = "shared.assay.md";
 const LAWS_HALF: &str = "shared-laws.assay.md";
+
+const HELP: &str = "usage: assay <spec.assay.md>... [flags] [-- <caps>]
+  --out <dir>                  write the modules there (one document only)
+  --parse                      Alloy's parse lint, no solver, no heavy-work lock
+  --staged                     the pre-commit form: staged bytes, parse and key diff, never solves
+  --check                      solve and compare against <stem>.lock.json
+  --write                      solve and rewrite <stem>.lock.json
+  --hot                        tier: 120s CPU per command, deferral, 540s batch
+  --gate                       tier (default): 600s CPU per command, 540s batch
+  --official                   tier: 1800s CPU per command, 4096 MB, keys ignored, 8h batch
+  --module <m>                 solve every command of one module; never writes
+  --only <[module.]command>    solve one command, its premise twin, and its book's run; never writes
+  --quiet                      no progress lines on stderr
+  --help                       this text
+caps, after a second --:
+  --cpu <s>                    CPU per command; alone, the wall cap becomes twice it
+  --timeout <s>                wall-clock per command; alone, the CPU cap becomes it too
+  --heap <MB>                  each child JVM's heap
+  --procs <n>                  processors each child JVM may use
+  --batch-timeout <s>          wall-clock for the whole pass; later commands get what is left, or none
+";
 
 fn usage(problem: &str) -> ExitCode {
     eprintln!(

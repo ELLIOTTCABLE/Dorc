@@ -103,7 +103,25 @@ fn opts(args: &[String]) -> Result<Opts, String> {
     Ok(o)
 }
 
+const HELP: &str = "usage: alloy [flags] <file.als | dir>...
+  --timeout <s>                wall-clock per command (default 120)
+  --cpu <s>                    CPU per command (default the wall cap)
+  --heap <MB>                  the child JVM's heap (default 2048)
+  --procs <n>                  processors the child JVM may use (default 2)
+  --batch-timeout <s>          no command starts after this (default 540); later ones are not-run
+  --parse-only                 parse each file, solve nothing
+  --command <name>             run only this command
+  --instances                  add Alloy's instance to each row that has one
+  --solver <id>                SAT solver (default sat4j)
+  --open <module>=<file.als>   serve a module living elsewhere where Alloy resolves `open`
+  --help                       this text
+";
+
 pub(crate) fn run(args: &[String]) -> ExitCode {
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print!("{HELP}");
+        return ExitCode::SUCCESS;
+    }
     let o = match opts(args) {
         Ok(o) => o,
         Err(why) => return usage(&why),
