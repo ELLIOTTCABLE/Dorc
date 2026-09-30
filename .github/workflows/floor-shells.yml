@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 20
     steps:
       # musl, so one static binary runs on any Linux, WSL included, whatever its libc.
-      - run: sudo apt-get update && sudo apt-get install --no-install-recommends -y musl-tools
+      - run: sudo apt-get update && sudo apt-get install --no-install-recommends -y musl-tools autoconf automake
       # Debian's pool serves dash's upstream release tarball byte for byte (upstream's own host
       # speaks only plain HTTP), and Debian is posh's upstream; the digests are what make either
       # host trustworthy.
@@ -47,9 +47,12 @@ jobs:
           cd dash-0.5.12
           ./configure CC=musl-gcc --enable-static
           make
+      # posh's generated autotools files predate its own acinclude.m4, so they are regenerated, the
+      # way Debian (posh's upstream) always builds it.
       - run: |
           tar -xJf posh_0.14.1.tar.xz
           cd posh-0.14.1
+          autoreconf -fi
           ./configure CC=musl-gcc LDFLAGS=-static
           make
       - run: |
