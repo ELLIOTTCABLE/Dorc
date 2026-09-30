@@ -372,3 +372,86 @@ meaning-shifts is due.
   asked outside it, two translation sentences for the hole and the counts of holes retuned. The
   pre-commit step compiled and parsed it. Nothing else of § 8's three reds is owed.
 - The road to the panel, as put to the human this sitting, stays in chat until reacted to.
+
+## § 10-the-remit-bounded-the-panel-plan-typed-and-the-top-repair
+
+2026-09-29, the same conductor, after the human's reaction to § 9's road and a notification from
+the assay conductor's session.
+
+### § 10.1-typed
+
+- **[TYPED]** the fidelity gap `gap-top-writeset-invalidates-nothing` is acked unread, on the
+  conductor's claim that the repair moves toward fidelity and gives reviewers less to catch.
+- **[TYPED]** proceed as planned (§ 9's road, items 1 to 5).
+- **[TYPED]** the panel is not within this lane. The remit is to bring the tree right up to the
+  panel and stop: a tree that is fully, as far as the conductor knows, equivalent to the
+  before-mechanization text.
+- **[TYPED]** the plan for the panel, for the lane that runs it: the panel's first pass and its
+  attack planning happen against ONE pure document, fully stripped, holding only the normative
+  prose blocks and the mechanical blocks (no commentary of any kind, the UNACKED READING marks
+  included), set against the full text of the original prose 311. The panel is instructed to
+  produce Alloy, failing counterexamples, real-world shell books, and precise descriptions of how
+  each attack proves disagreement or inauthenticity against the prose 311. Only after all of that
+  is the panel told it may access other files of the project and its history, to collect
+  further context for its items and report. All initial work is pure over the normative 311
+  alone, unpoisoned by the non-normative commentary of the mechanical 311.
+
+### § 10.2-the-assay-conductors-notification
+
+A cross-session message from the assay conductor, 2026-09-29, a notification and no instruction;
+its facts as relayed, each a peer's claim:
+
+- `ai/main` moved to `0586ac1b` with the assay tooling; this branch's rebase (§ 9) landed on
+  that tip, 32 ahead and 0 behind, with no conflict.
+- The adapter's source digest moved (the sat4j effort counters), so every row of the committed
+  lock now mismatches; regenerating it from scratch on the landed binary, together with this
+  arc's spec changes, is this lane's. The human's official run took 1 h 34 m on two children;
+  the official tier's batch cap is eight hours, a capped pass writes what it measured and leaves
+  the rest owed, and is not resumable by ruling.
+- `--write` refuses (exit 2) while the document or either shared half differs from `HEAD`, and
+  records that commit in the lock header (`{"schema": 2, "commit": …}`): commit the text, then
+  write.
+- A solving pass writes its JSON report to `<repo>/.tmp/assay/<stem>-<UTC stamp>.json` and
+  prints a summary ending in that path; progress goes to stderr as `tracing` events; `mise run
+  assay-quiet` is the hook and agent spelling; `--help` lists every flag; deferral notes name
+  their measurement; `expect` rides report rows. The shared-world module for books, the
+  instance text form, and the two lints are the next tune, not started.
+- Every tooling task carries `--profile tooling`; the tooling exe lives under `target/tooling/`,
+  so the first build after the rebase is cold.
+- Conductor's reading of "this lane owns the regeneration": consistent with § 1's typed lean (an
+  Opus runs the official pass) and § 8's typed rule now that the key-moving change has landed; the
+  write runs at the settled tip, after the slices loop, by an Opus, and its commit is the act that
+  accepts the rows.
+
+### § 10.3-the-top-repair-applied
+
+- `rep-top-writeset-touches-everything` — `d15a630d`: `lineWritesetIsTop[l]` is
+  `writesetIsTop[l, lineWriteset[l]]`; routing invalidation fires where the line's writeset is ⊤
+  and the mKey has any mTraversal member or placing record; token invalidation where it is ⊤ and
+  the identity chain has an mKey above; lifecycle invalidation where it is ⊤ and an mKey on that
+  chain is mRoot-adjacent; and a ⊤ line counts as a write for an open read set. Three translation
+  sentences say so. Direction: more stale, fewer spared, every existing book outcome unchanged by
+  hand-walk (~SUSPECT until the slices run; the reboot line of § 3.3.2 was already ⊤, its boot
+  having no finished record, and its outcome asserts only what still holds).
+- Predicted consequence for the untouched-route twin: `not routingInvalidatedBy` now needs the
+  line's writeset not ⊤, so every member's finished record must be in force too, eight
+  statements at nine; ~SUSPECT it seats. If unsat, the count is the human's (a scope is part of
+  the claim), never the conductor's.
+- A consequence for book authorship, not a repair: a line with no completion record is a ⊤
+  writer under the letter, a `cmp` line included, so a book that wants a read line inert below
+  itself declares `ClosesMayWrite` on it with no entry. The existing books assert nothing that
+  this changes; new books follow the convention.
+
+### § 10.4-findings-of-the-read-unseen-by-the-human
+
+Banked under the § 6 rule (the human has no room for findings; only blockers are put); a
+hand-walk each; none posed, none acted on.
+
+- `sus-passes-is-one-step-in-every-truth` (+SURE of the fences; ~SUSPECT of weight) — every
+  truth predicate and law that reads a route reads `passes` one step (`passes.(r)`,
+  `r.passes`), never `^passes`; the books pin `passes` transitively closed by hand
+  (§ 2.10.2 states both `fs_1->inode_a` and `dir_a->inode_a`), and no fact says a book must.
+  A book that pins one hop per edge makes the closing act's truth, the region law's
+  conclusion, and the untouched-route law's conclusion read shallower than "a route through"
+  in English. A world-modelling convention the panel may name; sits on
+  `312d` § 17.1's `ask-passes`.
