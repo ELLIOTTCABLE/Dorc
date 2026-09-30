@@ -327,8 +327,8 @@ impl Cache {
     /// The path whose existence means this cache is already populated.
     ///
     /// For the workspace it is a PRODUCT binary, not the `debug/` directory holding it:
-    /// reaching preflight at all runs `cargo run -q -p internal-tooling`, which creates
-    /// `debug/` before this code executes, so a directory witness read every tree as warm and
+    /// reaching preflight at all runs a `cargo run` of this crate, which once created
+    /// `debug/` before this code executed, so a directory witness read every tree as warm and
     /// the cold bound was unreachable (`300:finding-workspace-preflight-never-reads-cold`).
     /// That build produces this crate's own binary and no other package's, so [`PRODUCT_BIN`]
     /// is the cheapest witness the probe cannot forge for itself. A tree carrying warm deps
@@ -586,9 +586,9 @@ mod tests {
             .and_then(|n| n.to_str())
             .expect("the witness names a file");
 
-        // `debug/` itself, and this crate's own binary in it, are both created by the
-        // `cargo run -p internal-tooling` that every preflight invocation goes through —
-        // either one as the witness reads warm always, and the cold bound is dead code.
+        // A directory, or this crate's own binary, can be created by the `cargo run` that
+        // every preflight invocation goes through — either one as the witness reads warm
+        // always, and the cold bound is dead code.
         assert_eq!(witness.parent(), Some(root.join("debug").as_path()));
         assert_ne!(name, format!("{}{EXE_SUFFIX}", env!("CARGO_PKG_NAME")));
         // Spelled independently of PRODUCT_BIN, suffix included: a witness without the

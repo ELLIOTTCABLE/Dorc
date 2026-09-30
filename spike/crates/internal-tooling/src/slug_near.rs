@@ -4,9 +4,9 @@
 //!
 //! NOT WIRED YET — this is the seam, not a backend. The near line is meant to be SEMANTIC ("the
 //! point is to catch nearby concepts"), and any embedding backend has to live OUTSIDE this crate:
-//! `internal-tooling` keeps a hard zero-native-dependency bar (its `Cargo.toml` explains why —
-//! fingerprint stability against the shared workspace build, and disk in a crate whose own job
-//! includes guarding it), so a backend is an external subprocess, never a crate we compile.
+//! `internal-tooling` judges every dependency on disk and cold-build cost (its `Cargo.toml` says
+//! why), and an embedding model fails both, so a backend is an external subprocess, never a crate
+//! we compile.
 //! `build_ranker` returns `None` until one is wired; until then `slugs::resolve_near` carries the
 //! previous line forward / computes nothing, and `SLUGS.md` simply has no `near:` lines. When a
 //! backend does land, the staleness rule keeps the cost down: a row's line refreshes only when that
