@@ -63,6 +63,9 @@ typos = "latest"
 # backend — the lane provisions it out-of-band into the git-ignored `spike/e2e/.real-tools/`.)
 shellcheck = "0.11.0"
 
+# The CI workflows' linter (an hk.pkl step); it shellchecks each `run:` block with the pin above.
+actionlint = "1.7.12"
+
 # Lean 4, for the sparing-algebra formalization under
 # .claude/research/refinement-types-industrial-cost/spike-lean-sparing/. The registry has
 # no lean/elan entry, so the github backend installs elan (the ecosystem's rustup-alike)
@@ -723,7 +726,7 @@ description = "verify:kani's body, without the heavy-work lock; run verify:kani 
 hide = true
 raw = true
 dir = "spike"
-run = ["mise run preflight kani", "cargo run -q -p dorc-verify -- kani"]
+run = ["mise run preflight kani", "mise run ci:kani"]
 
 [tasks."verify:kani-check"]
 description = "Check the detached Kani harness with the standard toolchain."
@@ -755,7 +758,7 @@ run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- lean-build"]
 description = "Recompute Lean badges and compare them with the catalogue."
 raw = true
 dir = "spike"
-run = ["mise run preflight lean", "cargo run -q -p dorc-verify -- report --with-lean"]
+run = ["mise run preflight lean", "mise run ci:lean"]
 run_windows = "wsl -- mise run verify:lean-badges"
 
 # ── livetest ─────────────────────────────────────────────────────────────────────────────────
@@ -797,3 +800,32 @@ raw = true
 dir = "spike"
 depends = ["build"]
 run = "cargo run -q --profile tooling -p internal-tooling -- livetest remote"
+
+# ── ci ───────────────────────────────────────────────────────────────────────────────────────
+# A CI lane runs on a clean, single-purpose runner, so it calls the unit under test bare: preflight
+# and the heavy-work lock guard a shared developer machine, and a runner has neither to protect.
+# Where a local task wraps one of these in that ceremony, it composes the `ci:` task, so each tool
+# invocation is spelled once. The workflow itself is `.github/workflows/ci.yml`.
+
+[tasks."ci:kani"]
+description = "The whole Kani battery, bare. Locally, run `verify:kani`."
+raw = true
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- kani"
+
+[tasks."ci:lean"]
+description = "Recompute the Lean badges and compare them with the catalogue, bare. Locally, run `verify:lean-badges`."
+raw = true
+dir = "spike"
+run = "cargo run -q -p dorc-verify -- report --with-lean"
+
+[tasks."ci:assay"]
+description = "Every spec at the official tier, its batch capped at five hours to fit inside a hosted runner's six; rows it does not reach report `not-run`."
+raw = true
+dir = "spike"
+run = "cargo run -q --profile tooling -p internal-tooling -- assay --check --official {{ config_root }}/specs/shared.assay.md -- --batch-timeout 18000"
+
+[tasks."ci:path-filters"]
+description = "Render the path filters of the CI lanes that run only on relevant changes, from the hk.pkl steps that route the same checks into the local gates."
+raw = true
+run = "pkl eval --format yaml --output-path {{ config_root }}/.tmp/ci/path-filters.yml {{ config_root }}/.github/path-filters.pkl"

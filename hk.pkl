@@ -146,6 +146,11 @@ local linters = new Mapping<String, Step> {
         check = "typos {{files}}"
         fix = "typos --write-changes {{files}}"
     }
+    // The CI workflows. actionlint also shellchecks every `run:` block, with mise's pinned shellcheck.
+    ["actionlint"] {
+        glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
+        check = "actionlint {{files}}"
+    }
 }
 
 // Case corpora, pre-commit only — deliberately NOT in `linters`, which the `check`/`fix` hooks
