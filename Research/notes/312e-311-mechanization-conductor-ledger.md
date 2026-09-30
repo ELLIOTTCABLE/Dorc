@@ -212,6 +212,38 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   shows the mKey resolved after the reboot marked stale too. 311 § 3.3 says "an mKey whose
   mResolution ... a line above invalidated"; the fences hold no resolution time
   (`312d:str-static-over-lines-not-temporal`). For the panel and the temporal latitude.
+- `acc-the-accounting-at-the-tip` — the Opus's account over `6d1ca99f` (tables copied to the
+  conductor worktree's `.tmp/312e-accounting-tip/`, not durable): of the 770 baseline
+  sentences, commentary 211, mechanical with a named carrier 263, structural 32, carried
+  differently or by an inert definition 32, residue 223, duplicates 9, absent 0. Five rows moved
+  category, each by a repair of § 5 or § 8 (the § 1.3.1 sentence to residue; the cells'
+  KNOWN_UNSPOKEN sentence from structural to mechanical, its structural judgement having been
+  wrong at `a212975c`; three § 2.8 sentences from inert to mechanical, the books now reading
+  `sameTopic`). Of 436 blockquote sentences: 146 verbatim, 77 near-verbatim, 55 merges, 16
+  moves, 6 rewords, 136 additions of the mechanization. Four clauses of the baseline appeared
+  nowhere: the mTraversal being ordered, "or the filesystem binder", "leaf first", and the
+  engine's vouch (replaced by the axiom under `43b8d4dd`); the first three are restored as
+  normative prose or into their sentence.
+- `acc-firewall-audit-disposition` — fifty fence-against-sentence findings. Applied as fidelity
+  repairs: the writeset reads a written mKey's own entailment beside its identity chain's
+  (F09: `contributingContainers` and `writesetUnexcluded` ranged over `levelKeysOf`, so the
+  finished record's truth and the engine's read now cover one entailment); `parentCatalog` is
+  the mParent for a primary mKey too (F10, 311's "one mKey"); the unused fourth seat atom
+  deleted (F17); every hole has a sentence and every law sentence names the holes it is asked
+  outside (F01 to F08); the guards the sentences dropped restored (F14 the cell, F15 the closing
+  act, F16 the non-empty mTraversal); "by the walk" on the different-mSorts law (F12); a verdict
+  fact reads an mKey, a cell's included (F13); the catalog supply claims nothing (F18);
+  `sameTopic` in the fence's words (F20); the commentary slip at the index book. Left as
+  recorded, no repair: `compareAt` has no consumer but the books (F11); `DeclaresPlaces` gates
+  no record, invocation being prose (F21); no fact forbids a cell mSort a primary mScheme (F24,
+  a wider universe); rule 3 applies at the seed only (F26, 311's "entry"). Rank 3 (kill and
+  twin sentences, books' world facts, reasons the outcomes do not assert, two nits in the
+  shared half) went to the STE pass as translation-only work.
+- `act-ste-rewrite-dispatched` — an Opus in `.tmp/trees/r31-ste-rewrite` on `ai/r31-ste-rewrite`
+  off `9b3662ee`: every headed-blockquote line to strict STE with the fence as the authority,
+  one commit per top-level section, the linter as its gate, fidelity mismatches reported and
+  not repaired, plus the rank-3 gaps above. The conductor reads every changed line before any
+  fold. The accounting worktree and branch are removed (no commit of its own).
 - `msr-ste-over-the-normative-lines` — the skill's linter over the 441 blockquote lines (9,405
   words) at `8a1be5a7`: 143 semicolons, 123 sentences over the cap, 81 passive advisories, 4
   present-perfect, 1 synonym rotation; 159 lines carry a hard flag. The day's own sentences are
