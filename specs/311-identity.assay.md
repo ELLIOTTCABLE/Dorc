@@ -2771,6 +2771,158 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 > Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one mTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the mFullyQualifiedKey walk and `compare()` answer UNKNOWN, the natural-key license answers UNKNOWN, and the two facts are not about one mTopic.
 
+#### § 3.2.6-a-book-two-cells-of-one-unit
+
+Two cells of one mParent are two mSorts (1.9-cell-a-singleton-sort), and the walk decides
+between them as between any two mSorts. Sven describes units and two of their cells; the unit
+name is scoped in the mRoute, so the world is thin. The book reads one cell twice, under two
+mKey atoms for the unit, and reads the other cell once.
+
+```alloy
+run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
+```
+
+```sh
+# two_cells_of_one_unit.sh
+   systemctl is-active nginx.service
+#} systemctl is_active nginx_service
+#= one sig sven extends Speaker {}
+#= one sig sm_Unit, sm_UnitActive, sm_UnitEnabled extends mSort {} { sortOwner = sven }
+#= one sig sm_UnitName extends mScheme {} { schemeOwner = sven }
+#= one sig unit_name_shape extends mShape {} { ofScheme = sm_UnitName }
+#= one sig unit_nginx, active_state, enabled_state extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends mKey {} { value = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  reaches = unit_nginx }
+#= one sig k_active_at_line_1, k_active_at_line_3 extends mKey {} { value = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  reaches = active_state }
+#= one sig k_enabled extends mKey {} { value = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  reaches = enabled_state }
+#= Speaker = sven
+#= mSort = sm_Unit + sm_UnitActive + sm_UnitEnabled
+#= mScheme = sm_UnitName
+#= mShape = unit_name_shape
+#= mReferent = unit_nginx + active_state + enabled_state
+#= mKey = k_nginx_at_line_1 + k_nginx_at_line_3 + k_active_at_line_1 + k_active_at_line_3 + k_enabled
+#= mVantage = v0 and mRoute = r0 and no mRootWorld
+#= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= holds = unit_nginx->active_state + unit_nginx->enabled_state
+#= owns = holds
+#= no passes and no affects
+#= one sig sven__the_unit_name_is_primary_of_the_unit extends DeclaresPrimaryOf {} { speaker = sven  primaryScheme = sm_UnitName  ofSort = sm_Unit }
+#= one sig sven__a_unit_name_reaches_one_unit extends DeclaresUniqueReferent {} { speaker = sven  referentShape = unit_name_shape }
+#= one sig sven__active_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven  theCell = sm_UnitActive  cellParent = sm_Unit }
+#= one sig sven__enabled_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven  theCell = sm_UnitEnabled  cellParent = sm_Unit }
+#= one sig sven__the_active_cell_at_line_1_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_active_at_line_1  instance = k_nginx_at_line_1  seat = BindSeat }
+#= one sig sven__the_active_cell_at_line_3_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_active_at_line_3  instance = k_nginx_at_line_3  seat = BindSeat }
+#= one sig sven__the_enabled_cell_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_enabled  instance = k_nginx_at_line_1  seat = BindSeat }
+#= one sig sven__nginx_is_active extends VerdictFact {} { speaker = sven  topic = k_active_at_line_1  atLine = this  markedReads = k_active_at_line_1  dependsOn = active_state }
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_active_at_line_1 and f.topic.parent = k_nginx_at_line_1 and worldOf[f.topic] = r0)
+
+   systemctl is-enabled nginx.service
+#} systemctl is_enabled nginx_service
+#= one sig sven__nginx_is_enabled extends VerdictFact {} { speaker = sven  topic = k_enabled  atLine = this  markedReads = k_enabled  dependsOn = enabled_state }
+#= let f = atLine.this, g = sven__nginx_is_active | tabledCompare[f.topic, g.topic] = KNOWN_UNSPOKEN and not sameTopic[f, g]
+
+   systemctl is-active nginx.service
+#} systemctl is_active nginx_service
+#= one sig sven__nginx_is_active_again extends VerdictFact {} { speaker = sven  topic = k_active_at_line_3  atLine = this  markedReads = k_active_at_line_3  dependsOn = active_state }
+#= let f = atLine.this, g = sven__nginx_is_active | tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is six atoms of every kind the specification owns.
+> Sven owns the unit and two of its cells.
+> The unit name's mScheme is `:primary-of` the unit.
+> Its one shape carries `:guarantees-unique-referent` and neither `:identified-in` nor `:root`.
+> The active cell and the enabled cell are each `:identified-in` the unit.
+> The world holds one unit with its active state and its enabled state, each owned by the unit.
+> Nothing passes, no write affects another mReferent, and no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
+> The unit's mKey is scoped in the mRoute.
+> Each cell's mKey has the unit's mKey of its own line as its mParent, supplied by the mark that named it.
+> Line 1, `is-active`: every statement in force is true and the engine's axioms hold.
+> The active cell's identity is its own mKey, its mParent is the unit's mKey, and its chain ends at the mRoute.
+> Line 2, `is-enabled`, against line 1: `compare()` answers KNOWN_UNSPOKEN, and the two facts are not about one mTopic.
+> Line 3, `is-active` again, against line 1: `compare()` answers SAME, and the two facts are about one mTopic.
+
+#### § 3.2.7-a-book-one-configuration-from-two-files-in-two-orders
+
+A composite mKey names one part per role (2.11-composite-sorts-and-roles), and the same two
+parts in swapped roles are another mKey (`composite-identity-is-structure-not-a-bag`). Cora
+describes a tool that merges a base file with an overlay; Tessa's files are thin, scoped in the
+mRoute.
+
+```alloy
+run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
+```
+
+```sh
+# one_configuration_from_two_files_in_two_orders.sh
+   cfg --base ./a.toml --overlay ./b.toml
+#} cfg dash_dash_base a_toml dash_dash_overlay b_toml
+#= one sig tessa, cora extends Speaker {}
+#= one sig sm_File extends mSort {} { sortOwner = tessa }
+#= one sig sm_MergedConfig extends mSort {} { sortOwner = cora }
+#= one sig sm_Inode extends mScheme {} { schemeOwner = tessa }
+#= one sig sm_MergeKey extends mScheme {} { schemeOwner = cora }
+#= one sig inode_shape extends mShape {} { ofScheme = sm_Inode }
+#= one sig merge_shape extends mShape {} { ofScheme = sm_MergeKey }
+#= one sig base_role, overlay_role extends Role {}
+#= one sig inode_a, inode_b, merged_a_over_b, merged_b_over_a extends mReferent {}
+#= one sig r0 extends mRoute {}
+#= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
+#= one sig k_ino_a extends mKey {} { value = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_a }
+#= one sig k_ino_b extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_b }
+#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends mKey {} { value = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  reaches = merged_a_over_b }
+#= one sig k_b_over_a extends mKey {} { value = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  reaches = merged_b_over_a }
+#= part = k_a_over_b_at_line_1->base_role->k_ino_a + k_a_over_b_at_line_1->overlay_role->k_ino_b + k_a_over_b_at_line_3->base_role->k_ino_a + k_a_over_b_at_line_3->overlay_role->k_ino_b + k_b_over_a->base_role->k_ino_b + k_b_over_a->overlay_role->k_ino_a
+#= Speaker = tessa + cora
+#= mSort = sm_File + sm_MergedConfig
+#= mScheme = sm_Inode + sm_MergeKey
+#= mShape = inode_shape + merge_shape
+#= Role = base_role + overlay_role
+#= mReferent = inode_a + inode_b + merged_a_over_b + merged_b_over_a
+#= mKey = k_ino_a + k_ino_b + k_a_over_b_at_line_1 + k_a_over_b_at_line_3 + k_b_over_a
+#= CompositeKey = k_a_over_b_at_line_1 + k_a_over_b_at_line_3 + k_b_over_a
+#= mVantage = v0 and mRoute = r0 and no mRootWorld
+#= no Wrapper and no RiskFaultlessSkips
+#= no Engine.lookupReadSetOpen and no World.lineWrites
+#= no holds and no owns and no passes and no affects
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
+#= one sig cora__the_merge_key_is_primary_of_the_merged_config extends DeclaresPrimaryOf {} { speaker = cora  primaryScheme = sm_MergeKey  ofSort = sm_MergedConfig }
+#= one sig cora__a_merged_config_is_a_composite extends DeclaresComposite {} { speaker = cora  compositeSort = sm_MergedConfig }
+#= one sig cora__a_over_b_is_valid extends VerdictFact {} { speaker = cora  topic = k_a_over_b_at_line_1  atLine = this  markedReads = k_a_over_b_at_line_1  dependsOn = merged_a_over_b }
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_a_over_b_at_line_1 and worldOf[f.topic] = r0)
+
+   cfg --base ./b.toml --overlay ./a.toml
+#} cfg dash_dash_base b_toml dash_dash_overlay a_toml
+#= one sig cora__b_over_a_is_valid extends VerdictFact {} { speaker = cora  topic = k_b_over_a  atLine = this  markedReads = k_b_over_a  dependsOn = merged_b_over_a }
+#= let f = atLine.this, g = cora__a_over_b_is_valid | not compositeSame[f.topic, g.topic] and tabledCompare[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
+
+   cfg --base ./a.toml --overlay ./b.toml
+#} cfg dash_dash_base a_toml dash_dash_overlay b_toml
+#= one sig cora__a_over_b_is_valid_again extends VerdictFact {} { speaker = cora  topic = k_a_over_b_at_line_3  atLine = this  markedReads = k_a_over_b_at_line_3  dependsOn = merged_a_over_b }
+#= let f = atLine.this, g = cora__a_over_b_is_valid | tabledWalk[f.topic, g.topic] = UNKNOWN and compositeSame[f.topic, g.topic] and tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g]
+```
+
+<!-- prose-translation -->
+> This book's ceiling is six atoms of every kind the specification owns.
+> Tessa owns the file.
+> The inode number's mScheme is `:primary-of` the file, and its shape carries `:guarantees-unique-referent` and nothing else.
+> Cora owns the merged configuration, a mCompositeSort with a base role and an overlay role.
+> The merge key's mScheme is `:primary-of` it, and its shape carries no warrant.
+> The world holds two inodes and two merged configurations.
+> No store holds them, nothing passes, no write affects another mReferent, and no line writes.
+> Every mKey is resolved from one mVantage on one mRoute, which holds no ambient instance, under no wrapper and without the flag.
+> Every mKey is scoped in the mRoute.
+> Line 1, `a.toml` under `b.toml`: every statement in force is true and the engine's axioms hold.
+> The composite mKey's identity is itself, and its chain ends at the mRoute.
+> Line 2, `b.toml` under `a.toml`, against line 1: the parts are the same two inodes in swapped roles, so the composites are not SAME by their parts.
+> `compare()` answers UNKNOWN, and the two facts are not about one mTopic.
+> Line 3, `a.toml` under `b.toml` again, against line 1: the walk over the composite mKeys answers UNKNOWN, since the merge shape carries no warrant.
+> The composites are SAME by their parts, role by role, so `compare()` answers SAME and the two facts are about one mTopic.
+
 ### § 3.3-invalidation-three-mutator-species
 
 Three mutator species invalidate three kinds of fact, and in all three the engine withdraws
