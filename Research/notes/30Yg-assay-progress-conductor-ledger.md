@@ -14,11 +14,17 @@ showed one preflight line and then nothing, with no bound; the person could not 
 would return in a minute or tomorrow. The rule for the build [TYPED]: "don't overengineer, start
 small; MVP." The second tune arrives from the 311 mechanization conductor and is not yet here.
 
-State: built on `ai/r30-alloy-praxis-conductor`. Everything below the two effort-counter
-commits is Rust only, leaves `AlloyAdapter.java` and the wire protocol untouched, and moves no
-lock key; the two on top do (§ 5). Smoked on the crate's fixture at a small heap under the lock
-bypass of § 4; the completion gate on both legs is owed, held by memory, not by the lock (§ 4).
-`notes/30Y` § 2.7 and § 3 describe what is, the counters excepted until their landing is timed.
+State: `ai/r30-alloy-praxis-conductor` carries everything that moves no lock key: the
+progress lines (now `tracing` events), `--quiet`, the official cap, per-heap preflight, the
+sibling's three fold-ins, the tooling profile, and the Rust half of the effort counters, which
+is inert until the adapter speaks. The adapter's counters commit, the one that re-keys every
+lock row, sits alone on `ai/r30-assay-effort-counters` directly above; the human is "fine with
+the work that will churn the lock-format sitting in a branch for the moment" [TYPED] and lands
+it when the next official run is due anyway. The human's official pass ended during the
+evening of 2026-09-29 and left a schema-2 lock, keyed under the pre-counters adapter,
+uncommitted in the primary checkout; its duration is the calibration for § 2's figure. The
+Windows completion gate is green at every tip; the WSL leg is run before the fold if memory and
+the machine's other work allow, else recorded as owed. `notes/30Y` § 2.7 and § 3 describe what is.
 
 ## § 1-what-a-pass-says
 
@@ -81,14 +87,20 @@ needs about 4.5 GiB, and the child count clamps to at least one.
 
 ## § 5-posed-and-open
 
-- **`open-tracing-after-a-re-exec`** — the human likes `tracing` for this ("two tools
-  communicating") but not builds breaking on a long run. The crate's Windows-empty dependency
-  table guards against feature unification differing between `-p internal-tooling` and
-  `--workspace`, which relinks and re-uplifts the binary. Measured: at `dorc-loom`'s exact
-  feature set, zero differences today (~SUSPECT safe, fragile). Proposed: long-running
-  subcommands re-execute from a copy of their own executable (rustup's move), which retires the
-  hazard for any dependency graph; then adopt `tracing` with the subscriber's uptime timer.
-  Awaiting the human.
+- **`dec-tooling-profile-then-tracing`** [TYPED: "remarkably sane and prevents this shape in
+  the future. ship it."] — the human likes `tracing` here ("two tools communicating") but not
+  builds breaking on a long run. The crate's Windows-empty dependency table guarded against
+  cargo unifying a shared dependency's features differently under `-p internal-tooling` than
+  under `--workspace`, which relinks the binary and re-copies it over a running exe. Measured
+  first: at `dorc-loom`'s exact feature set, zero differences today, so ~SUSPECT safe and
+  fragile by construction. Resolved cargo-natively rather than by re-executing from a copy of
+  the binary (the first proposal): the tooling builds and runs under `[profile.tooling]`, so
+  its exe lives in `target/tooling/` and no workspace build writes it (measured: a
+  `cargo build --workspace` leaves its mtime alone; the cold profile build cost 6 s on a warm
+  dependency cache and 229 MiB). Then `tracing` at `dorc-loom`'s specification replaced the
+  hand-rolled sink; `--quiet` is a level filter. The manifest's dependency bar is restated:
+  disk and cold-build cost, no longer feature unification. This also closes
+  `finding-fmt-runs-a-jvm`'s race by construction.
 - **`open-effort-counters-fold-timing`** [TYPED: "try it if it's easy and drop it if it
   chafes"] — built, as the two top commits of the branch, separable from everything below:
   the adapter wraps sat4j in an adapter-local subclass of `SAT4JRef` (same id, so the
@@ -104,11 +116,16 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   `mise run fmt` is hk's fix over all files, so its `assay --staged` step parses every spec in
   a 1 GB JVM, in parallel with the cargo steps; a rebuild of `internal-tooling` racing that
   parse cannot replace the running executable. Bites whoever edits the tooling crate.
-- `open-fmt-races-its-own-rebuild` (~SUSPECT, the builder's diagnosis: an hk step running
-  `internal-tooling.exe` while a sibling step rebuilds it) and
-  `open-respawn-parse-eats-wall-budget` (a child after a spawn or kill re-parses inside its next
-  solve, against the wall cap only) are posed and unanswered.
-- Whether `specs/AGENTS.md` may carry the `--quiet` line is unanswered.
+- `open-respawn-parse-eats-wall-budget` (a child after a spawn or kill re-parses inside its
+  next solve, against the wall cap only) is posed and unanswered; so is whether the deferral
+  note's byte-exact test stays (the builder pinned strings the conductor had specified, arguing
+  the same test is the only pin on which rows defer). `specs/AGENTS.md` carries no `--quiet`
+  line; the praxis lives in the skill, `spike/CLAUDE.md`, and the task description.
+- Line wording is deliberately unretuned [TYPED: "as long as it's honestly reporting and
+  what's-reported is mildly interesting or arguably useful, i'm letting it lay"].
+- The human's rule for this arc's chat: bank builder returns, report when asked; ledgering is
+  welcome under that posture ("will help untangle errors caused by my aggressive 'go away'
+  posture") [TYPED].
 
 ## § 6-the-sibling's-needs
 
