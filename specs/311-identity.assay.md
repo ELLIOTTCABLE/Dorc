@@ -1303,11 +1303,20 @@ pred sparingIsSound {
       no (World.lineWrites[l]).*affects & f.dependsOn
 }
 
+pred hole_two_separated_things_hold_one_part {
+   some disj x, y: mKey | tabledCompare[x, y] = DISJOINT and some x.reaches.^holds & y.reaches.^holds
+}
+
+run hole_two_separated_things_hold_one_part_witness {
+   hole_two_separated_things_hold_one_part and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
 check law_sparing_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
-      and not hole_composite_keys_with_same_parts_reach_differently implies
+      and not hole_composite_keys_with_same_parts_reach_differently
+      and not hole_two_separated_things_hold_one_part implies
       sparingIsSound
 } for 4 but 4 Int, 10 Claim
 
@@ -1316,6 +1325,7 @@ run law_sparing_is_sound_premise {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
 }
@@ -1324,15 +1334,17 @@ check law_sparing_is_sound_with_a_store_on_the_chain {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
-      and not hole_composite_keys_with_same_parts_reach_differently implies
+      and not hole_composite_keys_with_same_parts_reach_differently
+      and not hole_two_separated_things_hold_one_part implies
       sparingIsSound
-} for 4 but 4 Int, 10 Claim, 5 mLevel
+} for 4 but 4 Int, 14 Claim, 5 mLevel
 
 run law_sparing_is_sound_with_a_store_on_the_chain_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    some l: Line, f: VerdictFact & InForce, r: readset[f] |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
          and some identity[r].^parent & mKey
@@ -1343,6 +1355,7 @@ run kill_sparing_is_sound_closes_may_write {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    axiomaticByDifferentialTest
    some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1354,6 +1367,7 @@ run kill_sparing_is_sound_verdict_fact {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    axiomaticByDifferentialTest
    some d: VerdictFact & InForce | axiomaticByContractExcept[d] and not true_VerdictFact[d]
       and some l: Line | spared[l, d] and some (World.lineWrites[l]).*affects & d.dependsOn
@@ -1364,6 +1378,7 @@ run kill_sparing_is_sound_closes_may_read {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    axiomaticByDifferentialTest
    some d: ClosesMayRead & InForce | axiomaticByContractExcept[d] and not true_ClosesMayRead[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1375,6 +1390,7 @@ run kill_sparing_is_sound_finishes_entailment {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    axiomaticByDifferentialTest
    some d: FinishesEntailment & InForce | axiomaticByContractExcept[d] and not true_FinishesEntailment[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1386,6 +1402,7 @@ run kill_sparing_is_sound_supplies_parent {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_two_separated_things_hold_one_part
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
       and some l: Line, f: VerdictFact & InForce |
@@ -1439,17 +1456,18 @@ run law_exclusion_readings_agree_premise {
 > The second kind is an mReferent that a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
 > The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
+> A held hole: two mKeys that `compare()` reads DISJOINT reach two mReferents that hold one part in common, directly or through others.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents.
 > Under those premises, for every sparing, no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
-> The sparing law is asked outside the world-scoped-top hole, the region hole, and the composite hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
+> The sparing law is asked outside the world-scoped-top hole, the region hole, the composite hole, and the shared-part hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > Two commands ask the same law.
 > The first command asks it over worlds of four levels.
-> The second command asks it over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
-> The premise twins of the two sparing commands also ask for the sparing law's premises and ask outside its three holes.
+> The second command asks it over worlds of five levels and fourteen statements, where a spared fact's read mKey can have a store on its chain.
+> The premise twins of the two sparing commands also ask for the sparing law's premises and ask outside its four holes.
 > The premise twin of `law_sparing_is_sound` asks for a world where a fact that depended on something is spared past a writing line with an at-most entry.
 > The premise twin of `law_sparing_is_sound_with_a_store_on_the_chain` asks for a world where the first twin's spared fact has a readset member with a store on its chain.
 > The sparing law dies with a statement it rests on.
-> Each kill of the sparing law asks outside the three holes, with the engine's axioms holding and no store among its own contents.
+> Each kill of the sparing law asks outside the four holes, with the engine's axioms holding and no store among its own contents.
 > With one completion record false and every other statement in force true, a false sparing is reachable.
 > With one vouch false and every other statement in force true, a false sparing is reachable.
 > Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false.
@@ -1459,7 +1477,7 @@ run law_exclusion_readings_agree_premise {
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 > The premise twin of `law_exclusion_readings_agree` asks for a world where an at-most entry has an entailing level and a contributing container against a read mKey.
 
-Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten. Four levels seat an mRoute, a mRoot mWorld, and two mKeys, so no spared world at that scope holds a store on a read mKey's chain; the second command asks the same law at five levels, where its twin demands such a store, and its result is the measurement of whether that claim is affordable.
+Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten. Four levels seat an mRoute, a mRoot mWorld, and two mKeys, so no spared world at that scope holds a store on a read mKey's chain; the second command asks the same law at five levels, where its twin demands such a store, and its result is the measurement of whether that claim is affordable. That twin is unsat at ten statements: a store on the chain adds its own `:primary-of`, `:root`, `:identified-in`, a second supplied mParent, and a second closed may-read set, thirteen in force by hand count, so the second command runs at fourteen, the least count that seats its witness plus one.
 
 Scope: the exclusion-readings law runs at the sparing law's four atoms and ten statements for the same reason, since both of its sides are the sparing test over a writeset, and it does not finish translating at six.
 
@@ -2008,7 +2026,10 @@ run hole_region_closure_with_unknown_leaf_pair_witness {
 } for 6 but 4 Int expect 1
 
 check law_region_disjoint_is_sound {
-   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_region_closure_with_unknown_leaf_pair and not hole_composite_keys_with_same_parts_reach_differently implies
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+      and not hole_region_closure_with_unknown_leaf_pair
+      and not hole_composite_keys_with_same_parts_reach_differently
+      and not hole_world_scoped_top_aliases_into_a_store implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.reaches & (D.reaches + D.reaches.passes)
 } for 6 but 4 Int
@@ -2017,6 +2038,7 @@ run law_region_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_world_scoped_top_aliases_into_a_store
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
 }
@@ -2025,6 +2047,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
       and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
@@ -2034,6 +2057,7 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
+   not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
       and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
@@ -2067,12 +2091,12 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > The region law has three premises: every statement in force is true, the engine's axioms hold, and no store is among its own contents.
 > Under those premises, a DISJOINT of the region test is never false.
 > Such a DISJOINT for D and x is false when x reaches D's mReferent, or an mReferent that a route through D's mReferent passes to.
-> The region law is asked outside that hole and outside the composite hole (3.2-compare-one-chokepoint-four-answers).
+> The region law is asked outside that hole, outside the composite hole, and outside the world-scoped-top hole (3.2-compare-one-chokepoint-four-answers).
 > The premise twin of `law_region_disjoint_is_sound` asks for a world where the region test reads DISJOINT for D and x.
 > In that world, x reaches an mReferent, D's mReferent passes to an mReferent, and a level of x has mTraversal members.
-> The twin also asks for the region law's premises, outside both holes.
+> The twin also asks for the region law's premises, outside the three holes.
 > The region law dies with a statement it rests on.
-> Each kill of the region law asks outside both holes, with the engine's axioms holding and no store among its own contents.
+> Each kill of the region law asks outside the three holes, with the engine's axioms holding and no store among its own contents.
 > With one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
 > One more kill asks whether the law also dies with one `alias nothing-else` false.
 > An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
