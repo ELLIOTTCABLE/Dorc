@@ -1211,13 +1211,17 @@ pred true_FinishesEntailment[d: FinishesEntailment] {
       (k.reaches).affects in k.reaches.*holds + entailed[k].reaches
 }
 
+pred sparingIsSound {
+   all l: Line, f: VerdictFact & InForce | spared[l, f] implies
+      no (World.lineWrites[l]).*affects & f.dependsOn
+}
+
 check law_sparing_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_region_closure_with_unknown_leaf_pair
       and not hole_composite_keys_with_same_parts_reach_differently implies
-      all l: Line, f: VerdictFact & InForce | spared[l, f] implies
-         no (World.lineWrites[l]).*affects & f.dependsOn
+      sparingIsSound
 } for 4 but 4 Int, 10 Claim
 
 run law_sparing_is_sound_premise {
@@ -1227,6 +1231,24 @@ run law_sparing_is_sound_premise {
    not hole_composite_keys_with_same_parts_reach_differently
    some l: Line, f: VerdictFact & InForce |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
+}
+
+check law_sparing_is_sound_with_a_store_on_the_chain {
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+      and not hole_world_scoped_top_aliases_into_a_store
+      and not hole_region_closure_with_unknown_leaf_pair
+      and not hole_composite_keys_with_same_parts_reach_differently implies
+      sparingIsSound
+} for 4 but 4 Int, 10 Claim, 5 mLevel
+
+run law_sparing_is_sound_with_a_store_on_the_chain_premise {
+   axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_reach_differently
+   some l: Line, f: VerdictFact & InForce, r: readset[f] |
+      spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
+         and some identity[r].^parent & mKey
 }
 
 run kill_sparing_is_sound_closes_may_write {
@@ -1307,12 +1329,13 @@ run law_exclusion_readings_agree_premise {
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when, for every mKey whose mSort and shape are the record's and that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
+> The same law is asked twice: over worlds of four levels, and over worlds of five levels, where a spared fact's read mKey can have a store on its chain.
 > The sparing law dies with a statement it rests on: with one completion record false, or one vouch false, and every other statement in force true, a false sparing is reachable.
 > Whether it also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false is asked; an unsatisfiable kill says that no sparing rests on that statement alone.
 > The kill by a supplied mParent instance runs at five levels, since its witness needs a store on the read mKey's chain beside the two mWorlds.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 
-Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten.
+Scope: the sparing law runs at four atoms of the model's kinds and ten statements because its writeset closes a comprehension over every pair of mKeys and does not finish translating at six, and because its twin's witness (the flag, a verdict fact, a closed may-read set on every level of a read key's chain, a closed at-most set, a finished record for every writeset member, and the separation they rest on) is unsat at six statements and seats at ten. Four levels seat an mRoute, a mRoot mWorld, and two mKeys, so no spared world at that scope holds a store on a read mKey's chain; the second command asks the same law at five levels, where its twin demands such a store, and its result is the measurement of whether that claim is affordable.
 
 Scope: the exclusion-readings law runs at the sparing law's four atoms and ten statements for the same reason, since both of its sides are the sparing test over a writeset, and it does not finish translating at six.
 
