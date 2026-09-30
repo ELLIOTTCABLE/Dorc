@@ -53,6 +53,8 @@ pub(super) struct Computed {
     pub(super) solve_ms: Option<u64>,
     pub(super) note: Option<String>,
     pub(super) index: u64,
+    /// The command's `expect`, reported beside the row and never written to the lock.
+    pub(super) expects: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -494,6 +496,7 @@ fn unrun(e: &Entry, result: Outcome, job: &Job<'_>, note: &str) -> Computed {
         solve_ms: None,
         note: Some(note.to_owned()),
         index: e.info.index,
+        expects: e.info.expects,
     }
 }
 
@@ -566,6 +569,7 @@ fn decide(
             solve_ms: None,
             note: None,
             index: e.info.index,
+            expects: e.info.expects,
         };
     }
     if job.tier.defers()
@@ -617,6 +621,7 @@ fn decide(
             solve_ms: None,
             note: None,
             index: e.info.index,
+            expects: e.info.expects,
         };
     }
     let ask = Ask {
@@ -644,6 +649,7 @@ fn decide(
         solve_ms: None,
         note: None,
         index: e.info.index,
+        expects: e.info.expects,
     };
     match solved {
         Solved::Found { options, .. } if options.compact() != e.options => {

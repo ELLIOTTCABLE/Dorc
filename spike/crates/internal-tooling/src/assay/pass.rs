@@ -504,6 +504,9 @@ fn premise(c: &Computed, rows: &[Computed]) -> Option<String> {
 fn command_json(c: &Computed, standing: Standing, rows: &[Computed]) -> Json {
     let mut json = c.row.json();
     if let Json::Obj(fields) = &mut json {
+        if let Some(e) = c.expects {
+            fields.push(("expect".to_owned(), Json::Num(e)));
+        }
         if let Some(p) = premise(c, rows) {
             fields.push(("premise".to_owned(), Json::str(p)));
         }
@@ -651,6 +654,7 @@ mod tests {
             solve_ms: None,
             note: None,
             index: 0,
+            expects: None,
         }
     }
 
