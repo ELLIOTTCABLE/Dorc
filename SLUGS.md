@@ -2531,6 +2531,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/26L-native-orchestration-and-contingent-progression.md:434
 - cited: ROADMAP (1)
 
+## finding-gate-e2e-harness-uplift-race
+- defined: —
+- cited: 30Yg Research/LIVING_STATUS (2)
+
 ## finding-grouping-key-design
 - defined: —
 - cited: 228 22A 22B (4)
@@ -5155,6 +5159,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## open-observer-sort-inventory
 - defined: —
 - cited: 01 (1)
+
+## open-respawn-parse-eats-wall-budget
+- defined: —
+- cited: 30Yg Research/LIVING_STATUS (2)
 
 ## operands-are-pure-and-capped
 - defined: Research/notes/28Va-aid-extraction-map.md:569 — — every operand is a `Copy` scalar or an interned
@@ -9416,7 +9424,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/CLAUDE:tooling-runs-under-its-own-profile
 - defined: spike/CLAUDE.md:1018 — — every invocation of the tooling binary carries
-- cited: 30Y (1)
+- cited: 30Y Research/LIVING_STATUS (2)
 
 ## spike/CLAUDE:top-identifies-with-nothing
 - defined: spike/CLAUDE.md:247 — — ⊤ identifies with nothing, including itself;

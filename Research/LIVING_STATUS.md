@@ -30,11 +30,32 @@
 
 ## IN FLIGHT (2026-09-29)
 
+The assay progress lane (`notes/30Yg`, Fable conductor, worktree
+`.tmp/trees/r30-alloy-praxis-conductor` kept) folded into `ai/main` the evening of 2026-09-29
+with both gate legs green: a `--check`/`--write` reports itself on stderr as `tracing` events
+(a begin line, a plan line, each fresh solve's start, translation, five-minute still-alive, and
+result, an end line on every exit path, all stamped `assay +<elapsed>`; `--quiet` silences
+exactly that, and hooks, gates, and agents pass it); `--help` lists the flags; the official tier
+has an eight-hour batch cap and is not resumable by ruling; preflight is sized from the tier's
+heap; the tooling binary builds under `--profile tooling` so no workspace build can replace a
+running tooling exe (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`). Above `ai/main`
+sits `ai/r30-assay-effort-counters`, one Java commit that puts sat4j's conflicts, restarts,
+learned clauses, and decisions on the still-alive line (confirmed live on a 311 slice); it moves
+every lock key, so it lands when the next official run is due anyway (the Rust half is already
+in `ai/main`, inert). The human's official pass over 311 finished the same evening on the
+pre-lane binary and left a schema-2 lock, keyed under the pre-counters adapter, uncommitted in
+the primary checkout. Posed, unfixed: `30Yg:finding-gate-e2e-harness-uplift-race` (the
+completion gate's concurrent steps can re-uplift `dorc-harness.exe` under the e2e tests once in
+a while) and `30Yg:open-respawn-parse-eats-wall-budget`. The lane's second tune, from the 311
+mechanization conductor's needs list (a shared world module for books; an instance text form;
+two lints), is not yet started; its three small chafes (`--help`, deferral notes naming their
+measurement, `expect` on report rows) landed here.
+
 The assay build closed 2026-09-28 and its hot-loop lane 2026-09-29, every lane folded (ledgers
 `notes/30Yc`, § 7 the close, and `notes/30Yf`, the hot-loop rulings; as built `notes/30Yd`,
 `notes/30Ye`; what is, `notes/30Y`; the praxis `plans/30Z`). The design-tier checker exists:
 `mise run assay -- <spec.assay.md> [--parse | --staged | --check | --write] [--hot | --gate |
---official] [--module <m> | --only <[module.]command>]` compiles a specification into
+--official] [--module <m> | --only <[module.]command>] [--quiet]` compiles a specification into
 `target/alloy/<stem>/` and answers every row whose key is unchanged straight from
 `<stem>.lock.json`, so a `--check` with nothing changed costs a parse; a set of reds the lock
 records is still a pass. The tiers are `--hot` (120 CPU s per command, deferring what last timed
