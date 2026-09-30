@@ -5503,7 +5503,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/AGENTS:platform-tests-live-in-named-regions
 - defined: spike/AGENTS.md:1297 — (`30Xc:dec-platform-tests-in-named-regions`) — a
-- cited: 30Xc (1)
+- cited: 30Xc (2)
 
 ## analysis/AGENTS:polarity-becomes-transitions
 - defined: spike/crates/analysis/AGENTS.md:287 — — the binary `Establish`/`Kill` bit becomes a

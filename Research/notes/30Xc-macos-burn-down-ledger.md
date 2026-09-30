@@ -336,3 +336,18 @@
   what differs. `grep -rn 'mod \(for\|on\)_'` finds them all
   (`spike/AGENTS:platform-tests-live-in-named-regions`).
 
+### Landed
+
+- `a413dc3a` — the `for_macos` root-rule test moves into `durable.rs`'s tests;
+  `cli/tests/platform.rs` is gone; the steering line becomes
+  `spike/AGENTS:platform-tests-live-in-named-regions`.
+- Windows, mirrored as separate commits: `ffef344c` (`durable.rs`: `for_windows`, and
+  `for_other_unix` for the XDG arm) · `b74fc118` (`staging_store`: one `on_windows` with its two
+  private helpers) · `f83607b6` (`receipt-local`: two `on_windows`, two `for_windows`) ·
+  `27504bfa` (`loadpath.rs`: `for_windows`) · `3d6d36f7` (`receipt/src/image.rs`:
+  `for_windows`) · `61353806` (`doctor.rs`: one `on_windows` with its import).
+- Left as ordinary tests: `preflight.rs`'s `cfg!(windows)` test asserts both directions on every
+  platform; `cfg(unix)` tests are out of this pass.
+- The `on_windows` modules are not compiled here (no Windows target on this machine); each move
+  is mechanical, rustfmt parses them, and the item sets are unchanged. They wait on a Windows leg.
+
