@@ -41,7 +41,23 @@ impl ProfileSandbox {
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(root.join("config")).expect("a sandbox configuration base");
         std::fs::create_dir_all(root.join("state")).expect("a sandbox state base");
-        Self { root }
+        let sandbox = Self { root };
+        // The shipped binary's own bases: on macOS these are not `config` and `state`.
+        let roots = sandbox.platform_roots();
+        for role in dorc_receipt_local::RootRole::ALL {
+            std::fs::create_dir_all(roots.base(role)).expect("a sandbox platform base");
+        }
+        sandbox
+    }
+
+    /// The per-user roots the platform's own rule resolves in this sandbox.
+    #[expect(
+        clippy::expect_used,
+        reason = "the sandbox sets every variable the rule reads, so a refusal is a harness fault"
+    )]
+    pub(crate) fn platform_roots(&self) -> dorc_receipt_local::RootInputs {
+        dorc_cli::durable::standard_roots(dorc_cli::durable::host_platform(), self)
+            .expect("the sandbox sets every root variable")
     }
 
     /// The sandbox's own directory, above the two role bases — the runner-owned throwaway a harness
@@ -50,12 +66,12 @@ impl ProfileSandbox {
         &self.root
     }
 
-    /// Where a keyset would land.
+    /// The harness's configuration base.
     pub(crate) fn config_root(&self) -> PathBuf {
         self.root.join("config")
     }
 
-    /// Where receipts would land.
+    /// The harness's state base.
     pub(crate) fn state_root(&self) -> PathBuf {
         self.root.join("state")
     }
@@ -77,13 +93,30 @@ impl ProfileSandbox {
 /// `HOME` is set as well as the XDG pair, because macOS resolves both roles from it and a drive
 /// that left it inherited would write into whoever ran the suite.
 pub(crate) fn apply_roots_under(command: &mut std::process::Command, root: &std::path::Path) {
-    for key in ["APPDATA", "XDG_CONFIG_HOME"] {
-        command.env(key, root.join("config"));
+    for (key, value) in platform_variables(root) {
+        command.env(key, value);
     }
-    for key in ["LOCALAPPDATA", "XDG_STATE_HOME"] {
-        command.env(key, root.join("state"));
+}
+
+/// Each standard per-user variable a sandbox sets, and where it points.
+fn platform_variables(root: &std::path::Path) -> [(&'static str, PathBuf); 5] {
+    [
+        ("APPDATA", root.join("config")),
+        ("XDG_CONFIG_HOME", root.join("config")),
+        ("LOCALAPPDATA", root.join("state")),
+        ("XDG_STATE_HOME", root.join("state")),
+        ("HOME", root.join("home")),
+    ]
+}
+
+/// What a shipped spawn in this sandbox reads: the platform's own variables, pointed here.
+impl dorc_cli::durable::RootEnvironment for ProfileSandbox {
+    fn var(&self, name: &str) -> Option<String> {
+        platform_variables(&self.root)
+            .into_iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, value)| value.to_string_lossy().into_owned())
     }
-    command.env("HOME", root.join("home"));
 }
 
 /// The roots-seam variable (one home for the name is `dorc_cli::seam`); its pinned value is a

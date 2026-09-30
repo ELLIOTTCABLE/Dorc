@@ -34,6 +34,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use dorc_receipt_local::{RootPlatform, RootRole};
+
 mod sandbox;
 
 use sandbox::ProfileSandbox;
@@ -185,6 +187,26 @@ fn keyset_dir(sandbox: &ProfileSandbox) -> PathBuf {
         .join("dorc")
         .join("receipt-keys-v1")
         .join("keyset-v1")
+}
+
+/// The shipped binary's store: below the platform's own state root, not the harness's.
+fn shipped_store_root(sandbox: &ProfileSandbox) -> PathBuf {
+    shipped_product_root(sandbox, RootRole::State).join("receipts-v1")
+}
+
+/// The shipped binary's keyset: below the platform's own configuration root.
+fn shipped_keyset_dir(sandbox: &ProfileSandbox) -> PathBuf {
+    shipped_product_root(sandbox, RootRole::Configuration)
+        .join("receipt-keys-v1")
+        .join("keyset-v1")
+}
+
+fn shipped_product_root(sandbox: &ProfileSandbox, role: RootRole) -> PathBuf {
+    let root = sandbox
+        .platform_roots()
+        .product_root(role)
+        .expect("the product root is one component below the base");
+    PathBuf::from(root.as_str())
 }
 
 #[test]
@@ -609,6 +631,26 @@ fn a_receipt_identity_retrieves_its_own_document_and_prefers_nothing() {
     );
 }
 
+/// Each platform's root rule resolves inside the sandbox, so a shipped spawn writes nowhere else.
+#[test]
+fn every_platform_root_rule_resolves_inside_the_sandbox() {
+    let sandbox = ProfileSandbox::new("every-platform");
+    for platform in [
+        RootPlatform::Windows,
+        RootPlatform::MacOs,
+        RootPlatform::OtherUnix,
+    ] {
+        let roots = dorc_cli::durable::standard_roots(platform, &sandbox)
+            .unwrap_or_else(|refusal| panic!("{platform:?}: {refusal:?}"));
+        for role in RootRole::ALL {
+            assert!(
+                Path::new(roots.base(role)).starts_with(sandbox.root()),
+                "{platform:?} {role:?} resolved outside the sandbox"
+            );
+        }
+    }
+}
+
 /// Every file that spawns the shipped binary points its per-user roots somewhere throwaway.
 ///
 /// A lexical census, because no type can say "this `Command` had its environment set". It exists
@@ -922,7 +964,7 @@ fn the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams() {
     shipped_plan(&sandbox, &scratch);
     shipped_plan(&sandbox, &scratch);
 
-    let published = entries(&store_root(&sandbox));
+    let published = entries(&shipped_store_root(&sandbox));
     assert_eq!(
         published.len(),
         2,
@@ -934,7 +976,7 @@ fn the_shipped_binary_draws_live_os_identities_and_ignores_harness_seams() {
         "the shipped binary mints from live OS entropy: two runs never share one identity"
     );
     assert!(
-        keyset_dir(&sandbox)
+        shipped_keyset_dir(&sandbox)
             .join("keyset-manifest-v1.txt")
             .is_file(),
         "the production roots resolved to the sandboxed platform variables, where the keyset landed"
