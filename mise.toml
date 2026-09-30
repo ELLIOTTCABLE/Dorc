@@ -13,6 +13,11 @@
 # directions - manufacture changes that trip the failure-modes, and ensure the
 # tooling blocks.
 
+[settings]
+# Rust's version lives in ./rust-toolchain.toml, where rustup reads it too; this makes mise
+# install and lock that same pin rather than a second one here.
+idiomatic_version_file_enable_tools = ["rust"]
+
 [tools]
 node = "22"
 

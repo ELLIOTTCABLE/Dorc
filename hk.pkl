@@ -13,10 +13,8 @@ default_branch = "ai/main"
 // running `hk install`.
 //
 // Toolchain note: unlike the human's other Rust repos this does NOT use
-// `cargo +nightly fmt`. The spike carries no toolchain pin — the global mise
-// config supplies `stable` (msvc-hosted on Windows; linker via VS Build Tools;
-// the previous spikes' per-dir gnu pin is tombstoned, do not resurrect it) — so
-// plain `cargo fmt` is correct here. The `--manifest-path` lets the step run from
+// `cargo +nightly fmt`; the toolchain is ./rust-toolchain.toml's, so plain
+// `cargo fmt` is correct here. The `--manifest-path` lets the step run from
 // the worktree-root repo top-level.
 //
 // No step spells `mise x --`: `HK_MISE=1` in mise.toml has hk resolve the mise

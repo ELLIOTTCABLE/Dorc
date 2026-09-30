@@ -1,0 +1,14 @@
+# The one Rust toolchain pin. rustup reads it directly (editors, a bare `cargo`); mise reads it
+# through `idiomatic_version_file_enable_tools` in mise.toml, installs it, and locks it.
+#
+# The exact release, never a channel or a minor: rustup names `1.98` and `1.98.1` as distinct
+# toolchains, so anything looser installs a second identical copy beside mise's.
+#
+# No host triple: each platform takes rustup's default host, which on Windows is msvc (the older
+# per-dir gnu pin is tombstoned; do not resurrect it).
+#
+# The minimum the code supports is a separate fact: `rust-version` in spike/Cargo.toml.
+[toolchain]
+channel = "1.98.1"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

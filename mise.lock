@@ -312,6 +312,14 @@ checksum = "sha256:a8834481667325b44c539dbb758d7365a16389070f343c04b639bbe525ede
 url = "https://github.com/apple/pkl/releases/download/0.31.1/pkl-windows-amd64.exe"
 url_api = "https://api.github.com/repos/apple/pkl/releases/assets/382243744"
 
+[[tools.rust]]
+version = "1.98.1"
+backend = "core:rust"
+
+[tools.rust.options]
+components = "clippy,rustfmt"
+profile = "minimal"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"

@@ -9,7 +9,7 @@ publish = false
 # real algebra sources, so the thing verified is the thing shipped.
 #
 # DELIBERATELY NOT A WORKSPACE MEMBER, and the reason is Kani's toolchain rather than taste.
-# Kani 0.67 compiles with rustc 1.93-nightly, the workspace declares `rust-version = "1.96"`,
+# Kani compiles with its own nightly, older than the workspace's `rust-version`,
 # and cargo refuses to build any package whose MSRV exceeds the active compiler. Every route
 # that keeps the algebra crates as DEPENDENCIES hits that wall (their `rust-version.workspace`
 # resolves against `spike/Cargo.toml` however this manifest is arranged), and the two ways

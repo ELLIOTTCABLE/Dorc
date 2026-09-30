@@ -944,7 +944,7 @@ type below lives in `dorc-aid`, never `dorc-core`, since `288:phase-aid-crate-ex
 
 ## Build / test / run
 
-No per-dir toolchain pin; the global mise config supplies stable. **Use the mise
+The Rust toolchain is the root `rust-toolchain.toml`'s. **Use the mise
 tasks — never hand-derive an invocation.** They carry the cwd, the env, and the
 ordering that are easy to get subtly wrong, and they run from anywhere in the tree
 (`dir` resolves against the root `mise.toml`, not your cwd):
