@@ -52,7 +52,7 @@ pub const ARRANGEMENTS: &[ArrangementEntry] = &[
         occurrence: None,
         when_used: "`dorc --help` / `dorc -h` prints this whole page to stdout and exits 0.",
         why: "288 rul-help-text-is-loomable: help is product prose, so it gets an editable face like every other user-facing string.",
-        words: Some(ProseTier::Slop(&["in $XDG_STATE_HOME/dorc (else ~/.local/state/dorc; Windows sm %LOCALAPPDATA%\\dorc). Sensitive: it names your hosts, sm paths and oracles: unix writes it 0600 in a 0700 directory; Windows has sm no mode, so there that per-user location is the *only protection.*"])),
+        words: Some(ProseTier::Slop(&["in $XDG_STATE_HOME/dorc (else ~/.local/state/dorc; Windows sm %LOCALAPPDATA%\\dorc; sm macOS ~/Library/Application Support/dorc). Sensitive: it names your hosts, sm paths and oracles: unix writes it 0600 in a 0700 directory; Windows has sm no mode, so there that per-user location is the *only protection.*"])),
     },
     ArrangementEntry {
         slug: "cli-help-receipt-holds",
