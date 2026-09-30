@@ -401,10 +401,8 @@ impl RootsSeam {
     }
 }
 
-/// Derive the config/state roots UNDER a selected directory, consulting no platform variable
-/// (`30Xa:rul-roots-pinned-is-a-literal`). The two roles stay separate subdirectories, exactly as
-/// every platform keeps them, so a pinned run writes precisely where the platform route would
-/// under the selected directory.
+/// Derive the config/state roots under a selected directory, consulting no platform variable
+/// (`30Xa:rul-roots-pinned-is-a-literal`).
 fn pinned_roots(
     directory: &Path,
 ) -> Result<dorc_receipt_local::RootInputs, dorc_receipt_local::RootRefusal> {
