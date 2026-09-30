@@ -19,6 +19,12 @@ import edu.mit.csail.sdg.translator.A4SolutionReader;
 import edu.mit.csail.sdg.translator.TranslateAlloyToKodkod;
 
 import kodkod.engine.satlab.SATFactory;
+import kodkod.engine.satlab.SATSolver;
+import kodkod.solvers.SAT4J;
+import kodkod.solvers.SAT4JRef;
+
+import org.sat4j.minisat.SolverFactory;
+import org.sat4j.specs.ISolver;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,6 +47,20 @@ public class AlloyAdapter {
    static final PrintStream OUT = new PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out), true, StandardCharsets.UTF_8);
    static final Map<String, CompModule> worlds = new HashMap<>();
 
+   // Here and not on the factory: the ticker touching the factory class first would initialise
+   // SAT4JRef ahead of SATFactory, whose static init then reads a still-null SAT4JRef.INSTANCE.
+   static volatile ISolver solving;
+
+   /** Kodkod's own sat4j factory, keeping the solver it hands out so the ticker can read its effort. */
+   static final class WatchedSat4j extends SAT4JRef {
+      @Override
+      public SATSolver createSolver() {
+         ISolver solver = SolverFactory.instance().defaultSolver();
+         solving = solver;
+         return new SAT4J(solver);
+      }
+   }
+
    public static void main(String[] args) throws Exception {
       System.setProperty("org.slf4j.simpleLogger.log.kodkod", "warn");
       System.setOut(new PrintStream(new java.io.OutputStream() { public void write(int b) {} }));
@@ -48,7 +68,7 @@ public class AlloyAdapter {
          while (true) {
             // A caller killed mid-solve closes no pipe this thread would notice.
             if (!ProcessHandle.current().parent().map(ProcessHandle::isAlive).orElse(false)) Runtime.getRuntime().halt(1);
-            emit(event("tick"));
+            emit(tick());
             try { Thread.sleep(1000); } catch (InterruptedException e) { return; }
          }
       });
@@ -96,6 +116,22 @@ public class AlloyAdapter {
       JsonObject o = new JsonObject();
       o.addProperty("event", name);
       o.addProperty("cpu_ms", cpuMs());
+      return o;
+   }
+
+   // Read unsynchronised from the solving thread's live counters: they are shown, never decided on,
+   // so a stale value costs nothing. Anything thrown here would stop the ticks the CPU cap needs.
+   static JsonObject tick() {
+      JsonObject o = event("tick");
+      ISolver solver = solving;
+      if (solver == null) return o;
+      try {
+         Map<String, Number> stat = solver.getStat();
+         String[][] fields = {{"conflicts", "conflicts"}, {"restarts", "starts"}, {"learned", "learnedclauses"}, {"decisions", "decisions"}};
+         for (String[] f : fields) if (!stat.containsKey(f[1])) return o;
+         for (String[] f : fields) o.addProperty(f[0], stat.get(f[1]).longValue());
+      } catch (Throwable ignored) {
+      }
       return o;
    }
 
@@ -198,7 +234,7 @@ public class AlloyAdapter {
       A4Options opt = new A4Options();
       String solver = req.has("solver") ? req.get("solver").getAsString() : "sat4j";
       if (SATFactory.find(solver).isEmpty()) throw new IllegalArgumentException("unknown solver " + solver);
-      opt.solver = SATFactory.get(solver);
+      opt.solver = solver.equals("sat4j") ? new WatchedSat4j() : SATFactory.get(solver);
       return opt;
    }
 
@@ -248,7 +284,13 @@ public class AlloyAdapter {
             emit(e);
          }
       };
-      A4Solution sol = TranslateAlloyToKodkod.execute_command(progress, world.getAllReachableSigs(), cmd, opt);
+      A4Solution sol;
+      try {
+         sol = TranslateAlloyToKodkod.execute_command(progress, world.getAllReachableSigs(), cmd, opt);
+      } finally {
+         // Otherwise the finished solver's clause database outlives the command into the next one's heap.
+         solving = null;
+      }
       JsonObject o = new JsonObject();
       o.addProperty("ok", true);
       o.addProperty("result", sol.satisfiable() ? "sat" : "unsat");
