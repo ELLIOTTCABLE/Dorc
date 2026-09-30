@@ -23,8 +23,9 @@ the work that will churn the lock-format sitting in a branch for the moment" [TY
 it when the next official run is due anyway. The human's official pass ended during the
 evening of 2026-09-29 and left a schema-2 lock, keyed under the pre-counters adapter,
 uncommitted in the primary checkout; its duration is the calibration for § 2's figure. The
-Windows completion gate is green at every tip; the WSL leg is run before the fold if memory and
-the machine's other work allow, else recorded as owed. `notes/30Y` § 2.7 and § 3 describe what is.
+completion gate is green on both legs at the tip that folded into `ai/main`
+[TYPED: "land and fast-forward into ai/main the *non* lockchurn changes when your builder is
+done"]. `notes/30Y` § 2.7 and § 3 describe what is.
 
 ## § 1-what-a-pass-says
 
@@ -112,6 +113,18 @@ needs about 4.5 GiB, and the child count clamps to at least one.
   through a Kodkod class-initialisation order (the ticker thread touched the factory's subclass
   before anything had touched the factory); the fix, moving the static off the subclass, is
   loud-if-wrong and untested live for want of memory.
+- **`finding-gate-e2e-harness-uplift-race`** (~SUSPECT; seen once, 2026-09-29, at the tip
+  that landed) — one `both` run failed on the Windows leg in hk's `test-real-tools`: a single
+  e2e case (`glob-for-word-runs`) could not spawn `target\debug\dorc-harness.exe` ("The system
+  cannot find the file specified") while every other case spawned it; the same leg at the same
+  code was green before and after. The builder's reading of `hk.pkl`: the completion gate runs
+  its twelve steps concurrently (only `gate:arc` passes `--jobs 1`), and `test-floor-suite`
+  (`cargo test --workspace`, then nextest over the workspace) is the one step whose package
+  selection is the whole workspace, so it builds every product binary into `target\debug`
+  and, if the workspace-unified feature set differs from `-p dorc-cli`'s, re-uplifts
+  `dorc-harness.exe` under the e2e tests' feet; Windows removes before it copies. The same
+  hazard class the tooling profile retired for the tooling exe, on a product binary; not
+  confirmed by fingerprint, not fixed, posed for the human.
 - **`finding-fmt-runs-a-jvm`** (~SUSPECT the mechanism of the earlier "Access is denied") —
   `mise run fmt` is hk's fix over all files, so its `assay --staged` step parses every spec in
   a 1 GB JVM, in parallel with the cargo steps; a rebuild of `internal-tooling` racing that
