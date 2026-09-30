@@ -1206,7 +1206,7 @@ pred true_ClosesMayWrite[d: ClosesMayWrite] {
 pred true_DeclaresEntails[d: DeclaresEntails] {}
 
 pred true_FinishesEntailment[d: FinishesEntailment] {
-   all k: keysOfSort[d.finishedSort] | k.shape = d.finishedShape and some k.reaches implies
+   all k: mKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.reaches implies
       (k.reaches).affects in k.reaches.*holds + entailed[k].reaches
 }
 
@@ -1271,7 +1271,7 @@ run law_exclusion_readings_agree_premise {
 > A may-write entry and an entailment entry license nothing alone.
 > K's owner declares the entailment; the written mSort's owner declares the finished record.
 > A completion record is true when every mReferent the line writes is one an at-most entry reaches, or one a route through a whole-marked entry's mReferent passes to.
-> A finished record is true when, for every mKey of the shape that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
+> A finished record is true when, for every mKey whose mSort and shape are the record's and that reaches an mReferent, writing that mReferent affects only it, what it holds, and the mReferents its entailment names.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents: no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > The sparing law dies with a statement it rests on: with one completion record false, or one vouch false, and every other statement in force true, a false sparing is reachable.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
