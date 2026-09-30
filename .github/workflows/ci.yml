@@ -1,0 +1,172 @@
+# Each job is one complete, focused check on its own clean runner. Steps are only checkout, mise,
+# a cache, and `mise run <task>`: what a check IS lives in mise.toml and hk.pkl, never here.
+name: ci
+
+on:
+  push:
+    branches: [ai/main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Incremental artifacts pay off only across edits, and a runner never edits; they also double
+  # the target dir the cache has to carry.
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    concurrency:
+      group: rust-${{ matrix.os }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+      # The checks that cannot vary by platform run once, and first, before the build they can spare.
+      - if: runner.os == 'Linux'
+        run: mise run check
+      - if: runner.os == 'Linux'
+        run: mise run audit
+      # Clippy is the one lint that varies by platform: each OS compiles only its own cfg arms.
+      - if: runner.os != 'Linux'
+        run: mise run clippy
+      - run: mise run test
+      - run: mise run test:hooks
+      - run: mise run test:real-tools
+      - run: mise run verify:check
+
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      # This job needs pkl alone; without this, `mise run` would install the whole toolset first.
+      MISE_TASK_RUN_AUTO_INSTALL: "false"
+    outputs:
+      kani: ${{ steps.filter.outputs.kani }}
+      lean: ${{ steps.filter.outputs.lean }}
+      translate: ${{ steps.filter.outputs.translate }}
+      assay: ${{ steps.filter.outputs.assay }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          install_args: pkl
+      - run: mise run ci:path-filters
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: .tmp/ci/path-filters.yml
+
+  # The heavy lanes run to completion; a newer push replaces only the pending run, so the latest
+  # commit is always tested without a long lane being cancelled over and over.
+  kani:
+    needs: changes
+    if: needs.changes.outputs.kani == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    concurrency:
+      group: kani-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+          save-if: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.kani
+          key: kani-${{ hashFiles('mise.lock') }}
+      - run: mise run verify:kani-setup
+      - run: mise run ci:kani
+
+  lean:
+    needs: changes
+    if: needs.changes.outputs.lean == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    concurrency:
+      group: lean-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+          save-if: false
+      - run: mise run verify:lean-bootstrap
+      - run: mise run ci:lean
+
+  translate:
+    needs: changes
+    if: needs.changes.outputs.translate == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    concurrency:
+      group: translate-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+          save-if: false
+      - run: mise run verify:translate-check
+
+  assay:
+    needs: changes
+    if: needs.changes.outputs.assay == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    concurrency:
+      group: assay-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+          save-if: false
+      - run: mise run ci:assay
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: assay-report
+          path: .tmp/assay/
+          if-no-files-found: warn
+
+  livetest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    concurrency:
+      group: livetest-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: spike
+          shared-key: rust
+          save-if: false
+      - run: mise run livetest

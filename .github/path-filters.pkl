@@ -1,0 +1,11 @@
+// `dorny/paths-filter`'s filters for the CI lanes that run only when their paths change, read
+// out of the hk steps that route the same checks into the local gates, so the two cannot drift.
+// A renamed or removed step fails the render rather than silencing a lane.
+import "../hk.pkl"
+
+local steps = hk.hooks["check"].steps
+
+kani = steps["verify-kani"].glob
+lean = steps["verify-lean-badges"].glob
+translate = steps["verify-translate-check"].glob
+assay = steps["assay-lock"].glob
