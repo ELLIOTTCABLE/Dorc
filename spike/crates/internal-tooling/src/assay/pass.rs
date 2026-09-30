@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use super::drive::{self, Computed, Job, Target};
 use super::lock::{self, Row, Standing};
+use super::report;
 use super::{
     Ask, CONTENTION, DOC_SUFFIX, Finding, Inputs, LAWS_HALF, LOCK_SUFFIX, Lint, Mode, RED, REFUSED,
     RUNNER_FAILED, SHARED_HALF, Source, UNMEASURED, compile, display_path, emit, lints_json,
@@ -54,9 +56,31 @@ impl Drop for PassLog {
     }
 }
 
-fn emit_report(fields: Fields, code: u8) -> u8 {
-    print!("{}", Json::Obj(fields).render());
-    code
+/// Where one document's report goes: stdout for the sub-second modes, `--json`'s sink for a
+/// solving pass, whose stdout gets the summary instead.
+struct Reporter<'a> {
+    ask: &'a Ask,
+    stem: String,
+    began: Instant,
+    changes: Vec<String>,
+}
+
+impl Reporter<'_> {
+    fn emit(&self, fields: Fields, code: u8) -> u8 {
+        let text = Json::Obj(fields).render();
+        if matches!(self.ask.mode, Mode::Check | Mode::Write) {
+            let ctx = report::Context {
+                stem: &self.stem,
+                tier: self.ask.tier.name(),
+                wall: self.began.elapsed(),
+                changes: &self.changes,
+            };
+            report::deliver(&text, &self.ask.report, &ctx);
+        } else {
+            print!("{text}");
+        }
+        code
+    }
 }
 
 fn staged(path: &Path) -> Option<String> {
@@ -78,6 +102,7 @@ fn staged(path: &Path) -> Option<String> {
     reason = "one document's pass, in the order the modes branch"
 )]
 pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
+    let began = Instant::now();
     let read = |path: &Path| {
         if ask.mode == Mode::Staged {
             staged(path)
@@ -101,6 +126,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     let stem = doc_name
         .strip_suffix(DOC_SUFFIX)
         .map_or_else(|| lossy(spec.file_stem()), str::to_owned);
+    let mut reporter = Reporter {
+        ask,
+        stem: stem.clone(),
+        began,
+        changes: Vec::new(),
+    };
     let out = out.unwrap_or_else(|| {
         let dir = if ask.mode == Mode::Staged {
             format!("{stem}.staged")
@@ -133,7 +164,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         Err(findings) => {
             fields.push(("modules".to_owned(), Json::Arr(Vec::new())));
             fields.push(("lints".to_owned(), lints_json(&findings)));
-            return emit_report(fields, REFUSED);
+            return reporter.emit(fields, REFUSED);
         }
     };
     match write_modules(&out, &compiled.modules) {
@@ -153,12 +184,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             .map(|(k, v)| ((*k).to_owned(), v.clone())),
     );
     if ask.mode == Mode::Compile {
-        return emit_report(fields, 0);
+        return reporter.emit(fields, 0);
     }
     let mut log = PassLog::begin(&stem, ask);
     let jvm = match Jvm::from_env() {
         Ok(jvm) => jvm,
-        Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
+        Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
     };
     let lock_path = spec.with_file_name(format!("{stem}{LOCK_SUFFIX}"));
     let committed_text = if ask.mode == Mode::Staged {
@@ -177,7 +208,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
                     ("status", Json::str("unreadable")),
                 ]),
             ));
-            return emit_report(fields, RED);
+            return reporter.emit(fields, RED);
         }
     };
     let mut caps = match super::tier::with_overrides(ask.tier.caps(), &ask.caps) {
@@ -212,7 +243,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         };
         let mut adapter = match Adapter::new(&jvm, caps.machine) {
             Ok(a) => a,
-            Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
+            Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
         };
         let refusals = if ask.mode == Mode::Parse {
             compiled
@@ -236,25 +267,25 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
                     }
                     survey.refusals
                 }
-                Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
+                Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
             }
         };
         if refusals.is_empty() {
-            return emit_report(fields, 0);
+            return reporter.emit(fields, 0);
         }
         set(
             &mut fields,
             "lints",
             lints_json(&unparsed(&refusals, &compiled.modules, &doc_name, &out)),
         );
-        return emit_report(fields, REFUSED);
+        return reporter.emit(fields, REFUSED);
     }
 
     if !crate::preflight::gate(
         "alloy",
         Some(crate::preflight::jvm_ram(caps.machine.heap_mb)),
     ) {
-        return emit_report(runner_failed(fields, "preflight refused"), RUNNER_FAILED);
+        return reporter.emit(runner_failed(fields, "preflight refused"), RUNNER_FAILED);
     }
     let _hold = match crate::exclusive::hold("assay") {
         Ok(hold) => hold,
@@ -264,7 +295,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             } else {
                 RUNNER_FAILED
             };
-            return emit_report(runner_failed(fields, "the heavy-work lock"), code);
+            return reporter.emit(runner_failed(fields, "the heavy-work lock"), code);
         }
     };
     let job = Job {
@@ -279,7 +310,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     };
     let (rows, refusals) = match drive::run(&jvm, &job) {
         Ok(ran) => ran,
-        Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
+        Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
     };
     log.counts = Some(drive::row_counts(&rows));
     if !refusals.is_empty() {
@@ -288,7 +319,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             "lints",
             lints_json(&unparsed(&refusals, &compiled.modules, &doc_name, &out)),
         );
-        return emit_report(fields, REFUSED);
+        return reporter.emit(fields, REFUSED);
     }
     let judged: Vec<(Standing, Option<&Row>)> = rows
         .iter()
@@ -370,7 +401,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             &computed,
             ask.tier == super::tier::Tier::Official,
         );
-        print_diff(&committed, &next, &lock_path);
+        reporter.changes = lock_changes(&committed, &next);
         match std::fs::write(&lock_path, lock::render(&next)) {
             Ok(()) => {
                 summary.push(("status".to_owned(), Json::str("written")));
@@ -397,19 +428,13 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     } else {
         Vec::new()
     };
-    if !disagreeing.is_empty() {
-        eprintln!(
-            "assay: the conjunction disagrees with its lines' own verdicts in: {}",
-            disagreeing.join(", ")
-        );
-    }
     let code = if disagreeing.is_empty() { code } else { RED };
     summary.push((
         "construction_disagreements".to_owned(),
         Json::Arr(disagreeing.into_iter().map(Json::Str).collect()),
     ));
     fields.push(("lock".to_owned(), Json::Obj(summary)));
-    emit_report(fields, code)
+    reporter.emit(fields, code)
 }
 
 fn disagreements(rows: &[Computed], conjunctions: &[(String, Vec<String>)]) -> Vec<String> {
@@ -530,41 +555,38 @@ fn key_diff(entries: &[drive::Entry], committed: &[Row], spec: &str) -> Json {
     Json::Arr(moved.into_iter().map(Json::Str).collect())
 }
 
-fn print_diff(before: &[Row], after: &[Row], lock_path: &Path) {
+/// The rows a write changes: `+` new, `~` moved, `-` gone.
+fn lock_changes(before: &[Row], after: &[Row]) -> Vec<String> {
     let id = |r: &Row| format!("{}.{}", r.module, r.name);
-    for r in after {
-        match before
+    let mut changes: Vec<String> = after
+        .iter()
+        .filter_map(|r| {
+            match before
+                .iter()
+                .find(|b| b.module == r.module && b.name == r.name)
+            {
+                None => Some(format!("+ {} {}", id(r), r.result.name())),
+                Some(b) if b.result != r.result => Some(format!(
+                    "~ {} {} -> {}",
+                    id(r),
+                    b.result.name(),
+                    r.result.name()
+                )),
+                Some(_) => None,
+            }
+        })
+        .collect();
+    changes.extend(
+        before
             .iter()
-            .find(|b| b.module == r.module && b.name == r.name)
-        {
-            None => eprintln!(
-                "assay: {} + {} {}",
-                lock_path.display(),
-                id(r),
-                r.result.name()
-            ),
-            Some(b) if b.result != r.result => eprintln!(
-                "assay: {} ~ {} {} -> {}",
-                lock_path.display(),
-                id(r),
-                b.result.name(),
-                r.result.name()
-            ),
-            Some(_) => {}
-        }
-    }
-    for b in before.iter().filter(|b| {
-        !after
-            .iter()
-            .any(|r| r.module == b.module && r.name == b.name)
-    }) {
-        eprintln!(
-            "assay: {} - {} {}",
-            lock_path.display(),
-            id(b),
-            b.result.name()
-        );
-    }
+            .filter(|b| {
+                !after
+                    .iter()
+                    .any(|r| r.module == b.module && r.name == b.name)
+            })
+            .map(|b| format!("- {} {}", id(b), b.result.name())),
+    );
+    changes
 }
 
 fn unparsed(

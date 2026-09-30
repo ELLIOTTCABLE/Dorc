@@ -1,7 +1,7 @@
 //! `assay`: compile a literate spec document into one flat directory of Alloy modules
 //! (`notes/30Y` § 2), and on request parse them, run them through the Alloy adapter, and
 //! hold the verdicts in a lock beside the spec (`30Y` § 2.7). Markdown in, `.als` out, one JSON
-//! report per document on stdout.
+//! report per document: on stdout, or for a solving pass in a file its stdout summary names.
 
 mod alloy;
 mod book;
@@ -12,6 +12,7 @@ mod lock;
 mod pass;
 mod progress;
 mod replay;
+mod report;
 mod sh;
 mod tier;
 
@@ -169,6 +170,7 @@ struct Ask {
     tier: tier::Tier,
     target: drive::Target,
     caps: Vec<String>,
+    report: report::Sink,
 }
 
 /// Assay's own arguments, and the runner caps after its `--`.
@@ -182,6 +184,10 @@ fn split_caps(args: &[String]) -> (&[String], &[String]) {
     }
 }
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "the command line, parsed and then validated top to bottom"
+)]
 pub(crate) fn run(args: &[String]) -> ExitCode {
     let (ours, caps) = split_caps(args);
     let mut specs = Vec::new();
@@ -191,7 +197,9 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         tier: tier::Tier::Gate,
         target: drive::Target::All,
         caps: caps.to_vec(),
+        report: report::Sink::Stdout,
     };
+    let mut json = None;
     let mut quiet = false;
     let mut it = ours.iter();
     while let Some(arg) = it.next() {
@@ -202,6 +210,10 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
             }
             "--quiet" => {
                 quiet = true;
+                continue;
+            }
+            "--json" => {
+                json = Some(it.next());
                 continue;
             }
             "--help" | "-h" => {
@@ -271,7 +283,14 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     if out.is_some() && specs.len() > 1 {
         return usage("--out names one document's directory, and more than one was named");
     }
-    if matches!(ask.mode, Mode::Check | Mode::Write) {
+    let solving = matches!(ask.mode, Mode::Check | Mode::Write);
+    ask.report = match json {
+        Some(_) if !solving => return usage("--json is where --check or --write reports"),
+        Some(None) => return usage("--json names a file, or - for stdout"),
+        Some(Some(to)) => report::Sink::named(to, specs.len()),
+        None => report::Sink::Dir(report::default_dir()),
+    };
+    if solving {
         progress::install(quiet);
     }
     let worst = specs
@@ -338,6 +357,9 @@ const HELP: &str = "usage: assay <spec.assay.md>... [flags] [-- <caps>]
   --official                   tier: 1800s CPU per command, 4096 MB, keys ignored, 8h batch
   --module <m>                 solve every command of one module; never writes
   --only <[module.]command>    solve one command, its premise twin, and its book's run; never writes
+  --json <path|->              where --check or --write puts its JSON report, - for stdout; a
+                               directory when several documents are named; default
+                               .tmp/assay/<stem>-<UTC time>.json under the repository
   --quiet                      no progress lines on stderr
   --help                       this text
 caps, after a second --:
@@ -351,7 +373,7 @@ caps, after a second --:
 fn usage(problem: &str) -> ExitCode {
     eprintln!(
         "assay: {problem}
-usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--quiet] [-- <runner caps>]"
+usage: assay <spec.assay.md>... [--out <dir>] [--parse | --staged | --check | --write] [--hot | --gate | --official] [--module <m>] [--only <[module.]command>] [--json <path|->] [--quiet] [-- <runner caps>]"
     );
     ExitCode::from(REFUSED)
 }
