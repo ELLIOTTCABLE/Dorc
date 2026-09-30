@@ -569,3 +569,29 @@ Both sparing laws were red again, through one new shape outside the shared-part 
   fact (`^affects in affects`) and the hole's deletion, never the conductor's to write.
 - At `c0487fbe` the sparing laws are unmeasured under the new premise; the kills may starve under
   one more conjunct. Leg three measures them and, if quiet, runs the official write at that tip.
+
+## § 13-leg-three-and-the-two-world-shape-holes
+
+2026-09-30. Leg three at `57fbe4ee`: the third-thing witness sat, both twins sat, all five kills
+sat; both sparing laws red once more, one shape, outside the four holes; the builder stopped
+before the official write, as briefed.
+
+- `red-sparing-through-a-held-thing-off-the-route` — a whole-marked entry's region reaches R0
+  one `passes` step down; the line writes R0, which the completion record allows; R0 HOLDS the
+  read thing R2 but no route passes to R2, so the placing closure is vacuously true over the
+  keyed things of the sort and the region test reads DISJOINT by its second form; R0 affects R2,
+  which the read closure allows because R0 holds R2. Every statement true. The world stratum's
+  `holds` and `passes` are unlinked, and the region is one `passes` step.
+- Applied at `cfd0f37b`, under the hole protocol: `hole_a_held_thing_is_not_reached_beneath`
+  (some b holds c and does not pass to c) and `hole_a_route_reaches_beyond_one_step` (a passes
+  to b, b to c, a not to c), each with a witness at six; both premised out of the sparing laws,
+  their twins, and the five kills. The second is added on a hand-walk, +SURE: with `holds`
+  pinned inside `passes` the same world returns as a two-step route the one-step region misses,
+  so excluding the first alone buys one round. The seven sparing exclusions are factored into
+  one named predicate, `outsideTheSparingHoles`, a pure inlining of the same conjuncts.
+- For the sitting, unposed: with the affects hole (§ 12) these are the three world-stratum
+  closures the laws presuppose and 311's prose leaves to English: `affects` transitive, `passes`
+  transitive, `holds` inside `passes`. Each is a one-line world fact if ruled, and a hole
+  deleted; each is `312d` § 17.1's `ask-affects-and-the-chain`, `ask-passes`, and `ask-holds`.
+- Leg four re-measures the sparing commands under the seven holes and, if quiet, runs the
+  official write at `cfd0f37b` plus this ledger's commit.
