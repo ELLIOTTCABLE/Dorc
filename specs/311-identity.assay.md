@@ -1313,12 +1313,13 @@ pred sparingIsSound {
       no (World.lineWrites[l]).*affects & f.dependsOn
 }
 
-pred hole_two_separated_things_hold_one_part {
-   some disj x, y: mKey | tabledCompare[x, y] = DISJOINT and some x.reaches.^holds & y.reaches.^holds
+pred hole_two_separated_things_reach_one_thing_beneath {
+   some disj x, y: mKey | tabledCompare[x, y] = DISJOINT
+      and some x.reaches.*(holds + passes) & y.reaches.*(holds + passes)
 }
 
-run hole_two_separated_things_hold_one_part_witness {
-   hole_two_separated_things_hold_one_part and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+run hole_two_separated_things_reach_one_thing_beneath_witness {
+   hole_two_separated_things_reach_one_thing_beneath and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
 pred hole_a_write_affects_through_a_third_thing {
@@ -1329,30 +1330,12 @@ run hole_a_write_affects_through_a_third_thing_witness {
    hole_a_write_affects_through_a_third_thing and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
-pred hole_a_held_thing_is_not_reached_beneath {
-   some disj b, c: mReferent | c in b.holds and c not in b.passes
-}
-
-run hole_a_held_thing_is_not_reached_beneath_witness {
-   hole_a_held_thing_is_not_reached_beneath and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
-} for 6 but 4 Int expect 1
-
-pred hole_a_route_reaches_beyond_one_step {
-   some disj a, b, c: mReferent | b in a.passes and c in b.passes and c not in a.passes
-}
-
-run hole_a_route_reaches_beyond_one_step_witness {
-   hole_a_route_reaches_beyond_one_step and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
-} for 6 but 4 Int expect 1
-
 pred outsideTheSparingHoles {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
-   not hole_two_separated_things_hold_one_part
+   not hole_two_separated_things_reach_one_thing_beneath
    not hole_a_write_affects_through_a_third_thing
-   not hole_a_held_thing_is_not_reached_beneath
-   not hole_a_route_reaches_beyond_one_step
 }
 
 check law_sparing_is_sound {
@@ -1464,12 +1447,10 @@ run law_exclusion_readings_agree_premise {
 > The second kind is an mReferent that a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
 > The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
-> A held hole: two mKeys that `compare()` reads DISJOINT reach two mReferents that hold one part in common, directly or through others.
+> A held hole: two mKeys that `compare()` reads DISJOINT reach two mReferents from which one mReferent is reached beneath both, by holding or by route, directly or through others.
 > A held hole: a write to one mReferent affects a third mReferent through a second, and does not affect the third directly.
-> A held hole: an mReferent holds another that no route through it passes to.
-> A held hole: a route passes to a second mReferent and from there to a third, and does not pass to the third directly.
-> The sparing holes are seven: the world-scoped-top hole, the region hole, the composite hole, the shared-part hole, the third-thing hole, the held-thing hole, and the one-step hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
-> A world is outside the sparing holes when it is outside each of the seven.
+> The sparing holes are five: the world-scoped-top hole, the region hole, the composite hole, the one-thing-beneath hole, and the third-thing hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
+> A world is outside the sparing holes when it is outside each of the five.
 > A sparing is never false while every statement in force is true and the engine's axioms hold and no store is among its own contents.
 > Under those premises, for every sparing, no mReferent the line writes affects, directly or through others, an mReferent the fact's answer depended on.
 > The sparing law is asked outside the sparing holes.
