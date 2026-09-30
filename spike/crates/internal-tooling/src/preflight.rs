@@ -124,7 +124,7 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     let Some(profile) = PROFILES.iter().find(|p| p.name == name) else {
         return usage(&format!("unknown profile {name:?}"));
     };
-    let (ok, line) = verdict(profile);
+    let (ok, line) = verdict(profile, profile.ram);
     println!("{line}");
     if ok {
         ExitCode::SUCCESS
@@ -133,17 +133,25 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
     }
 }
 
-pub(crate) fn gate(name: &str) -> bool {
+/// The in-process form, for a caller that knows its own memory need better than the table's
+/// default can: the JVM lanes size their heap per invocation.
+pub(crate) fn gate(name: &str, ram: Option<u64>) -> bool {
     let Some(profile) = PROFILES.iter().find(|p| p.name == name) else {
         eprintln!("preflight: unknown profile {name:?}");
         return false;
     };
-    let (ok, line) = verdict(profile);
+    let (ok, line) = verdict(profile, ram.unwrap_or(profile.ram));
     eprintln!("{line}");
     ok
 }
 
-fn verdict(profile: &Profile) -> (bool, String) {
+/// What one adapter JVM can claim: its heap plus the non-heap headroom the official tier's child
+/// count already assumes.
+pub(crate) fn jvm_ram(heap_mb: u64) -> u64 {
+    heap_mb.saturating_add(512).saturating_mul(1024 * 1024)
+}
+
+fn verdict(profile: &Profile, need_ram: u64) -> (bool, String) {
     let name = profile.name;
     if std::env::var("DORC_PREFLIGHT").is_ok_and(|v| v == "skip") {
         return (
@@ -156,7 +164,7 @@ fn verdict(profile: &Profile) -> (bool, String) {
             true,
             format!("preflight {name}: not applicable here — {reason}"),
         ),
-        Ok(root) => report(profile, &root),
+        Ok(root) => report(profile, &root, need_ram),
     }
 }
 
@@ -165,7 +173,7 @@ pub(crate) fn available_ram() -> Option<u64> {
 }
 
 /// Measure, then print exactly one line: a pass note, or a refusal naming the remedy.
-fn report(profile: &Profile, root: &Path) -> (bool, String) {
+fn report(profile: &Profile, root: &Path, need_ram: u64) -> (bool, String) {
     let name = profile.name;
     let warm = profile.cache.witness(root).exists();
     let need_disk = if warm {
@@ -196,14 +204,14 @@ fn report(profile: &Profile, root: &Path) -> (bool, String) {
         return (false, line);
     }
     if let Ok(free) = ram
-        && free < profile.ram
+        && free < need_ram
     {
         let line = format!(
             "preflight {name}: REFUSED — {} RAM available, needs {}. Reap what is holding it \
              (an orphaned `cbmc` outlives its driver; `pkill -9 -x cbmc`), or set \
              DORC_PREFLIGHT=skip for an emergency.",
             gib(free),
-            gib(profile.ram)
+            gib(need_ram)
         );
         return (false, line);
     }
@@ -221,7 +229,7 @@ fn report(profile: &Profile, root: &Path) -> (bool, String) {
         say(&disk),
         gib(need_disk),
         say(&ram),
-        gib(profile.ram)
+        gib(need_ram)
     );
     (true, line)
 }

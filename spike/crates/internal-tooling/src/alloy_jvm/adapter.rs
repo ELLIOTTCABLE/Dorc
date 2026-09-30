@@ -132,7 +132,7 @@ impl std::fmt::Debug for LiveHandle {
 
 const STDERR_TAIL: usize = 16 * 1024;
 const POLL: Duration = Duration::from_millis(200);
-const ALIVE_EVERY: Duration = Duration::from_mins(1);
+const ALIVE_EVERY: Duration = Duration::from_mins(5);
 
 /// Where progress lines go: nowhere, or stderr. Never stdout, which carries the report.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -142,17 +142,24 @@ pub(crate) enum Progress {
 }
 
 impl Progress {
-    pub(crate) fn say(self, line: &str) {
+    /// Every line leads with the time since `began`, so the last line on a dead terminal says how
+    /// long the pass had run.
+    pub(crate) fn say(self, began: Instant, line: &str) {
         if self == Self::Stderr {
-            let _ = self.write_to(&mut std::io::stderr().lock(), line);
+            let _ = self.write_to(&mut std::io::stderr().lock(), began.elapsed(), line);
         }
     }
 
     /// One whole line in one write, so concurrent children interleave by line.
-    fn write_to(self, out: &mut impl std::io::Write, line: &str) -> std::io::Result<()> {
+    fn write_to(
+        self,
+        out: &mut impl std::io::Write,
+        elapsed: Duration,
+        line: &str,
+    ) -> std::io::Result<()> {
         match self {
             Self::Silent => Ok(()),
-            Self::Stderr => out.write_all(format!("assay {line}\n").as_bytes()),
+            Self::Stderr => out.write_all(format!("assay +{} {line}\n", human(elapsed)).as_bytes()),
         }
     }
 }
@@ -162,39 +169,62 @@ impl Progress {
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Watch<'a> {
     pub(crate) progress: Progress,
+    pub(crate) began: Instant,
     pub(crate) name: &'a str,
 }
 
 impl Watch<'_> {
-    pub(crate) const SILENT: Watch<'static> = Watch {
-        progress: Progress::Silent,
-        name: "",
-    };
+    pub(crate) fn silent() -> Watch<'static> {
+        Watch {
+            progress: Progress::Silent,
+            began: Instant::now(),
+            name: "",
+        }
+    }
+
+    fn say(self, line: &str) {
+        self.progress
+            .say(self.began, &format!("{}: {line}", self.name));
+    }
 }
 
-pub(crate) fn secs(d: Duration) -> String {
-    format!("{:.1}s", d.as_secs_f64())
+/// `41.3s`, `12m08s`, `2h14m05s`: read by a person, never parsed.
+pub(crate) fn human(d: Duration) -> String {
+    let s = d.as_secs();
+    let (h, m, s) = (s / 3600, (s / 60) % 60, s % 60);
+    match (h, m) {
+        (0, 0) => format!("{:.1}s", d.as_secs_f64()),
+        (0, _) => format!("{m}m{s:02}s"),
+        _ => format!("{h}h{m:02}m{s:02}s"),
+    }
 }
 
-fn still_alive_due(elapsed: Duration, last_said: Duration) -> bool {
-    elapsed.saturating_sub(last_said) >= ALIVE_EVERY
+fn still_alive_due(waited: Duration, last_said: Duration) -> bool {
+    waited.saturating_sub(last_said) >= ALIVE_EVERY
 }
 
+/// Reassurance, not progress: CPU of budget is the only ratio it may show, and before the child
+/// reports its start there is no CPU to show.
 fn still_alive_line(
-    name: &str,
-    elapsed: Duration,
-    cpu: Duration,
+    waited: Duration,
+    cpu_ms: Option<u64>,
     budget: Budget,
     translated: Option<&Value>,
 ) -> String {
+    let Some(cpu_ms) = cpu_ms else {
+        return format!(
+            "alive, {} waited, the child has not started solving",
+            human(waited)
+        );
+    };
     let phase = match translated.and_then(|t| t.u64("clauses")) {
         Some(clauses) => format!("solving {clauses} clauses"),
         None => "translating".to_owned(),
     };
     format!(
-        "{name}: alive at {}, cpu {} of {}s, {phase}",
-        secs(elapsed),
-        secs(cpu),
+        "alive, {} waited, cpu {} of {}s, {phase}",
+        human(waited),
+        human(Duration::from_millis(cpu_ms)),
         budget.cpu_s
     )
 }
@@ -291,6 +321,7 @@ impl Adapter {
         let sent = Instant::now();
         let mut base_cpu: Option<u64> = None;
         let mut translated: Option<Value> = None;
+        let mut cpu_used: Option<u64> = None;
         let mut last_said = Duration::ZERO;
         loop {
             let Some(LiveHandle(live)) = self.live.as_mut() else {
@@ -305,10 +336,9 @@ impl Adapter {
                         // std reads no child's CPU portably, so the child reports its own.
                         Some("start") => base_cpu = value.u64("cpu_ms"),
                         Some("translated") => {
-                            watch.progress.say(&format!(
-                                "{}: translated in {}, {} clauses, {} primary vars",
-                                watch.name,
-                                secs(Duration::from_millis(value.u64("ms").unwrap_or(0))),
+                            watch.say(&format!(
+                                "translated in {}, {} clauses, {} primary vars",
+                                human(Duration::from_millis(value.u64("ms").unwrap_or(0))),
                                 value.u64("clauses").unwrap_or(0),
                                 value.u64("primary_vars").unwrap_or(0),
                             ));
@@ -319,20 +349,10 @@ impl Adapter {
                                 (base_cpu, value.u64("cpu_ms"), budget)
                             {
                                 let used = now.saturating_sub(b);
+                                cpu_used = Some(used);
                                 if used >= budget.cpu_s.saturating_mul(1000) {
                                     self.kill();
                                     return Call::Exceeded(Exceeded::Cpu(budget.cpu_s), translated);
-                                }
-                                let elapsed = sent.elapsed();
-                                if still_alive_due(elapsed, last_said) {
-                                    last_said = elapsed;
-                                    watch.progress.say(&still_alive_line(
-                                        watch.name,
-                                        elapsed,
-                                        Duration::from_millis(used),
-                                        budget,
-                                        translated.as_ref(),
-                                    ));
                                 }
                             }
                         }
@@ -341,6 +361,19 @@ impl Adapter {
                 }
                 Err(RecvTimeoutError::Timeout) => {}
                 Err(RecvTimeoutError::Disconnected) => return self.died(),
+            }
+            // Driven by the poll, not by the child's ticks, so a frozen child still gets a line.
+            if let Some(budget) = budget {
+                let waited = sent.elapsed();
+                if still_alive_due(waited, last_said) {
+                    last_said = waited;
+                    watch.say(&still_alive_line(
+                        waited,
+                        cpu_used,
+                        budget,
+                        translated.as_ref(),
+                    ));
+                }
             }
             if let Some(budget) = budget
                 && sent.elapsed() >= Duration::from_secs(budget.wall_s)
@@ -377,7 +410,7 @@ impl Adapter {
         solver: &str,
     ) -> Result<Parsed, Refusal> {
         let request = request("parse", root, opens, &[("solver", Json::str(solver))]);
-        let reply = match self.call(&request, None, Watch::SILENT) {
+        let reply = match self.call(&request, None, Watch::silent()) {
             Call::Reply(v) => v,
             other => return Err(other.refusal()),
         };
@@ -423,7 +456,7 @@ impl Adapter {
         match self.call(
             &request("parse-only", root, opens, &[]),
             None,
-            Watch::SILENT,
+            Watch::silent(),
         ) {
             Call::Reply(v) if v.bool("ok") == Some(true) => {
                 Ok(v.str("module").unwrap_or_default().to_owned())
@@ -492,7 +525,7 @@ impl Adapter {
         match self.call(
             &request("eval", root, &[], &extra),
             Some(budget),
-            Watch::SILENT,
+            Watch::silent(),
         ) {
             Call::Reply(v) if v.bool("ok") == Some(true) => v.bool("value"),
             _ => None,
@@ -593,9 +626,8 @@ fn compiled(jvm: &Jvm, watch: Watch<'_>) -> Result<PathBuf, String> {
     ));
     let _ = std::fs::remove_dir_all(&scratch);
     std::fs::create_dir_all(&scratch).map_err(|e| format!("{}: {e}", scratch.display()))?;
-    watch.progress.say(&format!(
-        "{}: compiling the adapter with javac into {}",
-        watch.name,
+    watch.say(&format!(
+        "compiling the adapter with javac into {}",
         dir.display()
     ));
     let out = Command::new(&jvm.javac)
@@ -631,20 +663,31 @@ fn compiled(jvm: &Jvm, watch: Watch<'_>) -> Result<PathBuf, String> {
 mod tests {
     use std::time::Duration;
 
-    use super::{Progress, still_alive_due};
+    use super::{Progress, human, still_alive_due};
 
     #[test]
-    fn still_alive_speaks_once_a_minute_from_the_last_line() {
-        // A tick arrives every second for hours; the throttle alone keeps that to one line a
-        // minute, measured from the last line said rather than from each tick.
+    fn still_alive_speaks_once_per_five_minutes_from_the_last_line() {
+        // The poll runs five times a second for hours; the throttle alone keeps that to one line
+        // per interval, measured from the last line said rather than from each poll.
         let s = Duration::from_secs;
         assert!(!still_alive_due(s(0), s(0)));
-        assert!(!still_alive_due(Duration::from_millis(59_900), s(0)));
-        assert!(still_alive_due(s(60), s(0)));
-        let said = Duration::from_millis(60_400);
-        assert!(!still_alive_due(s(61), said));
-        assert!(!still_alive_due(s(120), said));
-        assert!(still_alive_due(Duration::from_millis(120_400), said));
+        assert!(!still_alive_due(Duration::from_millis(299_900), s(0)));
+        assert!(still_alive_due(s(300), s(0)));
+        let said = Duration::from_millis(300_200);
+        assert!(!still_alive_due(s(301), said));
+        assert!(!still_alive_due(s(600), said));
+        assert!(still_alive_due(Duration::from_millis(600_200), said));
+    }
+
+    #[test]
+    fn durations_render_for_a_person() {
+        // The human's own examples; seconds past a minute are what a person cannot read.
+        let s = Duration::from_secs;
+        assert_eq!(human(Duration::from_millis(41_300)), "41.3s");
+        assert_eq!(human(s(60)), "1m00s");
+        assert_eq!(human(s(728)), "12m08s");
+        assert_eq!(human(s(8045)), "2h14m05s");
+        assert_eq!(human(s(31_244)), "8h40m44s");
     }
 
     #[test]
@@ -653,13 +696,13 @@ mod tests {
         // write of one terminated line, or concurrent children could split each other's lines.
         let mut silent = Vec::new();
         Progress::Silent
-            .write_to(&mut silent, "doc: laws.k: solving")
+            .write_to(&mut silent, Duration::ZERO, "doc: laws.k: solving")
             .expect("a Vec accepts writes");
         assert!(silent.is_empty());
 
         let mut heard = Vec::new();
         Progress::Stderr
-            .write_to(&mut heard, "doc: laws.k: solving")
+            .write_to(&mut heard, Duration::ZERO, "doc: laws.k: solving")
             .expect("a Vec accepts writes");
         let text = String::from_utf8(heard).expect("utf-8");
         assert_eq!(text.matches('\n').count(), 1);

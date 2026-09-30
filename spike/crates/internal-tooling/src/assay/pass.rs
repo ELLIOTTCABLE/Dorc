@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use super::drive::{self, Computed, Job, Target};
 use super::lock::{self, Row, Standing};
@@ -12,6 +13,55 @@ use crate::alloy_jvm::adapter::{Adapter, Machine, Progress, Refusal, Watch};
 use crate::json::Json;
 
 type Fields = Vec<(String, Json)>;
+
+/// A solving pass's first and last progress lines. The last is said on drop, so every exit path
+/// says how long the pass ran, refusals and runner failures included.
+struct PassLog<'a> {
+    progress: Progress,
+    began: Instant,
+    stem: &'a str,
+    counts: Option<String>,
+}
+
+impl<'a> PassLog<'a> {
+    fn begin(stem: &'a str, ask: &Ask) -> Self {
+        let mode = match ask.mode {
+            Mode::Check => Some("check"),
+            Mode::Write => Some("write"),
+            Mode::Compile | Mode::Parse | Mode::Staged => None,
+        };
+        let log = Self {
+            progress: if mode.is_some() {
+                ask.progress
+            } else {
+                Progress::Silent
+            },
+            began: Instant::now(),
+            stem,
+            counts: None,
+        };
+        log.progress.say(
+            log.began,
+            &format!(
+                "{stem}: {} at the {} tier, begins",
+                mode.unwrap_or_default(),
+                ask.tier.name()
+            ),
+        );
+        log
+    }
+}
+
+impl Drop for PassLog<'_> {
+    fn drop(&mut self) {
+        let counts = self
+            .counts
+            .take()
+            .unwrap_or_else(|| "no rows answered".to_owned());
+        self.progress
+            .say(self.began, &format!("{}: ended, {counts}", self.stem));
+    }
+}
 
 fn emit_report(fields: Fields, code: u8) -> u8 {
     print!("{}", Json::Obj(fields).render());
@@ -114,6 +164,7 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     if ask.mode == Mode::Compile {
         return emit_report(fields, 0);
     }
+    let mut log = PassLog::begin(&stem, ask);
     let jvm = match Jvm::from_env() {
         Ok(jvm) => jvm,
         Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
@@ -168,8 +219,9 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             target: &target,
             stem: &stem,
             progress: Progress::Silent,
+            began: log.began,
         };
-        let mut adapter = match Adapter::new(&jvm, caps.machine, Watch::SILENT) {
+        let mut adapter = match Adapter::new(&jvm, caps.machine, Watch::silent()) {
             Ok(a) => a,
             Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
         };
@@ -209,7 +261,10 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         return emit_report(fields, REFUSED);
     }
 
-    if !crate::preflight::gate("alloy") {
+    if !crate::preflight::gate(
+        "alloy",
+        Some(crate::preflight::jvm_ram(caps.machine.heap_mb)),
+    ) {
         return emit_report(runner_failed(fields, "preflight refused"), RUNNER_FAILED);
     }
     let _hold = match crate::exclusive::hold("assay") {
@@ -232,12 +287,14 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         caps,
         target: &target,
         stem: &stem,
-        progress: ask.progress,
+        progress: log.progress,
+        began: log.began,
     };
     let (rows, refusals) = match drive::run(&jvm, &job) {
         Ok(ran) => ran,
         Err(why) => return emit_report(runner_failed(fields, &why), RUNNER_FAILED),
     };
+    log.counts = Some(drive::row_counts(&rows));
     if !refusals.is_empty() {
         set(
             &mut fields,

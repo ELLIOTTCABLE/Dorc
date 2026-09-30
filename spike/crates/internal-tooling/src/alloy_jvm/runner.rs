@@ -112,11 +112,14 @@ pub(crate) fn run(args: &[String]) -> ExitCode {
         Ok(jvm) => jvm,
         Err(why) => return usage(&why),
     };
+    if !crate::preflight::gate("alloy", Some(crate::preflight::jvm_ram(o.machine.heap_mb))) {
+        return ExitCode::from(1);
+    }
     let _hold = match crate::exclusive::hold("alloy") {
         Ok(hold) => hold,
         Err(code) => return ExitCode::from(code),
     };
-    let mut adapter = match Adapter::new(&jvm, o.machine, Watch::SILENT) {
+    let mut adapter = match Adapter::new(&jvm, o.machine, Watch::silent()) {
         Ok(a) => a,
         Err(why) => {
             eprintln!("alloy runner: {why}");
@@ -282,7 +285,7 @@ fn solve_all(adapter: &mut Adapter, o: &Opts) -> ExitCode {
                         xml: false,
                         text: o.instances,
                     };
-                    let solved = adapter.solve(file, &o.opens, &ask, budget, Watch::SILENT);
+                    let solved = adapter.solve(file, &o.opens, &ask, budget, Watch::silent());
                     let wall = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                     match solved {
                         Solved::Found {

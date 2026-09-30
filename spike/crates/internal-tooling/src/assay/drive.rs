@@ -11,7 +11,7 @@ use super::lock::{Outcome, Row};
 use super::replay;
 use super::tier::{Caps, DEFER_CLAUSES, Tier};
 use crate::alloy_jvm::adapter::{
-    Adapter, Ask, Budget, CommandInfo, Parsed, Progress, Refusal, Solved, Watch, secs,
+    Adapter, Ask, Budget, CommandInfo, Parsed, Progress, Refusal, Solved, Watch, human,
 };
 use crate::alloy_jvm::{self, Jvm};
 
@@ -66,6 +66,7 @@ pub(super) struct Job<'a> {
     pub(super) target: &'a Target,
     pub(super) stem: &'a str,
     pub(super) progress: Progress,
+    pub(super) began: Instant,
 }
 
 /// Rows answered so far across every child, for the `[n/total]` on each solve's end line.
@@ -260,9 +261,9 @@ fn slice(entries: Vec<Entry>, target: &Target) -> Vec<Entry> {
 pub(super) type Ran = (Vec<Computed>, Vec<(String, Refusal)>);
 
 pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
-    let started = Instant::now();
     let watch = Watch {
         progress: job.progress,
+        began: job.began,
         name: job.stem,
     };
     let mut adapter = Adapter::new(jvm, job.caps.machine, watch)?;
@@ -302,15 +303,18 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
             adapters.push(Adapter::new(jvm, job.caps.machine, watch)?);
         }
     }
-    job.progress.say(&plan_line(
-        job,
-        &Plan {
-            commands: tally.total,
-            modules: groups.len(),
-            children: adapters.len(),
-            capped_before,
-        },
-    ));
+    job.progress.say(
+        job.began,
+        &plan_line(
+            job,
+            &Plan {
+                commands: tally.total,
+                modules: groups.len(),
+                children: adapters.len(),
+                capped_before,
+            },
+        ),
+    );
     let queue = Mutex::new(groups.into_iter().rev().collect::<Vec<_>>());
     let done = Mutex::new(Vec::new());
     std::thread::scope(|s| {
@@ -334,8 +338,6 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
             .unwrap_or(usize::MAX)
     };
     rows.sort_by_key(|c| (module_at(&c.row.module), c.index));
-    job.progress
-        .say(&pass_ends_line(job.stem, started.elapsed(), &rows));
     Ok((rows, Vec::new()))
 }
 
@@ -385,7 +387,7 @@ fn solve_ends_line(name: &str, c: &Computed, finished: usize, total: usize) -> S
         .as_ref()
         .map_or_else(String::new, |p| format!(" while {p}"));
     let wall = c.wall_ms.map_or_else(String::new, |ms| {
-        format!(" in {}", secs(Duration::from_millis(ms)))
+        format!(" in {}", human(Duration::from_millis(ms)))
     });
     format!(
         "{name}: {}{phase}{wall} [{finished}/{total}]",
@@ -393,7 +395,8 @@ fn solve_ends_line(name: &str, c: &Computed, finished: usize, total: usize) -> S
     )
 }
 
-fn pass_ends_line(stem: &str, elapsed: Duration, rows: &[Computed]) -> String {
+/// Rows by provenance, then by result: the pass-end line's body.
+pub(super) fn row_counts(rows: &[Computed]) -> String {
     let by_provenance: Vec<String> = [
         Provenance::Fresh,
         Provenance::Cached,
@@ -416,20 +419,11 @@ fn pass_ends_line(stem: &str, elapsed: Duration, rows: &[Computed]) -> String {
         .into_iter()
         .map(|(r, n)| format!("{r} {n}"))
         .collect();
-    format!(
-        "{stem}: done in {}, {} | {}",
-        secs(elapsed),
-        by_provenance.join(", "),
-        by_result.join(", ")
-    )
+    format!("{} | {}", by_provenance.join(", "), by_result.join(", "))
 }
 
 fn parallelism(caps: Caps) -> usize {
-    let per = caps
-        .machine
-        .heap_mb
-        .saturating_add(512)
-        .saturating_mul(1024 * 1024);
+    let per = crate::preflight::jvm_ram(caps.machine.heap_mb);
     crate::preflight::available_ram()
         .map_or(1, |free| free.checked_div(per).unwrap_or(1))
         .clamp(1, 4)
@@ -465,12 +459,10 @@ fn run_group(
             .fetch_add(1, Ordering::Relaxed)
             .saturating_add(1);
         if c.provenance == Provenance::Fresh {
-            job.progress.say(&solve_ends_line(
-                &e.progress_name(job.stem),
-                &c,
-                finished,
-                tally.total,
-            ));
+            job.progress.say(
+                job.began,
+                &solve_ends_line(&e.progress_name(job.stem), &c, finished, tally.total),
+            );
         }
         out.push(c);
     }
@@ -620,10 +612,13 @@ fn decide(
         text: false,
     };
     let name = e.progress_name(job.stem);
-    job.progress
-        .say(&solve_starts_line(&name, budget, e.committed.as_ref()));
+    job.progress.say(
+        job.began,
+        &solve_starts_line(&name, budget, e.committed.as_ref()),
+    );
     let watch = Watch {
         progress: job.progress,
+        began: job.began,
         name: &name,
     };
     let solved = adapter.solve(&root, &[], &ask, budget, watch);
