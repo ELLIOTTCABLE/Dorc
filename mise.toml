@@ -29,16 +29,19 @@ jq = "1"
 # `pkl` is hk's config backend; both are pinned here so the hook is
 # reproducible rather than relying on a machine-global mise install.
 #
-# NOTE: the git hook is deliberately NOT auto-installed. This worktree's
-# `.git` shares the MAIN repo's gitdir, so `hk install` would write the
-# `hook.*` entry into the SHARED `.git/config` (affecting `main` and every
-# worktree). Install is a manual, human-gated step — see the round-19 spike
-# note. Run `mise run hk-install` only with that tradeoff understood.
+# NOTE: the git hook is deliberately NOT auto-installed. All worktrees share
+# `.git`, so `hk install` would write the `hook.*` entry into the SHARED
+# `.git/config` (affecting `main` and every worktree). Install is a manual step
+# — see the round-19 spike note. Run `mise run hk-install` only with that
+# tradeoff understood.
 #
 # FLOOR 1.47.0: earlier hk vendors a libgit2 that rejects `extensions.relativeWorktrees`
 # — which the worktree fleet needs — and cannot open this repository at all. Never pin
 # below it. `HK_LIBGIT2=0` forces hk's shell-git path if a libgit2 problem recurs.
-hk = "1.53.0"
+#
+# Upstream doesn't publish for darwin/amd64 anymore (Intel macOS.)
+"cargo:hk" = { os = "macos", version = "1.53.0" }
+hk = { os = ["macos/arm64", "linux", "linux/x64", "windows"], version = "1.53.0" }
 pkl = "0.31.1"
 
 # Lint/audit toolbelt for the spike (wired as hk.pkl steps; see also
