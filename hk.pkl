@@ -220,10 +220,23 @@ local gates = new Mapping<String, Step> {
     // The specification tier's lock (`Research/notes/30Y` § 2.7): parse, run Alloy bounded under
     // the runner's own caps and the heavy-work lock, and compare against `<spec>.lock.json` in both
     // directions. Builder-completion tier, never pre-commit: it runs a solver.
+    //
+    // Beyond the specs, only assay's own code, the JVM runner it solves through, and the adapter
+    // source every lock key hashes: a change there can move a result the lock holds, and no other
+    // internal-tooling edit routes it. Hence no `{{files}}` (assay takes documents, not `.rs`): the
+    // shared half stands for every document beside it, and unchanged keys replay cheaply.
     ["assay-lock"] {
         profiles = List("slow")
-        glob = List("specs/**/*.assay.md", "specs/**/*.lock.json")
-        check = "mise run assay-quiet -- --check {{files}}"
+        glob = List(
+            "specs/**/*.assay.md",
+            "specs/**/*.lock.json",
+            "spike/crates/internal-tooling/src/assay.rs",
+            "spike/crates/internal-tooling/src/assay/**",
+            "spike/crates/internal-tooling/src/alloy_jvm.rs",
+            "spike/crates/internal-tooling/src/alloy_jvm/**",
+            "spike/verify/alloy/**"
+        )
+        check = "mise run assay-quiet -- --check specs/shared.assay.md"
         output_summary = "combined"
     }
     ["verify-check"] {
