@@ -66,3 +66,4 @@ Suggest new entries only when a particular case-under-study has repeated caused 
 62. backing-is-not-presenting: "`dd` over `disk.img` rewrites every file of the filesystem loop-mounted from it, yet none of them is a file of the outer filesystem; every file of an overlay is a file of its lower one."
 63. a-directory-can-have-two-parents: "HFS+ hardlinks whole directories for Time Machine, and a bind mount answers one directory at two paths; only Linux's on-disk tree refuses."
 64. an-insert-renumbers-every-later-key: "`ufw insert 1` gives every rule after it a new number, and `VACUUM` renumbers every rowid of a table without its own integer primary key."
+65. a-copy-takes-the-originals-name: "`dd if=/dev/sdb1 of=/dev/sdc1` leaves sdb1 untouched, yet its `UUID=` now names two filesystems and `/dev/disk/by-uuid` may point at the copy."
