@@ -535,3 +535,12 @@ do not decide whether this is an intended price of weaker speech, a missing conn
 existing validity information, or an insufficiently stated lifetime contract. The difference
 between global comparability and temporal stability must not be erased by the successful root
 fixture. No new warrant or invalidation rule is adopted.
+
+One limit of root promotion is already visible without a new experiment: uniqueness within a
+parent does not imply unique naming across parents. The existing nested-pid-namespace example
+has one process with different keys in two namespaces. Qualifying each pid with its namespace
+can make the qualified names globally unambiguous, but does not make them globally unique names
+for referents. The proposed root-part scheme's unique-name warrant would then be false. Finding
+one common canonical identifier may need additional knowledge or access. Thus the root fixture
+is not a general reduction of locally scoped comparisons to rooted ones. This argument concerns
+identity expressiveness; it does not itself prove a temporal stability contract for pids.
