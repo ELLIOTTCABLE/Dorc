@@ -368,3 +368,67 @@ on the exact obligations already carried by the uniqueness warrant, supplied par
 and closure. The conductor has not established whether the missing piece is new optional
 speech, clarification of existing speech, or its consumption by invalidation. No existing
 warrant gains a stronger obligation merely because that would make the desired book pass.
+
+## § 9-investigating-existing-speech-before-adding-any
+
+**[HUMAN objection]** A database-derived answer requires knowledge of the database. Whether an
+author obtains that knowledge through a command or through their own investigation, omitting
+its required read attribution is a contract failure. The conductor's return-the-argument
+example did not establish a new category of unreportable semantic dependence.
+
+The conductor withdrew that use of the example. Returning unchanged bytes is distinct from
+establishing unchanged denotation; a supplied name may retain its bytes while its referent
+changes. But its declared mParent and other foundations already report more than the function
+body's direct reads. No honest counterexample to the full existing contract was demonstrated.
+
+**[ACKED as investigation questions, not answers]** Can existing resolution-dependency speech
+cover the semantic basis of a primary token's interpretation? Can fully reported existing
+foundations distinguish a sibling-value update from a change to the naming structure? If so,
+the problem could be consumption or composition rather than absent speech. The human asked the
+conductor to investigate both.
+
+### § 9.1-source-findings-and-their-limits
+
++SURE of the text: the original prose 311 defines a mResolution as the fact that N, of S,
+resolved in P at program point p, reaches mReferent R. It is not defined merely as producing
+the next token's bytes. Its backing includes the closed emitted traversal and the lookup
+body's reads. An unclosed traversal retains its catalog given whole. An open lookup read set
+invalidates under any write. The current specification retains these statements across
+`311:1.7-resolution-and-its-traversal` and its prose residue.
+
++SURE of the text: the independent parent-store token-invalidation clause already existed in
+the prose baseline, before mechanization. The clause follows the observation that a first
+write can change an mKey-Primary. It is not a mistranscription introduced by the Alloy builder.
+Changing its scope would be a design clarification or revision, not an automatic fidelity fix.
+
+~SUSPECT: the semantic scope of mResolution supplies a stronger existing basis for the desired
+contract than the conductor's earlier account of executed reads alone. It does not establish
+that every existing closure already guarantees all the required validity conditions. Inputs,
+parent identity, warrant conditions, traversed state, and read provenance still need a coherent
+composition rule. The primary lookup's identity result is not a license to manufacture a
+closed empty basis for dynamic knowledge.
+
+The focused older reads were `plans/27C` § 4 and `plans/30T` § 3.1, plus the relevant
+`ANALYZER-NEEDS` rows. They distinguish tracked inputs and marked external reads, and require
+marks for a verdict's visible reads. They do not override 311's newer meanings or establish
+that its literal-return case has no other foundation. `311q` § 10 records the conditional
+warrant lifetime as an earlier ack; its scope must not be silently widened.
+
+### § 9.2-both-existing-warrants-still-hit-the-same-rule
+
+A fifth temporary book, `precise_sibling_with_both_warrants`, adds the existing
+`:guarantees-unique-referent` statement to § 6's precise sibling world. Unique-name, closed
+reads, closed traversals, complete writes, and the other facts remain. No definition changes.
+The strengthened diagnostic again requires that token invalidation alone prevents sparing.
+
+Windows and WSL both returned an inhabited world and no counterexample to that diagnostic.
+The scope is six, with four-bit integers, sequence bound seven, 71 words, zero classes, two
+lines, and 21 claims. The conjunction was solved fresh on each platform; its line checks were
+entailed. All parse lints were empty. The reports are `both-warrants-report.json` and
+`both-warrants-wsl-report.json` in `.tmp/312f-study/`. Exit 1 still denotes new rows against a
+missing experimental lock. No lock or specification was edited.
+
+This confirms only that adding this warrant does not overcome the current consumer in the
+fixed world. It does not show that the warrant is redundant, or decide its intended temporal
+meaning. The broader question remains a contract question, not something this static world
+can settle by itself.
