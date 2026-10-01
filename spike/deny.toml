@@ -4,7 +4,6 @@
 all-features = true
 
 [licenses]
-# Extend deliberately, per-dependency.
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "BSD-3-Clause"]
 unused-allowed-license = "allow"
 # The spike's own crates are publish = false and carry no license field.

@@ -7,19 +7,9 @@
 //! Nothing here mints a checked, trusted, or complete receipt state. A signer answers bytes,
 //! a verifier answers a boolean, an opener answers bounded plaintext; the states those feed
 //! are constructed in `dorc-receipt` and are unreachable from here.
-//!
-//! The one lint carve here is about the dependency graph rather than this crate's code:
-//! `age` reaches two major lines of `sha2`, `digest`, `crypto-common`, `block-buffer`,
-//! `cpufeatures`, `const-oid`, and `hybrid-array` through separate subtrees, which
-//! `clippy::multiple_crate_versions` reports and `-D warnings` then makes fatal. Both current
-//! `age` lines carry it, so no version choice avoids it, and `deny.toml` already sets
-//! `multiple-versions = "warn"` for the workspace. Scoped here rather than to `clippy.toml`,
-//! whose workspace-wide key would also have to name `syn`, `thiserror`, and `thiserror-impl` —
-//! ordinary ecosystem churn unrelated to this dependency. `expect`, so it warns once the
-//! duplication clears.
 #![expect(
     clippy::multiple_crate_versions,
-    reason = "a transitive-dependency fact; see the module note above"
+    reason = "transitive duplicates; the workspace deny.toml's skip list names each one's chain"
 )]
 
 pub mod key_document;
