@@ -83,7 +83,7 @@ local linters = new Mapping<String, Step> {
     }
     ["cargo_deny"] {
         // The lockfile matters as much as the manifests: a dependency arrives there.
-        glob = List("spike/**/Cargo.toml", "spike/Cargo.lock")
+        glob = List("spike/**/Cargo.toml", "spike/Cargo.lock", "spike/deny.toml")
         // Offline checks only; `mise run audit` does the network-touching
         // advisories pass on demand.
         check = "cargo deny --manifest-path spike/Cargo.toml check licenses bans sources"
