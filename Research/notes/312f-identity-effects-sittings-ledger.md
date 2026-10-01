@@ -544,3 +544,58 @@ for referents. The proposed root-part scheme's unique-name warrant would then be
 one common canonical identifier may need additional knowledge or access. Thus the root fixture
 is not a general reduction of locally scoped comparisons to rooted ones. This argument concerns
 identity expressiveness; it does not itself prove a temporal stability contract for pids.
+
+## § 11-store-side-responsibility-for-collateral-naming-effects
+
+### § 11.1-the-human-sub-ruling
+
+**[TYPED, sub-ruling]** `__resolve` authors must not describe the effects of writes to the
+parent store. The item-side warrants are not responsible for warranting properties of that
+store, except potentially properties that apply only and locally to the resolved item.
+Knowledge and responsibility for effects on other items' naming belong at the database/store
+level. An implicit collateral-write obligation on the item resolver is excluded.
+
+The human distinguished this from the read side, about which they remain concerned. This
+sub-ruling does not settle the read contract, the exact store-side statement, or the policy
+for combining two ends. It does not authorize a new API or a change to invalidation.
+
+**[HUMAN concern]** An answer over the entire store may be expensive or impossible to obtain.
+That may require coarse statements and limit precision. The human did not yet find the exact
+relationship between that concern and the responsibility ruling clear.
+
+### § 11.2-tentative-consequences-not-additional-rulings
+
+~SUSPECT: the ruling narrows the investigation but does not remove the measured mechanical
+obstruction. Item-local resolution information can identify dependencies without certifying
+what writes elsewhere do to them. A store-side description can identify collateral changes
+that reach those dependencies. The engine would compose the information rather than infer
+store behavior from a resolver's closed read list. The exact sufficiency of either description
+remains unsettled.
+
+~SUSPECT: responsibility at the store level need not require a fine-grained survey of every
+member on each invocation. The store describer could supply a conditional rule applied to one
+described write and the relevant instance configuration. Examples discussed were stable
+addressing under member-content changes, positional assignments affected by an insertion or
+deletion, and a whole-store bound where finer knowledge is unavailable. These are candidate
+uses of speech, not an adopted statement shape or invocation contract. Every claim remains
+path-granular through the admitted shell analysis.
+
+A constraint on that proposal: an input describing only “member A may be touched” does not
+necessarily distinguish a content update from deletion. A store rule must cover the operations
+its input description admits. Finer existing write descriptions might supply the distinction
+without making command authors responsible for collateral naming behavior. Whether the current
+interfaces carry sufficient input is not established.
+
+~SUSPECT: the relevant store may be virtual. A third party's score-sorted view can have unstable
+positional names over a physical database with stable native IDs. The view's author would
+occupy the store-side seat for that addressing system. The physical database's statement must
+not silently certify an unknown third-party lookup. This is a proposed application of ordinary
+virtual mSorts, not a ruling that the two descriptions or their effects already compose
+correctly under every relevant 311 rule.
+
+The resulting candidate question is narrower: how can the store describer express the naming
+effects of a described write, and how should token invalidation consume that information?
+Existing store-owned effect entailments over ordinary naming-state objects may supply it.
+That possibility is unverified. No conclusion is drawn yet about a new statement, entrypoint,
+model row, or species. No new Alloy measurement accompanies this section; the earlier fixed
+worlds do not establish the proposed contract or its ergonomics.
