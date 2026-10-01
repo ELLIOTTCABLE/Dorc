@@ -335,7 +335,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   measurements; closed) and **`notes/312e`** (the fidelity repairs, held holes, and official
   lock; closed). **`notes/312f`** is the living identity-and-effects sittings ledger after
   mechanization, beginning with precise member writes under a shared carrier. Its concrete
-  exercise is `notes/312b-exercises/precise-writes-inside-an-opaque-carrier.md`.
+  exercises are `notes/312b-exercises/precise-writes-inside-an-opaque-carrier.md` and
+  `notes/312b-exercises/a-copy-takes-the-originals-name.md` (Linux block-device naming).
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
