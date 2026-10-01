@@ -432,3 +432,106 @@ This confirms only that adding this warrant does not overcome the current consum
 fixed world. It does not show that the warrant is redundant, or decide its intended temporal
 meaning. The broader question remains a contract question, not something this static world
 can settle by itself.
+
+## § 10-semantic-links-and-an-existing-rooted-alternative
+
+**[TYPED]** Assay experiments run on Windows only from this point. The human sees no useful
+platform difference for this model-finding work. This does not change the separate project
+completion-gate convention.
+
+**[ACKED]** Argument-to-output dataflow grants no semantic identity. Even equal bytes can mean
+different things unless authored speech establishes otherwise. The conductor withdraws
+“forwarding input retains its foundations” as a general semantic rule over values. Mechanical
+dependency tracking and the support of an identity derivation are different things. A lookup
+makes its own local yield claim; the engine composes that claim with other supplied claims.
+The lookup author need not inspect an unknown caller's warrant. No warrant transfers to a new
+mScheme merely because a binary preserved or transformed some bytes.
+
+The ergonomic attack found no demonstrated need for one lookup author to certify the whole
+chain. The important restrictions were local yields, inherited input knowledge rather than
+repeat investigation, negative lookup dependencies, and no requirement that every result name
+one existing physical object. The human's provisional acceptance of sufficient speech remains
+qualified by that local reading; it is not a proof that every future naming system fits.
+
+**[TYPED]** Reassess the alleged hole before adding design: can existing semantically
+appropriate claims make the assay pass? If the gap survives, describe only the constrained
+residue for the human's attention.
+
+### § 10.1-the-scoped-derivation-experiment-is-unmeasured
+
+An additional temporary book added an explicit `:yields` from a decorated input value to a
+different canonical value, with layout as an ordinary mReferent. Both the producing lookup
+and the primary interpretation declared and closed their traversal through the layout. The
+verdict included layout in its marked reads. Both identity warrants remained present.
+
+This is `.tmp/312f-study/explicit-yield-book.assay.md`, assembled against unchanged 311 as
+`composed.assay.md` by `extend-derivation.cjs`. At scope eight, 28 claims, four-bit integers,
+and the 120-second hot budget, both the diagnostic check and its inhabitation run timed out
+while translating. A second encoding of the scope stated the exact signature counts already
+required by the fixture's equalities: five referents, two sorts, three schemes, three shapes,
+one vantage. No world fact or outcome changed. Both commands still timed out in translation.
+The two reports are `explicit-yield-report.json` and `explicit-yield-exact-report.json`.
+Neither run provides a verdict or an inhabitation witness.
+
+The structural argument remains separate from those unmeasurements: on the ordinary chain,
+a written member compares UNKNOWN with its own ancestor. The token rule consults that pair
+without a closure-sensitive exception. Adding a producer's yield does not by itself remove
+the ancestor from the final primary key's chain. This is not a claim that every alternative
+identity representation must fail.
+
+### § 10.2-root-speech-greens-a-different-description
+
+The original fixture already supplies a rooted carrier. The next experiment describes its
+parts with globally qualified identifiers under a `:root` part shape, rather than relative
+identifiers `:identified-in` the carrier. The world still says the carrier holds the same
+parts. The root carrier and root parts have different root shapes. No inference rule changed.
+
+This is a stronger proposed description, not automatic propagation of a root warrant through
+string formatting. Its intended concrete reading is a nominal position identified by the
+carrier's non-reassigned identity and the position's own identity. The owner must answer for
+that global naming claim. An unqualified offset, a pathname, or an identifier that can be
+reassigned does not acquire that guarantee merely by receiving a prefix. Whether the concrete
+library provides such identities is not measured by this fixture.
+
+Windows results, from the hot tier, all with satisfiable book runs:
+
+| book | asserted outcome | result at the stated bounds |
+| --- | --- | --- |
+| `rooted_precise_sibling` | sibling sparing, no token/routing invalidation, outside all five held sparing holes | no counterexample |
+| `rooted_whole_carrier` | no sparing, despite no token/routing invalidation | no counterexample |
+| `rooted_same_member` | no sparing, despite no token/routing invalidation | no counterexample |
+
+The scope is seven, with four-bit integers, sequence bound seven, 71 words, zero classes,
+and two lines. The claim counts are respectively 18, 16, and 17. The strengthened precise
+check was solved fresh; its witness replayed successfully. The two control checks and their
+witnesses were solved fresh. The precise book demands that it is outside the held holes as
+part of its outcome, not as a premise exclusion.
+
+Why it works in the fixed world: a rooted part's chain has no mKey ancestor, so the token
+rule has no parent-store entry to test. Part-against-part comparisons use the common part
+mScheme's warrants. Whole-carrier against part stays UNKNOWN across their two root shapes,
+so the coarse write still collides. This also means the construction is not evidence that
+unrelated whole carriers would spare each other's parts; that precision was not recovered.
+
+Replay inputs: `rooted-alternative.cjs`, `rooted-books.assay.md`, and `rooted.assay.md` under
+`.tmp/312f-study/`. Reports: `rooted-precise-outside-holes-report.json`,
+`rooted-whole-report.json`, and `rooted-same-report.json`. The earlier, weaker precise check is
+`rooted-precise-report.json`. All use unchanged 311 and no result lock.
+
+### § 10.3-what-this-does-and-does-not-close
+
++SURE of the bounded result: existing `:root` speech can produce the desired outcome in this
+stronger fixed description while retaining the two tested collision controls. The earlier
+specimen therefore does not establish a general lack of expressive power.
+
+~SUSPECT: globally named nominal positions are a legitimate library construction for the
+fixed-profile carrier when its own global identity is available. This is not established for
+arbitrary physical byte incarnations or arbitrary stores. It is not a proof that root-level
+global comparability alone gives the required temporal guarantee.
+
+The narrower unresolved question concerns primary keys that remain parent-scoped. Complete
+resolution information still meets the unconditional parent-store veto there. The experiments
+do not decide whether this is an intended price of weaker speech, a missing connection to
+existing validity information, or an insufficiently stated lifetime contract. The difference
+between global comparability and temporal stability must not be erased by the successful root
+fixture. No new warrant or invalidation rule is adopted.

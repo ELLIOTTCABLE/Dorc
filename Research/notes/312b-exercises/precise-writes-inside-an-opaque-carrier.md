@@ -350,6 +350,14 @@ repair. The exact scopes, abstraction limits, report paths, and replay inputs ar
 `312f:6-measured-token-invalidation-without-a-routing-wall`. The experimental source remains
 uncommitted in the conductor worktree, under the human's allowance for experimental work.
 
+A later alternative uses existing `:root` speech for globally qualified part identifiers instead
+of the parent-scoped part identifiers above. Its precise sibling case spares, and its
+whole-carrier and same-member controls still collide, in the bounded fixture. That is a stronger
+identity description, not a repair of the parent-scoped rule and not authority inferred from
+formatting identifier bytes. Its applicability to the concrete library remains conditional.
+The distinction between global comparability and temporal stability is still open. See
+`312f:10.2-root-speech-greens-a-different-description` for the claims, measurements, and limits.
+
 ## § 7-who-knows-and-who-pays
 
 | knowledge | nearest reusable speaker | another possible speaker | difficult part |
