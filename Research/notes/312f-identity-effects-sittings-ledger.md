@@ -649,3 +649,94 @@ matter incomplete and default safe.
 **[HUMAN]** 311 is known to owe Alloy 6's small-world time (about ten steps). The human asked
 whether the analysis says that time must come first for mechanically tracked progress on this
 item.
+
+## § 13-the-two-rules-walked-time-and-a-real-store
+
+2026-10-01, the same conductor. **[TYPED]** ledger the findings; add a GOTCHA if the case is
+not covered; write a detailed exercise record that implies no clear conclusion. Everything
+below is the conductor's, unacked unless marked.
+
+### § 13.1-the-two-rules-withdrawn
+
+- `fnd-rule-a-needs-non-disjoint` (+SURE of the walk) — "a write that names the store itself"
+  is unsafe when read as SAME: a write naming the store in another vocabulary, or naming
+  something that contains it, must count (`dd of=/dev/sda1` against a filesystem; a snapshot
+  revert of a VM disk above it). The repaired form: a write counts when it compares other than
+  DISJOINT with the store, except when its own described chain places it strictly below the
+  store. A ⊤ writeset keeps invalidating.
+- `fnd-rule-b-reads-an-effects-closure-as-a-naming-closure` (+SURE of the text) — 311 keeps
+  naming apart from state (`311:1.7.1`: an mKey can cease to reach an object without the object
+  changing). The finished record is a closure over state, and its truth exempts the holder
+  ("affects only it, what it holds, and the entailment"). The naming map lives in the holder.
+  So a finished record can never be false about a renaming, and cannot license one. Rule (b)
+  gave it that second meaning, and a store owner could not finish effects while leaving naming
+  open. Withdrawn.
+- `fnd-the-ops-shaped-assumption` — the smuggled default was "a store renames only what a write
+  names". It holds where names change only by creation or destruction (inode numbers, pids,
+  uids), which are writes someone already names.
+- `fnd-positional-is-caught-by-the-honest-prefix` — positional renumbering (`ufw insert 1`) is
+  not a counterexample: an honest positional lookup emits the prefix it walks, which is its own
+  lookup and not a store effect, and routing catches the insertion. What rule (b) lets through
+  is narrower: renaming as a store behaviour that no key's own lookup walks.
+- `fnd-token-leg-duplicates-routing-default` (+SURE of the fences) — for a primary key, an
+  unclosed traversal is the parent given whole, so routing already invalidates on any write
+  inside the parent. The token rule's member-write leg differs only after a closing act on the
+  primary key. It is the backstop against unspoken store behaviour.
+- `claim-no-store-sited-statement-speaks-naming` (posed in chat) — the conductor walked the
+  store-sited species (the finished record, `:aliases-nothing-else`,
+  `:guarantees-unique-referent`, the store sort's closed may-read set, `:places` and
+  `looked-up-in`) and found none that speaks naming stability, and filed the primary key's
+  closing act as item-side. **[HUMAN]** challenge: the walk did not account for the primary
+  mScheme's `__resolve`, which is the store owner's naming half and is probably written by them.
+
+### § 13.2-time
+
+- `fnd-reuse-is-inexpressible-without-time` (+SURE of the fences) — `reaches` is one mReferent
+  or none for the whole book, and the uniqueness warrants are timeless, so no world with every
+  statement true reuses or reassigns a key. Every narrowing of the token rule would check green
+  vacuously. ~SUSPECT, unmeasured: deleting the member-write leg outright leaves every law
+  green. The experiments of § 6 to § 10 measured blocking only.
+- `fnd-time-is-necessary-not-sufficient` — once reach varies, someone's truth sentence must say
+  when it may vary. Order proposed: settle the speaker by argument; add the slice; write that
+  speaker's temporal truth; narrow the rule and expect a red exactly where that statement is
+  false.
+- `fnd-the-smallest-slice` (~SUSPECT) — only `reaches` needs to vary, and only by line;
+  `holds`, `affects`, and `passes` stay timeless for now. `30Y` § 4 already keeps the hook
+  (sited world facts; assay hoists them today). Steps are lines: two to four per book. Start on
+  the walk laws and the token and routing books, not the sparing law, which is at its ceiling
+  (-GUESS on cost). Only `_tmp` § 3.3's group needs the slice; it edits `specs/`, so it needs
+  the human's word.
+
+### § 13.3-a-real-store-that-is-not-counting
+
+- The case: Linux block-device naming, one partition under six names with six authorities
+  (kernel name, device number, by-path, by-id, filesystem UUID and label, LVM names). A byte
+  copy (`dd`), a label write on another device, an LVM snapshot, or duplicate physical volumes
+  move content-derived names that another device held; a delete and rescan move the kernel's
+  names and leave the content-derived ones. Record:
+  `312b-exercises/a-copy-takes-the-originals-name.md`. GOTCHA:
+  `a-copy-takes-the-originals-name`.
+- What it strains, as observations: a content write moves a name with no counting; the renamer
+  is a third store (udev, `blkid`, LVM, btrfs) reacting asynchronously; one store holds schemes
+  with opposite sensitivities; a scanned name's honest dependency is an absence over the whole
+  population; ties are broken by policy; with duplicate physical volumes a later write lands on
+  the copy; the "stable" name is the cloneable one.
+- What it does not settle: whether a narrowed token rule is safe for device numbers. It shows
+  that a rule decided per store cannot treat device numbers and UUIDs differently.
+
+### § 13.4-questions-the-human-put-for-the-next-turn
+
+- **[HUMAN]** Speech about naming has been modelled as an mScheme, and the naming half of a store
+  mSort's owner as the primary mScheme they probably also write. Does the primary mScheme's
+  `__resolve` resolve `claim-no-store-sited-statement-speaks-naming`?
+- **[HUMAN]** The single-item `__resolve` row of the two-ended table may have no effective far
+  end; no store-level API endpoint for an mScheme was designed, unless forgotten. If so, and
+  acked, consider placing this speech on the mScheme rather than on the mSort.
+- **[HUMAN]** Is that speech meaningful only for primary mSchemes? Can a secondary mScheme
+  yielding into the same mSort have different write and invalidation semantics?
+- **[HUMAN]**, tabled but kept in scope: this may be the first time mSchemes get significant,
+  dangerous descriptive power, which is hard to square with fail-safe defaults. Each must fail
+  safe with no collaboration, with no default that lets someone else's speech make one's own
+  non-dangerous speech dangerous, except the usual "and nothing else": a sort declared with no
+  scheme; a stranger's scheme yielding into one's sort; a stranger's sort naming one's scheme
+  as its primary.
