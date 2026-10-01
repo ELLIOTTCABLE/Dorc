@@ -10,13 +10,11 @@ unused-allowed-license = "allow"
 private = { ignore = true }
 
 [bans]
-# Raise-to-the-human: a new duplicate refuses the commit, and widening `skip` to admit one is the
-# human's decision, never an agent's.
+# Raise-to-the-human: widening `skip` is the human's decision, never an agent's.
 multiple-versions = "deny"
 wildcards = "deny"
-# Exact versions, deliberately: these sit in the receipt-crypto graph, so any version movement
-# resurfaces for review, and an entry whose version leaves the graph warns. Each skips the side
-# reached only through its named chain; the other side stays counted.
+# Exact versions only because this is the receipt-crypto graph. Each skips the side reached only
+# through its chain.
 skip = [
    { crate = "sha2@0.11.0", reason = "age -> rust-embed -> rust-embed-utils 8.12 (localization embedding); age itself is on sha2 0.10" },
    { crate = "digest@0.11.3", reason = "rust-embed-utils chain, via sha2 0.11" },
