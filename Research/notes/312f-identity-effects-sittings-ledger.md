@@ -259,3 +259,112 @@ canonical keys and ideal closed routing. It does not authorize deleting that rul
 a carrier and genuinely identity-changing member operations still require conservative
 handling. The next discussion can therefore examine what the current statements actually
 promise about a member token's lifetime, without first inventing a new region species.
+
+## § 8-provisional-contract-analysis-after-the-example
+
+This is a thematic synthesis, not a sequence of turns. The analysis remains soft. No proposed
+contract, table placement, or repair below is ratified. No further Alloy experiment was run
+for these interpretations; § 6 remains the measured evidence and has the narrower scope it
+states.
+
+### § 8.1-the-fixed-boundaries
+
+**[TYPED, reinforcing ack]** The conservative behavior is the floor. This sitting introduces
+neither incorrectness nor ambiguity. The option space is explicit speech that permits correct
+additional elision; the question is who speaks and where. The flag does not supply absent
+knowledge, although explicit closures still admit the epistemically unknowable residue under
+the double consent recorded in § 2.
+
+**[HUMAN, probable nack]** An implicit extension of the command writer's obligation damages
+gradual enhancement. Making it optional requires a distinguishable statement or entrypoint.
+That has an authorship cost comparable to giving the speech to someone better placed to know.
+This is not a ruling against every optional statement a command author could make.
+
+**[TYPED reminder]** Every warrant and claim is subject to full abstract interpretation. An
+author may condition speech, decline, or retain the coarse floor through arbitrary legal sh.
+For example, a probe can establish that a database is in a stable mode before a path emits a
+claim. A single warrant is therefore not necessarily uniform across a scheme. The conductor
+withdraws the expressiveness objection that presumed such uniformity. The meaning of a claim
+and the validity of its measured conditions remain separate questions.
+
+**[HUMAN]** The two-ended table is non-normative. Gaps in it have often corresponded to design
+gaps, so it is a useful search pattern, not authority. Whether a two-ended relation requires
+both ends, either end, or only coherence when both speak is explicitly set aside here. Nothing
+in this synthesis chooses that licensing policy.
+
+### § 8.2-the-validity-condition-that-stood-out
+
+The conductor's formulation, singled out by the human as important while they still described
+the analysis as soft:
+
+> The troublesome sentence is that a warrant holds while its token stands. It gives the answer
+> under a condition, but does not itself establish that condition after a write.
+
+The textual anchor is `311:1.5.1-the-token-over-time-and-the-per-level-closure`: “A warrant
+holds while that mKey's mResolution or mToken stands.” The invalidation rules decide when that
+condition ceases to hold. The quoted observation is not a ruling that a new warrant is needed.
+Another existing statement may already justify preservation, with a missing or overly coarse
+consumer. Alternatively, the present contract may lack that statement. Those readings have
+not been distinguished conclusively.
+
+A useful provisional separation (~SUSPECT): identity asks what equality or inequality licenses
+while interpretations are valid; validity asks which changes can end that authority; effects
+ask what a running operation changes. The experiment shows a current consumer's behavior. It
+does not establish which of these existing promises should justify the desired alternative.
+
+### § 8.3-the-alternatives-reduced-to-their-knowledge
+
+Three candidate forms remain in view, without choosing a spelling or requiring a new species:
+
+- A direct, conditional stability promise by a naming-system owner. It might state that a
+  supported class of member writes preserves interpretations in that owner's key space.
+- A closed description of an interpretation's dependencies, supplied by its lookup or
+  naming-system owner. Existing routing and lookup-read machinery may carry much of it.
+- A description from the mutation side, supplied by the owner of the store or naming
+  machinery. It might identify which assignments can change when the described state changes.
+  This is distinct from imposing that knowledge on every command writer.
+
+**[HUMAN correction, accepted by the conductor]** “Use a stronger identity” is not an
+independent escape from authored speech. Detecting a strong identifier or a stable store gives
+someone grounds for the corresponding promise. Someone must still state what can vary.
+
+A runtime re-check remains a different product outcome: it can protect execution but normally
+returns the later operation to the guarded plan. Neither that observation nor the possibility
+of a stronger identifier settles the missing contract.
+
+### § 8.4-the-two-competent-ends-and-the-table
+
+The candidate pair is the naming-scheme or lookup owner, who knows the dependencies of their
+interpretation, and the owner of the affected store or naming machinery, who knows what its
+mutations can disturb. These can be different people. They can also be one author serving two
+roles. No argument established a uniquely possible speaker; the concern is placing reusable
+expertise and responsibility with the least duplicated effort.
+
+The conductor first pointed at the empty container end of ROUTE/CAT. That was too quick.
+Static membership in a catalog does not itself specify stability across mutations. Nor is this
+the missing ADDR/STORE thing-side “no other home” closure, which concerns alternative identity
+placements rather than the lifetime of one interpretation.
+
+The later working reading (~SUSPECT) spans existing rows: the ROUTE thing-side supplies
+resolution dependencies, WRITE supplies effects that can reach those dependencies, and ADDR
+supplies the identity warrants consumed while validity holds. Ordinary virtual mSorts could
+name assignment state, so a store owner's existing effect descriptions could identify changes
+to it. This might need a more complete interpretation-side contract and a consumer connection,
+rather than two new warrants or a new row. It is a candidate construction, not a demonstrated
+reduction of the full problem. In particular, the blank ROUTE/CAT cell has not thereby been
+proved necessary or unnecessary.
+
+### § 8.5-executed-reads-versus-semantic-dependencies
+
+The remaining suspected distinction (~SUSPECT) is between all reads a lookup body performs and
+all changes that can invalidate the meaning of its result. A primary lookup can return its
+argument without consulting a mutable assignment table on which that argument's interpretation
+still depends. This motivates examining whether current resolution-dependency speech covers
+semantic validity, including primary-token validity, rather than assuming that a closed empty
+executed-read set certifies it.
+
+That example is not yet a counterexample to the complete existing contract. Its force depends
+on the exact obligations already carried by the uniqueness warrant, supplied parent, lookup,
+and closure. The conductor has not established whether the missing piece is new optional
+speech, clarification of existing speech, or its consumption by invalidation. No existing
+warrant gains a stronger obligation merely because that would make the desired book pass.
