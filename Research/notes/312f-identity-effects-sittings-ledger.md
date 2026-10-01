@@ -740,3 +740,102 @@ below is the conductor's, unacked unless marked.
   non-dangerous speech dangerous, except the usual "and nothing else": a sort declared with no
   scheme; a stranger's scheme yielding into one's sort; a stranger's sort naming one's scheme
   as its primary.
+
+## § 14-the-conductors-answers-the-humans-responses-and-the-open-asks
+
+2026-10-01, the same conductor, near its context limit. **[TYPED]** the human rewinds before
+seeking real answers; this section carries the threads for a successor. Nothing here is ruled.
+The conductor's answers to § 13.4 were put in chat and are banked first; the human's responses
+follow; the open asks are last.
+
+### § 14.1-the-conductors-answers-to-section-13-4-unacked
+
+- On the primary mScheme's `__resolve` (~SUSPECT) — the conductor's error was to file a primary
+  key's closing act as item-side speech. The primary mScheme's owner is the mSort's owner (the
+  fence fact under `312d:enc-primary-owner-is-sort-owner`), and for keys a store mints the
+  primary mScheme is that store's naming, so the seat is the store-level one that § 11.1 asks
+  for. The act exists: a lookup emits what it crossed and closes the list, the closing act's
+  prose meaning (`311:1.7.1`) is "what can make this key stop reaching its object", and the
+  fences already admit `EmitsCrossed` and `ClosesTraversal` on a primary key. Three things block
+  it: 311 says a primary `resolve()` is the identity on the key, so it has no body to emit from;
+  the token rule ignores any emission; the closing act's mechanized truth reads the static
+  `passes`. Proposed reading: no new speech act; one existing act gains one new seat (primary
+  mSchemes), and the token rule's member-write leg folds into routing. Caveat: the primary
+  mScheme's owner is the member sort's owner, who can differ from the store's describer (a
+  third party keying rows by rowid inside another's database); that owner chose the key space
+  and can stay on the floor by emitting nothing.
+- On the far end and the seat (+SURE of the text; ~SUSPECT of the placement) — `311` § 5.1's
+  ROUTE row at catalog level has an empty store end, footnoted "a catalog makes no statement
+  about its own entries"; no store-level naming endpoint was designed. Per-mScheme placement:
+  the block-device case puts several mSchemes with opposite sensitivities on one mSort, which a
+  per-sort statement cannot separate. It also matches 311's existing split (§ 5.2): identity
+  statements sit on schemes (both lookup warrants, `:root`, `:identified-in`, `:yields`, the
+  closing act, `alias nothing-else`); effect statements sit on sorts (may-read, the entailment,
+  the finished record, observer-independence). The withdrawn rule (b) put a naming statement on
+  the sort. For store-minted keys the two ends merge. The conductor also framed naming stability
+  as "how long `:guarantees-unique-referent` stays true" (`311:1.5.1`: "a warrant holds while
+  that mKey's mResolution or mToken stands"); see § 14.2 for the human's response.
+- On secondary mSchemes — yes, secondary mSchemes into one mSort with different invalidation
+  are everyday: a user by uid or by login name; a file by inode, path, or `/proc/self/fd/N`; a
+  partition by device number, `UUID=`, by-path; a package by name, `name:arch`, `provides`.
+  Secondary mSchemes already carry the speech (emission, closing act, the lookup body's read
+  set); primary mSchemes are the ones without it. The example the conductor gave was
+  `userdel alice && useradd alice`; see § 14.2.
+- On failing safe with strangers (a first walk; ~SUSPECT each) — a sort declared with no scheme
+  has only cells, whose naming is their parent's, so nothing can turn dangerous. A stranger's
+  scheme yielding into one's sort: only a key's own scheme owner may emit for it (a fence fact),
+  so the stranger can add a dependency for facts read through their keys and never remove one;
+  one's own claims become load-bearing for their facts, as `:guarantees-unique-referent`
+  already is. A stranger's sort naming one's scheme as its primary: refused today by the fence
+  that the primary scheme's owner is the sort's owner, which is the unacked reading
+  `312d:enc-primary-owner-is-sort-owner`, and by "at most one mSort per mScheme" when one's own
+  `:primary-of` is in force; if both fall, the stranger's sort-level closures govern facts about
+  one's keys, which are their "nothing else" claims, but one's silence then rests on that
+  unacked reading. Defaults stay safe: no emission is the parent given whole; emission without
+  a closing act keeps the parent; only the closing act narrows. Hand walk on the block-device
+  case: the stdlib's device-number scheme emits the device itself and closes, so a copy onto
+  `8:33` leaves `8:17`'s key standing, a rescan (another vocabulary) collides with every device
+  number, and a UUID lookup that emits every device (or nothing) invalidates every fact read
+  through a UUID.
+- Asked in chat, unanswered: hold the per-scheme placement as the direction for `_tmp` § 3.3?
+  Start path 2 now, and may the line-varying-reach slice run beside it (it edits `specs/`)?
+
+### § 14.2-the-humans-responses
+
+- **[HUMAN]** A gentle, probable nack on framing naming stability as "how long
+  `:guarantees-unique-referent` stays true". Dorc's promises have so far been unbounded: Dorc
+  models the disturbing act, never a duration; TOCTOU is the horizon; and a warrant is given
+  when the act that would invalidate it, at the other end, is also modelled. Letting an author
+  say "this holds for X time" would be new and does not follow from what has been built. Open to
+  pushback. The human's understanding of Alloy time, to be confirmed: it models "A, then B, then
+  C", showing an invalidation that follows an overwrite, not how long something stays valid.
+- **[HUMAN]** On `userdel alice && useradd alice`: two commands, two models. Contract work
+  describes items that are atomic from Dorc's perspective. A better example is an opaque, atomic
+  `userrecreate alice`, whose own description covers it well. The two-command sequence is the
+  interesting and dangerous case, which Dorc cannot handle without more speech from someone. The
+  conductor's point stands; the example was imprecise.
+- **[HUMAN]** The two ends of a row are more than possibly separate authors, and they can often
+  be one human. A significant reason for them, slightly outside 311's usual altitude, is
+  performance: where a warrant varies per key, calling a per-key `__resolve` across every key of
+  a store is vastly expensive against one store-level call that dumps the whole map. The
+  canonical example: dpkg lists the files of a package, and the package of a file, and neither
+  substitutes performantly for the other.
+- **[HUMAN]** The human still has no name for the hole and no clear fundamental understanding of
+  the single hole under discussion, and reads that as a bad sign.
+
+### § 14.3-the-open-asks-for-a-successor
+
+- **[HUMAN]** In the block-device naming case, find a concrete store that offers both directions
+  as separate commands for some subset of (store, names), each of which would be prohibitive for
+  Dorc to compute piecemeal through a per-item entrypoint. Conductor's unposed, unverified lead:
+  `findfs UUID=…` and `blkid -U` (name to device), `blkid /dev/sdb1` (device to names), and
+  whole-map dumps (`blkid` with no argument, `lsblk -f`, `udevadm info --export-db`; for LVM,
+  `pvs -o pv_name,pv_uuid`). Whether any pair is truly two directions that do not substitute is
+  unchecked.
+- **[HUMAN]** Set aside "we may not need a new member". Define the new member or members that
+  would close this issue precisely and completely, so that the problem has a name. Only then
+  test whether the member is unnecessary, another member in disguise, or derivable by engine
+  logic. Do not fold too easily: "we have enough already, and the named thing is unnecessary"
+  stays a legitimate outcome of the exercise.
+- Carried from § 14.1 and still open: the per-scheme placement for `_tmp` § 3.3; path 2 and the
+  time slice; confirming or correcting the human's reading of Alloy time.

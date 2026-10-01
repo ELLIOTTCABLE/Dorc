@@ -2179,7 +2179,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-primary-owner-is-sort-owner
 - defined: —
-- cited: 311 312d (2)
+- cited: 311 312d 312f (4)
 
 ## enc-support-functions
 - defined: —
