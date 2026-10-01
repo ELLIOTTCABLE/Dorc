@@ -599,3 +599,53 @@ Existing store-owned effect entailments over ordinary naming-state objects may s
 That possibility is unverified. No conclusion is drawn yet about a new statement, entrypoint,
 model row, or species. No new Alloy measurement accompanies this section; the earlier fixed
 worlds do not establish the proposed contract or its ergonomics.
+
+## § 12-the-root-acked-and-the-path
+
+2026-10-01. A new conductor (Opus) over `55571543`, after a full read of 311, both shared
+halves, this ledger, and its exercise. **[TYPED]** this ledger is reused, sittings are not
+ledgered every turn, and commits are granular.
+
+**[ACKED, the problem statement only, up to and excluding a proposed fix]** The conductor's
+statement of what is wrong:
+
+- The common root: 311 answers effect questions ("can this write change what that fact depended
+  on, or what that key now names?") with its identity instrument ("is this the same thing, or
+  inside it?"). Two stand-ins carry the load. "Inside" stands in for "changed by", which is too
+  coarse: the token rule, a contained write touching its store, the exclusion keyed on the
+  container, cells of one parent, and region against region. "Distinct" stands in for
+  "independent", which is too loose: one thing beneath two separated things, the third thing,
+  a route off the catalog, and the region closure.
+- Each hole is a world-shape assumption that the composition relies on with no assigned
+  speaker. Each needs one disposition: an existing statement read so that its author owns the
+  assumption, the conservative floor, or a stated horizon.
+- The test that refutes this framing: if three or four rulings on what the world relations
+  mean do not collapse most effect-side holes, the framing is wrong.
+- The item of § 3 to § 11 at product altitude: within any parent-scoped store, a write to one
+  member invalidates every other member's token, and no statement anyone can make recovers it,
+  since `compare()` of a key against its own container is UNKNOWN by step 2 of the walk. So
+  USER_STORY stage 5 (a list-file write against a status-file fact in one filesystem) cannot
+  survive, however precise the describers are. Only keys minted directly in a root's world
+  spare. The clause guards a real concern, a store handing an old number to a new thing, with
+  the wrong test: "is the write inside the store?" in place of "does the write change how the
+  store names things?".
+
+**[ACKED, generally]** The path: park everything off the critical path; firm the identity
+half; rule the effect world, time-boxed to about two sittings, with the token clause as its
+first worked case; and, if that does not converge, take the floor on every value-only hole,
+close the soundness holes, and freeze.
+
+**[TYPED]** Recut the root `_tmp-311-held-work-reference.md` around the path without dropping
+items; group by the ruling likely to close them; move subordinate items under a parent as
+probable correlates. Done the same turn; the file is gitignored and not committed.
+
+**[HUMAN]** On the proposed fix (two rules: a write naming the store itself; the store
+describer's unfinished entailment): a suspected break of referential agnosticism, a
+fail-helpful default that assumes ops-shaped constructs. The human asked for a careful walk:
+whether the two rules cover every name, address, id, or index invalidation in the core with
+safe defaults, and whether, without new speech, a store owner can intentionally leave the
+matter incomplete and default safe.
+
+**[HUMAN]** 311 is known to owe Alloy 6's small-world time (about ten steps). The human asked
+whether the analysis says that time must come first for mechanically tracked progress on this
+item.
