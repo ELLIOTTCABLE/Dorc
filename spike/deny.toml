@@ -4,17 +4,32 @@
 all-features = true
 
 [licenses]
-# Extend deliberately, per-dependency, when a real dep arrives. The allowlist is
-# pre-staged (this workspace is currently dep-free), so unmatched allowances are
-# expected, not an error.
+# Extend deliberately, per-dependency.
 allow = ["MIT", "Apache-2.0", "Unicode-3.0", "BSD-3-Clause"]
 unused-allowed-license = "allow"
 # The spike's own crates are publish = false and carry no license field.
 private = { ignore = true }
 
 [bans]
-multiple-versions = "warn"
+# Raise-to-the-human: a new duplicate refuses the commit, and widening `skip` to admit one is the
+# human's decision, never an agent's.
+multiple-versions = "deny"
 wildcards = "deny"
+# Exact versions, deliberately: these sit in the receipt-crypto graph, so any version movement
+# resurfaces for review, and an entry whose version leaves the graph warns. Each skips the side
+# reached only through its named chain; the other side stays counted.
+skip = [
+   { crate = "sha2@0.11.0", reason = "age -> rust-embed -> rust-embed-utils 8.12 (localization embedding); age itself is on sha2 0.10" },
+   { crate = "digest@0.11.3", reason = "rust-embed-utils chain, via sha2 0.11" },
+   { crate = "block-buffer@0.12.1", reason = "rust-embed-utils chain, via digest 0.11" },
+   { crate = "crypto-common@0.2.2", reason = "rust-embed-utils chain, via digest 0.11" },
+   { crate = "const-oid@0.10.2", reason = "rust-embed-utils chain, via digest 0.11" },
+   { crate = "cpufeatures@0.3.0", reason = "rust-embed-utils chain, via sha2 0.11" },
+   { crate = "hybrid-array@0.4.14", reason = "rust-embed-utils chain, via block-buffer 0.12; age's ml-kem is on 0.2" },
+   { crate = "thiserror@1.0.69", reason = "age -> i18n-embed / i18n-config; age's fluent-syntax is on thiserror 2" },
+   { crate = "thiserror-impl@1.0.69", reason = "derive half of thiserror 1.0.69" },
+   { crate = "syn@2.0.119", reason = "proc macros only; clap_derive, zeroize_derive, curve25519-dalek-derive are on syn 2 while serde_derive is on syn 3" },
+]
 
 [advisories]
 yanked = "deny"
