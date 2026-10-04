@@ -784,9 +784,10 @@ The builder has latitude on everything not marked.
   warns nothing about the documents that open it; the completion step below names the shared
   half, which stands for every document beside it, openers included. Builder completion, hk's
   `assay-lock` step (profile `slow`), runs `mise run assay-quiet -- --check` at the gate tier
-  over the same paths. `--parse` alone is Alloy's parse lint in one child, no heavy-work lock. `--check` and `--write` preflight in-process for the tier's heap plus one
-  child's overhead, take the heavy-work lock, and exit 75 when another task holds it. The
-  official tier's standup in CI (runner choice) is separate work.
+  over the same paths. `--parse` alone is Alloy's parse lint in one child, no heavy-work lock.
+  `--check` and `--write` preflight in-process for the tier's heap plus one child's overhead, take
+  the heavy-work lock, and exit 75 when another task holds it. The official tier's standup in CI
+  (runner choice) is separate work.
 - **Platforms** [TYPED `30Yf:arch-three-platforms`]: Windows, Linux, and macOS must be
   supportable; WSL is secondary. sat4j is pure Java and the default, and no design depends on a
   bundled native: minisat and glucose ship for Windows and Linux, the core-producing minisat and
