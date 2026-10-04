@@ -412,8 +412,8 @@ hardware formal verification, mCRL2 and CADP, WebAssembly, RISC-V, K, among othe
 Conductor's read, ~SUSPECT, for the human's gate:
 
 - The identity specification is larger than any Alloy development whose size the scout found
-  reported (Mondex's modules sum to about 1,700 lines), and it is one closure. The prior art does not offer a way to keep an object of that shape cheap; it offers
-  ways not to have one.
+  reported (Mondex's modules sum to about 1,700 lines), and it is one closure. The prior art
+  does not offer a way to keep an object of that shape cheap; it offers ways not to have one.
 - The per-rule step check that `Research/notes/313a` reports as standing is circular
   assume-guarantee under another name, and leaving its composition as a paper induction beside a
   bounded assembly check is the mainstream posture, not a shortcut.
