@@ -76,6 +76,9 @@ corpus-shaped ones.
   Alloy-to-Isabelle translations, Event-B refinement chains to code, Aeneas-style derivation,
   Cedar-style differential checking as the counter-thesis, and the seam-pushing failure mode
   the human has observed.
+- front-tractable-decomposition-of-checked-specifications (added 2026-10-04): how projects keep
+  a large, interdependent, mechanically checked specification tractable while it grows. Its
+  section below carries the question, the sub-questions, and the net.
 
 ## front-production-alloy-users: established (turn01, subagent-graded; conductor re-read the load-bearing archived copies)
 
@@ -299,6 +302,74 @@ and was defined in none of them.
   [A-alhanahnah-llm-repair-alloy-specs-2025]; two agents rebuilding a helper from primitives
   instead of reusing it [C-lablambworks-alloy6-maintenance-reference-2026].
 
+## front-tractable-decomposition-of-checked-specifications: OPEN (minted 2026-10-04; an Opus researcher gathers it as its own turn, `graded-by: subagent`)
+
+**[HUMAN]** 2026-10-04, the question: how do other projects split a specification into
+manageable chunks? Any real specification, model, or protocol has many mutually interdependent
+parts. It cannot be that every project using Alloy, Dafny, or TLA+ writes one interdependent
+object of ten thousand lines that can only be checked whole, in runs of days. What is the
+*practice* that keeps progress on a model-checked specification tractable?
+
+Why it is asked now, as measured facts: the first specification written under this phase's
+praxis (`specs/311-identity.assay.md`) is one closure of about 4,350 lines and 49 signatures.
+Every command pays for the whole closure (about 20 s of translation per command for a law that
+reads little; a full pass is hours; three laws do not finish at a 30-minute ceiling; a
+three-line scenario's checks exceed 150 s). A plan to cut it by product question
+(`Research/notes/313`) was reviewed (`Research/notes/313a`): the per-rule step check and the
+induction over derivations stood, but the cut does not subdivide the work, since the answers are
+mutually recursive, the hard nouns pool in a shared core, and a check made below has to be asked
+again in the assembled universe.
+
+What the earlier fronts already say, and its limit: among production Alloy users one standalone
+model per concern is the norm and no multi-year model set exists (turn01); TLC, Apalache, and
+TLAPS each take a different fragment of one TLA+ spec, and design specs and conformance specs
+pull apart (turn03). Both fronts asked where models live and how they tie to code. Neither asked
+how a large, interdependent specification is kept checkable while it grows.
+
+Sub-questions, each wanting practice with a primary source behind it:
+
+- `sub-what-the-unit-is` — by component, by property, by abstraction layer, by protocol phase,
+  by feature or version; and what crosses between two units (an interface, shared constants, an
+  assumed lemma, an environment model).
+- `sub-how-interdependence-is-cut` — assume-guarantee, abstract or interface modules, refinement
+  mappings, uninterpreted or axiomatised stand-ins, stubs; mutual recursion between parts above
+  all.
+- `sub-what-argues-the-composition` — whether the soundness of putting the pieces back together
+  is proved, checked at a bound, tested, or knowingly left open.
+- `sub-how-iteration-stays-cheap` — per-unit checking and caching; small constants and scopes per
+  configuration; resource limits per obligation; a fast tier beside a nightly or scheduled one;
+  simulation or random walks beside exhaustive runs; inductive invariants in place of
+  reachability; symmetry and data abstraction.
+- `sub-how-a-specification-grows` — step-wise refinement, a specification per feature or fork,
+  layering; what is re-checked when one part changes.
+- `sub-where-it-failed` — decompositions that did not pay, monoliths that were simply paid for,
+  projects that changed instrument because checking stopped scaling, brittleness and timeouts.
+- `sub-the-numbers` — specification size, check time, state counts, verification time per module,
+  wherever a project reports them.
+
+Counter-theses to look for with equal effort: successful projects keep each specification small
+by abstraction and never compose them; large monolithic specifications exist and are paid for in
+compute; the composition's soundness is accepted unverified in practice; model-checked
+specifications stop scaling and projects move to deductive tools, or the reverse.
+
+A primary source for this front is a specification repository itself (its directory layout, its
+imports, its model-checker configurations, its CI), a paper or experience report by the
+project's own authors, first-party tool documentation on modularity, or a maintainer's own
+talk or essay. A listicle or a vendor's account of someone else's project is not.
+
+Leads, unverified, a net and not a conclusion: TLA+ (tlaplus/Examples, CCF, etcd raft, MongoDB,
+Azure Cosmos DB, the AWS experience reports, the Paxos refinement chain, TLAPS hierarchical
+proofs, Apalache's inductive invariants); Quint (the Tendermint and CometBFT specifications); P
+(its module system and compositional testing at AWS); Ivy (modular decidable reasoning); Dafny
+and Verus (IronFleet, VeriBetrKV, Anvil, verified storage and OS projects, per-module resource
+limits); F* (HACL*, Everest); the refinement lineages (seL4, CertiKOS's certified abstraction
+layers, CompCert's per-pass simulations); Event-B (refinement and model decomposition in Rodin);
+Alloy's own larger models (Chord, the flash file system, Mondex) and Electrum; compositional
+model checking (mCRL2, CADP, SPIN, NuSMV) and hardware formal-verification practice
+(assume-guarantee, black-boxing, case splitting); standards that carry an executable or formal
+specification (Ethereum's consensus specifications by fork, WebAssembly's SpecTec, RISC-V's
+Sail model, the K framework).
+
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
 Heuristic for "worth modelling now", -GUESS as a rule, ~SUSPECT per cluster below: a closed
@@ -394,7 +465,9 @@ records exact unread line-ranges; a follow-up pass can start there.
 
 ## Pending
 
-- Nothing in flight. The five fronts are banked as `turn01`–`turn07`; the web scout's task-1
+- In flight: `front-tractable-decomposition-of-checked-specifications`, dispatched 2026-10-04 to
+  an Opus researcher, which mints the next turn file.
+- The five earlier fronts are banked as `turn01`–`turn07`; the web scout's task-1
   hits that were read only in part are listed at the tail of `turn01` and stay unregistered.
 - `examples.md` has been executed against the pinned jar (turn07, a builder lane in scratch over
   the book's own model repository): nine of twenty sections disagreed with their own claims and
