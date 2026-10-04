@@ -337,6 +337,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   mechanization, beginning with precise member writes under a shared carrier. Its concrete
   exercises are `notes/312b-exercises/precise-writes-inside-an-opaque-carrier.md` and
   `notes/312b-exercises/a-copy-takes-the-originals-name.md` (Linux block-device naming).
+  **`notes/313`** is a PROPOSAL, unacked and written to be attacked: the plan to cut the
+  territory that specification covers into small specifications by product question (core,
+  naming, extent, effect, order), the Alloy and assay mechanics of doing so, and the arguments
+  that the cut keeps the product's properties.
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the

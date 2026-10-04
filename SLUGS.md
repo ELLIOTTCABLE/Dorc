@@ -22,6 +22,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - aka: a-chrome-line-is-one-span
 - cited: 288 28L (2)
 
+## a-copy-takes-the-originals-name
+- defined: —
+- cited: 312f 313 Research/GOTCHAS Research/README Research/notes/312b-exercises/a-copy-takes-the-originals-name (7)
+
 ## oracle/AGENTS:a-definitions-file-is-not-a-mark-fragment
 - defined: spike/crates/oracle/AGENTS.md:165 — — `validate` runs `lint_mark_subset` only for a
 
@@ -32,6 +36,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## a-known-flag-suggests-nothing
 - defined: —
 - cited: 30Rk (1)
+
+## a-path-is-not-a-referent
+- defined: —
+- cited: 311t 311u 312ca 313 Research/GOTCHAS (5)
 
 ## core/AGENTS:a-record-says-what-its-population-holds
 - defined: spike/crates/core/AGENTS.md:133 — (the `30Nd` meaning-audit) — the census proves
@@ -498,7 +506,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-insert-renumbers-every-later-key
 - defined: —
-- cited: 312cg Research/GOTCHAS (2)
+- cited: 312cg 313 Research/GOTCHAS (3)
 
 ## an-invariance-speech-act
 - defined: —
@@ -933,6 +941,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## book-conjunction-entails-the-lines
 - defined: —
 - cited: 30Y 30Yf (2)
+
+## books-lines-speech-and-outcomes
+- defined: —
+- cited: 30Y 313 (2)
 
 ## bottom-line-broad-proposal-rejected-narrow-seam-retained
 - defined: —
@@ -3744,6 +3756,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Z specs/shared.assay (2)
 
+## form-strawmen-are-quarry-never-seed
+- defined: —
+- cited: 30Z 313 (2)
+
 ## spike/AGENTS:four-rung-gate-ladder
 - defined: spike/AGENTS.md:1049 — (r30) — a GATE is what you must pass before you may do
 - cited: 30Qd 30Qf 310 (3)
@@ -3943,7 +3959,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hole-fence-never-fill
 - defined: —
-- cited: 30Z 312d (5)
+- cited: 30Z 312d 313 (6)
 
 ## hole-probe-path-transport-divergence
 - defined: —
@@ -4770,6 +4786,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
+## lock-a-reword-shows-as-nothing
+- defined: —
+- cited: 30Z 313 (2)
+
 ## lock-asymmetric-match
 - defined: —
 - cited: 30Y 30Yc 30Yf 312e (4)
@@ -4793,6 +4813,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## lock-tier-invariant
 - defined: —
 - cited: 30Y 30Yf (2)
+
+## lock-unmeasured-is-not-a-pass
+- defined: —
+- cited: 30Z 313 (2)
 
 ## loom-driver-is-derived-and-reported
 - defined: —
@@ -4828,7 +4852,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## loop-a-reword-moves-nothing
 - defined: —
-- cited: 30Z 312d specs/shared-laws.assay (3)
+- cited: 30Z 312d 313 specs/shared-laws.assay (4)
 
 ## loop-propagation-staged-now
 - defined: —
@@ -5896,6 +5920,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:204
 - cited: 30Vb plan/AGENTS (2)
 
+## recycled-keys-outrun-the-unwalled-span
+- defined: —
+- cited: 311u 312ca 313 Research/GOTCHAS (4)
+
 ## 28I:red-artifact-regeneration-header
 - defined: Research/notes/28I-webhost-redline-extraction.md:45 — (new surface direction): rendered
 
@@ -6865,7 +6893,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-cross-kind-sparing-needs-a-finished-definition
 - defined: —
-- cited: 30U 311 ORACLE_PROVIDES Research/LIVING_STATUS (4)
+- cited: 30U 311 313 ORACLE_PROVIDES Research/LIVING_STATUS (5)
 
 ## 28E:rul-danger-axis-is-completion-class
 - defined: Research/notes/28E-why-surface-design-sitting.md:423 — (nack on my reported/written split) —
@@ -7136,7 +7164,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/AGENTS.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch (25)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch 313 (27)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7493,7 +7521,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-no-claim-type-gating
 - defined: Research/plans/271-block-settle-rulings-ledger.md:594 — (2026-07-12; TYPED — "hard ack on the 'not flagging
-- cited: 27C 312a (3)
+- cited: 27C 312a 313 (4)
 
 ## 28L:rul-no-emitter-codes-are-blocked-rows
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:276 — (conductor) — a catalog code whose only
@@ -9368,6 +9396,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Mc (2)
 
+## the-311-313-seam-argued-and-deferred
+- defined: —
+- cited: 312d 313 (2)
+
 ## the-account-export-died-with-its-lane
 - defined: —
 - cited: 30Rk ROADMAP spike/AGENTS (3)
@@ -9423,6 +9455,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## cli/AGENTS:the-frozen-set-includes-the-function-environment
 - defined: spike/crates/cli/AGENTS.md:210 — (`28K` §2) — env resolutions (both
 - cited: 308b (1)
+
+## the-humans-responses
+- defined: —
+- cited: 312f 313 (2)
 
 ## plan/AGENTS:the-in-loop-floor-is-route-aware
 - defined: spike/crates/plan/AGENTS.md:335 — (`30L` §7; built `30Qa`) — `floored_in_loop`
