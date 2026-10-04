@@ -4,8 +4,9 @@
 > for how the ground that `specs/311-identity.assay.md` covers is cut into several small
 > specifications, and why the cut keeps the product's properties. Nothing here is ruled unless it
 > is marked **[TYPED]** (the human typed it in the sitting) or cites a ruling by `docID:slug`;
-> everything marked **[CONDUCTOR]** is the conductor's and unacked. The root docs, `spike/AGENTS.md`, the welds, and stamped `plans/` outrank
-> this note. It is written to be attacked: an adversarial review follows it before any build.
+> everything marked **[CONDUCTOR]** is the conductor's and unacked. The root docs,
+> `spike/AGENTS.md`, the welds, and stamped `plans/` outrank this note. It is written to be
+> attacked: an adversarial review follows it before any build.
 > Every Alloy fragment below is illustration, never specification text
 > (`30Z:form-strawmen-are-quarry-never-seed`).
 
