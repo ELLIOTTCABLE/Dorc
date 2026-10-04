@@ -107,7 +107,11 @@ tier will run it on a host; the lock records both verdicts side by side.
 A spec document is Markdown with two fence kinds assay reads and nothing else it interprets:
 
 - `alloy` fences: the model, verbatim. Whatever sigs, facts, functions, predicates, and commands
-  the spec wants; claim atoms as `one sig <name> extends <some sig under Claim>`.
+  the spec wants; claim atoms as `one sig <name> extends <some sig under Claim>`. An `open` line
+  names either a module of the library the jar bundles (`open util/ordering[Line]`) or another
+  document beside this one, by its stem under the munge below (`open widgets` for
+  `widgets.assay.md`, `open w_311_dash_identity` for `311-identity.assay.md`), so the document
+  stays valid Alloy. An opener sees the opened document's species (§ 2.3) and nothing else of it.
 - `sh` fences: books and load files. A book is valid sh: each concrete line is followed by two
   comment forms, `#}` and `#=`. A load file is an `sh` fence of `.` lines headed by a file name,
   which books source (the degenerate form of a future in which claims ride lines of oracle sh;
@@ -194,15 +198,28 @@ half or both. The append half's laws name things each document defines (an `answ
 `wrong`, a `support`; the names are the spec tier's own convention, chosen by whoever writes
 that half), and Alloy, not assay, refuses a document that leaves one undefined, in that
 document alone; the scope each generic law runs at is the append half's to spell, once, for
-every document. Nothing assay owns appears in either half; everything either half says is
-spec-tier content and not this document's, and anything less than tree-global is opened
-explicitly by the spec that wants it.
+every document. A document that opens another is no exception: the append half is spliced into
+its laws module exactly as into any other, and its laws see what the opened species define.
+Nothing assay owns appears in either half; everything either half says is spec-tier content and
+not this document's, and anything less than tree-global is opened explicitly by the spec that
+wants it.
 
 ### § 2.3-the-generated-modules
 
 One spec document becomes one directory of Alloy modules [CONDUCTOR, STRAWMAN layout]:
 
-- `species.als` — opens `assay` and `shared`; every `alloy` fence line that is not a claim atom.
+- `species.als` — opens `assay` and `shared`, then every `open` line of the document, moved ahead
+  of every paragraph wherever the document wrote it; every other `alloy` fence line that is not a
+  claim atom or a command.
+- `<atom>.als` — for each document this one opens, directly or through another, that document's
+  own `species.als` under the module name its munged stem spells, written into this directory. It
+  opens `assay`, `shared`, and what that document opens itself, and nothing this document
+  declares, so the one-way view is Alloy's module order and not an arrangement of text. Nothing
+  else of an opened document is emitted: not its claim atoms, words, classes, or load files, and
+  no book, law, or corpus check, so none of its commands runs as part of the opener. This
+  document's words, classes, and corpus speech are its own, as for a document that opens
+  nothing. A document whose munged stem is the name of a module assay generates (`assay`,
+  `shared`, `species`, `words`, `claims`, `laws`, or any `book_…`) cannot be opened.
 - `words.als` — opens `shared`; one atom per distinct literal on any map line in the document,
   per braced class, and per name a `#=` line or a claim atom's body introduces, with the class
   memberships the map lines state and no others. An introduced name is an identifier that no
@@ -387,6 +404,10 @@ report (exit 2):
 - `fence-header`: an `sh` fence opens with `# <identifier>.sh`;
 - `no-stray-comments`: an `sh` fence carries no other `#` line;
 - `load-stem-resolves`: every `.` line resolves to a load file or a claim atom;
+- `open-names-a-sibling`: every `open` that names no `util/…` module names, by munged stem, one
+  document beside this one;
+- `opens-are-acyclic`: no document opens itself, directly or through another; an opened document
+  is compiled on assay's way in, and its own findings refuse the opener;
 - `this-on-atomless-line`: a declaration mentions `this` only on a line that has an outcome;
 - `parent-is-a-known-sig`: every `extends` or `in` parent is a sig declared somewhere assay reads
   (or `univ`, `Int`, `String`);
@@ -440,7 +461,9 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   is sound because a command is a query: it binds no name, adds no constraint another command
   inherits, declares no atom, and opens no module; the premises a book line or a conjunction
   embeds are in the command's own text, which the key hashes
-  [`30Yf:key-why-stripping-commands-is-sound`].
+  [`30Yf:key-why-stripping-commands-is-sound`]. An opener's closure holds the opened species
+  modules, so an edit to an opened document's species moves every key of the opener, and an edit
+  to its books, laws, corpus checks, or prose moves none.
 - **Matching** [ACKED `30Yf:lock-asymmetric-match`]: each computed row against the committed row
   of the same `(module, name)`. A definite result matches only its equal, at any budget, and an
   equal `size` across a changed key proves nothing; an unmeasurement never matches a definite
@@ -482,13 +505,14 @@ A free name in a `#=` that nothing declares is not a lint: it is minted as a wor
   unmeasurement, so a full timeout on new text is recordable for acceptance. Rows the document no
   longer has are dropped. `--write` locks committed text only [TYPED 2026-09-29: "fail-fast if
   given --write and it isn't in a quiet, committed tree"]: before compiling or solving it refuses
-  (exit 2, one stderr line naming the paths) when the document or either shared half differs from
-  `HEAD` in any way (staged, unstaged, deleted, untracked, ignored), or when no repository with a
-  commit holds them; the lock file's own modification and every other path never refuse, so
-  write, look, write again stays possible, and `--check` never refuses on this. It lists the rows
-  it changed (`+` new, `~` moved, `-` gone) in the stdout summary under the lock's repo-relative
-  path, or on stderr under `--json -`, and exits 0 once the lock is written, or 1 on the official
-  tier's construction finding (§ 2.5). A targeted run never writes.
+  (exit 2, one stderr line naming the paths) when the document, either shared half, or any
+  document it opens, directly or through another, differs from `HEAD` in any way (staged,
+  unstaged, deleted, untracked, ignored), or when no repository with a commit holds them; the
+  lock file's own modification and every other path never refuse, so write, look, write again
+  stays possible, and `--check` never refuses on this. It lists the rows it changed (`+` new, `~`
+  moved, `-` gone) in the stdout summary under the lock's repo-relative path, or on stderr under
+  `--json -`, and exits 0 once the lock is written, or 1 on the official tier's construction
+  finding (§ 2.5). A targeted run never writes.
 - **A schema-1 lock** (no `schema` element) is read for its results alone: its `budget`, `heap`,
   `size`, and `key` read as unknown, and its `premise` and `hash` columns are ignored. No such row
   matches a key, so nothing is cached, carried, or owed from it: every row re-solves, a definite
@@ -744,10 +768,11 @@ The builder has latitude on everything not marked.
   `<out>/instances/<module>/<label>.xml`, and the fit belts); `assay/tier.rs` (tiers, caps, the
   ceiling, the deferral threshold); `assay/lock.rs` (the lock's rows, schemas, matching, and
   writing); `assay/drive.rs` (the survey, slices, ordering, and the per-row decision of § 2.5);
-  `assay/pass.rs` (one document's pass, the report, the exit); `assay/progress.rs` (the
-  `tracing` subscriber and the human duration); `assay/report.rs` (where the report goes, and the
-  stdout summary rendered from it); `assay/commit.rs` (`HEAD`, and the uncommitted-input check
-  `--write` refuses on). `json.rs` and `sha256.rs` are the crate's own, standard library only. The tooling binary builds and runs under its own cargo profile
+  `assay/pass.rs` (one document's pass, the documents it opens, the report, the exit);
+  `assay/progress.rs` (the `tracing` subscriber and the human duration); `assay/report.rs`
+  (where the report goes, and the stdout summary rendered from it); `assay/commit.rs` (`HEAD`,
+  and the uncommitted-input check `--write` refuses on). `json.rs` and `sha256.rs` are the
+  crate's own, standard library only. The tooling binary builds and runs under its own cargo profile
   (`spike/CLAUDE.md` `tooling-runs-under-its-own-profile`), so a long assay pass never holds the
   executable a workspace build would replace.
 - **Gate placement.** Pre-commit, hk's `assay` step over staged `specs/**/*.assay.md` and
@@ -755,9 +780,11 @@ The builder has latitude on everything not marked.
   the staged bytes into `<stem>.staged/`, parses every module through a fresh adapter child at a
   1024 MB heap, and diffs the keys against the staged lock, warning on stderr how many rows the
   commit leaves unmeasured; it never solves, takes no heavy-work lock, and exits 0 unless a lint
-  refuses. Builder completion, hk's `assay-lock` step (profile `slow`), runs `mise run
-  assay-quiet -- --check` at the gate tier over the same paths. `--parse` alone is Alloy's parse lint in one child, no
-  heavy-work lock. `--check` and `--write` preflight in-process for the tier's heap plus one
+  refuses. It key-diffs only the staged documents, so a commit that edits only an opened document
+  warns nothing about the documents that open it; the completion step below names the shared
+  half, which stands for every document beside it, openers included. Builder completion, hk's
+  `assay-lock` step (profile `slow`), runs `mise run assay-quiet -- --check` at the gate tier
+  over the same paths. `--parse` alone is Alloy's parse lint in one child, no heavy-work lock. `--check` and `--write` preflight in-process for the tier's heap plus one
   child's overhead, take the heavy-work lock, and exit 75 when another task holds it. The
   official tier's standup in CI (runner choice) is separate work.
 - **Platforms** [TYPED `30Yf:arch-three-platforms`]: Windows, Linux, and macOS must be
@@ -782,7 +809,9 @@ The builder has latitude on everything not marked.
 - **Fixtures** [TYPED 2026-09-28]: assay's own fixture is a meaningless, Dorc-agnostic document
   under `internal-tooling`'s tests, compiled byte-for-byte against committed expected modules and
   their `assay-map.json`, with negative documents for the join-key, stray-run, and
-  duplicate-label refusals; no committed test runs a JVM. The two strawmen,
+  duplicate-label refusals; a second document beside it opens it and is compiled the same way,
+  a third opens the second, and negative documents pin the two `open` refusals; no committed test
+  runs a JVM. The two strawmen,
   `notes/30Ya-strawman-3` (the outcome algebra past a wall; every command finishes in seconds at
   the shared ceiling of twelve) and `notes/30Ya-strawman-2` (the identity model's first cut;
   its per-line checks reach millions of clauses at the same ceiling, through the transitive
