@@ -2910,5 +2910,31 @@
     "sha256": "a5b591c5b2027adb4dd9afbee29326dce0f79cd9172dae847043b12a6c8ef981",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['seL4 proof maintenance cost empirical study proof size check time hours'])"
+  },
+  "A-kang-flash-filesystem-alloy-2008": {
+    "url": "https://eskang.github.io/assets/papers/abz08_kang_jackson.pdf",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not B: peer-reviewed ABZ 2008 case study by the Alloy group (Jackson co-author) with the run's scope, hardware and duration stated; certainty held at SUSPECT because this scout read sections 1-2 and 5-8 in full and only skimmed the hardware and concrete-filesystem model listings of sections 3-4",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the Alloy monolith paid for in compute: the abstract POSIX model, the flash hardware model and the concrete design are composed into one refinement check (backwards simulation per operation) that took about 8 hours at scope 5 and was left running overnight; the concrete invariant's preservation was checked as a separate command; the authors call it one of their largest case studies and the edge of the Analyzer's scalability",
+    "graded-by": "subagent",
+    "published": "2008",
+    "retrieved": "2026-10-04",
+    "sha256": "8502e75b089e88974df84342f69fa90ccf26796bd627208b83cc25f8154ca9f7",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Kang Jackson formal modeling and analysis of a flash filesystem in Alloy pdf'])"
+  },
+  "B-ramananandro-mondex-alloy-refinement-slides-2006": {
+    "url": "https://epubs.stfc.ac.uk/manifestation/1060/Mondex2ramananandro.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: workshop slides rather than the journal paper (Formal Aspects of Computing 2008), whose author copy at normalesup.org uses unmapped Type3 fonts and could not be text-extracted, so the paper itself was not read; not C: first-party, by the case study's authors (Ramananandro with Jackson), with a module diagram, per-check timings by scope and the failures stated, read in full",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the one Alloy case study found that reports how a large refinement development was cut: nine modules of about 180-270 lines (abstract, between, concrete worlds; operations; two refinement modules; abort), each refinement theorem a separate check; existence separated from refinement and existentials replaced by explicit witness functions; the hardest theorem did not terminate in four days until split by a case condition (the Z proof's own split was wrong), then finished under 30,000 s; most theorems reached scope 8; solve times ranged from seconds to days",
+    "graded-by": "subagent",
+    "published": "2006-05",
+    "retrieved": "2026-10-04",
+    "sha256": "b134882d3447658113200df3aa7418ed150b0cc46197b9f31a741c506c3b432c",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Ramananandro Mondex electronic purse specification refinement checks Alloy model-finding pdf'])"
   }
 }
