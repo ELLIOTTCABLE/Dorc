@@ -2936,5 +2936,31 @@
     "sha256": "b134882d3447658113200df3aa7418ed150b0cc46197b9f31a741c506c3b432c",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Ramananandro Mondex electronic purse specification refinement checks Alloy model-finding pdf'])"
+  },
+  "A-bornholt-shardstore-lightweight-fm-2021": {
+    "url": "https://jamesbornholt.com/papers/shardstore-sosp21.pdf",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not B: peer-reviewed SOSP 2021 experience report by the Amazon S3 engineers and formal-methods staff who did the work, with bug catalogue and line counts; certainty held at SUSPECT because this scout read sections 1-3 and 8 in full and skipped the checking-technique sections 4-7, which concern how each check is run, not how the work was cut",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "an industrial decomposition by component and by execution class: one small executable reference model per component (450 lines for 44,000 total), durability cut into crash-free sequential, crashing sequential and concurrent crash-free checks each run by the tool that suits it, with concurrent-and-crashing left unchecked for want of a method; models delivered one component at a time as APIs stabilised; the team first wrote models in Alloy and SPIN and moved them into the implementation language for maintainability",
+    "graded-by": "subagent",
+    "published": "2021-10",
+    "retrieved": "2026-10-04",
+    "sha256": "231eb1ed39613cc60a73cc3394f97e10f72349034c09da2f68de7782ee1f72d4",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Bornholt using lightweight formal methods to validate a key-value storage node in Amazon S3 pdf'])"
+  },
+  "A-gu-certikos-certified-abstraction-layers-2015": {
+    "url": "https://www.cs.columbia.edu/~rgu/publications/popl15-gu.pdf",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not B: peer-reviewed POPL 2015 paper by the CertiKOS authors with a formal layer calculus and an evaluation section with effort figures; certainty held at SUSPECT because this scout read the introduction, section 2, the start of section 3 and section 7 (the kernels and their evaluation) in full and skipped the ClightX and CompCertX formal development of sections 4-6",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "refinement lineage at the far end: 37 thin layers, each a deep specification over one abstract state, composed vertically by proved refinement and horizontally only when state views are identical, which is what forbids arbitrary cross-module interaction; a hard step is split by inserting an intermediate layer; the authors state that the shipped proof composes at whole-machine level rather than through the calculus, and give person-month figures per kernel variant",
+    "graded-by": "subagent",
+    "published": "2015-01",
+    "retrieved": "2026-10-04",
+    "sha256": "12b627e10f6dd11f72472ee1052947ca6b51e84998a850362b5e6965d39c62be",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Gu deep specifications and certified abstraction layers POPL 2015 pdf'])"
   }
 }
