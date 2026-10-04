@@ -1097,12 +1097,19 @@ row's `near:` line refreshes only when that row's other lines change.
 ## plan/AGENTS:check-tax-awareness
 - defined: spike/crates/plan/AGENTS.md:162 — — a guarded site pays its check on every apply,
 
+## 313b:checks-that-held
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:98
+- cited: 312ch (1)
+
 ## cli/AGENTS:chrome-comes-from-the-registry
 - defined: spike/crates/cli/AGENTS.md:39 — (`289:rul-arrangement-home-is-registry-plus-transcripts`) —
 
 ## spike/AGENTS:churn-avoidance-disclosure
 - defined: spike/AGENTS.md:588 — (ru-26) — any implementation shaped by a
 - cited: 27O 27P 28F 28P 30Qd 30Vd (7)
+
+## 313c:circular-derivations-refute-the-induction
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:98 — — dropped. Induction over finite derivations
 
 ## spike/AGENTS:claim-tier-gating
 - defined: spike/AGENTS.md:100 — — license mints demand `ByVouch<VerdictVouch>` by value
@@ -1398,6 +1405,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## core/AGENTS:custody-is-one-newtype-and-one-crossing
 - defined: spike/crates/core/AGENTS.md:26 — (`28M` §8; `28P` bitem3) — `DefinitionCustody`
 - cited: 30E (1)
+
+## cut-the-negative-answer-is-separation
+- defined: —
+- cited: 313 313d (2)
 
 ## 30A:d1-tdd-first-for-linguistic-behavior
 - defined: Research/notes/30A-sh-parity-test-doctrine.md:15 — — any engine work touching a core sh
@@ -3132,6 +3143,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Ba:fnd-error-channel-claim-overstates-what-is-shown
 - defined: Research/notes/30Ba-minispec-review-neutral.md:205 — (+SURE)
 
+## 313d:fnd-every-answers-meaning-lands-in-the-core
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:72
+- cited: 313a (1)
+
 ## 26G:fnd-existence-gate-darkens-oracle
 - defined: Research/notes/26G-analyzer-findings-adjudication.md:439 — — the contract's own gate silently kills the oracle
 - cited: 26H (1)
@@ -3298,6 +3313,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28O:fnd-oracle-only-vectors-truncate-the-book-silently
 - defined: Research/notes/28O-oracle-loading-build-ledger.md:513
 - superseded: Stage B's `dec-lift-lanes-keep-the-oracle-only-vectors` is SUPERSEDED, and the way it failed is
+
+## 313d:fnd-overlap-is-not-exclusive-or-not-positive
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:85
+- cited: 313a (1)
 
 ## 28P:fnd-parity-is-the-deliverable-and-the-e2e-tier-can-only-show-it-negatively
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1370
@@ -3466,6 +3485,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:285
 - cited: 311p (1)
 
+## 313d:fnd-separation-is-a-held-hole-not-todays-speech
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:12
+- cited: 313a (1)
+
 ## 311l:fnd-shape-is-not-a-function-of-bytes
 - defined: Research/notes/311l-identity-crosscheck-fable-neutral.md:271
 
@@ -3531,6 +3554,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30Xc:fnd-test-filter-is-not-quoted
 - defined: Research/notes/30Xc-macos-burn-down-ledger.md:300 — — `mise run test` templates its filter into both commands
 
+## 313d:fnd-the-bounded-class-moves-with-what-is-called-named
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:52
+- cited: 313a (1)
+
 ## fnd-the-canon-does-not-destructure-plan
 - defined: —
 - cited: 30N 30Nd 30Ne (3)
@@ -3540,6 +3567,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:fnd-the-fold-alone-cures-the-binding-and-nothing-else
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:549
+
+## 313d:fnd-the-instant-seam-forgets-the-writers-names
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:31
+- cited: 313a (1)
 
 ## fnd-the-lint-tier-that-check-does-not-cover
 - defined: —
@@ -3557,6 +3588,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:fnd-the-refusal-was-in-the-parser-not-the-domain
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1335
+
+## 313d:fnd-the-whole-design-tier-has-no-measured-path
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:109
+- cited: 313a (1)
 
 ## 28P:fnd-the-wrapped-gate-is-unreachable-today
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1203
@@ -3580,6 +3615,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 30Ba:fnd-translation-unit-has-no-cheap-rot-check
 - defined: Research/notes/30Ba-minispec-review-neutral.md:121 — (+SURE)
+
+## 313d:fnd-true-speech-arms-a-loaded-false-statement
+- defined: Research/notes/313d-cut-plan-review-fable-adversarial.md:97
+- cited: 313a (1)
 
 ## 30Ba:fnd-trusted-base-is-visible-and-discharged
 - defined: Research/notes/30Ba-minispec-review-neutral.md:166 — (+SURE) — this part is honest
@@ -4778,6 +4817,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 26Ob 311a (2)
 
+## 313b:local-greens-do-not-preclude-late-reds
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:47
+- cited: 313a (1)
+
 ## local-route-identity-exemption
 - defined: —
 - cited: 311o (1)
@@ -4927,6 +4970,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/analysis/AGENTS.md:58 — (`30L` §7; built `30Qa`) —
 - cited: 30Qa (1)
 
+## 313c:missing-import-support-is-concealed
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:100 — — dropped. §2.2 explicitly reports assay's missing
+
 ## mode-apply-cursor-via-xtrace
 - defined: —
 - cited: 26O 311a (2)
@@ -5001,6 +5047,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 311u:names-never-to-use
 - defined: Research/notes/311u-refuted-shapes-register.md:378
 - cited: 311 (1)
+
+## 313c:naming-warrants-are-not-all-positive
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:40
+- cited: 313a (1)
 
 ## narrative-eq-excluded-at-the-carrier
 - defined: Research/notes/28Va-aid-extraction-map.md:565 — — `CollapseNarrative` derives `Eq`, but any
@@ -5091,6 +5141,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## plan/AGENTS:never-synthesized-never-mutating
 - defined: spike/crates/plan/AGENTS.md:103 — — never engine-synthesized sh; never
+
+## 313b:new-signatures-can-change-old-answers
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:28
+- cited: 313a (1)
 
 ## nit-batching-key-carries-entry-definition-identity
 - defined: —
@@ -5593,6 +5647,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/AGENTS.md:1232 — (r30, after two incidents: a WSL VM OOM'd twice
 - cited: 307 30G 30Ka 30Nd 30Ne 30Nf 30Nh 30Q (9)
 
+## 313b:preservation-needs-more-than-soundness
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:6
+- cited: 313a (1)
+
 ## 28M:price-forbidden-to-fork
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:194 — — orgs whose policy forbids forking vendored third-party
 
@@ -5620,6 +5678,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## cli/AGENTS:probe-ships-oracle-bytes-only
 - defined: spike/crates/cli/AGENTS.md:146 — — the compiled probe is synthesized
+
+## prop-acts-never-durations
+- defined: —
+- cited: 313 313d (3)
 
 ## 28E:prop-carrier-to-the-edge
 - defined: Research/notes/28E-why-surface-design-sitting.md:140 — — the ~25 print-in-place cli sites accumulate
@@ -5668,6 +5730,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 288:prop-structural-needles-only
 - defined: Research/plans/288-aid-loom-unification-plan.md:307 — (shaped by nit-needles-rot) — re-bless-surviving
 - cited: 28O (1)
+
+## prop-the-flag-has-one-closed-meaning
+- defined: —
+- cited: 313 313d (3)
 
 ## 28E:prop-three-literalness-modes
 - defined: Research/notes/28E-why-surface-design-sitting.md:153 — — shown sh is exactly one of: LITERAL
@@ -6539,6 +6605,14 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Ta (1)
 
+## risk-the-factoring-forces-more-guarding
+- defined: —
+- cited: 313 313a 313b 313d (5)
+
+## risk-two-documents-drift-at-their-interface
+- defined: —
+- cited: 313 313d (2)
+
 ## ROADMAP:round-r31-language-and-kernel
 - defined: ROADMAP.md:32 — — announced 2026-09-02; cut 2026-09-02; test-rebuild prerequisite satisfied (`notes/30Xa` §0)
 
@@ -7164,7 +7238,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/AGENTS.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch 313 (27)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch 313 313c (28)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7521,7 +7595,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-no-claim-type-gating
 - defined: Research/plans/271-block-settle-rulings-ledger.md:594 — (2026-07-12; TYPED — "hard ack on the 'not flagging
-- cited: 27C 312a 313 (4)
+- cited: 27C 312a 313 313d (5)
 
 ## 28L:rul-no-emitter-codes-are-blocked-rows
 - defined: Research/notes/28L-loom-final-conduct-ledger.md:276 — (conductor) — a catalog code whose only
@@ -8701,6 +8775,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/syntax/AGENTS.md:33 — — the dynamic-word/expansion surface (unquoted `$x`,
 - cited: 28P 30Qc (2)
 
+## 313c:separation-is-merely-inequality
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:102 — — dropped. §1 explicitly requires absence of shared
+
 ## seq-stdlib-gates-on-env-identity
 - defined: —
 - cited: 30S ORACLE_PROVIDES ROADMAP (3)
@@ -8742,6 +8819,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## plan/AGENTS:ship-seam-reads-the-lane-not-the-kind
 - defined: spike/crates/plan/AGENTS.md:63 — (`26H` §3.5; `28Q` §4
 - cited: 28M 28O (2)
+
+## 313c:signature-extension-can-change-lower-results
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:66
+- cited: 313a (1)
 
 ## spike/AGENTS:sigpipe-flap-class
 - defined: spike/AGENTS.md:353 — (`279f`) — pipefail + early-exit consumers (`| grep -q`)
@@ -8952,6 +9033,9 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30I 30Ib 30N 30Ne 30Nf (10)
 
+## 313c:step-lemma-trusts-false-inputs
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:96 — — dropped. `f_rules.als:parentsGivenSame` explicitly
+
 ## 30Ng:still-lift-but-also-munge
 - defined: Research/notes/30Ng-artifact-semantics-adjudication-sitting.md:171 — — where we can / are willing to edit names, AND our
 
@@ -9050,12 +9134,19 @@ row's `near:` line refreshes only when that row's other lines change.
 ## analysis/AGENTS:substrate-decision-stands
 - defined: spike/crates/analysis/AGENTS.md:360 — — keep and extend the hand-rolled worklist (not
 
+## 313c:survival-does-not-frame-the-vantage
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:10
+- cited: 313a (1)
+
 ## surviving-narrow-design-core
 - defined: —
 - cited: 30Ta (1)
 
 ## 26M:suspicion-transit-reach-subsumption
 - defined: Research/notes/26M-pivot-language-surface-sitting.md:54 — — the conductor claim "a fired
+
+## 313c:suspicions-dropped-after-checking
+- defined: Research/notes/313c-cut-plan-review-astra-adversarial.md:94
 
 ## syn-closure-is-the-speaker
 - defined: —
@@ -9396,6 +9487,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Mc (2)
 
+## the-311-313-seam-argued-and-deferred
+- defined: —
+- cited: 312d 313a (2)
+
 ## the-account-export-died-with-its-lane
 - defined: —
 - cited: 30Rk ROADMAP spike/AGENTS (3)
@@ -9603,11 +9698,19 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/analysis/AGENTS.md:182 — (`304`) — `lattice.rs` is inside the TRANSLATED
 - cited: 300b (1)
 
+## 313b:true-additions-can-activate-falsehood
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:82
+- cited: 313a (1)
+
 ## trust-tier-is-syntax
 - defined: Research/notes/28Va-aid-extraction-map.md:594 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
 - defined: spike/AGENTS.md:759 — — the epistemic tier of every rendered link (STRAWMAN
 - defined: spike/crates/aid/AGENTS.md:179 — (`AID-NEEDS:law-trust-tier-is-syntax`) — the epistemic tier of
 - cited: 26N 289 28N 300 300c 306b 311a 311c (8)
+
+## 313b:truth-does-not-establish-current-consent
+- defined: Research/notes/313b-cut-plan-review-astra-neutral.md:66
+- cited: 313a (1)
 
 ## spike/AGENTS:two-binary-floor
 - defined: spike/AGENTS.md:709 — (`276:rul-spec-two-binary-floor`; `KNOBS:kWHICHSH` WELDED) —
