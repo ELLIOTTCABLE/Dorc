@@ -2845,5 +2845,70 @@
     "sha256": "6b04d2db1968dd16bcf8846d0cece070f5317ee606aeb5673181ad9708a19da4",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['TLAPS fingerprints proof obligations cache rechecking only changed obligations'])"
+  },
+  "A-apalache-running-inductive-invariants-2026": {
+    "url": "https://apalache-mc.org/docs/apalache/running.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: current first-party manual of the Apalache model checker, read in full",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the standard way TLA+ users replace an unbounded or long reachability run with three one-step bounded queries (Init implies IndInv at length 0; IndInv and Next imply IndInv' at length 1; IndInv implies Safety at length 0), plus a test mode for a single action; the per-action, per-step obligation is the unit of cheap re-checking",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-10-04",
+    "sha256": "cc6863a3c1cf21ea0e81f6aa7329e0dd410f262d18a327e1cc175fc6bc122ea6",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Apalache inductive invariant checking TLA+ documentation IndInv init next one step'])"
+  },
+  "A-schultz-mongoraftreconfig-tlaps-proof-2022": {
+    "url": "https://iandardik.github.io/assets/papers/verif_cpp22.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: peer-reviewed CPP 2022 paper by the MongoDB-and-academia authors of the protocol's specification, with proof statistics and effort figures; read in full apart from the protocol-definition figures of section 2.4",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "an industrial specification's path from model checking at small bounds (prior paper) to a deductive proof: the induction step is cut into one goal per invariant conjunct per protocol action (20 x 8 = 160 goals), the inductive invariant was found with TLC sampling counterexamples to induction, full re-check 38 minutes on 8 cores, 3,189 lines and about 5-6 person-months; exploiting the protocol's own compositional structure is left as future work",
+    "graded-by": "subagent",
+    "published": "2022-01",
+    "retrieved": "2026-10-04",
+    "sha256": "710721c0bd09ac40f1b9a7d141278192262811bb460c616c0c52bff41f4fe972",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Schultz Dardik Tripakis formal verification distributed dynamic reconfiguration protocol TLAPS inductive invariant CPP 2022 pdf'])"
+  },
+  "A-ethereum-pysetup-combine-fork-specs-2026": {
+    "url": "https://raw.githubusercontent.com/ethereum/consensus-specs/master/pysetup/helpers.py",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not B: the build code that actually assembles each fork's executable specification in the canonical repository; certainty held at SUSPECT because this scout read the fork-chain collection, the combiners and the type-sharing docstring (lines 1-66, 267-366) and not the formatting helpers in between",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "how a growing standard composes per-version deltas mechanically: walk the previous-fork chain back to phase0, then merge each fork's definitions over its predecessor's by name (a later definition replaces an earlier one), so every fork is checked as a whole assembled executable rather than as a delta; types a fork does not change are bound to the predecessor's class",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-10-04",
+    "sha256": "50dab5ef42750672324de731147e5d5f78eb7a9434e71ea0ef2fda88f109d693",
+    "acquired": "url",
+    "via": "A-ethereum-consensus-specs-readme-2026"
+  },
+  "B-silva-eventb-decomposition-tool-2011": {
+    "url": "https://www.southampton.ac.uk/~tsh2n14/publications/journals/decomp-tool-spe2011.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: a four-page author preprint of a short tool paper (Software: Practice and Experience 2011) with no evaluation; not C: first-party, by the Rodin decomposition plug-in's authors including Butler who defined shared-event decomposition, read in full",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "Event-B's two decomposition styles with their limits stated by the tool authors: shared-variable (partition events; a shared variable must stay and cannot be data-refined; external events simulate the other part) and shared-event (partition variables; an event touching both parts is split; predicates over variables in different parts need human rewriting); decomposition is monotonic, so parts refine independently, and the proof obligations are partitioned",
+    "graded-by": "subagent",
+    "published": "2011",
+    "retrieved": "2026-10-04",
+    "sha256": "d2256a33550b083d7e170572400d5c9ba3562614cc2191d428272bb726eebf0a",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Event-B model decomposition shared variable shared event Abrial Hallerstede Butler pdf'])"
+  },
+  "B-klein-sel4-agile-proofs-summit-slides-2023": {
+    "url": "https://sel4.org/Summit/2023/slides/day1-04-klein.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: conference slides, terse and partly garbled in text extraction (the run-time line is overlaid on page 19), with no method section; not C: first-party, by the seL4 verification lead about the project's own proof maintenance, read in full",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "the cost of a monolithic proof paid per configuration: each platform port is a proof branch, test combinations multiply, a single proof check runs over six hours; the planned remedy is parameterisation (prove once for every value that satisfies stated conditions, and have the build check the conditions) rather than splitting the proof",
+    "graded-by": "subagent",
+    "published": "2023",
+    "retrieved": "2026-10-04",
+    "sha256": "a5b591c5b2027adb4dd9afbee29326dce0f79cd9172dae847043b12a6c8ef981",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['seL4 proof maintenance cost empirical study proof size check time hours'])"
   }
 }
