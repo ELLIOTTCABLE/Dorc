@@ -2962,5 +2962,18 @@
     "sha256": "12b627e10f6dd11f72472ee1052947ca6b51e84998a850362b5e6965d39c62be",
     "acquired": "url",
     "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Gu deep specifications and certified abstraction layers POPL 2015 pdf'])"
+  },
+  "A-torlak-kodkod-incremental-solver-api-2026": {
+    "url": "http://emina.github.io/kodkod/doc/kodkod/engine/IncrementalSolver.html",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not B: first-party API documentation by Kodkod's author for the model finder underneath Alloy, read in full; it states the contract, not an aspiration",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the only shipped Kodkod mechanism for reusing one translation across several problems: later formulas and bounds are added to the stored SAT solver, but only monotonically, only while results stay SAT, with bounds that refine the first problem's partition, and with unsat-core extraction disabled; a check that passes (UNSAT) ends the solver, so one translated core cannot be reused across many checks through this API",
+    "graded-by": "subagent",
+    "published": "2026",
+    "retrieved": "2026-10-04",
+    "sha256": "43b889f77b411e233eecdb784fb95156f0465722ab9bbc6059351727ec149f9c",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Kodkod IncrementalSolver javadoc incremental solving sequence of problems added formulas'])"
   }
 }
