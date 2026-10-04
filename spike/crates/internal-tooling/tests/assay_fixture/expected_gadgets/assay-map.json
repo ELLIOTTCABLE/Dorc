@@ -1,0 +1,75 @@
+{"modules": {
+  "assay.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 2]],
+    [[1, "assay", 3]],
+    [[1, "assay", 4]],
+    [[1, "assay", 5]]
+  ],
+  "shared.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "shared.assay.md", 8]],
+    [[1, "shared.assay.md", 9]],
+    [[1, "shared.assay.md", 10]],
+    [[1, "shared.assay.md", 11]],
+    [[1, "shared.assay.md", 12]]
+  ],
+  "species.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "gadgets.assay.md", 6]],
+    [[1, "gadgets.assay.md", 14]],
+    [[1, "gadgets.assay.md", 7]]
+  ],
+  "words.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "gadgets.assay.md", 15]],
+    [[1, "gadgets.assay.md", 27]],
+    [[1, "assay", 0]],
+    [[1, "assay", 0]]
+  ],
+  "claims.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "gadgets.assay.md", 15]]
+  ],
+  "laws.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "gadgets.assay.md", 17]],
+    [[1, "gadgets.assay.md", 18]],
+    [[1, "shared-laws.assay.md", 8]]
+  ],
+  "book_corpus.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "gadgets.assay.md", 20]],
+    [[1, "assay", 0]]
+  ],
+  "book_fiddles.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "gadgets.assay.md", 24]],
+    [[1, "gadgets.assay.md", 27]],
+    [[1, "gadgets.assay.md", 27]],
+    [[1, "gadgets.assay.md", 27]],
+    [[1, "gadgets.assay.md", 24]]
+  ],
+  "widgets.als": [
+    [[1, "assay", 0]],
+    [[1, "assay", 1]],
+    [[1, "assay", 2]],
+    [[1, "widgets.assay.md", 6]],
+    [[1, "widgets.assay.md", 8]],
+    [[1, "widgets.assay.md", 9]],
+    [[1, "widgets.assay.md", 10]],
+    [[1, "widgets.assay.md", 12]]
+  ]
+}}

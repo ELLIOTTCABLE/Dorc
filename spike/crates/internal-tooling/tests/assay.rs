@@ -185,6 +185,79 @@ fn a_self_named_literal_whose_atom_another_literal_holds_refuses() {
     assert!(!out.exists(), "a refusal must write no module");
 }
 
+#[test]
+fn an_opener_compiles_beside_the_opened_species_and_nothing_else_of_it() {
+    let out = fresh_dir("assay_gadgets");
+    let run = assay(&fixture().join("gadgets.assay.md"), &out);
+    assert!(
+        run.status.success(),
+        "assay refused the opener:\n{}\n{}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
+    );
+
+    let expected = fixture().join("expected_gadgets");
+    let regenerate = "mise run assay -- spike/crates/internal-tooling/tests/assay_fixture/gadgets.assay.md \
+                      --out spike/crates/internal-tooling/tests/assay_fixture/expected_gadgets";
+    assert_eq!(
+        module_files(&out),
+        module_files(&expected),
+        "module set differs; regenerate with `{regenerate}`"
+    );
+    for name in module_files(&expected)
+        .into_iter()
+        .chain(["assay-map.json".to_owned()])
+    {
+        let want =
+            std::fs::read_to_string(expected.join(&name)).expect("expected module should read");
+        let got = std::fs::read_to_string(out.join(&name)).expect("generated module should read");
+        assert!(
+            want == got,
+            "{name} differs from expected:\n{}\nregenerate with `{regenerate}` and review the git diff",
+            diff(&want, &got)
+        );
+    }
+
+    let species = std::fs::read_to_string(fixture().join("expected").join("species.als"))
+        .expect("the opened document's own species should read");
+    let exposed = std::fs::read_to_string(out.join("widgets.als")).expect("widgets.als is written");
+    assert_eq!(
+        exposed,
+        species.replacen("module species", "module widgets", 1),
+        "the opener must see the opened document's species exactly as that document compiles it"
+    );
+}
+
+#[test]
+fn an_open_reached_through_another_open_is_emitted_too() {
+    let out = fresh_dir("assay_sprockets");
+    let run = assay(&fixture().join("sprockets.assay.md"), &out);
+    assert!(
+        run.status.success(),
+        "{}",
+        String::from_utf8_lossy(&run.stdout)
+    );
+    let read = |path: PathBuf| std::fs::read_to_string(path).expect("module should read");
+    let expected = fixture().join("expected_gadgets");
+    assert_eq!(
+        read(out.join("gadgets.als")),
+        read(expected.join("species.als")).replacen("module species", "module gadgets", 1)
+    );
+    assert_eq!(
+        read(out.join("widgets.als")),
+        read(expected.join("widgets.als"))
+    );
+}
+
+#[test]
+fn an_open_of_no_sibling_or_around_a_cycle_refuses_before_writing_anything() {
+    let nowhere = refused_with("open_names_no_sibling", "open-names-a-sibling");
+    assert_eq!(nowhere["open"], "nowhere");
+    let cycle = refused_with("cycle_a", "opens-are-acyclic");
+    assert_eq!(cycle["cycle"], "cycle_a cycle_b cycle_a");
+    assert_eq!(cycle["file"], "cycle_b.assay.md");
+}
+
 fn refused_with(name: &str, lint: &str) -> serde_json::Value {
     let out = fresh_dir(&format!("assay_{name}"));
     let run = assay(
