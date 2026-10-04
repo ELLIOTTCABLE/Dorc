@@ -302,7 +302,7 @@ and was defined in none of them.
   [A-alhanahnah-llm-repair-alloy-specs-2025]; two agents rebuilding a helper from primitives
   instead of reusing it [C-lablambworks-alloy6-maintenance-reference-2026].
 
-## front-tractable-decomposition-of-checked-specifications: OPEN (minted 2026-10-04; an Opus researcher gathers it as its own turn, `graded-by: subagent`)
+## front-tractable-decomposition-of-checked-specifications: established (turn08, subagent-graded; the conductor checked about twenty quoted excerpts against seven archived copies and read no source whole)
 
 **[HUMAN]** 2026-10-04, the question: how do other projects split a specification into
 manageable chunks? Any real specification, model, or protocol has many mutually interdependent
@@ -357,18 +357,73 @@ imports, its model-checker configurations, its CI), a paper or experience report
 project's own authors, first-party tool documentation on modularity, or a maintainer's own
 talk or essay. A listicle or a vendor's account of someone else's project is not.
 
-Leads, unverified, a net and not a conclusion: TLA+ (tlaplus/Examples, CCF, etcd raft, MongoDB,
-Azure Cosmos DB, the AWS experience reports, the Paxos refinement chain, TLAPS hierarchical
-proofs, Apalache's inductive invariants); Quint (the Tendermint and CometBFT specifications); P
-(its module system and compositional testing at AWS); Ivy (modular decidable reasoning); Dafny
-and Verus (IronFleet, VeriBetrKV, Anvil, verified storage and OS projects, per-module resource
-limits); F* (HACL*, Everest); the refinement lineages (seL4, CertiKOS's certified abstraction
-layers, CompCert's per-pass simulations); Event-B (refinement and model decomposition in Rodin);
-Alloy's own larger models (Chord, the flash file system, Mondex) and Electrum; compositional
-model checking (mCRL2, CADP, SPIN, NuSMV) and hardware formal-verification practice
-(assume-guarantee, black-boxing, case splitting); standards that carry an executable or formal
-specification (Ethereum's consensus specifications by fork, WebAssembly's SpecTec, RISC-V's
-Sail model, the K framework).
+Established (34 sources; the turn file carries a project table, counter-evidence, and the
+scout's own applicability reads; leads not taken are listed at its tail: Quint, F*, CompCert,
+hardware formal verification, mCRL2 and CADP, WebAssembly, RISC-V, K, among others):
+
+- No project found checks a large interdependent object whole in its working loop. The practices
+  that avoid it are five, below; each counter-thesis also found real support.
+- Small and never composed is the commonest practice and a successful one: AWS's specifications
+  ran 102 to 939 lines, one per component, with nothing crossing between them
+  [A-newcombe-formal-methods-at-aws-2014]; Chord is about 100 lines
+  [A-zave-lightweight-modeling-chord-2012]; ShardStore keeps one small model per component and
+  never checks their composition [A-bornholt-shardstore-lightweight-fm-2021].
+- A growing design is a chain of separate specifications by abstraction level, each tied to the
+  one above by a refinement mapping and checked on a tiny model in about a second; the levels are
+  never assembled [A-lamport-voting-tla-refinement-module-2019]
+  [A-lamport-paxos-tla-refines-voting-2019]. Every proved layering needs parts that depend on
+  each other in one direction only [A-taube-ivy-modularity-for-decidability-2018]
+  [A-gu-certikos-certified-abstraction-layers-2015] [B-silva-eventb-decomposition-tool-2011].
+- Mutual dependence is handled by circular assume-guarantee: each part is checked against
+  stand-in abstractions of the others. The composition theorem is proved on paper by induction
+  over trace length; the obligations are tested or checked by hand
+  [A-desai-modp-compositional-testing-2018] [B-gu-ipa-compositional-tla-consensus-2022]. It paid
+  10x to 288x where a part had internals to hide and about 3x where it did not, and one module
+  was merged back.
+- The unit of iteration is the obligation, with only what it uses in view: TLAPS fingerprints
+  each obligation after cutting its context to the hypotheses used
+  [A-cousineau-tla-proofs-fingerprints-2012]; MongoDB cut one induction step into twenty
+  conjuncts by eight actions [A-schultz-mongoraftreconfig-tlaps-proof-2022]; VeriBetrKV hides
+  definitions by default and fixes any unit over twenty seconds before work continues
+  [A-hance-veribetrkv-disciplined-automation-2020]. One-step induction replaces trace search
+  [A-apalache-running-inductive-invariants-2026] [A-practicalalloy-inductive-invariants-2026].
+  Alloy has no counterpart: every command carries every fact
+  [A-practicalalloy-module-system-2025], and the Alloy research tools for incremental analysis
+  all need sparse dependence [B-wang-ialloy-incremental-evolving-alloy-2019]
+  [B-zheng-platinum-reusing-constraint-solutions-2020].
+- What stays monolithic is paid for by schedule: CCF runs a 300-second simulation on pull
+  requests and exhaustive checks weekly, narrows the state space in a wrapper module and never in
+  the specification, and fails a run whose coverage invariant was never reached
+  [A-ccf-tla-shallow-verification-workflow-2026] [A-ccf-mcccfraft-harness-module-2026]; the TLA+
+  corpus runs models under 30 seconds to completion and smoke-runs the rest
+  [A-tlaplus-examples-contributing-guide-2026].
+- The large Alloy developments are smaller than ours and were paid for in hours: Mondex, about
+  nine modules of 34 to 274 lines, one command per theorem, existence separated from refinement,
+  explicit witnesses in place of existentials, a hardest theorem that did not finish in four days
+  until a human case split [B-ramananandro-mondex-alloy-refinement-slides-2006]; the flash
+  filesystem's refinement check, about eight hours at scope five
+  [A-kang-flash-filesystem-alloy-2008].
+- Putting the parts back together is the least mechanised step in the flagship projects (a paper
+  proof in IronFleet, a hand check in IPA, tests in ModP)
+  [A-hawblitzel-ironfleet-layered-refinement-2015]. Projects also change instrument: MongoDB to a
+  TLAPS proof; ShardStore away from Alloy and SPIN to executable reference models in the
+  implementation language.
+
+Conductor's read, ~SUSPECT, for the human's gate:
+
+- The identity specification is larger than any Alloy development whose size the scout found
+  reported (Mondex's modules sum to about 1,700 lines), and it is one closure. The prior art does not offer a way to keep an object of that shape cheap; it offers
+  ways not to have one.
+- The per-rule step check that `Research/notes/313a` reports as standing is circular
+  assume-guarantee under another name, and leaving its composition as a paper induction beside a
+  bounded assembly check is the mainstream posture, not a shortcut.
+- The cheapest practice with the widest support is the one this phase has not tried: many small
+  standalone models, one per design question, each re-declaring the little vocabulary it needs,
+  never composed. This sitting's own scratch models were of that kind (about a hundred lines,
+  checks in milliseconds). Its price is that global coherence is argued and not checked.
+- Three tactics transfer with no change of approach: a hard time limit per command, fixed before
+  work continues; a human case split, with a coverage check, for the laws that do not finish;
+  explicit witnesses in place of existentials.
 
 ## Scope map: the modelable region (conductor's read over a Sonnet inventory of 40 corpus documents; the raw inventory is scratchpad-tier and not banked)
 
@@ -465,8 +520,10 @@ records exact unread line-ranges; a follow-up pass can start there.
 
 ## Pending
 
-- In flight: `front-tractable-decomposition-of-checked-specifications`, dispatched 2026-10-04 to
-  an Opus researcher, which mints the next turn file.
+- Nothing in flight. `front-tractable-decomposition-of-checked-specifications` is banked as
+  `turn08`; its sources are subagent-graded and twelve of them were read only in the sections
+  that bear on decomposition (the turn file lists them, and three sources that could not be
+  read).
 - The five earlier fronts are banked as `turn01`–`turn07`; the web scout's task-1
   hits that were read only in part are listed at the tail of `turn01` and stay unregistered.
 - `examples.md` has been executed against the pinned jar (turn07, a builder lane in scratch over
