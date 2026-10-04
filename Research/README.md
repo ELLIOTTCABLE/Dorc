@@ -337,13 +337,14 @@ the license-contamination map. Cross-references are `docID:slug`.
   mechanization, beginning with precise member writes under a shared carrier. Its concrete
   exercises are `notes/312b-exercises/precise-writes-inside-an-opaque-carrier.md` and
   `notes/312b-exercises/a-copy-takes-the-originals-name.md` (Linux block-device naming).
-  **`notes/313`** is a PROPOSAL, unacked and written to be attacked: the plan to cut the
-  territory that specification covers into small specifications by product question (core,
-  naming, extent, effect, order), the Alloy and assay mechanics of doing so, and the arguments
-  that the cut keeps the product's properties. Its review: **`notes/313a`** (the adjudication:
-  what stood, and what the plan owes before any build) over three clean-context reports kept as
-  delivered, `notes/313b` (Astra, neutral), `notes/313c` (Astra, adversarial), and `notes/313d`
-  (Fable, adversarial).
+  **`notes/313`** is a PROPOSAL, unacked: the plan to keep that specification fast to check
+  (a defining fact becomes a named premise; a time limit as a build rule; tactics for the laws
+  that do not finish) and small to read (the design in one document, its tests in a second that
+  opens it), with decomposition for performance kept only as a route not taken. It replaces an
+  earlier plan to cut the territory by product question, whose text is at `c4b9761d` and whose
+  review is **`notes/313a`** (the adjudication: what stood, and what that plan owed) over three
+  clean-context reports kept as delivered, `notes/313b` (Astra, neutral), `notes/313c` (Astra,
+  adversarial), and `notes/313d` (Fable, adversarial).
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
