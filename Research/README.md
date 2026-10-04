@@ -344,7 +344,9 @@ the license-contamination map. Cross-references are `docID:slug`.
   earlier plan to cut the territory by product question, whose text is at `c4b9761d` and whose
   review is **`notes/313a`** (the adjudication: what stood, and what that plan owed) over three
   clean-context reports kept as delivered, `notes/313b` (Astra, neutral), `notes/313c` (Astra,
-  adversarial), and `notes/313d` (Fable, adversarial).
+  adversarial), and `notes/313d` (Fable, adversarial). **`notes/313e`** is the foray's
+  chronological sittings ledger: what the human typed, what the conductor tried and withdrew,
+  the research aside, and the assay lane.
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
