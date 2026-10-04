@@ -2533,5 +2533,70 @@
     "sha256": "f84e85c8a69c9153c5a45eb312671308be59a83e22f79366ced48fdfb90ca4c8",
     "acquired": "url",
     "via": "gh api repos/hwayne/alloydocs/git/trees/28c48b86d3f40c3347501af4dd4bf46fb18ef5f0?recursive=1 --jq '.tree[] | select(.type==\"blob\") | .path' | grep -i markdown"
+  },
+  "B-wang-ialloy-incremental-evolving-alloy-2019": {
+    "url": "https://users.ece.utexas.edu/~gligoric/papers/WangETAL19iAlloy.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: peer-reviewed (TACAS 2019) primary research, but the evaluation subjects are the toy models of the Alloy 4.2 distribution and ARepair student models (largest 85 commands), and the prototype is not part of any maintained Analyzer; not C: first-party authors, full algorithm and per-model tables, read in full",
+    "relevance-certainty": "+1:SURE",
+    "relevance-description": "the only Alloy-specific regression command selection: re-run only commands whose transitive paragraph dependencies changed, reuse prior instances by evaluation; states that every command depends on all facts and that a signature change disables reuse, which bounds what it buys a fact-heavy closure",
+    "graded-by": "subagent",
+    "published": "2019",
+    "retrieved": "2026-10-04",
+    "sha256": "dd2337c648180277b4497804694dff0d13960d306a0605d15464e1f658d3e53a",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Incremental analysis of evolving Alloy models iAlloy'])"
+  },
+  "B-bagheri-titanium-evolving-alloy-specs-2016": {
+    "url": "https://cse.unl.edu/~hbagheri/publications/2016FSE.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: peer-reviewed (FSE 2016) primary research by the tool's authors, but soundness is asserted without proof ('Space constraints prevented us from including a proof') and the large subjects are machine-extracted Android bundles, not hand-written design models; not C: full algorithm, per-subject CNF sizes and times, read in full",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "declarative slicing of a revised Alloy spec into a base over unchanged relations whose bounds are tightened from the previous version's full instance set; a Kodkod-level reuse mechanism for evolving specs, but it needs the complete instance set, so it serves enumeration more than unsat checks",
+    "graded-by": "subagent",
+    "published": "2016-11",
+    "retrieved": "2026-10-04",
+    "sha256": "5592d3b3928953972fb05e8004163bf25070db3467b080a88abee6ed4149614a",
+    "acquired": "url",
+    "via": "B-wang-ialloy-incremental-evolving-alloy-2019"
+  },
+  "B-uzuncaova-declarative-slicing-alloy-2008": {
+    "url": "https://users.ece.utexas.edu/~khurshid/papers/2008/08fm-decl-slicing.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: peer-reviewed (FM 2008) and first-party, but evaluated on three textbook data-structure models with satisfiable `run` commands only, and the prototype Kato was never mainlined; not C: full algorithm with its definition of a valid base slice and per-criterion clause counts, read in full",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "the one technique that cuts a single Alloy problem into two SAT problems over disjoint relation sets (base solved first, its instance pinned as an exact bound for the rest); states that base unsat implies whole unsat and that an unextendable base instance forces enumeration, which is the costly case for a check that is expected to be unsat",
+    "graded-by": "subagent",
+    "published": "2008",
+    "retrieved": "2026-10-04",
+    "sha256": "7508802658f567fdd510733f8a76c35abfc504067ac0404da2f626623825654d",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Uzuncaova Khurshid \"Constraint prioritization\" pdf utexas'])"
+  },
+  "A-macedo-pardinus-temporal-relational-model-finder-2022": {
+    "url": "https://nmacedo.github.io/pubs/JAR22.pdf",
+    "grading-certainty": "-0:SUSPECT",
+    "grading-reasoning": "not B: journal (JAR 2022) paper by the authors of the backend Alloy 6 actually ships, so first-party and peer-reviewed, with a benchmark table that reports where the decomposition loses; certainty held at SUSPECT because this scout read sections 1-2 and 5-8 in full (the decomposition, evaluation, related work) and only the headings of sections 3-4 (the temporal encoding and iteration machinery), which bear on correctness of the encoding, not on decomposition",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "the decomposition strategy inside the solver Alloy 6 runs: solve the immutable configuration problem first, then solve each configuration's mutable problem in parallel, with a hybrid mode racing the whole problem; states that unsat needs every configuration explored, which is the check case; its cut is mutable versus immutable, so a static model gets nothing from it",
+    "graded-by": "subagent",
+    "published": "2022",
+    "retrieved": "2026-10-04",
+    "sha256": "57b6a0fdb3229ebbcac459943dfa08ba8f1acaa614b6fa8a78e1ae1d0e62899c",
+    "acquired": "url",
+    "via": "mcp__kagi-ken__kagi_search_fetch(queries: ['Pardinus temporal relational model finder decomposed parallel strategy pdf'])"
+  },
+  "B-zheng-platinum-reusing-constraint-solutions-2020": {
+    "url": "https://link.springer.com/content/pdf/10.1007/978-3-030-45234-6_2.pdf",
+    "grading-certainty": "+1:SURE",
+    "grading-reasoning": "not A: peer-reviewed open-access (FASE 2020) and first-party, but the revisions are mutation-generated or machine-extracted Android bundles and the timings are against Alloy 4.2 with SAT4J, so transfer to a hand-written, heavily-connected design model is unmeasured; not C: full slicing and canonicalisation algorithms with overhead and per-subject tables, read in full apart from the reference list",
+    "relevance-certainty": "-0:SUSPECT",
+    "relevance-description": "cuts the translated boolean formula into connected components that share no variable, canonicalises each, and caches verdicts across runs and revisions; the cut is only as fine as the formula's variable-sharing graph, which is exactly what mutual recursion collapses",
+    "graded-by": "subagent",
+    "published": "2020",
+    "retrieved": "2026-10-04",
+    "sha256": "86e616301b46695ec8656101f584c143239bd4ade490fa75e4fe4089a67b225a",
+    "acquired": "url",
+    "via": "B-wang-ialloy-incremental-evolving-alloy-2019"
   }
 }
