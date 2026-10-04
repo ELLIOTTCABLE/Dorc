@@ -3783,6 +3783,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Z specs/shared.assay (2)
 
+## form-strawmen-are-quarry-never-seed
+- defined: —
+- cited: 30Z Research/LIVING_STATUS (2)
+
 ## spike/AGENTS:four-rung-gate-ladder
 - defined: spike/AGENTS.md:1049 — (r30) — a GATE is what you must pass before you may do
 - cited: 30Qd 30Qf 310 (3)

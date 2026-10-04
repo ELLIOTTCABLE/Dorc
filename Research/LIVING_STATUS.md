@@ -28,7 +28,16 @@
 
 ---
 
-## IN FLIGHT (2026-09-29)
+## IN FLIGHT (2026-10-04)
+
+The identity dependency-order run (Fable conductor, autonomous, the human away; opened
+2026-10-04): worktree `.tmp/trees/r31-identity-order-conductor`, branch
+`ai/r31-identity-order-conductor`, ledger `notes/313e` § 4 onward. Its remit is the order of
+human design sittings that would firm the identity, relation, and effects model, measured with
+scouts over the corpus and small Alloy probes. It edits nothing under `specs/` and rules nothing;
+every model it writes is quarry (`30Z:form-strawmen-are-quarry-never-seed`). Its report is not
+yet minted. Until that lands, `notes/313` and the mechanised specification's held holes are
+unreconciled alternatives, and neither is the path.
 
 The assay progress lane (`notes/30Yg`, Fable conductor, worktree
 `.tmp/trees/r30-alloy-praxis-conductor` kept) folded into `ai/main` the evening of 2026-09-29
