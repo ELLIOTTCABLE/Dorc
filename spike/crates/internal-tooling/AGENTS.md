@@ -9,4 +9,4 @@ assay lives here: its design is `Research/notes/30Y`, the praxis for writing aga
 - it reads alloy only as far as sig heads and binders; alloy itself does the rest
 - the lock holds results; a set of reds the committed lock already records (with no new ones) is a pass
 - a solving pass's JSON report goes to a file (`assay/report.rs`) and stdout carries only the summary that names it; the non-solving modes keep the JSON on stdout; whatever a pass says about itself is a `tracing` event under the subscriber `assay/progress.rs` installs on stderr, and `--quiet` is that subscriber's level filter and silences only that
-- `--write` locks committed text only (`assay/commit.rs`): the document and shared halves must match `HEAD`, and the header records that commit
+- `--write` locks committed text only (`assay/commit.rs`): the document, the shared halves, and every document it opens through any chain must match `HEAD`, and the header records that commit
