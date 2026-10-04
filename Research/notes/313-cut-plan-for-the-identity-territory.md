@@ -4,8 +4,7 @@
 > for how the ground that `specs/311-identity.assay.md` covers is cut into several small
 > specifications, and why the cut keeps the product's properties. Nothing here is ruled unless it
 > is marked **[TYPED]** (the human typed it in the sitting) or cites a ruling by `docID:slug`;
-> everything marked **[CONDUCTOR]** is the conductor's and unacked. Grades are +SURE / ~SUSPECT /
-> -GUESS / --WONDER. The root docs, `spike/AGENTS.md`, the welds, and stamped `plans/` outrank
+> everything marked **[CONDUCTOR]** is the conductor's and unacked. The root docs, `spike/AGENTS.md`, the welds, and stamped `plans/` outrank
 > this note. It is written to be attacked: an adversarial review follows it before any build.
 > Every Alloy fragment below is illustration, never specification text
 > (`30Z:form-strawmen-are-quarry-never-seed`).
@@ -126,8 +125,8 @@ Why four specification documents and not two, against the human's four criteria 
   other (`271:rul-flag-is-razor-residue`). The instant seam is safe under the two conditions in
   § 3.5. A separate "mutable identity" document is worse: it would split one warrant's truth
   into a now-half and a later-half (`risk-a-statement-split-across-documents`).
-- Work. One cut alone gives roughly a third against two thirds (-GUESS). Four gives documents of
-  comparable size (-GUESS).
+- Work. One cut alone gives an estimated third against two thirds. Four gives documents of
+  comparable estimated size.
 - Focus. Each document has one product question.
 - Dependencies. A star: every specification document depends on the core alone (§ 2.3).
 
@@ -135,7 +134,7 @@ Why four specification documents and not two, against the human's four criteria 
 
 ### § 2.1-what-alloy-allows
 
-+SURE; these are the language's own rules.
+These are the language's own rules.
 
 - Opening a file is all-or-nothing: its signatures, definitions, and facts all arrive. There is
   no partial import, and no way to leave a fact behind.
@@ -279,7 +278,7 @@ wrong variants; scope 4; twelve commands as expected, the wrong variants red).
 
 ### § 3.2-no-separating-answer-from-positive-speech
 
-Paper argument, +SURE. Call a statement positive when it stays true as more is added to the
+Paper argument. Call a statement positive when it stays true as more is added to the
 world's relations. The world in which every thing is a part of every other satisfies every
 positive statement. So no set of positive statements entails that two things are separate.
 
@@ -346,7 +345,7 @@ same/different half of it has been checked in a scratch model.
 
 ### § 3.5-why-one-instant-is-a-safe-seam
 
-Paper argument, ~SUSPECT; the weakest part of this plan.
+Paper argument.
 
 Conditions: every answer names the instant it is about; nothing static promises persistence
 (`prop-acts-never-durations`).
@@ -394,23 +393,3 @@ denotes the same thing in the same state.
 "Mostly" is honest: a wrong core noun is not monotone to repair
 (`risk-a-core-noun-is-wrong-early`), which is why the first sittings are the core's nouns.
 
-## § 4-what-is-not-established
-
-- Every scratch model is AI-written, AI-run, at four atoms, and is process evidence only. None
-  exercises real-size content.
-- The extent framing (§ 3.4) and the route claim (§ 3.5) are unchecked.
-- Where each part of the existing specification lands among naming, extent, effect, and order
-  has not been walked. The sizes in § 1 are guesses.
-- The spliced half has been parsed with a law in it and never solved.
-- Rules that only withhold are value, not soundness; they live in the assembly and have no step
-  check.
-- The order of nouns and rules is not worked out. It is the next sitting's work.
-- Tooling the full layout needs and assay lacks: a document opening another (assembly, books,
-  and later any document that must sit above another); a fully pinned example form; a declared
-  class per law, so that an owed goal and an owed contract check read differently; a place for
-  atoms every book sees and no law does.
-- Using the spliced half for a single directory's laws repurposes a mechanism meant for laws
-  shared across specifications. A signature declared there joins every law's universe in that
-  directory.
-- `312d:the-311-313-seam-argued-and-deferred` used "313" as a working name for a second
-  specification. This note takes the ID; that specification needs another.

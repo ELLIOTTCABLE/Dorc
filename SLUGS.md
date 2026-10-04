@@ -9396,10 +9396,6 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30M 30Mc (2)
 
-## the-311-313-seam-argued-and-deferred
-- defined: —
-- cited: 312d 313 (2)
-
 ## the-account-export-died-with-its-lane
 - defined: —
 - cited: 30Rk ROADMAP spike/AGENTS (3)
