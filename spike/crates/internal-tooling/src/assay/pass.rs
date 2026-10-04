@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -5,8 +6,8 @@ use super::drive::{self, Computed, Job, Target};
 use super::lock::{self, Row, Standing};
 use super::{
     Ask, CONTENTION, DOC_SUFFIX, Finding, Inputs, LAWS_HALF, LOCK_SUFFIX, Lint, Mode, RED, REFUSED,
-    RUNNER_FAILED, SHARED_HALF, Source, UNMEASURED, compile, display_path, emit, lints_json,
-    write_modules,
+    RUNNER_FAILED, SHARED_HALF, Source, UNMEASURED, compile, display_path, emit, is_shared_half,
+    lints_json, opened_documents, stem_atom, write_modules,
 };
 use super::{commit, report};
 use crate::alloy_jvm::Jvm;
@@ -84,16 +85,55 @@ impl Reporter<'_> {
     }
 }
 
+fn dir_of(spec: &Path) -> &Path {
+    spec.parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."))
+}
+
+type Opened = BTreeMap<String, (String, String)>;
+
+fn opened(spec: &Path, doc: &str, read: &dyn Fn(&Path) -> Option<String>) -> Opened {
+    let beside: Vec<String> = std::fs::read_dir(dir_of(spec))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|n| n.ends_with(DOC_SUFFIX) && !is_shared_half(n))
+        .collect();
+    let mut found = Opened::new();
+    let mut todo = opened_documents(doc);
+    while let Some(atom) = todo.pop() {
+        if found.contains_key(&atom) {
+            continue;
+        }
+        let mut named = beside.iter().filter(|n| stem_atom(n) == atom);
+        let (Some(name), None) = (named.next(), named.next()) else {
+            continue;
+        };
+        let Some(text) = read(&dir_of(spec).join(name)) else {
+            continue;
+        };
+        todo.extend(opened_documents(&text));
+        found.insert(atom, (name.clone(), text));
+    }
+    found
+}
+
+fn locked_inputs<'a>(doc_name: &'a str, opened: &'a Opened) -> Vec<&'a str> {
+    [doc_name, SHARED_HALF, LAWS_HALF]
+        .into_iter()
+        .chain(opened.values().map(|(name, _)| name.as_str()))
+        .collect()
+}
+
 /// The `HEAD` a solving pass answers for. `--write` refuses, before any solve, while the text it
 /// would lock differs from that commit, so a lock never records verdicts about text no commit has.
-fn measured_against(spec: &Path, doc_name: &str, ask: &Ask) -> Result<Option<String>, ()> {
-    let dir = spec
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
+fn measured_against(spec: &Path, inputs: &[&str], ask: &Ask) -> Result<Option<String>, ()> {
+    let dir = dir_of(spec);
     match ask.mode {
         Mode::Check => Ok(commit::head(dir)),
-        Mode::Write => match commit::dirty_inputs(dir, &[doc_name, SHARED_HALF, LAWS_HALF]) {
+        Mode::Write => match commit::dirty_inputs(dir, inputs) {
             Ok(dirty) if dirty.is_empty() => Ok(commit::head(dir)),
             Ok(dirty) => {
                 eprintln!(
@@ -154,7 +194,8 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
     let stem = doc_name
         .strip_suffix(DOC_SUFFIX)
         .map_or_else(|| lossy(spec.file_stem()), str::to_owned);
-    let Ok(commit) = measured_against(spec, &doc_name, ask) else {
+    let opened = opened(spec, &doc, &read);
+    let Ok(commit) = measured_against(spec, &locked_inputs(&doc_name, &opened), ask) else {
         return REFUSED;
     };
     let mut reporter = Reporter {
@@ -172,7 +213,12 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         internal_tooling::target_dir().join("alloy").join(dir)
     });
     let spec_path = display_path(spec);
+    let siblings: BTreeMap<String, Source<'_>> = opened
+        .iter()
+        .map(|(atom, (name, text))| (atom.clone(), Source { name, text }))
+        .collect();
     let inputs = Inputs {
+        siblings: &siblings,
         doc: Source {
             name: &doc_name,
             text: &doc,

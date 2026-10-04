@@ -74,6 +74,7 @@ mod tests {
                 text: SHARED,
             }),
             laws: None,
+            siblings: &BTreeMap::new(),
         };
         let compiled = compile(&inputs).expect("the test document compiles");
         let closure: Vec<(String, String)> = compiled

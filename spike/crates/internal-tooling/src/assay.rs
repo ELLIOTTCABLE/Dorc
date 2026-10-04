@@ -46,6 +46,8 @@ pub(crate) enum Lint {
     MapWordCount,
     MapLineFollowsCommand,
     LoadStemResolves,
+    OpenNamesASibling,
+    OpensAreAcyclic,
     FenceHeader,
     NoStrayComments,
     ThisOnAtomlessLine,
@@ -57,11 +59,13 @@ pub(crate) enum Lint {
 }
 
 impl Lint {
-    const ALL: [Self; 12] = [
+    const ALL: [Self; 14] = [
         Self::JoinKeyCoherence,
         Self::MapWordCount,
         Self::MapLineFollowsCommand,
         Self::LoadStemResolves,
+        Self::OpenNamesASibling,
+        Self::OpensAreAcyclic,
         Self::FenceHeader,
         Self::NoStrayComments,
         Self::ThisOnAtomlessLine,
@@ -78,6 +82,8 @@ impl Lint {
             Self::MapWordCount => "map-word-count",
             Self::MapLineFollowsCommand => "map-line-follows-command",
             Self::LoadStemResolves => "load-stem-resolves",
+            Self::OpenNamesASibling => "open-names-a-sibling",
+            Self::OpensAreAcyclic => "opens-are-acyclic",
             Self::FenceHeader => "fence-header",
             Self::NoStrayComments => "no-stray-comments",
             Self::ThisOnAtomlessLine => "this-on-atomless-line",
@@ -128,6 +134,7 @@ struct Inputs<'a> {
     doc: Source<'a>,
     shared: Option<Source<'a>>,
     laws: Option<Source<'a>>,
+    siblings: &'a BTreeMap<String, Source<'a>>,
 }
 
 #[derive(Debug)]
@@ -135,6 +142,8 @@ struct Compiled {
     modules: Vec<(String, emit::Rendered)>,
     report: Vec<(&'static str, Json)>,
     conjunctions: Vec<(String, Vec<String>)>,
+    /// What an opener places beside its own modules: this species, and every species it opens.
+    exposed: BTreeMap<String, emit::Rendered>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,6 +361,29 @@ fn documents(paths: &[PathBuf]) -> Vec<PathBuf> {
 
 fn is_shared_half(name: &str) -> bool {
     matches!(name, SHARED_HALF | LAWS_HALF)
+}
+
+const LIBRARY: &str = "util/";
+
+fn opened_documents(text: &str) -> Vec<String> {
+    md_fences(text)
+        .into_iter()
+        .filter(|f| f.alloy)
+        .flat_map(|f| alloy::items(&f.lines.join("\n"), f.first_line))
+        .filter_map(|item| item.opened())
+        .filter(|path| !path.starts_with(LIBRARY))
+        .collect()
+}
+
+fn stem_atom(doc_name: &str) -> String {
+    alloy::atom(doc_name.strip_suffix(DOC_SUFFIX).unwrap_or(doc_name))
+}
+
+fn is_generated_module(name: &str) -> bool {
+    matches!(
+        name,
+        "assay" | "shared" | "species" | "words" | "claims" | "laws"
+    ) || name.starts_with("book_")
 }
 
 const LOCK_SUFFIX: &str = ".lock.json";
@@ -605,11 +637,16 @@ struct Ctx<'a> {
 }
 
 /// Compile, or refuse with every lint finding at once.
+fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
+    compile_in(inputs, &[])
+}
+
+/// `above` is the munged stems of the documents that open this one, outermost first.
 #[expect(
     clippy::too_many_lines,
     reason = "one pass over the document, read top to bottom in the order `30Y` § 2 states it"
 )]
-fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
+fn compile_in(inputs: &Inputs<'_>, above: &[String]) -> Result<Compiled, Vec<Finding>> {
     let mut findings = Vec::new();
     let file = inputs.doc.name;
     let harness: Vec<(Item, &str)> = alloy::items(HARNESS, 1)
@@ -625,6 +662,54 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
         .filter_map(|f| sh::read(file, f.first_line, &f.lines, &mut findings))
         .collect();
 
+    let own = stem_atom(file);
+    let chain: Vec<String> = above.iter().chain([&own]).cloned().collect();
+    let mut opens = Vec::new();
+    let mut exposed: BTreeMap<String, emit::Rendered> = BTreeMap::new();
+    for (item, _) in &doc_items {
+        let Some(path) = item.opened() else { continue };
+        opens.push(block(file, item.line, &item.text));
+        if path.starts_with(LIBRARY) {
+            continue;
+        }
+        if chain.contains(&path) {
+            let cycle: Vec<&str> = chain.iter().chain([&path]).map(String::as_str).collect();
+            findings.push(
+                Finding::new(Lint::OpensAreAcyclic, file, item.line).with("cycle", cycle.join(" ")),
+            );
+            continue;
+        }
+        let Some(sibling) = inputs
+            .siblings
+            .get(&path)
+            .filter(|_| !is_generated_module(&path))
+        else {
+            findings
+                .push(Finding::new(Lint::OpenNamesASibling, file, item.line).with("open", &path));
+            continue;
+        };
+        let opened = Inputs {
+            doc: *sibling,
+            ..*inputs
+        };
+        match compile_in(&opened, &chain) {
+            Ok(compiled) => exposed.extend(compiled.exposed),
+            Err(theirs) => findings.extend(theirs),
+        }
+    }
+    if !findings.is_empty() {
+        findings.sort_by_key(|f| (f.lint, f.line));
+        return Err(findings);
+    }
+    let opened_items: Vec<(Item, &str)> = exposed
+        .iter()
+        .flat_map(|(name, r)| {
+            alloy::items(&r.text, 1)
+                .into_iter()
+                .map(move |i| (i, name.as_str()))
+        })
+        .collect();
+
     // Every declaration and sig head: the harness, both halves, the document, and book lines.
     let mut declared: BTreeSet<String> = BTreeSet::new();
     let mut heads: Vec<(Head, String, usize)> = Vec::new();
@@ -632,6 +717,7 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
         .iter()
         .chain(&shared)
         .chain(&appended)
+        .chain(&opened_items)
         .chain(&doc_items)
     {
         declared.extend(item.declared());
@@ -731,7 +817,7 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
     let mut species = Vec::new();
     let mut laws = Vec::new();
     let mut corpus: Vec<(usize, String, Option<String>)> = Vec::new();
-    for (item, _) in &doc_items {
+    for (item, _) in doc_items.iter().filter(|(i, _)| i.opened().is_none()) {
         let head = item.head();
         if is_claim(&head) {
             claim_items.push(item);
@@ -938,6 +1024,7 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
     let mut add = |name: &str, body: String| modules.push((name.to_owned(), body));
     add("assay.als", HARNESS.to_owned());
     add("shared.als", module("shared", &["assay"], &shared_blocks));
+    let species: Vec<String> = opens.into_iter().chain(species).collect();
     add(
         "species.als",
         module("species", &["assay", "shared"], &species),
@@ -1064,7 +1151,12 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
             conjunctions.push((format!("book_{}", book.name), conjoined));
         }
     }
-    let modules = finish(modules)?;
+    let mut modules = finish(modules)?;
+    modules.extend(exposed.clone());
+    exposed.extend(finish(vec![(
+        format!("{own}{MODULE_SUFFIX}"),
+        module(&own, &["assay", "shared"], &species),
+    )])?);
 
     let literal_of = |name: &str| match name {
         NULL_WORD => Json::str(":"),
@@ -1117,6 +1209,7 @@ fn compile(inputs: &Inputs<'_>) -> Result<Compiled, Vec<Finding>> {
         modules,
         report,
         conjunctions,
+        exposed,
     })
 }
 

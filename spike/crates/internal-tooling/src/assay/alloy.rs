@@ -489,6 +489,21 @@ impl Item {
         }
     }
 
+    pub(super) fn opened(&self) -> Option<String> {
+        let at = usize::from(self.word(0) == "private");
+        if self.word(at) != "open" {
+            return None;
+        }
+        let mut i = at.saturating_add(1);
+        let mut path = self.word(i).to_owned();
+        while self.word(i.saturating_add(1)) == "/" {
+            i = i.saturating_add(2);
+            path.push('/');
+            path.push_str(self.word(i));
+        }
+        Some(path)
+    }
+
     /// Every name this item declares: sig names and fields, fun/pred/assert names, enum members.
     pub(super) fn declared(&self) -> Vec<String> {
         let mut out = Vec::new();
