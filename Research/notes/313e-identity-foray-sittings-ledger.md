@@ -108,3 +108,8 @@ own worktree.
   a time. The branch is not folded, and `LIVING_STATUS.md` carries no entry for the lane.
 - Left out of the lane on purpose: the two leaks of § 2, a fully pinned example form, and a
   declared class per law.
+- Afterwards: the builder reported both gate legs green, each run alone, on its rebased tip. The
+  conductor confirmed the branch touches nothing under `specs/` and not the Java adapter, and
+  folded it into `ai/main` at `067ef686` by rebase and fast-forward. That last rebase crossed
+  one documentation-only commit made after the gate ran. The conductor did not read the
+  builder's code. The worktree is left in place with the builder's logs.
