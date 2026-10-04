@@ -792,6 +792,27 @@ mod tests {
     }
 
     #[test]
+    fn a_write_locks_every_document_the_spec_opens_through_any_other() {
+        let spec = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests")
+            .join("assay_fixture")
+            .join("sprockets.assay.md");
+        let read = |p: &std::path::Path| std::fs::read_to_string(p).ok();
+        let doc = read(&spec).expect("the fixture reads");
+        let opened = super::opened(&spec, &doc, &read);
+        assert_eq!(
+            super::locked_inputs("sprockets.assay.md", &opened),
+            [
+                "sprockets.assay.md",
+                "shared.assay.md",
+                "shared-laws.assay.md",
+                "gadgets.assay.md",
+                "widgets.assay.md"
+            ]
+        );
+    }
+
+    #[test]
     fn a_premise_is_the_twin_else_the_books_run_else_absent() {
         let rows = vec![
             computed("laws", "k", "check", Outcome::NoCounterexample),

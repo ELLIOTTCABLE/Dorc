@@ -107,6 +107,67 @@ mod tests {
     const DOC: &str = "```alloy\nsig Gadget extends Blurb {}\npred loud[g: Gadget] { some g.speaker }\ncheck lawA { all g: Gadget | loud[g] } for 3\nrun lawA_premise { some Gadget } for 3\ncheck lawB { no Gadget } for 3\n```\n\n```sh\n# b.sh\n   frob x\n#} frob x\n#= this in Line\n   spin y\n#} spin y\n#= this in Line\n   twirl z\n#} twirl z\n#= this.cmd in Shword\n```\n";
 
     #[test]
+    fn an_opened_species_edit_moves_every_opener_key_and_an_opened_law_edit_moves_none() {
+        let opener = "```alloy\nopen sib\ncheck lawO { all g: Gadget | loud[g] } for 3\ncheck corpusO { no Gadget & Line.speech }\n```\n";
+        let keys = |sibling: &str| -> BTreeMap<(String, String), String> {
+            let siblings = BTreeMap::from([(
+                "sib".to_owned(),
+                Source {
+                    name: "sib.assay.md",
+                    text: sibling,
+                },
+            )]);
+            let inputs = Inputs {
+                doc: Source {
+                    name: "o.assay.md",
+                    text: opener,
+                },
+                shared: Some(Source {
+                    name: "shared.assay.md",
+                    text: SHARED,
+                }),
+                laws: None,
+                siblings: &siblings,
+            };
+            let compiled = compile(&inputs).expect("the opener compiles");
+            let closure: Vec<(String, String)> = compiled
+                .modules
+                .iter()
+                .map(|(n, r)| (n.clone(), r.text.clone()))
+                .collect();
+            let fixed = Fixed {
+                jar: "jar".to_owned(),
+                adapter: "adapter".to_owned(),
+                options: "{}".to_owned(),
+            };
+            let mut out = BTreeMap::new();
+            for (name, rendered) in &compiled.modules {
+                for item in super::alloy::items(&rendered.text, 1) {
+                    if let super::Head::Command {
+                        name: Some(label), ..
+                    } = item.head()
+                    {
+                        let text =
+                            command_text(&rendered.text, &label, 0).expect("the command is there");
+                        out.insert((name.clone(), label), key(&closure, &text, "scope", &fixed));
+                    }
+                }
+            }
+            out
+        };
+        let sibling = "```alloy\nsig Gadget extends Blurb {}\npred loud[g: Gadget] { some g.speaker }\ncheck lawS { some Gadget } for 3\n```\n";
+        let before = keys(sibling);
+        assert_eq!(before.len(), 3, "{before:?}");
+        let species = keys(&sibling.replace("some g.speaker", "one g.speaker"));
+        assert!(
+            before.iter().all(|(k, v)| species.get(k) != Some(v)),
+            "{before:?}\n{species:?}"
+        );
+        let law = keys(&sibling.replace("check lawS { some Gadget }", "check lawS { no Gadget }"));
+        assert_eq!(before, law);
+    }
+
+    #[test]
     fn comments_and_whitespace_in_a_fence_move_no_key() {
         let reworded = DOC
             .replace(
