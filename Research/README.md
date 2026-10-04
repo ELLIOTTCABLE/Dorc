@@ -340,7 +340,10 @@ the license-contamination map. Cross-references are `docID:slug`.
   **`notes/313`** is a PROPOSAL, unacked and written to be attacked: the plan to cut the
   territory that specification covers into small specifications by product question (core,
   naming, extent, effect, order), the Alloy and assay mechanics of doing so, and the arguments
-  that the cut keeps the product's properties.
+  that the cut keeps the product's properties. Its review: **`notes/313a`** (the adjudication:
+  what stood, and what the plan owes before any build) over three clean-context reports kept as
+  delivered, `notes/313b` (Astra, neutral), `notes/313c` (Astra, adversarial), and `notes/313d`
+  (Fable, adversarial).
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
