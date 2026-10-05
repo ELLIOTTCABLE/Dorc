@@ -2165,7 +2165,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Ne (1)
 
 ## spike/AGENTS:emitted-is-measure-once-ground-truth
-- defined: spike/AGENTS.md:1351 — (r30, closing a gap that bit three lanes) — an
+- defined: spike/AGENTS.md:1354 — (r30, closing a gap that bit three lanes) — an
 - cited: 30P 30Xa cli/AGENTS (3)
 
 ## cli/AGENTS:empty-ran-has-two-stable-spellings
@@ -2899,7 +2899,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Q (1)
 
 ## spike/AGENTS:floor-differential-lane-opt-in
-- defined: spike/AGENTS.md:1330 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
+- defined: spike/AGENTS.md:1333 — (`28K` §10 bitem8; `mise run test:floor`) — the SECOND opt-in
 - cited: TODO-ADDTL (1)
 
 ## analysis/AGENTS:floors-are-whole-window-and-demote-only
@@ -3677,7 +3677,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## foreground-final-verification
 - defined: Research/notes/27U-user-aid-build-phase.md:192 — — a builder's last verification runs
-- defined: spike/AGENTS.md:1462 — (`27U` §2) — a builder's FINAL verification
+- defined: spike/AGENTS.md:1465 — (`27U` §2) — a builder's FINAL verification
 - cited: 280 28Vb 30Q (3)
 
 ## FORFEITS:forfeit-ambient-dependency-vouch-composition
@@ -4780,7 +4780,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30P-emission-planner-and-inclusion.md:730
 
 ## spike/AGENTS:lexical-fences-are-human-ack-instruments
-- defined: spike/AGENTS.md:1368 — (human-typed 2026-08-31; scope
+- defined: spike/AGENTS.md:1371 — (human-typed 2026-08-31; scope
 - cited: 30Va 30Vd 30X 30Xa (5)
 
 ## cli/AGENTS:lib-target-is-a-loom-seam
@@ -4901,7 +4901,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## map-then-execute-split
 - defined: Research/notes/27U-user-aid-build-phase.md:184 — — a big-bang dispatch splits map-and-rule (proposal,
-- defined: spike/AGENTS.md:1458 — (`27U` §4) — big-bang dispatches split map-and-rule
+- defined: spike/AGENTS.md:1461 — (`27U` §4) — big-bang dispatches split map-and-rule
 - cited: 283 28B 28Va 28Vb 30Xa (6)
 
 ## oracle/AGENTS:marker-and-names
@@ -5277,7 +5277,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/crates/analysis/AGENTS.md:191 — (`30I:rul-one-load-account-separate-projections`)
 
 ## spike/AGENTS:one-platform-green-is-not-cross-platform-green
-- defined: spike/AGENTS.md:1284 — (two live bugs, 2026-07-24) —
+- defined: spike/AGENTS.md:1287 — (two live bugs, 2026-07-24) —
 - cited: 289 300 300a (3)
 
 ## cli/AGENTS:one-runner-one-walk
@@ -5564,7 +5564,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:251
 
 ## spike/AGENTS:platform-tests-live-in-named-regions
-- defined: spike/AGENTS.md:1297 — (`30Xc:dec-platform-tests-in-named-regions`) — a
+- defined: spike/AGENTS.md:1300 — (`30Xc:dec-platform-tests-in-named-regions`) — a
 - cited: 30Xc (2)
 
 ## analysis/AGENTS:polarity-becomes-transitions
@@ -5912,7 +5912,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: Research/notes/311b-index-identity-scope-and-committee-speech-ledger.md:105
 
 ## spike/AGENTS:real-tools-lane-opt-in
-- defined: spike/AGENTS.md:1314 — (human-authorized 2026-07-18) — the ONE sanctioned
+- defined: spike/AGENTS.md:1317 — (human-authorized 2026-07-18) — the ONE sanctioned
 - cited: 27R 27T 28P (3)
 
 ## reason-dedup-is-not-execution-dedup
@@ -10082,7 +10082,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## worktree-file-access-law
 - defined: Research/notes/27U-user-aid-build-phase.md:181 — — worktree agents: every Read/Grep/Edit/cite
-- defined: spike/AGENTS.md:1446 — (`27U` §2 — two incidents, one root cause) — a
+- defined: spike/AGENTS.md:1449 — (`27U` §2 — two incidents, one root cause) — a
 - cited: 300 300b 307 30C 30Va (7)
 
 ## 283:world-as-payload
@@ -10119,7 +10119,7 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 30Q (1)
 
 ## spike/AGENTS:wsl-needs-a-modern-git
-- defined: spike/AGENTS.md:1303 — — the repo enables the `relativeWorktrees` extension
+- defined: spike/AGENTS.md:1306 — — the repo enables the `relativeWorktrees` extension
 - cited: 289 (1)
 
 ## spike/AGENTS:wsl-trust-per-worktree
@@ -10131,5 +10131,5 @@ row's `near:` line refreshes only when that row's other lines change.
 - cited: 300 (1)
 
 ## spike/AGENTS:xfail-pins-ride-one-seat
-- defined: spike/AGENTS.md:1391 — (`30A` d3; r30) — target behavior the engine does not
+- defined: spike/AGENTS.md:1394 — (`30A` d3; r30) — target behavior the engine does not
 - cited: 30Na 30Qf 30Xa (4)

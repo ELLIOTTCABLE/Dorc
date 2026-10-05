@@ -1267,7 +1267,10 @@ no task covers, and consider adding the task instead.
   Nested worktrees are pruned from their container's total (the fleet lives INSIDE the
   primary checkout, so a naive walk doubles every lane).
 - **unused-report-never-reaps** — `mise run doctor:unused` is the SOFT hygiene gate: every
-  worktree (clean/dirty, tip landed in `ai/main` or not), every local branch (merged, and
+  worktree (clean/dirty, tip landed in `ai/main` or not), every STRAY directory under
+  `.claude/worktrees`/`.tmp/trees` that git no longer registers (`empty`, `landed`, or `UNIQUE`
+  — compared by content against every branch and tag, `spike/target` and a `.git` pointer
+  excepted), every local branch (merged, and
   whether anything has it checked out), and every `dorc-*` lane cache (whether the worktree its
   name is keyed to still exists — `live`/`ORPHAN`/`shared`, and `unkeyed` where no key can be
   derived, never guessed). Sub-second, and COMPARABLE by construction: sorted, no sizes, no
