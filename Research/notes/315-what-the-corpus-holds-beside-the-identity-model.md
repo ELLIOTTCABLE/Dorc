@@ -144,6 +144,9 @@ a line that ran touched what the removed line's fact depended on.
 - conductor · `312d:1166-1171`: the world stratum was “invented by the conductor in the raw pass
   so the laws would have one”. The human's corrections to that explanation are `312d` § 17.3,
   typed; the turn closes “otherwise ack” (`312d:1261`).
+- No document found relates the three accounts of what is so apart from what is said: the
+  built chronology net (§ 1.4, § 7), `30Ya`'s two strata, and the mechaniser's world relations.
+  The two-ended table (§ 3) is a fourth, never re-cut into the model.
 - Registered: no.
 
 ### § 1.6 measurement as a foundation of its own
