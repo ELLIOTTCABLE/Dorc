@@ -106,4 +106,33 @@ responses follow each.
 - **[TYPED]** directive, applied: § 1.4 of the specification states in its normative translation
   that, by definition, an mKey reaches at most one mReferent, with a commentary pointer to
   `311t:fnd-a-referent-is-an-aggregate-and-a-may-set`; the model is unchanged (commit "(AI dsn)
-  State that a key reaching one referent is definitional").
+  State that a key reaching one referent is definitional"). The assay check of that commit at
+  the gate tier: lock matches, exit 0.
+
+### § 1.4-the-fourth-round-as-put
+
+- **[CONDUCTOR]** the reading put for ack: (1) the clock counts runs of mSites, not mSites, and
+  ticks at every simple command, builtins included; the shared half's "no line is above itself"
+  fits only loop-free books, and `World.lineWrites` is indexed per line. (2) Deferred effects are
+  in, as concurrency the book started (happens-before; a background job and its `wait` are the
+  same shape); they land at any later run until the book observes them or ends, and one still in
+  flight when the book ends is horizon for the next run. ~SUSPECT landing time matters to live
+  checks inside the window and to names the effect re-points, not to the elision tier's walls.
+  (3) `sleep` orders nothing, so wallclock is fully outside the model; this departs from `312b`
+  § 3's banked "the admin's `until` and `sleep` closes it". Owed: a noun for one run of an mSite.
+- **[TYPED]** loops and the other control-flow constructs must be handled by the specification;
+  they cannot be punted.
+- **[TYPED]** "extern" was a conversational gloss and is retracted. Meant: every command, shell
+  builtins included, except one ruled (as ground truth) to have no side effects and so no step
+  in logical time. Whether a command is implemented inside or outside the shell does not decide.
+- **[TYPED]** gentle ack, not deeply investigated: the interesting cases are nearly always two
+  worst cases for different consumers: an effect lands very late (last in logical time) or very
+  early (first, immediately after dispatch).
+- **[TYPED]** on `sleep`, not ruled: the strict reading is the near-certain ruling.
+- **[TYPED]** concurrency was punted several times on purpose and is a round's worth of work; this
+  sitting firms and reduces owed work and must not open it. Asked: can the local task go forward
+  without locking in any concurrency decision at product or language-design tier? If not,
+  concurrency is ruled out of this version of the specification entirely, at the cost of a new
+  specification later. A question of Alloy capability, specification language, and ordering, not
+  of product behaviour. The punt boundary may move to give a clean, stable specification;
+  pushback is allowed if specifying 311 fully with concurrency is easier than expected.
