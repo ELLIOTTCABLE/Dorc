@@ -488,7 +488,7 @@ dir = "spike"
 run = "cargo run -q --profile tooling -p internal-tooling -- doctor"
 
 [tasks."doctor:unused"]
-description = "READ-ONLY inventory of what is sitting around UNUSED: every worktree with its clean/dirty and landed state, every local branch with its merged state and whether anything has it checked out, and every lane cache with whether its worktree still exists. Deletes nothing, ever. Sorted, sizeless and timestampless ON PURPOSE — run it at the start and the end of a session and the difference IS that session's residue. Sub-second; `mise run doctor` is the separate, slower question of what is eating the disk. Each leg sees only its own filesystem, so `mise run both doctor:unused` is what puts the WSL caches beside the Windows worktrees."
+description = "READ-ONLY inventory of what is sitting around UNUSED: every worktree with its clean/dirty and landed state, every unregistered directory left under `.claude/worktrees` or `.tmp/trees` with whether its files (build cache aside) hold content no branch has, every local branch with its merged state and whether anything has it checked out, and every lane cache with whether its worktree still exists. Deletes nothing, ever. Sorted, sizeless and timestampless ON PURPOSE — run it at the start and the end of a session and the difference IS that session's residue. Sub-second; `mise run doctor` is the separate, slower question of what is eating the disk. Each leg sees only its own filesystem, so `mise run both doctor:unused` is what puts the WSL caches beside the Windows worktrees."
 raw = true
 dir = "spike"
 run = "cargo run -q --profile tooling -p internal-tooling -- doctor unused"

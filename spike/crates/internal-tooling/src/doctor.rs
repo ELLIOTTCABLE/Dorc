@@ -26,6 +26,15 @@ use crate::preflight::gib;
 /// and its absence is reported rather than guessed around.
 const LINEAGE: &str = "ai/main";
 
+/// Where worktrees are made, under the primary checkout: the harness's agent fleet and the
+/// conductors' own trees. A removal that fails partway (a locked file, on Windows) leaves its
+/// directory here with no registration, invisible to `git worktree list`.
+const FLEET_ROOTS: [&str; 2] = [".claude/worktrees", ".tmp/trees"];
+
+/// What a stray directory may lose for free: the build cache rebuilds, and a leftover `.git`
+/// pointer names a registration that is already gone.
+const DISPOSABLE: [&str; 2] = ["spike/target", ".git"];
+
 /// The size inventory by default; the comparable hygiene report under `unused`.
 pub(crate) fn run(args: &[String]) -> ExitCode {
     match args.first().map(String::as_str) {
@@ -110,8 +119,8 @@ fn sizes() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// The comparable report: what is registered, what has already landed, and what is keyed to a
-/// worktree that no longer exists.
+/// The comparable report: what is registered, what has already landed, what is keyed to a
+/// worktree that no longer exists, and what a removed worktree left behind.
 ///
 /// Every column is a fact with a git or filesystem answer behind it. Nothing here recommends a
 /// reap — the join a reader makes (landed AND no worktree, or a cache whose key names nothing) is
@@ -141,6 +150,44 @@ fn unused() -> ExitCode {
                 );
             }
         }
+    }
+
+    match (&trees, primary_checkout()) {
+        (Ok(list), Some(primary)) => {
+            let registered: Vec<PathBuf> = list.iter().map(|t| t.path.clone()).collect();
+            let strays: Vec<(PathBuf, Option<Vec<PathBuf>>)> = stray_dirs(&primary, &registered)
+                .into_iter()
+                .map(|dir| {
+                    let files = kept_files(&dir);
+                    (dir, files)
+                })
+                .collect();
+            // The slowest query in this report, so asked only when some stray holds a file.
+            let objects = if strays
+                .iter()
+                .any(|(_, files)| files.as_ref().is_some_and(|f| !f.is_empty()))
+            {
+                git_in(&primary, &["rev-list", "--objects", "--branches", "--tags"])
+            } else {
+                Ok(String::new())
+            };
+            let landed: Option<BTreeSet<&str>> = objects.as_ref().ok().map(|out| {
+                out.lines()
+                    .map(|line| line.split_once(' ').map_or(line, |(id, _)| id))
+                    .collect()
+            });
+            println!("== stray directories ({}) ==", strays.len());
+            for (dir, files) in &strays {
+                println!(
+                    "  {:<8} {}",
+                    stray_state(&primary, files.as_deref(), landed.as_ref()),
+                    short(dir)
+                );
+            }
+        }
+        _ => println!(
+            "== stray directories ==\n  (unavailable: no worktree list or primary checkout)"
+        ),
     }
 
     match local_branches() {
@@ -255,6 +302,94 @@ fn tree_state(path: &Path) -> String {
             }
         },
     )
+}
+
+/// The primary checkout, where the fleets live. Not [`dorc_testbed::repo_root`], which is
+/// whichever tree this binary was built in — a lane's own, when run from one.
+fn primary_checkout() -> Option<PathBuf> {
+    let common = git(&["rev-parse", "--path-format=absolute", "--git-common-dir"]).ok()?;
+    Path::new(common.trim()).parent().map(Path::to_path_buf)
+}
+
+/// Every directory under a [`FLEET_ROOTS`] entry that git has no worktree registered at, sorted.
+fn stray_dirs(primary: &Path, registered: &[PathBuf]) -> Vec<PathBuf> {
+    let mut found: Vec<PathBuf> = FLEET_ROOTS
+        .iter()
+        .filter_map(|root| std::fs::read_dir(primary.join(root)).ok())
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir() && !registered.contains(path))
+        .collect();
+    found.sort();
+    found
+}
+
+/// Every file under `dir` but the [`DISPOSABLE`] paths, or `None` when any part could not be
+/// read: an unread corner would otherwise report `empty`, the one wrong answer that invites a
+/// delete.
+fn kept_files(dir: &Path) -> Option<Vec<PathBuf>> {
+    let skip: Vec<PathBuf> = DISPOSABLE.iter().map(|path| dir.join(path)).collect();
+    let mut files = Vec::new();
+    let mut stack = vec![dir.to_path_buf()];
+    while let Some(path) = stack.pop() {
+        if skip.contains(&path) {
+            continue;
+        }
+        if std::fs::symlink_metadata(&path).ok()?.is_dir() {
+            for entry in std::fs::read_dir(&path).ok()? {
+                stack.push(entry.ok()?.path());
+            }
+        } else {
+            files.push(path);
+        }
+    }
+    files.sort();
+    Some(files)
+}
+
+/// `empty` (nothing but [`DISPOSABLE`] paths), `landed` (every file's exact content is reachable
+/// from a branch or tag), `UNIQUE` (some file's content is on no branch or tag — a delete loses
+/// it), or `unknown`. Content, not path: a stray is usually an older checkout of files that have
+/// since moved on, so its paths answer nothing.
+fn stray_state(
+    primary: &Path,
+    files: Option<&[PathBuf]>,
+    landed: Option<&BTreeSet<&str>>,
+) -> &'static str {
+    let Some(files) = files else {
+        return "unknown";
+    };
+    if files.is_empty() {
+        return "empty";
+    }
+    let (Some(landed), Ok(ids)) = (landed, blob_ids(primary, files)) else {
+        return "unknown";
+    };
+    if ids.len() != files.len() {
+        "unknown"
+    } else if ids.iter().all(|id| landed.contains(id.as_str())) {
+        "landed"
+    } else {
+        "UNIQUE"
+    }
+}
+
+/// The blob id each file would have if committed: `hash-object` without `-w`, so a query like
+/// every other git call here. Asked of the primary checkout so its line-ending attributes apply,
+/// and chunked to stay under Windows' command-line limit.
+fn blob_ids(primary: &Path, files: &[PathBuf]) -> Result<Vec<String>, String> {
+    let mut ids = Vec::with_capacity(files.len());
+    for chunk in files.chunks(100) {
+        let paths: Vec<String> = chunk
+            .iter()
+            .map(|file| file.to_string_lossy().into_owned())
+            .collect();
+        let mut args = vec!["hash-object", "--"];
+        args.extend(paths.iter().map(String::as_str));
+        ids.extend(git_in(primary, &args)?.lines().map(str::to_owned));
+    }
+    Ok(ids)
 }
 
 /// Every local branch, sorted by name.
@@ -504,7 +639,7 @@ fn short(path: &Path) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        cache_state, children_with_sizes, parse_worktree_list, short, tree_size,
+        cache_state, children_with_sizes, kept_files, parse_worktree_list, short, tree_size,
         tree_size_excluding,
     };
     use std::collections::BTreeSet;
@@ -587,6 +722,26 @@ locked
                 "{banned} would make this report destructive; it reports and nothing else"
             );
         }
+    }
+
+    #[test]
+    fn a_stray_looks_away_from_its_build_cache_and_git_pointer_only() {
+        // The skip list is the one place the stray check looks away, so it must not match by
+        // name alone: a skipped file would let a directory holding unique work read `empty`.
+        let root =
+            std::env::temp_dir().join(format!("dorc-doctor-stray-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("spike/target/debug")).expect("scratch dir");
+        std::fs::create_dir_all(root.join("notes/target")).expect("scratch dir");
+        std::fs::write(root.join("spike/target/debug/dorc"), "built").expect("scratch file");
+        std::fs::write(root.join(".git"), "gitdir: gone").expect("scratch file");
+        let cache_only = kept_files(&root);
+        std::fs::write(root.join("notes/target/plan.md"), "work").expect("scratch file");
+        let with_work = kept_files(&root);
+        let _ = std::fs::remove_dir_all(&root);
+
+        assert_eq!(cache_only, Some(Vec::new()));
+        assert_eq!(with_work, Some(vec![root.join("notes/target/plan.md")]));
     }
 
     #[test]
