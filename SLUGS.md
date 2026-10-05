@@ -5376,6 +5376,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: spike/AGENTS.md:91 — — judgments, not facts: the system has coherence checks,
 - cited: 26C 271 275 27D (4)
 
+## ord-name-a-relation-before-any-choice-that-reads-it
+- defined: —
+- cited: 314 314a (2)
+
 ## order-is-carried-not-respelled
 - defined: —
 - cited: 30Rk (1)
