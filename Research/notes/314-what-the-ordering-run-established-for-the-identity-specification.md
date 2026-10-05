@@ -103,6 +103,14 @@ Each is a precedence between kinds of work. None is a schedule.
   with the specification's truth for the finished record; `30U`'s own wider sentence was not
   measured. Known-unspoken unless a key chain separates them passes, in fewer contexts as the
   sense narrows.
+- `ord-what-disjoint-means-is-put-with-the-thing-beneath` (~SUSPECT; the walk at depth two, rows
+  equal at four to six atoms) — who says that nothing sits beneath two separated things is put
+  with what a right DISJOINT means (`315` § 3 item 1 is the closure that would say it). If it
+  means two different things, the shape can stay open with the law asked outside it, take that
+  closure, or be a stated horizon; if neither thing inside the other, the closure or the
+  horizon; if no shared part, the horizon only. The horizon sentence tested (no thing has two
+  holders; a key with no parent key reaches a thing nothing holds) is the first lane's, and no
+  source states it. A deeper walk could move the closure's row.
 - `ord-names-that-move-wait-on-instants` (+SURE) — nothing about a contained write and its
   store's naming can be checked until a key's reach can vary. Once it can, one result needs no
   sitting: checking only the fact's key fails in every profile where names move (an earlier
