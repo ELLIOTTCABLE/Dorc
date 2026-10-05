@@ -177,3 +177,15 @@ responses follow each.
   the gloss up front and banning it from the specification.
 - **[TYPED]** NACK event (too overloaded); strong suspected nack of step. The name should have as
   much reach as "site" and will appear in other documents with a precise meaning.
+- **[CONDUCTOR]** answer put, +SURE of the substance: no. POSIX (XCU 2.9.1) lets a simple command
+  name no command; its assignments then change the current shell, its redirections are still
+  performed, and the standard still calls it executed. Cases with effects and no callee: a
+  `PATH` assignment (a routing change), a lone redirection that truncates a file, a command
+  substitution inside an assignment, a function definition that re-routes a name, a redirection
+  on a compound command. Call and invocation assume a callee, so both are out. Revised menu:
+  execution (the pick: POSIX's word, under the rule that it always means one execution of an
+  mSite, the whole book's run taking another word later), dynamic instance, site execution,
+  occurrence; also rejected: evaluation, transition, action.
+- **[TYPED]** DURABLE ACK `mExecution`; minted. Applied: § 1.11.2 of the specification defines it
+  in a normative block, and § 1.10's translation and § 1.10.1's normative block no longer use the
+  bare word (commit "(AI dsn new) Mint mExecution and drop the bare word elsewhere").
