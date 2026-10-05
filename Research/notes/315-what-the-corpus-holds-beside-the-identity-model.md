@@ -283,7 +283,7 @@ chains and other parties' reactions included.
   declared finished”. `311t:1676-1678` (typed characterisation): “every sort walls everything
   around it until it is mapped into the filesystem, spiritually, allowing for the few roots”.
   `spike/AGENTS.md` compare-consumer-map states the `30U` form as law while the code has three
-  answers. Registered: `30U` and the ANALYZER-NEEDS rows, yes; the code, no.
+  answers. `notes/314` § 2 records what a model showed of the three. Registered: `30U` and the ANALYZER-NEEDS rows, yes; the code, no.
 - § 1.18 `sibling cells` — `271:222-234` (typed, “as ruled for now … spike-provisional”): a
   selector dialect separates two selectors of one entity. Against `pre:343`: “Two cells of one
   mParent are two mSorts.” Registered: yes.
