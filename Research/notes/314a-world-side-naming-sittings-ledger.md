@@ -86,3 +86,24 @@ responses follow each.
   documentation: Dorc and the oracles a user installs share one horizon toward that user. It
   tells oracle engineers where not to spend effort and, more importantly, where they must (many
   extremely hard things in ops are not horizoned, and a battle-class oracle handles them all).
+
+### § 1.3-the-third-round-as-put
+
+- `time-is-book-line-time` **[CONDUCTOR]** — if time enters the model, its only clock is the
+  book's order, and host state is a function of position in the book (the smallest slice of
+  `312f` § 13.2).
+- **[TYPED]** DURABLE ACK of `time-is-book-line-time` for this specification, corrected: time is
+  logical time over externs, not over book lines, and it fully encodes sh control flow (loops,
+  function calls, loads). The human's recollection is that this is what the corpus calls a site.
+  A word that normative text cannot carry without a new term goes to the owed-terms list; nothing
+  is minted. It may prove under-resolved; it is where to start.
+- **[TYPED]** wallclock may not be wholly outside the model: wait loops, `sleep`, and shell
+  concurrency (`&`), a first-class need for any meta-orchestration (create a machine through a
+  provider's API, then loop in sh until it is up). The ruling restated as a narrowing of the
+  TOCTOU weld: the model checks no externally initiated sub-step between one Dorc-visible action
+  or claim and the next.
+- **[TYPED]** the horizon discussion is tabled while time takes a turn of its own.
+- **[TYPED]** directive, applied: § 1.4 of the specification states in its normative translation
+  that, by definition, an mKey reaches at most one mReferent, with a commentary pointer to
+  `311t:fnd-a-referent-is-an-aggregate-and-a-may-set`; the model is unchanged (commit "(AI dsn)
+  State that a key reaching one referent is definitional").

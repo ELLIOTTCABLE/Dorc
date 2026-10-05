@@ -2919,7 +2919,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## fnd-a-referent-is-an-aggregate-and-a-may-set
 - defined: —
-- cited: 311 311t (2)
+- cited: 311 311t 314a (3)
 
 ## 28P:fnd-a-shipped-body-was-never-self-contained
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:362
