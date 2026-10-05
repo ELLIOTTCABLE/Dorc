@@ -789,13 +789,13 @@ pred shellResolvesInTheAmbientInstance {
 > A mVantage is the mEntryChain: a finite map from mParent-Catalog mSorts to the instances in effect, each an mKey of that mSort, with its mRoute.
 > A mVantage is not part of any mKey's identity.
 > Every mKey is resolved from one mVantage, and an mKey a lookup emits is resolved from the vantage of the mKey it was emitted for.
-> A mVantage says where a `resolve()` executes.
+> A mVantage says where a `resolve()` runs.
 > A mVantage supplies the ambient mParent for every mKey of a secondary mScheme looked up in a lent mParent-Catalog mSort.
 > For a shape with no `:identified-in`, a mVantage is the mRoute, the last-resort mParent (1.6-parent-one-per-key).
 > A vantage entered through a wrapper is entered from the caller's vantage.
 > No vantage is entered from itself, directly or through other vantages.
 > The observers a fact was measured under are the instances its mEntryChain holds (2.8-observer-dependence-and-independence).
-> For execution under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves.
+> When the shell runs under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves.
 > Differential test discharges that axiom, and nobody speaks it.
 > The axiom concerns every mKey of a secondary mScheme that the engine scoped in an ambient instance under no wrapper.
 > The axiom holds when every such mKey reaches what a route through that instance's mReferent passes to.
@@ -805,7 +805,7 @@ pred shellResolvesInTheAmbientInstance {
 <!-- normative -->
 > The mRoute is an address.
 > The mRoute holds no mState and declares no may-read set.
-> For execution under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom.
+> When the shell runs under no wrapper, the mRoute and the ambient mParent instances within one unwalled span rest on the engine's axiom.
 > Each of the mRoute and those instances is resolved once per mEntryChain and shared: one mPlaceholder.
 > The mValue is a literal, or a mPlaceholder for a captured mValue.
 > The mParent is an instance one of the seats of 1.6-parent-one-per-key supplies, or a mPlaceholder.
@@ -856,6 +856,21 @@ sig VerdictFact extends Spoken {
 <!-- normative -->
 > Speech at or about a mSite has one author per claim.
 > Every warrant is typed speech, never an exit status.
+
+#### § 1.11.2-executions-of-a-site
+
+A compiler's program point against its dynamic instances: an mSite is a place in the book's text,
+and an mExecution is one time the shell executes it. The word is POSIX's, for which a simple
+command is executed even when it names no command (XCU 2.9.1, Simple Commands). A word built on
+"call" or "invocation" assumes a callee, which an assignment or a lone redirection lacks.
+
+<!-- normative -->
+> An mExecution is one time that the shell executes an mSite.
+> One mSite can have more than one mExecution.
+> In a loop, an mSite can have one mExecution in each iteration.
+> In a function, an mSite can have one mExecution each time the function runs.
+> In a loaded file, an mSite can have one mExecution each time the shell loads the file.
+> When the book runs again, its mSites have new mExecutions.
 
 ## § 2-the-model-relations
 
