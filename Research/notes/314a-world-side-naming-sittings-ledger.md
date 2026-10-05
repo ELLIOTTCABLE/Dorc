@@ -275,3 +275,11 @@ responses follow each.
 - **[TYPED]** the usage sites are many: apply with great care; the adversarial reviewer may be
   woken afterwards. Offered, the choice left to the conductor: ledger without applying, and take
   the reviewer's earlier findings first, so that new edits do not rest on shaky ground.
+- **[CONDUCTOR]** chosen order: the reviewer's findings, then the review of existing `:` uses,
+  then the rename. Asked to confirm the base arity explicitly.
+- **[TYPED]** ACK: an mKey reaches one mReferent; only one thing can be mReferred to at once; it
+  is singular. Where reassignment or set-valuedness enters, new precise wording is appropriate,
+  whether a new mTerm or careful phrasing (undecided).
+- **[TYPED]** unconcerned with the lock: the fixes are mostly naming and normative text; Alloy
+  confirms in CI in the background while the sitting's time goes to explanation, thinking, and
+  ledgering.
