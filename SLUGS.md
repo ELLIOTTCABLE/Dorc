@@ -130,7 +130,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-cross-world-wall-is-the-floor
 - defined: —
-- cited: 04 26Ob 311a 311c 312a 312b (11)
+- cited: 04 26Ob 311a 311c 312a 312b 315 (12)
 
 ## ack-entered-kind-is-declared-never-host
 - defined: —
@@ -160,7 +160,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## ack-rich-internals-keyed-by-the-matrix
 - defined: —
-- cited: 26Ob 312a (2)
+- cited: 26Ob 312a 315 (3)
 
 ## 28M:ack-shared-bytes-transitive-permission
 - defined: Research/plans/28M-committee-speech-and-the-custody-price.md:557 — [ACKED, "if we opt not to lift, this
@@ -466,7 +466,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-compare-chokepoint
 - defined: —
-- cited: 310 311 311a ANALYZER-NEEDS (5)
+- cited: 310 311 311a 315 ANALYZER-NEEDS (6)
 
 ## an-cross-host-kind
 - defined: —
@@ -506,7 +506,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28P:an-kind-reach
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:1177 — is now status B, not B-with-an-open
-- cited: 310 311 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (6)
+- cited: 310 311 315 ANALYZER-NEEDS ORACLE_PROVIDES Research/LIVING_STATUS (7)
 
 ## an-load-exactness-reads-binding-state
 - defined: —
@@ -514,7 +514,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## an-mode-gate
 - defined: —
-- cited: 311 312cg ANALYZER-NEEDS (3)
+- cited: 311 312cg 315 ANALYZER-NEEDS (4)
 
 ## an-oracle-ref-sha
 - defined: —
@@ -1210,7 +1210,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## spike/AGENTS:compare-consumer-map
 - defined: spike/AGENTS.md:210 — (née ternary-compare-consumer-map; `277` §2 · `30U`) —
 - aka: ternary-compare-consumer-map
-- cited: 26Ob 311 311a 311c 312cb 312cg (7)
+- cited: 26Ob 311 311a 311c 312cb 312cg 315 (10)
 
 ## analysis/AGENTS:compare-only-at-chokepoints
 - defined: spike/crates/analysis/AGENTS.md:282 — — dialect sets + backing provenance (minting
@@ -2190,11 +2190,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## enc-primary-owner-is-sort-owner
 - defined: —
-- cited: 311 312d 312f (4)
+- cited: 311 312d 312f 315 (5)
 
 ## enc-support-functions
 - defined: —
-- cited: 311 312d (4)
+- cited: 311 312d 315 (5)
 
 ## enc-vantage-is-the-entry-chain
 - defined: —
@@ -3179,6 +3179,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28R:fnd-identity-signals-decay
 - defined: Research/notes/28R-context-kernel-review.md:90 — (+SURE — plain ops facts) — machine-id survives most
 
+## fnd-in-force-is-book-global
+- defined: —
+- cited: 312d 312e 315 (6)
+
 ## 30Qa:fnd-in-loop-floor-is-the-whole-seam
 - defined: Research/notes/30Qa-loop-propagation-lane-report.md:44 — (+SURE, quoted at the seat)
 
@@ -3966,11 +3970,11 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## hold-region-against-region-floor
 - defined: —
-- cited: 312cg 312ch (12)
+- cited: 312cg 312ch 315 (13)
 
 ## hold-stdlib-key-space-over-the-boots-children
 - defined: —
-- cited: 312cg 312ch (15)
+- cited: 312cg 312ch 315 (16)
 
 ## hole-app-auth
 - defined: —
@@ -5209,7 +5213,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## note-transport-single-consented-sparing-double
 - defined: —
-- cited: 311 311a 312cg (3)
+- cited: 311 311a 312cg 315 (4)
 
 ## 28Ra:note-two-planes-weld-is-vocabulary-not-mechanism
 - defined: Research/notes/28Ra-context-kernel-review-fable-neutral.md:260 — : `syn-one-context-two-planes`
@@ -5577,6 +5581,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 30Y 30Yf 30Z 312d (4)
 
+## pos-mechanical-trumps-prose
+- defined: —
+- cited: 30Z 315 (2)
+
 ## spike/AGENTS:posix-in-spirit-default
 - defined: spike/AGENTS.md:730 — (`271:rul-posix-in-spirit-defaults`, standing) — for
 
@@ -5834,7 +5842,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/AGENTS:pure-predicate-carry
 - defined: spike/AGENTS.md:270 — (`plans/27C` §4(a); `notes/27Xf` Tier-1; human-opted
-- cited: 27Xf 300 308 312cg 312ch (9)
+- cited: 27Xf 300 308 312cg 312ch 315 (10)
 
 ## q-entry-economics
 - defined: —
@@ -6364,7 +6372,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## res-per-index-relation-table
 - defined: —
-- cited: 26Ob 311 (2)
+- cited: 26Ob 311 315 (3)
 
 ## 28P:res-plural-families-withhold-off-peak
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:251 — (disclosed under-approximation)
@@ -6430,7 +6438,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## res-worlds-compare-through-the-chokepoint
 - defined: —
-- cited: 26Ob 311 (2)
+- cited: 26Ob 311 315 (3)
 
 ## resid-return-arity
 - defined: —
@@ -6753,7 +6761,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-binder-claims-are-ordinary
 - defined: —
-- cited: 30T 311 (2)
+- cited: 30T 311 315 (3)
 
 ## rul-binds-entity-only-provisional
 - defined: —
@@ -6932,7 +6940,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-coordinate-shape-flat-three-place
 - defined: —
-- cited: 271 277 278 300 311a 311c 312a ANALYZER-NEEDS ORACLE_PROVIDES core/AGENTS spike/AGENTS (11)
+- cited: 271 277 278 300 311a 311c 312a 315 ANALYZER-NEEDS ORACLE_PROVIDES core/AGENTS spike/AGENTS (13)
 
 ## 288:rul-core-stays-light-custody
 - defined: Research/plans/288-aid-loom-unification-plan.md:23 — — `core` stays light; the analyzer machinery is
@@ -6947,7 +6955,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-cross-kind-sparing-needs-a-finished-definition
 - defined: —
-- cited: 30U 311 ORACLE_PROVIDES Research/LIVING_STATUS (4)
+- cited: 30U 311 315 ORACLE_PROVIDES Research/LIVING_STATUS (5)
 
 ## 28E:rul-danger-axis-is-completion-class
 - defined: Research/notes/28E-why-surface-design-sitting.md:423 — (nack on my reported/written split) —
@@ -6962,6 +6970,10 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 28R:rul-defensive-mode-definition-vectors
 - defined: Research/notes/28R-context-kernel-review.md:483 — [TYPED] — whole-artifact defensive emission
+
+## rul-definitions-not-surveys
+- defined: —
+- cited: 30U 315 (3)
 
 ## rul-delivery-shape-file-backed-default
 - defined: —
@@ -6991,7 +7003,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-disjoint-is-an-rc-predicate
 - defined: —
-- cited: 30T 30W 311 311a 311b 311c 312a ROADMAP (10)
+- cited: 30T 30W 311 311a 311b 311c 312a 315 ROADMAP (12)
 
 ## rul-ditch-is-diverged
 - defined: —
@@ -7218,7 +7230,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## rul-flag-is-razor-residue
 - defined: Research/plans/271-block-settle-rulings-ledger.md:660 — (2026-07-12; TYPED — the positive half of
 - defined: spike/AGENTS.md:221 — — claims own what lines can say; the admin flag
-- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch 313c (26)
+- cited: 24S 26M 26N 26Ob 270 272 275 277 279f 27A 27C 27Xf 30W 311b 311c 312ca 312cg 312ch 313c 315 (27)
 
 ## 271:rul-flag-named-risk-faultless-skips
 - defined: Research/plans/271-block-settle-rulings-ledger.md:686 — (2026-07-12; TYPED — "let's stamp that
@@ -7399,7 +7411,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 271:rul-invariance-speech-act
 - defined: Research/plans/271-block-settle-rulings-ledger.md:640 — (2026-07-12; TYPED — "I approve;
-- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311 311a 311b 311c 311h 312a ORACLE_PROVIDES (24)
+- cited: 24S 26M 270 272 275 277 279f 27A 27C 27O 30W 311 311a 311b 311c 311h 312a 315 ORACLE_PROVIDES (26)
 
 ## rul-iteration-waste-acceptable
 - defined: —
@@ -7442,7 +7454,7 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 271:rul-lend-map
 - defined: Research/plans/271-block-settle-rulings-ledger.md:402 — (task 5; 2026-07-11; TYPED — task-5 closing ruling)
 - superseded: `27C` §9's "one human checkpoint" line is superseded.]
-- cited: 24S 270 273 277 278 27K 311c 312a ORACLE_PROVIDES spike/AGENTS (12)
+- cited: 24S 270 273 277 278 27K 311c 312a 315 ORACLE_PROVIDES spike/AGENTS (14)
 
 ## 28K:rul-library-naming-finds-defaults-only
 - defined: Research/plans/28K-oracle-loading-and-resolution.md:173 — [TYPED] — "naming a library/file is
@@ -7847,7 +7859,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## rul-reference-entity-name-floor
 - defined: —
-- cited: 300 300c 311c 311d 312a (8)
+- cited: 300 300c 311c 311d 312a 315 (9)
 
 ## rul-reflow-fix-in-phase-four
 - defined: —
@@ -9141,7 +9153,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## synonym-cell-scoped
 - defined: —
-- cited: 312a (1)
+- cited: 312a 315 (2)
 
 ## syntax/AGENTS:syntactic-top-triggers
 - defined: spike/crates/syntax/AGENTS.md:20 — (fixed; shrinking one is a deliberate design act) —
@@ -9661,7 +9673,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## spike/AGENTS:top-identifies-with-nothing
 - defined: spike/AGENTS.md:247 — — ⊤ identifies with nothing, including itself;
-- cited: 26Ob 27G 300 300a 300e 312a (6)
+- cited: 26Ob 27G 300 300a 300e 312a 315 (7)
 
 ## analysis/AGENTS:top-licenses-nothing
 - defined: spike/crates/analysis/AGENTS.md:135 — (rider 1; `28O:res-polyfill-binding-tops-pending-fold`) —
