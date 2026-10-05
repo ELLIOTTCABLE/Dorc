@@ -189,3 +189,37 @@ responses follow each.
 - **[TYPED]** DURABLE ACK `mExecution`; minted. Applied: § 1.11.2 of the specification defines it
   in a normative block, and § 1.10's translation and § 1.10.1's normative block no longer use the
   bare word (commit "(AI dsn new) Mint mExecution and drop the bare word elsewhere").
+
+## § 2-what-reaches-means
+
+### § 2.1-the-first-rounds-as-put
+
+- `reach-is-per-execution` **[CONDUCTOR]** — an mKey is minted at a bind, so it is static, while
+  loops, re-pointed names (a `current` symlink switched by `ln -sfn`), and round-robin lookups give
+  one mKey different mReferents at different times. Proposed: at the probe and at each
+  mExecution, an mKey reaches at most one mReferent; across its mExecutions, a may-set. § 1.4's
+  committed "an mKey cannot reach two mReferents" is false once loops are encoded unless it means
+  "at one mExecution". A summary reading (the referent is the pool) would make SAME unsound for
+  round-robin names.
+- **[CONDUCTOR]** explained on request: `reaches` is the ground-truth endpoint of a lookup, which
+  the engine never holds; the word is booked three ways in the corpus (`30U`'s entailment,
+  `28Q`'s effective reach, the specification's denotation) and means control-flow reachability
+  to a compiler engineer. Beside the endpoint sit three chains with their own relations: the
+  route (`passes`, the mTraversal), the re-keying (`:yields`), and the scoping (`holds`,
+  mParent). Proposed: `reaches` names only the endpoint of one lookup at one instant, an instant
+  being the probe or one mExecution.
+- **[TYPED]** asked: what of a chain that reaches no mReferent but ends at one mKey that is itself
+  unresolvable, a symbol that exists only inside the engine to decide that two resolutions end
+  together? Expected to be very common, since the shell world will often be described only up
+  to a local name.
+- **[TYPED]** ack: some component here is falsifiable in an important way, which is why it needs
+  a name and a distinction, so that false claims about it can be written down.
+- **[TYPED]** asked whether the may-set is a lattice.
+- **[TYPED]** ack: the grain is the mExecution, by design and dictum (the TOCTOU exclusion).
+- **[TYPED]** the question as put cannot be answered: whether a site handles one settled value or a
+  growing set is what decides whether a name is singular (an mResolution) or plural (a set of
+  them), not the reverse. Two entangled questions instead: for each use of "reaches" in the
+  specification, whether it was meant to be many-valued at that site (possibly with no single
+  answer, if logical time was not in view when it was written); and, separately, minting fixed
+  terms of fixed arity, each site then saying one or a set of them. Naming, plurality, and
+  variation over time form a matrix. Not a terminology ruling.
