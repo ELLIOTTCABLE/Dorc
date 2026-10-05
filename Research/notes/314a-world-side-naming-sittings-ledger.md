@@ -161,3 +161,19 @@ responses follow each.
   `314:ord-the-wrongness-criterion-before-any-licence-result` is out by construction, not by
   ruling; open to being convinced otherwise.
 - **[TYPED]** the punt boundary is accepted as understood; in accordance.
+
+### § 1.6-a-noun-for-one-run-of-an-mSite
+
+- **[CONDUCTOR]** menu put: call (paired with call site; the conductor's pick, with "an execution
+  of the book" for the whole), invocation, dynamic instance, event, step; rejected outright: run,
+  execution, occurrence, activation, iteration, span, task instance.
+- **[TYPED]** call and invocation look risky: both assume that a line with effects involves a
+  context switch (a function, a builtin, a shell function), which fails for variable
+  definitions, and a line of pure variable definitions can have surprisingly complex effects.
+  Asked: is "a call" 1:1 with a run of a site, guaranteed by POSIX? The clearest words are
+  skipped only if they cause this precise mis-assumption.
+- **[TYPED]** several words are acceptable at specification tier; the cost is a gloss evolving in
+  other documents and conversation so that grep no longer finds every use, handled by declaring
+  the gloss up front and banning it from the specification.
+- **[TYPED]** NACK event (too overloaded); strong suspected nack of step. The name should have as
+  much reach as "site" and will appear in other documents with a precise meaning.
