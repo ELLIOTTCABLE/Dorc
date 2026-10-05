@@ -80,10 +80,11 @@ Each is a precedence between kinds of work. None is a schedule.
   end-state reading, and the criterion is chosen before such results are relied on.
 - `ord-whether-a-facts-dependence-is-a-closure-before-the-flag` (+SURE of the rows, one lane) —
   `313a` § 2.3 holds open whether a fact's dependence is itself a closure. The question of which
-  licences need the flag turns on it. In the licence model, requiring both ends' closures
-  together with a flag-free floor passes in 0 of 48 profiles while the vouch counts as a
-  negative that closes over an unclosed world, and in 44 of 48 when it does not (four and five
-  atoms). The coupling of the ends to the flag exists only under the first counting.
+  licences need the flag turns on it. In the licence model, the human's latest typed line on the
+  read side (both ends' closures, `312cg:391-394`) together with the latest on the flag (a
+  flag-free floor, `313e:24-27`) passes in 0 of 48 profiles while the vouch counts as a negative
+  that closes over an unclosed world, and in 44 of 48 when it does not (four and five atoms).
+  The coupling of the ends to the flag exists only under the first counting.
 - `ord-what-a-claim-covers-is-put-with-what-disjoint-must-mean` (~SUSPECT; a coupling, stated
   as corrected by all three lanes) — under a verb's at-most claim that covers the line's own
   writes, the sparing law has a wrong spare with every statement true in 36 of 192 profiles;
