@@ -237,3 +237,41 @@ responses follow each.
 - **[TYPED]** directive, for when the renaming comes: the normative collision is fixed to a
   different, locally correct word in a commit separate from the one that gives the (singular)
   meaning of "reach" its acked name.
+
+### § 2.3-the-name-of-the-relation
+
+- **[CONDUCTOR]** put: four combinations of one-or-a-set against one-instant-or-across-instants;
+  the base unit is one mKey at one instant reaching at most one mReferent (the engine's record of
+  it is the existing mResolution, singular); a set at one instant is never wanted; one value
+  across instants is the case where the resolution stands; a set across instants is the derived
+  plural, the existing normative word may-set. mResolution's "at program point p" needs retiming.
+- **[TYPED]** asked to confirm: the minted word is world-side (the category of mReferent, never
+  held by the engine), not a name for the last mKey in a chain. **[CONDUCTOR]** confirmed; the
+  last mKey is the engine-side mKey-Primary that `identity()` finds; mResolution reads as the
+  engine's record of a landing.
+- **[TYPED]** read, not a ruling: this is a lattice over resolutions; a statement has one
+  resolution across the whole analysis, or a lifted lattice of several possible resolutions that
+  join and meet at points. **[CONDUCTOR]** agreed with one placement: the lattice is the
+  analysis's, over engine-side resolutions; ground truth at one instant is one point. A menu for
+  the world-side verb was put (refers to, designates, denotes, points to, resolves to), with a
+  lean to "refers to" and "resolution" kept for the engine side.
+- **[TYPED]** lean: use the family of the acked mReferent, written with the model tag: "mRefers
+  to", "its several mReferences", so that the relation is the one with an mReferent at its other
+  end. Possible only if the relation is one-to-one with mReferents at its other end and if
+  mReferents mean nothing in the model when no mKey refers to them.
+  **[CONDUCTOR]** the first condition holds (the field's type; "or none" is "mRefers to no
+  mReferent"); the second fails by design, since the checker considers pieces nobody keyed
+  (`notes/312d` § 21, cited at § 1.1.1) and they carry the danger (a loop image nobody
+  described); so mReferent keeps its own definition (§ 1.1), "mRefers to" is a relation into it,
+  and an mReference is one instance (one mKey, one instant, one mReferent). Spelling: `312b`
+  § 4 writes relations as `:fixed-term`.
+- **[TYPED]** ACK of that family, with the correction.
+- **[TYPED]** lean, open to pushback, not a ruling: the earlier description of the typographic
+  conventions was imprecise. `:this` is reserved for claims, as a deliberate reference to the
+  eventual syntax of claims; a relation that is not a claim, and will never have a spelling,
+  keeps the mThisSyntax, the marker for a precisely defined term (a modelled relation is a
+  modelled object in the higher-order sense). Taking it needs a review of existing `:` uses, so
+  that none names an abstract relationship that can never be spelled.
+- **[TYPED]** the usage sites are many: apply with great care; the adversarial reviewer may be
+  woken afterwards. Offered, the choice left to the conductor: ledger without applying, and take
+  the reviewer's earlier findings first, so that new edits do not rest on shaky ground.
