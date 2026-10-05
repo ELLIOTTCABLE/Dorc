@@ -94,6 +94,15 @@ Each is a precedence between kinds of work. None is a schedule.
   inside the other; held outside, as the specification holds it today, two different things is
   enough. Under the first reading too, a finished record demanded only across sorts
   (`30U:15-19`) passes only where the reader's end is closed as well (`315` § 1.8).
+- `ord-two-sorts-waits-on-no-sense-of-disjoint` (+SURE of the rows; a second-round lane re-ran
+  them under each sense) — what the comparison answers for two sorts nobody related (`315`
+  § 1.17) can be put before what a right DISJOINT means. Under each of three senses of
+  DISJOINT, two answers fail the walk's DISJOINT law in every profile, because two keys of two
+  sorts can reach one thing: always-disjoint, which is what the built comparison does
+  (`spike/crates/core/src/coord.rs`), and disjoint where the written sort is finished (`30U`),
+  with the specification's truth for the finished record; `30U`'s own wider sentence was not
+  measured. Known-unspoken unless a key chain separates them passes, in fewer contexts as the
+  sense narrows.
 - `ord-names-that-move-wait-on-instants` (+SURE) — nothing about a contained write and its
   store's naming can be checked until a key's reach can vary. Once it can, one result needs no
   sitting: checking only the fact's key fails in every profile where names move (an earlier
