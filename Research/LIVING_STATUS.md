@@ -30,14 +30,17 @@
 
 ## IN FLIGHT (2026-10-04)
 
-The identity dependency-order run (Fable conductor, autonomous, the human away; opened
-2026-10-04): worktree `.tmp/trees/r31-identity-order-conductor`, branch
-`ai/r31-identity-order-conductor`, ledger `notes/313e` § 4 onward. Its remit is the order of
-human design sittings that would firm the identity, relation, and effects model, measured with
-scouts over the corpus and small Alloy probes. It edits nothing under `specs/` and rules nothing;
-every model it writes is quarry (`30Z:form-strawmen-are-quarry-never-seed`). Its report is not
-yet minted. Until that lands, `notes/313` and the mechanised specification's held holes are
-unreconciled alternatives, and neither is the path.
+The identity dependency-order run (Fable conductor, autonomous; 2026-10-04/05) is complete and
+UNFOLDED. Its one branch, `ai/r31-identity-order-conductor` (worktree
+`.tmp/trees/r31-identity-order-conductor`, on this `ai/main` tip), holds its report and corpus
+evidence under the docID after `313`, its ledger as § 4 of `notes/313e`, both crosscheck rounds
+with their adjudications, and its models as quarry (`30Z:form-strawmen-are-quarry-never-seed`).
+It edits nothing under `specs/` or `spike/` and rules nothing. Folding it is the human's; until
+then `ai/main` does not carry the report. The report's standing: the order of design sittings
+it gives is unacked, its two reviews overturned much of its first drafts, and nothing measured
+chooses between amending the mechanised specification in place, growing a new document, and
+the floor-and-freeze fallback. `notes/313` and the specification's held holes stay unreconciled
+until the human rules.
 
 The assay progress lane (`notes/30Yg`, Fable conductor, worktree
 `.tmp/trees/r30-alloy-praxis-conductor` kept) folded into `ai/main` the evening of 2026-09-29
