@@ -223,3 +223,17 @@ responses follow each.
   answer, if logical time was not in view when it was written); and, separately, minting fixed
   terms of fixed arity, each site then saying one or a set of them. Naming, plurality, and
   variation over time form a matrix. Not a terminology ruling.
+
+### § 2.2-the-census-as-put
+
+- **[CONDUCTOR]** an Opus census of every "reach" in the specification at `63e08859` (ephemeral
+  table, root `_tmp-314a-reach-census.md`): 383 uses; 310 are the ground-truth landing of a key,
+  73 are five other senses (engine-side landing, control flow, route reachability, effect
+  spread, "a false answer is reachable" by the checker), one of them in normative text
+  (§ 1.7.1, "ordinary effective-mWorld reach"). Of the 310, no site means several mReferents at
+  one time; three sentences say the landing changes over time (§ 0, § 1.7.1, § 3.3.1), and the
+  invalidation rules rest on them; every fence reads one landing per key for the whole book (no
+  `var` field), which § 3.3.2's commentary states outright for its reboot book.
+- **[TYPED]** directive, for when the renaming comes: the normative collision is fixed to a
+  different, locally correct word in a commit separate from the one that gives the (singular)
+  meaning of "reach" its acked name.
