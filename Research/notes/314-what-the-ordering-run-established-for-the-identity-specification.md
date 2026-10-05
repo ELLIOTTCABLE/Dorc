@@ -5,9 +5,10 @@
 > reading locality; this one records what a run on the ORDER of the identity model's design work
 > established about ordering, dependency, and praxis, and only the part that held. Nothing here
 > is ruled unless it is marked **[TYPED]** (the human typed it; the wording is the conductor's).
-> Every measurement is AI-run process evidence at small bounds. Each item below is stated in the
-> form that stood after two rounds of clean-context review (two GPT-6-Astra lanes and one Fable
-> lane per round, each handing back counter-models). Grades: +SURE / ~SUSPECT / -GUESS /
+> Every measurement is AI-run process evidence at small bounds. Two rounds of clean-context
+> review (two GPT-6-Astra lanes and one Fable lane per round, each handing back counter-models)
+> attacked the run. Each item below held against the rounds that saw it, some were found or
+> corrected by the second, and no review read this wording. Grades: +SURE / ~SUSPECT / -GUESS /
 > --WONDER.
 >
 > The run's models, tables, and review reports are on the unfolded branch
