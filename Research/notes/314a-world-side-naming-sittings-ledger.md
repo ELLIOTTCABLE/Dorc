@@ -136,3 +136,28 @@ responses follow each.
   specification later. A question of Alloy capability, specification language, and ordering, not
   of product behaviour. The punt boundary may move to give a clean, stable specification;
   pushback is allowed if specifying 311 fully with concurrency is easier than expected.
+
+### § 1.5-the-punt-boundary-as-put
+
+- `concurrency-punt-boundary` **[CONDUCTOR]** — every concurrency design only adds order, so a
+  soundness law that holds with nothing ordered beyond program order holds under every later
+  design. In: time as program order over runs of mSites, as sh control flow sets it (loops,
+  function calls, loads), a command ruled to have no side effects taking no place in it; every
+  effect attributed to the run that started it, with no field for when it lands. Floor: a
+  background job, pipeline stages, and a tool's deferred effects are ordered by nothing beyond
+  program order. Out, nothing ruled: `wait`, observation as a join, `sleep`, describers'
+  declarations of synchronous or asynchronous effects, and every consumer that reads state
+  between dispatch and landing (today the guard tier's live checks and the apply standup's
+  `witness()`, both outside the fences). Coupling put: the boundary holds while wrongness is
+  judged by interference, not by end-state equality. Owed terms: a noun for one run of an
+  mSite; the order relation over sites (today's textual `above`).
+- **[TYPED]** that the specification does not cover landing time or ordering is normative truth
+  and belongs in the specification (where and how not yet chosen). The "out" list is
+  non-normative and conversational, kept so nobody is confused.
+- **[TYPED]** Dorc concerns itself with the presence of runs, not with end states. Epistemics,
+  not a ruling: Dorc cannot know end states, and nothing gives oracle authors or admins a
+  vocabulary for what a state is; Dorc knows booleans about whether a run is wanted, and
+  `__predict()` strings that no contract maps onto real state. Lean:
+  `314:ord-the-wrongness-criterion-before-any-licence-result` is out by construction, not by
+  ruling; open to being convinced otherwise.
+- **[TYPED]** the punt boundary is accepted as understood; in accordance.

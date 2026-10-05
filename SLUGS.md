@@ -5384,6 +5384,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 314 314a (2)
 
+## ord-the-wrongness-criterion-before-any-licence-result
+- defined: —
+- cited: 314 314a (2)
+
 ## order-is-carried-not-respelled
 - defined: —
 - cited: 30Rk (1)
