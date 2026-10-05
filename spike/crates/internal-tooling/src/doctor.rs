@@ -26,13 +26,11 @@ use crate::preflight::gib;
 /// and its absence is reported rather than guessed around.
 const LINEAGE: &str = "ai/main";
 
-/// Where worktrees are made, under the primary checkout: the harness's agent fleet and the
-/// conductors' own trees. A removal that fails partway (a locked file, on Windows) leaves its
-/// directory here with no registration, invisible to `git worktree list`.
+/// Where worktrees are made. A directory left here after its worktree is gone is invisible to
+/// `git worktree list`.
 const FLEET_ROOTS: [&str; 2] = [".claude/worktrees", ".tmp/trees"];
 
-/// What a stray directory may lose for free: the build cache rebuilds, and a leftover `.git`
-/// pointer names a registration that is already gone.
+/// Lost for free: the build cache rebuilds, and a `.git` pointer names a registration already gone.
 const DISPOSABLE: [&str; 2] = ["spike/target", ".git"];
 
 /// The size inventory by default; the comparable hygiene report under `unused`.
@@ -162,7 +160,7 @@ fn unused() -> ExitCode {
                     (dir, files)
                 })
                 .collect();
-            // The slowest query in this report, so asked only when some stray holds a file.
+            // slowest query here; only paid when some stray holds a file
             let objects = if strays
                 .iter()
                 .any(|(_, files)| files.as_ref().is_some_and(|f| !f.is_empty()))
@@ -304,14 +302,13 @@ fn tree_state(path: &Path) -> String {
     )
 }
 
-/// The primary checkout, where the fleets live. Not [`dorc_testbed::repo_root`], which is
-/// whichever tree this binary was built in — a lane's own, when run from one.
+/// Not [`dorc_testbed::repo_root`]: that is the tree this binary was built in, a lane's own when
+/// run from one.
 fn primary_checkout() -> Option<PathBuf> {
     let common = git(&["rev-parse", "--path-format=absolute", "--git-common-dir"]).ok()?;
     Path::new(common.trim()).parent().map(Path::to_path_buf)
 }
 
-/// Every directory under a [`FLEET_ROOTS`] entry that git has no worktree registered at, sorted.
 fn stray_dirs(primary: &Path, registered: &[PathBuf]) -> Vec<PathBuf> {
     let mut found: Vec<PathBuf> = FLEET_ROOTS
         .iter()
@@ -325,9 +322,8 @@ fn stray_dirs(primary: &Path, registered: &[PathBuf]) -> Vec<PathBuf> {
     found
 }
 
-/// Every file under `dir` but the [`DISPOSABLE`] paths, or `None` when any part could not be
-/// read: an unread corner would otherwise report `empty`, the one wrong answer that invites a
-/// delete.
+/// `None` if anything is unreadable: an unread corner would otherwise read `empty`, which invites
+/// a delete.
 fn kept_files(dir: &Path) -> Option<Vec<PathBuf>> {
     let skip: Vec<PathBuf> = DISPOSABLE.iter().map(|path| dir.join(path)).collect();
     let mut files = Vec::new();
@@ -348,10 +344,8 @@ fn kept_files(dir: &Path) -> Option<Vec<PathBuf>> {
     Some(files)
 }
 
-/// `empty` (nothing but [`DISPOSABLE`] paths), `landed` (every file's exact content is reachable
-/// from a branch or tag), `UNIQUE` (some file's content is on no branch or tag — a delete loses
-/// it), or `unknown`. Content, not path: a stray is usually an older checkout of files that have
-/// since moved on, so its paths answer nothing.
+/// By content, not path: a stray's files are usually older versions, unlike today's at the same
+/// paths but still in history.
 fn stray_state(
     primary: &Path,
     files: Option<&[PathBuf]>,
@@ -375,9 +369,8 @@ fn stray_state(
     }
 }
 
-/// The blob id each file would have if committed: `hash-object` without `-w`, so a query like
-/// every other git call here. Asked of the primary checkout so its line-ending attributes apply,
-/// and chunked to stay under Windows' command-line limit.
+/// No `-w`, so still a query. Run in the primary checkout so its eol attributes apply; chunked
+/// under Windows' command-line limit.
 fn blob_ids(primary: &Path, files: &[PathBuf]) -> Result<Vec<String>, String> {
     let mut ids = Vec::with_capacity(files.len());
     for chunk in files.chunks(100) {
@@ -726,8 +719,7 @@ locked
 
     #[test]
     fn a_stray_looks_away_from_its_build_cache_and_git_pointer_only() {
-        // The skip list is the one place the stray check looks away, so it must not match by
-        // name alone: a skipped file would let a directory holding unique work read `empty`.
+        // skipping by name alone would hide `notes/target/` work and read `empty`
         let root =
             std::env::temp_dir().join(format!("dorc-doctor-stray-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
