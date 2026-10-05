@@ -92,7 +92,8 @@ Each is a precedence between kinds of work. None is a schedule.
   happens, it has none. Under the first reading, what a right DISJOINT must mean depends on
   whether the one-thing-beneath shape is in scope of the law: in scope, at least neither thing
   inside the other; held outside, as the specification holds it today, two different things is
-  enough.
+  enough. Under the first reading too, a finished record demanded only across sorts
+  (`30U:15-19`) passes only where the reader's end is closed as well (`315` § 1.8).
 - `ord-names-that-move-wait-on-instants` (+SURE) — nothing about a contained write and its
   store's naming can be checked until a key's reach can vary. Once it can, one result needs no
   sitting: checking only the fact's key fails in every profile where names move (an earlier
