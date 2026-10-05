@@ -324,8 +324,11 @@ known only once bytes arrive. The mPlaceholder, for an mValue or an mParent not 
 1.10-vantage-route-placeholder-witness's. An mLevel is what a mFullyQualifiedKey passes through
 (1.8-fully-qualified-key-topic-and-derivation): an mKey, or one of the world atoms that end a
 chain. The `reaches` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
-no engine definition reads it. The two views coincide when an mSort's only mScheme is its primary
-mScheme, and the primary view is where the dangerous warrants can honestly sit.
+no engine definition reads it. That an mKey reaches at most one mReferent is a definition and
+not an assumption about the world, since an mReferent may be an aggregate
+(`311t:fnd-a-referent-is-an-aggregate-and-a-may-set`). The two views coincide when an mSort's
+only mScheme is its primary mScheme, and the primary view is where the dangerous warrants can
+honestly sit.
 
 ```alloy
 abstract sig mLevel {}
@@ -381,6 +384,8 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
+> By definition, an mKey cannot reach two mReferents.
+> All that one mKey reaches is one mReferent, which may have parts (1.1.1-state-and-value).
 > mKey-Primary is an mKey of the primary mScheme on a shape that yields nothing, or a cell's mKey (1.9-cell-a-singleton-sort).
 > It is meaningful only relative to its mParent-Store.
 > mKey-Natural is any other mKey, what tool authors and books write.

@@ -2917,6 +2917,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 28P:fnd-a-helpers-only-file-was-refused-out-of-dialect
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:445
 
+## fnd-a-referent-is-an-aggregate-and-a-may-set
+- defined: —
+- cited: 311 311t (2)
+
 ## 28P:fnd-a-shipped-body-was-never-self-contained
 - defined: Research/notes/28P-oracle-loading-resume-conduct-ledger.md:362
 
