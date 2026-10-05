@@ -7,3 +7,82 @@
 > conductor's) or cited as `docID:slug`. **[CONDUCTOR]** marks a claim the human has not acked.
 > Grades: +SURE / ~SUSPECT / -GUESS / --WONDER. Sections are written at discoveries and at the
 > human's acks, not per turn. Successors append sections; they do not rewrite an earlier one.
+> **[TYPED]** standing law: this ledger holds only what the human has seen and responded to, and
+> never the conductor's reasoning from a turn the human has not yet answered.
+
+## § 1-what-the-world-side-is
+
+2026-10-05. The first item: the thing the seven world relations live in, which the specification
+calls the world stratum, and the truth predicates that read it. Put in two rounds; the human's
+responses follow each.
+
+### § 1.1-the-first-round-as-put
+
+- `ground-truth-is-the-world-side` **[CONDUCTOR]** — the world side is the specification's
+  stand-in for reality: what is actually so in each world the checker considers. Nobody states
+  it, and the engine's definitions never read it. Anchor: alias analysis, whose soundness is
+  stated against the actual heap that the analysis never sees (SAME, DISJOINT, UNKNOWN as must-,
+  no-, and may-alias).
+- `truth-condition-is-contract-text` **[CONDUCTOR]** — a statement type's truth condition is the
+  fine print of what its author asserts. The law assumes the truth condition of every statement
+  in force, so a wrong answer is attributed to the statement whose truth condition fails.
+  Consequences put: a truth condition stronger than the author's assertion hides countermodels
+  and misattributes; 9 of the 28 are empty, which is right for entries and wrong where the engine
+  relies on the statement (the cell and composite holes); attribution is not fault. Worked
+  example: `:aliases-nothing-else` over an LDAP directory and a host's NSS view of it, where the
+  `owns` reading puts the burden on the describer of the store that re-presents, who can know.
+- Names put: "world stratum" → ground truth; "truth predicate" → truth condition; with
+  alternatives, and with "world" already meaning three things in the specification (mWorld, the
+  `World` signature, a whole scenario the checker considers).
+- **[TYPED]** neither name is ruled yet.
+- **[TYPED]** soft, conversational, not durable: the stronger reading of `:aliases-nothing-else`
+  puts the epistemic burden in the wrong place.
+- **[TYPED]** `holds` and `owns`, and the difference between them, read as imprecise glosses for
+  something that likely has a precise, standard name in the field; to be dug when those
+  relations are reached.
+- **[TYPED]** the human's rephrase of the world side: the last link behind each claim, hidden from
+  the engine — whether, in the world under examination, the claim is actually true or false.
+  Tooling for checking fail-safety. "What actually happened" is a dangerous, temporal phrasing.
+- **[TYPED]** a third category exists: world truths paired with no claim and specific to no book.
+  The division may matter for writing the Alloy and for naming.
+
+### § 1.2-the-second-round-as-put
+
+- **[CONDUCTOR]** world facts vary from world to world, and a book pins some of them; a truth
+  condition is fixed per statement type and is what its author signs. The universal premises
+  paired with no claim, +SURE by grep: `owns in holds` (a `fact`); no store among its own
+  contents and no route through itself (named premises of the laws); the engine's
+  shell-resolution axiom (it reads `reaches` and `passes`); and `reaches: lone` (a multiplicity).
+- **[CONDUCTOR]** the horizon is not inside ground truth; it selects which worlds the promise
+  covers. "Take as ground truth" is an idiom for "assume", a cost to the name.
+- `premise-kinds-by-who-answers` **[CONDUCTOR]** — every universal premise is true by definition,
+  an engine axiom, or a horizon; truth conditions are the per-claim contract beside them; a hole
+  is an item not yet assigned (`312f` § 12's three dispositions). ~SUSPECT nothing empirical about
+  ops is universal, so "literally true" reduces to definitional plus engine. A horizon is
+  described by its cause and by the user habit that keeps a user inside it, never by frequency.
+- **[CONDUCTOR]** truth conditions ship as oracle-author documentation, horizons as admin
+  documentation.
+- **[TYPED]** RULING `rul-host-state-changes-only-at-book-actions`, for the encoding, for sanity
+  and for checker performance: host state does not change outside book actions. The TOCTOU
+  exclusion dictates the checker's state space, and is expected to be encoded as structure
+  (timeless world facts for host state and for the truth behind claims) rather than as
+  time-varying state. Time may be absent, and is not required to be: some ground truth is still
+  about change (a line that was claimed to modify something did or did not).
+- **[TYPED]** referential agnosticism is not an impregnable law for the specification: the engine
+  holds some narrow ground truths by design (shell-loading semantics; perhaps basic host and
+  network facts for orchestrator features).
+- **[TYPED]** an attention tune, no new ruling: "a key reaches at most one mReferent" is
+  definitional. An mReferent is defined as what an mKey can point to; round-robin DNS and other
+  notions of identity, object, and target were weighed and distilled into it in the r31 ledgers.
+- **[TYPED]** conversational ack: a clear, mandated distinction between ground truth and a
+  horizoned truth. The human's description, put as a question: ground truth varies over no
+  inputs; a horizoned truth varies over an input whose variance is discarded for a fixed output.
+- **[TYPED]** ack: no frequency for horizons; add sibling coverage as a property of one. The table
+  of horizons, their rationale, and their user documentation are not content of this
+  specification and are set aside. What matters here is how "horizon" is defined and used in
+  specification-class documents, and how the Alloy form of a horizon is set apart from other
+  Alloy, if at all.
+- **[TYPED]** NACK of horizons as admin documentation only. The horizon is equally oracle-author
+  documentation: Dorc and the oracles a user installs share one horizon toward that user. It
+  tells oracle engineers where not to spend effort and, more importantly, where they must (many
+  extremely hard things in ops are not horizoned, and a battle-class oracle handles them all).
