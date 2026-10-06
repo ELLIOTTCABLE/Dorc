@@ -50,8 +50,9 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 
 Spelling inside the fences:
 
-- A model object keeps its prose name as an Alloy signature: `mKey`, `mSort`. A shell word is
-  assay's `Shword`; an mKey's mValue is one.
+- A model object keeps its prose name in the fences, its m included: the signatures `mKey` and
+  `mSort`, the fields `mParent` and `mRefersTo`. A shell word is assay's `Shword`; an mKey's
+  mValue is one.
 - A statement is a spoken foundation: a party states it, and the contract trusts it. A
   statement species is a signature under the shared `Spoken`, named for the act:
   `DeclaresIdentifiedIn`, `SuppliesParent`. Its fields name what it is about. One statement
@@ -121,12 +122,12 @@ strongest ordinary world, two mKeys scoped in one mParent-Store with a known cha
 run bookScope {} for 6 but 4 Int
 
 run world_exists {
-   some k: mKey | knownChain[k] and some k.refersTo
+   some k: mKey | knownChain[k] and some k.mRefersTo
 } for 6 but 4 Int expect 1
 
 run chains_meet_in_a_store {
    some disj a, b: mKey | isPrimaryKey[a] and isPrimaryKey[b] and no (a + b).cellSort
-      and knownChain[a] and knownChain[b] and a.parent = b.parent and a.parent in mKey
+      and knownChain[a] and knownChain[b] and a.mParent = b.mParent and a.mParent in mKey
 } for 6 but 4 Int expect 1
 ```
 
@@ -326,7 +327,7 @@ mValue matches, so which mSort an mKey reaches, and which mParent mSort and warr
 known only once bytes arrive. The mPlaceholder, for an mValue or an mParent not yet measured, is
 1.10-vantage-route-placeholder-witness's. An mLevel is what a mFullyQualifiedKey passes through
 (1.8-fully-qualified-key-topic-and-derivation): an mKey, or one of the world atoms that end a
-chain. The `refersTo` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
+chain. The `mRefersTo` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
 no engine definition reads it. That an mKey mRefers to at most one mReferent is a definition and
 not an assumption about the world (`notes/314a` § 1.2 and § 2.3). The two views coincide when an
 mSort's only mScheme is its primary mScheme, and the primary view is where the dangerous
@@ -336,14 +337,14 @@ warrants can honestly sit.
 abstract sig mLevel {}
 
 sig mKey extends mLevel {
-   value: one Shword,
+   mValue: one Shword,
    scheme: lone mScheme,
    cellSort: lone mSort,
    shape: lone mShape,
-   parent: lone mLevel,
+   mParent: lone mLevel,
    yielded: lone mKey,
    at: one mVantage,
-   refersTo: lone mReferent
+   mRefersTo: lone mReferent
 }
 
 fact { all k: mKey | some k.scheme iff no k.cellSort }
@@ -352,7 +353,7 @@ fact { all k: mKey | some k.cellSort implies no k.shape }
 
 fact { all k: mKey | k.shape.ofScheme in k.scheme }
 
-fact { all a, b: mKey | a.scheme = b.scheme and a.value = b.value implies a.shape = b.shape }
+fact { all a, b: mKey | a.scheme = b.scheme and a.mValue = b.mValue implies a.shape = b.shape }
 
 fact { all k: mKey | no yieldsTo[k.shape] implies no k.yielded }
 
@@ -404,7 +405,7 @@ matched shape is a control-flow path, an evaluation that declines the warrant ha
 shape that does not carry it.
 
 ```alloy
-fun token[k: mKey]: lone Shword { isPrimaryKey[k] implies k.value else none }
+fun mToken[k: mKey]: lone Shword { isPrimaryKey[k] implies k.mValue else none }
 
 sig DeclaresUniqueReferent extends Spoken { referentShape: one mShape }
 
@@ -424,19 +425,19 @@ fact {
 }
 
 pred withinOneParent[a, b: mKey] {
-   some a.parent & b.parent
-   or (a.parent + b.parent in mKey and some a.parent.refersTo and a.parent.refersTo = b.parent.refersTo)
+   some a.mParent & b.mParent
+   or (a.mParent + b.mParent in mKey and some a.mParent.mRefersTo and a.mParent.mRefersTo = b.mParent.mRefersTo)
 }
 
 pred true_DeclaresUniqueReferent[d: DeclaresUniqueReferent] {
    all a, b: keysOfShape[d.referentShape] |
-      withinOneParent[a, b] and a.value = b.value implies a.refersTo = b.refersTo
+      withinOneParent[a, b] and a.mValue = b.mValue implies a.mRefersTo = b.mRefersTo
 }
 
 pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
    all a: keysOfShape[d.nameShape], b: mKey |
-      b.scheme = a.scheme and withinOneParent[a, b] and some a.refersTo and a.refersTo = b.refersTo
-         implies a.value = b.value
+      b.scheme = a.scheme and withinOneParent[a, b] and some a.mRefersTo and a.mRefersTo = b.mRefersTo
+         implies a.mValue = b.mValue
 }
 ```
 
@@ -513,21 +514,21 @@ pred supplyFits[k: mKey] {
 
 fact {
    all k: mKey {
-      (no k.shape and no k.cellSort) implies no k.parent
-      some k.cellSort implies k.parent = (supplyFits[k] implies identity[supplies[k]] else none)
-      isRoot[k.shape] implies k.parent = rootShape.(k.shape)
+      (no k.shape and no k.cellSort) implies no k.mParent
+      some k.cellSort implies k.mParent = (supplyFits[k] implies identity[supplies[k]] else none)
+      isRoot[k.shape] implies k.mParent = rootShape.(k.shape)
       (some k.shape and not isRoot[k.shape] and no identifiedIn[k.shape] and no yieldsTo[k.shape])
-         implies k.parent = k.at.route
+         implies k.mParent = k.at.route
       some identifiedIn[k.shape]
-         implies k.parent = (supplyFits[k] implies identity[supplies[k]] else none)
+         implies k.mParent = (supplyFits[k] implies identity[supplies[k]] else none)
       some yieldsTo[k.shape]
-         implies k.parent = (let seats = supplies[k] + k.at.ambient[catalogSortOf[k.scheme]] |
+         implies k.mParent = (let seats = supplies[k] + k.at.ambient[catalogSortOf[k.scheme]] |
                              one seats implies seats else none)
    }
 }
 
 pred true_SuppliesParent[s: SuppliesParent] {
-   isPrimaryKey[s.forKey] implies s.forKey.refersTo in s.instance.refersTo.holds
+   isPrimaryKey[s.forKey] implies s.forKey.mRefersTo in s.instance.mRefersTo.holds
 }
 ```
 
@@ -605,12 +606,12 @@ fun crossed[k: mKey]: set mKey { (EmitsCrossed & InForce & crossedFor.k).crossed
 
 pred traversalClosed[k: mKey] { some ClosesTraversal & InForce & closedFor.k }
 
-fun traversal[k: mKey]: set mLevel { crossed[k] + (traversalClosed[k] implies none else k.parent) }
+fun mTraversal[k: mKey]: set mLevel { crossed[k] + (traversalClosed[k] implies none else k.mParent) }
 
 pred true_EmitsCrossed[d: EmitsCrossed] {}
 
 pred true_ClosesTraversal[d: ClosesTraversal] {
-   let k = d.closedFor | passes.(k.refersTo) in crossed[k].refersTo
+   let k = d.closedFor | passes.(k.mRefersTo) in crossed[k].mRefersTo
 }
 ```
 
@@ -664,17 +665,17 @@ fact { all w: mRootWorld | isRoot[w.rootShape] }
 
 fact { all s: mShape | isRoot[s] implies one rootShape.s }
 
-fact { no l: mLevel | l in l.^parent }
+fact { no l: mLevel | l in l.^mParent }
 
-fun fullyQualifiedKey[k: mKey]: set mLevel { identity[k].*parent }
+fun mFullyQualifiedKey[k: mKey]: set mLevel { identity[k].*mParent }
 
-fun terminus[k: mKey]: lone mLevel { {l: k.*parent | no l.parent} }
+fun terminus[k: mKey]: lone mLevel { {l: k.*mParent | no l.mParent} }
 
 pred knownChain[k: mKey] { terminus[k] in mWorld }
 
 fun worldOf[k: mKey]: lone mWorld { terminus[k] & mWorld }
 
-fun height[l: mLevel]: Int { #(l.^parent) }
+fun height[l: mLevel]: Int { #(l.^mParent) }
 ```
 
 <!-- prose-translation -->
@@ -727,7 +728,7 @@ fact { all c: mSort | lone cellParentSort[c] }
 
 fact { all k: mKey | some k.cellSort implies some cellParentSort[k.cellSort] }
 
-fact { all disj a, b: mKey | some a.cellSort & b.cellSort and some a.parent & b.parent implies a = b }
+fact { all disj a, b: mKey | some a.cellSort & b.cellSort and some a.mParent & b.mParent implies a = b }
 
 pred true_DeclaresCell[d: DeclaresCell] {}
 ```
@@ -783,8 +784,8 @@ fact { all f: VerdictFact | f.underObservers = mSort.(f.topic.at.ambient) }
 
 pred shellResolvesInTheAmbientInstance {
    all v: mVantage | no v.through implies
-      all k: mKey | k.at = v and isNaturalKey[k] and some k.parent & v.ambient[catalogSortOf[k.scheme]] implies
-         k.refersTo in k.parent.refersTo.passes
+      all k: mKey | k.at = v and isNaturalKey[k] and some k.mParent & v.ambient[catalogSortOf[k.scheme]] implies
+         k.mRefersTo in k.mParent.mRefersTo.passes
 }
 ```
 
@@ -916,11 +917,11 @@ fact { all s: mShape | lone yieldsTo[s] }
 fact { all s: mShape | some yieldsTo[s] implies no identifiedIn[s] and not isRoot[s] }
 
 pred true_DeclaresYields[d: DeclaresYields] {
-   all k: keysOfShape[d.fromShape] | some k.yielded implies k.refersTo = k.yielded.refersTo
+   all k: keysOfShape[d.fromShape] | some k.yielded implies k.mRefersTo = k.yielded.mRefersTo
 }
 
 fun naturalKeyAnswer[x, y: mKey]: one Answer {
-   (some x.scheme & y.scheme and some x.parent & y.parent) implies
+   (some x.scheme & y.scheme and some x.mParent & y.mParent) implies
       (sameAtOneLevel[x, y] implies SAME
        else twoTopsWay[x, y] implies DISJOINT
        else UNKNOWN)
@@ -929,34 +930,34 @@ fun naturalKeyAnswer[x, y: mKey]: one Answer {
 
 check law_natural_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest implies
-      all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.refersTo = y.refersTo
+      all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.mRefersTo = y.mRefersTo
 } for 6 but 4 Int
 
 run law_natural_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.refersTo
+   some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.mRefersTo
 }
 
 run kill_natural_same_is_sound_unique_referent {
    axiomaticByDifferentialTest
    some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
-      and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 6 but 4 Int expect 1
 
 check law_natural_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest implies
-      all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.refersTo & y.refersTo
+      all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int
 
 run law_natural_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.refersTo and some y.refersTo
+   some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.mRefersTo and some y.mRefersTo
 }
 
 run kill_natural_disjoint_is_sound_unique_name {
    axiomaticByDifferentialTest
    some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
-      and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int expect 1
 ```
 
@@ -1046,12 +1047,12 @@ pred isRoot[s: mShape] { some DeclaresRoot & InForce & rootedShape.s }
 fact { all s: mShape | isRoot[s] implies no identifiedIn[s] }
 
 pred true_DeclaresIdentifiedIn[d: DeclaresIdentifiedIn] {
-   all k: keysOfShape[d.onShape] | some k.refersTo implies
-      some r: keysOfSort[d.inSort].refersTo | k.refersTo in r.holds
+   all k: keysOfShape[d.onShape] | some k.mRefersTo implies
+      some r: keysOfSort[d.inSort].mRefersTo | k.mRefersTo in r.holds
 }
 
 pred true_DeclaresRoot[d: DeclaresRoot] {
-   all a, b: keysOfShape[d.rootedShape] | a.value = b.value implies a.refersTo = b.refersTo
+   all a, b: keysOfShape[d.rootedShape] | a.mValue = b.mValue implies a.mRefersTo = b.mRefersTo
 }
 ```
 
@@ -1089,7 +1090,7 @@ sig DeclaresAliasesNothingElse extends Spoken { store: one mKey }
 pred aliasesNothingElse[l: mLevel] { some DeclaresAliasesNothingElse & InForce & store.l }
 
 pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
-   let s = d.store.refersTo |
+   let s = d.store.mRefersTo |
       all r: s.holds | s in owns.r and owns.r in s
 }
 ```
@@ -1112,9 +1113,9 @@ routing, through a secondary mScheme; identity, through the primary mScheme. Dan
 own.
 
 ```alloy
-fun parentStore[k: mKey]: lone mLevel { isPrimaryKey[k] implies k.parent else none }
+fun mParentStore[k: mKey]: lone mLevel { isPrimaryKey[k] implies k.mParent else none }
 
-fun parentCatalog[k: mKey]: lone mLevel { k.parent }
+fun mParentCatalog[k: mKey]: lone mLevel { k.mParent }
 ```
 
 <!-- prose-translation -->
@@ -1165,7 +1166,7 @@ pred sortClosed[k: mKey] { mayReadClosed[sortOfKey[k]] }
 pred readsetMemberIsTop[k: mKey] {
    some m: k.*mayReadEdge |
       (not sortClosed[m]
-       or (some l: identity[m].*parent & mKey | not sortClosed[l])
+       or (some l: identity[m].*mParent & mKey | not sortClosed[l])
        or terminus[identity[m]] in mRoute)
 }
 
@@ -1176,12 +1177,12 @@ pred readsetIsTop[f: VerdictFact] { no f.markedReads or some k: f.markedReads | 
 pred true_DeclaresMayRead[d: DeclaresMayRead] {}
 
 pred true_ClosesMayRead[d: ClosesMayRead] {
-   all k: keysOfSort[d.readSort] | some k.refersTo implies
-      affects.(k.refersTo) in k.refersTo.*holds + (^holds).(k.refersTo) + compositeMayRead[k].refersTo
+   all k: keysOfSort[d.readSort] | some k.mRefersTo implies
+      affects.(k.mRefersTo) in k.mRefersTo.*holds + (^holds).(k.mRefersTo) + compositeMayRead[k].mRefersTo
 }
 
 pred true_VerdictFact[f: VerdictFact] {
-   some f.markedReads implies f.dependsOn in f.markedReads.refersTo
+   some f.markedReads implies f.dependsOn in f.markedReads.mRefersTo
 }
 ```
 
@@ -1270,10 +1271,10 @@ fun rule4[m: mKey]: set mKey { {k: mKey | some e: compositeMayRead[k] | entryAns
 
 fun seed[l: Line]: set mKey { atMostEntries[l] + {k: mKey | some P: wholeWriteEntries[l] | k in beneathFor[P]} }
 
-fun levelKeysOf[m: mKey]: set mKey { m + (identity[m].*parent & mKey) }
+fun levelKeysOf[m: mKey]: set mKey { m + (identity[m].*mParent & mKey) }
 
 fun contributingContainers[m, r: mKey]: set mKey {
-   let excluded = (meet[identity[m], identity[r]].mLevel).*parent |
+   let excluded = (meet[identity[m], identity[r]].mLevel).*mParent |
       levelKeysOf[m] - excluded - (some identity[m] & excluded implies m else none)
 }
 
@@ -1322,14 +1323,14 @@ pred true_DeclaresMayWrite[d: DeclaresMayWrite] {}
 
 pred true_ClosesMayWrite[d: ClosesMayWrite] {
    let l = d.closedLine |
-      World.lineWrites[l] in atMostEntries[l].refersTo + wholeWriteEntries[l].refersTo.passes
+      World.lineWrites[l] in atMostEntries[l].mRefersTo + wholeWriteEntries[l].mRefersTo.passes
 }
 
 pred true_DeclaresEntails[d: DeclaresEntails] {}
 
 pred true_FinishesEntailment[d: FinishesEntailment] {
-   all k: mKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.refersTo implies
-      (k.refersTo).affects in k.refersTo.*holds + entailed[k].refersTo
+   all k: mKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.mRefersTo implies
+      (k.mRefersTo).affects in k.mRefersTo.*holds + entailed[k].mRefersTo
 }
 
 pred sparingIsSound {
@@ -1339,7 +1340,7 @@ pred sparingIsSound {
 
 pred hole_two_separated_things_reach_one_thing_beneath {
    some disj x, y: mKey | tabledCompare[x, y] = DISJOINT
-      and some x.refersTo.*(holds + passes) & y.refersTo.*(holds + passes)
+      and some x.mRefersTo.*(holds + passes) & y.mRefersTo.*(holds + passes)
 }
 
 run hole_two_separated_things_reach_one_thing_beneath_witness {
@@ -1386,7 +1387,7 @@ run law_sparing_is_sound_with_a_store_on_the_chain_premise {
    outsideTheSparingHoles
    some l: Line, f: VerdictFact & InForce, r: readset[f] |
       spared[l, f] and some World.lineWrites[l] and some f.dependsOn and some atMostEntries[l]
-         and some identity[r].^parent & mKey
+         and some identity[r].^mParent & mKey
 }
 
 run kill_sparing_is_sound_closes_may_write {
@@ -1553,11 +1554,11 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
-#= one sig k_index extends mKey {} { value = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  refersTo = the_index }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
+#= one sig k_index extends mKey {} { mValue = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  mRefersTo = the_index }
+#= one sig k_status_inode extends mKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
+#= one sig k_status_path extends mKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= mSort = sm_Boot + sm_Filesystem + sm_File + sm_PkgIndex
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path + sm_AptIndex
@@ -1659,12 +1660,12 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
-#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = list_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
-#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  refersTo = list_inode }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
+#= one sig k_status_inode extends mKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
+#= one sig k_list_inode extends mKey {} { mValue = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = list_inode }
+#= one sig k_status_path extends mKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
+#= one sig k_list_path extends mKey {} { mValue = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  mRefersTo = list_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -1753,10 +1754,10 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 #= one sig status_inode, list_inode extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
-#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = list_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
-#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  refersTo = list_inode }
+#= one sig k_status_inode extends mKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
+#= one sig k_list_inode extends mKey {} { mValue = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = list_inode }
+#= one sig k_status_path extends mKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
+#= one sig k_list_path extends mKey {} { mValue = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  mRefersTo = list_inode }
 #= Speaker = tessa + anna + deb
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -1830,8 +1831,8 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_volumes extends mRootWorld {} { rootShape = volume_id_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_vol_0a1 extends mKey {} { value = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  refersTo = volume_a }
-#= one sig k_vol_0b2 extends mKey {} { value = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  refersTo = volume_b }
+#= one sig k_vol_0a1 extends mKey {} { mValue = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  mRefersTo = volume_a }
+#= one sig k_vol_0b2 extends mKey {} { mValue = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  mRefersTo = volume_b }
 #= Speaker = petra + ravi
 #= mSort = sm_Volume
 #= mScheme = sm_VolumeId
@@ -1905,7 +1906,7 @@ pred corresponds[x, y: mKey] {
    some d: DeclaresCorresponds & InForce | (d.keyX = x and d.keyY = y) or (d.keyX = y and d.keyY = x)
 }
 
-pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.refersTo = d.keyY.refersTo }
+pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.mRefersTo = d.keyY.mRefersTo }
 ```
 
 <!-- prose-translation -->
@@ -1945,7 +1946,7 @@ pred sameTopic[f, g: VerdictFact] {
 
 pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
    all f: VerdictFact | sortOfKey[f.topic] = d.independentSort implies
-      no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.refersTo
+      no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.mRefersTo
 }
 ```
 
@@ -1993,16 +1994,16 @@ fact { all d: EmitsAliasNothingElse | d.speaker = d.atLevel.scheme.schemeOwner }
 pred aliasClosed[m: mKey] { some EmitsAliasNothingElse & InForce & atLevel.m }
 
 pred true_EmitsAliasNothingElse[d: EmitsAliasNothingElse] {
-   no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.refersTo and c.refersTo = d.atLevel.refersTo
+   no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.mRefersTo and c.mRefersTo = d.atLevel.mRefersTo
 }
 
 fun sortOfKey[k: mKey]: lone mSort { primaryOf[identity[k].scheme] + identity[k].cellSort }
 
 fun traversalMembers[k: mKey]: set mKey {
-   crossed[k] + (traversalClosed[k] implies none else k.parent & mKey)
+   crossed[k] + (traversalClosed[k] implies none else k.mParent & mKey)
 }
 
-fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^parent & mKey) }
+fun levelsOf[x: mKey]: set mKey { x.*yielded + (identity[x].^mParent & mKey) }
 
 pred coveredBy[D, x: mKey] {
    (some l: levelsOf[x], m: traversalMembers[l] | tabledCompare[m, D] = SAME)
@@ -2050,7 +2051,7 @@ check law_region_disjoint_is_sound {
       and not hole_composite_keys_with_same_parts_reach_differently
       and not hole_world_scoped_top_aliases_into_a_store implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
-         no x.refersTo & (D.refersTo + D.refersTo.passes)
+         no x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
 } for 6 but 4 Int
 
 run law_region_disjoint_is_sound_premise {
@@ -2058,7 +2059,7 @@ run law_region_disjoint_is_sound_premise {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_world_scoped_top_aliases_into_a_store
-   some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo and some D.refersTo.passes
+   some D, x: mKey | regionTest[D, x] = DISJOINT and some x.mRefersTo and some D.mRefersTo.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
 }
 
@@ -2069,7 +2070,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
-      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo & (D.refersTo + D.refersTo.passes)
+      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
 } for 5 but 4 Int expect 1
 
 run kill_region_disjoint_is_sound_alias_nothing_else {
@@ -2079,7 +2080,7 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
-      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo & (D.refersTo + D.refersTo.passes)
+      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
 } for 5 but 4 Int expect 1
 ```
 
@@ -2183,12 +2184,12 @@ fun beneathFor[P: mKey]: set mKey { entailmentFinished[P] implies entailed[P] el
 pred true_DeclaresPlaces[d: DeclaresPlaces] {}
 
 pred true_RecordsLookedUpIn[d: RecordsLookedUpIn] {
-   d.placedKey.refersTo in d.inKey.refersTo.passes
+   d.placedKey.mRefersTo in d.inKey.mRefersTo.passes
 }
 
 pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
-   all g: keysOfSort[d.routeSort] | some d.closedKey.refersTo and d.closedKey.refersTo in g.refersTo.passes implies
-      some r: placedIn[d.closedKey, d.routeSort] | r.refersTo = g.refersTo
+   all g: keysOfSort[d.routeSort] | some d.closedKey.mRefersTo and d.closedKey.mRefersTo in g.mRefersTo.passes implies
+      some r: placedIn[d.closedKey, d.routeSort] | r.mRefersTo = g.mRefersTo
 }
 ```
 
@@ -2251,11 +2252,11 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 #= one sig fs_1, dir_a, dir_b, inode_a extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
-#= one sig k_dir_a extends mKey {} { value = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  refersTo = dir_a }
-#= one sig k_dir_b extends mKey {} { value = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  refersTo = dir_b }
-#= one sig k_ino_a extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_a }
-#= one sig k_srv_a_path extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  refersTo = inode_a }
+#= one sig k_fs_1 extends mKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
+#= one sig k_dir_a extends mKey {} { mValue = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  mRefersTo = dir_a }
+#= one sig k_dir_b extends mKey {} { mValue = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  mRefersTo = dir_b }
+#= one sig k_ino_a extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_a }
+#= one sig k_srv_a_path extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  mRefersTo = inode_a }
 #= Speaker = tessa + dan + rick + carl
 #= mSort = sm_Filesystem + sm_File + sm_Directory
 #= mScheme = sm_FsId + sm_Inode + sm_Path + sm_DirInode
@@ -2448,32 +2449,32 @@ pred oneInstance[a, b: mLevel] { a = b }
 
 pred sameAtOneLevel[a, b: mLevel] {
    oneInstance[a, b]
-   or (a + b in mKey and a.value = b.value and a.shape = b.shape and guaranteesUniqueReferent[a.shape])
+   or (a + b in mKey and a.mValue = b.mValue and a.shape = b.shape and guaranteesUniqueReferent[a.shape])
    or (a + b in mKey and some a.cellSort and a.cellSort = b.cellSort)
 }
 
 pred alignedSame[a, b: mLevel] {
    height[a] = height[b]
-   all a2: a.*parent, b2: b.*parent | height[a2] = height[b2] implies sameAtOneLevel[a2, b2]
+   all a2: a.*mParent, b2: b.*mParent | height[a2] = height[b2] implies sameAtOneLevel[a2, b2]
 }
 
 pred sameChains[x, y: mKey] { alignedSame[x, y] }
 
 fun meet[x, y: mKey]: mLevel -> mLevel {
-   {a: x.*parent, b: y.*parent |
+   {a: x.*mParent, b: y.*mParent |
       alignedSame[a, b] and
-      no a2: x.*parent, b2: y.*parent | alignedSame[a2, b2] and a in a2.^parent}
+      no a2: x.*mParent, b2: y.*mParent | alignedSame[a2, b2] and a in a2.^mParent}
 }
 
-fun topBelow[x: mKey, a: mLevel]: lone mLevel { {t: x.*parent | t.parent = a} }
+fun topBelow[x: mKey, a: mLevel]: lone mLevel { {t: x.*mParent | t.mParent = a} }
 
-fun legStores[x: mKey, a: mLevel]: set mLevel { (x.^parent & mKey) - a.*parent }
+fun legStores[x: mKey, a: mLevel]: set mLevel { (x.^mParent & mKey) - a.*mParent }
 
 pred twoTopsWay[tx, ty: mLevel] {
    tx + ty in mKey
    tx.scheme = ty.scheme
    guaranteesUniqueName[tx.shape] and guaranteesUniqueName[ty.shape]
-   tx.value != ty.value
+   tx.mValue != ty.mValue
 }
 
 pred oneTopWay[x, y: mKey, tx, ty: mLevel] {
@@ -2529,8 +2530,8 @@ fun tabledWalk[x, y: mKey]: one Answer { Tables.walkTable[x][y] }
 fun tabledCompare[x, y: mKey]: one Answer { Tables.compareTable[x][y] }
 
 pred hole_cell_keys_under_same_parents_reach_differently {
-   some disj a, b: mKey | some a.cellSort & b.cellSort and a.parent != b.parent
-      and some a.parent.refersTo & b.parent.refersTo and a.refersTo != b.refersTo
+   some disj a, b: mKey | some a.cellSort & b.cellSort and a.mParent != b.mParent
+      and some a.mParent.mRefersTo & b.mParent.mRefersTo and a.mRefersTo != b.mRefersTo
 }
 
 run hole_cell_keys_under_same_parents_reach_differently_witness {
@@ -2538,8 +2539,8 @@ run hole_cell_keys_under_same_parents_reach_differently_witness {
 } for 6 but 4 Int expect 1
 
 pred hole_world_scoped_top_aliases_into_a_store {
-   some x, s: mKey | some x.parent & mWorld and some s.parent & x.parent and s != x
-      and some x.refersTo and x.refersTo in s.refersTo.^holds
+   some x, s: mKey | some x.mParent & mWorld and some s.mParent & x.mParent and s != x
+      and some x.mRefersTo and x.mRefersTo in s.mRefersTo.^holds
 }
 
 run hole_world_scoped_top_aliases_into_a_store_witness {
@@ -2547,7 +2548,7 @@ run hole_world_scoped_top_aliases_into_a_store_witness {
 } for 6 but 4 Int expect 1
 
 pred hole_composite_keys_with_same_parts_reach_differently {
-   some disj a, b: CompositeKey | compositeSame[a, b] and a.refersTo != b.refersTo
+   some disj a, b: CompositeKey | compositeSame[a, b] and a.mRefersTo != b.mRefersTo
 }
 
 run hole_composite_keys_with_same_parts_reach_differently_witness {
@@ -2558,14 +2559,14 @@ check law_compare_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest
       and not hole_cell_keys_under_same_parents_reach_differently
       and not hole_composite_keys_with_same_parts_reach_differently implies
-      all x, y: mKey | compare[x, y] = SAME implies x.refersTo = y.refersTo
+      all x, y: mKey | compare[x, y] = SAME implies x.mRefersTo = y.mRefersTo
 } for 6 but 4 Int
 
 run law_compare_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
    not hole_composite_keys_with_same_parts_reach_differently
-   some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.refersTo
+   some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.mRefersTo
 }
 
 run kill_compare_same_is_sound_corresponds {
@@ -2573,21 +2574,21 @@ run kill_compare_same_is_sound_corresponds {
    not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
-      and some x, y: mKey | compare[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | compare[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 check law_compare_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_composite_keys_with_same_parts_reach_differently implies
-      all x, y: mKey | compare[x, y] = DISJOINT implies no x.refersTo & y.refersTo
+      all x, y: mKey | compare[x, y] = DISJOINT implies no x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_composite_keys_with_same_parts_reach_differently
-   some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.refersTo and some y.refersTo
+   some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo and some y.mRefersTo
 }
 
 run kill_compare_disjoint_is_sound_corresponds {
@@ -2596,7 +2597,7 @@ run kill_compare_disjoint_is_sound_corresponds {
    not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
-      and some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 pred axiomaticByContractExcept[except: set Spoken] {
@@ -2640,39 +2641,39 @@ pred noRoutePassesThroughItself { no r: mReferent | r in r.^passes }
 
 check law_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and not hole_cell_keys_under_same_parents_reach_differently implies
-      all x, y: mKey | walkOfKeys[x, y] = SAME implies x.refersTo = y.refersTo
+      all x, y: mKey | walkOfKeys[x, y] = SAME implies x.mRefersTo = y.mRefersTo
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
-   some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.refersTo
+   some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.mRefersTo
 }
 
 run kill_same_is_sound_unique_referent {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 6 but 4 Int expect 1
 
 run kill_same_is_sound_yields {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not true_DeclaresYields[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 check law_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_world_scoped_top_aliases_into_a_store implies
-      all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.refersTo & y.refersTo
+      all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
-   some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo and some y.refersTo
-      and some (x.^parent + y.^parent) & mKey
+   some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo and some y.mRefersTo
+      and some (x.^mParent + y.^mParent) & mKey
 }
 
 run kill_disjoint_is_sound_unique_name {
@@ -2680,7 +2681,7 @@ run kill_disjoint_is_sound_unique_name {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_aliases_nothing_else {
@@ -2688,14 +2689,14 @@ run kill_disjoint_is_sound_aliases_nothing_else {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresAliasesNothingElse & InForce | axiomaticByContractExcept[d] and not true_DeclaresAliasesNothingElse[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_same_is_sound_identified_in {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_identified_in {
@@ -2703,21 +2704,21 @@ run kill_disjoint_is_sound_identified_in {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_root {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not true_DeclaresRoot[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_supplies_parent {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_supplies_parent {
@@ -2725,14 +2726,14 @@ run kill_disjoint_is_sound_supplies_parent {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_closes_lends {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not true_ClosesLends[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 check law_nobody_spoke_declines {
@@ -2917,13 +2918,13 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
-#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_42 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
-#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  refersTo = inode_42 }
-#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  refersTo = inode_17 }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
+#= one sig k_ino_42 extends mKey {} { mValue = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_b extends mKey {} { mValue = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  mRefersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -3018,11 +3019,11 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
-#= one sig k_srv_a extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
-#= one sig k_srv_mirror extends mKey {} { value = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  refersTo = inode_17 }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_a extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_mirror extends mKey {} { mValue = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  mRefersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -3111,11 +3112,11 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 #= one sig docker_exec extends Wrapper {} { wrapperOwner = dora }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_PidNamespace->k_ns_0 }
 #= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = docker_exec  ambient = sm_PidNamespace->k_ns_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_ns_0 extends mKey {} { value = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  refersTo = ns_0 }
-#= one sig k_ns_1 extends mKey {} { value = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  refersTo = ns_1 }
-#= one sig k_pid_4821 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  refersTo = proc_web }
-#= one sig k_pid_1 extends mKey {} { value = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  refersTo = proc_web }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_ns_0 extends mKey {} { mValue = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  mRefersTo = ns_0 }
+#= one sig k_ns_1 extends mKey {} { mValue = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  mRefersTo = ns_1 }
+#= one sig k_pid_4821 extends mKey {} { mValue = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  mRefersTo = proc_web }
+#= one sig k_pid_1 extends mKey {} { mValue = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  mRefersTo = proc_web }
 #= Speaker = stdlib + pia + dora
 #= mSort = sm_Boot + sm_PidNamespace + sm_Process
 #= mScheme = sm_BootId + sm_PidNsId + sm_Pid
@@ -3209,11 +3210,11 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= one sig inode_17, inode_42 extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
-#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_42 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
-#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  refersTo = inode_42 }
-#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  refersTo = inode_17 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
+#= one sig k_ino_42 extends mKey {} { mValue = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_b extends mKey {} { mValue = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  mRefersTo = inode_17 }
 #= Speaker = tessa + carl
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -3228,7 +3229,7 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
 #= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
 #= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
-#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.parent)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.mParent)
 
    cmp -s ./golden.conf /srv/b/app.conf
 #} cmp dash_s golden_conf srv_b_app_conf
@@ -3286,9 +3287,9 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 #= one sig unit_nginx, active_state, enabled_state extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends mKey {} { value = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  refersTo = unit_nginx }
-#= one sig k_active_at_line_1, k_active_at_line_3 extends mKey {} { value = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  refersTo = active_state }
-#= one sig k_enabled extends mKey {} { value = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  refersTo = enabled_state }
+#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends mKey {} { mValue = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  mRefersTo = unit_nginx }
+#= one sig k_active_at_line_1, k_active_at_line_3 extends mKey {} { mValue = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  mRefersTo = active_state }
+#= one sig k_enabled extends mKey {} { mValue = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  mRefersTo = enabled_state }
 #= Speaker = sven
 #= mSort = sm_Unit + sm_UnitActive + sm_UnitEnabled
 #= mScheme = sm_UnitName
@@ -3309,7 +3310,7 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 #= one sig sven__the_active_cell_at_line_3_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_active_at_line_3  instance = k_nginx_at_line_3  seat = BindSeat }
 #= one sig sven__the_enabled_cell_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_enabled  instance = k_nginx_at_line_1  seat = BindSeat }
 #= one sig sven__nginx_is_active extends VerdictFact {} { speaker = sven  topic = k_active_at_line_1  atLine = this  markedReads = k_active_at_line_1  dependsOn = active_state }
-#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_active_at_line_1 and f.topic.parent = k_nginx_at_line_1 and worldOf[f.topic] = r0)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_active_at_line_1 and f.topic.mParent = k_nginx_at_line_1 and worldOf[f.topic] = r0)
 
    systemctl is-enabled nginx.service
 #} systemctl is_enabled nginx_service
@@ -3369,10 +3370,10 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 #= one sig inode_a, inode_b, merged_a_over_b, merged_b_over_a extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_a extends mKey {} { value = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_a }
-#= one sig k_ino_b extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_b }
-#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends mKey {} { value = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  refersTo = merged_a_over_b }
-#= one sig k_b_over_a extends mKey {} { value = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  refersTo = merged_b_over_a }
+#= one sig k_ino_a extends mKey {} { mValue = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_a }
+#= one sig k_ino_b extends mKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_b }
+#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends mKey {} { mValue = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  mRefersTo = merged_a_over_b }
+#= one sig k_b_over_a extends mKey {} { mValue = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  mRefersTo = merged_b_over_a }
 #= part = k_a_over_b_at_line_1->base_role->k_ino_a + k_a_over_b_at_line_1->overlay_role->k_ino_b + k_a_over_b_at_line_3->base_role->k_ino_a + k_a_over_b_at_line_3->overlay_role->k_ino_b + k_b_over_a->base_role->k_ino_b + k_b_over_a->overlay_role->k_ino_a
 #= Speaker = tessa + cora
 #= mSort = sm_File + sm_MergedConfig
@@ -3447,14 +3448,14 @@ fun lineWriteset[l: Line]: set mKey { writesetUnexcluded[l] }
 pred lineWritesetIsTop[l: Line] { writesetIsTop[l, lineWriteset[l]] }
 
 pred hasTraversalMembers[k: mKey] {
-   (some l: levelsOf[k] | some crossed[l] or (not traversalClosed[l] and some l.parent & mKey))
+   (some l: levelsOf[k] | some crossed[l] or (not traversalClosed[l] and some l.mParent & mKey))
    or some (RecordsLookedUpIn & InForce & placedKey.k).inKey
 }
 
 pred touchesTraversal[w: mKey, k: mKey] {
    (some l: levelsOf[k] |
       (some m: crossed[l] | tabledCompare[w, m] != DISJOINT)
-      or (not traversalClosed[l] and some p: l.parent & mKey | regionTest[p, w] != DISJOINT))
+      or (not traversalClosed[l] and some p: l.mParent & mKey | regionTest[p, w] != DISJOINT))
    or some g: (RecordsLookedUpIn & InForce & placedKey.k).inKey | tabledCompare[w, g] != DISJOINT
 }
 
@@ -3465,13 +3466,13 @@ pred routingInvalidatedBy[l: Line, k: mKey] {
 }
 
 pred tokenInvalidatedBy[l: Line, k: mKey] {
-   (lineWritesetIsTop[l] and some identity[k].^parent & mKey)
-   or (some w: lineWriteset[l], p: identity[k].^parent & mKey | tabledCompare[w, p] != DISJOINT)
+   (lineWritesetIsTop[l] and some identity[k].^mParent & mKey)
+   or (some w: lineWriteset[l], p: identity[k].^mParent & mKey | tabledCompare[w, p] != DISJOINT)
 }
 
 pred lifecycleInvalidatedBy[l: Line, k: mKey] {
-   (lineWritesetIsTop[l] and some w: identity[k].^parent & mKey | some w.parent & mRootWorld)
-   or (some w: lineWriteset[l] | some w.parent & mRootWorld and w in identity[k].^parent)
+   (lineWritesetIsTop[l] and some w: identity[k].^mParent & mKey | some w.mParent & mRootWorld)
+   or (some w: lineWriteset[l] | some w.mParent & mRootWorld and w in identity[k].^mParent)
 }
 
 pred staleAt[s: Line, k: mKey] {
@@ -3483,7 +3484,7 @@ fun compareAt[s: Line, x, y: mKey]: one Answer {
 }
 
 pred hole_unclosed_traversal_without_a_key_catalog {
-   some k: mKey, l: levelsOf[k] | not traversalClosed[l] and no l.parent & mKey
+   some k: mKey, l: levelsOf[k] | not traversalClosed[l] and no l.mParent & mKey
 }
 
 run hole_unclosed_traversal_without_a_key_catalog_witness {
@@ -3491,8 +3492,8 @@ run hole_unclosed_traversal_without_a_key_catalog_witness {
 } for 6 but 4 Int expect 1
 
 pred hole_natural_key_catalog_off_the_route {
-   some k: mKey | isNaturalKey[k] and some k.parent & mKey and some k.refersTo
-      and k.refersTo not in k.parent.refersTo.passes
+   some k: mKey | isNaturalKey[k] and some k.mParent & mKey and some k.mRefersTo
+      and k.mRefersTo not in k.mParent.mRefersTo.passes
 }
 
 run hole_natural_key_catalog_off_the_route_witness {
@@ -3501,7 +3502,7 @@ run hole_natural_key_catalog_off_the_route_witness {
 
 pred hole_a_route_off_the_catalog_reaches_the_thing {
    some k: mKey | not traversalClosed[k]
-      and some passes.(k.refersTo) - (k.parent & mKey).refersTo - crossed[k].refersTo
+      and some passes.(k.mRefersTo) - (k.mParent & mKey).mRefersTo - crossed[k].mRefersTo
 }
 
 run hole_a_route_off_the_catalog_reaches_the_thing_witness {
@@ -3515,7 +3516,7 @@ check law_unstale_route_is_untouched {
       and not hole_a_route_off_the_catalog_reaches_the_thing
       and not hole_region_closure_with_unknown_leaf_pair implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
-         no World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
+         no World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
 } for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
@@ -3537,7 +3538,7 @@ run kill_unstale_route_is_untouched_closes_traversal {
    axiomaticByDifferentialTest
    some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not true_ClosesTraversal[d]
       and some s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
-         and some World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
+         and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_unstale_route_is_untouched_closes_may_write {
@@ -3549,7 +3550,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
    axiomaticByDifferentialTest
    some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
       and some s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
-         and some World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
+         and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
 } for 6 but 4 Int, 9 Claim expect 1
 ```
 
@@ -3637,8 +3638,8 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
-#= one sig k_pid_at_line_1, k_pid_at_line_3 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  refersTo = proc_web }
+#= one sig k_boot extends mKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
+#= one sig k_pid_at_line_1, k_pid_at_line_3 extends mKey {} { mValue = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  mRefersTo = proc_web }
 #= Speaker = stdlib + pia + rob
 #= mSort = sm_Boot + sm_Process
 #= mScheme = sm_BootId + sm_Pid
@@ -3660,13 +3661,13 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 #= one sig pia__pid_4821_at_line_1_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_1  instance = k_boot  seat = DeclarationSeat }
 #= one sig pia__pid_4821_at_line_3_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_3  instance = k_boot  seat = DeclarationSeat }
 #= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_at_line_1  atLine = this  markedReads = k_pid_at_line_1  dependsOn = proc_web }
-#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_at_line_1 and f.topic.parent = k_boot and worldOf[f.topic] = w_boot)
+#= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_at_line_1 and f.topic.mParent = k_boot and worldOf[f.topic] = w_boot)
 
    reboot
 #} reboot
 #= one sig rob__reboot_writes_the_boot extends DeclaresMayWrite {} { speaker = rob  writeLine = this  writeEntry = k_boot }
 #= one sig rob__reboot_writes_nothing_else extends ClosesMayWrite {} { speaker = rob  closedLine = this }
-#= atMostClosed[this] and atMostEntries[this] = k_boot and some k_boot.parent & mRootWorld
+#= atMostClosed[this] and atMostEntries[this] = k_boot and some k_boot.mParent & mRootWorld
 
    kill -0 4821
 #} kill dash_0 pid_4821
@@ -3752,16 +3753,16 @@ fun keysUnder[w: Wrapper]: set mKey { {k: mKey | k.at.through = w} }
 pred true_DeclaresLends[d: DeclaresLends] {
    all k: keysUnder[d.lendingWrapper] |
       isNaturalKey[k] and catalogSortOf[k.scheme] = d.lentSort implies
-         k.refersTo in d.lentInstance.refersTo.passes
+         k.mRefersTo in d.lentInstance.mRefersTo.passes
 }
 
 pred true_ClosesLends[d: ClosesLends] {
    let w = d.closedWrapper {
       all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]]
             and some k.at.enteredFrom.ambient[catalogSortOf[k.scheme]] implies
-         k.refersTo in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].refersTo.passes
-      all k: keysUnder[w], j: mKey | j.at = k.at.enteredFrom and k.scheme = j.scheme and k.value = j.value
-         and k.parent = k.at.route and j.parent = j.at.route implies k.refersTo = j.refersTo
+         k.mRefersTo in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].mRefersTo.passes
+      all k: keysUnder[w], j: mKey | j.at = k.at.enteredFrom and k.scheme = j.scheme and k.mValue = j.mValue
+         and k.mParent = k.at.route and j.mParent = j.at.route implies k.mRefersTo = j.mRefersTo
    }
 }
 ```
@@ -3824,10 +3825,10 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
 #= one sig v1 extends mVantage {} { enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
-#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  refersTo = inode_17 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
-#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  refersTo = inode_17 }
+#= one sig k_ino_17_at_line_1 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  mRefersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -3895,10 +3896,10 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
 #= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
-#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  refersTo = inode_17 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
-#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  refersTo = inode_17 }
+#= one sig k_ino_17_at_line_1 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  mRefersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -3961,7 +3962,7 @@ fun warrantsOn[k: mLevel]: set Spoken {
 }
 
 fun chainSupport[x: mKey]: set Spoken {
-   warrantsOn[fullyQualifiedKey[identity[x]]]
+   warrantsOn[mFullyQualifiedKey[identity[x]]]
    + (DeclaresYields & InForce & fromShape.((x.*yielded).shape))
    + (DeclaresLends & InForce & lentInstance.(mSort.(x.at.ambient)))
    + (ClosesLends & InForce & closedWrapper.(x.at.*enteredFrom.through))
@@ -4343,7 +4344,7 @@ Plain-English "read" that must NOT be tagged or renamed (a host read, not the op
 | mPlacement · `:lives-in` · "placement"; and "backing" (`an-backing-selfframing`, the probe's marked read set): the declared and the measured halves of one side | `may-read` (the record verb / relation); Readset (the set: the declared `may-read` entries, the probe's marked reads, and the Readsets of every container on the chain). Sentinel `may-read nothing-else` | `ANALYZER-NEEDS` rows, including the slug `ANALYZER-NEEDS:an-backing-selfframing` (also cited from `plans/30T`); `USER_STORY`; `KNOBS` |
 | footprint · `disturbs` · "at-most claim"; and `:reaches` / `disturbance_reaches` (the entailment, computed into the same set) | `may-write` (the record verb / relation); Writeset (the set: the declared `may-write` entries, the entailment, and the may-write sets of the written thing's containers strictly below the level shared with the fact's key). Sentinel `may-write nothing-else` (the finished definition / completion record) | `USER_STORY` stages 5–7; `KNOBS:kBURDEN`; `ANALYZER-NEEDS`; `FORFEITS`; the spike members `cmd__disturbs()` and `kind__disturbance_reaches()`, which follow the verb |
 | "perishing" and its forms, used as jargon | no term: the jargon retires. Plain English and standard compiler-engineering terminology, usually but not always a phrase with the word "invalidation". Never a capitalised or tagged form (no "Invalidation", no mInvalidation). Where it becomes "invalidation", it nearly always needs a precise subject; for how "perishing" was used, the human believes that is probably "routing invalidation", unchecked | not yet investigated |
-| `reaches`, the world relation from an mKey to an mReferent | mRefers to (one instance is an mReference); the fence field is `refersTo` | the r31 ledgers from `312d` on |
+| `reaches`, the world relation from an mKey to an mReferent | mRefers to (one instance is an mReference); the fence field is `mRefersTo` | the r31 ledgers from `312d` on |
 | `unrelated` | KNOWN_UNSPOKEN | `30U` § 7, `compare-consumer-map`, `ANALYZER-NEEDS:an-compare-chokepoint`. The design-of-record documents keep `unrelated` until the model is ruled (4.2-supersessions-pending-in-prior-documents names them) |
 
 ### § 6.2-undecided-whether-a-name-is-dead
