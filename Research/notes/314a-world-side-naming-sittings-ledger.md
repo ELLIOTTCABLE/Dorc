@@ -373,3 +373,42 @@ root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate chan
   Otherwise the non-m use is reworded or renamed.
 - **[TYPED]** the reviewer was meant to wait for the next substantial change; its second report
   is read with extra skepticism.
+
+### § 2.7-the-second-review-walked
+
+The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is root
+`_tmp-314a-adversarial-review-2.md`). The conductor put seven items.
+
+- Applied first: the per-instant sentence in § 1.1.1 (commit "(AI dsn new) State that a key
+  mRefers to at most one referent per instant").
+- **[TYPED]** ack, applied: "An mKey has at most one mParent", as the fence says (commit "(AI dsn
+  fix) Say at most one mParent, as the fence does").
+- **[TYPED]** ack, applied: "No statement species declares an mKey's mParent", so the sentence no
+  longer denies the Conventions (commit "(AI dsn fix) Say no statement species declares the
+  mParent").
+- **[TYPED]** ack, applied: § 3.3's line points to the authoritative section, "The sparing test of
+  2.6-may-write-the-writeset decides what a state mutation invalidates" (commit "(AI dsn fix)
+  Point a state mutation's invalidation at the sparing test").
+- **[TYPED]** HARD ACK: language stays unambiguous; a pronoun is dangerous in a specification.
+  Repeating the noun within about three lines, or a parenthetical pointer to the line that
+  introduces it, is always reasonable ("a foo" then "the foo that bars", not "it"); a strong
+  preference, not a ban, added to the Conventions. Applied: § 1.7.1 names the mutator outright
+  (commit "(AI dsn fix) Name the mutator outright instead of its and it"); the Conventions bullet
+  (commits "(AI dsn) Prefer a repeated noun to a pronoun" and "(- AI dsn fix) Drop a never that
+  contradicted not-a-ban").
+- **[TYPED]** ack, applied: "at each site that the shell can execute after the mutator" in place
+  of the undefined "use" (commit "(AI dsn fix) Say site, not the undefined use").
+- **[TYPED]** the execution order against the fence's text order joins the held-work entry for
+  line-varying reach, so the line is not missed; no spec change yet. Done there.
+- **[TYPED]** soft ack: the colon rule says what Dorc is given, not an author's speech. The
+  category is likely larger than users: defined by negative space at both ends (not built into
+  the engine, not hidden from Dorc by design), it is what product design must worry about:
+  spelling, UX, users' expectations, defaults, configurability. Applied, with attributes and
+  warrants named (commit "(AI dsn fix) Widen the colon rule from an author's speech to what Dorc
+  is given").
+- **[TYPED]** the Conventions' derived-relation clause against the m-tagged derived names, and the
+  leftover uses of "reach": held for the next turn.
+- Applied under § 2.6's slug ruling: the two hole slugs that kept "reach" in the landing sense are
+  renamed `…_refer_differently` in the specification, its lock, `312d`, and `312e` (commit "(AI
+  dsn) Rename the two refer-differently hole slugs everywhere").
+- **[TYPED]** these items close before the rewind; no new large item is taken on.
