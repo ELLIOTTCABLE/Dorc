@@ -1485,7 +1485,7 @@ run law_exclusion_readings_agree_premise {
 > With one vouch false and every other statement in force true, a false sparing is reachable.
 > Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied mParent instance false.
 > An unsatisfiable kill says that no sparing rests on that statement alone.
-> The kill by a supplied mParent instance runs at five levels.
+> The kill by a supplied mParent instance asks over worlds of five levels.
 > Its witness needs a store on the read mKey's chain beside the two mWorlds.
 > Whether the two readings of the exclusion ever disagree on a sparing is asked, and either answer is a finding.
 > The premise twin of `law_exclusion_readings_agree` asks for a world where an at-most entry has an entailing level and a contributing container against a read mKey.
@@ -2807,7 +2807,7 @@ run law_different_sorts_never_same_premise {
 > A held hole: two cell mKeys of one cell mSort, under two mParents that reach one mReferent, reach two mReferents.
 > A held hole: an mKey scoped in an mWorld reaches an mReferent that a sibling mKey's mReferent holds, directly or through others.
 > A held hole: two composite mKeys that are SAME by their parts reach two mReferents.
-> Each hole has a witness run that shows it inhabited, and each law below is asked only outside the holes its sentence names.
+> Each hole has a witness that shows it inhabited, and each law below is asked only outside the holes its sentence names.
 > The model never reaches a false SAME while every statement in force is true and the engine's axioms hold.
 > Under those premises, two mKeys the walk reads SAME reach one mReferent, or both reach none.
 > No counterexample at scope 6 is the claim, never a proof.
@@ -2838,7 +2838,7 @@ run law_different_sorts_never_same_premise {
 > With one mCorrespondence false and every other statement in force true, a false SAME of `compare()` is reachable.
 > With one mCorrespondence false and every other statement in force true, a false DISJOINT of `compare()` that the walk does not give is reachable.
 > With a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
-> The kill by `:aliases-nothing-else` runs at nine statements, since its witness holds eight in force at once.
+> The kill by `:aliases-nothing-else` asks over worlds of nine statements, since its witness holds eight in force at once.
 > Six more kills ask whether the walk's laws also die with one more statement false.
 > Two of these kills try one `:identified-in` false against the SAME law and the DISJOINT law of the walk.
 > One kill tries one `:root` false against the SAME law of the walk.
@@ -3762,7 +3762,7 @@ pred true_ClosesLends[d: ClosesLends] {
 ```
 
 <!-- prose-translation -->
-> `--risk-faultless-skips` is set for a run, or it is not.
+> `--risk-faultless-skips` is set for one invocation of Dorc, or it is not.
 > A wrapper's entry `:lends` mParent-Catalog instances for the mParent-Catalog mSorts it perturbs, and nothing else.
 > The wrapper owner declares each lend, one instance per lent mSort, and the completion sentinel.
 > An unlent mParent-Catalog mSort is ⊤ under the wrapper: a vantage entered through the wrapper holds no instance for it.
