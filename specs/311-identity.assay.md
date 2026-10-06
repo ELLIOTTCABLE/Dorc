@@ -3555,7 +3555,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > Where the member is a mParent-Catalog given whole, the region test gives that answer.
 > A routing mutation invalidates a mResolution when its mTraversal includes a touched mKey.
 > Any write invalidates a mResolution whose read set is open.
-> A state mutation reaches every mKey in its writeset (2.6-may-write-the-writeset): ordinary kill-reach.
+> A state mutation touches every mKey in its writeset (2.6-may-write-the-writeset), as an ordinary kill.
 > Invalidation reads the line's writeset with every container contributing, there being no read mKey to exclude against.
 > For invalidation as for the sparing test, a line's writeset is ⊤ where its at-most set is unclosed or a member has no reached finished record (2.6-may-write-the-writeset).
 > ⊤ touches every mTraversal member, every mParent-Store, and every mRoot-adjacent mKey, since ⊤ is DISJOINT from nothing.
