@@ -385,7 +385,7 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > No mKey is its own yield, directly or through others.
 > An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
 > By definition, an mKey cannot reach two mReferents.
-> All that one mKey reaches is one mReferent, which may have parts (1.1.1-state-and-value).
+> Everything that an mKey reaches is an mReferent.
 > mKey-Primary is an mKey of the primary mScheme on a shape that yields nothing, or a cell's mKey (1.9-cell-a-singleton-sort).
 > It is meaningful only relative to its mParent-Store.
 > mKey-Natural is any other mKey, what tool authors and books write.
