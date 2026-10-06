@@ -26,7 +26,10 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 ## Conventions
 
 - A model object is written mFixedTerm. The bare word never stands in for it.
-- A relation, attribute, or warrant is written `:fixed-term`.
+- A relation that only an author's speech makes known is written `:fixed-term`, including the
+  default an author's silence leaves (a default is a spelling too). A relation in the world,
+  which the engine never holds, is a model object, written mFixedTerm. A relation the engine
+  derives takes neither.
 - An abstract operation is written `op()`. A concrete authored member keeps the `__name()` form.
 - A derived view of a species is written species-hyphen-gloss: mKey-Primary, mParent-Catalog,
   mParent-Store. It is never a declared species.
