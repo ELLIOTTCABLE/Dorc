@@ -412,3 +412,25 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   renamed `…_refer_differently` in the specification, its lock, `312d`, and `312e` (commit "(AI
   dsn) Rename the two refer-differently hole slugs everywhere").
 - **[TYPED]** these items close before the rewind; no new large item is taken on.
+
+### § 2.8-names-inside-the-fences
+
+- **[TYPED]** the narrow dictum about names is walked back, then restated: the same rules for
+  normative Alloy as for normative prose, even where the Alloy reads awkwardly to a programmer.
+  Where the spec's word is precise, it is used; where a meaning differs, a different word is
+  chosen and used consistently, as STE requires. A rule easy to review beats a fine
+  delineation, since a fine one invites model drift. The conductor's "name each field for its
+  role" is a probable NACK, as it mints a second name for a chosen word.
+- **[TYPED]** ack: a field spelled exactly like a signature (`k.mScheme`) is one spelling with two
+  meanings (the set of all mSchemes, a key's mScheme). "The" reads wrong, since `a.b` is "a's b".
+  Floated, not ruled: `k.own_mScheme` as the default form, with room to choose a more exact name
+  per item. The two laws put: use the m-term exactly where that concept is meant; never write
+  `item.mTerm` where it collides in Alloy with a bare `mTerm`.
+- **[TYPED]** ack: helpers follow the rule, awkward or not.
+- **[TYPED]** NACK that the rename pass is large: the bytes changed do not matter when no
+  semantics can change. A commit of only one-to-one renames (no split, no merge, no other
+  normative text) is safe. Any case that needs a decision is ruled and reworded first, so that
+  the broad mechanical commit always carries the intent "no semantic change"; one found later
+  is a bug, not a question of intent.
+- **[TYPED]** authorized: an Opus subagent inventories the fence names and sorts the clear
+  one-to-one renames from those that need care.
