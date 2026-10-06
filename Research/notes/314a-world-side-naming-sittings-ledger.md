@@ -352,3 +352,24 @@ root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate chan
   `mTraversal`, `mFullyQualifiedKey`, `mParentStore`, `mParentCatalog`, and the Conventions'
   fence bullet; commit "(AI dsn) Carry the m into every Alloy spelling of a model term"). Alloy's
   parse lint is clean after each.
+
+### § 2.6-the-renames-judgment-calls
+
+- **[CONDUCTOR]** put after the rename: the fields `scheme`, `shape`, and `route` stay bare,
+  since tagging them would clash with their signatures; `topic` stays, since the field holds the
+  mKey alone while an mTopic adds the observer; the world relations stay untagged until named;
+  two hole slugs keep "reach" in the landing sense, since renaming them touches historical
+  ledgers. Asked whether the per-instant sentences go in.
+- **[TYPED]** slugs are no reason to hold back: they exist so that one global grep-and-replace
+  commit swaps them, historical documents included. Eyeball the results; keep a global replace
+  in its own commit; check grammatical variants and other spellings; check git history for an
+  earlier rename of the same slug.
+- **[TYPED]** ack: the world relations that are not mWords stay as they are until their turn.
+- **[TYPED]** ack: "At the probe, and at each mExecution, an mKey mRefers to no more than one
+  mReferent."
+- **[TYPED]** asked for the field-name choice explained and compared. Lean: no site in the
+  document uses both `bleh` and `mBleh` with an intended division between them; the one
+  conceivable exception is an Alloy reserved word that is also the right long-term word.
+  Otherwise the non-m use is reworded or renamed.
+- **[TYPED]** the reviewer was meant to wait for the next substantial change; its second report
+  is read with extra skepticism.
