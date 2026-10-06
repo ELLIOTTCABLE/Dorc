@@ -434,3 +434,29 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   is a bug, not a question of intent.
 - **[TYPED]** authorized: an Opus subagent inventories the fence names and sorts the clear
   one-to-one renames from those that need care.
+
+### § 2.9-capitalized-model-terms
+
+- **[CONDUCTOR]** put: a field that would be spelled like a signature needs a disambiguator; `has_`
+  and `own_` were floated (`own_` collides with the world relation `owns` and with the
+  `…Owner` fields), then a trailing underscore (`k.mScheme_`). Then two options: (A) one narrow
+  exception, a bare lowercase base word only as a field whose declared type is exactly that
+  term's signature; (B) signatures capitalized, `MScheme`, the lowercase form kept for a
+  property of an instance. The inventory came back (ephemeral, root
+  `_tmp-314a-fence-naming-inventory.md`): 89 clear renames, 73 names needing care in 17
+  groups, 7 deferred; among its findings, the prose never writes mShape but writes bare "shape"
+  146 times.
+- **[TYPED]** `has_` reads as a boolean predicate: probable NACK. `owns` will very likely be
+  killed with `reaches` as an LLM-minted term; its current use is acknowledged.
+- **[TYPED]** lean B: it is the common form in other specifications. The lowercase m-form was
+  chosen to avoid implying a one-to-one between a code name and the specification concept; the
+  sitting has arrived at wanting that one-to-one on purpose, which reverses the reason.
+- **[CONDUCTOR]** pushback put on B's application: the global replace uses an explicit list of
+  model terms, never a pattern (mDNS, mTLS); the change reverses `312b` § 4's typed convention
+  and re-cases quoted words in historical ledgers; nouns capitalized everywhere, the lowercase
+  form only as a property of an instance; timing.
+- **[TYPED]** RULING, minted: `MTerm` is used globally, everywhere, for everything, except where a
+  language feature forces the lowercase form (an Alloy field, Rust). In Alloy: `sig MKey` against
+  `k.mKey`. Applied by one global, project-wide, single-commit capitalization change. Nothing of
+  it is applied in this sitting.
+- **[TYPED]** the sitting ends here.
