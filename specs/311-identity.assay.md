@@ -859,7 +859,7 @@ sig VerdictFact extends Spoken {
 #### § 1.11.2-executions-of-a-site
 
 A compiler's program point against its dynamic instances: an mSite is a place in the book's text,
-and an mExecution is one time the shell executes it. The word is POSIX's, for which a simple
+and an mExecution is one time the shell executes it. The verb is POSIX's, for which a simple
 command is executed even when it names no command (XCU 2.9.1, Simple Commands). A word built on
 "call" or "invocation" assumes a callee, which an assignment or a lone redirection lacks.
 
