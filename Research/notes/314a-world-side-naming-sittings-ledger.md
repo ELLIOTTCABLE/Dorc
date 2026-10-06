@@ -283,3 +283,39 @@ responses follow each.
 - **[TYPED]** unconcerned with the lock: the fixes are mostly naming and normative text; Alloy
   confirms in CI in the background while the sitting's time goes to explanation, thinking, and
   ledgering.
+
+### § 2.4-the-first-review-walked
+
+A Fable reviewer in clean context attacked the two normative commits (its report, ephemeral, is
+root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate change alone.
+
+- **[TYPED]** one commit per semantic change, or at least per ack; no batches of reviewer nits.
+  Adversarial review has produced churn in r31 and is not trusted: any change to normative text
+  the conductor is not absolutely certain of is dropped.
+- **[TYPED]** ack: the STE "may" fix; a pointer fix to the right heading of an external document.
+- **[TYPED]** the POSIX citation stays broad (2.9 is fine; not 2.9.1.3).
+- **[TYPED]** on deleting § 1.4's second added translation line: suspicious. The two lines bind
+  opposite directions: "cannot reach two mReferents" excludes a second mReferent, and "all that
+  one mKey reaches is one mReferent" excludes anything that is not an mReferent (no apples).
+  The second half may go if the pair still says one-to-one, not one-to-one-plus. Applied: the
+  line now reads "Everything that an mKey reaches is an mReferent", which also discharged the
+  "may" fix (commit "(AI dsn) Translate the reach field's range plainly, without parts").
+- **[TYPED]** ack, applied: § 1.4's commentary drops the aggregate reason and cites § 1.2 and
+  § 2.3 here (commit "(AI dsn fix) Drop the aggregate reason and cite the typed definitional
+  line").
+- **[TYPED]** ack, applied: § 1.11.2's commentary credits POSIX with the verb, not the noun
+  (commit "(AI dsn fix) Credit POSIX with the verb, not the noun").
+- **[TYPED]** ACK of the wording "When the book runs again, its mSites have new mExecutions":
+  the same mExecution an hour later on a re-run is nonsense; low value, kept, since a
+  specification excludes the nonsensical too.
+- **[TYPED]** "run" stays, to avoid churn, except that STE allows one meaning per word: a site
+  that reads significantly differently is reworded. Applied: the plain reading (a command, a
+  function, a body, the shell, or the book executing) keeps "run"; four normative lines in
+  other senses take the specification's own words: two kills' scopes ("asks over worlds of"),
+  a hole's witness, and the flag set "for one invocation of Dorc" (commit "(AI dsn) Keep run to
+  one reading in normative text").
+- **[TYPED]** the description of mSite against its executions, and an mExecution not being the
+  tick of logical time, go to the held-work file; done there as two § 3.3 entries. Asked to
+  check off completed entries: none is complete; two § 3.3 entries are marked advanced.
+- Not acted on, by the conductor's walk: rewording the other "run" sites; § 1.11's description;
+  the per-instant normative sentences, deferred to the rename commit.
