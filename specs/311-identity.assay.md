@@ -632,8 +632,8 @@ The read set of a lookup body is not in the fences.
 
 <!-- normative -->
 > The lookup emits the chain in the order it crossed the members, and the chain is ordered.
-> A mutator invalidates a mResolution when its writeset touches a mTraversal member.
-> It does so for each use of the mResolution that the shell can execute after the mutator.
+> A mutator whose writeset touches a mTraversal member invalidates the mResolution.
+> The mutator invalidates the mResolution for each use of the mResolution that the shell can execute after the mutator.
 > A mResolution's target object is not its backing.
 > An mKey can cease to mRefer to an object without the object changing.
 > An object can change without its mKey changing.
