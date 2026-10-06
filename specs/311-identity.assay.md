@@ -1364,7 +1364,7 @@ run hole_a_write_affects_through_a_third_thing_witness {
 pred outsideTheSparingHoles {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_region_closure_with_unknown_leaf_pair
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    not hole_two_separated_things_reach_one_thing_beneath
    not hole_a_write_affects_through_a_third_thing
 }
@@ -2054,7 +2054,7 @@ run hole_region_closure_with_unknown_leaf_pair_witness {
 check law_region_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_region_closure_with_unknown_leaf_pair
-      and not hole_composite_keys_with_same_parts_reach_differently
+      and not hole_composite_keys_with_same_parts_refer_differently
       and not hole_world_scoped_top_aliases_into_a_store implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
          no x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
@@ -2063,7 +2063,7 @@ check law_region_disjoint_is_sound {
 run law_region_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    not hole_world_scoped_top_aliases_into_a_store
    some D, x: mKey | regionTest[D, x] = DISJOINT and some x.mRefersTo and some D.mRefersTo.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
@@ -2072,7 +2072,7 @@ run law_region_disjoint_is_sound_premise {
 run kill_region_disjoint_is_sound_closes_looked_up_in {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
@@ -2082,7 +2082,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
 run kill_region_disjoint_is_sound_alias_nothing_else {
    noStoreIsAmongItsOwnContents
    not hole_region_closure_with_unknown_leaf_pair
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
@@ -2535,13 +2535,13 @@ fun tabledWalk[x, y: mKey]: one Answer { Tables.walkTable[x][y] }
 
 fun tabledCompare[x, y: mKey]: one Answer { Tables.compareTable[x][y] }
 
-pred hole_cell_keys_under_same_parents_reach_differently {
+pred hole_cell_keys_under_same_parents_refer_differently {
    some disj a, b: mKey | some a.cellSort & b.cellSort and a.mParent != b.mParent
       and some a.mParent.mRefersTo & b.mParent.mRefersTo and a.mRefersTo != b.mRefersTo
 }
 
-run hole_cell_keys_under_same_parents_reach_differently_witness {
-   hole_cell_keys_under_same_parents_reach_differently and axiomaticByContract and axiomaticByDifferentialTest
+run hole_cell_keys_under_same_parents_refer_differently_witness {
+   hole_cell_keys_under_same_parents_refer_differently and axiomaticByContract and axiomaticByDifferentialTest
 } for 6 but 4 Int expect 1
 
 pred hole_world_scoped_top_aliases_into_a_store {
@@ -2553,31 +2553,31 @@ run hole_world_scoped_top_aliases_into_a_store_witness {
    hole_world_scoped_top_aliases_into_a_store and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
 } for 6 but 4 Int expect 1
 
-pred hole_composite_keys_with_same_parts_reach_differently {
+pred hole_composite_keys_with_same_parts_refer_differently {
    some disj a, b: CompositeKey | compositeSame[a, b] and a.mRefersTo != b.mRefersTo
 }
 
-run hole_composite_keys_with_same_parts_reach_differently_witness {
-   hole_composite_keys_with_same_parts_reach_differently and axiomaticByContract and axiomaticByDifferentialTest
+run hole_composite_keys_with_same_parts_refer_differently_witness {
+   hole_composite_keys_with_same_parts_refer_differently and axiomaticByContract and axiomaticByDifferentialTest
 } for 6 but 4 Int expect 1
 
 check law_compare_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest
-      and not hole_cell_keys_under_same_parents_reach_differently
-      and not hole_composite_keys_with_same_parts_reach_differently implies
+      and not hole_cell_keys_under_same_parents_refer_differently
+      and not hole_composite_keys_with_same_parts_refer_differently implies
       all x, y: mKey | compare[x, y] = SAME implies x.mRefersTo = y.mRefersTo
 } for 6 but 4 Int
 
 run law_compare_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   not hole_cell_keys_under_same_parents_reach_differently
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.mRefersTo
 }
 
 run kill_compare_same_is_sound_corresponds {
-   not hole_cell_keys_under_same_parents_reach_differently
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
       and some x, y: mKey | compare[x, y] = SAME and x.mRefersTo != y.mRefersTo
@@ -2586,21 +2586,21 @@ run kill_compare_same_is_sound_corresponds {
 check law_compare_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
-      and not hole_composite_keys_with_same_parts_reach_differently implies
+      and not hole_composite_keys_with_same_parts_refer_differently implies
       all x, y: mKey | compare[x, y] = DISJOINT implies no x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo and some y.mRefersTo
 }
 
 run kill_compare_disjoint_is_sound_corresponds {
    noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
-   not hole_composite_keys_with_same_parts_reach_differently
+   not hole_composite_keys_with_same_parts_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
       and some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo & y.mRefersTo
@@ -2646,25 +2646,25 @@ pred noStoreIsAmongItsOwnContents { no r: mReferent | r in r.^holds }
 pred noRoutePassesThroughItself { no r: mReferent | r in r.^passes }
 
 check law_same_is_sound {
-   axiomaticByContract and axiomaticByDifferentialTest and not hole_cell_keys_under_same_parents_reach_differently implies
+   axiomaticByContract and axiomaticByDifferentialTest and not hole_cell_keys_under_same_parents_refer_differently implies
       all x, y: mKey | walkOfKeys[x, y] = SAME implies x.mRefersTo = y.mRefersTo
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.mRefersTo
 }
 
 run kill_same_is_sound_unique_referent {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 6 but 4 Int expect 1
 
 run kill_same_is_sound_yields {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not true_DeclaresYields[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
@@ -2699,7 +2699,7 @@ run kill_disjoint_is_sound_aliases_nothing_else {
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_same_is_sound_identified_in {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
@@ -2714,14 +2714,14 @@ run kill_disjoint_is_sound_identified_in {
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_root {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not true_DeclaresRoot[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_supplies_parent {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
@@ -2736,7 +2736,7 @@ run kill_disjoint_is_sound_supplies_parent {
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_closes_lends {
-   not hole_cell_keys_under_same_parents_reach_differently
+   not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
    some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not true_ClosesLends[d]
       and some x, y: mKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo

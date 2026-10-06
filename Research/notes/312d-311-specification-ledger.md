@@ -570,7 +570,7 @@ Holes surfaced by the solver, each minted `hole_<slug>` with a sat witness and p
 exclusions on the laws that showed it, each a design question for the human's sitting, none
 closed:
 
-- `hole_cell_keys_under_same_parents_reach_differently` — § 1.9 gives a cell's identity as
+- `hole_cell_keys_under_same_parents_refer_differently` — § 1.9 gives a cell's identity as
   (mParent, mSort) engine-side; no sentence ties a cell key's mReferent to its mParent's
   mReferent and its mSort. Excludes the SAME laws.
 - `hole_world_scoped_top_aliases_into_a_store` — the two-tops and one-top ways with a leaf top
@@ -579,7 +579,7 @@ closed:
   The mRoute variant rests on `ask-route-for-any-path-without-identified-in`; the mRoot variant
   also on `ask-aliases-nothing-else-world-reading`, since an mWorld owns nothing in this encoding
   where § 2.2 says the world is the store. Excludes the DISJOINT laws and, by evidence, sparing.
-- `hole_composite_keys_with_same_parts_reach_differently` — § 2.11's twin of the cell hole.
+- `hole_composite_keys_with_same_parts_refer_differently` — § 2.11's twin of the cell hole.
   Excludes the compare laws.
 - `hole_unclosed_traversal_without_a_key_catalog` — a route-scoped lookup with no emitted member
   has an empty mTraversal in the fences; 311 covers it by the engine's vouch of the mRoute within

@@ -320,7 +320,7 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   counterexample (76 s): a composite mKey whose one part is itself, SAME by parts with another
   composite that reaches a different mReferent, lifting the walk's UNKNOWN into `compare()`'s
   DISJOINT, which the region test then consumed. Every statement in force true. The world
-  satisfies `hole_composite_keys_with_same_parts_reach_differently`, which the sparing and
+  satisfies `hole_composite_keys_with_same_parts_refer_differently`, which the sparing and
   `compare()` laws exclude and the region law did not. Applied under the hole protocol at
   `ffea0bef`: the composite hole added to the region law's premise, its twin, and its two
   kills, the translation saying so. A composite whose part is itself is representable in the
