@@ -196,6 +196,7 @@ be safe under (the ruling of `notes/312d` § 21 for the sentence of 1.3.1-a-prim
 > An mReferent does not survive destruction and recreation under its old mKey.
 > An mReferent does not survive a lifecycle write to what it is scoped in (3.3-invalidation-three-mutator-species).
 > Before a lookup binds an mKey, that mKey names a may-set of mReferents (1.5-token-and-the-two-warrants).
+> At the probe, and at each mExecution, an mKey mRefers to no more than one mReferent.
 > An mState is the condition of one mReferent at one instant: what a write changes and what a read observes.
 > An mState is known only through a read, which yields an mValue.
 > Two mReferents may have equal mStates and stay two.
