@@ -47,6 +47,9 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
   a prior name, a refuted shape (`notes/311u`), or an example is plain prose.
 - § 5 is non-normative in its entirety (5-the-relations-indexed-two-ways). It indexes § 1 to
   § 3 and defines nothing.
+- A strong preference, not a ban: no pronoun stands for a noun. Repeat the noun within about
+  three lines, or point in parentheses to the line that introduces it. "A foo bars. The foo that
+  bars is brown," never "A foo bars. It is brown."
 
 Spelling inside the fences:
 
