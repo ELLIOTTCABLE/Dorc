@@ -1115,9 +1115,10 @@ fun parentCatalog[k: mKey]: lone mLevel { k.parent }
 ```
 
 <!-- prose-translation -->
-> `:parent` is one per mKey, never plural, never a species of its own.
-> Through the primary mScheme, `:parent` is the mParent-Store, which carries identity.
-> Through a secondary mScheme, `:parent` is the mParent-Catalog, which carries routing and never identity.
+> An mKey has one mParent, never more than one.
+> The mParent is never a species of its own.
+> Through the primary mScheme, an mKey's mParent is the mParent-Store, which carries identity.
+> Through a secondary mScheme, an mKey's mParent is the mParent-Catalog, which carries routing and never identity.
 > At the primary mScheme, mParent-Catalog and mParent-Store are one mKey.
 > The far end is an ordinary mKey with an identity of its own, or an mWorld, never a string the engine composes.
 
