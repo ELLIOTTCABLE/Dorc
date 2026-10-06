@@ -627,7 +627,7 @@ The read set of a lookup body is not in the fences.
 
 <!-- normative -->
 > The lookup emits the chain in the order it crossed the members, and the chain is ordered.
-> Under ordinary effective-mWorld reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
+> Under ordinary effective-world reach, any mutator whose writeset touches a mTraversal member invalidates the mResolution.
 > A mResolution's target object is not its backing.
 > An mKey can cease to reach an object without the object changing.
 > An object can change without its mKey changing.
