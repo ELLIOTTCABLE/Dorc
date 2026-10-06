@@ -1120,7 +1120,7 @@ fun mParentCatalog[k: mKey]: lone mLevel { k.mParent }
 ```
 
 <!-- prose-translation -->
-> An mKey has one mParent, never more than one.
+> An mKey has at most one mParent.
 > The mParent is never a species of its own.
 > Through the primary mScheme, an mKey's mParent is the mParent-Store, which carries identity.
 > Through a secondary mScheme, an mKey's mParent is the mParent-Catalog, which carries routing and never identity.
