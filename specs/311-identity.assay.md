@@ -26,8 +26,10 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 ## Conventions
 
 - A model object is written mFixedTerm. The bare word never stands in for it.
-- A relation that only an author's speech makes known is written `:fixed-term`, including the
-  default an author's silence leaves (a default is a spelling too). A relation in the world,
+- A relation, attribute, or warrant known to Dorc only from what Dorc is given is written
+  `:fixed-term`, the default that silence leaves included (a default is a spelling too). These
+  are neither built into the engine nor hidden from Dorc by design, and they are what product
+  design has to spell. A relation in the world,
   which the engine never holds, is a model object, written mFixedTerm. A relation the engine
   derives takes neither.
 - An abstract operation is written `op()`. A concrete authored member keeps the `__name()` form.
