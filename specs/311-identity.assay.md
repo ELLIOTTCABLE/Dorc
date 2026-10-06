@@ -35,7 +35,7 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
   mParent-Store. It is never a declared species.
 - "Cell" stays untagged. It means a singleton mSort under its mParent
   (1.9-cell-a-singleton-sort).
-- "Lookup" stays untagged. It means the relation between an mKey and what it reaches.
+- "Lookup" stays untagged. It means the relation between an mKey and what it mRefers to.
 - An mKey's bytes are its mValue. An mReferent's condition is its mState
   (1.1-referent-state-and-value).
 - An in-Dorc mSort or mScheme is always written with its prefix: `sm.File`, `sm.Path`.
@@ -78,7 +78,7 @@ another. DISJOINT lets a license survive a write. Each under-executes when wrong
 safe for both.
 
 No single author knows the whole path from a tool's argument to a measurable mReferent.
-Viewpoint transitions, authored by yet other people, change which mReferent an mKey reaches
+Viewpoint transitions, authored by yet other people, change which mReferent an mKey mRefers to
 mid-book. What the engine can and cannot hold is 0.1-the-two-strata.
 
 Two of the law's four sentences are the checks of 3.2-compare-one-chokepoint-four-answers:
@@ -93,7 +93,7 @@ The other two sentences are the law's own terms of refutation, and stay prose:
 ### § 0.1-the-two-strata
 
 The engine and the world are two strata, and the fences keep them apart: the world stratum (an
-mReferent, what an mKey reaches, what a store holds) is what the truth predicates read; the
+mReferent, what an mKey mRefers to, what a store holds) is what the truth predicates read; the
 engine's definitions read only mKeys, their declared shapes, and the statements in force.
 Nothing in the fences enforces the separation; the two sentences below are the rule, and a
 reviewer reads the engine's definitions for a world relation by eye.
@@ -121,7 +121,7 @@ strongest ordinary world, two mKeys scoped in one mParent-Store with a known cha
 run bookScope {} for 6 but 4 Int
 
 run world_exists {
-   some k: mKey | knownChain[k] and some k.reaches
+   some k: mKey | knownChain[k] and some k.refersTo
 } for 6 but 4 Int expect 1
 
 run chains_meet_in_a_store {
@@ -132,7 +132,7 @@ run chains_meet_in_a_store {
 
 <!-- prose-translation -->
 > A book's ceiling in this document is six atoms of every kind the specification owns, and integers of four bits.
-> Some mKey has a known mFullyQualifiedKey and reaches an mReferent.
+> Some mKey has a known mFullyQualifiedKey and mRefers to an mReferent.
 > Two mKeys can share one mParent-Store, each with a known mFullyQualifiedKey.
 
 ## § 1-the-model-objects
@@ -167,7 +167,7 @@ is one reading of § 2.3's "by the store's own construction". None of this is au
 acked; it stands only until the document has run under Alloy and the reading is acked or
 replaced, and it is not a pattern to extend (`notes/312d` § 7).
 
-Every identity question is ultimately "do these two mKeys reach one mReferent"; the mKey's
+Every identity question is ultimately "do these two mKeys mRefer to one mReferent"; the mKey's
 side of that question is 1.4-key-and-its-two-views. No other term names a part. An mReferent is
 not an mTopic (1.8-fully-qualified-key-topic-and-derivation), and not the set an mKey given
 whole denotes: the container is the mReferent, and the set is a set
@@ -188,7 +188,7 @@ be safe under (the ruling of `notes/312d` § 21 for the sentence of 1.3.1-a-prim
 <!-- normative -->
 > An mReferent has one or more mKeys.
 > An mReferent survives changes to its mState.
-> An mReferent has the mSort of the mKey that reaches it.
+> An mReferent has the mSort of the mKey that mRefers to it.
 > Two mSorts over one piece of the world is the strangers case (1.2-sort-the-declared-carrier).
 > An mReferent may have parts.
 > Every part is an ordinary mReferent of an ordinary mSort identified in it (1.9-cell-a-singleton-sort).
@@ -247,7 +247,7 @@ mSort's side; they stay prose until that section's checks carry them.
 > Only a human act merges it, by making one mSort's mSchemes yield into the other's.
 > The owner speaks only about the mSort's relations to its immediate neighbours.
 
-The strangers case: two vendors describe one tool, or two vocabularies reach one cell under `/proc/sys`.
+The strangers case: two vendors describe one tool, or two vocabularies name one cell under `/proc/sys`.
 
 ### § 1.3-scheme-a-way-of-writing
 
@@ -326,8 +326,8 @@ mValue matches, so which mSort an mKey reaches, and which mParent mSort and warr
 known only once bytes arrive. The mPlaceholder, for an mValue or an mParent not yet measured, is
 1.10-vantage-route-placeholder-witness's. An mLevel is what a mFullyQualifiedKey passes through
 (1.8-fully-qualified-key-topic-and-derivation): an mKey, or one of the world atoms that end a
-chain. The `reaches` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
-no engine definition reads it. That an mKey reaches at most one mReferent is a definition and
+chain. The `refersTo` field is world stratum (0.1-the-two-strata) although it sits on the mKey;
+no engine definition reads it. That an mKey mRefers to at most one mReferent is a definition and
 not an assumption about the world (`notes/314a` § 1.2 and § 2.3). The two views coincide when an
 mSort's only mScheme is its primary mScheme, and the primary view is where the dangerous
 warrants can honestly sit.
@@ -343,7 +343,7 @@ sig mKey extends mLevel {
    parent: lone mLevel,
    yielded: lone mKey,
    at: one mVantage,
-   reaches: lone mReferent
+   refersTo: lone mReferent
 }
 
 fact { all k: mKey | some k.scheme iff no k.cellSort }
@@ -385,9 +385,9 @@ pred isNaturalKey[k: mKey] { not isPrimaryKey[k] }
 > An mKey whose shape yields nothing carries no emitted mKey.
 > Every mKey was resolved from one mVantage (1.10-vantage-route-placeholder-witness).
 > No mKey is its own yield, directly or through others.
-> An mKey reaches one mReferent, or none (2.2-primary-of-and-identified-in).
-> By definition, an mKey cannot reach two mReferents.
-> Everything that an mKey reaches is an mReferent.
+> An mKey mRefers to one mReferent, or to none (2.2-primary-of-and-identified-in).
+> By definition, an mKey cannot mRefer to two mReferents.
+> Everything that an mKey mRefers to is an mReferent.
 > mKey-Primary is an mKey of the primary mScheme on a shape that yields nothing, or a cell's mKey (1.9-cell-a-singleton-sort).
 > It is meaningful only relative to its mParent-Store.
 > mKey-Natural is any other mKey, what tool authors and books write.
@@ -398,7 +398,7 @@ OWL's inverse-functional and functional properties, spelled out by direction.
 
 What each warrant licenses, SAME from equality and DISJOINT from inequality, is the walk of
 3.2-compare-one-chokepoint-four-answers; here is what each means when true. "Within one
-mParent" is read at the world stratum: two mParents that reach one mReferent, or one mWorld.
+mParent" is read at the world stratum: two mParents that mRefer to one mReferent, or one mWorld.
 The instance of a warrant is per evaluation, and it may rest on what the path measured: since a
 matched shape is a control-flow path, an evaluation that declines the warrant has matched a
 shape that does not carry it.
@@ -425,17 +425,17 @@ fact {
 
 pred withinOneParent[a, b: mKey] {
    some a.parent & b.parent
-   or (a.parent + b.parent in mKey and some a.parent.reaches and a.parent.reaches = b.parent.reaches)
+   or (a.parent + b.parent in mKey and some a.parent.refersTo and a.parent.refersTo = b.parent.refersTo)
 }
 
 pred true_DeclaresUniqueReferent[d: DeclaresUniqueReferent] {
    all a, b: keysOfShape[d.referentShape] |
-      withinOneParent[a, b] and a.value = b.value implies a.reaches = b.reaches
+      withinOneParent[a, b] and a.value = b.value implies a.refersTo = b.refersTo
 }
 
 pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
    all a: keysOfShape[d.nameShape], b: mKey |
-      b.scheme = a.scheme and withinOneParent[a, b] and some a.reaches and a.reaches = b.reaches
+      b.scheme = a.scheme and withinOneParent[a, b] and some a.refersTo and a.refersTo = b.refersTo
          implies a.value = b.value
 }
 ```
@@ -448,14 +448,14 @@ pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
 > A warrant holds for every mKey of that shape inside any one mParent.
 > A path that does not reach a warrant does not give it.
 > So an mKey has a warrant when the shape it matched carries it.
-> Two mKeys are within one mParent when they have one mParent, or when their mParents reach one mReferent.
-> `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape reach one mReferent, or both reach none: the lookup is a function.
-> `:guarantees-unique-name` is true when, within one mParent, one mReferent reached by an mKey of the shape has one mKey of the lookup.
+> Two mKeys are within one mParent when they have one mParent, or when their mParents mRefer to one mReferent.
+> `:guarantees-unique-referent` is true when, within one mParent, equal mKeys of the shape mRefer to one mReferent, or both mRefer to none: the lookup is a function.
+> `:guarantees-unique-name` is true when, within one mParent, one mReferent that an mKey of the shape mRefers to has one mKey of the lookup.
 
 UNACKED READING, temporary (`312d:ask-unique-name-ranges-over-the-scheme`): 311's "one mReferent
 has one mKey" does not say whether the one mKey ranges over the warranted shape or over the
 whole lookup; the fence takes the lookup, the reading under which the two-tops way of § 3.2
-is sound, and "within one mParent" is read at the world stratum as mParents that reach one
+is sound, and "within one mParent" is read at the world stratum as mParents that mRefer to one
 mReferent. The conductor's readings, not acked, not authoritative, held only until acked or
 replaced (`notes/312d` § 7).
 
@@ -527,7 +527,7 @@ fact {
 }
 
 pred true_SuppliesParent[s: SuppliesParent] {
-   isPrimaryKey[s.forKey] implies s.forKey.reaches in s.instance.reaches.holds
+   isPrimaryKey[s.forKey] implies s.forKey.refersTo in s.instance.refersTo.holds
 }
 ```
 
@@ -556,7 +556,7 @@ pred true_SuppliesParent[s: SuppliesParent] {
 > Where two seats disagree, the mKey has no mParent.
 > Where the supplied mKey is not of the declared mSort, the mKey has no mParent.
 > In each of these three cases, the mKey's mFullyQualifiedKey is unknown from that level.
-> A supplied mParent-Store instance is true when the mReferent the mKey-Primary reaches is held by the mReferent the instance reaches.
+> A supplied mParent-Store instance is true when the mReferent the mKey-Primary mRefers to is held by the mReferent the instance mRefers to.
 > A supplied mParent-Catalog instance claims nothing in this model.
 > That the catalog is on the route to the mKey's mReferent is a held hole (3.3-invalidation-three-mutator-species).
 
@@ -586,7 +586,7 @@ Examples of a mParent-Catalog: a directory for a path's entry, a passwd database
 ### § 1.7-resolution-and-its-traversal
 
 A mResolution is the fact that mKey N of mScheme S, resolved inside mParent P at program point
-p, reaches mReferent R: in the fences it is the mKey's emitted mKey (1.4-key-and-its-two-views)
+p, mRefers to mReferent R: in the fences it is the mKey's emitted mKey (1.4-key-and-its-two-views)
 with the mTraversal beside it. The order the lookup crossed the members in is not held; the
 consumers read membership. What touches a member and so invalidates the mResolution is
 3.3-invalidation-three-mutator-species's; the read set of the lookup body is
@@ -610,7 +610,7 @@ fun traversal[k: mKey]: set mLevel { crossed[k] + (traversalClosed[k] implies no
 pred true_EmitsCrossed[d: EmitsCrossed] {}
 
 pred true_ClosesTraversal[d: ClosesTraversal] {
-   let k = d.closedFor | passes.(k.reaches) in crossed[k].reaches
+   let k = d.closedFor | passes.(k.refersTo) in crossed[k].refersTo
 }
 ```
 
@@ -619,7 +619,7 @@ pred true_ClosesTraversal[d: ClosesTraversal] {
 > The lookup emits that chain, one member per routing mKey (2.9-the-traversal-and-the-region-test), as the lookup owner's speech.
 > The emission is an at-most set, and an emitted member licenses nothing alone.
 > The lookup's owner closes the emission by an explicit act.
-> The closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one an emitted member reaches.
+> The closing act is true when every mReferent the route to the mKey's mReferent in fact passes through is one that an emitted member mRefers to.
 > A lookup that emits no member and no closing act has its mParent-Catalog, given whole, as its mTraversal.
 > A lookup that emits members without the closing act has those members and its mParent-Catalog, given whole.
 > A lookup that emits the closing act has exactly the members it emitted as its mTraversal.
@@ -633,7 +633,7 @@ The read set of a lookup body is not in the fences.
 > A mutator invalidates a mResolution when its writeset touches a mTraversal member.
 > It does so for each use of the mResolution that the shell can execute after the mutator.
 > A mResolution's target object is not its backing.
-> An mKey can cease to reach an object without the object changing.
+> An mKey can cease to mRefer to an object without the object changing.
 > An object can change without its mKey changing.
 > A mResolution also depends on the read set of the lookup body that produced it.
 > The engine derives that set from the body.
@@ -784,7 +784,7 @@ fact { all f: VerdictFact | f.underObservers = mSort.(f.topic.at.ambient) }
 pred shellResolvesInTheAmbientInstance {
    all v: mVantage | no v.through implies
       all k: mKey | k.at = v and isNaturalKey[k] and some k.parent & v.ambient[catalogSortOf[k.scheme]] implies
-         k.reaches in k.parent.reaches.passes
+         k.refersTo in k.parent.refersTo.passes
 }
 ```
 
@@ -801,7 +801,7 @@ pred shellResolvesInTheAmbientInstance {
 > When the shell runs under no wrapper, the ambient mParent instances rest on the engine's axiom about where the shell resolves.
 > Differential test discharges that axiom, and nobody speaks it.
 > The axiom concerns every mKey of a secondary mScheme that the engine scoped in an ambient instance under no wrapper.
-> The axiom holds when every such mKey reaches what a route through that instance's mReferent passes to.
+> The axiom holds when every such mKey mRefers to what a route through that instance's mReferent passes to.
 
 #### § 1.10.1-placeholder-and-witness
 
@@ -916,7 +916,7 @@ fact { all s: mShape | lone yieldsTo[s] }
 fact { all s: mShape | some yieldsTo[s] implies no identifiedIn[s] and not isRoot[s] }
 
 pred true_DeclaresYields[d: DeclaresYields] {
-   all k: keysOfShape[d.fromShape] | some k.yielded implies k.reaches = k.yielded.reaches
+   all k: keysOfShape[d.fromShape] | some k.yielded implies k.refersTo = k.yielded.refersTo
 }
 
 fun naturalKeyAnswer[x, y: mKey]: one Answer {
@@ -929,34 +929,34 @@ fun naturalKeyAnswer[x, y: mKey]: one Answer {
 
 check law_natural_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest implies
-      all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.reaches = y.reaches
+      all x, y: mKey | naturalKeyAnswer[x, y] = SAME implies x.refersTo = y.refersTo
 } for 6 but 4 Int
 
 run law_natural_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.reaches
+   some disj x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = SAME and some x.refersTo
 }
 
 run kill_natural_same_is_sound_unique_referent {
    axiomaticByDifferentialTest
    some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
-      and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | naturalKeyAnswer[x, y] = SAME and x.refersTo != y.refersTo
 } for 6 but 4 Int expect 1
 
 check law_natural_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest implies
-      all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.reaches & y.reaches
+      all x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT implies no x.refersTo & y.refersTo
 } for 6 but 4 Int
 
 run law_natural_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
-   some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.reaches and some y.reaches
+   some x, y: mKey | isNaturalKey[x] and naturalKeyAnswer[x, y] = DISJOINT and some x.refersTo and some y.refersTo
 }
 
 run kill_natural_disjoint_is_sound_unique_name {
    axiomaticByDifferentialTest
    some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
-      and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | naturalKeyAnswer[x, y] = DISJOINT and some x.refersTo & y.refersTo
 } for 6 but 4 Int expect 1
 ```
 
@@ -967,7 +967,7 @@ run kill_natural_disjoint_is_sound_unique_name {
 > Where S's own mKeys are looked up is S's mParent-Catalog, of one mSort, which S's owner declares.
 > That declaration claims nothing about the world.
 > A shape that yields carries no `:identified-in` and no `:root`.
-> `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two reach one mReferent, or both reach none.
+> `:yields` is true when, for every mKey of the shape whose lookup emitted an mKey, the two mRefer to one mReferent, or both mRefer to none.
 > S's lookup warrants (1.5-token-and-the-two-warrants) govern what equality and inequality of S's mKeys license before the primary mScheme is reached.
 > Within one mParent-Catalog, two mKeys of S read SAME by the one-level rule (3.2-compare-one-chokepoint-four-answers).
 > Within one mParent-Catalog, two mKeys of S read DISJOINT by the two-tops way (3.2-compare-one-chokepoint-four-answers).
@@ -975,9 +975,9 @@ run kill_natural_disjoint_is_sound_unique_name {
 > S's lookup warrants never license across mParent-Catalogs: two mKeys not in one mParent-Catalog read UNKNOWN.
 > A SAME licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
 > Each premise twin in this section asks for a world where every statement in force is true and the engine's axioms hold.
-> The premise twin of `law_natural_same_is_sound` asks for a world where a natural mKey reads SAME with another mKey by the natural-key license and reaches an mReferent.
+> The premise twin of `law_natural_same_is_sound` asks for a world where a natural mKey reads SAME with another mKey by the natural-key license and mRefers to an mReferent.
 > A DISJOINT licensed before the primary mScheme is reached is never false while every statement in force is true and the engine's axioms hold.
-> The premise twin of `law_natural_disjoint_is_sound` asks for a world where the natural-key license reads a natural mKey DISJOINT with an mKey, and each reaches an mReferent.
+> The premise twin of `law_natural_disjoint_is_sound` asks for a world where the natural-key license reads a natural mKey DISJOINT with an mKey, and each mRefers to an mReferent.
 > Each of the two laws dies with the warrant it rests on.
 > Each kill in this section asks with the engine's axioms holding.
 > With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary mScheme is reachable.
@@ -1003,7 +1003,7 @@ strangers write; the fences read a chain that reaches no primary mKey as an unkn
 > A `resolve()` declines on mReferents its mSort does not describe.
 > This decline is the mechanical net against lazy borrowing.
 
-A cache and the file it caches are two mParent-Catalogs. A decline: a path reaching a socket, under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the directory entry, or the inode that the entry leads to. A tool that removes the entry binds under the first, and a tool that changes the file binds under the second.
+A cache and the file it caches are two mParent-Catalogs. A decline: a path that mRefers to a socket, under an mScheme into files. Two mSchemes over one spelling, into two mSorts: a path yields the directory entry, or the inode that the entry leads to. A tool that removes the entry binds under the first, and a tool that changes the file binds under the second.
 
 ### § 2.2-primary-of-and-identified-in
 
@@ -1011,7 +1011,7 @@ ER's identifying relationship. Identifying is not containing.
 
 A second name is a second mScheme. P's mKeys mean something only relative to K's mParent-Store;
 `:primary-of` itself is 1.3-scheme-a-way-of-writing's, P's `resolve()` being the identity is
-3.1-identity-of-a-key's, "an mKey reaches one mReferent or none" is 1.4-key-and-its-two-views's,
+3.1-identity-of-a-key's, "an mKey mRefers to one mReferent or to none" is 1.4-key-and-its-two-views's,
 and the two warrants are 1.5-token-and-the-two-warrants's. A store that generates its mKeys at
 creation holds an mReferent under a generated mKey while that mReferent exists; a store that
 admits mKeys as names may hold none under an mKey a book names. The mParent's type varies per
@@ -1046,12 +1046,12 @@ pred isRoot[s: mShape] { some DeclaresRoot & InForce & rootedShape.s }
 fact { all s: mShape | isRoot[s] implies no identifiedIn[s] }
 
 pred true_DeclaresIdentifiedIn[d: DeclaresIdentifiedIn] {
-   all k: keysOfShape[d.onShape] | some k.reaches implies
-      some r: keysOfSort[d.inSort].reaches | k.reaches in r.holds
+   all k: keysOfShape[d.onShape] | some k.refersTo implies
+      some r: keysOfSort[d.inSort].refersTo | k.refersTo in r.holds
 }
 
 pred true_DeclaresRoot[d: DeclaresRoot] {
-   all a, b: keysOfShape[d.rootedShape] | a.value = b.value implies a.reaches = b.reaches
+   all a, b: keysOfShape[d.rootedShape] | a.value = b.value implies a.refersTo = b.refersTo
 }
 ```
 
@@ -1059,9 +1059,9 @@ pred true_DeclaresRoot[d: DeclaresRoot] {
 > P's owner declares, per matched shape of the mKey's mValue, `:identified-in` mSort M: the mParent's mSort for mKeys of that shape.
 > A shape has at most one M.
 > The primary mScheme's owner is the mSort's owner.
-> `:identified-in` M is true when every mKey of the shape that reaches an mReferent reaches one held by an mReferent that some mKey of M reaches.
+> `:identified-in` M is true when every mKey of the shape that mRefers to an mReferent mRefers to one held by an mReferent that some mKey of M mRefers to.
 > P's owner declares `:root` per matched shape, absent by default: the shape declares no mParent, so it carries no `:identified-in`, and thereby claims global comparability.
-> `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues reach one mReferent, or both reach none.
+> `:root` is true when it is `:guarantees-unique-referent` over the whole world: two mKeys of the shape with equal mValues mRefer to one mReferent, or both mRefer to none.
 > For a `:root` shape, the world is the store: the shape's mWorld (1.8-fully-qualified-key-topic-and-derivation).
 
 UNACKED READING, temporary (`312d:enc-primary-owner-is-sort-owner`): 311 has `:identified-in`
@@ -1089,7 +1089,7 @@ sig DeclaresAliasesNothingElse extends Spoken { store: one mKey }
 pred aliasesNothingElse[l: mLevel] { some DeclaresAliasesNothingElse & InForce & store.l }
 
 pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
-   let s = d.store.reaches |
+   let s = d.store.refersTo |
       all r: s.holds | s in owns.r and owns.r in s
 }
 ```
@@ -1176,12 +1176,12 @@ pred readsetIsTop[f: VerdictFact] { no f.markedReads or some k: f.markedReads | 
 pred true_DeclaresMayRead[d: DeclaresMayRead] {}
 
 pred true_ClosesMayRead[d: ClosesMayRead] {
-   all k: keysOfSort[d.readSort] | some k.reaches implies
-      affects.(k.reaches) in k.reaches.*holds + (^holds).(k.reaches) + compositeMayRead[k].reaches
+   all k: keysOfSort[d.readSort] | some k.refersTo implies
+      affects.(k.refersTo) in k.refersTo.*holds + (^holds).(k.refersTo) + compositeMayRead[k].refersTo
 }
 
 pred true_VerdictFact[f: VerdictFact] {
-   some f.markedReads implies f.dependsOn in f.markedReads.reaches
+   some f.markedReads implies f.dependsOn in f.markedReads.refersTo
 }
 ```
 
@@ -1190,12 +1190,12 @@ pred true_VerdictFact[f: VerdictFact] {
 > K's owner declares an entry per mKey of K.
 > K's owner closes the set per mSort with a completion sentinel.
 > An entry licenses nothing positive.
-> A closed may-read set is true when every mKey of K that reaches an mReferent meets one condition.
+> A closed may-read set is true when every mKey of K that mRefers to an mReferent meets one condition.
 > The condition is that every mReferent whose write affects the mKey's mReferent is of one of four kinds.
-> The four kinds are the mKey's mReferent itself, something it holds, something that holds it, and an mReferent one of the mKey's entries reaches.
+> The four kinds are the mKey's mReferent itself, something it holds, something that holds it, and an mReferent that one of the mKey's entries mRefers to.
 > A fact's readset is the marked reads of the body that answered it.
 > For a verdict fact, the vouch closes the marked reads (`KNOBS:kCONTRACT-RUNGS`).
-> The vouch is true when the measured answer depended on no mReferent outside what the marked reads reach.
+> The vouch is true when the measured answer depended on no mReferent outside what the marked reads mRefer to.
 > A body that marks no read has readset ⊤.
 > May-read entries are not in a readset.
 > A write reaches K through the may-read entries (2.6-may-write-the-writeset, rule 4).
@@ -1322,14 +1322,14 @@ pred true_DeclaresMayWrite[d: DeclaresMayWrite] {}
 
 pred true_ClosesMayWrite[d: ClosesMayWrite] {
    let l = d.closedLine |
-      World.lineWrites[l] in atMostEntries[l].reaches + wholeWriteEntries[l].reaches.passes
+      World.lineWrites[l] in atMostEntries[l].refersTo + wholeWriteEntries[l].refersTo.passes
 }
 
 pred true_DeclaresEntails[d: DeclaresEntails] {}
 
 pred true_FinishesEntailment[d: FinishesEntailment] {
-   all k: mKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.reaches implies
-      (k.reaches).affects in k.reaches.*holds + entailed[k].reaches
+   all k: mKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.refersTo implies
+      (k.refersTo).affects in k.refersTo.*holds + entailed[k].refersTo
 }
 
 pred sparingIsSound {
@@ -1339,7 +1339,7 @@ pred sparingIsSound {
 
 pred hole_two_separated_things_reach_one_thing_beneath {
    some disj x, y: mKey | tabledCompare[x, y] = DISJOINT
-      and some x.reaches.*(holds + passes) & y.reaches.*(holds + passes)
+      and some x.refersTo.*(holds + passes) & y.refersTo.*(holds + passes)
 }
 
 run hole_two_separated_things_reach_one_thing_beneath_witness {
@@ -1467,11 +1467,11 @@ run law_exclusion_readings_agree_premise {
 > K's owner declares the entailment.
 > The written mSort's owner declares the finished record.
 > A completion record is true when every mReferent the line writes is of one of two kinds.
-> The first kind is an mReferent that an at-most entry reaches.
+> The first kind is an mReferent that an at-most entry mRefers to.
 > The second kind is an mReferent that a route through a whole-marked entry's mReferent passes to.
 > A finished record is true when writing each covered mReferent affects only it, what it holds, and the mReferents the entailment names.
-> The covered mReferents are those an mKey reaches whose mSort and shape are the record's.
-> A held hole: two mKeys that `compare()` reads DISJOINT reach two mReferents from which one mReferent is reached beneath both, by holding or by route, directly or through others.
+> The covered mReferents are those an mKey mRefers to whose mSort and shape are the record's.
+> A held hole: two mKeys that `compare()` reads DISJOINT mRefer to two mReferents from which one mReferent is reached beneath both, by holding or by route, directly or through others.
 > A held hole: a write to one mReferent affects a third mReferent through a second, and does not affect the third directly.
 > The sparing holes are five: the world-scoped-top hole, the region hole, the composite hole, the one-thing-beneath hole, and the third-thing hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > A world is outside the sparing holes when it is outside each of the five.
@@ -1553,11 +1553,11 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
-#= one sig k_index extends mKey {} { value = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  reaches = the_index }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
+#= one sig k_index extends mKey {} { value = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  refersTo = the_index }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= mSort = sm_Boot + sm_Filesystem + sm_File + sm_PkgIndex
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path + sm_AptIndex
@@ -1659,12 +1659,12 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
-#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = list_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
-#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  reaches = list_inode }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
+#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = list_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
+#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  refersTo = list_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -1753,10 +1753,10 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 #= one sig status_inode, list_inode extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = status_inode }
-#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = list_inode }
-#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  reaches = status_inode }
-#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  reaches = list_inode }
+#= one sig k_status_inode extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = status_inode }
+#= one sig k_list_inode extends mKey {} { value = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = list_inode }
+#= one sig k_status_path extends mKey {} { value = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  refersTo = status_inode }
+#= one sig k_list_path extends mKey {} { value = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  refersTo = list_inode }
 #= Speaker = tessa + anna + deb
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -1830,8 +1830,8 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_volumes extends mRootWorld {} { rootShape = volume_id_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_vol_0a1 extends mKey {} { value = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  reaches = volume_a }
-#= one sig k_vol_0b2 extends mKey {} { value = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  reaches = volume_b }
+#= one sig k_vol_0a1 extends mKey {} { value = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  refersTo = volume_a }
+#= one sig k_vol_0b2 extends mKey {} { value = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  refersTo = volume_b }
 #= Speaker = petra + ravi
 #= mSort = sm_Volume
 #= mScheme = sm_VolumeId
@@ -1905,13 +1905,13 @@ pred corresponds[x, y: mKey] {
    some d: DeclaresCorresponds & InForce | (d.keyX = x and d.keyY = y) or (d.keyX = y and d.keyY = x)
 }
 
-pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.reaches = d.keyY.reaches }
+pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.refersTo = d.keyY.refersTo }
 ```
 
 <!-- prose-translation -->
 > mKey X inside mParent A `:corresponds` to mKey Y inside mParent B: they denote the same mReferent.
 > The owner of the transition between A and B declares it, and that owner is neither mKey's mScheme owner.
-> A mCorrespondence is true when the two mKeys reach one mReferent, or both reach none.
+> A mCorrespondence is true when the two mKeys mRefer to one mReferent, or both mRefer to none.
 
 Examples: the container manager knows guest pid 1 is host pid 4821. `sudo -u alice` knows inner "me" is outer "alice". A mount line's oracle knows mKeys under the mountpoint are mKeys under the export on the named server, from this mVantage.
 
@@ -1945,7 +1945,7 @@ pred sameTopic[f, g: VerdictFact] {
 
 pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
    all f: VerdictFact | sortOfKey[f.topic] = d.independentSort implies
-      no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.reaches
+      no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.refersTo
 }
 ```
 
@@ -1993,7 +1993,7 @@ fact { all d: EmitsAliasNothingElse | d.speaker = d.atLevel.scheme.schemeOwner }
 pred aliasClosed[m: mKey] { some EmitsAliasNothingElse & InForce & atLevel.m }
 
 pred true_EmitsAliasNothingElse[d: EmitsAliasNothingElse] {
-   no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.reaches and c.reaches = d.atLevel.reaches
+   no c: mKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.refersTo and c.refersTo = d.atLevel.refersTo
 }
 
 fun sortOfKey[k: mKey]: lone mSort { primaryOf[identity[k].scheme] + identity[k].cellSort }
@@ -2050,7 +2050,7 @@ check law_region_disjoint_is_sound {
       and not hole_composite_keys_with_same_parts_reach_differently
       and not hole_world_scoped_top_aliases_into_a_store implies
       all D, x: mKey | regionTest[D, x] = DISJOINT implies
-         no x.reaches & (D.reaches + D.reaches.passes)
+         no x.refersTo & (D.refersTo + D.refersTo.passes)
 } for 6 but 4 Int
 
 run law_region_disjoint_is_sound_premise {
@@ -2058,7 +2058,7 @@ run law_region_disjoint_is_sound_premise {
    not hole_region_closure_with_unknown_leaf_pair
    not hole_composite_keys_with_same_parts_reach_differently
    not hole_world_scoped_top_aliases_into_a_store
-   some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches and some D.reaches.passes
+   some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo and some D.refersTo.passes
       and (some l: levelsOf[x] | some traversalMembers[l])
 }
 
@@ -2069,7 +2069,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
-      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
+      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo & (D.refersTo + D.refersTo.passes)
 } for 5 but 4 Int expect 1
 
 run kill_region_disjoint_is_sound_alias_nothing_else {
@@ -2079,14 +2079,14 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
-      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.reaches & (D.reaches + D.reaches.passes)
+      and some D, x: mKey | regionTest[D, x] = DISJOINT and some x.refersTo & (D.refersTo + D.refersTo.passes)
 } for 5 but 4 Int expect 1
 ```
 
 <!-- prose-translation -->
 > An entry's author marks it given whole.
 > A lookup may emit a closure, `alias nothing-else`, for a level it resolved (1.5-token-and-the-two-warrants).
-> That closure is true when no other mKey of that level's mScheme reaches the level's mReferent.
+> That closure is true when no other mKey of that level's mScheme mRefers to the level's mReferent.
 > A lookup's mTraversal members are the routing mKeys it emitted, and its mParent-Catalog where the emission is not closed.
 > The mTraversals of x are those `identity(x)` produced, at every lookup toward the primary mKey and at every level of x's mFullyQualifiedKey (1.7-resolution-and-its-traversal, 3.1-identity-of-a-key).
 > The routes of 2.10-places-the-upward-lookup are also mTraversals of x.
@@ -2110,10 +2110,10 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
 > A held hole: some mKey D and some mKey x whose `compare()` reads UNKNOWN or KNOWN_UNSPOKEN, and whose region test reads DISJOINT.
 > The region law has three premises: every statement in force is true, the engine's axioms hold, and no store is among its own contents.
 > Under those premises, a DISJOINT of the region test is never false.
-> Such a DISJOINT for D and x is false when x reaches D's mReferent, or an mReferent that a route through D's mReferent passes to.
+> Such a DISJOINT for D and x is false when x mRefers to D's mReferent, or to an mReferent that a route through D's mReferent passes to.
 > The region law is asked outside that hole, outside the composite hole, and outside the world-scoped-top hole (3.2-compare-one-chokepoint-four-answers).
 > The premise twin of `law_region_disjoint_is_sound` asks for a world where the region test reads DISJOINT for D and x.
-> In that world, x reaches an mReferent, D's mReferent passes to an mReferent, and a level of x has mTraversal members.
+> In that world, x mRefers to an mReferent, D's mReferent passes to an mReferent, and a level of x has mTraversal members.
 > The twin also asks for the region law's premises, outside the three holes.
 > The region law dies with a statement it rests on.
 > Each kill of the region law asks outside the three holes, with the engine's axioms holding and no store among its own contents.
@@ -2183,12 +2183,12 @@ fun beneathFor[P: mKey]: set mKey { entailmentFinished[P] implies entailed[P] el
 pred true_DeclaresPlaces[d: DeclaresPlaces] {}
 
 pred true_RecordsLookedUpIn[d: RecordsLookedUpIn] {
-   d.placedKey.reaches in d.inKey.reaches.passes
+   d.placedKey.refersTo in d.inKey.refersTo.passes
 }
 
 pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
-   all g: keysOfSort[d.routeSort] | some d.closedKey.reaches and d.closedKey.reaches in g.reaches.passes implies
-      some r: placedIn[d.closedKey, d.routeSort] | r.reaches = g.reaches
+   all g: keysOfSort[d.routeSort] | some d.closedKey.refersTo and d.closedKey.refersTo in g.refersTo.passes implies
+      some r: placedIn[d.closedKey, d.routeSort] | r.refersTo = g.refersTo
 }
 ```
 
@@ -2251,11 +2251,11 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 #= one sig fs_1, dir_a, dir_b, inode_a extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
-#= one sig k_dir_a extends mKey {} { value = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  reaches = dir_a }
-#= one sig k_dir_b extends mKey {} { value = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  reaches = dir_b }
-#= one sig k_ino_a extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_a }
-#= one sig k_srv_a_path extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  reaches = inode_a }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
+#= one sig k_dir_a extends mKey {} { value = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  refersTo = dir_a }
+#= one sig k_dir_b extends mKey {} { value = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  refersTo = dir_b }
+#= one sig k_ino_a extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_a }
+#= one sig k_srv_a_path extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  refersTo = inode_a }
 #= Speaker = tessa + dan + rick + carl
 #= mSort = sm_Filesystem + sm_File + sm_Directory
 #= mScheme = sm_FsId + sm_Inode + sm_Path + sm_DirInode
@@ -2530,7 +2530,7 @@ fun tabledCompare[x, y: mKey]: one Answer { Tables.compareTable[x][y] }
 
 pred hole_cell_keys_under_same_parents_reach_differently {
    some disj a, b: mKey | some a.cellSort & b.cellSort and a.parent != b.parent
-      and some a.parent.reaches & b.parent.reaches and a.reaches != b.reaches
+      and some a.parent.refersTo & b.parent.refersTo and a.refersTo != b.refersTo
 }
 
 run hole_cell_keys_under_same_parents_reach_differently_witness {
@@ -2539,7 +2539,7 @@ run hole_cell_keys_under_same_parents_reach_differently_witness {
 
 pred hole_world_scoped_top_aliases_into_a_store {
    some x, s: mKey | some x.parent & mWorld and some s.parent & x.parent and s != x
-      and some x.reaches and x.reaches in s.reaches.^holds
+      and some x.refersTo and x.refersTo in s.refersTo.^holds
 }
 
 run hole_world_scoped_top_aliases_into_a_store_witness {
@@ -2547,7 +2547,7 @@ run hole_world_scoped_top_aliases_into_a_store_witness {
 } for 6 but 4 Int expect 1
 
 pred hole_composite_keys_with_same_parts_reach_differently {
-   some disj a, b: CompositeKey | compositeSame[a, b] and a.reaches != b.reaches
+   some disj a, b: CompositeKey | compositeSame[a, b] and a.refersTo != b.refersTo
 }
 
 run hole_composite_keys_with_same_parts_reach_differently_witness {
@@ -2558,14 +2558,14 @@ check law_compare_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest
       and not hole_cell_keys_under_same_parents_reach_differently
       and not hole_composite_keys_with_same_parts_reach_differently implies
-      all x, y: mKey | compare[x, y] = SAME implies x.reaches = y.reaches
+      all x, y: mKey | compare[x, y] = SAME implies x.refersTo = y.refersTo
 } for 6 but 4 Int
 
 run law_compare_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
    not hole_composite_keys_with_same_parts_reach_differently
-   some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.reaches
+   some disj x, y: mKey | compare[x, y] = SAME and walkOfKeys[x, y] != SAME and some x.refersTo
 }
 
 run kill_compare_same_is_sound_corresponds {
@@ -2573,21 +2573,21 @@ run kill_compare_same_is_sound_corresponds {
    not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
-      and some x, y: mKey | compare[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | compare[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 check law_compare_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
       and not hole_world_scoped_top_aliases_into_a_store
       and not hole_composite_keys_with_same_parts_reach_differently implies
-      all x, y: mKey | compare[x, y] = DISJOINT implies no x.reaches & y.reaches
+      all x, y: mKey | compare[x, y] = DISJOINT implies no x.refersTo & y.refersTo
 } for 6 but 4 Int
 
 run law_compare_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    not hole_composite_keys_with_same_parts_reach_differently
-   some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches and some y.reaches
+   some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.refersTo and some y.refersTo
 }
 
 run kill_compare_disjoint_is_sound_corresponds {
@@ -2596,7 +2596,7 @@ run kill_compare_disjoint_is_sound_corresponds {
    not hole_composite_keys_with_same_parts_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
-      and some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.refersTo & y.refersTo
 } for 5 but 4 Int expect 1
 
 pred axiomaticByContractExcept[except: set Spoken] {
@@ -2640,38 +2640,38 @@ pred noRoutePassesThroughItself { no r: mReferent | r in r.^passes }
 
 check law_same_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and not hole_cell_keys_under_same_parents_reach_differently implies
-      all x, y: mKey | walkOfKeys[x, y] = SAME implies x.reaches = y.reaches
+      all x, y: mKey | walkOfKeys[x, y] = SAME implies x.refersTo = y.refersTo
 } for 6 but 4 Int
 
 run law_same_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest
    not hole_cell_keys_under_same_parents_reach_differently
-   some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.reaches
+   some disj x, y: mKey | walkOfKeys[x, y] = SAME and some x.refersTo
 }
 
 run kill_same_is_sound_unique_referent {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 6 but 4 Int expect 1
 
 run kill_same_is_sound_yields {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not true_DeclaresYields[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 check law_disjoint_is_sound {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents and not hole_world_scoped_top_aliases_into_a_store implies
-      all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.reaches & y.reaches
+      all x, y: mKey | walkOfKeys[x, y] = DISJOINT implies no x.refersTo & y.refersTo
 } for 6 but 4 Int
 
 run law_disjoint_is_sound_premise {
    axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
-   some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches and some y.reaches
+   some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo and some y.refersTo
       and some (x.^parent + y.^parent) & mKey
 }
 
@@ -2680,7 +2680,7 @@ run kill_disjoint_is_sound_unique_name {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_aliases_nothing_else {
@@ -2688,14 +2688,14 @@ run kill_disjoint_is_sound_aliases_nothing_else {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresAliasesNothingElse & InForce | axiomaticByContractExcept[d] and not true_DeclaresAliasesNothingElse[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_same_is_sound_identified_in {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_identified_in {
@@ -2703,21 +2703,21 @@ run kill_disjoint_is_sound_identified_in {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_root {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not true_DeclaresRoot[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_supplies_parent {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_disjoint_is_sound_supplies_parent {
@@ -2725,14 +2725,14 @@ run kill_disjoint_is_sound_supplies_parent {
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
    some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
-      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.reaches & y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = DISJOINT and some x.refersTo & y.refersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_closes_lends {
    not hole_cell_keys_under_same_parents_reach_differently
    axiomaticByDifferentialTest
    some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not true_ClosesLends[d]
-      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.reaches != y.reaches
+      and some x, y: mKey | walkOfKeys[x, y] = SAME and x.refersTo != y.refersTo
 } for 5 but 4 Int expect 1
 
 check law_nobody_spoke_declines {
@@ -2809,26 +2809,26 @@ run law_different_sorts_never_same_premise {
 > Differential test makes them axiomatic, and nobody speaks them.
 > A store is never among its own contents when no mReferent holds itself, directly or through others.
 > No route passes through itself when no mReferent passes to itself, directly or through others.
-> A held hole: two cell mKeys of one cell mSort, under two mParents that reach one mReferent, reach two mReferents.
-> A held hole: an mKey scoped in an mWorld reaches an mReferent that a sibling mKey's mReferent holds, directly or through others.
-> A held hole: two composite mKeys that are SAME by their parts reach two mReferents.
+> A held hole: two cell mKeys of one cell mSort, under two mParents that mRefer to one mReferent, mRefer to two mReferents.
+> A held hole: an mKey scoped in an mWorld mRefers to an mReferent that a sibling mKey's mReferent holds, directly or through others.
+> A held hole: two composite mKeys that are SAME by their parts mRefer to two mReferents.
 > Each hole has a witness that shows it inhabited, and each law below is asked only outside the holes its sentence names.
 > The model never reaches a false SAME while every statement in force is true and the engine's axioms hold.
-> Under those premises, two mKeys the walk reads SAME reach one mReferent, or both reach none.
+> Under those premises, two mKeys the walk reads SAME mRefer to one mReferent, or both mRefer to none.
 > No counterexample at scope 6 is the claim, never a proof.
 > The SAME law of the walk is asked outside the cell hole.
 > Each premise twin of a law with premises also asks for those premises, outside that law's holes.
-> The premise twin of `law_same_is_sound` asks for a world where the walk reads two distinct mKeys SAME and the first reaches an mReferent.
+> The premise twin of `law_same_is_sound` asks for a world where the walk reads two distinct mKeys SAME and the first mRefers to an mReferent.
 > The model never reaches a false DISJOINT under three premises.
 > The premises are that every statement in force is true, the engine's axioms hold, and no store is among its own contents.
-> Under those premises, two mKeys the walk reads DISJOINT reach no common mReferent.
+> Under those premises, two mKeys the walk reads DISJOINT mRefer to no common mReferent.
 > The DISJOINT law of the walk is asked outside the world-scoped-top hole.
-> The premise twin of `law_disjoint_is_sound` asks for a world where the walk reads a pair of mKeys DISJOINT and each reaches an mReferent.
+> The premise twin of `law_disjoint_is_sound` asks for a world where the walk reads a pair of mKeys DISJOINT and each mRefers to an mReferent.
 > In that world, one of the pair has an mKey above it.
 > The SAME law of `compare()` is asked outside the cell hole and the composite hole.
-> The premise twin of `law_compare_same_is_sound` asks for a world where `compare()` reads two distinct mKeys SAME, the walk does not, and the first reaches an mReferent.
+> The premise twin of `law_compare_same_is_sound` asks for a world where `compare()` reads two distinct mKeys SAME, the walk does not, and the first mRefers to an mReferent.
 > The DISJOINT law of `compare()` is asked while no store is among its own contents, outside the world-scoped-top hole and the composite hole.
-> The premise twin of `law_compare_disjoint_is_sound` asks for a world where `compare()` reads a pair of mKeys DISJOINT, the walk does not, and each reaches an mReferent.
+> The premise twin of `law_compare_disjoint_is_sound` asks for a world where `compare()` reads a pair of mKeys DISJOINT, the walk does not, and each mRefers to an mReferent.
 > Where nobody has spoken, the model declines to answer: with no warrant of any kind in force, two distinct mKeys never read SAME or DISJOINT.
 > The premise twin of `law_nobody_spoke_declines` asks for a world where no warrant is in force and two distinct mKeys have known chains in one mWorld.
 > mKeys of different mSorts never read SAME by the walk.
@@ -2917,13 +2917,13 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
-#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_42 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
-#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  reaches = inode_42 }
-#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  reaches = inode_17 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
+#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
+#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  refersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  refersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -2974,7 +2974,7 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 > The inode number's mScheme is `:primary-of` the file, and its shape is `:identified-in` the filesystem.
 > The inode number's shape carries `:guarantees-unique-referent` and `:guarantees-unique-name`.
 > A slash path `:yields` an inode and is looked up in a filesystem.
-> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path reaches.
+> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path mRefers to.
 > The book holds no world object besides those its lines name.
 > The world holds one boot, one filesystem in it, and two inodes in the filesystem.
 > Each of these mReferents is owned by what holds it.
@@ -3018,11 +3018,11 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  reaches = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
-#= one sig k_srv_a extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
-#= one sig k_srv_mirror extends mKey {} { value = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  reaches = inode_17 }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_fs_1 extends mKey {} { value = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  refersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
+#= one sig k_srv_a extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
+#= one sig k_srv_mirror extends mKey {} { value = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  refersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= mSort = sm_Boot + sm_Filesystem + sm_File
 #= mScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -3067,7 +3067,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 > Each of these mReferents is owned by what holds it.
 > A route through the filesystem passes to the inode.
 > No write affects another mReferent, and no line writes.
-> Two paths, `/srv/a/app.conf` and `/srv/mirror/app.conf`, each yield an inode key of the one inode's number, and both reach the one inode.
+> Two paths, `/srv/a/app.conf` and `/srv/mirror/app.conf`, each yield an inode key of the one inode's number, and both mRefer to the one inode.
 > Every mKey is resolved from one mVantage on one mRoute, whose ambient filesystem is the one filesystem, under no wrapper and without the flag.
 > The book holds no composite mKey and no role.
 > No lookup's read set is open.
@@ -3111,11 +3111,11 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 #= one sig docker_exec extends Wrapper {} { wrapperOwner = dora }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  ambient = sm_PidNamespace->k_ns_0 }
 #= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = docker_exec  ambient = sm_PidNamespace->k_ns_1 }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_ns_0 extends mKey {} { value = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  reaches = ns_0 }
-#= one sig k_ns_1 extends mKey {} { value = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  reaches = ns_1 }
-#= one sig k_pid_4821 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  reaches = proc_web }
-#= one sig k_pid_1 extends mKey {} { value = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  reaches = proc_web }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_ns_0 extends mKey {} { value = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  refersTo = ns_0 }
+#= one sig k_ns_1 extends mKey {} { value = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  refersTo = ns_1 }
+#= one sig k_pid_4821 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  refersTo = proc_web }
+#= one sig k_pid_1 extends mKey {} { value = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  refersTo = proc_web }
 #= Speaker = stdlib + pia + dora
 #= mSort = sm_Boot + sm_PidNamespace + sm_Process
 #= mScheme = sm_BootId + sm_PidNsId + sm_Pid
@@ -3209,11 +3209,11 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= one sig inode_17, inode_42 extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
-#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_42 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
-#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  reaches = inode_42 }
-#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  reaches = inode_17 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
+#= one sig k_ino_42 extends mKey {} { value = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
+#= one sig k_srv_b extends mKey {} { value = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  refersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  refersTo = inode_17 }
 #= Speaker = tessa + carl
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -3249,7 +3249,7 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 > Its shape carries `:guarantees-unique-name`, neither `:identified-in` nor `:root`, and no `:guarantees-unique-referent`.
 > A slash path `:yields` an inode, and nothing says where a path is looked up.
 > Nobody describes a filesystem or a boot.
-> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path reaches.
+> Carl's fact at each line marks the path that line reads as its read and depends on the inode that path mRefers to.
 > The book holds no world object besides those its lines name.
 > The world holds two inodes.
 > No store holds them, nothing passes, no write affects another mReferent, and no line writes.
@@ -3286,9 +3286,9 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 #= one sig unit_nginx, active_state, enabled_state extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends mKey {} { value = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  reaches = unit_nginx }
-#= one sig k_active_at_line_1, k_active_at_line_3 extends mKey {} { value = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  reaches = active_state }
-#= one sig k_enabled extends mKey {} { value = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  reaches = enabled_state }
+#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends mKey {} { value = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  refersTo = unit_nginx }
+#= one sig k_active_at_line_1, k_active_at_line_3 extends mKey {} { value = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  refersTo = active_state }
+#= one sig k_enabled extends mKey {} { value = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  refersTo = enabled_state }
 #= Speaker = sven
 #= mSort = sm_Unit + sm_UnitActive + sm_UnitEnabled
 #= mScheme = sm_UnitName
@@ -3369,10 +3369,10 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 #= one sig inode_a, inode_b, merged_a_over_b, merged_b_over_a extends mReferent {}
 #= one sig r0 extends mRoute {}
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_a extends mKey {} { value = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_a }
-#= one sig k_ino_b extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_b }
-#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends mKey {} { value = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  reaches = merged_a_over_b }
-#= one sig k_b_over_a extends mKey {} { value = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  reaches = merged_b_over_a }
+#= one sig k_ino_a extends mKey {} { value = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_a }
+#= one sig k_ino_b extends mKey {} { value = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_b }
+#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends mKey {} { value = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  refersTo = merged_a_over_b }
+#= one sig k_b_over_a extends mKey {} { value = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  refersTo = merged_b_over_a }
 #= part = k_a_over_b_at_line_1->base_role->k_ino_a + k_a_over_b_at_line_1->overlay_role->k_ino_b + k_a_over_b_at_line_3->base_role->k_ino_a + k_a_over_b_at_line_3->overlay_role->k_ino_b + k_b_over_a->base_role->k_ino_b + k_b_over_a->overlay_role->k_ino_a
 #= Speaker = tessa + cora
 #= mSort = sm_File + sm_MergedConfig
@@ -3491,8 +3491,8 @@ run hole_unclosed_traversal_without_a_key_catalog_witness {
 } for 6 but 4 Int expect 1
 
 pred hole_natural_key_catalog_off_the_route {
-   some k: mKey | isNaturalKey[k] and some k.parent & mKey and some k.reaches
-      and k.reaches not in k.parent.reaches.passes
+   some k: mKey | isNaturalKey[k] and some k.parent & mKey and some k.refersTo
+      and k.refersTo not in k.parent.refersTo.passes
 }
 
 run hole_natural_key_catalog_off_the_route_witness {
@@ -3501,7 +3501,7 @@ run hole_natural_key_catalog_off_the_route_witness {
 
 pred hole_a_route_off_the_catalog_reaches_the_thing {
    some k: mKey | not traversalClosed[k]
-      and some passes.(k.reaches) - (k.parent & mKey).reaches - crossed[k].reaches
+      and some passes.(k.refersTo) - (k.parent & mKey).refersTo - crossed[k].refersTo
 }
 
 run hole_a_route_off_the_catalog_reaches_the_thing_witness {
@@ -3515,7 +3515,7 @@ check law_unstale_route_is_untouched {
       and not hole_a_route_off_the_catalog_reaches_the_thing
       and not hole_region_closure_with_unknown_leaf_pair implies
       all s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l] implies
-         no World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
+         no World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
 } for 6 but 4 Int, 9 Claim
 
 run law_unstale_route_is_untouched_premise {
@@ -3537,7 +3537,7 @@ run kill_unstale_route_is_untouched_closes_traversal {
    axiomaticByDifferentialTest
    some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not true_ClosesTraversal[d]
       and some s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
-         and some World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
+         and some World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_unstale_route_is_untouched_closes_may_write {
@@ -3549,7 +3549,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
    axiomaticByDifferentialTest
    some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
       and some s: Line, k: mKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
-         and some World.lineWrites[l] & passes.(levelsOf[k].reaches + k.reaches)
+         and some World.lineWrites[l] & passes.(levelsOf[k].refersTo + k.refersTo)
 } for 6 but 4 Int, 9 Claim expect 1
 ```
 
@@ -3568,9 +3568,9 @@ run kill_unstale_route_is_untouched_closes_may_write {
 > A lifecycle mutation writes a mRoot-adjacent mKey, and invalidates every mKey whose identity's chain passes through that mKey.
 > Below a site, an mKey whose mResolution, mToken, or mWorld a line above invalidated is stale, and every mFullyQualifiedKey built on it reads unknown there.
 > A held hole: some level of an mKey has no closing act and no mKey for its mParent-Catalog.
-> A held hole: a natural mKey with an mKey for its mParent-Catalog reaches an mReferent that no route through the catalog's mReferent passes to.
-> A held hole: an mKey with no closing act reaches an mReferent that a third mReferent passes to.
-> That third mReferent is neither the mReferent of the mKey's mParent-Catalog nor an mReferent that an emitted member reaches.
+> A held hole: a natural mKey with an mKey for its mParent-Catalog mRefers to an mReferent that no route through the catalog's mReferent passes to.
+> A held hole: an mKey with no closing act mRefers to an mReferent that a third mReferent passes to.
+> That third mReferent is neither the mReferent of the mKey's mParent-Catalog nor an mReferent that an emitted member mRefers to.
 > The untouched-route law has four premises.
 > Every statement in force is true, and the engine's axioms hold.
 > No store is among its own contents, and no route passes through itself.
@@ -3601,7 +3601,7 @@ Scope: the untouched-route law runs at nine statements because its twin's witnes
 > Dependent SAME conclusions lose authority, dependent elisions demote to guards, and dependent DISJOINT conclusions collide.
 > The touched object itself is untouched.
 > Creation, deletion, and rename of an mKey are routing writes.
-> They change what the mKey reaches.
+> They change what the mKey mRefers to.
 > The mKeys they write are the verb author's at-most claim.
 > A writeset that omits them is the ordinary at-most omission knife, which now visibly covers routing mKeys.
 > Cells whose mFullyQualifiedKeys pass through a lifecycle-written mKey are new and unmeasured.
@@ -3614,7 +3614,7 @@ Routing mutations: a mount, a symlink replacement, a rename, a user added, a hos
 
 A lifecycle write to a mRoot-adjacent mKey: Rob describes `reboot` as writing the boot's own
 mKey. Pia's pids are identified in the boot for this book. The fences hold no instant, so the
-world is one world and both pid mKeys reach one process; what the book shows is the engine
+world is one world and both pid mKeys mRefer to one process; what the book shows is the engine
 withdrawing authority below the line, and that it withdraws it from the mKey resolved after the
 reboot as well, since no fence holds when an mKey was resolved.
 
@@ -3637,8 +3637,8 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 #= one sig r0 extends mRoute {}
 #= one sig w_boot extends mRootWorld {} { rootShape = boot_shape }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  reaches = the_boot }
-#= one sig k_pid_at_line_1, k_pid_at_line_3 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  reaches = proc_web }
+#= one sig k_boot extends mKey {} { value = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  refersTo = the_boot }
+#= one sig k_pid_at_line_1, k_pid_at_line_3 extends mKey {} { value = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  refersTo = proc_web }
 #= Speaker = stdlib + pia + rob
 #= mSort = sm_Boot + sm_Process
 #= mScheme = sm_BootId + sm_Pid
@@ -3752,16 +3752,16 @@ fun keysUnder[w: Wrapper]: set mKey { {k: mKey | k.at.through = w} }
 pred true_DeclaresLends[d: DeclaresLends] {
    all k: keysUnder[d.lendingWrapper] |
       isNaturalKey[k] and catalogSortOf[k.scheme] = d.lentSort implies
-         k.reaches in d.lentInstance.reaches.passes
+         k.refersTo in d.lentInstance.refersTo.passes
 }
 
 pred true_ClosesLends[d: ClosesLends] {
    let w = d.closedWrapper {
       all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]]
             and some k.at.enteredFrom.ambient[catalogSortOf[k.scheme]] implies
-         k.reaches in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].reaches.passes
+         k.refersTo in k.at.enteredFrom.ambient[catalogSortOf[k.scheme]].refersTo.passes
       all k: keysUnder[w], j: mKey | j.at = k.at.enteredFrom and k.scheme = j.scheme and k.value = j.value
-         and k.parent = k.at.route and j.parent = j.at.route implies k.reaches = j.reaches
+         and k.parent = k.at.route and j.parent = j.at.route implies k.refersTo = j.refersTo
    }
 }
 ```
@@ -3774,18 +3774,18 @@ pred true_ClosesLends[d: ClosesLends] {
 > After the wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the mRoute inherit the caller's instances instead.
 > Otherwise the mRoute is unknown across the two vantages, another mRoute.
 > A lend concerns every mKey of a secondary mScheme looked up in the lent mSort under the wrapper.
-> A lend is true when every such mKey reaches what a route through the lent instance's mReferent passes to.
+> A lend is true when every such mKey mRefers to what a route through the lent instance's mReferent passes to.
 > The sentinel is an at-most claim over every mParent-Catalog mSort and the mRoute.
 > The sentinel is true when two conditions hold.
 > The first condition concerns each mKey of a secondary mScheme looked up in an unlent mSort under the wrapper.
 > The first condition applies where the caller holds an instance for that mSort.
-> Under the first condition, each such mKey reaches what a route through the caller's instance passes to.
-> The second condition is that an mKey scoped in the mRoute under the wrapper reaches what its same-spelled twin scoped in the caller's mRoute reaches.
+> Under the first condition, each such mKey mRefers to what a route through the caller's instance passes to.
+> The second condition is that an mKey scoped in the mRoute under the wrapper mRefers to what its same-spelled twin scoped in the caller's mRoute mRefers to.
 
 UNACKED READING, temporary (`312d:enc-lends-truth-is-routing`, `312d:enc-vantage-is-the-entry-chain`):
 311 says a wrapper lends instances "for the mParent-Catalog mSorts it perturbs, and nothing
 else"; the fence reads "perturbs" through the world relation `passes` and reads the mRoute's
-inheritance as sameness of what same-spelled route-scoped mKeys reach, and it makes a vantage
+inheritance as sameness of what same-spelled route-scoped mKeys mRefer to, and it makes a vantage
 not inheriting hold a DIFFERENT mRoute atom. The conductor's readings, not acked, not
 authoritative, held only until acked or replaced (`notes/312d` § 7).
 
@@ -3824,10 +3824,10 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
 #= one sig v1 extends mVantage {} { enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
-#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  reaches = inode_17 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
-#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  reaches = inode_17 }
+#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  refersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  refersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -3895,10 +3895,10 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
 #= one sig v0 extends mVantage {} { route = r0  no enteredFrom  no through  no ambient }
 #= one sig v1 extends mVantage {} { route = r1  enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  reaches = inode_17 }
-#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  reaches = inode_17 }
-#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  reaches = inode_17 }
-#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  reaches = inode_17 }
+#= one sig k_ino_17_at_line_1 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  refersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends mKey {} { value = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  refersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  refersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends mKey {} { value = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  refersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= mSort = sm_File
 #= mScheme = sm_Inode + sm_Path
@@ -4343,6 +4343,7 @@ Plain-English "read" that must NOT be tagged or renamed (a host read, not the op
 | mPlacement · `:lives-in` · "placement"; and "backing" (`an-backing-selfframing`, the probe's marked read set): the declared and the measured halves of one side | `may-read` (the record verb / relation); Readset (the set: the declared `may-read` entries, the probe's marked reads, and the Readsets of every container on the chain). Sentinel `may-read nothing-else` | `ANALYZER-NEEDS` rows, including the slug `ANALYZER-NEEDS:an-backing-selfframing` (also cited from `plans/30T`); `USER_STORY`; `KNOBS` |
 | footprint · `disturbs` · "at-most claim"; and `:reaches` / `disturbance_reaches` (the entailment, computed into the same set) | `may-write` (the record verb / relation); Writeset (the set: the declared `may-write` entries, the entailment, and the may-write sets of the written thing's containers strictly below the level shared with the fact's key). Sentinel `may-write nothing-else` (the finished definition / completion record) | `USER_STORY` stages 5–7; `KNOBS:kBURDEN`; `ANALYZER-NEEDS`; `FORFEITS`; the spike members `cmd__disturbs()` and `kind__disturbance_reaches()`, which follow the verb |
 | "perishing" and its forms, used as jargon | no term: the jargon retires. Plain English and standard compiler-engineering terminology, usually but not always a phrase with the word "invalidation". Never a capitalised or tagged form (no "Invalidation", no mInvalidation). Where it becomes "invalidation", it nearly always needs a precise subject; for how "perishing" was used, the human believes that is probably "routing invalidation", unchecked | not yet investigated |
+| `reaches`, the world relation from an mKey to an mReferent | mRefers to (one instance is an mReference); the fence field is `refersTo` | the r31 ledgers from `312d` on |
 | `unrelated` | KNOWN_UNSPOKEN | `30U` § 7, `compare-consumer-map`, `ANALYZER-NEEDS:an-compare-chokepoint`. The design-of-record documents keep `unrelated` until the model is ruled (4.2-supersessions-pending-in-prior-documents names them) |
 
 ### § 6.2-undecided-whether-a-name-is-dead
