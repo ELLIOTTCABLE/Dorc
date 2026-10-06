@@ -319,3 +319,36 @@ root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate chan
   check off completed entries: none is complete; two § 3.3 entries are marked advanced.
 - Not acted on, by the conductor's walk: rewording the other "run" sites; § 1.11's description;
   the per-instant normative sentences, deferred to the rename commit.
+
+### § 2.5-the-colon-review-and-the-rename
+
+- **[CONDUCTOR]** put: every `:`-term in the specification names a claim except `:parent` (the
+  derived parent edge, already named mParent) and `:observer-dependence` (the default, which has
+  no spelling); § 1.7.1's "effective-mWorld reach" is a mis-tag from the 2026-09-10 tagging pass
+  over `30K`'s "effective world reach"; after the rename, the other uses of "reach" in normative
+  text are reachability in the standard sense; the Alloy field needs a name.
+- **[TYPED]** ack: `:parent` becomes mParent, written grammatically (its mParent, mParentage).
+  Applied (commit "(AI dsn) Write the parent edge as mParent, not as a claim").
+- **[TYPED]** `:observer-dependence` stays. The colon rule, restated: `:` marks a relation that is
+  known only from what a user says, a default included (the user conveys it by taking no
+  action, and a default is itself a spelling, open to change in the spelling work); a relation
+  the engine never holds takes an mWord; a relation the engine derives takes neither (stated
+  with uncertainty).
+- **[TYPED]** ack: the Conventions line is rewritten to say so, short. Applied (commit "(AI dsn)
+  Reserve the colon for relations only speech makes known").
+- **[TYPED]** the mis-tag is undone first, in its own commit. Applied (commit "(AI dsn fix) Undo
+  the tagging pass's mWorld in effective-world reach"); no other mWorld mis-conversion of that
+  pass survives in the specification.
+- **[TYPED]** ack: the § 1.7.1 replacement, which belongs in the next adversarial batch. Applied
+  (commit "(AI dsn) Say where a mutator invalidates without borrowing effective reach").
+- **[TYPED]** mRefers to names one specific thing; reachability in its algorithmic, compiler sense
+  stays "reachability", an ordinary word that grated only as the name of an LLM-minted relation.
+- **[TYPED]** ack: § 3.3's "reaches every mKey in its writeset … kill-reach" is reworded. Applied
+  (commit "(AI dsn) Say a state mutation touches its writeset, not reaches it").
+- **[TYPED]** ack: the m is carried into Alloy, in two commits: first the plain rename, then every
+  Alloy spelling that should have followed the rule. Applied: the rename (60 prose lines, 199
+  fence identifiers as `refersTo`, a § 6.1 row; commit "(AI dsn) Rename the key-to-referent
+  relation to mRefers to"), then the tag (`mRefersTo`, `mParent`, `mValue`, `mToken`,
+  `mTraversal`, `mFullyQualifiedKey`, `mParentStore`, `mParentCatalog`, and the Conventions'
+  fence bullet; commit "(AI dsn) Carry the m into every Alloy spelling of a model term"). Alloy's
+  parse lint is clean after each.
