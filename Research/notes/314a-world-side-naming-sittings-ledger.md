@@ -226,8 +226,8 @@ responses follow each.
 
 ### § 2.2-the-census-as-put
 
-- **[CONDUCTOR]** an Opus census of every "reach" in the specification at `63e08859` (ephemeral
-  table, root `_tmp-314a-reach-census.md`): 383 uses; 310 are the ground-truth landing of a key,
+- **[CONDUCTOR]** an Opus census of every "reach" in the specification at `63e08859`: 383 uses;
+  310 are the ground-truth landing of a key,
   73 are five other senses (engine-side landing, control flow, route reachability, effect
   spread, "a false answer is reachable" by the checker), one of them in normative text
   (§ 1.7.1, "ordinary effective-mWorld reach"). Of the 310, no site means several mReferents at
@@ -286,8 +286,8 @@ responses follow each.
 
 ### § 2.4-the-first-review-walked
 
-A Fable reviewer in clean context attacked the two normative commits (its report, ephemeral, is
-root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate change alone.
+A Fable reviewer in clean context attacked the two normative commits. The conductor put each
+candidate change alone.
 
 - **[TYPED]** one commit per semantic change, or at least per ack; no batches of reviewer nits.
   Adversarial review has produced churn in r31 and is not trusted: any change to normative text
@@ -315,8 +315,7 @@ root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate chan
   a hole's witness, and the flag set "for one invocation of Dorc" (commit "(AI dsn) Keep run to
   one reading in normative text").
 - **[TYPED]** the description of mSite against its executions, and an mExecution not being the
-  tick of logical time, go to the held-work file; done there as two § 3.3 entries. Asked to
-  check off completed entries: none is complete; two § 3.3 entries are marked advanced.
+  tick of logical time, are held work, with no spec change yet.
 - Not acted on, by the conductor's walk: rewording the other "run" sites; § 1.11's description;
   the per-instant normative sentences, deferred to the rename commit.
 
@@ -376,8 +375,7 @@ root `_tmp-314a-adversarial-review-1.md`). The conductor put each candidate chan
 
 ### § 2.7-the-second-review-walked
 
-The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is root
-`_tmp-314a-adversarial-review-2.md`). The conductor put seven items.
+The reviewer attacked the seven commits of § 2.5. The conductor put seven items.
 
 - Applied first: the per-instant sentence in § 1.1.1 (commit "(AI dsn new) State that a key
   mRefers to at most one referent per instant").
@@ -398,8 +396,8 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   contradicted not-a-ban").
 - **[TYPED]** ack, applied: "at each site that the shell can execute after the mutator" in place
   of the undefined "use" (commit "(AI dsn fix) Say site, not the undefined use").
-- **[TYPED]** the execution order against the fence's text order joins the held-work entry for
-  line-varying reach, so the line is not missed; no spec change yet. Done there.
+- **[TYPED]** the execution order against the fence's text order is held with the line-varying
+  reach work, so the line is not missed; no spec change yet.
 - **[TYPED]** soft ack: the colon rule says what Dorc is given, not an author's speech. The
   category is likely larger than users: defined by negative space at both ends (not built into
   the engine, not hidden from Dorc by design), it is what product design must worry about:
@@ -442,10 +440,9 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   `…Owner` fields), then a trailing underscore (`k.mScheme_`). Then two options: (A) one narrow
   exception, a bare lowercase base word only as a field whose declared type is exactly that
   term's signature; (B) signatures capitalized, `MScheme`, the lowercase form kept for a
-  property of an instance. The inventory came back (ephemeral, root
-  `_tmp-314a-fence-naming-inventory.md`): 89 clear renames, 73 names needing care in 17
-  groups, 7 deferred; among its findings, the prose never writes mShape but writes bare "shape"
-  146 times.
+  property of an instance. The inventory came back: 89 clear renames, 73 names needing care in
+  17 groups, 7 deferred; among its findings, the prose never writes mShape but writes bare
+  "shape" 146 times.
 - **[TYPED]** `has_` reads as a boolean predicate: probable NACK. `owns` will very likely be
   killed with `reaches` as an LLM-minted term; its current use is acknowledged.
 - **[TYPED]** lean B: it is the common form in other specifications. The lowercase m-form was
@@ -584,7 +581,7 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   dependencies, judged by the rubric; then the assay work that makes it run; more items later. How
   specifications see the document (an include mechanism, or opening) is the conductor's choice.
 - The rubric was written (only a normative block, no Alloy) and attacked by a Fable reviewer in
-  clean context (report, ephemeral: root `_tmp-314a-adversarial-review-3.md`). Upheld by the
+  clean context. Upheld by the
   conductor: as written the rubric admits nothing ("meets every sentence" with the no-clear-answer
   fallback); the four "another choice" tests read literally exclude every definition a check uses;
   the naming rule excludes all Alloy-forced plumbing, since Alloy's typing makes it name product
