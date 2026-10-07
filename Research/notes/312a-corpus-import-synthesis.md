@@ -37,7 +37,7 @@ Seven read-only collation sweeps over `Research/notes`, `Research/plans`, `Resea
 `Research/trial`, and four `.claude/research` ledgers, producing: every concrete ops case the
 corpus records as having forced a design element (five sweeps by round range, 246 entries); the
 original forcing case behind each of sixteen designs that 311 dissolved or re-litigated; and
-every human-typed or acked ruling on mSorts, identity, stores, contexts, transport, survival,
+every human-typed or acked ruling on MSorts, identity, stores, contexts, transport, survival,
 attribution, responsibility, committee speech, and custody (123 rulings). Triage was done in
 the main window. The raw sweeps are ephemeral; what they yielded is below.
 
@@ -54,28 +54,28 @@ Each needs a typed reversal or a re-ack; chat leans do not overturn typed ruling
   `311a:rul-overlaps-is-a-kernel-generator` (TYPED 2026-09-05), dissolved by the
   symlink-retarget case and the granule observation (`311` § 6.2); no reversal typed.
 - `reack-lend-map-sentinel` — `271:rul-lend-map` (TYPED 2026-07-11): enumerate-every-dimension
-  becomes a completion sentinel over mSorts (`311` § 3.4). The `273` razor survives
+  becomes a completion sentinel over MSorts (`311` § 3.4). The `273` razor survives
   because the sentinel is a pointable line.
 - `reack-selector-and-dialect` — `271:rul-coordinate-shape-flat-three-place`,
   `271:rul-emission-selector-on-mark`, `271:rul-selector-disjointness-dialect-scoped`,
   `271:rul-kind-or-selector-is-a-behaviour-choice`, and the `30J` acks of 2026-08-19 and 08-23.
-  Selectors become mAspectSorts; the mSort-versus-selector behaviour menu collapses to one
+  Selectors become MAspectSorts; the MSort-versus-selector behaviour menu collapses to one
   behaviour (known-unspoken, then collide unless the owner's finished definition speaks); `30J`'s P2
   gate on strangers has no counterpart (~SUSPECT it wants a seat in assignment, not a rule).
 - `reack-name-floor-default` — `300:rul-reference-entity-name-floor` (ruled; human-corrected
-  2026-08-15), dissolved toward default-safe; an mSort with no `resolve()` gets no same-mSort sparing.
+  2026-08-15), dissolved toward default-safe; an MSort with no `resolve()` gets no same-MSort sparing.
 - `reack-cross-sort-same-now-exists` — `23O:synonym-cell-scoped` and the second clause of
-  `spike/CLAUDE.md:top-identifies-with-nothing`. Cross-mSort SAME arrives through a shared
-  mKey-PrimaryStore (`311` § 3.2), delivering `24M:rul24M-kind-unify-owed`; the mechanism is
+  `spike/CLAUDE.md:top-identifies-with-nothing`. Cross-MSort SAME arrives through a shared
+  MKey-PrimaryStore (`311` § 3.2), delivering `24M:rul24M-kind-unify-owed`; the mechanism is
   unacked.
 - `check-posture-options-lost-their-home` — `26Ob:ack-rich-internals-keyed-by-the-matrix` and
   `26Ob:ack-cross-world-wall-is-the-floor` (TYPED) reserve a later posture flag; 311 dissolves
-  the matrix into a mVantage and does not say where a posture option attaches.
+  the matrix into a MVantage and does not say where a posture option attaches.
 
 Walked and preserved, no action: the sudo-crontab and dpkg-under-sudo pair; the docker default
 socket (`272` § 4); the sysctl inversion (Sysctl identified-in Boot needs no substrate word);
 policyctl's unmarked read (the read-set closure stays as the net); the nginx/nginx-full alias
-(the `resolve()` supplies the mPrimaryKey); the enabled/active pair (two mAspectSorts, two mKey-PrimaryStores); the
+(the `resolve()` supplies the MPrimaryKey); the enabled/active pair (two MAspectSorts, two MKey-PrimaryStores); the
 store member's argv blindness (SITE-supplied instances); `272` § 5 addresses-are-not-coordinates
 (placement feeds collision only; no identity merge); the refused transport chain (`279f` § 3,
 re-opened only as a warranted `resolve()`); the committee law (`28M` § 8: every positive step is one
@@ -90,14 +90,14 @@ that coherently. They are recorded so the re-verification is against the actual 
 rulings, not a reconstruction.
 
 - `26M:ack-authored-host-sameness-parallel` + `26Ob:ack-pools-are-the-admins` — which spellings
-  reach one target, and set-valued mResolution across a pool, are the admin's to declare, in
+  reach one target, and set-valued MResolution across a pool, are the admin's to declare, in
   plain sh. The model has no admin seat: the first concrete seat gap.
 - `26Ob:nack-lane-decline-as-a-plan` — an author never decides, for the admin, a risk class
   specific to the admin's own timing and architecture.
 - `26Ob:nack-residue-is-not-engine-defined` — the engineer-to-admin residue is a contract
   between them, never engine-defined.
 - `30U:the-authorship-contract-summarized` — the current three-seat table (tool authors name
-  what they touch; mSort owners reach freely and finish only when finished; admins write nothing
+  what they touch; MSort owners reach freely and finish only when finished; admins write nothing
   and trust past the flag): the thing this phase revises.
 - `28M:the-overlay-price` — speak whole or the engine composes nothing in your name; bounds
   every push-half-the-work-to-a-neighbour move: the half must be that neighbour's own speech.
@@ -115,10 +115,10 @@ rulings, not a reconstruction.
 
 Working set; the first column of any strain card. in-principle (nobody, ever: the frame
 problem's residue, host-configured reactions) · by-design (Dorc refuses to hold it: tool
-semantics, paths, mReferents) · vacant (someone could; nobody has) · was-true-then (an honest
+semantics, paths, MReferents) · vacant (someone could; nobody has) · was-true-then (an honest
 claim outrun by a newer binary, a renamed key, a non-monotonic capability; time across
 authoring, the deferred MH2 layer) · nobody-at-this-granularity (someone could at a coarser
-grain; fchmod through stdout is why binder claims are whole-mKey). The last two were forced by
+grain; fchmod through stdout is why binder claims are whole-MKey). The last two were forced by
 the import; `26Ob:ack-two-contracts-outside-versus-unanalyzable` supplies the first split.
 
 ## § 5-seat-gaps
@@ -127,7 +127,7 @@ the import; `26Ob:ack-two-contracts-outside-versus-unanalyzable` supplies the fi
   deployment facts (a configured APT hook; a hardlink-free tree; whether comment order matters;
   what `$SUDO` expands to; their sudoers) are the admin's; the model gives the admin only the
   flag.
-- `seat-third-party-glue-author` — someone who knows mSorts A and B and owns neither has no seat
+- `seat-third-party-glue-author` — someone who knows MSorts A and B and owns neither has no seat
   (`28R:fnd-bridging-oracles-foreclosed`: both ecosystems with single-occupancy rules needed an
   escape valve almost immediately).
 - `seat-nobody-at-this-granularity` — § 4.
@@ -157,10 +157,10 @@ the import; `26Ob:ack-two-contracts-outside-versus-unanalyzable` supplies the fi
   already assigns every positive claim to a party. Assignment is an audit of that column
   against can-reasonably-know and blast radius, not a fresh table.
 - `fnd-leverage-and-blast-radius-are-one-number` (+SURE; the alignment is the human's) — a
-  per-mSort claim amortizes across every book and bites every book. Countability follows: few
+  per-MSort claim amortizes across every book and bites every book. Countability follows: few
   such seats, all stdlib, all tested.
 - `fnd-witnessed-versus-declared-sorts-the-answers` (+SURE by
-  `26Ob:ack-guards-reach-elisions-witness`) — SAME from measured mTokens re-read at standup is
+  `26Ob:ack-guards-reach-elisions-witness`) — SAME from measured MTokens re-read at standup is
   witnessed; SAME or DISJOINT from a warrant alone is declared; the survival tier was always
   declared. Every card carries this bit.
 - `fnd-known-unspoken-and-unknown-repair-differently` (+SURE of the text; ~SUSPECT of the intent) —
@@ -196,10 +196,10 @@ guest; wrapper order and env scrubbing; `$SUDO` as a variable); 03 store identit
 
 Suggested next, each naming the seat it strains: the stdlib Package owner's horizon judgment
 (postinst is arbitrary root sh; APT hooks can install; convert-to-read versus decline) ·
-per-subtree mKey-PrimaryStore and cross-mSort SAME (`net.*` sysctls per netns, `kernel.*` per
+per-subtree MKey-PrimaryStore and cross-MSort SAME (`net.*` sysctls per netns, `kernel.*` per
 boot; `sysctl -w` versus a write under `/proc/sys`) · the missing requirement relation and the
 run-delta residue (reload after a changed write; nginx exposes no loaded-config state) · env as
-an mSort (`AWS_PROFILE`; `psql` and `PGHOST`) · time holes (effects after return;
+an MSort (`AWS_PROFILE`; `psql` and `PGHOST`) · time holes (effects after return;
 was-true-then) · nobody-at-granularity and the horizon policy (fchmod through stdout; a `cp`
 tripping a watcher).
 

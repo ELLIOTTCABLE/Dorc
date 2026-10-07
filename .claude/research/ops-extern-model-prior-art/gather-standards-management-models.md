@@ -7,7 +7,7 @@ Lane 1 of ten. I read 311 at `63e49f29`. Every grade is `graded-by: subagent`. L
 ## Findings
 - CIM is the closest standards-body counterpart to 311's `:identified-in` chain. A weak class is identified inside a scoping instance whose keys propagate into it, and this nests: ComputerSystem > OperatingSystem > LocalUser; System > FileSystem > LogicalFile; OperatingSystem > Process. The schema owner declares the scope once per class, with no per-shape variation. [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] [A-dmtf-cim-logicalfile-class-2005] (+SURE)
 - CIM's naming clause states 311's two-warrant split for namespaces. Equal namespace-path strings reference the same namespace; unequal strings license "no conclusion". That is `:guarantees-unique-referent` without `:guarantees-unique-name`. [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] (+SURE)
-- CIM separates CIM-object identity from managed-object identity, which is 311's mKey-vs-mReferent seam. The bridge between them is the Correlatable qualifier: an org-scoped, one-directional SAME generator whose failure yields "no conclusion". The spec explicitly keeps it distinct from the opaque InstanceID. [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] (+SURE)
+- CIM separates CIM-object identity from managed-object identity, which is 311's MKey-vs-MReferent seam. The bridge between them is the Correlatable qualifier: an org-scoped, one-directional SAME generator whose failure yields "no conclusion". The spec explicitly keeps it distinct from the opaque InstanceID. [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] (+SURE)
 - CIM v3 removed Correlatable with "No replacement". It folded Weak, Propagated and Delete/IfDeleted into OCL constraints. The change list gives no rationale. [B-dmtf-dsp0004-cim-metamodel-3-0-2014] (+SURE on the removal; --WONDER why)
 - CIM keys a file by path, not by inode:
   - LogicalFile is weak to its FileSystem, "not to a Directory", with "a full path name" as the unique Name.
@@ -44,8 +44,8 @@ Lane 1 of ten. I read 311 at `63e49f29`. Every grade is `graded-by: subagent`. L
   - ifCounterDiscontinuityTime acts as a witness instead of issuing a new index.
   - A sysUpTime reset is the lifecycle signal.
 
-  This is the analogue of 311's lifecycle mutation, and of a `witness()` that cannot see a recycled mKey. [A-ietf-rfc2863-if-mib-2000] (+SURE)
-- SNMP names observer-dependence directly. ENTITY-MIB distinguishes "multi-scoped" objects (identical instance values mean different things in different naming scopes) from "single-scoped" ones. IF-MIB says whether ifIndex values across scopes are the same interface is "the agent's choice". The naming scope (community or context) plays the mVantage role. [A-ietf-rfc6933-entity-mib-v4-2013] [A-ietf-rfc2863-if-mib-2000] (+SURE)
+  This is the analogue of 311's lifecycle mutation, and of a `witness()` that cannot see a recycled MKey. [A-ietf-rfc2863-if-mib-2000] (+SURE)
+- SNMP names observer-dependence directly. ENTITY-MIB distinguishes "multi-scoped" objects (identical instance values mean different things in different naming scopes) from "single-scoped" ones. IF-MIB says whether ifIndex values across scopes are the same interface is "the agent's choice". The naming scope (community or context) plays the MVantage role. [A-ietf-rfc6933-entity-mib-v4-2013] [A-ietf-rfc2863-if-mib-2000] (+SURE)
 - ENTITY-MIB also has:
   - an agent-authored correspondence table, entAliasMappingTable;
   - scoped keys: serial numbers are comparable only within one manufacturer;
@@ -70,9 +70,9 @@ Lane 1 of ten. I read 311 at `63e49f29`. Every grade is `graded-by: subagent`. L
 ## Candidate table
 | [slug] | what | breadth / battle-tested | 311 analogues | punts | altitude |
 |---|---|---|---|---|---|
-| [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] | CIM v2 metamodel | all CIM; WMI/OpenPegasus/SBLIM | Weak+Propagated = `:identified-in` chain; namespace rule = unique-referent w/o unique-name; Correlatable = one-way SAME; 8.3 = mKey vs mReferent; Delete/IfDeleted = lifecycle entailment | namespace sameness undecidable; Delete optional | schema/naming |
+| [A-dmtf-dsp0004-cim-infrastructure-2-8-2014] | CIM v2 metamodel | all CIM; WMI/OpenPegasus/SBLIM | Weak+Propagated = `:identified-in` chain; namespace rule = unique-referent w/o unique-name; Correlatable = one-way SAME; 8.3 = MKey vs MReferent; Delete/IfDeleted = lifecycle entailment | namespace sameness undecidable; Delete optional | schema/naming |
 | [B-dmtf-dsp0004-cim-metamodel-3-0-2014] | CIM v3 change list | narrow read | removal record | Correlatable "No replacement" | schema |
-| [A-dmtf-cim-logicalfile-class-2005] | CIM_LogicalFile | one class | path mKey in FS store | hardlinks, bind mounts | schema |
+| [A-dmtf-cim-logicalfile-class-2005] | CIM_LogicalFile | one class | path MKey in FS store | hardlinks, bind mounts | schema |
 | [A-dmtf-cim-unixfile-class-2005] | CIM_UnixFile | one class | inode/linkcount non-key | inode never identity | schema |
 | [A-dmtf-cim-filesystem-class-2005] | CIM_FileSystem | one class | FS weak to System; PersistenceType; hrFSMountPoint mapping | NFS on two hosts = two instances | schema |
 | [A-dmtf-cim-softwareidentity-class-2011] | CIM_SoftwareIdentity | one class | InstanceID minting; ConcreteIdentity to files | "does NOT indicate... installed" | schema |
@@ -87,7 +87,7 @@ Lane 1 of ten. I read 311 at `63e49f29`. Every grade is `graded-by: subagent`. L
 | [B-openconfig-opstate-draft-2015] | OpenConfig rationale | operator reqs | intended/applied/derived; async | divergence semantics | architecture |
 | [A-ietf-rfc2578-smiv2-1999] | SMIv2 | language | foreign INDEX; AUGMENTS | none | schema lang |
 | [A-ietf-rfc2579-smiv2-textual-conventions-1999] | SMIv2 TCs | conventions | StorageType; RowStatus | index by collision | conventions |
-| [A-ietf-rfc2863-if-mib-2000] | IF-MIB | 25+ yrs; litigation text | lifecycle; discontinuity witness; naming scope as mVantage; ifAlias | "different" left open | schema+litigation |
+| [A-ietf-rfc2863-if-mib-2000] | IF-MIB | 25+ yrs; litigation text | lifecycle; discontinuity witness; naming scope as MVantage; ifAlias | "different" left open | schema+litigation |
 | [A-ietf-rfc2790-host-resources-mib-2000] | HOST-RESOURCES | host breadth; net-snmp | pid keys; positional SW index; freshness scalar; kill-by-set | SW identity open | schema |
 | [A-ietf-rfc6933-entity-mib-v4-2013] | ENTITY-MIB v4 | 4 revisions | multi/single-scoped; containment; alias map; scoped serials | agents not consistent | schema |
 | [A-ietf-rfc6643-smiv2-to-yang-2012] | SMIv2→YANG | bridge | INDEX→key; foreign→leafref | persistence incompatible | translation |
@@ -275,7 +275,7 @@ Breadth against the 47 items. These are read-backed only; an item not listed was
 
 ## Leads not pulled
 - RFC 8344 (ietf-ip). Not pulled for time.
-- RFC 3411 (SNMP contexts). It would sharpen the mVantage analogue.
+- RFC 3411 (SNMP contexts). It would sharpen the MVantage analogue.
 - RFC 3780/3781/3216 (SMIng). Fetched, not read.
 - DMTF DSP1004 and the filesystem, DNS-client and IP-interface profiles.
 - WMI and SBLIM provider source. These would show whether deployed providers kept the path-key and Weak rules.

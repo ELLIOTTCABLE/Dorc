@@ -40,25 +40,25 @@ The original stubs follow, unedited.
   2.6-may-write-the-writeset, 4.2 · USER_STORY stage 5 (human-reviewed) has `apt-get update`
   (footprint `sm.dorc.PkgIndex`, entity-less whole-kind) sparing `sm.dorc.Package:nginx`,
   `sm.dorc.File:/etc/nginx/nginx.conf`, service state, on the finished definition alone. 311
-  says the finished definition generates no DISJOINT and a cross-mSort pair not separated by
-  the walk reads KNOWN_UNSPOKEN. Can the walk separate an entity-less cell under the mRoute
+  says the finished definition generates no DISJOINT and a cross-MSort pair not separated by
+  the walk reads KNOWN_UNSPOKEN. Can the walk separate an entity-less cell under the MRoute
   from a package identified in the dpkg database? If not, the headline render is lost and the
   4.2 register does not name USER_STORY.
 - one-top-way-underspecified · 3.2-compare-one-chokepoint-four-answers step 3 · The "One top"
-  separation way (x is its own top under A; x's primary mScheme declares, for SOME OTHER
-  shape, `:identified-in` the mSort of y's top) is stated without an instance and I cannot
+  separation way (x is its own top under A; x's primary MScheme declares, for SOME OTHER
+  shape, `:identified-in` the MSort of y's top) is stated without an instance and I cannot
   build one where it is both needed and sound. "An omission is a distinction only inside the
-  body that made it" reads as: because the author knew of mSort M and did not scope this shape
+  body that made it" reads as: because the author knew of MSort M and did not scope this shape
   in M, x is not inside any M-instance. That is a negative inference from silence about the
   OTHER side's container, which § 0 and silence-licenses-nothing forbid. Needs an instance or
   deletion.
 - container-subtraction-blinds-container-cells · 2.6-may-write-the-writeset · "A container at
-  or above the deepest level the written mKey shares with the read mKey contributes nothing."
+  or above the deepest level the written MKey shares with the read MKey contributes nothing."
   A write to inode 77 in dir 10 is thereby invisible to a cell OF dir 10 (`10@sm.Mtime`,
   `10@sm.Nlink`), which meets 77 at A=10 and then separates as two tops. Only the cell owner's
   may-read (the directory given whole) rescues it. Check whether the model states that this
-  burden falls on the container-cell owner, and whether "two tops of one mScheme" can even be
-  evaluated between a cell mKey and an inode mKey.
+  burden falls on the container-cell owner, and whether "two tops of one MScheme" can even be
+  evaluated between a cell MKey and an inode MKey.
 - placing-lookup-set-valued-disagreement · 2.10-places-the-upward-lookup · "Two answers that
   disagree are refused and attributed to G's owner." Under a bind mount one inode is placed in
   two mounts; invoked with `/mnt/a/f` and `/srv/a/f` a correct Mount lookup answers two
@@ -66,7 +66,7 @@ The original stubs follow, unedited.
   the refusal is attributed to an author who said nothing false (the pope-sin of
   `271:rul-sin-ordering`). Needs: disagreement defined over sets, or the closure alone.
 - environment-is-catalog-or-shell-state · 3.4-entry-and-lends, 3.3, 1.10 · The environment is
-  named as "shell state a resolve() read" (perishable) and must also be an mParent-Catalog mSort
+  named as "shell state a resolve() read" (perishable) and must also be an MParent-Catalog MSort
   for `sudo`'s scrub (GOTCHAS a-wrapper-scrubs-what-an-outer-wrapper-lent) and
   `AWS_PROFILE=a aws` (an-env-variable-selects-the-referent) to be lend-able. The model does not
   say which, or both; if only the former, a wrapper that scrubs cannot be described truly.
@@ -79,45 +79,45 @@ The original stubs follow, unedited.
   model's own evidence rule, not an author's. `-GUESS` on how the traversal records a magic
   link; verify.
 - indexical-knowledge-is-not-the-path-owners · 2.9-hierarchical-and-the-region-test · "Only
-  the mScheme owner can say which [components are indexical], in the lookup that meets them."
+  the MScheme owner can say which [components are indexical], in the lookup that meets them."
   That `/proc/sys/net` is per-netns (GOTCHAS net-sysctls-are-per-namespace) and `/proc/self`
-  per-process is procfs knowledge, held by the store's describer, not by the path mScheme's
+  per-process is procfs knowledge, held by the store's describer, not by the path MScheme's
   owner. Under 3.5 each party speaks only of their own thing; the model here assigns the
   warrant to a party who cannot know it. Also: "an undeclared indexical component reads
   unknown" is unenforceable, since the engine cannot tell an undeclared indexical from a
   plain component.
 - absence-fact-topic-unspecified · 1.9-cell-a-singleton-sort, 3.3, 1.11 · A verdict that
   asserts absence (`[ ! -e /x ]`, `dpkg -s foo` rc 1, `systemctl is-enabled foo` on no unit —
-  GOTCHAS a-read-folds-absent-into-a-value) has no mResolution and so no mFullyQualifiedKey
-  for its leaf. 3.3 names "its mParent-Catalog entry, its existence cell", but 1.9's cell is a
-  SINGLETON under an mParent, whereas the entry `x` in directory 5 is one of many keyed by
-  name. What is the mTopic of an absence fact, and who declares the existence cell's mSort?
+  GOTCHAS a-read-folds-absent-into-a-value) has no MResolution and so no MFullyQualifiedKey
+  for its leaf. 3.3 names "its MParent-Catalog entry, its existence cell", but 1.9's cell is a
+  SINGLETON under an MParent, whereas the entry `x` in directory 5 is one of many keyed by
+  name. What is the MTopic of an absence fact, and who declares the existence cell's MSort?
 - same-parent-cells-never-separate · 1.9-cell-a-singleton-sort, 3.2 step 3, 1.2, 4.2 ·
   `systemctl start nginx` (writeset `nginx@sm.Active`) above a measured `nginx@sm.Enabled`
-  fact. 1.9 sends two cells of one mParent to 3.2 "as between any two mSorts"; 1.2 says the
-  engine never assumes two mSorts disjoint; 3.2's two ways need "mKeys of one mScheme" or a
-  self-top with an `:identified-in` distinction, and a cell has no mScheme. So the pair reads
+  fact. 1.9 sends two cells of one MParent to 3.2 "as between any two MSorts"; 1.2 says the
+  engine never assumes two MSorts disjoint; 3.2's two ways need "MKeys of one MScheme" or a
+  self-top with an `:identified-in` distinction, and a cell has no MScheme. So the pair reads
   KNOWN_UNSPOKEN and `enabled` cannot survive `start`. The spike's `277` §3 sparing-algebra
   (spike/CLAUDE.md) spares exactly this pair by selector inequality within one dialect; 4.2
   does not register 277 §3. The owner who minted two cells under one parent is the one party
   who can say they are two things; the model gives them no way to say it, so this is a
   "no sane spelling possible" ergonomics fault plus an unregistered supersession.
 - nothing-across-mworlds-versus-correspondence · 1.8, 3.2 step 1, 2.7 · "Nothing speaks across
-  mWorlds" (twice) versus 2.7's mount-line mCorrespondence bridging a client mRoute to a
-  server named in the DNS mRoot, and 3.2's "SAME is or across mDerivations". Either the
-  mCorrespondence is an exception to the mWorld fence (then say so, and say the fence binds
-  only the mFullyQualifiedKey derivation and the finished record) or the NFS example in 2.7
+  MWorlds" (twice) versus 2.7's mount-line MCorrespondence bridging a client MRoute to a
+  server named in the DNS MRoot, and 3.2's "SAME is or across MDerivations". Either the
+  MCorrespondence is an exception to the MWorld fence (then say so, and say the fence binds
+  only the MFullyQualifiedKey derivation and the finished record) or the NFS example in 2.7
   is unreachable.
 - route-terminus-readset-never-closed · 2.5-may-read-the-readset, 2.6 step 2, 1.3, 1.10 · A
   fact's readset "is closed only when every declared set is closed" yet the may-read default is
-  ⊤. Every mFullyQualifiedKey terminates at the mRoute or a mRoot, whose mSort (the floor
-  "mSort nobody has named", or the engine-vouched mRoute) has no owner and no may-read
+  ⊤. Every MFullyQualifiedKey terminates at the MRoute or a MRoot, whose MSort (the floor
+  "MSort nobody has named", or the engine-vouched MRoute) has no owner and no may-read
   declaration. Read as "undeclared = ⊤", no readset ever closes and 2.6 step 2 never spares;
   read as "undeclared is skipped", the sentence "Default: ⊤, which collides with everything"
-  is false at the terminus. The model must pick, and if the engine vouches the mRoute's
+  is false at the terminus. The model must pick, and if the engine vouches the MRoute's
   may-read as closed-empty it must say so (it is a positive statement by the engine).
 - resolve-readset-open-perishes-how · 3.3-perishing-three-mutator-species, 4.1 · A
-  mResolution perishes "when its resolve() read the written state". The engine knows a
+  MResolution perishes "when its resolve() read the written state". The engine knows a
   resolve() body's reads only through the read-set closure (`27C` §4(a)(B)), which is
   default-disqualify. What is the perish set of a resolution whose resolve() body fails the
   closure: ⊤ (perishes on any write), or the body's marked reads only? Unstated; the former is
@@ -126,7 +126,7 @@ The original stubs follow, unedited.
   `exec 3>f` are routing writes to "shell state a resolve() read", but 3.5 says every positive
   step is one author's line and the engine only chains and meets. The engine is the party who
   knows these builtins' writesets (they are sh semantics, not tool claims); 1.5 licenses the
-  engine to vouch only the transit-free mRoute. Either the engine's sh-semantics vouch is a
+  engine to vouch only the transit-free MRoute. Either the engine's sh-semantics vouch is a
   second engine statement (name it) or builtin writes are ⊤ walls (state it).
 - law-forbids-what-the-flag-buys · 0-the-problem-and-the-law, 2.6, 3.2, 4.2 ·
   IMPLEMENTATION ("Survival") defines `--risk-faultless-skips` as consent to exactly the
@@ -141,8 +141,8 @@ The original stubs follow, unedited.
   somewhere and the model does not say where.
 - heterogeneous-stores-never-spare · 3.2 step 3, 2.6, USER_STORY stage 5 · Generalises
   stale-index-morning-unreachable-under-walk. Two facts whose chains pass through different
-  store species (dpkg database vs unit table vs netfilter vs a filesystem) meet at the mRoute
-  and their tops are keys of different mSchemes; neither of 3.2's two ways applies; the pair
+  store species (dpkg database vs unit table vs netfilter vs a filesystem) meet at the MRoute
+  and their tops are keys of different MSchemes; neither of 3.2's two ways applies; the pair
   reads KNOWN_UNSPOKEN however completely everyone has spoken. So `foobar sync-certs` (a
   path-rooted sort) can never spare `sm.Service:nginx@active`, and `apt-get update` can never
   spare service or firewall facts. That is the whole stage-5 product on drifted days,
@@ -150,12 +150,12 @@ The original stubs follow, unedited.
   Not registered in 4.2 as a consequence.
 - finished-writeset-needs-both-closures · 2.6-may-write-the-writeset · The at-most set is
   "closed by the completion record" (the verb author's) and the entailment is finished by
-  "the reached completion record" (the mSort owner's); step 2 says "The writeset's definition
-  is finished" as one condition. Say whether both records are required per entailed mSort
+  "the reached completion record" (the MSort owner's); step 2 says "The writeset's definition
+  is finished" as one condition. Say whether both records are required per entailed MSort
   (`30U` did), or one suffices; the difference is a silent channel.
 - lookup-chains-force-second-round-trip · 1.4, 2.10, 1.10 · Every lookup is a measurement;
-  a `:places` lookup is invoked with the mKeys the engine holds for a referent, which for a
-  captured mValue are bound only after the first probe returns. The apply standup re-reads
+  a `:places` lookup is invoked with the MKeys the engine holds for a referent, which for a
+  captured MValue are bound only after the first probe returns. The apply standup re-reads
   every placeholder. Both imply a second host exchange whose inputs depend on the first
   (`spike/CLAUDE.md rul-repeated-probing-reviewed-before-design`). Not catastrophic;
   flag only if a depth pass shows pairs × lookups is unbounded.
@@ -213,18 +213,18 @@ The world: the list files are inodes in the root filesystem F. `enabled` is a sy
 `active` is held in the service manager's memory, in this boot (1.9's own example).
 
 The model's reading. apt's describer translates the bound into files, as `311t:1683`
-instructs: writeset entries are inodes {l1, l2, …} in F, F in the mRoute. The site's facts
+instructs: writeset entries are inodes {l1, l2, …} in F, F in the MRoute. The site's facts
 read two cells of the unit `nginx`: `nginx@sm.Enabled`, whose may-read is a symlink inode s
 in F, and `nginx@sm.Active`, whose may-read is an activation in the manager, in the boot B,
-B in the mRoute (or B a mRoot; either way below). 2.6 asks both questions for every
-(writeset entry, read mKey) pair; the site is spared only if every pair passes (the universal
+B in the MRoute (or B a MRoot; either way below). 2.6 asks both questions for every
+(writeset entry, read MKey) pair; the site is spared only if every pair passes (the universal
 meet, `spike/CLAUDE.md set-lifting-universal-meet`).
 
-- Pair (l1, s): chains meet at F; tops l1 and s are two inode mKeys of one mScheme with
+- Pair (l1, s): chains meet at F; tops l1 and s are two inode MKeys of one MScheme with
   `:guarantees-unique-name`, differing; F `:aliases-nothing-else`; DISJOINT. Good.
-- Pair (l1, activation): chains meet at the mRoute (or read UNKNOWN at step 1 if B is a
-  mRoot the other side does not share). Tops: F (a filesystem mKey) and B (a boot mKey).
-  Two tops: not one mScheme. One top: neither mKey is its own top. KNOWN_UNSPOKEN.
+- Pair (l1, activation): chains meet at the MRoute (or read UNKNOWN at step 1 if B is a
+  MRoot the other side does not share). Tops: F (a filesystem MKey) and B (a boot MKey).
+  Two tops: not one MScheme. One top: neither MKey is its own top. KNOWN_UNSPOKEN.
   Collides.
 
 So line 9 guards on the stale-index morning, not elides; the render at USER_STORY:493–507 is
@@ -232,7 +232,7 @@ unreachable however completely apt's, systemd's, and the filesystem's describers
 same walk kills every in-memory-versus-file pair in either direction: `systemctl start` (an
 activation write) against any file fact; `sysctl -w` (a live kernel slot) against any file
 fact; `nft add rule` against any file fact; `cp` against `@active`, live sysctls, live
-rules, the mount table, running processes. Only file-versus-file, and same-mScheme keys at
+rules, the mount table, running processes. Only file-versus-file, and same-MScheme keys at
 different depths (the one-top way), ever spare under the model as written. That is a much
 smaller product than `KNOBS:kSURVIVAL`'s "the whole stage-5–7 product" and than `kHALVES`
 (welded far toward elide) describe; stage 5's headline sentence "the install's guard reads
@@ -252,8 +252,8 @@ promotion carry one sentence stating the cost ("survival across a memory-held fa
 file write, in either direction, does not exist; stage 5's line 9 guards") so the root docs
 and `KNOBS` can be brought current rather than left silently stale; or (b) re-admit the
 withdrawn partition in its narrowest form — a `:guarantees-unique-name`-class warrant on the
-host's (or the boot's) *own* primary mScheme over its direct children, so that F and B become
-"two tops of one mScheme", spoken once by the stdlib's host describer, which `311t:1043`'s
+host's (or the boot's) *own* primary MScheme over its direct children, so that F and B become
+"two tops of one MScheme", spoken once by the stdlib's host describer, which `311t:1043`'s
 "speech is forced on whoever climbs out" already licenses in principle. Not (c): reading
 KNOWN_UNSPOKEN as sparing, which `311t` and `311q` § 18 killed for cause.
 
@@ -273,7 +273,7 @@ memory, unverifiable here.
 The model says (1.5): the closure `alias nothing-else` states the referent "is reachable by
 exactly this one entry anywhere in the instance the lookup ran in … For a file, the evidence
 is a link count of one." `311t:1605` confirms this is the intended lookup body. 2.9 step 3
-answers DISJOINT for D given whole against x when every level of x's mTraversal is DISJOINT
+answers DISJOINT for D given whole against x when every level of x's MTraversal is DISJOINT
 from D and emitted its closure, and defends against aliases above the leaf by asking every
 level ("an alias may sit at any level … A leaf's own closure cannot see it").
 
@@ -292,7 +292,7 @@ by jumping to the open file (a magic link; `-GUESS`: the walk lands on the file'
 without traversing `/srv/app/current`). The read's lookup records the traversal `/`, `proc`,
 `self`, `fd`, `3` → 77 and, on the evidence rule, emits the closure for 77.
 
-The model's reading of the pair (D=`/srv/app/current` given whole, x=the fact's mKey): step 1,
+The model's reading of the pair (D=`/srv/app/current` given whole, x=the fact's MKey): step 1,
 leaf 77 is not D; step 2, no level of x's traversal is SAME with D (dir 12 never appears);
 step 3, every level DISJOINT from 12 with closures: DISJOINT. The fact survives `rm -rf` of
 the directory that contains it. Whose statement is false? The closure on 77 — but the model
@@ -326,12 +326,12 @@ cat /mnt/a/f                       # a fact through the other name
 ```
 
 The world: one inode 77 in filesystem F, exposed by mount M1 (`/`) at `/mnt/a/f` and by the
-bind mount M2 at `/srv/a/f`. Both paths are mKeys the engine holds for the referent (both
+bind mount M2 at `/srv/a/f`. Both paths are MKeys the engine holds for the referent (both
 yield inode 77, SAME by `:guarantees-unique-referent`).
 
-The model's reading: the writeset names a Mount mKey given whole; the fact's mKey has no Mount
-route; Mount declares that it places Path; so the engine "invokes the lookup with every mKey
-it holds for that mReferent". A per-key Mount lookup answers `looked-up-in Mount:M1` for
+The model's reading: the writeset names a Mount MKey given whole; the fact's MKey has no Mount
+route; Mount declares that it places Path; so the engine "invokes the lookup with every MKey
+it holds for that MReferent". A per-key Mount lookup answers `looked-up-in Mount:M1` for
 `/mnt/a/f` and `looked-up-in Mount:M2` for `/srv/a/f`. 2.10: "Two answers that disagree are
 refused and attributed to G's owner." Both records are true; a referent under a bind mount is
 placed in two mounts. The refusal is safe (walls), but its attribution names the mount
@@ -359,12 +359,12 @@ dpkg -s apache2 >/dev/null 2>&1 && apt-get remove -y apache2
 ```
 
 Both guards assert absence. A `resolve()` of `/etc/nginx/sites-enabled/default` finds no
-entry; there is no mResolution, no mReferent, no leaf mFullyQualifiedKey. 3.3 says creation,
-deletion and rename are "routing writes to its mParent-Catalog entry, its existence cell", so
+entry; there is no MResolution, no MReferent, no leaf MFullyQualifiedKey. 3.3 says creation,
+deletion and rename are "routing writes to its MParent-Catalog entry, its existence cell", so
 the model means the fact to be about the catalog entry. But 1.9 defines a cell as a
-*singleton* mSort under an mParent, and the entries of directory 5 are many, keyed by name;
-1.6 says the catalog edge "never carries identity". So an absence fact's mTopic is
-`(entry named default, in directory 5)@sm.Exists`, an identity built on a routing-level mKey
+*singleton* MSort under an MParent, and the entries of directory 5 are many, keyed by name;
+1.6 says the catalog edge "never carries identity". So an absence fact's MTopic is
+`(entry named default, in directory 5)@sm.Exists`, an identity built on a routing-level MKey
 the model says carries no identity. `311q` § 11–12 discussed existence as "the catalog
 entry's facet" and then dropped the category; the final text kept the sentence in 3.3 and
 lost the definition.
@@ -372,12 +372,12 @@ lost the definition.
 Why it matters: a later `apt-get install nginx-full` (writeset widened by `dpkg -L` to
 `/etc/nginx/sites-enabled/default` as a *path*) must collide with the absence fact. That
 collision needs the two to `compare()` not-DISJOINT, which needs the absence fact to have an
-mKey the walk can place: the directory entry (dir 5, name `default`), which a directory does
+MKey the walk can place: the directory entry (dir 5, name `default`), which a directory does
 map injectively (unique-referent and unique-name both hold for names in one directory).
-Smallest repair: one paragraph in 1.9 or 1.6 stating that a catalog entry is an mReferent of
+Smallest repair: one paragraph in 1.9 or 1.6 stating that a catalog entry is an MReferent of
 its own (a directory entry, a passwd line, a unit-table row), that its existence cell is
-keyed by (mParent-Catalog instance, name), that both warrants hold for names within one
-catalog instance by the catalog's construction, and that an absence fact's mTopic is that
+keyed by (MParent-Catalog instance, name), that both warrants hold for names within one
+catalog instance by the catalog's construction, and that an absence fact's MTopic is that
 cell. Without it, "silent channel" is the honest default: absence facts never transport and
 never spare, which is safe but loses every hand-written `[ ! -e ]` guard's elision.
 
@@ -400,9 +400,9 @@ systemctl enable nginx       # measured: sm.Service:nginx@enabled
 
 spares `enabled` past `start`: same entity, two minted selectors of one dialect, unequal.
 
-The model: 4.1 excludes a selector dialect; 1.9 makes `active` and `enabled` two mSorts and
-sends them to 3.2 "as between any two mSorts"; 1.2 forbids assuming two mSorts disjoint;
-3.2's two ways need mKeys of one mScheme or a self-top distinction, and a cell has no mScheme.
+The model: 4.1 excludes a selector dialect; 1.9 makes `active` and `enabled` two MSorts and
+sends them to 3.2 "as between any two MSorts"; 1.2 forbids assuming two MSorts disjoint;
+3.2's two ways need MKeys of one MScheme or a self-top distinction, and a cell has no MScheme.
 Under the human's typed posture (`311t:1043`, `1057`) the pair collides unless both cells are
 re-homed into one key space, and `active` (manager memory) and `enabled` (a symlink) never
 share one. So the model reverses `277` § 3's answer for the commonest two-line service idiom
@@ -415,23 +415,23 @@ sparing-algebra bullet. `311q` § 18 left `30J` "neither in nor out" (human), wh
 the state 4.2 exists to register. A builder reading the steering law and the model will
 implement two different answers for the same pair. Smallest repair: one 4.2 entry naming
 `277` § 3 / `30J` § 12 / the steering bullet, with the model's claim after "Here" (two cells
-of one mParent separate only where their stores separate under 3.2; selector inequality
+of one MParent separate only where their stores separate under 3.2; selector inequality
 licenses nothing).
 
 ### fnd-mworld-fence-contradicts-the-correspondence-example
 
 Sections: 1.8-fully-qualified-key-topic-and-derivation, 3.2 step 1, 2.7-corresponds-across-
-a-transition, 3.2 "mDerivation sets". Kind: self-consistency (two sentences, opposite
+a-transition, 3.2 "MDerivation sets". Kind: self-consistency (two sentences, opposite
 readings). Consequence: a builder taking the fence literally refuses a SAME the model
 elsewhere licenses (lost transport, safe); taking the example literally with no fence
 statement admits cross-root SAME with no stated bound. Confidence: `+SURE` on the text.
 
-1.8: "Nothing speaks across mWorlds." 3.2 step 1: "Nothing speaks across mWorlds, not even the
-finished definition." 2.7: "A mount line's oracle knows mKeys under the mountpoint are mKeys
-under the export on the named server, from this mVantage" — a mCorrespondence whose two ends
-are a client path (terminating at this host's mRoute) and a server path (terminating at a
-DNS mRoot plus a remote filesystem: another mWorld by 1.8's own definition). 3.2 then says
-"SAME is 'or' across mDerivations (the mFullyQualifiedKey, a mCorrespondence, a
+1.8: "Nothing speaks across MWorlds." 3.2 step 1: "Nothing speaks across MWorlds, not even the
+finished definition." 2.7: "A mount line's oracle knows MKeys under the mountpoint are MKeys
+under the export on the named server, from this MVantage" — a MCorrespondence whose two ends
+are a client path (terminating at this host's MRoute) and a server path (terminating at a
+DNS MRoot plus a remote filesystem: another MWorld by 1.8's own definition). 3.2 then says
+"SAME is 'or' across MDerivations (the MFullyQualifiedKey, a MCorrespondence, a
 provider-supplied identifier)".
 
 ```sh
@@ -441,13 +441,13 @@ cp ./index.html /srv/www/index.html          # measured: content match, via the 
 
 Only the mount line's oracle can say the client key and the server key denote one inode;
 that is 2.7's example and 3.5's committee law working as intended. But 1.8 and 3.2 step 1
-say nothing speaks across mWorlds, full stop, and the server's inode lives in another one.
+say nothing speaks across MWorlds, full stop, and the server's inode lives in another one.
 The two sentences cannot both be read as written. The pre-rewrite text (`21b93214:509`)
-carried only the step-1 UNKNOWN for cross-route mFullyQualifiedKeys; the categorical "Nothing
-speaks across mWorlds" arrived with the STE100 rewrite (`ca68b868`) and was not crosschecked.
+carried only the step-1 UNKNOWN for cross-route MFullyQualifiedKeys; the categorical "Nothing
+speaks across MWorlds" arrived with the STE100 rewrite (`ca68b868`) and was not crosschecked.
 
-Smallest repair: narrow the fence to what it is about — "no mFullyQualifiedKey derivation
-and no finished record reaches across mWorlds; a mCorrespondence declared by the transition's
+Smallest repair: narrow the fence to what it is about — "no MFullyQualifiedKey derivation
+and no finished record reaches across MWorlds; a MCorrespondence declared by the transition's
 owner is the one derivation that may, vouch-tier, and it composes with DISJOINT only as
 `311q` § 10 typed (a part, a view or a correlate does not)". `311t` § 6–§ 7 (Dana's zones,
 "nothing on the web is aliases-nothing-else") is where the human's cross-root leans live;
@@ -456,37 +456,37 @@ the model's sentence should not out-run them.
 ### fnd-readset-closure-undefined-at-the-terminus
 
 Sections: 2.5-may-read-the-readset ("closed only when every declared set is closed";
-"Default: ⊤"), 2.6 step 2, 1.3 (the floor), 1.10 (the engine-vouched mRoute). Kind:
+"Default: ⊤"), 2.6 step 2, 1.3 (the floor), 1.10 (the engine-vouched MRoute). Kind:
 self-consistency — two sentences give opposite answers to the one question a builder must
 ask first. Consequence: read one way, no sparing exists at all (every readset stays open);
 read the other, an ancestor's silence is skipped and the "Default: ⊤" sentence is false.
 Confidence: `+SURE` the text says both; `~SUSPECT` which was meant.
 
 2.5: a fact's readset is the body's marked reads "together with the may-read entries declared
-by every member of the mKey's mFullyQualifiedKey. It is closed only when every declared set
-is closed." And: "Default: ⊤, which collides with everything." Every mFullyQualifiedKey ends
-at the mRoute or a mRoot. The mRoute's mSort is the floor "mSort nobody has named" (1.3) or
-the engine's own vouch (1.10); a mRoot shape's mSort is whatever a stdlib declared it as. None
+by every member of the MKey's MFullyQualifiedKey. It is closed only when every declared set
+is closed." And: "Default: ⊤, which collides with everything." Every MFullyQualifiedKey ends
+at the MRoute or a MRoot. The MRoute's MSort is the floor "MSort nobody has named" (1.3) or
+the engine's own vouch (1.10); a MRoot shape's MSort is whatever a stdlib declared it as. None
 of these has a may-read declaration in the model.
 
 ```sh
 cp ./nginx.conf /etc/nginx/nginx.conf      # fact: content match; chain 77 → dir → F → mRoute
 ```
 
-Reading A ("undeclared = ⊤"): the mRoute member's set is ⊤, the readset never closes, 2.6
+Reading A ("undeclared = ⊤"): the MRoute member's set is ⊤, the readset never closes, 2.6
 step 2 never passes, no elision ever survives any write. Reading B ("only declared sets
 count"): the chain's closure is decided by the leaf's and F's declarations alone, and an
-ancestor whose describer said nothing is silently skipped — which is fine for the mRoute
+ancestor whose describer said nothing is silently skipped — which is fine for the MRoute
 (the engine can vouch its set closed-empty, but the model does not say it does) and
 dangerous for a mid-chain store whose describer forgot (a loop-backed F whose image file was
 never named: the very example 2.5 gives). Neither reading is stated, and the pre-rewrite text
 (`21b93214:345`) carried the same sentence, so this was never crosschecked.
 
-Smallest repair: state that (i) the leaf mSort's set defaults to ⊤; (ii) an intermediate
+Smallest repair: state that (i) the leaf MSort's set defaults to ⊤; (ii) an intermediate
 member's undeclared set is ⊤ too (the silent channel is the omission inside a declared set,
-not the absence of the declaration); (iii) the mRoute's and each mRoot shape's may-read is
+not the absence of the declaration); (iii) the MRoute's and each MRoot shape's may-read is
 closed-empty by the engine's vouch (1.10) or the root describer's declaration respectively —
-a positive engine statement that 1.5 should list beside the transit-free mRoute vouch. Under
+a positive engine statement that 1.5 should list beside the transit-free MRoute vouch. Under
 that, (iii) is what makes any sparing possible, and it is one more thing the engine says.
 
 ### fnd-perish-set-of-an-unclosed-resolve-unstated
@@ -497,7 +497,7 @@ self-consistency (gap). Consequence: a builder choosing the narrow reading opens
 channel (a resolution that should perish does not, and a SAME built on it keeps authority
 past a write that changed what the name reaches). Confidence: `+SURE` the text is silent.
 
-3.3 perishes a mResolution "when its `resolve()` read the written state". The engine knows a
+3.3 perishes a MResolution "when its `resolve()` read the written state". The engine knows a
 body's reads only through `plans/27C` § 4(a)(B)'s read-set closure, which 4.1 adopts and
 which is default-disqualify: an unaudited construct in the body fails the closure. The model
 does not say what the perish set of a resolution through a body that *failed* the closure
@@ -525,9 +525,9 @@ channel on the other side. Confidence: `+SURE` the text is ambiguous; `+SURE` of
 intent.
 
 2.6 says the writeset is "the may-write entries the verb's author declared per matched
-shape … closed by the completion record, and widened by the may-write entailment that mSort
+shape … closed by the completion record, and widened by the may-write entailment that MSort
 owners declare", and separately "The reached completion record finishes the definition" (the
-mSort owner's). Step 2 then requires "The writeset's definition is finished" — singular.
+MSort owner's). Step 2 then requires "The writeset's definition is finished" — singular.
 `30U` § 5 is explicit that these are two records with two authors under one law: the verb
 author's tail record is the mandatory completion witness of a *dynamic* `disturbs` body
 (without it, exit-0 truncation under-claims and wrongly spares), and the kind owner's tail
@@ -539,11 +539,11 @@ statement, not separately gated".
 apt-get install -y nginx       # dynamic disturbs: dpkg -L … | … ; tail record required
 ```
 
-Under 311, for a pair (widened entry w of mSort K', read mKey r): is step 2 satisfied when
+Under 311, for a pair (widened entry w of MSort K', read MKey r): is step 2 satisfied when
 the verb author's record arrived but K's owner's `disturbance_reaches` for the origin cell
 reached no record? Or when K's record arrived but the dynamic `disturbs` body died before
 its tail? The model should say: both, per origin cell — the verb's at-most set closed by its
-own record AND, for every mSort whose entailment widened the set, that mSort's finished
+own record AND, for every MSort whose entailment widened the set, that MSort's finished
 record reached for the origin cell's shape; and per `30U` § 7, widened cells inherit their
 origin's finished-status rather than needing K'-side records. One sentence; `30U` has it.
 
@@ -553,14 +553,14 @@ Kind: things a revision lost; git holds the text. Confidence: `+SURE` on what wa
 
 - The refuted-shapes register. `ac4bc430` ("five shapes this sitting killed") and `7724e30c`
   ("six shapes this arc refuted and what killed each") recorded, per shape, the killer case:
-  the mParent as an implicit may-read entry (killed by the sidecar-files describer); skipping
+  the MParent as an implicit may-read entry (killed by the sidecar-files describer); skipping
   shared ancestors in the may-read test (same); a term for a referent's parts; a question
-  species beside the mReferent; a mirror rule over may-read (killed by a resolver cache
-  may-reading `/etc/hosts`); the upward lookup as a second mScheme of the placed mSort.
+  species beside the MReferent; a mirror rule over may-read (killed by a resolver cache
+  may-reading `/etc/hosts`); the upward lookup as a second MScheme of the placed MSort.
   `ca68b868` (the STE100 rewrite) dropped § 4.2-refuted-shapes whole. `311t:1159` records the
   human anticipating dropping it "for tightness", so this is by leave; but 4.2's surviving
   register lists only *other documents'* stale claims, and nothing in the tree now stops a
-  successor from re-minting "the mParent is implicitly a may-read entry" — the shape that
+  successor from re-minting "the MParent is implicitly a may-read entry" — the shape that
   was killed twice (`311t:1194`–`1205`). A one-line pointer in 4.2 to the two commits would
   cost nothing.
 - The four-gotcha litmus (`c7d48e1b`, `73e70d45`): an opening that named four GOTCHAS entries
@@ -568,31 +568,31 @@ Kind: things a revision lost; git holds the text. Confidence: `+SURE` on what wa
   Dropped with § 4.1-slugged-gotchas in `ca68b868`. Its loss is why this review had to
   re-derive which gotchas the model handles; a successor reviewer will again.
 - New sentences the rewrite introduced without a crosscheck: the categorical "Nothing speaks
-  across mWorlds" (twice; see fnd-mworld-fence-contradicts-the-correspondence-example) and the
+  across MWorlds" (twice; see fnd-mworld-fence-contradicts-the-correspondence-example) and the
   arity/declared-by/default/consumer/danger tails now inlined per relation, replacing the
   pre-rewrite § 2.10 relation table — the latter is an improvement; the former is the one
   post-panel sentence that reads as law and was never attacked.
 
 ## considered-and-dead
 
-- one-top-way-underspecified · 3.2 step 3 · Dead: the way is the same-mScheme
+- one-top-way-underspecified · 3.2 step 3 · Dead: the way is the same-MScheme
   different-depth case (`kernel.pid_max` in the boot against `net.ipv4.ip_forward` in a
   netns) and was human-acked in that form after repeated attack (`311t:1136`–`1154`). My
   worry that an unrelated other-shape `:identified-in` could yield an accidental DISJOINT
   dissolves: the real work is done by the deeper store's `:aliases-nothing-else` (if x were
-  inside that store, the store would be giving its mKeys to its parent's thing); the "knows M"
-  clause is only the guard against a floor-mScheme stranger separating from everything
+  inside that store, the store would be giving its MKeys to its parent's thing); the "knows M"
+  clause is only the guard against a floor-MScheme stranger separating from everything
   (`311q` § 15 `cliff-nothing-else-on-a-floor-sort`). Residual, text-level: the model states
   the rule without its instance or the ledger's clarifying sentence ("that body has some arm
-  whose `:identified-in` names the store's mSort"); a reader cannot reconstruct it, as I
+  whose `:identified-in` names the store's MSort"); a reader cannot reconstruct it, as I
   could not until the ledger. One example line in 3.2 would fix it.
 - container-subtraction-blinds-container-cells · 2.6 · Dead, safe direction. A write to
-  inode 77 versus the cell `10@sm.Mtime` of its directory: the cell has no mScheme, so it is
+  inode 77 versus the cell `10@sm.Mtime` of its directory: the cell has no MScheme, so it is
   never a "top" that 3.2 step 3 can separate; the pair reads KNOWN_UNSPOKEN and collides. If the
-  cell owner declares may-read = the directory given whole, 3.2 step 2 ("either mKey is A
+  cell owner declares may-read = the directory given whole, 3.2 step 2 ("either MKey is A
   itself") collides too. The only way to a wrong DISJOINT is a closed may-read set that omits
   the directory, which is the fs describer's false statement about a thing they own. Text nit:
-  2.6's "a write to an mKey is also a write to every container" is honoured only for the
+  2.6's "a write to an MKey is also a write to every container" is honoured only for the
   entailment, not for a container's own cells; one clause saying "a container's cells depend
   on their may-read sets, never on this sentence" would stop a builder reading it as coverage.
 - environment-is-catalog-or-shell-state · 3.4, 3.3, 1.10 · Dead. `plans/30S` is the
@@ -604,7 +604,7 @@ Kind: things a revision lost; git holds the text. Confidence: `+SURE` on what wa
   a-wrapper-scrubs-what-an-outer-wrapper-lent) is answered by measurement in the denoted
   context (`plans/27C`): the `resolve()` runs inside the wrapper and sees the scrubbed
   environment; nothing needs lending. The model could say in one clause that the environment
-  is routing input, never an mParent-Catalog, and cite `30S`; not owed.
+  is routing input, never an MParent-Catalog, and cite `30S`; not owed.
 - indexical-knowledge-is-not-the-path-owners · 2.9 · Dead. That `/proc/sys/net` is per-netns
   is knowledge of whoever classifies filesystem types per shape "one level up" (2.2's own
   mechanism: the mount crossing yields a key in a procfs store whose describer says which
@@ -617,7 +617,7 @@ Kind: things a revision lost; git holds the text. Confidence: `+SURE` on what wa
   resolution-vars` (human-typed) and `rul-export-is-an-index-fence` already make the engine
   the author of `cd`/`export`/assignment writes under the sh-parity law
   (`spike/CLAUDE.md rul-unsure-falls-toward-sh-parity`). The model's 1.5 lists only the
-  transit-free mRoute as the engine's own vouch; adding "and the routing writes of shell
+  transit-free MRoute as the engine's own vouch; adding "and the routing writes of shell
   builtins, by parity" is a one-clause completeness edit, not a fault.
 - law-forbids-what-the-flag-buys · 0, 2.6, 3.2 · Dead. Under the model the flag still owns
   something no line can say: the at-most set's completeness (2.6 step 2), which is an
@@ -631,7 +631,7 @@ Kind: things a revision lost; git holds the text. Confidence: `+SURE` on what wa
   fault-able author. The root docs are known stale on this by `311t:1161`; the name will
   eventually mislead an admin.
 - lookup-chains-force-second-round-trip · 1.4, 2.10, 1.10 · Dead. A `:places` lookup's
-  input, even a captured mValue, can be sequenced inside the one probe artifact the engine
+  input, even a captured MValue, can be sequenced inside the one probe artifact the engine
   already ships (capture, then invoke, in authored sh scaffolding), so no dependent second
   exchange is forced by the model; the apply-standup `witness()` is on record (`311t:155`,
   `166`, `877`) and is integrity-only. Which pairs need a placing lookup is static (which
@@ -647,7 +647,7 @@ model, every section, § 0 through § 4.2.
 
 Model sections checked in breadth (a stub or a dead entry above traces to each): § 0 (the
 law, against the flag); 1.1; 1.2 (strangers); 1.3 (the floor); 1.4; 1.5 (both warrants, the
-closure); 1.6 (three seats); 1.7; 1.8 (mWorld); 1.9 (cells; absence); 1.10 (vouch, witness);
+closure); 1.6 (three seats); 1.7; 1.8 (MWorld); 1.9 (cells; absence); 1.10 (vouch, witness);
 1.11; 2.1; 2.2 (rootness, one-level classification); 2.3; 2.4; 2.5 (closure, terminus); 2.6
 (subtraction, two questions, records); 2.7; 2.8; 2.9 (region test, indexicals, magic links);
 2.10 (disagreement); 2.11; 3.1; 3.2 (all four steps, both ways, derivation sets); 3.3 (all
@@ -686,7 +686,7 @@ file, and this round's sibling passes `312cb`, `312cc`, `312cd` (independence). 
 spawned; nothing was executed beyond read-only git.
 
 Not covered: `311t` § 3's killer set and the cross-root corner (DNS, cloud roots) — the
-model's mRoot/mWorld sentences were checked for self-consistency only, not against that
+model's MRoot/MWorld sentences were checked for self-consistency only, not against that
 ledger's leans; a reviewer with that ledger in context should own it. Performance was
 checked only for the network-catastrophic case (none found).
 ## overall

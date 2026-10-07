@@ -40,25 +40,25 @@ sysctl -w net.ipv4.ip_forward=1                        # 10  the admin's own re-
 
 Catastrophes (`311b:rul-ground-identity-in-final-outcomes`): C1, wrong SAME across the transit,
 line 3's converged fact stands in for line 5 and blue never forwards; C2, wrong DISJOINT across
-the two spellings, line 9's write is taken to be about something other than line 10's mCell,
-line 10's elision survives it, and the host stays dark. Truths: line 5 is a different mCell
-from line 3, and line 6 from line 5; line 7 is the same mCell as line 8; line 9 writes line
-10's mCell.
+the two spellings, line 9's write is taken to be about something other than line 10's MCell,
+line 10's elision survives it, and the host stays dark. Truths: line 5 is a different MCell
+from line 3, and line 6 from line 5; line 7 is the same MCell as line 8; line 9 writes line
+10's MCell.
 
 ## The actors
 
 Here the letters mark who owns what. Alice writes the book. Rachel and Simon own stdlib
 vocabularies, present from the start: `rachel-kernel-params.oracle.sh` (`sm.KernelParam`,
-primary mScheme `sm.ProcSysPath`) and `simon-namespaces.oracle.sh` (`sm.NetNamespace`,
+primary MScheme `sm.ProcSysPath`) and `simon-namespaces.oracle.sh` (`sm.NetNamespace`,
 `sm.MountNamespace`, `sm.Boot`). Michael (procps) and Nathan (iproute2) are a new team's tool
 authors: `michael-sysctl.oracle.sh`, `nathan-ip.oracle.sh`. Oscar (`acct`), Tessa (files), and
 Uma (users) appear only in the later sections, to show the other seats. Nobody has met.
 
 ## The floor: two tool oracles, no yields
 
-Michael and Nathan bind under mSchemes of their own with no `:yields`: the floor of `311j`
-§ 1.3 (a primary mScheme of an unnamed mSort, identity `resolve()`, no warrants, the mRoute its
-only mParent). Nathan's second lend line is the coarse truth about the mount table;
+Michael and Nathan bind under MSchemes of their own with no `:yields`: the floor of `311j`
+§ 1.3 (a primary MScheme of an unnamed MSort, identity `resolve()`, no warrants, the MRoute its
+only MParent). Nathan's second lend line is the coarse truth about the mount table;
 `lends-a-fresh-instance` is minted here (`273` has a pass-through lend and a valued lend, and no
 spelling for an instance the wrapper created that nobody can name).
 
@@ -117,8 +117,8 @@ plan: 1 to run, 1 to verify (6 skipped)
 
 The steady-state shape is reached at the floor. Lines 5 and 7 are entered through the wrapper
 (root reused, never acquired, `27C`) and probed where they run. Every identity comparison
-reads UNKNOWN: line 5's mKey and line 3's are one floor mScheme across a transit, two
-mPlaceholders, no warrant; likewise 7 against 8, and 6 against 5. Unknown is safe for both
+reads UNKNOWN: line 5's MKey and line 3's are one floor MScheme across a transit, two
+MPlaceholders, no warrant; likewise 7 against 8, and 6 against 5. Unknown is safe for both
 consumers: C1 cannot fire (nothing stands in for anything) and C2 cannot fire (line 9 is a
 total wall). On a blue-drifted day line 5 runs and lines 6, 7, 8, and 10 verify: the engine
 cannot say line 5's write missed any of them (`plan: 2 to run, 4 to verify (2 skipped)`).
@@ -127,7 +127,7 @@ cannot say line 5's write missed any of them (`plan: 2 to run, 4 to verify (2 sk
 
 Rachel holds the one fact Michael cannot: which shapes live in a namespace and which in the
 boot. Simon holds namespaces and the boot. Michael and Nathan each add one lookup that yields
-into a stdlib primary mScheme, the glue line `312b` § 7 promised a stranger. Each arm of a
+into a stdlib primary MScheme, the glue line `312b` § 7 promised a stranger. Each arm of a
 primary's `resolve()` records the store of the shape it matched as a coordinate; where the
 store is "wherever this probe stands", the coordinate is Simon's singleton spelling (next
 section), which the engine resolves where the arm ran.
@@ -187,19 +187,19 @@ sm_NetnsName__resolve() {                        # the label, into the namespace
 
 The walks:
 
-- Line 5 against line 3 (the C1 guard). Line 5's mKey: Michael's bind, Michael's yield run
+- Line 5 against line 3 (the C1 guard). Line 5's MKey: Michael's bind, Michael's yield run
   inside blue, Rachel's `net/*` arm recording `sm.NetnsSelf:self`, which Simon's lookup
   resolves inside blue to nsfs inode B (and which Nathan's lend, through his yield, also
   resolves to B: two derivations of one instance, coherent), then Simon's arm putting that
   namespace in the boot, and the boot and the route inherited from the caller through
-  Nathan's sentinel. Line 3's mKey: the same down to the namespace level, where
+  Nathan's sentinel. Line 3's MKey: the same down to the namespace level, where
   `sm.NetnsSelf:self` resolved on the host is inode H. From the top: the route and the boot
   are the identical inherited instances; at the namespace level H and B differ inside one
-  shared mParent, that shape carries `:guarantees-unique-name` (Simon), and each namespace is
+  shared MParent, that shape carries `:guarantees-unique-name` (Simon), and each namespace is
   a `:aliases-nothing-else` store (Simon). DISJOINT. Line 5 gets its own probe; line 3 never stands in.
   Line 6 against line 5 walks the same way.
 - Line 7 against line 8. Both yield `kernel/pid_max`; Rachel's `kernel/*` arm puts the
-  mParent at `sm.BootSelf:self`. Resolved in every context, the two boot ids are equal bytes
+  MParent at `sm.BootSelf:self`. Resolved in every context, the two boot ids are equal bytes
   and SAME rests on Simon's `:guarantees-unique-referent`; shared through Nathan's sentinel,
   they are one placeholder and no warrant is consulted. Either way SAME, attributed. At the
   leaf the keys are equal and the shape carries `:guarantees-unique-referent`. One probe
@@ -209,7 +209,7 @@ The walks:
   procfs; line 9 is a total wall; line 10 guards. Safe, and the identity model is never
   consulted.
 - Line 4 on a drifted day. It runs; its footprint is a routing write to `sm.NetnsName:blue`;
-  lines 5 and 7 resolved `blue` through that entry, so their mResolutions perish and they run.
+  lines 5 and 7 resolved `blue` through that entry, so their MResolutions perish and they run.
   Correct with nobody speaking.
 
 Render, steady state: as the floor, except line 8 reads "the same cell as line 7". Render,
@@ -230,7 +230,7 @@ plan: 2 to run, 1 to verify (5 skipped)
 
 ## The three seats that can supply a store
 
-The store of a primary key (`311j`'s mParent through the primary mScheme) is a value like any
+The store of a primary key (`311j`'s MParent through the primary MScheme) is a value like any
 other, and the language already has three homes for a value with a type: on a bind's trailer
 as a coordinate, on a record line from a yield, or on a record line from the primary's own
 arm. Exactly one seat speaks per key: two that disagree refuse (a contradiction, attributed
@@ -334,7 +334,7 @@ her own sh, since the engine never concatenates paths
 opaque key minted outside the pivot resolves `sm.HomePath:~` to another placeholder, and the
 two compare by inode: DISJOINT when sudo reset `HOME`, SAME when it preserved it, the truth
 either way, with nobody reasoning about users. Eviction falls out of § 1.7 and § 3.3 by
-construction: `sm.HomePath:~` is a routing key in the mTraversal because the engine resolved
+construction: `sm.HomePath:~` is a routing key in the MTraversal because the engine resolved
 it, so whatever perishes Uma's resolution (`usermod -d alice`; `export HOME=…`; a lend of the
 user) perishes everything below it. The reads inside Uma's body are hers to mark; unmarked,
 her resolution's backing is ⊤ and any wall perishes it, which is safe.
@@ -377,7 +377,7 @@ and the wrapper selects, so the read is the mechanism that matters.
   makes them inherited rather than ⊤. Without that one line the glue lines buy nothing. The
   cheapest line in the set carries the most.
 - `obs-the-parent-instance-is-a-value` (+SURE; acked in chat 2026-09-16) — `311j` § 1.6 fixes
-  who supplies a key's store by the kind of key (the yield for a yielded key, the mVantage for
+  who supplies a key's store by the kind of key (the yield for a yielded key, the MVantage for
   a direct bind), which put Rachel's knowledge on Michael's line. The case shows three seats
   (bind, yield, primary arm), any one of which may supply it as a typed value; § 2.1's
   `:parent-key-of` is subsumed by the record naming the spelling. Supply "modes" are not a
@@ -391,17 +391,17 @@ and the wrapper selects, so the read is the mechanism that matters.
   the sort with one indexical key, resolved like any coordinate where the site runs; no role,
   no blessed string, no new rule; the lend keeps entry, inheritance, and perishing, and the two
   derivations of a lent instance are checked for coherence.
-- `obs-identical-instances-need-no-warrant` (+SURE; `311j` § 3.2) — an inherited mParent is
-  one mKey on both sides, not two equal values from two lookups, so SAME at that level rests
+- `obs-identical-instances-need-no-warrant` (+SURE; `311j` § 3.2) — an inherited MParent is
+  one MKey on both sides, not two equal values from two lookups, so SAME at that level rests
   on the wrapper's sentinel or the engine's route claim, and `:guarantees-unique-referent` is
   consulted only where two lookups returned equal values. Whether the engine shares the
   placeholder or resolves twice as a canary is an engine choice; both are sound and attributed.
-- `obs-the-natural-key-is-the-ambiguous-one` (+SURE) — the path is the primary mScheme; the
-  dotted name yields into it by a lookup that must run where the mKey was bound, because a
+- `obs-the-natural-key-is-the-ambiguous-one` (+SURE) — the path is the primary MScheme; the
+  dotted name yields into it by a lookup that must run where the MKey was bound, because a
   knob exists only in the namespace that has its interface.
 - `obs-gotcha-30-is-guarded-by-the-binder` (+SURE) — line 9's safety is `30T`'s File binder
-  declining procfs; `:yields` is never asked. A binder per mScheme (Rachel claiming
-  `/proc/sys/*` locators as `sm.ProcSysPath` keys) would let line 9 wall one mCell instead of
+  declining procfs; `:yields` is never asked. A binder per MScheme (Rachel claiming
+  `/proc/sys/*` locators as `sm.ProcSysPath` keys) would let line 9 wall one MCell instead of
   everything; in this book only line 10 is below it, and it collides either way.
 - `obs-a-leg-separates-by-aliases-nothing-else` (+SURE of the walk; `311j` § 3.2) — line 5's knob sits
   one store deeper than line 8's (a namespace in the boot, against the boot itself). Simon's

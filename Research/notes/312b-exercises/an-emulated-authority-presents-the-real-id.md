@@ -64,7 +64,7 @@ Bram (`bram-cli53.oracle.sh`), Ravi (`ravi-aws.oracle.sh`), Quinn (`quinn-rclone
 
 ## The floor: four tool oracles, no yields
 
-Each author binds under mSchemes of their own with no `:yields`: the floor of `311j` § 1.3.
+Each author binds under MSchemes of their own with no `:yields`: the floor of `311j` § 1.3.
 Ravi's argparse is strict, as taught (USER_STORY stage 3): a shape he did not write for answers
 2.
 
@@ -89,8 +89,8 @@ Render, steady state:
 plan: 1 to run (5 skipped)
 ```
 
-Every identity comparison reads UNKNOWN or KNOWN_UNSPOKEN (four floor mSchemes of four unnamed
-mSorts, all scoped in the mRoute, no warrants), which is safe for both consumers. C1 cannot
+Every identity comparison reads UNKNOWN or KNOWN_UNSPOKEN (four floor MSchemes of four unnamed
+MSorts, all scoped in the MRoute, no warrants), which is safe for both consumers. C1 cannot
 fire: line 8 is a declined shape, so it runs. C2 cannot fire: on a day the sync runs, line 7
 guards. On any drifted day every line below the first running one verifies. Had line 8 selected
 localstack by `AWS_ENDPOINT_URL=…` instead of the flag, the floor's guard would have been
@@ -113,13 +113,13 @@ rv_AwsAccountId__resolve() {                     # no store declared, so scoped 
 ```
 
 Line 5 and line 8 both measure `rv.AwsAccountId:123456789012`, because localstack presents the
-real id. The account shape is scoped in the mRoute and carries `:guarantees-unique-referent`;
-the two mKeys are equal; SAME. The bucket names are equal under `:guarantees-unique-referent`;
+real id. The account shape is scoped in the MRoute and carries `:guarantees-unique-referent`;
+the two MKeys are equal; SAME. The bucket names are equal under `:guarantees-unique-referent`;
 SAME. One probe answers both lines, and C1 fires. Two faults, both already named in the corpus:
-the operator's mToken was trusted above the place it was read from (the exercised gotcha), and a warrant
+the operator's MToken was trusted above the place it was read from (the exercised gotcha), and a warrant
 sat on a shape with no `:identified-in` (`311m`'s parentless warrant: a true local sentence read
 as a claim about every route). A third, of arrangement: the primary's arm read the world, where
-`311j` § 1.6 makes a shape's declarations a function of the mKey's own bytes.
+`311j` § 1.6 makes a shape's declarations a function of the MKey's own bytes.
 
 ## The stdlib, and the glue lines
 
@@ -216,40 +216,40 @@ bm_R53Record__resolve() {                        # "ZONE NAME TYPE", into the wo
 The walks:
 
 - Line 8 against line 5 (the C1 guard). Line 5's bucket: Ravi's bind, stored in
-  `rv.S3Endpoint:self`, which resolves where the site runs (once per mEntryChain, an ambient
+  `rv.S3Endpoint:self`, which resolves where the site runs (once per MEntryChain, an ambient
   instance like the sysctl record's `sm.NetnsSelf:self`) through Hugo's `sm.Url` to
-  `sm.HttpOrigin:https://s3.corp.acme.example:443`, scoped in the mRoute. Line 8's bucket: the
+  `sm.HttpOrigin:https://s3.corp.acme.example:443`, scoped in the MRoute. Line 8's bucket: the
   same bind, stored in `rv.S3Endpoint:http://localhost:4566`, to
-  `sm.HttpOrigin:http://localhost:4566`. From the top: the mRoute is one inherited instance; at
-  the origin level the two mKeys differ and the shape carries no warrant, so they are not SAME
+  `sm.HttpOrigin:http://localhost:4566`. From the top: the MRoute is one inherited instance; at
+  the origin level the two MKeys differ and the shape carries no warrant, so they are not SAME
   and not DISJOINT. UNKNOWN. Line 8 gets its own probe and line 5 never stands in. The forged
   account id never enters: Ravi did not need the account in the chain, and had he kept it, it
   would sit BELOW the origin and compare only inside one.
-- Line 7 against line 5. Both bare; both stored in `rv.S3Endpoint:self`, one mPlaceholder; SAME at
+- Line 7 against line 5. Both bare; both stored in `rv.S3Endpoint:self`, one MPlaceholder; SAME at
   the origin by instance, no warrant consulted; bucket names equal under
   `:guarantees-unique-referent`; SAME. Line 7's object is in line 5's bucket, attributed to
   Ravi's warrant.
 - Line 7 against line 6 (the C2 guard). Quinn's footprint is a `qn.S3BucketName` stored in
   `https://s3.eu-west-1.amazonaws.com:443`; Ravi's fact is stored in
-  `https://s3.corp.acme.example:443`. The deepest SAME level is the mRoute; the tops are two
-  `sm.HttpOrigin` mKeys, one mScheme, no `:guarantees-unique-name`. UNKNOWN. Line 7 guards,
+  `https://s3.corp.acme.example:443`. The deepest SAME level is the MRoute; the tops are two
+  `sm.HttpOrigin` MKeys, one MScheme, no `:guarantees-unique-name`. UNKNOWN. Line 7 guards,
   re-checks after the sync, and copies. Were the two origins equal the pair would still be two
-  strangers' mSorts over one bucket: KNOWN_UNSPOKEN at the leaf, no mPlacements declared on
+  strangers' MSorts over one bucket: KNOWN_UNSPOKEN at the leaf, no MPlacements declared on
   either side, collide.
 - Line 4 against line 3. Carla's record yields `sm.RRsetKey:"assets.acme.example. CNAME"`,
   stored in `acme.example.`, in `example.`, in `.`; Bram's yields
   `sm.RRsetKey:"status.acme.org. A"`, in `acme.org.`, in `org.`, in `.`. The root is one
-  mWorld by :rootness. The tops `example.` and `org.` are mKeys of one mScheme carrying
+  MWorld by :rootness. The tops `example.` and `org.` are MKeys of one MScheme carrying
   `:guarantees-unique-name`, with differing values, and every store below down to the leaves'
-  mParents is `:aliases-nothing-else`. DISJOINT. On a day the CNAME has drifted, line 4 survives line 3:
+  MParents is `:aliases-nothing-else`. DISJOINT. On a day the CNAME has drifted, line 4 survives line 3:
   two provider authors who never met, separated by Dana's tree and one `dig` apiece.
-  <!-- /* superseded: this survival answers only the address question; under `311j` § 2.5 as folded 2026-09-19 the write-path question is also asked, Dana's mSorts declare no mPlacements, an undeclared mPlacement collides, and line 4 verifies in both renders (`311t` § 8). */ -->
+  <!-- /* superseded: this survival answers only the address question; under `311j` § 2.5 as folded 2026-09-19 the write-path question is also asked, Dana's MSorts declare no MPlacements, an undeclared MPlacement collides, and line 4 verifies in both renders (`311t` § 8). */ -->
 - Two strangers in one zone (no book line; a colleague's `dnscontrol` beside Carla's
   `flarectl`). Both yield into `sm.RRsetKey` under `acme.example.`. The same owner and type:
-  one mKey, SAME, one mCell, each tool's write a write to the other's fact. Different owners
+  one MKey, SAME, one MCell, each tool's write a write to the other's fact. Different owners
   (certbot's `_acme-challenge` TXT churn beside the CNAME): siblings under one zone,
   `:guarantees-unique-name`, DISJOINT. Collision and sparing both, from the glue alone.
-- Line 5 against line 3. A record's chain ends at a mRoot; a bucket's ends at the mRoute.
+- Line 5 against line 3. A record's chain ends at a MRoot; a bucket's ends at the MRoute.
   `311j` § 3.2's first bullet: UNKNOWN. Line 5 guards on a day line 3 runs.
 
 Render, a day the CNAME and the site have both drifted, with the flag:
@@ -296,22 +296,22 @@ is bought back, and taking the existing construct can quietly cost usability tha
 discovered later (**[HUMAN]**, 2026-09-18).
 
 - "My service is entered through these hosts." A lookup from typed route-names to a store's
-  mKey that declines what it does not know: a secondary mScheme's `:yields` with declining arms
+  MKey that declines what it does not know: a secondary MScheme's `:yields` with declining arms
   (§ 2.1). It needs no closure (nothing consumes "these and no others") and is no part of
   `:aliases-nothing-else` (many routes into a store all enter it). Pair: `sm.Path` into `sm.Inode`; a
   namespace label into its nsfs inode. The difference the pair shows: `stat` asks the store's
-  own arbiter and is handed the mKey; a host table is its author reciting. Both are `resolve()`
+  own arbiter and is handed the MKey; a host table is its author reciting. Both are `resolve()`
   bodies, and the value plane already grades a table below a world read. A host that fronts
-  several unrelated stores by path is several mSchemes over one class of strings, each owned by
+  several unrelated stores by path is several MSchemes over one class of strings, each owned by
   whoever knows that store, each declining the rest; the endpoint is not a unit of composition.
 - "I am a plain store, a view, or a driver." Three independent declarations, not a category:
-  `:aliases-nothing-else` (§ 2.2); a closed mPlacement set, as against one pointing outward or undeclared,
+  `:aliases-nothing-else` (§ 2.2); a closed MPlacement set, as against one pointing outward or undeclared,
   which is ⊤ (§ 2.4); a finished at-most footprint, as against none, which is a wall (§ 2.5).
   View and driver are the silent defaults; plain store is what is earned. Pairs: ext4 against
   an overlay's lower layer; `cp` against `apt-get install` and its postinst; a FUSE mount
   against a CDN.
 - "My store lives at my registrable domain." `:identified-in`, with a node of somebody else's
-  tree as the mParent, so that a store acquires a common ancestor with stores its describer
+  tree as the MParent, so that a store acquires a common ancestor with stores its describer
   never heard of. What it asserts of the world: this store belongs to that registration and to
   no other. The one piece of new content among the four. Pair: a filesystem identified in a
   boot by device number. The difference: `st_dev` is handed back by the arbiter when the file
@@ -319,10 +319,10 @@ discovered later (**[HUMAN]**, 2026-09-18).
   which registration it answers for (the names in its certificate) is the candidate
   measurement; open.
 - The registry tree. A delegation tree: each node's owner alone assigns child labels, so a
-  label path from the root is unique with no two owners coordinating. An ordinary mSort
+  label path from the root is unique with no two owners coordinating. An ordinary MSort
   identified in itself level by level, :rootness at the top, its warrants true of
   registrations. Pairs: nested pid and user namespaces; the OID arcs; ISBN prefixes; address
-  delegation; Dorc's own reverse-DNS names for mSorts, which already lean on this tree for the
+  delegation; Dorc's own reverse-DNS names for MSorts, which already lean on this tree for the
   uniqueness of vocabulary. Dana's file above is this.
 
 ## A store-sort under the tree: the revised glue
@@ -356,7 +356,7 @@ pt_AwsEndpointUrl__resolve() {                   # a URL someone typed or config
 
 Ravi changes one line: `rv_S3Endpoint__resolve` yields `pt.AwsEndpointUrl:$url` where it yielded
 `sm.Url:$url`. Quinn's remote, configured `provider = AWS`, does the same (another provider's
-remote is a second mScheme of hers, into Hugo's mSort as before). Nobody edits Petra's file, and
+remote is a second MScheme of hers, into Hugo's MSort as before). Nobody edits Petra's file, and
 Petra has read nobody's.
 
 The walks that change:
@@ -372,11 +372,11 @@ The walks that change:
   `localhost:4566` likewise. The emulator and the proxy are both names Petra never heard of.
 - Line 7 against line 6 (the C2 guard). One side unknown; UNKNOWN; line 7 guards. Were Alice's
   profile the public endpoint, both buckets would sit under `pt.AwsStoreKey:s3`, SAME at the
-  store by one yielded mKey and Petra's warrant, and the two bucket mKeys would be tops of two
-  strangers' mSchemes: UNKNOWN still, and rightly, since they are one bucket.
+  store by one yielded MKey and Petra's warrant, and the two bucket MKeys would be tops of two
+  strangers' MSchemes: UNKNOWN still, and rightly, since they are one bucket.
 - Strangers on one provider (no book line). Had Bram identified his hosted zones in
   `pt.AwsStoreKey:route53`, his records and Quinn's buckets would meet at Petra's registration
-  with tops `route53` and `s3`: one mScheme, `:guarantees-unique-name`, DISJOINT. What strangers
+  with tops `route53` and `s3`: one MScheme, `:guarantees-unique-name`, DISJOINT. What strangers
   share is the thin store-sort, never a resource vocabulary.
 
 Render, a morning only the CNAME has drifted, with the flag:
@@ -394,9 +394,9 @@ plan: 1 to run, 3 to verify (2 skipped)
 ## Cost, briefly
 
 Per distinct name, a few `dig`s up the labels, memoised within an unwalled span; per hosted
-zone, one provider call and one `dig` for the delegation check; per mEntryChain, one resolution
+zone, one provider call and one `dig` for the delegation check; per MEntryChain, one resolution
 of `self`; per rclone remote, one config read. Each is smaller than the API call its line
-already makes. The zone climb and the delegation check read through the mVantage's resolver; a
+already makes. The zone climb and the delegation check read through the MVantage's resolver; a
 careful Dana asks each parent's own servers without recursion, which costs the same reads and
 stops depending on whose resolver answers.
 
@@ -414,17 +414,17 @@ stops depending on whose resolver answers.
   5 and 6 of the same book refute it. Whoever is tempted to write it can be shown their own
   profile.
 - `obs-the-ambient-endpoint-is-a-singleton-spelling` (+SURE) — `rv.S3Endpoint:self` does for an
-  endpoint what `sm.NetnsSelf:self` does for a namespace: one mPlaceholder per mEntryChain, SAME
+  endpoint what `sm.NetnsSelf:self` does for a namespace: one MPlaceholder per MEntryChain, SAME
   across bare lines by instance, and the home for `an-env-variable-selects-the-referent` and
   `a-binary-reads-environment-you-cannot-see` (Ravi's body reads what the binary reads, so the
   dependence is a read of his, marked or ⊤). An `export AWS_ENDPOINT_URL=…` between two bare
   lines is `30S`'s fence, and in this model a routing write that perishes `self`; § 3.3's
   routing species names only `PATH` today.
 - `obs-equal-literal-origins-rest-on-the-route-vouch` (~SUSPECT it matters) — two lines that
-  both say `--endpoint-url http://localhost:4566` are SAME at the origin only as "one mKey in
+  both say `--endpoint-url http://localhost:4566` are SAME at the origin only as "one MKey in
   one transit-free unwalled span" (`311j` § 1.10), which for an origin is the reading "whatever
   answers there is one thing; a round-robin behind it is noise". Under `311p` thread 6's
-  narrowing they would be two mPlaceholders, UNKNOWN, and the ambient `self` would be the only
+  narrowing they would be two MPlaceholders, UNKNOWN, and the ambient `self` would be the only
   same-endpoint sameness. Both are safe; they differ in what a flag-spelled book gets for free.
 - `obs-dns-is-a-store-of-records-and-of-nothing-else` (+SURE) — the tree is a genuine container
   for zones and RRsets: forced spellings, one registry, delegation as the only way in. It gave
@@ -438,15 +438,15 @@ stops depending on whose resolver answers.
 - `obs-rootness-is-danas-line` (~SUSPECT of frequency) — :rootness on `.` claims there is one
   DNS. A split horizon makes two zones with one apex under one parent, and a pivot book that
   compares a record read inside the office with one read outside would find them SAME.
-  Within one mVantage only one provider's delegation check passes, so the knife needs two
-  mVantages in one comparison; asking the parents' own servers without recursion removes the
-  dependence on the mVantage's resolver and leaves interception of port 53, a horizon. The
+  Within one MVantage only one provider's delegation check passes, so the knife needs two
+  MVantages in one comparison; asking the parents' own servers without recursion removes the
+  dependence on the MVantage's resolver and leaves interception of port 53, a horizon. The
   stdlib owns it, as it owns cloned boots.
 - `obs-names-inside-values-are-not-keys` (+SURE) — line 3's CNAME content spells the bucket's
   website endpoint. It is a value; no author binds it; the record and the bucket are unrelated
   in the model, which is right in both directions.
 - `obs-a-drifted-record-guards-every-bucket-line` (+SURE; the cost) — a chain that ends at a
-  mRoot and one that ends at the mRoute read UNKNOWN, so the book's one drifted DNS line turns
+  MRoot and one that ends at the MRoute read UNKNOWN, so the book's one drifted DNS line turns
   every remote line below it into a guard. Nothing physical separates "what answers at an
   origin" from "what a zone holds"; buying those lines back is an operator's word or a
   consented policy (`311t` § 1 `hold-cross-root-cells`), and this exercise does not.
@@ -458,7 +458,7 @@ stops depending on whose resolver answers.
   whose port a local listener holds chains under the boot by three lookups, none of them
   Hugo's above; worked in `311t` § 5 (the `robots.txt` sitting), not here.
 - `obs-the-four-guesses-are-existing-relations` (+SURE) — a lookup with declining arms, three
-  declarations a store already has, one `:identified-in` edge, and an ordinary mSort that is a
+  declarations a store already has, one `:identified-in` edge, and an ordinary MSort that is a
   delegation tree. Nothing in the revised glue asked `311j` for a relation it lacks.
 - `obs-the-registration-edge-is-the-one-new-sentence` (+SURE of the strain; --WONDER of the
   repair) — § 3.2's walk asks `:aliases-nothing-else` of `amazonaws.com.` for what Petra hung there, and
@@ -466,21 +466,21 @@ stops depending on whose resolver answers.
   reaches the s3 store through no name in that zone. Petra's arrangement is safe where Hugo's
   was not because she hangs only stores she recognises and declines the rest, so no one store
   is ever hung twice by her; what the separation leans on is that a store has one registration
-  as its mParent, by its describer's word, and `311j` has no warrant that says that.
+  as its MParent, by its describer's word, and `311j` has no warrant that says that.
 - `obs-one-operator-several-registrations` (~SUSPECT of frequency) — large operators serve one
   tenancy under several registrations (a storage host under one, a management host under
-  another). A recited edge absorbs it: the describer picks one mParent and lists the other
+  another). A recited edge absorbs it: the describer picks one MParent and lists the other
   hosts as routes in her lookup. A measured edge would measure two registrations for one store
   and need the recital anyway.
 - `obs-the-corporate-route-needs-an-arm-petra-cannot-write` (+SURE) — the organisation's one
   true sentence ("this URL is a stateless route into the s3 store") is an arm of Petra's lookup
-  that only the organisation can author. A bind names one mScheme, and a lookup that declines
+  that only the organisation can author. A bind names one MScheme, and a lookup that declines
   falls through to nobody. This is the open composition corner, separate authors composing arms
   into one lookup, reduced here to one line of one file; punted (**[HUMAN]**, 2026-09-18). The
   thin store-sort is the same corner seen from the other side: better than a shared resource
   vocabulary, still less than ideal for collaboration.
 - `obs-one-scheme-one-sort-chafes-at-multi-provider-tools` (~SUSPECT) — Quinn's remote is AWS or
-  not according to its configuration, and one mScheme cannot yield into Petra's mSort on one arm
-  and Hugo's on another; she needs two mSchemes and a bind that chooses between them by a read.
+  not according to its configuration, and one MScheme cannot yield into Petra's MSort on one arm
+  and Hugo's on another; she needs two MSchemes and a bind that chooses between them by a read.
   Spellable, verbose, and a second place where recomposed first-guess constructs might earn
   their keep.

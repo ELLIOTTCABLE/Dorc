@@ -27,14 +27,14 @@
 One commit to 311, `0738c00f`, under `(AI dsn fix)`: the `312c` § 4 items that clarify or
 restore consistency and withhold no sparing.
 
-- Item 1, the level-comparison clause only: `compare()` compares a level of a mTraversal by the
-  identity of the mReferent the level resolved to (§ 2.9).
+- Item 1, the level-comparison clause only: `compare()` compares a level of a MTraversal by the
+  identity of the MReferent the level resolved to (§ 2.9).
 - Item 3, the per-shape-versus-per-evaluation clause: the declaration of a warrant is per shape,
   its instance per evaluation (§ 1.5).
-- Item 4: the fence narrowed to the mFullyQualifiedKey and the finished definition, with the
-  mCorrespondence named as the one mDerivation that speaks across mWorlds (§ 1.8, § 3.2 step 1).
+- Item 4: the fence narrowed to the MFullyQualifiedKey and the finished definition, with the
+  MCorrespondence named as the one MDerivation that speaks across MWorlds (§ 1.8, § 3.2 step 1).
 - Item 7's first half: "finished" means the at-most set's closure and, per origin cell whose
-  entailment widened the set, a reached finished record for that cell's mSort and shape, per
+  entailment widened the set, a reached finished record for that cell's MSort and shape, per
   `plans/30U` (§ 2.6 question 2).
 - Item 8: the `looked-up-in` records of every placing-lookup invocation accumulate; only a
   closure from one invocation contradicted by a record from another refuses (§ 2.10).
@@ -43,7 +43,7 @@ restore consistency and withhold no sparing.
   outside the register.
 
 Removed again in the same commit, under the negative-gloss rule: "It never compares the level's
-bytes"; "A warrant constructed for one mKey extends to no other mKey"; the register entry's
+bytes"; "A warrant constructed for one MKey extends to no other MKey"; the register entry's
 "and not otherwise" (now "only when").
 
 The skill's linter over the added lines: zero hard violations; four advisory passive flags, all
@@ -56,15 +56,15 @@ Each withholds a sparing the text now grants, or is a positive statement the hum
 reserves (`311t` § 14: an engine decision deserves authored speech or differential proof).
 
 - `hold-region-against-region-floor` — `312c` thread 1. The four-step walk of § 2.9 applied to
-  two whole-named keys; the repair (x must denote one mReferent; two regions read UNKNOWN unless
+  two whole-named keys; the repair (x must denote one MReferent; two regions read UNKNOWN unless
   one side is enumerated) removes a wrong DISJOINT and so removes a sparing.
-- `hold-zero-traversal-guard` — `312c` thread 6. Step 3's universal over zero mTraversals; the
-  repair (at least one mTraversal of D's mSort, else UNKNOWN) removes a vacuous DISJOINT.
+- `hold-zero-traversal-guard` — `312c` thread 6. Step 3's universal over zero MTraversals; the
+  repair (at least one MTraversal of D's MSort, else UNKNOWN) removes a vacuous DISJOINT.
 - `hold-closure-evidence-sentences` — `312c` thread 6. § 1.5's "link count of one" and "no
   other mount exposes it"; striking or qualifying them withholds the closure under magic links
   and file bind mounts.
 - `hold-terminus-closure-and-engine-vouch` — `312c` thread 7. Whether an undeclared may-read set
-  is ⊤ at every member, and whether the engine vouches the mRoute's set closed-empty. The vouch
+  is ⊤ at every member, and whether the engine vouches the MRoute's set closed-empty. The vouch
   is a positive engine statement. This one decides whether any sparing exists at all.
 - `hold-unclosed-lookup-perish-set` — `312c` thread 9. A lookup whose body fails the read-set
   closure perishing under any routing write withholds resolutions the narrow reading keeps.
@@ -130,7 +130,7 @@ the flag's meaning. Rulings and framings the human typed are graded; the conduct
 marked as such and none is acked unless the line says so.
 
 - The item as put: § 3.4's danger line says the sentinel is an at-most claim over every
-  mParent-Catalog mSort and names no consumer. Four options were offered: leave the line; add one
+  MParent-Catalog MSort and names no consumer. Four options were offered: leave the line; add one
   sentence naming the consequence (a wrong sentinel is a wrong SAME with no flag in front); price
   a sentinel-inherited SAME under `--risk-faultless-skips`; bound the sentinel's reach to sorts
   its author can compare against. The conductor leaned to the second, and framed the fourth as
@@ -151,11 +151,11 @@ marked as such and none is acked unless the line says so.
   reality they can see (`sm.File`, paths, filesystems), and collide at merge through that root,
   fail-safe, with some sparing in a described world. Does this apply to wrappers and dimensions
   as 311 models them, or are dimensions more dangerous? Conductor: it applies, and the lent case
-  already is it. The lent mParent-Catalog mSort is the shared root, and by § 2.8's default only
+  already is it. The lent MParent-Catalog MSort is the shared root, and by § 2.8's default only
   the wrapper's author needs to name it. Dimensions are not more dangerous in kind. The one
   exception is the post-sentinel default: everywhere else silence about a sort lands on the safe
-  bottom, and after the sentinel an unnamed sort inherits, inheritance is one mPlaceholder, and
-  one mPlaceholder is SAME. Unacked.
+  bottom, and after the sentinel an unnamed sort inherits, inheritance is one MPlaceholder, and
+  one MPlaceholder is SAME. Unacked.
 - **[HUMAN]** question B: is the hole a missing "only under the flag" sentence, since no
   oracle-engineer's negative existential ever licenses fail-dangerous function without the
   admin's flag? Conductor: nack on that reading. The consumer map, unchanged from `271` and
@@ -172,18 +172,18 @@ marked as such and none is acked unless the line says so.
   Mid-curve, where a user has not yet put in the effort, is not epistemically unknowable.
 - **[TYPED]** 2026-09-24: there is no machine-crossing class visible to Dorc, and for this topic
   the phrase breaks referential agnosticism. The conductor's hedge that § 1.10's "transit" meant
-  such a class is withdrawn. Every wrapper entry is a transit and a change of mVantage.
+  such a class is withdrawn. Every wrapper entry is a transit and a change of MVantage.
 - Conductor verdict, unacked: the sentinel qualifies, with the exclusion applied inside the
   same consumer. A perturbed fluent that has a name the wrapper's author did not lend is that
-  author's attributable omission, not flag-class. A fluent no mSort names is the residue: the
+  author's attributable omission, not flag-class. A fluent no MSort names is the residue: the
   wrapper's author cannot lend it, the fact's describer cannot key on it or declare dependence on
   it, and the stdlib cannot name an open set. The engine cannot tell the two apart when it
   decides, so the consumer is gated wholesale and attribution sorts the cases afterward, as the
   finished record already sits. The price stated two turns earlier ("the sudo pair at every
   wrapped site") was said to be lower, on a reading of § 1.10 recorded next.
-- Conductor claim, under the human's scrutiny, not graded: under the letter of § 1.10 the mRoute
-  is unknown across any wrapper, so a chain ending at the mRoute never transports across one, and
-  the sentinel's SAME can land only on unmeasured ambient instances under a shared mRoot. The
+- Conductor claim, under the human's scrutiny, not graded: under the letter of § 1.10 the MRoute
+  is unknown across any wrapper, so a chain ending at the MRoute never transports across one, and
+  the sentinel's SAME can land only on unmeasured ambient instances under a shared MRoot. The
   human asked for a ground-up re-derivation before grading it. That re-derivation is not in this
   section.
 - Conductor observation, unacked: § 3.4 carries only the inherit sentinel. `311a` § 3 had two,
@@ -214,9 +214,9 @@ ack.
   entry (the first revision cites the `sudo` gotcha `not-every-transit-changes-the-referent` as
   one). What `311:1.10-vantage-route-placeholder-witness` protects is the engine's parity vouch
   stopping at any binary in wrapper position. The two sentences the conductor had called
-  contradictory are two rungs of one rule: § 1.10's "unknown across mVantages" is the floor with
+  contradictory are two rungs of one rule: § 1.10's "unknown across MVantages" is the floor with
   no sentinel or no flag, § 3.4's inheritance is the licensed rung, and the flag is the missing
-  conjunct. A rooted, measured chain transports by equal mTokens in every rung, so the flag prices
+  conjunct. A rooted, measured chain transports by equal MTokens in every rung, so the flag prices
   only unrooted or unmeasured chains across a wrapper.
 - **[HUMAN]** the click: the human had been holding one of SAME and DISJOINT. "Everything
   changed" reaches for a DISJOINT that cannot be ascertained (network filesystems; colluding
@@ -262,19 +262,19 @@ ack.
 
 Applied at `6acb402b`, resolving `hold-sentinel-danger-line` under the § 8 ack.
 
-- `311:3.4-entry-and-lends`: an unlent mParent-Catalog mSort is ⊤ under the wrapper. After the
-  wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent mSorts and the
-  mRoute inherit the caller's instances instead. Leaf mKeys then inherit transitively with no
+- `311:3.4-entry-and-lends`: an unlent MParent-Catalog MSort is ⊤ under the wrapper. After the
+  wrapper's completion sentinel, and under `--risk-faultless-skips`, the unlent MSorts and the
+  MRoute inherit the caller's instances instead. Leaf MKeys then inherit transitively with no
   further speech. The danger line gains "A wrong sentinel is a wrong SAME. The flag prices it."
 - `311:3.2-compare-one-chokepoint-four-answers`: the engine consumes a SAME that rests on a
   wrapper's sentinel under the flag. The one-level rule's inherited instance carries "under the
-  flag". Step 1 reads "two mRoutes across a wrapper". The sentence "The consumer map is
+  flag". Step 1 reads "two MRoutes across a wrapper". The sentence "The consumer map is
   unchanged" is gone, since § 4.1 and § 4.2 now carry the change.
-- `311:1.10-vantage-route-placeholder-witness`: the engine vouches the mRoute and the ambient
+- `311:1.10-vantage-route-placeholder-witness`: the engine vouches the MRoute and the ambient
   instances for execution under no wrapper, and under a wrapper the inherited instances § 3.4
-  admits. Two mVantages share the mRoute and the ambient instances through a wrapper's sentinel
-  under the flag. Otherwise they are unknown across mVantages.
-- `311:1.5-token-and-the-two-warrants`: the engine's one vouch is the local mRoute under no
+  admits. Two MVantages share the MRoute and the ambient instances through a wrapper's sentinel
+  under the flag. Otherwise they are unknown across MVantages.
+- `311:1.5-token-and-the-two-warrants`: the engine's one vouch is the local MRoute under no
   wrapper. Across a wrapper the wrapper's author speaks, and everything else is measured and
   witnessed.
 - `311:4.1-boundary-of-this-model`: the consumer map is used with one stated exception, a
@@ -334,7 +334,7 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   where the set is derivable and mis-sited where it is not, because "what `nginx -T` reads" is
   knowledge about nginx, and its nearest competent edge is nginx's describer.
   `rul-lookup-read-closure-exists` is WITHDRAWN. Replaced by `rul-lookup-read-set-is-derived`: a
-  mResolution's read set is the union of its body's leaves' read sets, closed iff every leaf is
+  MResolution's read set is the union of its body's leaves' read sets, closed iff every leaf is
   closed, open ⇒ perish under any routing mutation, no lookup-level act. The hole is re-sited as
   `hole-predict-read-set-closure`: no predict's read set is closed today
   (`ANALYZER-NEEDS:an-backing-selfframing`, ruled for the verdict consumer where the vouch prices
@@ -360,12 +360,12 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   `Closed<Set>` newtype minted only from a received closure record is the analog. A steering
   candidate for the build, not owed.
 - Conductor, the general shape of a read set, given for the human's understanding and banked as
-  read: a read set is the mKeys an answer may depend on. It has two flavours, state and routing,
+  read: a read set is the MKeys an answer may depend on. It has two flavours, state and routing,
   partitioned by consumer and closed once. Three sources feed it: the sort owner's placement
   (`311:2.5-may-read-the-readset`, with its sentinel), the body author's marks (closed by the
   vouch for a verdict, `KNOBS:kCONTRACT-RUNGS`; by no act for a lookup), and each leaf tool's
   reads (no speech today). The engine unions the sources, and the union is closed iff every source
-  is closed, a withholding composite in `plans/28M`'s sense. An entry is an mKey at any grain, and
+  is closed, a withholding composite in `plans/28M`'s sense. An entry is an MKey at any grain, and
   a store named whole is a legal coarse entry. A closure is spoken (a tail record, static or
   dynamic arms, one per completing path, `plans/30U` § 5's witness law) or constructed (an
   engine-recognized construct whose complement is mechanical, `env -i` for the environment per
@@ -393,8 +393,8 @@ item chosen: `hold-unclosed-lookup-perish-set`. The ext4 nit stays held for the 
   high-value actions such as self-vouch. What travels, what bites other authors, and what composes
   into novel effective speech no human wrote needs the closure.
 - Applied, resolving `hold-unclosed-lookup-perish-set`: `311:1.7-resolution-and-its-traversal`
-  gains two paragraphs (a mResolution depends on its lookup body's read set; the engine derives
-  the set, shell parity for sh constructs, the path mScheme for paths, the describing speech for
+  gains two paragraphs (a MResolution depends on its lookup body's read set; the engine derives
+  the set, shell parity for sh constructs, the path MScheme for paths, the describing speech for
   external commands; closed only when every external command's read set is closed; the author of
   that speech closes it by an explicit act; an open set perishes under any routing mutation).
   `311:3.3-invalidation-three-mutator-species` replaces "when its `resolve()` read the written
@@ -419,7 +419,7 @@ The item chosen as least consequential: `hold-zero-traversal-guard`. It withhold
 sparing that the acked floor denies elsewhere (`311t` § 14: a sort hung on nothing comparable
 stays guard-only), so the ruling is about the text's consistency. Nothing applied to 311.
 
-- As put: step 3 of the region test quantifies over "every mTraversal of D's mSort"
+- As put: step 3 of the region test quantifies over "every MTraversal of D's MSort"
   (`311:2.9-the-traversal-and-the-region-test`). A universal over zero traversals is true, so an x
   with no traversal of D's sort reads DISJOINT. Three cases: x's own scheme is of D's sort (the
   set is never empty); D's sort declares no `:places` for x's sort (§ 2.10's default sends the
@@ -434,7 +434,7 @@ stays guard-only), so the ruling is about the text's consistency. Nothing applie
   "forgetting": an author leaves a set open or closed, and that is all Dorc holds. Dorc's two
   duties: introduce no footgun (a place that encourages being extra wrong, such as an implicit
   negative existential), and draw no incorrect conclusion from clear, intended, correct speech.
-- Conductor, re-derived and read (**[HUMAN]**: "mostly ack"): the phrase "has no route of mSort G"
+- Conductor, re-derived and read (**[HUMAN]**: "mostly ack"): the phrase "has no route of MSort G"
   (`311:2.10-places-the-upward-lookup`) names three epistemic states with one word: nobody asked;
   asked and the lookup declined; asked and the lookup answered "in no region of G". The forcing
   book, every statement true: a package-shipped directory bind-mounted at `/srv/www`; a drifted
@@ -456,7 +456,7 @@ stays guard-only), so the ruling is about the text's consistency. Nothing applie
   `looked-up-in` record for x (x is in no region of that sort). A decline carries no closure and
   reads UNKNOWN. A spoken zero-entry closure reads DISJOINT, attributed to G's owner. The
   earlier "at least one traversal" guard alone was too blunt: it also sent the spoken negative to
-  UNKNOWN. Companion clause still needed: x's mTraversals are those produced at every level of
+  UNKNOWN. Companion clause still needed: x's MTraversals are those produced at every level of
   `identity(x)` (§ 3.1), or the guard costs every non-path fact its separation from every
   recursive filesystem write (~SUSPECT the text already means this).
 - Held for the next exchange (**[HUMAN]** opened it): whether a coarse whole-key writeset entry
@@ -521,10 +521,10 @@ Nothing applied to 311.
   unsound elision.
 - Conductor's own defect, held for the human's word: the `0738c00f` rewrite of sparing's second
   question reads "For each origin cell whose entailment widened the set, a reached finished
-  record exists for that cell's mSort and shape". The relative clause admits a narrowing reading
+  record exists for that cell's MSort and shape". The relative clause admits a narrowing reading
   that excuses an origin sort with an empty entailment from the record `plans/30U` requires for
   every cross-kind pair. Proposed: "For each origin cell in the writeset, a reached finished
-  record exists for that cell's mSort and shape." The lead sentence "The writeset's definition
+  record exists for that cell's MSort and shape." The lead sentence "The writeset's definition
   is finished" still carries the strict meaning; the elaboration undercuts it.
 - Open for the human: whether the store's end separates at all, or the thing's end stays the one
   separating instrument. The next exchange digs the store's-end separation for consequences and
@@ -593,11 +593,11 @@ Conductor's acks, each re-walked against 311's text before the edit:
   `311:2.9-the-traversal-and-the-region-test` gains the entry paragraph (an entry names its
   referent; §3.2 collides a write to it with everything identified in it; an entry given whole
   also names what is reached beneath by lookups or a placing route; the author marks it), the
-  test walks the mTraversals `identity(x)` produced at every level, and step 3 answers DISJOINT
-  only from a carried closure in one of two forms (per level on at least one mTraversal of D's
-  mSort with every such mTraversal clean, or the placing lookup's zero-record
+  test walks the MTraversals `identity(x)` produced at every level, and step 3 answers DISJOINT
+  only from a carried closure in one of two forms (per level on at least one MTraversal of D's
+  MSort with every such MTraversal clean, or the placing lookup's zero-record
   `looked-up-in nothing-else`). `311:1.9-cell-a-singleton-sort`: a writeset entry naming the
-  mParent covers its cells by §3.2 step 2, "whole" dropped. `311:2.10-places-the-upward-lookup`:
+  MParent covers its cells by §3.2 step 2, "whole" dropped. `311:2.10-places-the-upward-lookup`:
   a finished entailment's members stand in for P given whole in the test of §2.6, each member an
   entry of that test, an unfinished entailment widens only, and a placing route into P against a
   finished enumeration with no member SAME with x reads UNKNOWN.
@@ -632,12 +632,12 @@ qualify, leave), the conductor leaning to strike.
   § 2.6, § 2.7, § 2.9, § 2.10, § 2.11, § 3.2, § 3.3, § 3.4, and § 3.5. Every move is verbatim
   except a label of at most a few words per footer item, so the item stands alone, and one
   pronoun made explicit ("that set" to "its may-read set", § 1.9). Seven fused sentences split
-  with the rule kept in prose: the mParent's type per shape and `:rootness` failing for cloned
+  with the rule kept in prose: the MParent's type per shape and `:rootness` failing for cloned
   identifiers (§ 2.2); the entailment's carried consequences and the justification of the
   shared-level exclusion (§ 2.6); the placing lookup's matched shapes (§ 2.10); the
   guest-dependent lend (§ 3.4); the granting and withholding composites (§ 3.5). Kept in prose as
   borderline model vocabulary rather than examples: "such as a boot or a tenure" (§ 3.3, the
-  lifecycle bullet's only anchor); "the path mScheme supplies the reads of a path" (§ 1.7, a rule
+  lifecycle bullet's only anchor); "the path MScheme supplies the reads of a path" (§ 1.7, a rule
   over three classes); "cloned identifiers are the standing witness" (§ 1.6). The § 4.2 register
   is untouched. One pre-existing overlong line in § 1.5 was rewrapped.
 - The two evidence sentences moved verbatim into § 1.5's footer. They stay known-insufficient
@@ -648,10 +648,10 @@ qualify, leave), the conductor leaning to strike.
   from sixty-four to sixty-five. The new one is `is checked`, on a § 1.5 sentence whose wording
   is unchanged from HEAD, so the line wrap moved it into the detector's view. No added line
   carries a violation.
-- Consequence for another hold: the § 2.2 sketch that places an ext4 filesystem in the mRoute is
+- Consequence for another hold: the § 2.2 sketch that places an ext4 filesystem in the MRoute is
   non-normative now, so the ext4 nit held for `hold-stdlib-key-space-over-the-boots-children` is
   no longer a question about the model's text. The structural half of that hold stands: two
-  tops separate only as keys of one mScheme.
+  tops separate only as keys of one MScheme.
 - Resolved: `hold-closure-evidence-sentences`. State: tip `a9f8ccb7` before this ledger commit.
   Six holds of § 3 remain: `hold-region-against-region-floor`,
   `hold-terminus-closure-and-engine-vouch`, `hold-catalog-entries-as-referents`,
@@ -669,7 +669,7 @@ claims are marked and none is acked unless the line says so.
 
 - **[TYPED]** 2026-09-26, terminology: "perish" is not industry-standard and becomes
   "invalidate", lower-case and unminted, meaning in 311 only the invalidation of a lookup result
-  (a mResolution or a mToken). "Kill" stays for a fact about a referent's state. The section slug
+  (a MResolution or a MToken). "Kill" stays for a fact about a referent's state. The section slug
   is renamed by mechanical global replace; a few dead citations in frozen documents are
   accepted. Conductor: "eviction" was set aside as a capacity word, "invalidate" being the
   correctness word in caches and incremental computation.
@@ -694,7 +694,7 @@ claims are marked and none is acked unless the line says so.
   explicit warrant for the dangerous behaviour, forcing an interloper to (1) apply the same
   warrant, (2) read the type and consume it, or (3) revert to the floor by not specifying the
   warrant and colliding with the type. Case 3 needs attention.
-- Conductor, on case 3: the invalidation test ("its mTraversal includes a touched mKey",
+- Conductor, on case 3: the invalidation test ("its MTraversal includes a touched MKey",
   `311:3.3-invalidation-three-mutator-species`) is undefined against the four answers. Under
   SAME-only a stranger's KNOWN_UNSPOKEN write invalidates nothing; under not-DISJOINT the
   stranger reverts the type to the floor by collision, which is `311:2.6-may-write-the-writeset`'s
@@ -747,17 +747,17 @@ Applied to 311, four commits, each linted at sixty-five findings (the one pre-ex
 and sixty-four advisories, one passive fewer than before, since the struck "was touched" left):
 
 - `ac0cb89b`, `edit-traversal-is-emitted`: `311:1.7-resolution-and-its-traversal` says the lookup
-  emits its mTraversal, one member per routing mKey crossed, as an at-most set that the lookup's
-  owner closes by an explicit act; no emission falls to the mParent-Catalog given whole; members
+  emits its MTraversal, one member per routing MKey crossed, as an at-most set that the lookup's
+  owner closes by an explicit act; no emission falls to the MParent-Catalog given whole; members
   without the closing act keep that floor member beside them. The § 2.9 floor paragraph and its
   Default line follow; § 3.3's flat-default clause is struck as subsumed.
 - `a9b33f8c`, `edit-retire-hierarchical`: the terms `:hierarchical` and flat are gone from 311
   and from `311u`; the section is `2.9-the-traversal-and-the-region-test`, the slug replaced in
   311, `311u`, and this ledger; the indexical paragraph reads "a lookup"; Arity is per lookup per
   matched shape and Declared-by is the lookup's owner; § 1.3 drops its bullet; the § 4.2 entry
-  and the footer say "emitted mTraversals" and "lookups that cross several levels".
+  and the footer say "emitted MTraversals" and "lookups that cross several levels".
 - `31eadb43`, `edit-touching-collides-widely`: `311:3.3-invalidation-three-mutator-species`, a
-  writeset entry touches a mTraversal member when `compare()` answers other than DISJOINT.
+  writeset entry touches a MTraversal member when `compare()` answers other than DISJOINT.
 - `c51558f0`, `edit-positional-footer`: the § 2.9 footer carries the positional catalog, the
   one-line-per-member emission, the ten-thousand-row table, and the single-emission want as 312's.
 
@@ -861,20 +861,20 @@ The pass, by what each class breaks (conductor; grades as marked):
 
 The human's questions, and the conductor's answers as given in chat (none acked):
 
-- **[HUMAN]** Q1: the term for "the thing it was resolved inside". Not an mReferent, since
-  "inside" is a relation within the model and not a byte range on disk; not an mKey, since a key
+- **[HUMAN]** Q1: the term for "the thing it was resolved inside". Not an MReferent, since
+  "inside" is a relation within the model and not a byte range on disk; not an MKey, since a key
   points at something within a namespace. Is there a name for an object in the modelled sense, the
-  parent category of a catalog? Conductor: 311 has no such category. Its letter makes the mParent
-  an mKey (`311:1.6-parent-one-per-key`, `311:2.4-parent-as-a-relation`), and the thing that key
-  denotes an mReferent; "inside" is the `:parent` edge, a model relation
+  parent category of a catalog? Conductor: 311 has no such category. Its letter makes the MParent
+  an MKey (`311:1.6-parent-one-per-key`, `311:2.4-parent-as-a-relation`), and the thing that key
+  denotes an MReferent; "inside" is the `:parent` edge, a model relation
   (`311:2.2-primary-of-and-identified-in`, identifying is not containing). The role has a name,
-  mParent with its two views, and the object playing it is the key. A species for "a namespace"
+  MParent with its two views, and the object playing it is the key. A species for "a namespace"
   would be the referent-class node of `312b` § 7's B(b), which was set aside. Nit offered: § 1.6
-  could read "the mKey naming the catalog or store it was resolved inside".
+  could read "the MKey naming the catalog or store it was resolved inside".
 - **[HUMAN]** Q2, a lean and a gentle nack, open to pushback: the name against the final identity
   matters less than how a scheme consumer resolves. Two consumers that resolve by one algorithm
   reach one eventual place, so a placeholder stands for both sites, and "the same algorithm" is
-  what an mScheme is. Contract it out: an oracle reuses an mScheme only where it genuinely
+  what an MScheme is. Contract it out: an oracle reuses an MScheme only where it genuinely
   resolves into the store the same way from every use-site, Dorc still owing the footgun and
   enhancement work. Conductor: the contract is `311:1.5-token-and-the-two-warrants`'
   `:guarantees-unique-referent` on the natural scheme (same input, same output), plus one catalog
@@ -890,7 +890,7 @@ The human's questions, and the conductor's answers as given in chat (none acked)
 
 Takeaways (**[HUMAN]**, explicitly in the oven, not ruled):
 
-- T1: placeholders, as in value-flow analysis. Conductor: 311's mPlaceholder covers unmeasured
+- T1: placeholders, as in value-flow analysis. Conductor: 311's MPlaceholder covers unmeasured
   tokens (`311:1.4-key-and-its-two-views`, `311:1.10-vantage-route-placeholder-witness`). The want
   widens it to unresolved keys: no referent yet, or unresolvable at probe. A widened placeholder is
   keyed by (scheme, canonical value, catalog instance, entry chain); two are SAME by the scheme's
@@ -936,7 +936,7 @@ section; its retractions and the picture that replaced it are banked.
   ergonomics over a conceptually simple, globally consistent model, not for enriching the model
   (the positional emission of § 17 is the sibling case). Conductor: the combinatorial argument is
   WITHDRAWN as a model argument, and under the picture below it does not arise.
-- **[HUMAN]** nack of "a family evolves additively": novel mSorts and mSchemes are the only
+- **[HUMAN]** nack of "a family evolves additively": novel MSorts and MSchemes are the only
   collaboration mechanism today. There is no arm-level collaboration story, and what is hardcoded
   in one body no stranger can additively affect, beyond sh load order and naming override.
   Neither route is investigated or ergonomic yet. Conductor: WITHDRAWN, and it cuts the other
@@ -995,32 +995,32 @@ very brief line in a non-normative footer.
 
 The holes re-derived narrowly (conductor): the model uses a catalog entry as a thing a write
 hits and a fact is about (`311:3.3-invalidation-three-mutator-species`; the `30T` entry of § 4.2)
-and defines it nowhere; and a name a catalog does not hold has no mKey, so an absence fact has
+and defines it nowhere; and a name a catalog does not hold has no MKey, so an absence fact has
 no topic. Everything else raised in § 19 and § 20 follows from existing rules once an entry is
-an mReferent keyed by its name: a future entry's primary key is its name, so it needs no
-mPlaceholder (`311:2.2-primary-of-and-identified-in`, the primary `resolve()` is the identity);
+an MReferent keyed by its name: a future entry's primary key is its name, so it needs no
+MPlaceholder (`311:2.2-primary-of-and-identified-in`, the primary `resolve()` is the identity);
 a future parent is a per-shape `:identified-in` into the entry sort itself, which § 2.2 permits;
 a traversal level's invalidation key (the entry) and containment key (what it leads to) are
 both defined (§ 18's residue closes); DISJOINT between two entries is the two-tops way under the
 entry scheme's unique-name; an entry against the inode it leads to separates at the filesystem,
-their dependence being routing. So T1's widened mPlaceholder and T2's general natural-key
+their dependence being routing. So T1's widened MPlaceholder and T2's general natural-key
 comparison are not this item's and stay as § 19 findings.
 
 Applied, `dfc1f950`:
 
-- `311:1.6-parent-one-per-key` gains one paragraph after the two mParent bullets: an entry of a
-  mParent-Catalog is an mReferent; whoever describes the catalog declares its mSort,
-  `:identified-in` the catalog's mSort; that mSort's primary mScheme keys an entry by its name
+- `311:1.6-parent-one-per-key` gains one paragraph after the two MParent bullets: an entry of a
+  MParent-Catalog is an MReferent; whoever describes the catalog declares its MSort,
+  `:identified-in` the catalog's MSort; that MSort's primary MScheme keys an entry by its name
   in the catalog and carries its warrants per matched shape; the catalog holds the entry or does
-  not, and the mKey names the entry in both cases; the entry's existence is a cell; a read of a
-  name the catalog does not hold reads that cell; a lookup that crosses the entry emits its mKey
-  as a mTraversal member.
+  not, and the MKey names the entry in both cases; the entry's existence is a cell; a read of a
+  name the catalog does not hold reads that cell; a lookup that crosses the entry emits its MKey
+  as a MTraversal member.
 - The § 1.6 footer gains one example: a future entry under a future directory has the
-  directory's own entry as its mParent, and the chain ends at the deepest directory that exists.
-- The § 2.1 footer gains one example, the footer line the human allowed: two mSchemes over one
-  spelling into two mSorts, a path yielding the directory entry or the inode it leads to, and a
-  bind naming the mScheme whose mReferent the tool acts on.
-- Untouched by choice: § 3.3's "its mParent-Catalog entry, its existence cell" and § 4.2's
+  directory's own entry as its MParent, and the chain ends at the deepest directory that exists.
+- The § 2.1 footer gains one example, the footer line the human allowed: two MSchemes over one
+  spelling into two MSorts, a path yielding the directory entry or the inode it leads to, and a
+  bind naming the MScheme whose MReferent the tool acts on.
+- Untouched by choice: § 3.3's "its MParent-Catalog entry, its existence cell" and § 4.2's
   same-for-existence line, both now grounded by the paragraph; § 1.1's referent examples.
 - Linter: the three snippets carry zero violations; the whole file keeps its one pre-existing
   hard flag (`terminates` against `stop`) and the same total as before the edit, sixty-five.
@@ -1046,13 +1046,13 @@ retraction as applied.
   as a DNS record's is its owner name in its zone (the § 1.6 footer). A future entry has a name; a
   future file has no inode. **[TYPED]** ack of the primary-key reading.
 - **[HUMAN]** the paragraph over-reached: it declared, in normative text, that every catalog's
-  entries are mReferents with an existence cell and a sort their describer must declare. That is
+  entries are MReferents with an existence cell and a sort their describer must declare. That is
   the stdlib shape the sittings had agreed to keep in userspace, dressed as model law. The § 3.3
-  sentence "its mParent-Catalog entry, its existence cell" was the same over-reach already in the
+  sentence "its MParent-Catalog entry, its existence cell" was the same over-reach already in the
   text, and the fix is to soften it, not to define what it presumed. Conductor: RETRACTED. The
-  model-native residue is one clause: an mKey of a primary mScheme names the mReferent its store
-  holds under it, or none, and is a level of a mFullyQualifiedKey in both cases. Whether a name
-  mScheme yields such an mKey for a name the store does not hold is the scheme owner's arm, which
+  model-native residue is one clause: an MKey of a primary MScheme names the MReferent its store
+  holds under it, or none, and is a level of a MFullyQualifiedKey in both cases. Whether a name
+  MScheme yields such an MKey for a name the store does not hold is the scheme owner's arm, which
   `311:2.1-yields-into-another-scheme` already leaves to them.
 - **[HUMAN]**, playing defensively and not married to it: the change must support both shapes.
   Sparse, the model before today: a sort that lists referents' primary keys directly, with the
@@ -1070,7 +1070,7 @@ retraction as applied.
   shape-neutral.
 - Observation, not this item's: rich buys sibling precision only while the directory's own cells
   (its mtime, its listing) stay out of the creation's writeset. A cell and an entry under one
-  mParent are two mSorts that separate nowhere today, so a creation that honestly names the
+  MParent are two MSorts that separate nowhere today, so a creation that honestly names the
   directory's mtime touches every routing member under that directory. That is
   `hold-cells-sparing-or-freshness` wearing the filesystem.
 
@@ -1078,14 +1078,14 @@ Applied, `4fa4625d`, over `dfc1f950`:
 
 - `311:1.6-parent-one-per-key`: the § 21 paragraph and its footer example are gone.
 - `311:2.2-primary-of-and-identified-in` gains two sentences after "P's `resolve()` is the
-  identity on the mKey": an mKey of P names the mReferent that K's mParent-Store holds under it,
-  or none, and is a level of a mFullyQualifiedKey in both cases.
-- `311:3.3-invalidation-three-mutator-species`: creation, deletion, and rename of an mKey are
-  routing writes that change what the mKey reaches; the mKeys they write are the verb author's
+  identity on the MKey": an MKey of P names the MReferent that K's MParent-Store holds under it,
+  or none, and is a level of a MFullyQualifiedKey in both cases.
+- `311:3.3-invalidation-three-mutator-species`: creation, deletion, and rename of an MKey are
+  routing writes that change what the MKey reaches; the MKeys they write are the verb author's
   at-most claim; a writeset that omits them is the ordinary at-most omission knife.
 - The `30T` per-aspect entry of `311:4.2-supersessions-pending-in-prior-documents`: contents is a
-  fact about the inode the path mScheme yields; existence is a fact about the directory, or about
-  an mReferent keyed by name in it where the describer mints one; creation, deletion, and rename
+  fact about the inode the path MScheme yields; existence is a fact about the directory, or about
+  an MReferent keyed by name in it where the describer mints one; creation, deletion, and rename
   write the one the describer named.
 - The § 2.1 footer line from `dfc1f950` stays, the one footer entry the human allowed.
 - Linter: the three snippets carry zero violations; the whole file keeps its one pre-existing
@@ -1116,7 +1116,7 @@ edits they licensed, the last of this context.
   revert, since it adds a clause.
 - `attack-clause-overgeneralizes-its-use` — the § 2.2 clause said any primary key names its
   referent or none. A generated key (an inode number, a UID) never names none from a book; a
-  `:root` shape has no mParent-Store, so "holds under it" was undefined. Wording, not soundness.
+  `:root` shape has no MParent-Store, so "holds under it" was undefined. Wording, not soundness.
 - `attack-nominal-primaries-widen-the-horizon` — the witness compares keys, so a name destroyed
   and recreated between probe and apply looks unchanged where an inode number would not
   (`311:1.10-vantage-route-placeholder-witness` already puts recycled keys on the horizon).
@@ -1131,14 +1131,14 @@ edits they licensed, the last of this context.
   their parents.
 - `attack-t2-is-answered-and-nobody-said-so` — the natural-key question of § 19 closes in the
   direction opposite to the one feared: natural keys never carry identity; a describer who wants
-  identity by name mints an mSort whose primary key is that name in the store that admits it,
-  under warrants they declare; a secondary mScheme's warrants only let the engine skip a lookup
+  identity by name mints an MSort whose primary key is that name in the store that admits it,
+  under warrants they declare; a secondary MScheme's warrants only let the engine skip a lookup
   for equal inputs (`311:2.1-yields-into-another-scheme`). **[TYPED]** ack; for the ledger and
   the routes-not-taken register, not for 311's normative text.
-- `attack-the-footer-line-is-a-rule-in-disguise` — the § 2.1 footer's "A bind names the mScheme
-  whose mReferent the tool acts on" read as a rule where rules do not bind. **[TYPED]**: normative
+- `attack-the-footer-line-is-a-rule-in-disguise` — the § 2.1 footer's "A bind names the MScheme
+  whose MReferent the tool acts on" read as a rule where rules do not bind. **[TYPED]**: normative
   only if it forces correct behaviour that would be incorrect without it; the conductor decides.
-  Decided: it forces nothing the model does not already force (a bind names an mScheme, and the
+  Decided: it forces nothing the model does not already force (a bind names an MScheme, and the
   scheme yields per shape into a sort), so it stays non-normative and reads as an example.
 - Survived: mixed shapes are safe (a sparse describer's coarse absence against a rich describer's
   entry write meets at the directory in the region test and collides; two strangers' entry sorts
@@ -1151,13 +1151,13 @@ edits they licensed, the last of this context.
 
 Applied, `7a63bae6`:
 
-- `311:2.2-primary-of-and-identified-in`: the clause now reads that an mKey of P names the
-  mReferent K's mParent-Store holds under it, or none; for a `:root` shape the world is the
-  store; the mKey is a level in both cases; a store that generates its mKeys at creation holds an
-  mReferent under every mKey a book can name; a store that admits mKeys as names may hold none
-  under an mKey a book names.
+- `311:2.2-primary-of-and-identified-in`: the clause now reads that an MKey of P names the
+  MReferent K's MParent-Store holds under it, or none; for a `:root` shape the world is the
+  store; the MKey is a level in both cases; a store that generates its MKeys at creation holds an
+  MReferent under every MKey a book can name; a store that admits MKeys as names may hold none
+  under an MKey a book names.
 - The § 2.1 footer's second sentence is descriptive: a tool that removes the entry binds under
-  the first mScheme, and a tool that changes the file binds under the second.
+  the first MScheme, and a tool that changes the file binds under the second.
 - `notes/311u` gains `refuted-identity-by-natural-key` (shape, case, survivor as above),
   committed with this ledger.
 - Linter: 311 keeps its one pre-existing hard flag and its total of sixty-five; `311u` keeps
@@ -1199,17 +1199,17 @@ acked unless the line says so. Nothing applied to 311.
   item-by-item comparison of named things is question 1 (`compare()`,
   `311:3.2-compare-one-chokepoint-four-answers`); the indirect path (a loop filesystem's image
   and `dd` over it) is why each link's describer lists that link's outside dependencies and
-  every fact beneath inherits them, the chain being the mFullyQualifiedKey; completeness needs
+  every fact beneath inherits them, the chain being the MFullyQualifiedKey; completeness needs
   an explicit "nothing else" per list, as Bazel refuses to cache an action with an undeclared
   input; a link with no list reads either "anything" (safe, lossy) or "nothing extra" (the
   forgotten image spares; unsafe).
 - **[TYPED]** 2026-09-26, step 5: missing falls toward ⊤, as usual, no exception; gradual
   enhancement; silence licenses nothing.
-- The hole, as put: read literally, the top of every chain in today's text is the mRoute, which
+- The hole, as put: read literally, the top of every chain in today's text is the MRoute, which
   nobody describes, so every fact inherits "anything" and no fact survives any write; § 2.5's
   "closed only when every declared set is closed" hints at the other reading; a builder would
   pick one.
-- **[TYPED]** 2026-09-26, terminology: the mRoute is the vantage-root and is not glossed as
+- **[TYPED]** 2026-09-26, terminology: the MRoute is the vantage-root and is not glossed as
   "the machine". A boot is not a machine. Views, NFS, and tunnels make the gloss dangerously
   wrong. Conductor: accepted. The vantage-root is where the probe stood, a route holding no
   state, which is why its list is ⊤ and nothing hung on it spares.
@@ -1258,7 +1258,7 @@ best-effort authorship; invent nothing.
   misnomer; under the forward reading they are `depends-on` edges consumed from the read end.
   The honest word is directional and is 312's.
 - `fnd-the-text-is-one-hop` (+SURE): `311:2.5-may-read-the-readset` joins "the may-read
-  entries declared by every member of the mKey's mFullyQualifiedKey" and stops; an entry
+  entries declared by every member of the MKey's MFullyQualifiedKey" and stops; an entry
   brings none of its own chain's dependencies. Counterexample, every describer honest, no lag:
   `/srv/disk1.img` on the root filesystem backs loop0 at `/mnt/outer`; `/mnt/outer/disk2.img`
   backs loop1 at `/mnt/inner`; `dd if=./restore.img of=/srv/disk1.img` above a converged
@@ -1310,7 +1310,7 @@ gradual enhancement later.
   one instance against a file write on the other walks inode, filesystem, volume, and answers
   SAME or DISJOINT correctly with neither host in the chain. This is the correct answer to
   `a-host-is-not-a-partition` that the sittings wanted for NFS and could not reach while a
-  filesystem was "in the mRoute". The volume's list closes empty (writes from attached
+  filesystem was "in the MRoute". The volume's list closes empty (writes from attached
   instances are inside it; detach and delete are lifecycle writes); the instance's likewise,
   its disks' parents being volumes.
 - The self-hosted twin, walked: a guest's `/dev/vda` is `x.qcow2` on the host. The
@@ -1318,7 +1318,7 @@ gradual enhancement later.
   the guest's disk depends on the host file. A host `dd of=x.qcow2` collides a guest file fact
   in three hops. `fnd-cross-world-may-read-entries-are-needed` (+SURE the cases need it;
   ~SUSPECT nothing in 311 forbids it): 311 does not say whether a may-read entry may be keyed
-  in another mWorld. Under referential agnosticism an entry is a key, a key carries its world,
+  in another MWorld. Under referential agnosticism an entry is a key, a key carries its world,
   and `compare()` answers as § 3.2 does. One sentence owed either way.
 - Clone horizons: `machine-id` (cloned images) and `boot_id` (a restored snapshot boots twice)
   fail `:root`; the stdlib names the clone as the horizon or scopes the shape smaller, per
@@ -1371,7 +1371,7 @@ litmus) and its wording owed. Candidate edits, put in chat for the human's word,
 - `edit-undeclared-set-is-top-at-every-member` (`311:2.5-may-read-the-readset`): acked in
   substance.
 - `edit-vantage-root-list-is-top-with-reason` (§ 2.5 or `311:1.10-vantage-route-placeholder-witness`):
-  the mRoute is an address and holds no mState, so it has no list and contributes ⊤; a chain
+  the MRoute is an address and holds no MState, so it has no list and contributes ⊤; a chain
   ending there yields no survival.
 - `edit-read-set-closes-transitively` (§ 2.5; § 2.6 question 2): a strengthening; or the test
   restated as forward propagation.
@@ -1394,18 +1394,18 @@ the `311u` entries first, in the backward form, minimal; then the forward rewrit
 
 - `c5e8f434`, backward: `311:2.5-may-read-the-readset` (⊤ at every undeclared member; each
   entry adds its own chain's entries until no entry joins; closed only when every set that
-  joined is closed; an entry may name an mKey of another mWorld);
-  `311:1.10-vantage-route-placeholder-witness` (the mRoute is an address, holds no mState,
+  joined is closed; an entry may name an MKey of another MWorld);
+  `311:1.10-vantage-route-placeholder-witness` (the MRoute is an address, holds no MState,
   declares no set); `311u` gains `refuted-vantage-root-as-a-machine`,
   `refuted-read-side-shared-level-exclusion`, `refuted-one-hop-dependency-inheritance`.
 - The forward rewrite, this commit: `311:2.6-may-write-the-writeset` defines the writeset as
   the least set closed under four rules (the at-most entries; the entailment, fired by a write
-  to an mKey of K or beneath one; everything beneath a whole-marked member; every mKey k of M
-  whose declared may-read entry compares other than DISJOINT with a member, and every mKey of an
-  mSort with no closed set), with ⊤ for an unclosed at-most set or unfinished entailment, the
+  to an MKey of K or beneath one; everything beneath a whole-marked member; every MKey k of M
+  whose declared may-read entry compares other than DISJOINT with a member, and every MKey of an
+  MSort with no closed set), with ⊤ for an unclosed at-most set or unfinished entailment, the
   write-side exclusion kept pair-relative, and one pairwise sparing test over writeset and
   readset. `311:2.5-may-read-the-readset`: the readset is the marked reads only; may-read
-  entries feed rule 4; an open set puts every mKey of the mSort in every writeset; the mRoute
+  entries feed rule 4; an open set puts every MKey of the MSort in every writeset; the MRoute
   declares none. § 1.9, § 1.10, § 3.3, § 3.5, and two § 5 lines follow. `:may-read` keeps its
   name; the directional word is 312's. No object, relation, or answer changed.
 - Linter: 311 keeps its one pre-existing hard flag after both rounds; `311u` zero hard.
@@ -1431,8 +1431,8 @@ sorts the candidate edits by what each does to the model.
   `1a5fe87a`, ⊤ back on the read side (`312ch:srv-injection-sentences-collide-every-fact`,
   three views independently; the ledger's own § 28 intended answer-equivalence with the
   backward form, which the three injection sentences broke): `311:2.5-may-read-the-readset`
-  states when a readset member is ⊤ (its mSort, an mSort on its chain, or the same of an entry
-  rule 4 reaches it through, transitively, has no closed set; or the chain ends at the mRoute);
+  states when a readset member is ⊤ (its MSort, an MSort on its chain, or the same of an entry
+  rule 4 reaches it through, transitively, has no closed set; or the chain ends at the MRoute);
   rule 4's last sentence and § 1.10's "in every line's writeset" are gone; a body that marks no
   read has readset ⊤ (`312ch:srv-unmarked-verdict-readset-closed-empty`, the human's § 12
   principle applied). `55697925`, the stand-in keeps P
@@ -1444,7 +1444,7 @@ sorts the candidate edits by what each does to the model.
   `312ch:srv-danger-none-against-the-closing-act`). `c20bbf4d`, the generated-key sentence is
   bounded to keys the store generated and still holds (`312ch:srv-generated-key-totality`).
   `47ca5ead`, § 1.10 attributes inherited instances to the sentinel under the flag, matching
-  § 1.5, and § 3.4's at-most claim names the mRoute. `64feb9f0`, two § 4.2 entries and two § 5
+  § 1.5, and § 3.4's at-most claim names the MRoute. `64feb9f0`, two § 4.2 entries and two § 5
   cells brought to the current text.
 - Held for the human, from the record: `hold-exclusion-keyed-on-the-container` (`312ch` items 1
   and § 2.1's two-level leak: the write-side exclusion keys on the entailing container and so
@@ -1452,7 +1452,7 @@ sorts the candidate edits by what each does to the model.
   fixes a wrong spare and an over-collision, but the exclusion is a cut the human defended, § 24,
   § 25); `hold-cross-world-entry-cost` (`312ch` item 6); `hold-within-sort-finished-record-gloss`
   (`312ch` item 8: the text demands the record for every written shape, the `30U` register entry
-  says "across mSorts"; which is meant was not discussed); the exclusion's construction-against-
+  says "across MSorts"; which is meant was not discussed); the exclusion's construction-against-
   test clause (`312ch` item 11, safe either way, entangled with the first hold); two register
   entries on `spike/CLAUDE.md` rules the conductor did not re-read (`rul-flag-is-razor-residue`,
   `pure-predicate-carry`); USER_STORY stage 5 and 7 register lines, which pre-empt

@@ -17,7 +17,7 @@ unreachable, so the exercise's drifted-day survival of lines 7 and 8 does not fo
 text, and it demands `:aliases-nothing-else` of the two legs' tops where `:guarantees-unique-name` alone
 separates them, so two processes in one namespace can never be told apart. That is my error and
 the first thing to repair. Three further threads have two-lineage support and re-walk cleanly:
-the mCell fold of §1.9 dropped the per-cell store, so `enabled` and `active` cannot differ across
+the MCell fold of §1.9 dropped the per-cell store, so `enabled` and `active` cannot differ across
 a reboot as the section claims and any two properties of one bearer always collide under §2.4
 and §2.5; `:aliases-nothing-else` is declared by the child where the parent store's owner holds the
 knowledge; and §1.10's engine vouch is stated for every floor spelling while justified only for
@@ -28,18 +28,18 @@ text-level, or did not survive re-walking. Nothing here reaches 312.
 
 ### 1. `thr-disjoint-bullet-as-written-is-defective` — 311l (b),(c) · 311m §1.2 · 311n 3 · 311o 4; +SURE
 
-The text (§3.2, second bullet): a leg is "each chain's mKeys strictly below A", which includes
-the leaf, so a leg is empty only when the mKey is A itself, and the preceding sentence already
+The text (§3.2, second bullet): a leg is "each chain's MKeys strictly below A", which includes
+the leaf, so a leg is empty only when the MKey is A itself, and the preceding sentence already
 sends that case to UNKNOWN. The disjunct is dead. Walk the exercise's line 5 against line 8: A
 is the boot; legs `[B, net/ipv4/ip_forward]` and `[kernel/pid_max]`; tops an `sm.NetnsInode`
-and an `sm.ProcSysPath`, different mSchemes; UNKNOWN. So the exercise's
+and an `sm.ProcSysPath`, different MSchemes; UNKNOWN. So the exercise's
 `obs-a-leg-separates-by-aliases-nothing-else`, its drifted-day render, and `311q` §4's "recovers survival"
 do not follow from the committed rule. Cause: the argument in chat used "nothing below A on G's
 chain" to mean G's strict ancestors; the text wrote "leg" to include the leaf.
 
 What the argument actually needs, stated: F's shape carries `:aliases-nothing-else`, so every route to
-F's referent enters F's mParent; G's mParent is A, so G's route enters no store strictly below A;
-F's mParent is strictly below A and is not A, because a store is never among its own contents;
+F's referent enters F's MParent; G's MParent is A, so G's route enters no store strictly below A;
+F's MParent is strictly below A and is not A, because a store is never among its own contents;
 hence F and G are two referents. That premise, the well-foundedness of `:identified-in`, is
 what the walk has always assumed and the text never states; 311l (c) is right that the clause "a
 key against its own container reads UNKNOWN" reads as a refusal of it. The two are compatible:
@@ -48,7 +48,7 @@ inside it, and that is interference, not identity), while the structural premise
 walk uses. The text should say both.
 
 Second defect, three passes (311l (a), 311m §1.2, 311n 3): the tops are over-demanded. Two
-children of one shared A, of one mScheme carrying `:guarantees-unique-name`, with differing
+children of one shared A, of one MScheme carrying `:guarantees-unique-name`, with differing
 values, are two referents by that warrant alone; `:aliases-nothing-else` does work only strictly below a
 top, where it is what keeps guest pid 1 and host pid 4821 from reading DISJOINT (§4.2). The
 demand bites exactly where a leaf shape honestly cannot carry `:aliases-nothing-else`: two pids in one
@@ -56,10 +56,10 @@ namespace; two files in a container's overlay root. Verified by the route argume
 `:aliases-nothing-else` is never used.
 
 Proposed second bullet, for the human: "Otherwise, with each leg's top the child of A on its
-side: DISJOINT iff either (a) the two tops are mKeys of one mScheme, each carrying
-`:guarantees-unique-name`, with differing values, and every mKey strictly below its top, on both
-legs, carries `:aliases-nothing-else` for its shape; or (b) one mKey's mParent is A, the other's is not,
-and the other mKey's shape carries `:aliases-nothing-else`. Else UNKNOWN. A store is never among its own
+side: DISJOINT iff either (a) the two tops are MKeys of one MScheme, each carrying
+`:guarantees-unique-name`, with differing values, and every MKey strictly below its top, on both
+legs, carries `:aliases-nothing-else` for its shape; or (b) one MKey's MParent is A, the other's is not,
+and the other MKey's shape carries `:aliases-nothing-else`. Else UNKNOWN. A store is never among its own
 contents, which (b) rests on; a key against its own container still reads UNKNOWN, since a write
 to a container must collide with everything inside it." The exercise's render and `311q` §4
 stand only once this lands, and the exercise carries a second defect that lands with it (§3,
@@ -67,7 +67,7 @@ stand only once this lands, and the exercise carries a second defect that lands 
 
 ### 2. `thr-cell-fold-lost-the-per-cell-store` — 311m §1.3 · 311n 2; +SURE
 
-§1.9 makes a mCell an mSort whose primary mScheme is `:identified-in` its bearer, with a
+§1.9 makes a MCell an MSort whose primary MScheme is `:identified-in` its bearer, with a
 singleton key, and in the same paragraph says `enabled` and `active` have chains that "differ
 exactly where one survives a reboot and the other does not, with no declaration about reboots by
 anyone". One bearer has one chain; two cells whose identity is that chain plus a property differ
@@ -79,7 +79,7 @@ for the bearer: the filesystem, and a post-reboot `systemctl start` elides on a 
 and `enabled` is re-probed for nothing. `312b` §9's own sketch (`sm.UnitEnablement` under
 `sm.UnitFile:nginx`) quietly uses two bearers, which is 311's shape under another name.
 
-Repair, minimal and agreed by both passes: a mCell's primary mScheme is `:identified-in` the
+Repair, minimal and agreed by both passes: a MCell's primary MScheme is `:identified-in` the
 store its value lives in, and the bearer supplies only the natural key the cell borrows for its
 own. That is 311's aspect-sort restored inside the two-species vocabulary: still no aspect
 species, still one sort per cell, but per-cell stores. §4.2's refutation of the aspect species
@@ -87,8 +87,8 @@ stands; what it must not refute is the per-cell store.
 
 ### 3. `thr-identifying-store-makes-siblings-collide` — 311l §1 · 311n 4; +SURE on the text
 
-§2.4 makes the identifying store one of a sort's mPlacements; §2.5 lets a finished definition
-spare an KNOWN_UNSPOKEN pair only where no mPlacements overlap. Two cells of one bearer (`mode` and
+§2.4 makes the identifying store one of a sort's MPlacements; §2.5 lets a finished definition
+spare an KNOWN_UNSPOKEN pair only where no MPlacements overlap. Two cells of one bearer (`mode` and
 `contents` of one file; `enabled` and `active` of one unit) are different sorts under §1.9, so
 KNOWN_UNSPOKEN, and share the bearer as identifying placement: overlap, collide. `chmod` walls every
 contents fact of the same file; `systemctl enable` walls `is-active`; and nobody has a sentence
@@ -100,7 +100,7 @@ anyway; the exclusion still matters for cells that share a store.
 ### 4. `thr-aliases-nothing-else-is-the-parents-knowledge` — 311l §3 · 311m §1.2; `312b` §7 found it against 311; +SURE on the seat, ~SUSPECT on frequency
 
 §2.2 has the child's primary owner declare `:aliases-nothing-else` per shape of the child's bytes, and says
-five sentences later that the child "never learns the mParent's types". An inode number carries
+five sentences later that the child "never learns the MParent's types". An inode number carries
 nothing about ext4, overlay-lower, nfs, or sshfs. Tessa must declare blanket, which is false on
 every docker host (an overlay lower inode is reachable through the merged view), or not at all,
 which forfeits every file-versus-file survival and kills stage 5 for the commonest line in every
@@ -135,8 +135,8 @@ not adopted here.
 
 ### 6. `thr-floor-vouch-broader-than-its-justification` — 311o 1 · 311n 5 · 311l `amb-route-claim`; two lineages; +SURE
 
-§1.10 vouches that "two same-spelled mKeys of one mScheme in one unwalled span are one
-mPlaceholder, because one shell process resolves one cwd-qualified mKey in one mount table", and
+§1.10 vouches that "two same-spelled MKeys of one MScheme in one unwalled span are one
+MPlaceholder, because one shell process resolves one cwd-qualified MKey in one mount table", and
 §3.2 reads one placeholder as SAME with no warrant. The justification is about paths and command
 words; a floor key whose lookup lives inside a binary (a TCP endpoint behind a local proxy; a
 round-robin name; a tool's store chosen by `$KUBECONFIG`) is resolved by nothing the shell holds.
@@ -152,7 +152,7 @@ Cost: one deduplicated probe at steady state, which the exercise never valued. W
 
 ### 7. `thr-parentless-warrants-and-the-sentinel-are-open-world-claims` — 311m §1.4 · 311n 6; two lineages; ~SUSPECT on how the route inherits
 
-§1.10 says the mRoute is never vouched across a transit; the exercise's walk said "the boot and
+§1.10 says the MRoute is never vouched across a transit; the exercise's walk said "the boot and
 the route inherited through Nathan's sentinel". If keys minted inside a wrapper share the outer
 route, a warrant on a parentless shape (311m's crontab: `guarantees-unique-referent` on a
 singleton key) makes `sudo -u deploy crontab …` and `crontab …` SAME across sudo: a true local
@@ -169,7 +169,7 @@ stdlib sort rather than minting beside it.
 
 - `txt-supply-modes-vestigial` (311l, 311m): §2.1 still enumerates FIXED, SITE, AMBIENT, COMPUTED
   for the catalog while the store is "any seat"; align.
-- `txt-two-roots-ambiguous` (311l): "two mRoots" should read "mRoots of two shapes"; two keys of
+- `txt-two-roots-ambiguous` (311l): "two MRoots" should read "MRoots of two shapes"; two keys of
   one root shape compare by `:guarantees-unique-name`.
 - `txt-warrants-span-scoped` (311l): read both warrants as holding within an unwalled span absent
   a perishing write, so Simon can warrant nsfs inodes honestly and a bind mount reads SAME.
@@ -179,18 +179,18 @@ stdlib sort rather than minting beside it.
   file resolution below it under §2.8's flat default.
 - `txt-ext4-in-boot-and-in-route` (311m): §2.2's two ext4 examples disagree; pick one.
 - `txt-same-then-disjoint-attribution` (311m): §3.5's survival attribution must name the
-  mCorrespondence when SAME-then-DISJOINT was used.
+  MCorrespondence when SAME-then-DISJOINT was used.
 - `txt-placement-may-need-a-read` (311m): directory members as placements need a read.
 - `txt-indexical-clause` (311l): §2.8's sentence reads as a mechanism; one sentence pointing at
   composition by yield closes it.
 
 ## § 2-applied-to-311j
 
-One deletion, §3.5: "Two mSchemes of one mSort that resolve one string, in one mParent, from one
-mVantage, to two different mKey-Primaries, where the primary mScheme's shape carries
+One deletion, §3.5: "Two MSchemes of one MSort that resolve one string, in one MParent, from one
+MVantage, to two different MKey-Primaries, where the primary MScheme's shape carries
 `:guarantees-unique-referent`: at most one is right, so both are withheld and narrated." Raised by
-311n 1 and 311o 3; verified: an mKey is a value plus its mScheme plus its mParent (§1.4), so one
-string under two mSchemes is two questions (`sudo -u 1000` against `sudo -u '#1000'`; a branch
+311n 1 and 311o 3; verified: an MKey is a value plus its MScheme plus its MParent (§1.4), so one
+string under two MSchemes is two questions (`sudo -u 1000` against `sudo -u '#1000'`; a branch
 and a tag both named `release`), and §2.2 already forbids reading unequal tokens as contradiction
 without `:guarantees-unique-name`, which the sentence did not even cite. Its failure direction
 was refusal plus false attribution of two correct authors, the worst aid failure
@@ -215,7 +215,7 @@ was refusal plus false attribution of two correct authors, the worst aid failure
 - Attacks that held, listed once by the reports and not re-walked: bind mounts and the netns
   `resolv.conf` overlay; hardlinks; recreate-under-a-name; a floor key through any wrapper;
   cross-route NFS; nested pids under 311j's rule; descriptors outliving path replacement; base
-  and overlay as a mCompositeSort.
+  and overlay as a MCompositeSort.
 
 ## § 4-what-this-redirects
 

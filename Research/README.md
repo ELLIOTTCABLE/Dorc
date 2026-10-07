@@ -305,8 +305,8 @@ the license-contamination map. Cross-references are `docID:slug`.
   the epistemic and composition gaps). These are exploratory proposals and reviews, not
   adopted direction. Then the design phase proper: **`notes/312a`** (the corpus import,
   frozen) · **`notes/312b`** (the epistemics-and-assignment sittings ledger; records in
-  `312b-exercises/`) · **`notes/311`** (THE identity-and-relation model: two species, mSort
-  and mScheme; ahistorical; nothing ruled; its § 3.7 names what it supersedes; the ledgers and
+  `312b-exercises/`) · **`notes/311`** (THE identity-and-relation model: two species, MSort
+  and MScheme; ahistorical; nothing ruled; its § 3.7 names what it supersedes; the ledgers and
   reviews around it cite it as `311j`, the id it carried until 2026-09-19, and any `311`
   section they cite beside that is a first draft kept only in git) · **`notes/311q`** (the
   attack-and-firming ledger over it; successors append at its tail) · the identity

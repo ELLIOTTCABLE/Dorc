@@ -22,7 +22,7 @@
   no meaningful book and still deserve rigor.
 - Vocabulary, the panels' own: book, rule (a slugged law restated per tier), walk (one tier's
   derivation of a verdict for a book), falsifier. Badges attach to rules; books never graduate,
-  they accrue renderers. Engine nouns (mSort, mScheme) never appear in a book.
+  they accrue renderers. Engine nouns (MSort, MScheme) never appear in a book.
 - The ratchet's content is the verdict-set over the book corpus, monotone except by human
   retirement; encodings churn beneath it. Seed corpus: `Research/GOTCHAS.md` (64), `311u`'s
   cases, the panels' witnesses. **[HUMAN]** hard ack on negative verification and mutation
@@ -86,7 +86,7 @@ Twelve elements, each chosen to stress a different mechanism; names from the tre
 read. Forward from design: `311:3.2` two-tops (the full chain, x3 fingerprinting; three panel
 books exist); `311:3.5` committee law (attributed, with the checkable fragment that every
 verdict's attribution set is nonempty and names only declared speakers); `311:1.1` "the engine
-never holds an mReferent" with `30T:inv-no-world-facts-in-engine` (structural; fenced;
+never holds an MReferent" with `30T:inv-no-world-facts-in-engine` (structural; fenced;
 human-acked fences only); `311:3.3` lifecycle mutation (a two-phase book with a reboot; the
 temporal module). Backward from code: the Kani harness
 `the_consumer_map_is_exhaustive_and_exclusive` (pins a consumer map `311:4.2` supersedes;
@@ -391,7 +391,7 @@ they sit alongside the Alloy spec rather than only as e2e.
   prose, opinions, suspicions, or hints, in text or smuggled into JSON. Lean on the user
   invoking Alloy directly wherever possible. Fancy reporting nacked for now; listed as later.
 - **[HUMAN]** a class is an assay-specific opaque category of strings: arbitrary, never parsed,
-  never meaningful, not a scheme; its correspondence with mScheme is accidental. It exists so two
+  never meaningful, not a scheme; its correspondence with MScheme is accidental. It exists so two
   claims can agree about two different literals as one kind of text; where they can share the
   literal, they just do. Braced words are join nodes, not quantifiers (the prior conductor
   doubted a book forall exists); a "for every inhabitant seen so far" check may come later.

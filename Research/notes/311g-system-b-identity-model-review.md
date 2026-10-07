@@ -18,7 +18,7 @@ Its weakest foundations are unscoped terminal measurements, unconditional separa
 through storage, and the suggestion that identifying an object makes observation
 context disposable. Its largest missing composition feature is a place for another
 knowledgeable speaker to contribute an alternative identification or correspondence.
-Several apparent simplifications leave substantive questions inside “mReferent,”
+Several apparent simplifications leave substantive questions inside “MReferent,”
 “store,” and “measured token.” These are not objections based on implementation churn.
 
 ## §1 — `issue-measured-tokens-escape-their-primary-store`
@@ -26,9 +26,9 @@ Several apparent simplifications leave substantive questions inside “mReferent
 **Assessment: a strong equality contract is missing or insufficiently distinguished
 from ordinary local canonicalization.**
 
-`311f` B2 makes equal `Measured` mTokens establish sameness unconditionally. B3 permits
+`311f` B2 makes equal `Measured` MTokens establish sameness unconditionally. B3 permits
 an identity member to return answers ranging from a canonical package name to
-`fsid:inode`. Those answers do not have uniform comparison mKey-PrimaryStore:
+`fsid:inode`. Those answers do not have uniform comparison MKey-PrimaryStore:
 
 - a package name is meaningful within a package database;
 - an inode number is meaningful within a filesystem;
@@ -36,21 +36,21 @@ an identity member to return answers ranging from a canonical package name to
 - some apparently global identifiers are duplicated by cloning.
 
 `Located` is the right representational ingredient for scoped answers, but B3 does not
-clearly distinguish “I obtained a local canonical name” from “I obtained a mToken
+clearly distinguish “I obtained a local canonical name” from “I obtained a MToken
 sufficient to terminate the chain.” B5's direct `Measured(File, fsid:inode)` is exposed
 to precisely that distinction.
 
-B4 also misidentifies the cloneable-mToken failure direction. Different machines with
+B4 also misidentifies the cloneable-MToken failure direction. Different machines with
 the same cloned machine-id threaten SAME. The `transparent` grade controls whether
-DIFFERENT mTokens establish separation; it cannot protect the unconditional equality
-rule. Wrong separation arises when one mReferent can produce different mTokens, not
-from equal mTokens on distinct clones.
+DIFFERENT MTokens establish separation; it cannot protect the unconditional equality
+rule. Wrong separation arises when one MReferent can produce different MTokens, not
+from equal MTokens on distinct clones.
 
-The generic File author should not have to know the mKey-PrimaryStore of every filesystem's
+The generic File author should not have to know the MKey-PrimaryStore of every filesystem's
 identifiers. The filesystem/provider author often knows better. Preserve that
-contribution explicitly rather than hide it in a supposedly terminal mToken. This is
-not a claim that trustworthy terminal mTokens cannot exist; it is a requirement to
-state the strength and mKey-PrimaryStore of the contract admitting them.
+contribution explicitly rather than hide it in a supposedly terminal MToken. This is
+not a claim that trustworthy terminal MTokens cannot exist; it is a requirement to
+state the strength and MKey-PrimaryStore of the contract admitting them.
 
 ## §2 — `issue-storage-is-not-necessarily-exclusive`
 
@@ -58,10 +58,10 @@ state the strength and mKey-PrimaryStore of the contract admitting them.
 separation needs a stronger relation than ordinary physical storage.**
 
 B0's “a row cannot live in two database files” is not a general foundation for B2's
-`stores disjoint ⇒ mReferents disjoint`. SQLite's current database state can span its
+`stores disjoint ⇒ MReferents disjoint`. SQLite's current database state can span its
 main file and write-ahead log. A logical record can have several replicas. Overlay
 copy-up can change physical placement while an application retains one logical name.
-These examples concern potentially different choices of mReferent, and the model must
+These examples concern potentially different choices of MReferent, and the model must
 say which choice it requires rather than silently identify logical objects with
 physical occurrences.
 
@@ -86,7 +86,7 @@ unconditional interpretation of ordinary storage is.
 **Assessment: B2's dissolution of transport omits a necessary account of the full
 subject of an observation.**
 
-B2 says: “If two mSites' Refs `compare()` same, there is one mCell; whichever probe read it,
+B2 says: “If two MSites' Refs `compare()` same, there is one MCell; whichever probe read it,
 read it.” Consider `sudo -u alice test -w /shared/accounts.db` versus
 `sudo -u root test -w /shared/accounts.db`. Both address the same filesystem object;
 their answers can differ.
@@ -98,13 +98,13 @@ Listing additional physical stores does not obviously supply the missing qualifi
 
 Distinguish identity of the object from identity of the complete subject of the claim
 about it. These coincide for some claims, not all. Credentials, client-local caches,
-mSort-relative visibility, and authorization mechanisms can contribute without
+MSort-relative visibility, and authorization mechanisms can contribute without
 changing the object reached.
 
 This review does NOT propose a special privilege algebra. User-related inputs should
 use the same abstract machinery as other inputs. The concern is erasing contextual
 information before showing how all relevant inputs became part of the claim. If each
-mSort owner must recover every influence through `located_in`, responsibility may land
+MSort owner must recover every influence through `located_in`, responsibility may land
 on the wrong author: a file author cannot reasonably know every mechanism affecting
 a particular caller's access.
 
@@ -113,7 +113,7 @@ a particular caller's access.
 **Assessment: conservative value hole in the stated comparison rule, not unsafe
 elision.**
 
-B2 permits cross-mSort disjointness only if the total store chains share no
+B2 permits cross-MSort disjointness only if the total store chains share no
 same-or-unknown store pair. Consider:
 
 - Package nginx → package-status File → Filesystem F;
@@ -130,7 +130,7 @@ sufficiently precise level. Its region predicate might help, but B does not spec
 how that result satisfies or overrides the all-ancestor test.
 
 The terminal case also needs specification: “no further stores listed” must not
-vacuously prove two arbitrary terminal mSorts disjoint. This is a question for the
+vacuously prove two arbitrary terminal MSorts disjoint. This is a question for the
 formalized rule, not a claim about an implementation that does not yet exist.
 
 ## §5 — `issue-knowledge-can-live-outside-the-sort-owner`
@@ -143,20 +143,20 @@ oracle, executing inside the container, may lack the information or privileges t
 identify the outer process. The container manager's author can know the correspondence
 from its control interface.
 
-B assigns identity production to one mSort-owner member running in the denoted mWorld,
-and wrapper authorship to lending routing mKey-CatalogStores. Where can the container author
+B assigns identity production to one MSort-owner member running in the denoted MWorld,
+and wrapper authorship to lending routing MKey-CatalogStores. Where can the container author
 contribute the concrete correspondence between these two process names?
 
-The mKey-CatalogStore declaration alone does not provide it. Namespace disjointness cannot
+The MKey-CatalogStore declaration alone does not provide it. Namespace disjointness cannot
 separate the processes either: they are the same process seen through different PID
-mKey-CatalogStores. Requiring the Process owner to learn every container manager's semantics
+MKey-CatalogStores. Requiring the Process owner to learn every container manager's semantics
 would put the responsibility on the wrong speaker.
 
 The model could be extended, or explicit helper composition could carry this knowledge.
 As written, that contribution has no clear primitive or contract. This is not a proof
 that the knowledge is unrepresentable under every extension. It identifies a choice
 between losing available value and centralizing implementation-specific knowledge in
-the generic mSort owner—precisely the epistemic seam the review was asked to examine.
+the generic MSort owner—precisely the epistemic seam the review was asked to examine.
 
 ## §6 — `issue-alternative-identities-are-not-represented`
 
@@ -169,7 +169,7 @@ reconciling several descriptions of one subject.
 
 This matters when one provider supplies a stronger identifier and another only the
 ordinary enclosure, or both descriptions exist and corroborate or contradict one
-another. Choosing one representation loses information. Mixing untagged mToken schemes
+another. Choosing one representation loses information. Mixing untagged MToken schemes
 in the single identity member can be worse: two encodings of the same object could be
 mistaken for disjoint identifiers.
 
@@ -192,7 +192,7 @@ important cases naturally:
 
 The shorthand “chroot swaps the mount table” is technically imprecise: root directory,
 mount namespace, and other path-resolution inputs differ. That alone does not refute
-the abstract model; its arbitrary mSort mReferents could represent the corrected
+the abstract model; its arbitrary MSort MReferents could represent the corrected
 inputs. The findings above concern stronger issues than such mechanical shorthand.
 
 No claim here depends on preserving the current implementation or the conversation's

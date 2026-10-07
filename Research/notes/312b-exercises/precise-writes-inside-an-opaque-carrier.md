@@ -115,27 +115,27 @@ Use these ordinary objects, not new model species:
 
 | name in this example | ordinary 311 representation | meaning |
 | --- | --- | --- |
-| F | an mReferent reached by a file mKey | the carrier inode |
-| B | an mKey for a virtual document | the decoded `worker_ini` view, a catalog for locations |
-| P | an mKey-Primary identified in F | the carrier byte holding the `enabled` digit |
-| Q | another mKey-Primary identified in F | the carrier byte holding the `trace` digit |
-| L | a finite set of mKeys-Primary identified in F | the remaining bytes needed to recognize and locate the supported layout |
-| M, C | mKeys-Primary identified in F | the carrier's modification-time and change-time fields |
+| F | an MReferent reached by a file MKey | the carrier inode |
+| B | an MKey for a virtual document | the decoded `worker_ini` view, a catalog for locations |
+| P | an MKey-Primary identified in F | the carrier byte holding the `enabled` digit |
+| Q | another MKey-Primary identified in F | the carrier byte holding the `trace` digit |
+| L | a finite set of MKeys-Primary identified in F | the remaining bytes needed to recognize and locate the supported layout |
+| M, C | MKeys-Primary identified in F | the carrier's modification-time and change-time fields |
 
-Tessa exposes payload-byte positions and the relevant metadata fields in one primary mScheme,
-`sm.dorc.FilePartId`, over an ordinary mSort `sm.dorc.FilePart`. Its discriminated keys are
+Tessa exposes payload-byte positions and the relevant metadata fields in one primary MScheme,
+`sm.dorc.FilePartId`, over an ordinary MSort `sm.dorc.FilePart`. Its discriminated keys are
 opaque to Dorc. Its owner warrants their separation. A byte and a timestamp are not separated
 because the engine recognizes a number or a prefix.
 
-The mKeys P and Q name storage bytes, not logical boolean settings. In this admitted encoding,
-one decoded digit is one literal carrier byte. An mScheme named `org.inez.IniValueByte` denotes
-that location. It may yield through `org.jules.JsonStringByte` into Tessa's byte mScheme because
-all three names denote the same storage mReferent. This construction is not valid unchanged for
+The MKeys P and Q name storage bytes, not logical boolean settings. In this admitted encoding,
+one decoded digit is one literal carrier byte. An MScheme named `org.inez.IniValueByte` denotes
+that location. It may yield through `org.jules.JsonStringByte` into Tessa's byte MScheme because
+all three names denote the same storage MReferent. This construction is not valid unchanged for
 an escaped character, a derived value, or a value spanning several bytes. Those descriptions
 need multiple read/write entries or another ordinary aggregate description; they must not use
 `:yields` to assert false sameness.
 
-A logical setting can instead be its own virtual mSort whose declared may-read entries name
+A logical setting can instead be its own virtual MSort whose declared may-read entries name
 carrier bytes. That is another available description. It is not necessary for this bit-slot
 case, and this exercise introduces no new property, region, or range species.
 

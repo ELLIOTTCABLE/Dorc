@@ -106,10 +106,10 @@ docker__may_write() {                            # the verb's Writeset, per matc
 }
 ```
 
-The bare key is deep by ruling: it denotes the directory's mReferent and every mReferent whose
+The bare key is deep by ruling: it denotes the directory's MReferent and every MReferent whose
 identity chain or access path passes through it (`311` §2.8, the sentence folded 2026-09-19).
-That is safe and it is V: with nothing more said, the region collides with every mKey the path
-mScheme can yield in the mount namespace, and lines 4 and 5 of book A guard behind line 3. Under
+That is safe and it is V: with nothing more said, the region collides with every MKey the path
+MScheme can yield in the mount namespace, and lines 4 and 5 of book A guard behind line 3. Under
 `311` as written before this arc the floor was worse than V, not better: a directory inode
 compared with a file inode reads DISJOINT as two siblings in one filesystem, which says only
 that the file is not the directory, and line 4 was spared under every variant. The folded
@@ -121,7 +121,7 @@ sentence closed that first.
 Sparing line 4 needs "inode 8812 is not reachable under `/var/lib/docker`", and no two path
 strings settle that: variant (i) gives the inode a second name under the root, (ii) gives its
 directory one, (iii) moves the root's real place, and a rename moves an inode across the
-boundary with no write to it. The engine never reads an mKey's syntax (`311` §2.8), so it
+boundary with no write to it. The engine never reads an MKey's syntax (`311` §2.8), so it
 cannot even ask the string question; a lookup could, and would be wrong. `containment-by-path-
 prefix-lies`, exactly. Dead.
 
@@ -129,7 +129,7 @@ prefix-lies`, exactly. Dead.
 
 Identify files in their directories, so that the data root is an ancestor of everything
 beneath it and §3.2 answers. Dead on the model's own terms: a directory gives its own names to
-mReferents of its filesystem, and one inode may have entries in two directories, so a directory
+MReferents of its filesystem, and one inode may have entries in two directories, so a directory
 is the kind of store that can never honestly say `:aliases-nothing-else`, and a silent store
 separates nothing. A directory boundary has no arbiter. `/proc` carves cleanly because it is a
 mount, which the kernel enforces and labels in the mount table; that is also why variant (iii)
@@ -149,7 +149,7 @@ rule.
 
 Tessa's path lookup yields one entry and names the shorter path it was looked up in; the engine
 runs the same lookup on that path, and so on to the root. The splitting is `dirname` in
-Tessa's body. Each level emits, where it can measure it, that its mReferent is reachable by
+Tessa's body. Each level emits, where it can measure it, that its MReferent is reachable by
 exactly this one entry.
 
 ```sh
@@ -180,14 +180,14 @@ sm_DirEntry__resolve() {                         # $1 the entry name; $2 the dir
 ```
 
 Read what each line carries in `311`'s terms. `looked-up-in` is the routing parent, one per
-mKey, supplied by the mKey's own lookup (§1.6). `alias nothing-else` is the thing's-end
-statement at the routing level, per mKey, measured on the path that emitted it (§1.5); it is a
+MKey, supplied by the MKey's own lookup (§1.6). `alias nothing-else` is the thing's-end
+statement at the routing level, per MKey, measured on the path that emitted it (§1.5); it is a
 statement separate from Simon's per-shape `:guarantees-unique-name` on inodes, and how the two
 license together is not this arc's. A mountpoint entry yields into Simon's `sm.Mounted` instead
 of `sm.Inode`, one more level owned by another author; the record does not spell it.
 
-The region test (`311` §2.8), over the mTraversal these lookups produced, leaf first, for the
-data root D against a fact's mKey x: x's leaf SAME with D, SAME; any level SAME with D, D's
+The region test (`311` §2.8), over the MTraversal these lookups produced, leaf first, for the
+data root D against a fact's MKey x: x's leaf SAME with D, SAME; any level SAME with D, D's
 region covers x, UNKNOWN; every level DISJOINT with D and every level closed, DISJOINT; otherwise
 UNKNOWN. Only x's chain is walked; D needs no closure. On the plain host, book A line 4:
 
@@ -221,7 +221,7 @@ dmitri__same_mount_namespace() {                 # the bound names a path in THI
 ```
 
 A decline is the floor, V, and correct. A better arm would resolve the root inside dockerd's
-namespace (`nsenter --mount=/proc/$pid/ns/mnt`) and name the mKey there; that is Simon's
+namespace (`nsenter --mount=/proc/$pid/ns/mnt`) and name the MKey there; that is Simon's
 `sm.MountNamespace` as a catalog instance and is not spelled here.
 
 ## The repair, part three: a sort that places files
@@ -252,22 +252,22 @@ sm_Package__may_write_entailment() {             # the store's end, as write rea
 }
 ```
 
-What the engine does with it (`311` §2.8, the last paragraph): a bound names an mKey of
-`sm.Package` given whole; line 4's fact reads an mKey of `sm.File`; that mKey has no route of
-mSort `sm.Package`; `sm.Package` declares it places `sm.File`; so the engine invokes Pavel's
-lookup, in the probe pass, with every mKey it holds for that mReferent, the path Alice bound
+What the engine does with it (`311` §2.8, the last paragraph): a bound names an MKey of
+`sm.Package` given whole; line 4's fact reads an MKey of `sm.File`; that MKey has no route of
+MSort `sm.Package`; `sm.Package` declares it places `sm.File`; so the engine invokes Pavel's
+lookup, in the probe pass, with every MKey it holds for that MReferent, the path Alice bound
 and the inode it yielded, and the arms answer for the path. Line 4 gets `looked-up-in
 sm.Package:nginx`, SAME with the bound, covered, collide. Line 5 gets the closure alone,
-nothing meets the bound, survive. The route is a mTraversal for the region test and never the
-mKey's parent, which is the route Tessa's own lookup supplied. A write to dpkg's database, the
+nothing meets the bound, survive. The route is a MTraversal for the region test and never the
+MKey's parent, which is the route Tessa's own lookup supplied. A write to dpkg's database, the
 upgrade itself, perishes the route (§3.3), and the next probe re-resolves it.
 
 Three shapes were tried for this lookup before the one above and are recorded in `311` §4.2.
-A second mScheme of files that accepts `sm.Path` values and is looked up in the package: killed,
-because mSchemes stay singular and a file's package is a relation between two mReferents, not a
+A second MScheme of files that accepts `sm.Path` values and is looked up in the package: killed,
+because MSchemes stay singular and a file's package is a relation between two MReferents, not a
 spelling of the file. The downward list alone: sound, in the model already, and one `dpkg -L`
 per package named in a bound against every file fact, which a `dist-upgrade` makes expensive.
-The one kept is a body on the placing sort, invoked with the placed mKey's mValue, whose arms
+The one kept is a body on the placing sort, invoked with the placed MKey's MValue, whose arms
 carry the input's shape where every other body carries it.
 
 ## The write side: a container's own entailment
@@ -283,11 +283,11 @@ cp ./payload /mnt/img/payload              # 6  drifted, runs: writes inode 7 in
 Line 6's Writeset is {inode 7 in L}. The walk reads inode 7 and inode 100 as DISJOINT once loop0
 and sda are keyed in one block-device scheme and both filesystems honestly claim
 `:aliases-nothing-else`, and line 4 survives a write that changed the bytes it checks. The
-first repair tried was a rule over may-read, that a write to an mKey is a write to its
+first repair tried was a rule over may-read, that a write to an MKey is a write to its
 containers' may-read entries; it is in `311` §4.2 as killed, by a resolver cache that honestly
 may-reads `/etc/hosts` and whose entries a query populates without ever writing that file. The
 repair kept is `311` §2.5: a write inside a container is a write to that container, so the
-container's own may-write entailment joins the line's Writeset, below the level both mKeys
+container's own may-write entailment joins the line's Writeset, below the level both MKeys
 share. Simon says it of loop filesystems and nobody says it of caches:
 
 ```sh
@@ -342,7 +342,7 @@ per pair.
 - `obs-the-alias-may-sit-at-any-level` (+SURE) — the leaf's own closure cannot see a second
   parent of its directory; every level of the chain is asked, and only that level's lookup can
   answer for it.
-- `obs-the-engine-never-splits-a-path` (+SURE of the text) — the mTraversal is the chain
+- `obs-the-engine-never-splits-a-path` (+SURE of the text) — the MTraversal is the chain
   Tessa's lookups produced, one level per lookup, and the model has no sentence about key
   syntax left.
 - `obs-a-sort-places-what-nothing-is-named-through` (~SUSPECT of the shape; the siting acked

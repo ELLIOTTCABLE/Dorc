@@ -84,18 +84,18 @@ put to the human. The lock is to show what moved; every one is expected to move 
   with no header, which under `30Z:fw-normative-prose-is-a-headed-blockquote` is neither
   translation nor normative. The two paragraphs now follow their blocks. Commentary only.
 - `rep-finished-record-truth-ranges-over-the-engines-keys` — `true_FinishesEntailment` ranged
-  over `keysOfSort`, which holds primary and cell mKeys only, while `entailmentFinished` reads the
-  written mKey's own shape; a record for a natural shape (a file written by its path) was
-  therefore true in every world. The truth now ranges over every mKey whose `sortOfKey` and shape
+  over `keysOfSort`, which holds primary and cell MKeys only, while `entailmentFinished` reads the
+  written MKey's own shape; a record for a natural shape (a file written by its path) was
+  therefore true in every world. The truth now ranges over every MKey whose `sortOfKey` and shape
   are the record's, the keys the engine treats as finished. The premise of the sparing law
   strengthens, so no green can move red; a twin or a kill that rested on the vacuous truth could
   go unsat, and that would be a finding.
 - `rep-walk-reads-cell-sorts-as-sorts` — the walk's last step and `law_different_sorts_never_same`
-  tested `x.scheme != y.scheme`, so two cell mKeys of two cell mSorts read UNKNOWN where 311 says
-  mKeys of different mSorts read KNOWN_UNSPOKEN; the test is now over the mScheme or cell mSort an
-  mKey carries. Both are safe bottoms; no law's answer moves.
-- `rep-translations-say-what-the-fences-say` — § 1.4's definition of mKey-Primary now names a
-  cell's mKey, which `isPrimaryKey` includes; the truths of `:guarantees-unique-referent` and
+  tested `x.scheme != y.scheme`, so two cell MKeys of two cell MSorts read UNKNOWN where 311 says
+  MKeys of different MSorts read KNOWN_UNSPOKEN; the test is now over the MScheme or cell MSort an
+  MKey carries. Both are safe bottoms; no law's answer moves.
+- `rep-translations-say-what-the-fences-say` — § 1.4's definition of MKey-Primary now names a
+  cell's MKey, which `isPrimaryKey` includes; the truths of `:guarantees-unique-referent` and
   `:root` now say "or both reach none", which their `=` on two `lone` sides says
   (`312d` § 9, the human's `=`-on-empty rule). Translation only.
 
@@ -104,34 +104,34 @@ put to the human. The lock is to show what moved; every one is expected to move 
 Put in chat 2026-09-29 and, by the human's statement, unread; banked here so a successor does
 not re-derive them. Each is a hand-walk; no solver has seen any. None is acted on beyond § 5.
 
-- `fnd-sparing-law-seats-two-keys` (+SURE, scope arithmetic) — `mLevel` is one top-level
-  signature over mKeys and both mWorld kinds; at `for 4` an mKey needs an mRoute and a non-⊤
-  readset needs a mRoot mWorld, leaving two mKeys. The only spared world with two mKeys is two
-  sibling mKeys of one `:root` shape, the shape of `two_volumes_of_one_issuer`. The sparing law's
+- `fnd-sparing-law-seats-two-keys` (+SURE, scope arithmetic) — `MLevel` is one top-level
+  signature over MKeys and both MWorld kinds; at `for 4` an MKey needs an MRoute and a non-⊤
+  readset needs a MRoot MWorld, leaving two MKeys. The only spared world with two MKeys is two
+  sibling MKeys of one `:root` shape, the shape of `two_volumes_of_one_issuer`. The sparing law's
   green, its two kills, and `law_exclusion_readings_agree` cover that shape. Rules 2 to 4 of the
-  writeset, a store on a leg, a natural mKey, and a cell cannot appear in a spared world there.
-  Widening `mLevel` alone (`for 4 but 5 mLevel, 10 Claim`) is the measurement to ask for after the
+  writeset, a store on a leg, a natural MKey, and a cell cannot appear in a spared world there.
+  Widening `MLevel` alone (`for 4 but 5 MLevel, 10 Claim`) is the measurement to ask for after the
   official pass; a scope is part of the claim, so it is the human's.
 - `sus-two-separated-leaves-share-a-held-part` (~SUSPECT) — a wrong sparing with every statement
-  true, needing three mKeys: two sibling mKeys with unique names (DISJOINT) whose mReferents both
-  hold a third mReferent; a write to one affects the shared part, which affects the other. The
+  true, needing three MKeys: two sibling MKeys with unique names (DISJOINT) whose MReferents both
+  hold a third MReferent; a write to one affects the shared part, which affects the other. The
   finished record ("affects only it and what it holds") and the may-read closure ("affected only
   by itself, what it holds, what holds it") are both true. `git -C wt-b gc` above `git -C wt-a
   fsck`, the object store shared. Not covered by `hole_world_scoped_top_aliases_into_a_store`.
   Sits on `312d` § 17.1's `ask-affects-and-the-chain`. Cheapest demonstration: a book of three
-  mKeys at scope five.
-- `fnd-every-referent-has-a-key-is-a-fact` (+SURE of the text) — `fact { all r: mReferent | some
-  reaches.r }` transcribes "It has one or more mKeys" and boxes the checker out of worlds holding a
+  MKeys at scope five.
+- `fnd-every-referent-has-a-key-is-a-fact` (+SURE of the text) — `fact { all r: MReferent | some
+  reaches.r }` transcribes "It has one or more MKeys" and boxes the checker out of worlds holding a
   thing nobody keyed; at the sparing law's scope it is what keeps the world above from fitting.
   Same class as the § 1.3.1 ruling (`312d` § 21.1): a checker boxing that is not documented
   horizon.
 - `fnd-two-truths-are-never-the-sole-support` (~SUSPECT) — no answer rests on the truth of `:root`
-  or `:identified-in` alone: `:root` is carried by construction as one mWorld per shape, and a
+  or `:identified-in` alone: `:root` is carried by construction as one MWorld per shape, and a
   true fitting supply implies `:identified-in`; their owed kills should come back unsat.
   `:observer-independence` has no kill because no fact-transport law consumes `sameTopic`.
 - `sus-a-contained-write-touches-its-store` (`312d` § 22.3; +SURE of the text now) —
   `tokenInvalidatedBy` and `touchesTraversal` read every answer other than DISJOINT as a touch,
-  and an mKey against its own container reads UNKNOWN, so within one store nothing spares; 311
+  and an MKey against its own container reads UNKNOWN, so within one store nothing spares; 311
   § 3.3's letter supports the fences.
 - `fnd-self-flagged-weak-points-sit-in-the-artifact` — the thirteen UNACKED READING marks and the
   "suspected hole" commentary are self-flagged weak points inside the document a fidelity panel
@@ -167,50 +167,50 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   sentences; it edits nothing and runs no solver. Its brief is in the conductor's session
   scratchpad, not durable.
 - `rep-seat-supplies-any-scheme-of-the-sort` — § 1.6: `supplyFits` demanded an instance of the
-  mParent mSort's primary mScheme, where 311 says "one of the mParent's mSort's mSchemes" (the
+  MParent MSort's primary MScheme, where 311 says "one of the MParent's MSort's MSchemes" (the
   narrowing `312d` § 12 found without a mark); the fit is now by `sortOfKey`, and the child's
-  mParent is the identity of the instance (3.1's "scoped in the identity of its mParent"), for
+  MParent is the identity of the instance (3.1's "scoped in the identity of its MParent"), for
   the `:identified-in` and the cell cases alike. Widens the worlds; no answer can move green.
-- `rep-referent-key-fact-becomes-prose` — § 1.1: `fact { all r: mReferent | some reaches.r }` is
-  deleted; "An mReferent has one or more mKeys" moves to § 1.1.1's normative block with the
+- `rep-referent-key-fact-becomes-prose` — § 1.1: `fact { all r: MReferent | some reaches.r }` is
+  deleted; "An MReferent has one or more MKeys" moves to § 1.1.1's normative block with the
   reason beside it, on the § 1.3.1 precedent (`312d` § 21.1). The checker now considers worlds
   holding an unkeyed piece. Predicted consequence: the sparing law's premise twin can seat the
   shared-part world of § 6 at its own scope, so `law_sparing_is_sound` is expected RED at the
   next run; that red is the arc's protocol firing and becomes a hole for the sitting, not a fix.
 - `act-ten-kills-asked` — kills for the species whose truths no kill exercised
   (`312d:owed-kills-for-ten-species`), each `expect 1`, placed by the law `311` § 5.2 names as
-  the consumer: `:identified-in`, `:root`, a supplied mParent instance, and a wrapper's sentinel
+  the consumer: `:identified-in`, `:root`, a supplied MParent instance, and a wrapper's sentinel
   against the walk laws; a closed may-read set, a finished record, and a supplied instance
   against the sparing law; `alias nothing-else` against the region law. ~SUSPECT most come back
   unsat, which then says mechanically that no answer rests on that statement alone; the
   translation sentences say so. `:observer-independence` and `:lends` have no consuming law
   (no fact-transport law exists) and got none.
 - `act-sparing-law-asked-at-five-levels` — the law's body is a named predicate; a second check
-  asks it at `4 but 4 Int, 10 Claim, 5 mLevel`, whose twin demands a store on the read mKey's
+  asks it at `4 but 4 Int, 10 Claim, 5 MLevel`, whose twin demands a store on the read MKey's
   chain, the world the four-level scope cannot seat. Its result is the affordability
   measurement.
 - `rep-sentinel-truth-presupposes-a-callers-instance` — `true_ClosesLends` demanded that every
-  natural mKey of an unlent mSort under the wrapper reach what the caller's instance passes to,
-  with no guard that the caller holds one, so a natural mKey of an mScheme with no declared
-  catalog mSort made every sentinel false and hid every world with one. The truth now
+  natural MKey of an unlent MSort under the wrapper reach what the caller's instance passes to,
+  with no guard that the caller holds one, so a natural MKey of an MScheme with no declared
+  catalog MSort made every sentinel false and hid every world with one. The truth now
   presupposes the instance, as its sentence does ("the caller's instance").
 - `act-five-books-for-the-untouched-sections` — each a pinned world the conductor hand-walked,
   its translation STE-strict, its answers the fences' answers as walked: § 3.2.6 two cells of
   one unit (KNOWN_UNSPOKEN between cells, SAME for one cell read twice under two unit atoms);
   § 3.2.7 one configuration merged in two orders (a composite SAME by parts and UNKNOWN by the
   walk; swapped roles UNKNOWN); § 3.4.2 and § 3.4.3 one file through `sudo` with and without
-  the flag (SAME with the sentinel in the support, else UNKNOWN across two mRoutes); § 3.3.2 a
+  the flag (SAME with the sentinel in the support, else UNKNOWN across two MRoutes); § 3.3.2 a
   reboot between two reads (lifecycle invalidation withdrawing a timeless SAME); § 2.10.2 a
   directory removed beside a file (the region test DISJOINT through the placing route; the
   store-given-whole floor invalidating all the same; the world inside
-  `hole_region_closure_with_unknown_leaf_pair`, a file and a directory being mKeys of two
-  mSorts the walk never separated). Every book passed the commit hook's parse; none has met a
+  `hole_region_closure_with_unknown_leaf_pair`, a file and a directory being MKeys of two
+  MSorts the walk never separated). Every book passed the commit hook's parse; none has met a
   solver.
 - `fnd-invalidation-does-not-know-when-a-key-was-resolved` (+SURE of the text; a mechanization
-  limit, not 311's) — `staleAt[s, k]` marks an mKey stale at every site below a line that
-  touched its chain, whether the mKey was resolved above or below that line; the reboot book
-  shows the mKey resolved after the reboot marked stale too. 311 § 3.3 says "an mKey whose
-  mResolution ... a line above invalidated"; the fences hold no resolution time
+  limit, not 311's) — `staleAt[s, k]` marks an MKey stale at every site below a line that
+  touched its chain, whether the MKey was resolved above or below that line; the reboot book
+  shows the MKey resolved after the reboot marked stale too. 311 § 3.3 says "an MKey whose
+  MResolution ... a line above invalidated"; the fences hold no resolution time
   (`312d:str-static-over-lines-not-temporal`). For the panel and the temporal latitude.
 - `acc-the-accounting-at-the-tip` — the Opus's account over `6d1ca99f` (tables copied to the
   conductor worktree's `.tmp/312e-accounting-tip/`, not durable): of the 770 baseline
@@ -221,21 +221,21 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   wrong at `a212975c`; three § 2.8 sentences from inert to mechanical, the books now reading
   `sameTopic`). Of 436 blockquote sentences: 146 verbatim, 77 near-verbatim, 55 merges, 16
   moves, 6 rewords, 136 additions of the mechanization. Four clauses of the baseline appeared
-  nowhere: the mTraversal being ordered, "or the filesystem binder", "leaf first", and the
+  nowhere: the MTraversal being ordered, "or the filesystem binder", "leaf first", and the
   engine's vouch (replaced by the axiom under `43b8d4dd`); the first three are restored as
   normative prose or into their sentence.
 - `acc-firewall-audit-disposition` — fifty fence-against-sentence findings. Applied as fidelity
-  repairs: the writeset reads a written mKey's own entailment beside its identity chain's
+  repairs: the writeset reads a written MKey's own entailment beside its identity chain's
   (F09: `contributingContainers` and `writesetUnexcluded` ranged over `levelKeysOf`, so the
   finished record's truth and the engine's read now cover one entailment); `parentCatalog` is
-  the mParent for a primary mKey too (F10, 311's "one mKey"); the unused fourth seat atom
+  the MParent for a primary MKey too (F10, 311's "one MKey"); the unused fourth seat atom
   deleted (F17); every hole has a sentence and every law sentence names the holes it is asked
   outside (F01 to F08); the guards the sentences dropped restored (F14 the cell, F15 the closing
-  act, F16 the non-empty mTraversal); "by the walk" on the different-mSorts law (F12); a verdict
-  fact reads an mKey, a cell's included (F13); the catalog supply claims nothing (F18);
+  act, F16 the non-empty MTraversal); "by the walk" on the different-MSorts law (F12); a verdict
+  fact reads an MKey, a cell's included (F13); the catalog supply claims nothing (F18);
   `sameTopic` in the fence's words (F20); the commentary slip at the index book. Left as
   recorded, no repair: `compareAt` has no consumer but the books (F11); `DeclaresPlaces` gates
-  no record, invocation being prose (F21); no fact forbids a cell mSort a primary mScheme (F24,
+  no record, invocation being prose (F21); no fact forbids a cell MSort a primary MScheme (F24,
   a wider universe); rule 3 applies at the seed only (F26, 311's "entry"). Rank 3 (kill and
   twin sentences, books' world facts, reasons the outcomes do not assert, two nits in the
   shared half) went to the STE pass as translation-only work.
@@ -269,11 +269,11 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
 - `act-ste-rewrite-folded` — the Opus's five per-section commits, squashed to one (a mechanical
   reflow; the builder's messages named sections) and rebased over this branch, then the
   conductor's own commit for the eight translation mismatches the builder's audit found and
-  left: a cell's mParent in the two-cells book, the aligned-SAME range including the pair
+  left: a cell's MParent in the two-cells book, the aligned-SAME range including the pair
   itself, `sameTopic`'s matching in each direction (not one to one), the vantage cycle through
   other vantages, "a matched shape is a control-flow path" moved to § 1.3.1's normative block
-  (no fence holds it), "names a new mReferent afterward" moved to § 3.3.1's (`lifecycleInvalidatedBy`
-  holds no new mReferent), the sudo-without-the-flag outcome in the fence's words, the shared
+  (no fence holds it), "names a new MReferent afterward" moved to § 3.3.1's (`lifecycleInvalidatedBy`
+  holds no new MReferent), the sudo-without-the-flag outcome in the fence's words, the shared
   half's derived argv clamp and its consequence sentence moved to commentary, and every book
   ceiling naming its bitwidth. At the tip: 975 normative lines, 13,330 words, zero hard
   violations, 111 passive advisories, 2 present-perfect kept for current relevance. The
@@ -304,8 +304,8 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   it is committed to `ai/main` as the measured baseline of that text is the human's; this
   branch cannot carry it.
 - `red-the-two-exclusion-readings-disagree` — `law_exclusion_readings_agree` found a
-  counterexample (124 s): a world of no mReferents, an entailment cycle between two shapeless
-  primary mKeys, a natural at-most entry yielding the read mKey itself, a finished record on
+  counterexample (124 s): a world of no MReferents, an entailment cycle between two shapeless
+  primary MKeys, a natural at-most entry yielding the read MKey itself, a finished record on
   the natural shape (vacuously true under the old text), and a closed `looked-up-in` making the
   region test DISJOINT. Under the exclusion-as-built reading the fact is spared; under the
   exclusion-at-the-test reading the writeset is ⊤. `30Z` § 2.5 kind 4, and the answer to the
@@ -317,25 +317,25 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   purpose, and shows `sus-finished-record-for-a-natural-shape-is-vacuous` live under the old
   text (repaired since, § 5).
 - `red-region-reached-through-the-composite-hole` — `law_region_disjoint_is_sound` found a
-  counterexample (76 s): a composite mKey whose one part is itself, SAME by parts with another
-  composite that reaches a different mReferent, lifting the walk's UNKNOWN into `compare()`'s
+  counterexample (76 s): a composite MKey whose one part is itself, SAME by parts with another
+  composite that reaches a different MReferent, lifting the walk's UNKNOWN into `compare()`'s
   DISJOINT, which the region test then consumed. Every statement in force true. The world
   satisfies `hole_composite_keys_with_same_parts_refer_differently`, which the sparing and
   `compare()` laws exclude and the region law did not. Applied under the hole protocol at
   `ffea0bef`: the composite hole added to the region law's premise, its twin, and its two
   kills, the translation saying so. A composite whose part is itself is representable in the
-  fences (`part: Role -> lone mKey` allows it); noted for the sitting, not narrowed.
+  fences (`part: Role -> lone MKey` allows it); noted for the sitting, not narrowed.
 - `red-a-thing-reachable-by-a-route-nobody-emitted` — `law_unstale_route_is_untouched` found a
-  counterexample (168 s): a natural mKey with a closed-catalog mParent whose mReferent is
-  passed to by two mReferents, the catalog's and another's; a line writes the other; the
-  unclosed traversal is the catalog given whole, whose region test reads the written mKey
+  counterexample (168 s): a natural MKey with a closed-catalog MParent whose MReferent is
+  passed to by two MReferents, the catalog's and another's; a line writes the other; the
+  unclosed traversal is the catalog given whole, whose region test reads the written MKey
   DISJOINT; nothing is invalidated, and the write sat on a route to the thing. Every statement
   in force true; `hole_natural_key_catalog_off_the_route` is false in it (the catalog does pass
   to the thing). Kind 4: no unit says a thing is reached only through its catalog, the route
   side of the § 5.1 OPEN "no other home" cell (`held-shared-parts-across-separated-things` in
   the held-work file). NOT applied, by the human's stop: the owed act is a new hole, candidate
-  `hole_a_route_off_the_catalog_reaches_the_thing` — `some k: mKey | not traversalClosed[k] and
-  some passes.(k.reaches) - (k.parent & mKey).reaches - crossed[k].reaches` — with its witness
+  `hole_a_route_off_the_catalog_reaches_the_thing` — `some k: MKey | not traversalClosed[k] and
+  some passes.(k.reaches) - (k.parent & MKey).reaches - crossed[k].reaches` — with its witness
   run at six, added to the untouched-route law's premise, its twin, and its two kills, and a
   translation sentence for the hole. A successor authors it; nothing else is owed for this red.
 - Reader chafe for the assay owner, beyond `312d` § 25.5's: the report and transcript carry no
@@ -427,9 +427,9 @@ its facts as relayed, each a peer's claim:
 
 - `rep-top-writeset-touches-everything` — `d15a630d`: `lineWritesetIsTop[l]` is
   `writesetIsTop[l, lineWriteset[l]]`; routing invalidation fires where the line's writeset is ⊤
-  and the mKey has any mTraversal member or placing record; token invalidation where it is ⊤ and
-  the identity chain has an mKey above; lifecycle invalidation where it is ⊤ and an mKey on that
-  chain is mRoot-adjacent; and a ⊤ line counts as a write for an open read set. Three translation
+  and the MKey has any MTraversal member or placing record; token invalidation where it is ⊤ and
+  the identity chain has an MKey above; lifecycle invalidation where it is ⊤ and an MKey on that
+  chain is MRoot-adjacent; and a ⊤ line counts as a write for an open read set. Three translation
   sentences say so. Direction: more stale, fewer spared, every existing book outcome unchanged by
   hand-walk (~SUSPECT until the slices run; the reboot line of § 3.3.2 was already ⊤, its boot
   having no finished record, and its outcome asserts only what still holds).
@@ -483,18 +483,18 @@ are in its hand-back and are summarized here.
 
 - `red-sparing-through-a-shared-part` — `law_sparing_is_sound` and
   `law_sparing_is_sound_with_a_store_on_the_chain`, both P1 exactly: two root-scoped sibling
-  mKeys under `:guarantees-unique-name` with a finished record, whose mReferents both hold a third
-  mReferent; the line writes one, its write affects the shared part, which affects the other; the
+  MKeys under `:guarantees-unique-name` with a finished record, whose MReferents both hold a third
+  MReferent; the line writes one, its write affects the shared part, which affects the other; the
   fact depends on the other; DISJOINT by the two-tops way; spared; every statement true by hand
   (the finished record and both may-read closures hold because the part is held on each side).
   `30Z` § 2.5 kind 4, the thing's-end "no other home" cell of § 5.1. Applied under the hole
-  protocol at `8d46d614`: `hole_two_separated_things_hold_one_part` (two mKeys `compare()`
-  reads DISJOINT whose mReferents share a held part, directly or through others), its witness at
+  protocol at `8d46d614`: `hole_two_separated_things_hold_one_part` (two MKeys `compare()`
+  reads DISJOINT whose MReferents share a held part, directly or through others), its witness at
   six, the two sparing laws, their twins, and the five sparing kills asked outside it, the
   translation saying so. Held for the sitting; repaired by nobody.
 - `red-region-through-the-world-scoped-top-hole` — `law_region_disjoint_is_sound`'s new
   counterexample (the lock's was the composite one, closed at `ffea0bef`): a route-scoped top
-  with `:aliases-nothing-else` whose mReferent owns the mReferent a sibling top and a cell key
+  with `:aliases-nothing-else` whose MReferent owns the MReferent a sibling top and a cell key
   both reach; the leaf pair DISJOINT and false by the two-tops way; the region test DISJOINT by
   the placing form, its closure vacuous with nothing passing. The world sits inside
   `hole_world_scoped_top_aliases_into_a_store`, which the DISJOINT laws exclude and the region
@@ -502,22 +502,22 @@ are in its hand-back and are summarized here.
   its two kills. The builder's scratch run of the law so premised timed out at 600 s (665k
   clauses); the official pass measures it.
 - `red-with-a-store-twin-starved` — `law_sparing_is_sound_with_a_store_on_the_chain_premise`
-  unsat at ten statements: a store on the read mKey's chain needs its own `:primary-of`, `:root`,
-  `:identified-in`, a second supplied mParent, and a second closed may-read set, thirteen in force
+  unsat at ten statements: a store on the read MKey's chain needs its own `:primary-of`, `:root`,
+  `:identified-in`, a second supplied MParent, and a second closed may-read set, thirteen in force
   by the builder's hand count (~SUSPECT). The law had never been read. Applied at `8d46d614`: the
   second command and its twin run at fourteen, the least count that seats the witness plus one,
   the reason beside the scope paragraph (`30Z` § 2.8: raise a bound only when a twin is unsat
   for want of atoms). If fourteen still starves, the count is the sitting's.
-- `red-exclusion-readings-a-new-shape` — the accepted red's instance moved shape (one mReferent;
-  a shaped and a shapeless primary mKey in an entailment cycle; the natural at-most entry yields
-  the read mKey itself). The question the law asks keeps its answer. Nothing applied.
+- `red-exclusion-readings-a-new-shape` — the accepted red's instance moved shape (one MReferent;
+  a shaped and a shapeless primary MKey in an entailment cycle; the natural at-most entry yields
+  the read MKey itself). The question the law asks keeps its answer. Nothing applied.
 - `red-three-kills-unsat` — `kill_same_is_sound_identified_in`, `kill_same_is_sound_root`,
   `kill_same_is_sound_closes_lends` unsat at five, each carrying `expect 1`; they land as
   accepted reds. The first two are § 6's `fnd-two-truths-are-never-the-sole-support` measured: the
   walk reads `:identified-in` only as a sort match and `:root` only as the world atom the shape
   is scoped in, so a SAME still needs `:guarantees-unique-referent`, whose truth over one parent
   forces equal reaches. The third is evidence about a marked reading, not about 311: under
-  `312d:enc-one-instance-is-one-atom-for-now` an inheriting vantage holds the caller's mRoute
+  `312d:enc-one-instance-is-one-atom-for-now` an inheriting vantage holds the caller's MRoute
   ATOM, so a false sentinel and a true `:guarantees-unique-referent` over that atom contradict,
   and no world exists in which the sentinel alone is the false statement behind a SAME. Under the
   letter the sentinel is what makes two instances one, and its falsity should be expressible
@@ -548,20 +548,20 @@ are in its hand-back and are summarized here.
 region law and its `alias nothing-else` kill timed out at 600 s and are the official tier's.
 Both sparing laws were red again, through one new shape outside the shared-part hole.
 
-- `red-sparing-through-a-third-thing` — the written mReferent holds a part that no mKey reaches;
-  the write affects that part; the part affects the mReferent that holds the read thing; that
+- `red-sparing-through-a-third-thing` — the written MReferent holds a part that no MKey reaches;
+  the write affects that part; the part affects the MReferent that holds the read thing; that
   holder affects the read thing. Every closure in force is true, because each speaks one step of
   `affects` (the finished record allows the held part; the may-read closure allows the holder),
   and the law asks the transitive chain. Applied under the hole protocol at `c0487fbe`:
   `hole_a_write_affects_through_a_third_thing` (some a, b, c with b in a's effects, c in b's,
   and c not in a's), its witness at six, both sparing laws, their twins, and the five kills asked
   outside it. Chosen over the narrower "an unkeyed thing carries the effect" because the same
-  chain runs through keyed things whose owner's record is not in force and whose mKey is not a
+  chain runs through keyed things whose owner's record is not in force and whose MKey is not a
   writeset member, and the narrow hole would miss that world.
 - Conductor's reading for the sitting, unposed (the human has no room): this is
   `312d` § 17.1's `ask-affects-and-the-chain` made concrete. Under the reading that `affects`
   is the TOTAL effect of a write (the relation closed under itself, which § 1.1's sentence "A
-  write to an mReferent affects the mState of the mReferents it affects" can carry), the written
+  write to an MReferent affects the MState of the MReferents it affects" can carry), the written
   thing's finished record is FALSE in these worlds (its write affects the read thing, which it
   neither holds nor entails), so the record's owner is attributable, as 311 intends the knife to
   cut. Under the reading that `affects` is one step, nobody is at fault and § 0's own terms
@@ -629,27 +629,27 @@ change to what any law answers:
 
 - Duplicates struck under the one-copy rule: § 1.10.1's copy of "Differential test discharges
   that axiom, and nobody speaks it"; § 3.1.1's composite-identity sentence (§ 2.11's
-  translation carries it); § 2.9.1's "a routing mKey named whole ... stands for whatever its
-  mScheme reaches beneath it" (§ 2.9's translation carries it). Three tier-A pairs left as
+  translation carries it); § 2.9.1's "a routing MKey named whole ... stands for whatever its
+  MScheme reaches beneath it" (§ 2.9's translation carries it). Three tier-A pairs left as
   residue on purpose: the consumer map's "DISJOINT licenses sparing under the same flag", the
-  framing "spares narrowly and collides widely", and the "under ordinary effective-mWorld reach"
+  framing "spares narrowly and collides widely", and the "under ordinary effective-MWorld reach"
   sentence whose qualifier is unmechanized.
 - Absent clauses restored: "Any path the dialect admits may decline it" (§ 1.5.1, normative);
-  "such as a boot or a tenure" (§ 3.3's examples); "An mValue with no mScheme is nothing"
+  "such as a boot or a tenure" (§ 3.3's examples); "An MValue with no MScheme is nothing"
   (§ 1.4, the fact at `some k.scheme iff no k.cellSort`); "P itself stays an entry of that test"
   (§ 2.6, the seed); the placing-route case of the region test's step 2 (§ 2.9, `coveredBy`'s
   `placedIn` arm, stated as the fence has it: covered whatever the enumeration holds).
-- Sentences retuned to their fences: the mParent instance is an mKey and the seats supply one
-  instance (F17); a declaration-seat supply is the line of the owner of the mKey's own mScheme
-  (N01; see § 14.3); the identity of a primary mScheme's mKey is that mKey on a shape that yields
+- Sentences retuned to their fences: the MParent instance is an MKey and the seats supply one
+  instance (F17); a declaration-seat supply is the line of the owner of the MKey's own MScheme
+  (N01; see § 14.3); the identity of a primary MScheme's MKey is that MKey on a shape that yields
   nothing (F19); rule 1 is every entry declared for the line, the author clause moved to § 2.6.1's
-  residue (F25); a record is emitted for an mKey, not "of T" (F21; see § 14.3); the
+  residue (F25); a record is emitted for an MKey, not "of T" (F21; see § 14.3); the
   correspondence kill of `compare()`'s DISJOINT names its extra conjunct (N02).
 - `fullyQualifiedKey[k]` is `identity[k].*parent` (N03), its one consumer already passing an
-  identity, so nothing moves; § 1.8 says a natural mKey's mFullyQualifiedKey is its identity's.
-- § 1.9's "The singleton mSort has no mScheme of its own" moved from the translation to a new
+  identity, so nothing moves; § 1.8 says a natural MKey's MFullyQualifiedKey is its identity's.
+- § 1.9's "The singleton MSort has no MScheme of its own" moved from the translation to a new
   normative § 1.9.1 on the § 1.3.1 precedent (F24): no fence forbids `:primary-of` on a cell
-  mSort, and boxing the checker out of that description is design.
+  MSort, and boxing the checker out of that description is design.
 
 ### § 14.3-recorded-for-the-sitting-not-fenced
 
@@ -657,12 +657,12 @@ Each is a place where the fences admit a world the prose says does not arise; ea
 structural fact; none was added, since which worlds the checker considers is design
 (`312d` § 21.1) and a fact is the direction that hides counterexamples.
 
-- A `looked-up-in` record is admitted for an mKey of any mSort, with no `:places` declaration
+- A `looked-up-in` record is admitted for an MKey of any MSort, with no `:places` declaration
   gating it; `places` is read by nothing (F21). The invocation prose of § 2.10.1 is where the
   gate lives.
-- A declaration-seat supply is admitted for a natural mKey, spoken by its secondary mScheme's
-  owner, where § 1.6 says a secondary mScheme's third seat is the mEntryChain (N01).
-- "Under any one mParent instance it has exactly one mKey" against the fence's at-most-one
+- A declaration-seat supply is admitted for a natural MKey, spoken by its secondary MScheme's
+  owner, where § 1.6 says a secondary MScheme's third seat is the MEntryChain (N01).
+- "Under any one MParent instance it has exactly one MKey" against the fence's at-most-one
   (F23, recorded since `312d` § 12); rule 3 applied at the seed only (F26, likewise); composite
   parts SAME by the walk only (F27, the mark `ask-composite-parts-by-walk`).
 
@@ -672,22 +672,22 @@ structural fact; none was added, since which worlds the checker considers is des
 conductor's message; both sparing laws were red anyway): both new witnesses sat, both twins sat,
 the five kills sat; the sparing laws red through a fourth shape.
 
-- `red-sparing-through-a-part-in-the-region` — the whole entry's mReferent passes to R0; the
+- `red-sparing-through-a-part-in-the-region` — the whole entry's MReferent passes to R0; the
   read thing holds R0 and passes to it; R0 affects the read thing; the line writes R0. Outside all
   seven holes: the shared part is reached by route on one side and held on the other, and both
   world-shape holes are satisfied (R0 is passed to as well as held; the two-step route has its
   direct edge). Every statement true, the region test DISJOINT by the vacuous placing form.
-- The family, seen whole after three rounds: a write lands on an mReferent that both the written
+- The family, seen whole after three rounds: a write lands on an MReferent that both the written
   thing and the read thing reach beneath them, by holding or by route, and the engine's speech
   (keys, entries, regions, one-step closures) never names that shared thing. Applied at
   `c9fe5210` under `30Z` § 2.5's rule that the second pin lifts to the species:
-  `hole_two_separated_things_reach_one_thing_beneath` (two mKeys `compare()` reads DISJOINT whose
-  mReferents' reflexive-transitive `holds + passes` images intersect) REPLACES the shared-part,
+  `hole_two_separated_things_reach_one_thing_beneath` (two MKeys `compare()` reads DISJOINT whose
+  MReferents' reflexive-transitive `holds + passes` images intersect) REPLACES the shared-part,
   held-thing, and one-step holes; the third-thing (affects) hole stays; `outsideTheSparingHoles`
   is five. By hand, +SURE the new hole covers every world the three did that the sparing law
   needs, and ~SUSPECT it is tied to the counterexample's structure where the two world-shape
-  holes excluded any such pair of mReferents anywhere in the world. It is § 5.1's OPEN cell,
-  "this mReferent has no other home", stated from the thing's end for the sparing test.
+  holes excluded any such pair of MReferents anywhere in the world. It is § 5.1's OPEN cell,
+  "this MReferent has no other home", stated from the thing's end for the sparing test.
 - For the sitting, unposed: the two remaining world-stratum questions under the sparing law are
   `ask-affects-and-the-chain` (the third-thing hole) and the no-other-home cell (this hole); the
   `passes`-transitivity and `holds`-in-`passes` questions of § 13 are no longer load-bearing for
@@ -705,10 +705,10 @@ timeout (translation alone 207 s), both owed to the official ceiling; four kills
 - `fnd-the-finished-records-truth-never-bears` — `kill_sparing_is_sound_finishes_entailment`
   unsat at four and ten under the five-hole premise, where it was sat under fewer holes. The
   builder's hand argument, re-derived by the conductor, +SURE at one step: a false sparing needs
-  the written mReferent to affect the depended-on one, which the vouch makes the read mKey's own
-  mReferent; the read closure, true, then makes the written thing a part of it, a holder of it, or
-  an entry's mReferent; part and holder are the one-thing-beneath hole, and an entry sends the read
-  mKey into the writeset by rule 4, where it reads SAME with itself and nothing spares. So the
+  the written MReferent to affect the depended-on one, which the vouch makes the read MKey's own
+  MReferent; the read closure, true, then makes the written thing a part of it, a holder of it, or
+  an entry's MReferent; part and holder are the one-thing-beneath hole, and an entry sends the read
+  MKey into the writeset by rule 4, where it reads SAME with itself and nothing spares. So the
   record's truth is implied by the read closure's outside the hole; its presence still gates
   (⊤ when absent, § 2.6). 311 prices "the premature finished record" as the sparing knife
   (§ 2.6's danger line, § 5.2's row); as mechanized, the knife is the may-read closure, and the
@@ -772,8 +772,8 @@ Nothing here is owed by this ledger's author; it is the field.
 - The thirteen marks (`312d` § 7) and the five world-stratum questions (`312d` § 17.1).
 - The unsat kills as evidence: `:identified-in`, `:root`, and the sentinel never stand alone
   behind an answer (§ 11.2); the sentinel's is a measurement of the one-atom reading.
-- The accounted gaps (§ 14.3): the `:places` gate, the declaration seat for a natural mKey,
-  exactly-one against at-most-one for a cell's mKey, rule 3 at the seed, composite parts by the
+- The accounted gaps (§ 14.3): the `:places` gate, the declaration seat for a natural MKey,
+  exactly-one against at-most-one for a cell's MKey, rule 3 at the seed, composite parts by the
   walk; and the inert definitions of § 14.1.
 - `burn-primary-coherence-sentence` (`312d` § 21.2); `fnd-in-force-is-book-global`
   (`312d` § 19.2); `sus-passes-is-one-step-in-every-truth` (§ 10.4), now load-bearing for no

@@ -17,7 +17,7 @@
 
 Five lanes, three lineages, converge on the region test of `311:2.9-hierarchical-and-the-region-test`
 from four angles; the two Astra lanes, independently, reach the same as-written correctness
-defect: the four-step walk is defined for "an mKey D given whole against an mKey x" with no
+defect: the four-step walk is defined for "an MKey D given whole against an MKey x" with no
 restriction on x, so two whole regions are compared by a region-against-point procedure, and two
 ordinary directory trees sharing one hardlinked inode read DISJOINT with every statement behind
 them true. The ledger already has the rule the text needs (`311t` § 15: region against region
@@ -25,7 +25,7 @@ stays UNKNOWN unless an owner enumerates); the fold lost it. That is the first r
 
 The second convergence is perishing. Four lanes touched the pair of sentences by which any write
 to an entry is also a write to its container (`311:2.6-may-write-the-writeset`) and a flat
-scheme's resolution perishes "when its mParent-Catalog was touched at all"
+scheme's resolution perishes "when its MParent-Catalog was touched at all"
 (`311:3.3-perishing-three-mutator-species`, `311:2.9-hierarchical-and-the-region-test`). Read as
 written, one drifted `apt-get install` demotes every `dpkg -s` guard below it, `useradd` every
 user-keyed fact, `systemctl enable` every service fact. The prior record filed the ambiguity as
@@ -37,7 +37,7 @@ Two product-level consequences are stated by both Fable lanes and are, on my wal
 text: a fact held in a daemon's memory and a fact held in a file never separate under
 `311:3.2-compare-one-chokepoint-four-answers` as the model's own § 2.2 examples place their
 parents, so USER_STORY stage 5's line 9 guards on the stale-index morning; and two cells of one
-mParent never separate, which supersedes the built selector-dialect sparing
+MParent never separate, which supersedes the built selector-dialect sparing
 (`277` § 3, `30J` § 12, the `spike/CLAUDE.md` sparing-algebra bullet) without a § 4.2 entry. Both
 losses are on the record as acked costs (`311t` § 14, § 15); what is not on the record is that
 the acked repair routes are awkward under the text as written, and § 2 below spells each one to
@@ -47,7 +47,7 @@ promotion should not carry them silently.
 Fable-a's headline, that the wrapper sentinel mints an unflagged SAME across a stranger's
 catalog sort, does not survive re-walking: in its own counterexample sudo lends `sm.User`, the
 stranger's cell is observer-dependent on `sm.User` by `311:2.8-observer-dependence-and-independence`'s
-default, and the two facts carry different mTopics. The pricing question underneath it
+default, and the two facts carry different MTopics. The pricing question underneath it
 (`311p` thread 7: the sentinel is a finished-record-class claim whose wrong answer is a SAME with
 no flag in front) stands as previously punted, and § 3.4's danger line should say so. Kimi's one
 finding (DISJOINT unreachable in the region test) rests on reading the routing traversal as the
@@ -102,8 +102,8 @@ spelling, then text a builder must guess at).
 
 ### 1. `thr-region-against-region-unguarded` — `312cc`, `312cd`; +SURE
 
-**The text.** `311:2.9-hierarchical-and-the-region-test`: "For an mKey D given whole against an
-mKey x, walk each mTraversal of x ... 3. Else if, on every mTraversal of D's mSort, every level
+**The text.** `311:2.9-hierarchical-and-the-region-test`: "For an MKey D given whole against an
+MKey x, walk each MTraversal of x ... 3. Else if, on every MTraversal of D's MSort, every level
 compares DISJOINT with D and every level emitted its closure ... : DISJOINT." The first paragraph
 of the same section admits a whole-named key "in a writeset or as a may-read entry", and
 `311:2.6-may-write-the-writeset` routes any pair with a whole-named member to § 2.9. Nothing
@@ -135,7 +135,7 @@ visits D, and answers DISJOINT although D is inside x.
 **Adjudication.** +SURE, an as-written correctness defect of the cardinal class. The procedure
 establishes that x's REFERENT is outside D's region; it says nothing about the set x denotes when
 x is whole. `311:1.1-referent-state-and-value` draws exactly that distinction ("the container is
-the mReferent, and the set is a set") and § 2.9 then ignores it. The ledger has the missing rule
+the MReferent, and the set is a set") and § 2.9 then ignores it. The ledger has the missing rule
 in the very sitting that minted the test (`311t` § 15, `rul-the-outside-rule-with-the-alias-closure`:
 "region against region stays unknown unless one owner enumerates") and the human's own words
 there ("bound against bound is the harder problem"; "the general hole must never be papered
@@ -149,19 +149,19 @@ enumerate is told to write; enumerating H on both sides is the value the coarse 
 avoid.
 
 **Repair.** One sentence in § 2.9: the four-step walk is defined only where x denotes one
-mReferent; two whole-named keys read UNKNOWN unless one owner enumerates the members of one side,
+MReferent; two whole-named keys read UNKNOWN unless one owner enumerates the members of one side,
 each of which then passes the test as a point. Astra-n's stronger form (either operand order) is
-already implied by "only x's mTraversals are walked" once x must be a point.
+already implied by "only x's MTraversals are walked" once x must be a point.
 
 ### 2. `thr-flat-perishing-eats-the-catalog` — `312cb`; touched by `312cc`, `312cd`, `312ce`; +SURE on the text
 
-**The text.** Three sentences compose. `311:3.3-perishing-three-mutator-species`: "A mResolution
-perishes when its mTraversal includes a touched mKey, when its `resolve()` read the written
-state, or, under the flat default, when its mParent-Catalog was touched at all."
-`311:2.9-hierarchical-and-the-region-test`: "By default an mScheme is flat. The mTraversal is
-then the mParent-Catalog as a whole, and any touch on it perishes every mResolution through it."
-`311:2.6-may-write-the-writeset`: "A write to an mKey is also a write to every container on that
-mKey's mFullyQualifiedKey."
+**The text.** Three sentences compose. `311:3.3-perishing-three-mutator-species`: "A MResolution
+perishes when its MTraversal includes a touched MKey, when its `resolve()` read the written
+state, or, under the flat default, when its MParent-Catalog was touched at all."
+`311:2.9-hierarchical-and-the-region-test`: "By default an MScheme is flat. The MTraversal is
+then the MParent-Catalog as a whole, and any touch on it perishes every MResolution through it."
+`311:2.6-may-write-the-writeset`: "A write to an MKey is also a write to every container on that
+MKey's MFullyQualifiedKey."
 
 **The book** (USER_STORY's own):
 
@@ -174,7 +174,7 @@ dpkg -s ca-certificates >/dev/null 2>&1 || apt-get install -y ca-certificates   
 two tops of the package scheme under `:guarantees-unique-name`, the dpkg database
 `:aliases-nothing-else`. DISJOINT. Perishing then undoes it: the package scheme is flat (a
 package name is not looked up in a shorter package name), so the resolution of `ca-certificates`
-has the dpkg catalog whole as its traversal; the install is "creation ... of an mKey", a routing
+has the dpkg catalog whole as its traversal; the install is "creation ... of an MKey", a routing
 write to the catalog entry; by § 2.6 that write is also a write to the catalog; by § 3.3 the
 catalog "was touched at all"; the resolution perishes; "dependent elisions demote to guards".
 Line 2 guards. The same reading demotes every user-keyed fact below `useradd`, every unit fact
@@ -188,28 +188,28 @@ ambiguity and took no action; the routing bullet's flat-default clause was never
 the base library's vocabulary, which is flat throughout. Fable-a's proposed narrow reading (an
 entry write perishes only traversals that include that entry, or the catalog named whole) does not
 rescue a flat scheme by itself: § 2.9 fixes a flat scheme's traversal AS the catalog named whole,
-and a whole-named key "stands for whatever its mScheme reaches beneath it", so the written entry is
+and a whole-named key "stands for whatever its MScheme reaches beneath it", so the written entry is
 beneath the traversal member and the resolution perishes under the narrow reading too.
 
 **Can it be spelled around?** No. A package name cannot honestly be declared `:hierarchical` (its
 lookup names the status file, not a shorter package name, as its catalog), and the model gives a
 flat scheme's describer no other word.
 
-**Repair.** In § 2.9: for a flat mScheme the mTraversal is the entry the lookup found (one level:
+**Repair.** In § 2.9: for a flat MScheme the MTraversal is the entry the lookup found (one level:
 this key in this catalog); the catalog named whole is touched only by a write that names it whole.
-In § 3.3: strike "when its mParent-Catalog was touched at all" and say that the container-write of
+In § 3.3: strike "when its MParent-Catalog was touched at all" and say that the container-write of
 § 2.6 feeds the write-path test and never perishing. The state-mutation bullet's "perishes the
-mTokens scoped in it" takes the same narrowing: a first write perishes the written key's own
-mToken (the copy-up case), never every mToken in the store. With this, the mask on thread 1
+MTokens scoped in it" takes the same narrowing: a first write perishes the written key's own
+MToken (the copy-up case), never every MToken in the store. With this, the mask on thread 1
 disappears and thread 1 is fully live, which is why the two repairs travel together.
 
 ### 3. `thr-memory-and-file-facts-never-separate` — `312ca`, `312cb`; +SURE on the walk; a decision for the human
 
 **The text.** `311:3.2-compare-one-chokepoint-four-answers` step 3: "Separation is only ever
-concluded from a single definition's own distinctions": two tops that are mKeys of one mScheme
-under `:guarantees-unique-name`, or one top whose primary mScheme's body places another shape in
-the other top's mSort. `311:2.2-primary-of-and-identified-in` places "an ext4 filesystem in the
-mRoute, an NFS filesystem in a host, a tmpfs in a boot". `311:1.9-cell-a-singleton-sort`: `active`
+concluded from a single definition's own distinctions": two tops that are MKeys of one MScheme
+under `:guarantees-unique-name`, or one top whose primary MScheme's body places another shape in
+the other top's MSort. `311:2.2-primary-of-and-identified-in` places "an ext4 filesystem in the
+MRoute, an NFS filesystem in a host, a tmpfs in a boot". `311:1.9-cell-a-singleton-sort`: `active`
 "is held in the service manager's memory in the boot".
 
 **The book** (USER_STORY stage 5, `--risk-faultless-skips` typed, the stale-index morning):
@@ -220,15 +220,15 @@ systemctl enable --now nginx       # probed converged: enabled (a symlink in F) 
 ```
 
 **The walk.** Pair (a list inode, `enabled`): tops are two inodes of one scheme in F, DISJOINT.
-Pair (a list inode, `active`): the inode's chain ends inode → F → mRoute; the cell's chain ends
-`active` → unit → manager → boot → mRoute (or at a boot mRoot, which step 1 sends to UNKNOWN
-outright). They meet at the mRoute; the tops are F and the boot, keys of two schemes; neither leaf
+Pair (a list inode, `active`): the inode's chain ends inode → F → MRoute; the cell's chain ends
+`active` → unit → manager → boot → MRoute (or at a boot MRoot, which step 1 sends to UNKNOWN
+outright). They meet at the MRoute; the tops are F and the boot, keys of two schemes; neither leaf
 is its own top. KNOWN_UNSPOKEN; collide. Line 2 guards. The same walk kills every pair of a
 memory-held fact and a file write in either direction: `systemctl start` against any file fact,
 `sysctl -w` against any file fact, `cp` against `@active`.
 
 **Adjudication.** +SURE of the walk. The loss is on record and acked: `311t` § 14 carries the
-human's hard ack that "an author who mints an mSort and hangs it on nothing comparable stays
+human's hard ack that "an author who mints an MSort and hangs it on nothing comparable stays
 guard-only under the flag", the reading that "every sort walls everything around it until it is
 mapped into the filesystem, spiritually, allowing for the few roots", and the conductor's cost
 line, "loses `active` against files until a stdlib key space exists for what sits directly in a
@@ -237,8 +237,8 @@ space, and its own examples point away from it. This is the human's tune exactly
 express the repair, and the expression is awkward enough to write down.
 
 **How it would be spelled** (STRAWMAN; chat-tier; no name proposed). Under § 3.2 the two tops
-must be keys of ONE mScheme, and a scheme is `:primary-of` at most one mSort, so the machine's
-immediate children must be keys of one mSort. The stdlib would mint it:
+must be keys of ONE MScheme, and a scheme is `:primary-of` at most one MSort, so the machine's
+immediate children must be keys of one MSort. The stdlib would mint it:
 
 ```sh
 sm_MachinePart__resolve() {                       # primary of one stdlib sort over the boot's children
@@ -253,10 +253,10 @@ sm_MachinePart__resolve() {                       # primary of one stdlib sort o
 and every sort that lives directly in a boot would declare `:identified-in` that one sort at the
 matching shape: inodes in `fs:<devno>`, a unit in `pid:1`, a knob in `net:<inode>`. Then F and
 the manager are two tops of one scheme, DISJOINT, and stage 5's line 9 survives. The costs, so
-the human can price them: `sm.Filesystem` and `sm.Manager` stop being mSorts of their own and
+the human can price them: `sm.Filesystem` and `sm.Manager` stop being MSorts of their own and
 become shapes of a synthetic one; every stdlib sort's `:identified-in` names the synthetic sort
 rather than the natural noun; the `2.2` examples must be rewritten (an ext4 filesystem is not "in
-the mRoute", it is `fs:` in the boot); and this is the parent-spoken partition of `311q` § 18 in
+the MRoute", it is `fs:` in the boot); and this is the parent-spoken partition of `311q` § 18 in
 stdlib-only clothing, the shape `311t` § 14 withdrew as a GENERAL rule because "children minted by
 other definitions could never spare". Here the objection is softer than it was: a stranger's
 daemon files itself under `pid:<n>` at its bind, exactly as a stranger's file files itself under
@@ -266,7 +266,7 @@ heterogeneous kernel objects that the kernel never hands out as one namespace, w
 reads as awkward rather than as wrong.
 
 **Repair, either of two, the human's.** (a) Add the sentence to 311 that the stdlib keys a
-machine's immediate children in one primary mScheme, and correct the § 2.2 examples; or (b) accept
+machine's immediate children in one primary MScheme, and correct the § 2.2 examples; or (b) accept
 the loss in writing and let the promotion carry one sentence stating it, so USER_STORY stage 5,
 `KNOBS:kSURVIVAL` ("the whole stage-5–7 product"), and `kHALVES` can be brought current rather
 than left silently stale. Fable-n's footnote belongs here: IMPLEMENTATION's definition of
@@ -276,10 +276,10 @@ root docs are human-voice and known stale on this, so it is a suggested edit onl
 
 ### 4. `thr-cells-of-one-parent-never-separate` — `312ca`, `312cb`; `312cc` dead-on-record; +SURE register gap
 
-**The text.** `311:1.9-cell-a-singleton-sort`: two cells of one mParent are two mSorts, "3.2
-decides between them as between any two mSorts"; a cell "has no mScheme of its own".
-`311:3.2-compare-one-chokepoint-four-answers` step 3 needs mKeys of one mScheme, or a self-top
-with a primary mScheme; a cell has neither. `311:4.1-boundary-of-this-model` excludes "a selector
+**The text.** `311:1.9-cell-a-singleton-sort`: two cells of one MParent are two MSorts, "3.2
+decides between them as between any two MSorts"; a cell "has no MScheme of its own".
+`311:3.2-compare-one-chokepoint-four-answers` step 3 needs MKeys of one MScheme, or a self-top
+with a primary MScheme; a cell has neither. `311:4.1-boundary-of-this-model` excludes "a selector
 dialect". `311:4.2-supersessions-pending-in-prior-documents` names neither `277` § 3 nor `30J`
 § 12 nor the `spike/CLAUDE.md` sparing-algebra bullet.
 
@@ -310,7 +310,7 @@ pair is two tops of one scheme, DISJOINT. Two things go wrong. First, the `@` sp
 mapping sitting found must be first-class in the authored surface (`311q` § 9), is exactly the
 spelling that forecloses sparing: `nginx@sm.Active` and `nginx@sm.Enabled` can never separate,
 `nginx/active` and `nginx/enabled` of a keyed sort can. Second, freshness: `311:2.5-may-read-the-readset`
-declares may-read per mSort, "a template the mSite or environment fills", and says nothing about
+declares may-read per MSort, "a template the MSite or environment fills", and says nothing about
 per-matched-shape may-read. Under one keyed sort, `active` (held in the manager's memory, in the
 boot) and `enabled` (held in a symlink, in a filesystem) share one may-read declaration, so a
 reboot cannot kill one and spare the other, which is the very case § 1.9 uses to motivate cells.
@@ -318,7 +318,7 @@ So the model as written gives the author sparing or freshness, not both, for the
 two-line idiom in books. --WONDER whether the retraction in `311t` § 15 saw this second cost.
 
 **Repair.** Two small edits recover both, and only one is needed for the register: (i) one § 4.2
-entry naming `277` § 3, `30J` § 12, and the steering bullet, with "Here: cells of one mParent
+entry naming `277` § 3, `30J` § 12, and the steering bullet, with "Here: cells of one MParent
 separate only where their owner keys them in one scheme under `:guarantees-unique-name`; no
 selector dialect exists"; (ii) either let may-read be declared per matched shape in § 2.5 (then
 the keyed-sort spelling carries per-key freshness), or let a parent's owner declare that the cells
@@ -329,35 +329,35 @@ knows; a stranger's `@org.vendor.Running` stays KNOWN_UNSPOKEN against both). Th
 ### 5. `thr-world-fence-contradicts-correspondence` — `312ca`, `312cb`; `312cd` dead; +SURE on the text
 
 **The text.** `311:1.8-fully-qualified-key-topic-and-derivation`: "Nothing speaks across
-mWorlds." `311:3.2-compare-one-chokepoint-four-answers` step 1: "Nothing speaks across mWorlds,
+MWorlds." `311:3.2-compare-one-chokepoint-four-answers` step 1: "Nothing speaks across MWorlds,
 not even the finished definition." `311:2.7-corresponds-across-a-transition`: "A mount line's
-oracle knows mKeys under the mountpoint are mKeys under the export on the named server, from this
-mVantage", and "the model's only declared sameness generator besides mToken equality". § 3.2: "SAME
-is 'or' across mDerivations (the mFullyQualifiedKey, a mCorrespondence, a provider-supplied
+oracle knows MKeys under the mountpoint are MKeys under the export on the named server, from this
+MVantage", and "the model's only declared sameness generator besides MToken equality". § 3.2: "SAME
+is 'or' across MDerivations (the MFullyQualifiedKey, a MCorrespondence, a provider-supplied
 identifier)".
 
 **Adjudication.** +SURE the sentences cannot all be read as written: a client path's chain ends at
-this host's mRoute, the export's chain ends on another machine, and a correspondence between them
-is a SAME across two mWorlds. Fable-n traces the categorical sentence to the STE100 rewrite
+this host's MRoute, the export's chain ends on another machine, and a correspondence between them
+is a SAME across two MWorlds. Fable-n traces the categorical sentence to the STE100 rewrite
 (`ca68b868`), after the last panel, uncrosschecked; the pre-rewrite text carried only the step-1
-UNKNOWN for cross-route mFullyQualifiedKeys. Astra-a read the fence as binding the
-mFullyQualifiedKey derivation only and the correspondence as another derivation, and filed it dead;
+UNKNOWN for cross-route MFullyQualifiedKeys. Astra-a read the fence as binding the
+MFullyQualifiedKey derivation only and the correspondence as another derivation, and filed it dead;
 that is the intended reading, and it is what the text must say rather than leave to a builder's
 charity.
 
 Fable-a's stronger claim, that the mount oracle cannot honestly make the statement because
 `nfs1.corp` from `web1` is a name from a vantage, is half right. The correspondence as § 2.7 words
-it is honest: its far end is "the export on the named server, from this mVantage", a
+it is honest: its far end is "the export on the named server, from this MVantage", a
 route-scoped key. Two client paths on one host through two mounts of one export are SAME through
 it, which is useful and safe. What it does NOT license is SAME with a fact measured ON the server
 as the fleet target: that needs the link "the name resolved from `web1` is the machine Dorc calls
 `nfs1`", which is the admin's host-sameness seat (`312b` § 2,
 `lead-cross-host-same-bottoms-out-in-the-admin`) and is absent from 311. Absent that link the far
-end's chain carries an unwarranted level and "and within one mFullyQualifiedKey" yields UNKNOWN.
+end's chain carries an unwarranted level and "and within one MFullyQualifiedKey" yields UNKNOWN.
 So the example stands; the fence is what is wrong.
 
-**Repair.** Narrow the fence in § 1.8 and § 3.2 to what it means: no mFullyQualifiedKey derivation
-and no finished record reaches across mWorlds; a mCorrespondence declared by the transition's
+**Repair.** Narrow the fence in § 1.8 and § 3.2 to what it means: no MFullyQualifiedKey derivation
+and no finished record reaches across MWorlds; a MCorrespondence declared by the transition's
 owner is the one derivation that may, vouch-tier, with its far end keyed from the declaring
 vantage; and it composes with DISJOINT only as `311q` § 10 typed (a part, a view, or a correlate
 does not).
@@ -365,16 +365,16 @@ does not).
 ### 6. `thr-region-test-smaller-holes` — three textual defects in § 2.9 and § 1.5
 
 - `thr-region-test-vacuous-over-no-traversal` (`312cb` found; `312cd` dead; ~SUSPECT residual).
-  Step 3 quantifies "on every mTraversal of D's mSort"; over zero traversals a universal is
+  Step 3 quantifies "on every MTraversal of D's MSort"; over zero traversals a universal is
   vacuously true, so an x with no route of D's sort reads DISJOINT where § 3.2 reads
   KNOWN_UNSPOKEN. Astra-a's defence holds for the common case: `311:2.10-places-the-upward-lookup`'s
-  default line says that where G does not declare it places T, "T's mKeys then have no route of
-  mSort G, and the pair reads as 3.2 decides it". It does not cover the case where G DOES place T
-  and the lookup DECLINED the mValue (an inode number handed to a path-shaped placing lookup):
+  default line says that where G does not declare it places T, "T's MKeys then have no route of
+  MSort G, and the pair reads as 3.2 decides it". It does not cover the case where G DOES place T
+  and the lookup DECLINED the MValue (an inode number handed to a path-shaped placing lookup):
   x then has no G-route, the invocation conditions were met, and step 3 is vacuous. The
   inherited pin (`277` § 5, ⊤ is never encoded as the empty set; `spike/CLAUDE.md`
   set-lifting-universal-meet) is what the seat needs restated. Repair: step 3 requires at least
-  one mTraversal of D's mSort on x; zero reads UNKNOWN.
+  one MTraversal of D's MSort on x; zero reads UNKNOWN.
 - `thr-prescribed-closure-evidence-insufficient` (`312ca` found; `312ce` stub; `312cd` dead as
   the author's knife; +SURE the model over-reaches). `311:1.5-token-and-the-two-warrants` states
   "For a file, the evidence is a link count of one. For a directory, the evidence is that no
@@ -397,29 +397,29 @@ does not).
 ### 7. `thr-readset-closure-at-the-terminus` — `312ca`; +SURE the text says both
 
 `311:2.5-may-read-the-readset`: a fact's readset includes "the may-read entries declared by every
-member of the mKey's mFullyQualifiedKey. It is closed only when every declared set is closed", and
-"Default: ⊤, which collides with everything". Every chain ends at the mRoute or a mRoot; the
-mRoute's mSort is the floor "mSort nobody has named" (`311:1.3-scheme-a-way-of-writing`), and
-neither it nor a mRoot shape declares a may-read set anywhere in the model. Read as "undeclared is
+member of the MKey's MFullyQualifiedKey. It is closed only when every declared set is closed", and
+"Default: ⊤, which collides with everything". Every chain ends at the MRoute or a MRoot; the
+MRoute's MSort is the floor "MSort nobody has named" (`311:1.3-scheme-a-way-of-writing`), and
+neither it nor a MRoot shape declares a may-read set anywhere in the model. Read as "undeclared is
 ⊤", no readset ever closes and § 2.6's second question never passes: no elision survives any
 write. Read as "only declared sets count", a mid-chain member whose describer forgot its set (the
 loop-backed filesystem whose image was never named, § 2.5's own example) is silently skipped. This
 is the one textual gap that decides whether the product exists, and it fails toward no product on
 one reading and toward a silent channel on the other. Repair: the leaf's and every intermediate
-member's undeclared set is ⊤; the mRoute's set is closed-empty by the engine's vouch, listed in
-§ 1.5 beside the transit-free mRoute; a mRoot shape's set is its describer's, and undeclared is ⊤.
+member's undeclared set is ⊤; the MRoute's set is closed-empty by the engine's vouch, listed in
+§ 1.5 beside the transit-free MRoute; a MRoot shape's set is its describer's, and undeclared is ⊤.
 
 ### 8. `thr-catalog-entries-are-not-referents` — `312ca` found; `312ce` stub; +SURE gap, safe direction
 
 `311:3.3-perishing-three-mutator-species` makes creation, deletion, and rename "routing writes to
-its mParent-Catalog entry, its existence cell", and `311:4.2-supersessions-pending-in-prior-documents`
-says same-for-existence "is the mParent-Catalog entry". `311:1.9-cell-a-singleton-sort` defines a
-cell as a singleton under an mParent; a directory's entries are many, keyed by name; and
+its MParent-Catalog entry, its existence cell", and `311:4.2-supersessions-pending-in-prior-documents`
+says same-for-existence "is the MParent-Catalog entry". `311:1.9-cell-a-singleton-sort` defines a
+cell as a singleton under an MParent; a directory's entries are many, keyed by name; and
 `311:1.6-parent-one-per-key` says the catalog edge "never carries identity". So an absence fact
-(`[ ! -e F ]`; `dpkg -s foo` answering 1) has no mReferent, no leaf mFullyQualifiedKey, and a
+(`[ ! -e F ]`; `dpkg -s foo` answering 1) has no MReferent, no leaf MFullyQualifiedKey, and a
 topic built on a routing-level key the model says carries none. Kimi's stub is the write side of
 the same seam: a creating write's leaf has no referent yet, and what `compare()` answers between
-it and a sibling's inode is unstated. Both resolve the same way: a catalog entry IS an mReferent of
+it and a sibling's inode is unstated. Both resolve the same way: a catalog entry IS an MReferent of
 its own (a directory entry, a passwd line, a status stanza), of a stdlib sort identified in the
 catalog, whose existence cell is what absence facts read and creating writes write; both warrants
 hold for names within one catalog instance by the catalog's construction. Walked: `touch
@@ -433,11 +433,11 @@ default is that absence facts never transport and never spare, which loses every
 
 - `thr-finished-means-two-records` (`312ca`; +SURE). § 2.6 says the writeset is "closed by the
   completion record" (the verb author's) and "The reached completion record finishes the
-  definition" (the mSort owner's), then gates on "The writeset's definition is finished",
+  definition" (the MSort owner's), then gates on "The writeset's definition is finished",
   singular. `30U` § 5 is explicit that a dynamic `disturbs` body's tail record and a
   `disturbance_reaches` body's record are two records with two authors, and `30U` § 7 that widened
   cells inherit their origin's finished status. Say both, per origin cell.
-- `thr-unclosed-lookup-perish-set` (`312ca`; +SURE silent). § 3.3 perishes a mResolution "when
+- `thr-unclosed-lookup-perish-set` (`312ca`; +SURE silent). § 3.3 perishes a MResolution "when
   its `resolve()` read the written state"; the engine knows a body's reads only through the
   read-set closure (`27C` § 4(a)(B)), default-disqualify. A lookup whose body fails the closure
   has an unstated perish set; the narrow reading (marked reads only) is a silent channel, the
@@ -450,8 +450,8 @@ default is that absence facts never transport and never spare, which loses every
   it: positive `looked-up-in` records accumulate across invocations; only a closure emitted on one
   invocation and contradicted by another's record is a contradiction, and that one is the owner's.
 - `thr-warrant-per-shape-and-per-evaluation` (`312ce` stub; textual). § 1.5 says a warrant "holds
-  for every mKey of that shape inside any one mParent" and, two sentences later, "is constructed
-  when that body is evaluated for the mKey in hand. It may rest on what the path measured."
+  for every MKey of that shape inside any one MParent" and, two sentences later, "is constructed
+  when that body is evaluated for the MKey in hand. It may rest on what the path measured."
   Both are meant: the declaration is per shape, the instance per evaluation, and a key whose
   evaluation did not reach the warrant has not got it (`311t` § 15,
   `rul-warrants-are-path-granular-and-built-at-evaluation`). One clause removes the reading in
@@ -472,10 +472,10 @@ default is that absence facts never transport and never spare, which loses every
   line 3 bare, line 7 under `$SUDO`; sudo lends `sm.User` and `sm.Group` and closes its sentinel;
   the vendor minted `org.vendor.CapSet` as its fact's catalog sort and declared nothing about
   `sm.User`. Fable-a's walk: `org.vendor.CapSet` is not lent, inherits the caller's instance
-  after the sentinel, one mPlaceholder, SAME, line 7 elides. Re-walked: sudo LENDS `sm.User`, so
-  line 7's cell is "measured under a lent mKey of O" for O = `sm.User`, and by
-  `311:2.8-observer-dependence-and-independence`'s default the vendor's mSort is dependent on
-  `sm.User` absent a declared independence; the mTopic of line 7's fact is (referent, root), of
+  after the sentinel, one MPlaceholder, SAME, line 7 elides. Re-walked: sudo LENDS `sm.User`, so
+  line 7's cell is "measured under a lent MKey of O" for O = `sm.User`, and by
+  `311:2.8-observer-dependence-and-independence`'s default the vendor's MSort is dependent on
+  `sm.User` absent a declared independence; the MTopic of line 7's fact is (referent, root), of
   line 3's (referent, the ambient user); they are not SAME. Fable-a's argument that "both halves
   are about different instances of O" confused O (the lent `sm.User`) with the inherited sort
   (`org.vendor.CapSet`). `311t` § 14's dismissal ("§ 2.7's default catches what it would carry")
@@ -492,11 +492,11 @@ default is that absence facts never transport and never spare, which loses every
   nothing-else` shape, priced, not refused.
 - `ref-disjoint-unreachable-at-the-root` (`312ce`'s one finding). Kimi read "every level" of the
   region test as the routing chain up to the root directory and compared the root directory with
-  D through § 3.2 step 2 ("If either mKey is A itself"), concluding UNKNOWN at the top of every
+  D through § 3.2 step 2 ("If either MKey is A itself"), concluding UNKNOWN at the top of every
   chain. A is the deepest SAME level of the two IDENTITY chains (the filesystem, for two inodes
-  in one filesystem), not the root directory, which is a ROUTING level of the mTraversal; the
+  in one filesystem), not the root directory, which is a ROUTING level of the MTraversal; the
   root directory's own identity is its inode, a sibling of D's inode under F, DISJOINT by
-  `:guarantees-unique-name`. The conflation of mTraversal with mFullyQualifiedKey is the
+  `:guarantees-unique-name`. The conflation of MTraversal with MFullyQualifiedKey is the
   misreading, and thread 6's third item is the clause that would have prevented it. Kimi's book
   (`apt-get update` bounded by a whole-kind `PkgIndex`) is not this case at all: a bound in a
   sort with no route into the file world is the acked floor (`311t` § 14: a sort hung on nothing
@@ -529,7 +529,7 @@ default is that absence facts never transport and never spare, which loses every
   may-read union losing its parts (marked reads supply them; a closure omitting them is false);
   shared-ancestor entailment suppressing a free-space cell (the cell's own whole-store may-read
   collides); dependent lookups forcing a second host exchange (sequenced inside the one probe
-  artifact); observer-independence's per-(mSort, O) arity against § 3.5's linearity sentence
+  artifact); observer-independence's per-(MSort, O) arity against § 3.5's linearity sentence
   (a textual nit; scope the sentence to positive generators); the flat default's cost for `mount`
   lines (on record, `311p` § 8); the emulated authority (handled by arrangement, `311t` § 6).
 
@@ -537,30 +537,30 @@ default is that absence facts never transport and never spare, which loses every
 
 Edits to 311, each one to three sentences, in the order of § 2:
 
-1. § 2.9: the four-step walk applies only where x denotes one mReferent; two whole-named keys read
+1. § 2.9: the four-step walk applies only where x denotes one MReferent; two whole-named keys read
    UNKNOWN unless one side is enumerated and each member passes as a point (thread 1). Step 3
-   requires at least one mTraversal of D's mSort (thread 6). A level is compared by the identity
+   requires at least one MTraversal of D's MSort (thread 6). A level is compared by the identity
    of the referent it resolved to (thread 6).
 2. § 2.9 and § 3.3: a flat scheme's traversal is the entry the lookup found; the catalog named
    whole is touched only by a write naming it whole; the container-write of § 2.6 feeds the
-   write-path test and never perishing; a first write perishes the written key's mToken, not the
+   write-path test and never perishing; a first write perishes the written key's MToken, not the
    store's (thread 2).
 3. § 1.5: strike or qualify the file and directory evidence sentences (thread 6); add the engine's
-   closed-empty may-read vouch for the mRoute beside its transit-free vouch (thread 7); one clause
+   closed-empty may-read vouch for the MRoute beside its transit-free vouch (thread 7); one clause
    separating the per-shape declaration of a warrant from its per-evaluation construction
    (thread 9).
-4. § 1.8 and § 3.2 step 1: narrow "Nothing speaks across mWorlds" to the mFullyQualifiedKey
-   derivation and the finished record; a mCorrespondence is the one cross-mWorld SAME derivation,
+4. § 1.8 and § 3.2 step 1: narrow "Nothing speaks across MWorlds" to the MFullyQualifiedKey
+   derivation and the finished record; a MCorrespondence is the one cross-MWorld SAME derivation,
    vouch-tier, far end keyed from the declaring vantage, composing with DISJOINT only as
    `311q` § 10 typed (thread 5).
-5. § 2.5: undeclared sets are ⊤ at every member; the mRoute's is closed-empty by engine vouch; a
-   mRoot shape's is its describer's (thread 7). Optionally: may-read declarable per matched shape
+5. § 2.5: undeclared sets are ⊤ at every member; the MRoute's is closed-empty by engine vouch; a
+   MRoot shape's is its describer's (thread 7). Optionally: may-read declarable per matched shape
    (thread 4, the freshness half).
-6. § 1.9 or § 1.6: a catalog entry is an mReferent of a stdlib sort identified in its catalog,
+6. § 1.9 or § 1.6: a catalog entry is an MReferent of a stdlib sort identified in its catalog,
    with both warrants by construction; absence facts read its existence cell; creating writes
    write it (thread 8).
 7. § 2.6: "finished" means the verb author's record for a dynamic at-most set AND the origin
-   cell's finished record for every widening mSort, per `30U` § 5 and § 7 (thread 9). § 3.3: a
+   cell's finished record for every widening MSort, per `30U` § 5 and § 7 (thread 9). § 3.3: a
    lookup whose body fails the read-set closure perishes under any routing write (thread 9).
 8. § 2.10: define disagreement over the union of records; only a contradicted closure refuses
    (thread 9).
@@ -591,6 +591,6 @@ cells-are-distinct sentence, or keys properties and gives may-read a per-shape f
   found the widest set of textual gaps; the adversarial Fable lane found the one product-scale
   perishing defect and the one refuted headline.
 - Not covered by any lane, and not by this adjudication: the cross-root corner (`311t` § 3's
-  killers; DNS, cloud roots, attestation) was checked for self-consistency of the mWorld
+  killers; DNS, cloud roots, attestation) was checked for self-consistency of the MWorld
   sentences only. Fable-n names it as the next panel's, with `311t` in context. Performance was
   checked only for the network-catastrophic case; none found.

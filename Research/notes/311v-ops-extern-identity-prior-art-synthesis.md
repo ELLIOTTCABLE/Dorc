@@ -202,23 +202,23 @@ it, the human's response, and the conductor's own counter are all in 6-the-bad-n
 
 | classical term | model object | fit |
 | --- | --- | --- |
-| naming scheme (name space, mapping algorithm, universe of values) | mScheme | close; the model adds one accountable owner and per-shape declarations |
-| `resolve(name, context)` | `resolve()` run in an mVantage, the mKey looked up in its mParent-Catalog | close; the classics fold vantage and parent into one argument, the model separates them |
-| context, catalog | mParent-Catalog | close |
-| default vs explicit context reference | the ambient mParent from the mEntryChain vs the bind seat | close |
-| path name terminating at a built-in context; root | mFullyQualifiedKey terminating at a mRoot or the mRoute | close; the classics treat the root as unique per resolver, the model makes each terminus an mWorld |
+| naming scheme (name space, mapping algorithm, universe of values) | MScheme | close; the model adds one accountable owner and per-shape declarations |
+| `resolve(name, context)` | `resolve()` run in an MVantage, the MKey looked up in its MParent-Catalog | close; the classics fold vantage and parent into one argument, the model separates them |
+| context, catalog | MParent-Catalog | close |
+| default vs explicit context reference | the ambient MParent from the MEntryChain vs the bind seat | close |
+| path name terminating at a built-in context; root | MFullyQualifiedKey terminating at a MRoot or the MRoute | close; the classics treat the root as unique per resolver, the model makes each terminus an MWorld |
 | universal name space | `:root` | close; the classics do not discuss cloning |
 | synonym, indirect name | a `:guarantees-unique-name` failure; a `:yields` whose target is another name | close |
-| hard link as a binding to a lower-layer name | the path mScheme yielding the inode | close; the 1978 text says a higher-level name bound to a lower one is not a synonym |
-| unique-identifier space, stable binding | a warranted mToken | close; the classics bundle never-reused into the rule, the model splits it off to the witness horizon |
-| limited context (names must be reused) | recycled mKeys | close |
-| search path, union directory | a lookup crossing several catalogs; its emitted mTraversal | partial; the classics note the hazard and have no traversal as backing |
+| hard link as a binding to a lower-layer name | the path MScheme yielding the inode | close; the 1978 text says a higher-level name bound to a lower one is not a synonym |
+| unique-identifier space, stable binding | a warranted MToken | close; the classics bundle never-reused into the rule, the model splits it off to the witness horizon |
+| limited context (names must be reused) | recycled MKeys | close |
+| search path, union directory | a lookup crossing several catalogs; its emitted MTraversal | partial; the classics note the hazard and have no traversal as backing |
 | user-dependent binding, closure | `:observer-dependence`; a wrapper's `:lends` | partial |
 | unstable binding | routing invalidation | named, not modelled |
-| cache valid until the min TX of arcs followed | a mResolution backed by its mTraversal | close in shape; GNS forbids the write, the model invalidates on it |
+| cache valid until the min TX of arcs followed | a MResolution backed by its MTraversal | close in shape; GNS forbids the write, the model invalidates on it |
 | sufficient vs necessary identity criterion | `:guarantees-unique-referent` vs `:guarantees-unique-name` | close, and independent in both |
-| supplies vs carries an identity criterion | primary mScheme owner declares; secondary schemes yield | close in spirit |
-| qualified-name conditions (uniqueness within, existence of, invariance of the qualifier) | the mParent-Store edge | close; Kent treats it as an anti-pattern, the model embraces it with invalidation |
+| supplies vs carries an identity criterion | primary MScheme owner declares; secondary schemes yield | close in spirit |
+| qualified-name conditions (uniqueness within, existence of, invariance of the qualifier) | the MParent-Store edge | close; Kent treats it as an anti-pattern, the model embraces it with invalidation |
 | no counterpart | KNOWN_UNSPOKEN; may-read and may-write with their closures; the region test; `:places` | the novel half |
 
 ## § 2-what-has-no-precedent
@@ -858,7 +858,7 @@ owed work.
 - `bad-the-ramp-has-a-cliff-and-a-settled-principle-denies-it` (+SURE of the texts).
   `KNOBS:kBURDEN` says the gradient "must have no cliff (settled principle 5)", and
   `USER_STORY.md` paints stages 3 through 7 as a ramp. Under the model, the step from an in-book
-  verdict function to any cross-vocabulary survival requires an mScheme at every bind,
+  verdict function to any cross-vocabulary survival requires an MScheme at every bind,
   `:identified-in` per shape into a store somebody else described, two warrants, a closed
   may-read set, a finished entailment, and the store describer's closure. That is not a step; it
   is learning the model. Every system in the survey has the same cliff and does not pretend
@@ -910,8 +910,8 @@ owed work.
   mechanism, one stranger's scheme yielding into another's, is the same one, per tool, per
   stranger pair, with no curator, no venue, and no budget. The reverse-DNS choice guarantees the
   collisions happen; nothing says who resolves them. Actionable phrasing: the stdlib maintainer
-  is that curator, and a third party's `:yields` into a stdlib mSort is the unit of curation.
-  Budget for it as Repology did, or accept that third-party mSorts read KNOWN_UNSPOKEN against
+  is that curator, and a third party's `:yields` into a stdlib MSort is the unit of curation.
+  Budget for it as Repology did, or accept that third-party MSorts read KNOWN_UNSPOKEN against
   everything forever, which is guard-only.
   - **[HUMAN]** Acked; this has come up at a brush a couple of times in the model's sittings. A
     discussion about collaboration inside the model is pending.
@@ -1009,7 +1009,7 @@ owed work.
   - Conductor, on reflection: the one classical term with the widest reach, "context", is
     already overloaded four ways in this corpus (`KNOBS:kCONTEXT`, the context slot,
     measure-in-context, the entry chain), so borrowing it would be a net loss; and the pair the
-    conductor misread twice on a careful pass is mRoute against mRoot, one letter apart and
+    conductor misread twice on a careful pass is MRoute against MRoot, one letter apart and
     nearly opposite in meaning, a legibility hazard rather than a naming-quality one. The
     finding's premise stands (the naming half has precedent, the novel half has none); its
     actionable half is weaker than stated.

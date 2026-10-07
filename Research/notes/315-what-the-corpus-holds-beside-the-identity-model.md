@@ -138,7 +138,7 @@ a line that ran touched what the removed line's fact depended on.
   claimed measurement is the preferred approach”; “the world's behaviour enters only at the very
   end, on a host”
 - spec · `spec:154`, `spec:159-165` · model, normative then an unacked reading: “A write to an
-  mReferent affects the mState of the mReferents it affects”; the world relations “are the
+  MReferent affects the MState of the MReferents it affects”; the world relations “are the
   conductor's choice of world stratum … 311 names none of them”
 - human · `312d:814` · typed: “the world stratum has not been explained to the human”
 - conductor · `312d:1166-1171`: the world stratum was “invented by the conductor in the raw pass
@@ -165,7 +165,7 @@ a line that ran touched what the removed line's fact depended on.
 - 311 · `pre:221`, `pre:367` · model: “The engine vouches for one lookup itself”
 - human · `312d:1273-1274` · typed: “the engine is not "vouch"”; applied to the specification as
   `43b8d4dd`. The same passage calls vouch a precisely defined contract term.
-- `311u:163` · model, unedited: “The engine vouches the local mRoute”
+- `311u:163` · model, unedited: “The engine vouches the local MRoute”
 - Closed by the typed line; the refuted-shapes register still carries the old sentence.
 
 ### § 1.8 the read side's completeness burden
@@ -185,7 +185,7 @@ disturbing that probe's fact.
 - human · `TODO.md:7` · voice: “"I'm converged in live state"” against “"this is a no-op in live
   state"”
 - 311 and spec · `pre:560`, `spec:1174` · model: “A closed may-read set is knife-tier”; “The vouch
-  is true when the measured answer depended on no mReferent outside what the marked reads reach.”
+  is true when the measured answer depended on no MReferent outside what the marked reads reach.”
 - human · `312cg:391-393` · 2026-09-24 · typed: “closure is necessary for the dangerous actions,
   cross-author survival and the like”
 - conductor · `312f:558`: “The human distinguished this from the read side, about which they
@@ -208,8 +208,8 @@ chains and other parties' reactions included.
   not say a claim covers every chain of effects.
 - human · `312f:56-57` · typed: “a write described only as a write to an image can affect the
   whole image”
-- 311 · `pre:603-604` · model: the entailment “carries every cross-mSort consequence no
-  mFullyQualifiedKey expresses”
+- 311 · `pre:603-604` · model: the entailment “carries every cross-MSort consequence no
+  MFullyQualifiedKey expresses”
 - spec · `spec:1308`, `spec:1313` · model: the finished record's truth bounds one step of
   `affects`; `sparingIsSound` reads every chain
 - conductor · `312f:64`: “The human has not chosen a replacement effect algebra.”
@@ -222,7 +222,7 @@ chains and other parties' reactions included.
 - human · `311b:341-342` · 2026-09-07 · hard ACK: avoid new enumerations of the kind “including
   things I have never heard of”
 - human · `312b:191-193` · 2026-09-10 · ACKED, seen then with "mKinds'": “"nothing else" means
-  "nothing outside my declared stores and my reached mSorts' stores"”
+  "nothing outside my declared stores and my reached MSorts' stores"”
 - human · `311q:673` · [HUMAN] lean: “`disturbs no-other:sm.File`”
 - human · `312f:53-54` · typed: “Closing a list does not require proof of an unknowable universal.”
 - Latest typed: `312f:53-54`. Registered: no.
@@ -259,11 +259,11 @@ chains and other parties' reactions included.
 
 - § 1.14 `the shape of a coordinate` — `271:rul-coordinate-shape-flat-three-place` (typed;
   `spike/AGENTS.md` coordinate-semantics: “recursive coordinate shapes DECLINED”) against the
-  recursive mFullyQualifiedKey of `pre:309-313`, which `311q:27` and `311t:1557` presuppose. No
+  recursive MFullyQualifiedKey of `pre:309-313`, which `311q:27` and `311t:1557` presuppose. No
   typed reversal. Registered: no (§ 4.2 registers `30W`'s context product, not this ruling).
 - § 1.15 `who resolves a name` — `USER_STORY.md:593`, `KNOBS.md:44` (audited): “Keyed by the KIND,
   not by a command”; “per-KIND `resolve`/`disturbance_reaches`”; `24F:184` and the built resolver
-  key it by kind. Against `pre:131`: “An mSort has no mKeys and no `resolve()`.” `312b:330`
+  key it by kind. Against `pre:131`: “An MSort has no MKeys and no `resolve()`.” `312b:330`
   [HUMAN] hard nack: “a naming system is a term language, never a sort.” `311t:1641` [HUMAN]
   NACK of a shape: “collaboration joins at the SORT”. Corrected: the extraction also listed
   `312f:734` here; in its source "this speech" is store-level speech about naming, not
@@ -286,7 +286,7 @@ chains and other parties' reactions included.
   answers. `notes/314` § 2 records what a model showed of the three. Registered: `30U` and the ANALYZER-NEEDS rows, yes; the code, no.
 - § 1.18 `sibling cells` — `271:222-234` (typed, “as ruled for now … spike-provisional”): a
   selector dialect separates two selectors of one entity. Against `pre:343`: “Two cells of one
-  mParent are two mSorts.” Registered: yes.
+  MParent are two MSorts.” Registered: yes.
 - § 1.19 `the invariance, disjointness, and lend speech acts` — `271:640-651`
   `rul-invariance-speech-act` (typed 2026-07-12); `30W:83-88` `rul-disjoint-is-an-rc-predicate`
   (typed); `271:rul-lend-map` (typed 2026-07-11; `spike/AGENTS.md`: “a MISSING dimension = ⊤,
@@ -294,7 +294,7 @@ chains and other parties' reactions included.
   dissolves the first two (registered) and replaces the third with a completion sentinel under
   which unlent sorts inherit (`pre:920-923`; not registered).
 - § 1.20 `context as part of identity` — the built fact key and `26Ob` `[extracted]` carry it.
-  Against `pre:355-357`: the mVantage “is not part of any mKey's identity.” No typed line.
+  Against `pre:355-357`: the MVantage “is not part of any MKey's identity.” No typed line.
   Registered: for `30W` and `26Ob`; not for the code.
 - § 1.21 `which way a wrong merge fails` — `USER_STORY.md:600-602` (audited): “a resolver that
   wrongly MERGES two entities only over-verifies; one that wrongly SPLITS one referent re-opens
@@ -307,7 +307,7 @@ chains and other parties' reactions included.
 - § 1.23 `property graduation` — accepted at `311q:402`, killed at `311q:538` `[extracted]`.
 - § 1.24 `a recreated thing` — `28Q:279`, `28Q:681` `[extracted]`: the door to a recreated
   instance being the same thing is held open. Against `pre:74-75`: “It does not survive
-  destruction and recreation under its old mKey.” `311b:334-340` (typed):
+  destruction and recreation under its old MKey.” `311b:334-340` (typed):
   `rul-reuse-incarnation-invalidation`, a nack of refresh-specific machinery. Registered: no.
 - § 1.25 `re-reading at apply time` — `24F:86` `[extracted]`: no apply-time resolution;
   `spike/AGENTS.md` toctou-scope: identified-cause re-verification is in, unattributed-drift
@@ -335,7 +335,7 @@ Fifteen entries, the same in both texts (`pre:995-1098`). Each as *earlier text 
 3. `30W` § 1 and § 5, `26Ob:res-per-index-relation-table`: one referent-transparent grade → two
    independent warrants per matched shape, and `:root` apart.
 4. `30W` § 1 and § 10, `26Ob:res-worlds-compare-through-the-chokepoint`: the context slot is a
-   product over index-kinds → it is an mVantage, part of no key's identity.
+   product over index-kinds → it is an MVantage, part of no key's identity.
 5. `30W` § 2 and § 3 `kind__disjoint()`, `30W:rul-disjoint-is-an-rc-predicate`, `30T:file-identity`:
    an owner-authored region predicate → none; containment is membership in a traversal.
 6. `30W` § 2 to § 4, `26Ob`'s filtered meet and target pin, `27C` § 4(A),
@@ -390,22 +390,22 @@ Earlier text the model departs from that § 4.2 does not name. Root documents ar
 - `28Q` on a recreated instance (§ 1.24); `USER_STORY.md` stage 6 on merges (§ 1.21).
 - `24F:86` and `spike/AGENTS.md` toctou-scope, against the standup `witness()` and the three
   mutator species (§ 1.25).
-- Stale bridges: root `AGENTS.md` terminology firming still says `mKey-CatalogStore` and
-  `mKey-PrimaryStore`, which `spec:4311-4312` gives as superseded by mParent-Catalog and
-  mParent-Store; `311u:163` still says the engine vouches (§ 1.7).
+- Stale bridges: root `AGENTS.md` terminology firming still says `MKey-CatalogStore` and
+  `MKey-PrimaryStore`, which `spec:4311-4312` gives as superseded by MParent-Catalog and
+  MParent-Store; `311u:163` still says the engine vouches (§ 1.7).
 - The held-work inventory also lists, as owed at a freeze and not in § 4.2: `spike/AGENTS.md`
   pure-predicate-carry, `USER_STORY.md` stages 5 and 7, and `IMPLEMENTATION.md`'s definition of
   the flag.
 
 ## § 3-names
 
-- Acked: mReferent, mState, mValue (`311t:1464`, [HUMAN] ACKED, typed: “mReferent, mState, mValue
+- Acked: MReferent, MState, MValue (`311t:1464`, [HUMAN] ACKED, typed: “MReferent, MState, MValue
   as three terms”). KNOWN_UNSPOKEN, by the human's own commit `adaaf990`. The flag's name
   (`271:686-687`, typed). Foundation (`312d:1271-1272`, typed: “Foundation, not Ground; not to be
   bikeshedded”). `:aliases-nothing-else` as the store's closure (`311t:1171-1172`, STAMPED), with
   “many names will churn if the table shape is taken”.
-- No typed ack found: mSort (only [HUMAN] paraphrase lines react to it); SAME, DISJOINT, UNKNOWN;
-  mScheme; the warrants' names.
+- No typed ack found: MSort (only [HUMAN] paraphrase lines react to it); SAME, DISJOINT, UNKNOWN;
+  MScheme; the warrants' names.
 - Nacked or disliked, each as its ledger records it: “statement” as the genus (`312d:1292`,
   typed); the engine as “vouch” (`312d:1273-1274`, typed); “Hands out the address”, “mints”,
   “Holds”, and “lives in” as phrasing that pierces referential agnosticism (`311t:614-626`,
@@ -423,10 +423,10 @@ Earlier text the model departs from that § 4.2 does not name. Root documents ar
   the two tables of § 5”; `312f:290-291`: “a useful search pattern, not authority”. The re-cut
   was not done.
 - Coinages of `312f` and its exercise records with no definition: "carrier" in the file sense
-  (the pre-mechanisation text uses "carrier" for an mSort, `pre:105-110`), "virtual mSort",
-  "location mScheme", "naming stability", "the token rule", "member-write leg", "in force".
+  (the pre-mechanisation text uses "carrier" for an MSort, `pre:105-110`), "virtual MSort",
+  "location MScheme", "naming stability", "the token rule", "member-write leg", "in force".
 - Things with no clear name anywhere, each with the plainest description the corpus gives:
-   1. the thing's-end closure: `pre:1175`, “this mReferent has no other home”
+   1. the thing's-end closure: `pre:1175`, “this MReferent has no other home”
    2. the hole `312f` is about: `312f:629-631`, “"is the write inside the store?"” in place of
       “"does the write change how the store names things?"”
    3. the store-level naming-stability statement: `312f:319-320`, “A direct, conditional
@@ -469,21 +469,21 @@ Identity:
 - `311b:297-302` (typed): “sameness is not a correctness freebie.” (§ 1.21)
 - `311b:436-441` (typed): “Expect most identity descriptions to do nothing without substantial
   contributions from several humans; no cheap implicit baseline is owed.”
-- `311b:559-561` (typed): “assume generalized storage in arbitrary abstract mSorts … File-only is
+- `311b:559-561` (typed): “assume generalized storage in arbitrary abstract MSorts … File-only is
   insufficient.” `311b:715-718` (typed): “User, NetNS, and the other context dimensions are
-  ordinary stdlib types, not engine-special types or built-in mWorld semantics.”
-- `311q:27`, `311q:32-33` ([HUMAN], "typed this sitting"): “B(b) with mScheme is the design,
+  ordinary stdlib types, not engine-special types or built-in MWorld semantics.”
+- `311q:27`, `311q:32-33` ([HUMAN], "typed this sitting"): “B(b) with MScheme is the design,
   unqualified”; “An arm is implementation, not model”.
 - `311q:357-360` (typed): “a correspondence weaker than sameness of the whole thing (a part, a
   view, a correlate) does not compose with DISJOINT”.
-- `311t:1118-1122` ([HUMAN] hard ack): “an author who mints an mSort and hangs it on nothing
+- `311t:1118-1122` ([HUMAN] hard ack): “an author who mints an MSort and hangs it on nothing
   comparable stays guard-only under the flag.”
 - `311t:1136-1144` ([HUMAN] ack, a paraphrase tag in that ledger): “separation is only ever
   concluded from a single definition's own distinctions”.
 - `311t:1557-1563` (typed acks, less the deep-key clause): “the engine never reads key syntax at
   the model level”.
 - `26Ob:702-707` (typed). `312cg:173-175` (typed): “there is no machine-crossing class visible to
-  Dorc”. `312cg:1212-1214` (typed): “the mRoute is the vantage-root and is not glossed as "the
+  Dorc”. `312cg:1212-1214` (typed): “the MRoute is the vantage-root and is not glossed as "the
   machine". A boot is not a machine.” `312cg:1229-1231` (typed): “"nobody has said the disk and
   the file are different things" is understood and internally consistent; any repair must
   acknowledge it”.
@@ -597,9 +597,9 @@ Time, attribution, the flag, the engine:
 ## § 8-open-questions-in-the-humans-own-terms
 
 - `312f` § 13.4 ([HUMAN], put for a next turn): whether the primary scheme's `__resolve` is the
-  store owner's naming half; whether, since “no store-level API endpoint for an mScheme was
+  store owner's naming half; whether, since “no store-level API endpoint for an MScheme was
   designed, unless forgotten”, this speech belongs on the scheme and not the sort; whether it is
-  meaningful only for primary schemes; and that this “may be the first time mSchemes get
+  meaningful only for primary schemes; and that this “may be the first time MSchemes get
   significant, dangerous descriptive power”, which must fail safe with no collaboration.
 - `312f` § 14.3 ([HUMAN]): “Define the new member or members that would close this issue
   precisely and completely, so that the problem has a name. Only then test whether the member is

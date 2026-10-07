@@ -12,7 +12,7 @@ visible sentence start.
   spec declares each scheme logical or universal. A logical scheme's identical FMRIs "native to
   distinct fault management domains do not necessarily identify the same actual resource". A
   universal scheme's identical FMRIs "identify the same actual resource wherever they are
-  interpreted". This is 311's mRoute-terminated shape vs `:root`, declared per scheme by the scheme
+  interpreted". This is 311's MRoute-terminated shape vs `:root`, declared per scheme by the scheme
   owner. The declaration lives in the spec, not the data ("FMRI schemes do not include a member
   indicating whether the scheme is logical or universal"). pkg v0 is universal only "if package name
   and package version conventions are adhered to", a conditional warrant. Authority members are
@@ -25,14 +25,14 @@ visible sentence start.
   311 would predict:
   - "The zone to which a particular non-global address pertains is not encoded in the address
     itself but determined by context."
-  - Zone indices are "strictly local to the node" (mRoute-scoped).
-  - An unqualified address "should be interpreted as <address>%<default ID>" (an ambient mParent
+  - Zone indices are "strictly local to the node" (MRoute-scoped).
+  - An unqualified address "should be interpreted as <address>%<default ID>" (an ambient MParent
     the node supplies).
   - "there is no way for a node to automatically determine which of its interfaces belong to the
     same zones ... an implementation must provide a means for manual assignment". Sameness of two
     parents is speech, never measured.
   - A zone-qualified literal "MUST NOT be sent on the wire unless every node that interprets the
-    format agrees on the semantics". Nothing speaks across mWorlds.
+    format agrees on the semantics". Nothing speaks across MWorlds.
 
   [A-rfc4007-ipv6-scoped-address-architecture-2005] +SURE.
 - The DNS RFCs split 311's two warrants the way 311 does:
@@ -46,7 +46,7 @@ visible sentence start.
     primary-key-only positions.
 
   [A-rfc2181-dns-clarifications-1997] +SURE.
-- Contradiction with a 311 example, not with a 311 rule. 311 §1.6 names "the DNS mRoot" as a mRoot
+- Contradiction with a 311 example, not with a 311 rule. 311 §1.6 names "the DNS MRoot" as a MRoot
   example. The DNS community's own terminology says "a domain name that is notionally globally
   unique has different meanings for different network users" (split DNS). Views "are not a
   standardized part of the DNS, but they are widely implemented". Locally served zones resolve "the
@@ -189,9 +189,9 @@ visible sentence start.
 
 | [slug] | what it is | exhaustive / broad / abstract / battle-tested | 311 analogues | punts | altitude |
 |---|---|---|---|---|---|
-| [A-solaris-fmri-man-2011] | Solaris FMRI scheme definitions | exhaustive for its ten schemes / broad (cpu, dev, hc, mem, mod, pkg, svc, sw, zfs) / abstract (typed member tuples, stabilities) / deployed since Solaris 10 in SMF, fmd, IPS | mScheme per scheme; authority = mParent-Store with implicit local default = mRoute; logical vs universal = mRoute-scoped vs `:root`; invariant vs soft authority members = warrant grading; embedded FMRIs = `:yields`; sw.root = lend in identity | logical/universal not in data; many members Private/undocumented; only localhost svc scope | naming theory + schema |
-| [A-solaris-smf-man-2011] | SMF overview | exhaustive for SMF / one domain / moderately abstract / deployed 2005– | composed lookup = inherit from mParent; layers = precedence; in-conflict = refuse; snapshots; non-persistent groups = boot-scoped cells; legacy_run = UNKNOWN | readers get a "random" value under conflict | read + config model |
-| [A-rfc4007-ipv6-scoped-address-architecture-2005] | IPv6 scoped addressing | exhaustive for scope / one domain / abstract (scope, zone, index) / universal deployment | mKey-Primary in mParent-Store (zone); node-local index = mRoute; default zone = ambient mParent; wire ban = no speech across mWorlds | zone membership manual; interface-name zone ids implementation-defined | naming theory |
+| [A-solaris-fmri-man-2011] | Solaris FMRI scheme definitions | exhaustive for its ten schemes / broad (cpu, dev, hc, mem, mod, pkg, svc, sw, zfs) / abstract (typed member tuples, stabilities) / deployed since Solaris 10 in SMF, fmd, IPS | MScheme per scheme; authority = MParent-Store with implicit local default = MRoute; logical vs universal = MRoute-scoped vs `:root`; invariant vs soft authority members = warrant grading; embedded FMRIs = `:yields`; sw.root = lend in identity | logical/universal not in data; many members Private/undocumented; only localhost svc scope | naming theory + schema |
+| [A-solaris-smf-man-2011] | SMF overview | exhaustive for SMF / one domain / moderately abstract / deployed 2005– | composed lookup = inherit from MParent; layers = precedence; in-conflict = refuse; snapshots; non-persistent groups = boot-scoped cells; legacy_run = UNKNOWN | readers get a "random" value under conflict | read + config model |
+| [A-rfc4007-ipv6-scoped-address-architecture-2005] | IPv6 scoped addressing | exhaustive for scope / one domain / abstract (scope, zone, index) / universal deployment | MKey-Primary in MParent-Store (zone); node-local index = MRoute; default zone = ambient MParent; wire ban = no speech across MWorlds | zone membership manual; interface-name zone ids implementation-defined | naming theory |
 | [A-rfc2181-dns-clarifications-1997] | DNS clarifications | exhaustive on RRsets, CNAME, TTL / one domain / normative / 29 years | warrants split (unique-referent kept, unique-name refused); four name states; canonical-only slots; provenance ranking; child owns its cut | "does not consider security" | naming + protocol |
 | [A-rfc9499-dns-terminology-2024] | DNS terminology BCP | exhaustive glossary / one domain / abstract facets / consensus doc | alias, canonical name, owner, zone, cut, occlusion; split DNS vs `:root`; "context for resolving a name" facet | no agreed facet set; bailiwick "historic" | naming theory |
 | [A-rfc6672-dname-redirection-2012] | DNAME | exhaustive for DNAME / narrow / normative / deployed | alias above the leaf; occlusion as a routing write; singleton redirection | loops left to administrators | naming |
@@ -218,7 +218,7 @@ visible sentence start.
 | [B-shadow-useradd-man-2026] | useradd | narrow | uid is the key, login name aliases (`-o`); recycling admitted | — | admin tool |
 | [B-git-gitrevisions-2023] | git revision syntax | narrow | first-match refname chain; abbreviated SHA-1 depends on the whole catalog | — | naming |
 | [A-cloud-init-first-boot-determination-2026] | cloud-init first boot | narrow / bug-litigated | lifecycle detection by token comparison; check vs trust | IMDS failure makes it undecidable | lifecycle |
-| [A-apparmor-technical-documentation-2007] | AppArmor design doc | broad for file mediation | path = mKey-Natural as policy key; namespace-relative paths; link = permissioned alias creation | namespaces "unclear"; disconnected files denied | policy model |
+| [A-apparmor-technical-documentation-2007] | AppArmor design doc | broad for file mediation | path = MKey-Natural as policy key; namespace-relative paths; link = permissioned alias creation | namespaces "unclear"; disconnected files denied | policy model |
 | [B-lwn-apparmor-debate-begins-2006] | LWN on the path vs label debate | secondary | "name is not the file" | — | debate record |
 | [B-selinux-setfiles-man-2026] | setfiles | narrow | path-keyed spec onto inode; hard-link conflict warned | last match wins | policy tool |
 

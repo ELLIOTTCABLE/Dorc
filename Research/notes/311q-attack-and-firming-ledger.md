@@ -12,23 +12,23 @@
 ## § 1 — 2026-09-16: the model re-cut as 311j
 
 Done: `notes/311j` minted from `notes/311`, ahistorical, as the one design. Two species: the
-mScheme (what every bind and mark names; owns the `resolve()`) and the mSort (a declared
-carrier, never a category of the world). One mParent per mKey: mParent-Catalog through a
-secondary mScheme, mParent-Store through the primary mScheme. `:identified-in` and the
-warrants declared per matched shape of an mKey-Primary's value, by the primary mScheme's
-owner; a second name is a second mScheme. The mScheme-alone floor; no default mScheme. mKeys
-as plan-time objects. mCells as mSorts with singleton mKeys under their mSort-Bearer. The
-finished definition bounded by declared mPlacements. `compare()` reading mRoute-versus-mRoot
-and mRoots-differ as unknown, :aliases-nothing-else leaf-ward, SAME "or" across mDerivations and "and"
+MScheme (what every bind and mark names; owns the `resolve()`) and the MSort (a declared
+carrier, never a category of the world). One MParent per MKey: MParent-Catalog through a
+secondary MScheme, MParent-Store through the primary MScheme. `:identified-in` and the
+warrants declared per matched shape of an MKey-Primary's value, by the primary MScheme's
+owner; a second name is a second MScheme. The MScheme-alone floor; no default MScheme. MKeys
+as plan-time objects. MCells as MSorts with singleton MKeys under their MSort-Bearer. The
+finished definition bounded by declared MPlacements. `compare()` reading MRoute-versus-MRoot
+and MRoots-differ as unknown, :aliases-nothing-else leaf-ward, SAME "or" across MDerivations and "and"
 within one, partial measurement never widening. Its § 4.2 carries the refuted shapes.
 
 Typed this sitting (**[HUMAN]**):
 
-- B(b) with mScheme is the design, unqualified; one design at a time, tuned when it strains.
+- B(b) with MScheme is the design, unqualified; one design at a time, tuned when it strains.
 - Burndown only: no minted work, no held maybes; anything undone from r31 dies unmentioned
   unless the human asks for a specific item to be recorded.
-- An mSort is never valid where an mScheme is; an mSort has exactly one primary mScheme and no
-  default; every bind and every mark names an mScheme.
+- An MSort is never valid where an MScheme is; an MSort has exactly one primary MScheme and no
+  default; every bind and every mark names an MScheme.
 - An arm is implementation, not model: the model states what the arms do (declarations per
   matched shape); how one `resolve()` body is factored is invisible to it.
 - Every keyed term stays tagged wherever it appears, grep-ability over grammar; a bare
@@ -100,14 +100,14 @@ Findings (the first four acked in chat, "almost everything", 2026-09-16; the res
 
 Three edits, each acked in chat and made ahistorically:
 
-- § 1.6, § 1.4, § 2.1, § 2.3, the relation table: an mKey's mParent instance is a value
-  supplied by exactly one of the bind, the yield, or the primary mScheme's per-shape
-  declaration, as an mKey of one of the mParent's mSort's mSchemes; disagreement refuses,
+- § 1.6, § 1.4, § 2.1, § 2.3, the relation table: an MKey's MParent instance is a value
+  supplied by exactly one of the bind, the yield, or the primary MScheme's per-shape
+  declaration, as an MKey of one of the MParent's MSort's MSchemes; disagreement refuses,
   attributed to both; absence is unknown from that level. `:parent-key-of` is gone.
 - § 3.2 and § 2.2: the DISJOINT walk in route terms. At the deepest SAME level A, DISJOINT iff
-  every mKey of both legs carries `:aliases-nothing-else` and either one leg is empty or the legs' tops
-  share an mScheme with `:guarantees-unique-name` and differing values; an mKey against its own
-  container reads UNKNOWN; legs whose tops are of different mSchemes read UNKNOWN. This
+  every MKey of both legs carries `:aliases-nothing-else` and either one leg is empty or the legs' tops
+  share an MScheme with `:guarantees-unique-name` and differing values; an MKey against its own
+  container reads UNKNOWN; legs whose tops are of different MSchemes read UNKNOWN. This
   recovers survival across a differently-lengthed leg (a knob in a namespace against a knob
   in the boot) from `:aliases-nothing-else` read as the route claim § 2.2 defines, with no new
   declaration, and leaves the strangers case and sibling sub-stores of different sorts
@@ -125,8 +125,8 @@ Four passes (`311l`–`311o`, two lineages) over 311j and the 311→311j diff; a
 synthesis in `notes/311p`. Seven threads survive, the first four with two-lineage support: § 3.2's
 DISJOINT bullet as committed is defective (its empty-leg disjunct is unreachable, so the
 exercise's drifted-day survival does not follow, and it over-demands `:aliases-nothing-else` at the tops);
-the mCell fold lost the per-cell store; the identifying store makes sibling cells collide;
-`:aliases-nothing-else` is the parent store's knowledge. One rule deleted from § 3.5 (the two-mSchemes
+the MCell fold lost the per-cell store; the identifying store makes sibling cells collide;
+`:aliases-nothing-else` is the parent store's knowledge. One rule deleted from § 3.5 (the two-MSchemes
 canary; refuted by both Astra passes and verified). Everything else waits on the human.
 
 ## § 6 — 2026-09-17: the cell question, under comparison
@@ -140,8 +140,8 @@ with no declared store or placement is none (no transport, no sparing); any suga
 
 Two cuts are on the table, to be compared, neither chosen:
 
-- Cut A, cells as sorts with their own stores: a cell is an mSort whose natural keys are
-  another mSort's primary keys (311's `:named-like`, restored) and whose store is where its
+- Cut A, cells as sorts with their own stores: a cell is an MSort whose natural keys are
+  another MSort's primary keys (311's `:named-like`, restored) and whose store is where its
   value lives; a cell has its own chain, so `enabled` and `active` differ by chain and a
   reboot spares the right one; whole-bearer footprints cover the bearer's cells through the
   named-by relation. Edits: § 1.9 (store, not bearer) and one relation.
@@ -312,7 +312,7 @@ The reasoning round that followed, banked here for the successor:
   composite attributes); perishing through the bearer's routing and the placement's store;
   existence as the catalog entry's facet; multi-valued facets (hard, separate). Roughly half the
   apparatus is inert or hazardous at facet grain and the two inert features are also the two
-  facet-author knives this round found: the threshold for "contorting mSort/mScheme" is met.
+  facet-author knives this round found: the threshold for "contorting MSort/MScheme" is met.
 - Against a hard category split, an enhancement-curve argument: promotion is routine in ops (an
   activation gains an id; a cron line gains a minted `name:`; a knob space gains aliases) and
   under two categories it is a cliff (every coordinate re-keyed; declarations move between rule
@@ -338,13 +338,13 @@ The reasoning round that followed, banked here for the successor:
 
 Twelve items offered as ack-or-nack; acked ones edited ahistorically into `311j` and the sysctl
 exercise record the same sitting. Edited: the § 2.1 supply modes deleted (the catalog instance
-is supplied by one seat, as the store is); § 1.5's warrants hold while an mKey's mResolution or
-mToken stands, reissue by an actor outside the book inside one span being the horizon
-(**[HUMAN]** gentle ack); § 3.2's first bullet reads a mRoot shape as a mWorld of its own, so
-two mKeys of one mRoot shape compare as siblings and mRoots of two shapes stay UNKNOWN
+is supplied by one seat, as the store is); § 1.5's warrants hold while an MKey's MResolution or
+MToken stands, reissue by an actor outside the book inside one span being the horizon
+(**[HUMAN]** gentle ack); § 3.2's first bullet reads a MRoot shape as a MWorld of its own, so
+two MKeys of one MRoot shape compare as siblings and MRoots of two shapes stay UNKNOWN
 (**[HUMAN]** gentlest ack, left to the conductor's judgement after analysis; ~SUSPECT sound);
-§ 3.2's DISJOINT bullet rewritten: the dead empty-leg case gone, siblings under one mParent
-separated by `:guarantees-unique-name` alone, unequal depth separated when the deeper mKey's
+§ 3.2's DISJOINT bullet rewritten: the dead empty-leg case gone, siblings under one MParent
+separated by `:guarantees-unique-name` alone, unequal depth separated when the deeper MKey's
 stores are `:aliases-nothing-else` and a store is never among its own contents (**[HUMAN]** all three
 acked); `:aliases-nothing-else` re-described as a store's own property, what is identified in me is
 reachable only through me, sited in § 2.2 with which line carries it left unfixed
@@ -401,7 +401,7 @@ Typed (**[HUMAN]**): `notes/311` is to be left as a historical first draft, and 
 properties fully thought out will be minted as the first document of the 312 series, which
 holds the model from there. The property gloss is accepted, not as a limitation or an engine restriction but as a
 gradual-enhancement step with ruled, clear defaults, each behaviour an element of the model:
-an mProperty graduates into an mSort when its members become many, separate, or
+an MProperty graduates into an MSort when its members become many, separate, or
 individualized, or need sub-properties, and that graduation owes a careful treatment of how it
 happens and what comes along. The ruler is closed-set against open-set, phrased as the human
 tuned it: a missing member of a closed set is UNSET (the tool has a slot for it, it can be
@@ -412,7 +412,7 @@ stated it is the coarser form; unset-or-absent is the ruler.
 The check this ruler must pass: whether things it files as properties badly need granular
 behaviour from the model (spellings, lookup warrants, a chain of their own, reissue, hierarchy).
 If many do, a tidy property dies to a bag of heuristics hard to teach, which dies in turn to
-"only mSorts; the user applies each trait" (**[HUMAN]**: exposing pain consistently beats
+"only MSorts; the user applies each trait" (**[HUMAN]**: exposing pain consistently beats
 papering over it leakily). A clean-context Fable pass over about forty ops reads, given no Dorc
 vocabulary and eleven behaviour questions covering every 311j trait, clustering by behaviour
 before answering the open/closed question, writes the next 311-series note; its adjudication
@@ -648,7 +648,7 @@ selector dialect, has no counterpart, since a property is a sort whose key is it
 owners' properties of one bearer are two sorts, KNOWN_UNSPOKEN, and a stranger reusing an
 owner's word names the owner's sort (30J §6.5 and 28M §11 close by construction); 30J's gate
 (a predict as proxy for descriptive responsibility) is served by the placement declaration
-itself. **[HUMAN]**: 30J neither in nor out; the mSort/mScheme split makes a stranger's scheme
+itself. **[HUMAN]**: 30J neither in nor out; the MSort/MScheme split makes a stranger's scheme
 speaking into a sort a larger and tighter coupling than a selector ever was, a steeper hill;
 the same general approach may apply; the richer tool is that any key can now be embedded in a
 chain and compared, so dangerous cases can be told "use the chain" and incomparable ones

@@ -66,7 +66,7 @@ update changed those other files. The human has not chosen a replacement effect 
 ## § 3-virtual-descriptions-before-new-model-structure
 
 **[TYPED]** The human challenged a recurring move: proposing new substructure where ordinary
-nested or virtual mSorts and mSchemes already express more. They requested an example under
+nested or virtual MSorts and MSchemes already express more. They requested an example under
 arbitrary stdlib effort, including an outer configuration file whose opaque string embeds an
 inner configuration document known to another author.
 
@@ -88,7 +88,7 @@ consumption. They did not approve a repair, a new warrant, a new species, or the
 chat strawman is a complete model of real JSON/INI tooling.
 
 Conductor's narrow finding (+SURE of the formula, not yet measured in a new book):
-`tokenInvalidatedBy` compares each writeset entry against every mKey ancestor of the read key.
+`tokenInvalidatedBy` compares each writeset entry against every MKey ancestor of the read key.
 A key against its own container is UNKNOWN. Because UNKNOWN counts as a touch, even a precise
 write to one member can invalidate a sibling's token. Closing the traversal and the lookup's
 read set does not remove this separate token rule. Existing evidence is the list-file book in
@@ -96,8 +96,8 @@ read set does not remove this separate token rule. Existing evidence is the list
 than repeat that book's additional open-traversal cause.
 
 The concrete exercise must distinguish a location alias from a dependency. A logical INI
-setting is not automatically identical to a carrier byte. A location mScheme may yield into
-another location mScheme only when they name the same mReferent. A derived setting instead
+setting is not automatically identical to a carrier byte. A location MScheme may yield into
+another location MScheme only when they name the same MReferent. A derived setting instead
 needs an ordinary read dependency on the carrier locations. Escaping, variable-length values,
 and parser-wide validation can defeat a naive one-byte story.
 
@@ -136,7 +136,7 @@ separate INI location knowledge, JSON encoding and writeback, and canonical file
 Jules explicitly sources Inez's plain-data helper and emits one complete invocation claim;
 there is no new protocol for merging completion records.
 
-A precision correction to the chat: the yielding mSchemes name the same storage byte at each
+A precision correction to the chat: the yielding MSchemes name the same storage byte at each
 step, not a logical boolean falsely equated with its encoding. Other encodings need different
 ordinary descriptions. Parser dependencies, inode replacement, timestamps, and consumed guest
 stdout are explicit. The exercise does not claim the two toy commands are production-ready.
@@ -175,9 +175,9 @@ wanted book's counterexample, then strengthened the current-behavior book to che
 sparing prerequisite. That strengthened book ran again on both platforms. No inference rule,
 truth predicate, hole exclusion, scope, or solver option was changed to obtain these results.
 
-Each book has two lines. Its fixed world has four mKeys: carrier, enabled byte, trace byte,
-and timestamp aggregate. The carrier is rooted; the three parts have it as their mParent.
-The primary part mScheme carries unique-name. Both sorts have closed may-read sets and finished
+Each book has two lines. Its fixed world has four MKeys: carrier, enabled byte, trace byte,
+and timestamp aggregate. The carrier is rooted; the three parts have it as their MParent.
+The primary part MScheme carries unique-name. Both sorts have closed may-read sets and finished
 entailments. All four primary-key traversals are explicitly closed-empty. The flag is set.
 The fact reads only the trace byte. The precise line writes the enabled byte and timestamps.
 
@@ -212,7 +212,7 @@ The strengthened current book confirms these facts together (+SURE at the stated
 - Token invalidation is true, and sparing is false.
 
 The counterexample's comparison table shows the same pattern for the timestamp key: it is
-DISJOINT from the trace key and UNKNOWN against their carrier. The carrier is the only mKey
+DISJOINT from the trace key and UNKNOWN against their carrier. The carrier is the only MKey
 ancestor of the trace key. Thus the token rule is the remaining blocker in this fixed world.
 The whole-carrier and same-member controls retain the required collision behavior.
 
@@ -301,7 +301,7 @@ the analysis as soft:
 > under a condition, but does not itself establish that condition after a write.
 
 The textual anchor is `311:1.5.1-the-token-over-time-and-the-per-level-closure`: “A warrant
-holds while that mKey's mResolution or mToken stands.” The invalidation rules decide when that
+holds while that MKey's MResolution or MToken stands.” The invalidation rules decide when that
 condition ceases to hold. The quoted observation is not a ruling that a new warrant is needed.
 Another existing statement may already justify preservation, with a missing or overly coarse
 consumer. Alternatively, the present contract may lack that statement. Those readings have
@@ -347,7 +347,7 @@ placements rather than the lifetime of one interpretation.
 
 The later working reading (~SUSPECT) spans existing rows: the ROUTE thing-side supplies
 resolution dependencies, WRITE supplies effects that can reach those dependencies, and ADDR
-supplies the identity warrants consumed while validity holds. Ordinary virtual mSorts could
+supplies the identity warrants consumed while validity holds. Ordinary virtual MSorts could
 name assignment state, so a store owner's existing effect descriptions could identify changes
 to it. This might need a more complete interpretation-side contract and a consumer connection,
 rather than two new warrants or a new row. It is a candidate construction, not a demonstrated
@@ -378,7 +378,7 @@ example did not establish a new category of unreportable semantic dependence.
 
 The conductor withdrew that use of the example. Returning unchanged bytes is distinct from
 establishing unchanged denotation; a supplied name may retain its bytes while its referent
-changes. But its declared mParent and other foundations already report more than the function
+changes. But its declared MParent and other foundations already report more than the function
 body's direct reads. No honest counterexample to the full existing contract was demonstrated.
 
 **[ACKED as investigation questions, not answers]** Can existing resolution-dependency speech
@@ -389,8 +389,8 @@ conductor to investigate both.
 
 ### § 9.1-source-findings-and-their-limits
 
-+SURE of the text: the original prose 311 defines a mResolution as the fact that N, of S,
-resolved in P at program point p, reaches mReferent R. It is not defined merely as producing
++SURE of the text: the original prose 311 defines a MResolution as the fact that N, of S,
+resolved in P at program point p, reaches MReferent R. It is not defined merely as producing
 the next token's bytes. Its backing includes the closed emitted traversal and the lookup
 body's reads. An unclosed traversal retains its catalog given whole. An open lookup read set
 invalidates under any write. The current specification retains these statements across
@@ -398,10 +398,10 @@ invalidates under any write. The current specification retains these statements 
 
 +SURE of the text: the independent parent-store token-invalidation clause already existed in
 the prose baseline, before mechanization. The clause follows the observation that a first
-write can change an mKey-Primary. It is not a mistranscription introduced by the Alloy builder.
+write can change an MKey-Primary. It is not a mistranscription introduced by the Alloy builder.
 Changing its scope would be a design clarification or revision, not an automatic fidelity fix.
 
-~SUSPECT: the semantic scope of mResolution supplies a stronger existing basis for the desired
+~SUSPECT: the semantic scope of MResolution supplies a stronger existing basis for the desired
 contract than the conductor's earlier account of executed reads alone. It does not establish
 that every existing closure already guarantees all the required validity conditions. Inputs,
 parent identity, warrant conditions, traversed state, and read provenance still need a coherent
@@ -445,7 +445,7 @@ different things unless authored speech establishes otherwise. The conductor wit
 dependency tracking and the support of an identity derivation are different things. A lookup
 makes its own local yield claim; the engine composes that claim with other supplied claims.
 The lookup author need not inspect an unknown caller's warrant. No warrant transfers to a new
-mScheme merely because a binary preserved or transformed some bytes.
+MScheme merely because a binary preserved or transformed some bytes.
 
 The ergonomic attack found no demonstrated need for one lookup author to certify the whole
 chain. The important restrictions were local yields, inherited input knowledge rather than
@@ -460,7 +460,7 @@ residue for the human's attention.
 ### § 10.1-the-scoped-derivation-experiment-is-unmeasured
 
 An additional temporary book added an explicit `:yields` from a decorated input value to a
-different canonical value, with layout as an ordinary mReferent. Both the producing lookup
+different canonical value, with layout as an ordinary MReferent. Both the producing lookup
 and the primary interpretation declared and closed their traversal through the layout. The
 verdict included layout in its marked reads. Both identity warrants remained present.
 
@@ -507,9 +507,9 @@ check was solved fresh; its witness replayed successfully. The two control check
 witnesses were solved fresh. The precise book demands that it is outside the held holes as
 part of its outcome, not as a premise exclusion.
 
-Why it works in the fixed world: a rooted part's chain has no mKey ancestor, so the token
+Why it works in the fixed world: a rooted part's chain has no MKey ancestor, so the token
 rule has no parent-store entry to test. Part-against-part comparisons use the common part
-mScheme's warrants. Whole-carrier against part stays UNKNOWN across their two root shapes,
+MScheme's warrants. Whole-carrier against part stays UNKNOWN across their two root shapes,
 so the coarse write still collides. This also means the construction is not evidence that
 unrelated whole carriers would spare each other's parts; that precision was not recovered.
 
@@ -590,7 +590,7 @@ interfaces carry sufficient input is not established.
 positional names over a physical database with stable native IDs. The view's author would
 occupy the store-side seat for that addressing system. The physical database's statement must
 not silently certify an unknown third-party lookup. This is a proposed application of ordinary
-virtual mSorts, not a ruling that the two descriptions or their effects already compose
+virtual MSorts, not a ruling that the two descriptions or their effects already compose
 correctly under every relevant 311 rule.
 
 The resulting candidate question is narrower: how can the store describer express the naming
@@ -665,7 +665,7 @@ below is the conductor's, unacked unless marked.
   DISJOINT with the store, except when its own described chain places it strictly below the
   store. A ⊤ writeset keeps invalidating.
 - `fnd-rule-b-reads-an-effects-closure-as-a-naming-closure` (+SURE of the text) — 311 keeps
-  naming apart from state (`311:1.7.1`: an mKey can cease to reach an object without the object
+  naming apart from state (`311:1.7.1`: an MKey can cease to reach an object without the object
   changing). The finished record is a closure over state, and its truth exempts the holder
   ("affects only it, what it holds, and the entailment"). The naming map lives in the holder.
   So a finished record can never be false about a renaming, and cannot license one. Rule (b)
@@ -687,11 +687,11 @@ below is the conductor's, unacked unless marked.
   `:guarantees-unique-referent`, the store sort's closed may-read set, `:places` and
   `looked-up-in`) and found none that speaks naming stability, and filed the primary key's
   closing act as item-side. **[HUMAN]** challenge: the walk did not account for the primary
-  mScheme's `__resolve`, which is the store owner's naming half and is probably written by them.
+  MScheme's `__resolve`, which is the store owner's naming half and is probably written by them.
 
 ### § 13.2-time
 
-- `fnd-reuse-is-inexpressible-without-time` (+SURE of the fences) — `reaches` is one mReferent
+- `fnd-reuse-is-inexpressible-without-time` (+SURE of the fences) — `reaches` is one MReferent
   or none for the whole book, and the uniqueness warrants are timeless, so no world with every
   statement true reuses or reassigns a key. Every narrowing of the token rule would check green
   vacuously. ~SUSPECT, unmeasured: deleting the member-write leg outright leaves every law
@@ -726,15 +726,15 @@ below is the conductor's, unacked unless marked.
 
 ### § 13.4-questions-the-human-put-for-the-next-turn
 
-- **[HUMAN]** Speech about naming has been modelled as an mScheme, and the naming half of a store
-  mSort's owner as the primary mScheme they probably also write. Does the primary mScheme's
+- **[HUMAN]** Speech about naming has been modelled as an MScheme, and the naming half of a store
+  MSort's owner as the primary MScheme they probably also write. Does the primary MScheme's
   `__resolve` resolve `claim-no-store-sited-statement-speaks-naming`?
 - **[HUMAN]** The single-item `__resolve` row of the two-ended table may have no effective far
-  end; no store-level API endpoint for an mScheme was designed, unless forgotten. If so, and
-  acked, consider placing this speech on the mScheme rather than on the mSort.
-- **[HUMAN]** Is that speech meaningful only for primary mSchemes? Can a secondary mScheme
-  yielding into the same mSort have different write and invalidation semantics?
-- **[HUMAN]**, tabled but kept in scope: this may be the first time mSchemes get significant,
+  end; no store-level API endpoint for an MScheme was designed, unless forgotten. If so, and
+  acked, consider placing this speech on the MScheme rather than on the MSort.
+- **[HUMAN]** Is that speech meaningful only for primary MSchemes? Can a secondary MScheme
+  yielding into the same MSort have different write and invalidation semantics?
+- **[HUMAN]**, tabled but kept in scope: this may be the first time MSchemes get significant,
   dangerous descriptive power, which is hard to square with fail-safe defaults. Each must fail
   safe with no collaboration, with no default that lets someone else's speech make one's own
   non-dangerous speech dangerous, except the usual "and nothing else": a sort declared with no
@@ -750,36 +750,36 @@ follow; the open asks are last.
 
 ### § 14.1-the-conductors-answers-to-section-13-4-unacked
 
-- On the primary mScheme's `__resolve` (~SUSPECT) — the conductor's error was to file a primary
-  key's closing act as item-side speech. The primary mScheme's owner is the mSort's owner (the
+- On the primary MScheme's `__resolve` (~SUSPECT) — the conductor's error was to file a primary
+  key's closing act as item-side speech. The primary MScheme's owner is the MSort's owner (the
   fence fact under `312d:enc-primary-owner-is-sort-owner`), and for keys a store mints the
-  primary mScheme is that store's naming, so the seat is the store-level one that § 11.1 asks
+  primary MScheme is that store's naming, so the seat is the store-level one that § 11.1 asks
   for. The act exists: a lookup emits what it crossed and closes the list, the closing act's
   prose meaning (`311:1.7.1`) is "what can make this key stop reaching its object", and the
   fences already admit `EmitsCrossed` and `ClosesTraversal` on a primary key. Three things block
   it: 311 says a primary `resolve()` is the identity on the key, so it has no body to emit from;
   the token rule ignores any emission; the closing act's mechanized truth reads the static
   `passes`. Proposed reading: no new speech act; one existing act gains one new seat (primary
-  mSchemes), and the token rule's member-write leg folds into routing. Caveat: the primary
-  mScheme's owner is the member sort's owner, who can differ from the store's describer (a
+  MSchemes), and the token rule's member-write leg folds into routing. Caveat: the primary
+  MScheme's owner is the member sort's owner, who can differ from the store's describer (a
   third party keying rows by rowid inside another's database); that owner chose the key space
   and can stay on the floor by emitting nothing.
 - On the far end and the seat (+SURE of the text; ~SUSPECT of the placement) — `311` § 5.1's
   ROUTE row at catalog level has an empty store end, footnoted "a catalog makes no statement
-  about its own entries"; no store-level naming endpoint was designed. Per-mScheme placement:
-  the block-device case puts several mSchemes with opposite sensitivities on one mSort, which a
+  about its own entries"; no store-level naming endpoint was designed. Per-MScheme placement:
+  the block-device case puts several MSchemes with opposite sensitivities on one MSort, which a
   per-sort statement cannot separate. It also matches 311's existing split (§ 5.2): identity
   statements sit on schemes (both lookup warrants, `:root`, `:identified-in`, `:yields`, the
   closing act, `alias nothing-else`); effect statements sit on sorts (may-read, the entailment,
   the finished record, observer-independence). The withdrawn rule (b) put a naming statement on
   the sort. For store-minted keys the two ends merge. The conductor also framed naming stability
   as "how long `:guarantees-unique-referent` stays true" (`311:1.5.1`: "a warrant holds while
-  that mKey's mResolution or mToken stands"); see § 14.2 for the human's response.
-- On secondary mSchemes — yes, secondary mSchemes into one mSort with different invalidation
+  that MKey's MResolution or MToken stands"); see § 14.2 for the human's response.
+- On secondary MSchemes — yes, secondary MSchemes into one MSort with different invalidation
   are everyday: a user by uid or by login name; a file by inode, path, or `/proc/self/fd/N`; a
   partition by device number, `UUID=`, by-path; a package by name, `name:arch`, `provides`.
-  Secondary mSchemes already carry the speech (emission, closing act, the lookup body's read
-  set); primary mSchemes are the ones without it. The example the conductor gave was
+  Secondary MSchemes already carry the speech (emission, closing act, the lookup body's read
+  set); primary MSchemes are the ones without it. The example the conductor gave was
   `userdel alice && useradd alice`; see § 14.2.
 - On failing safe with strangers (a first walk; ~SUSPECT each) — a sort declared with no scheme
   has only cells, whose naming is their parent's, so nothing can turn dangerous. A stranger's
@@ -788,7 +788,7 @@ follow; the open asks are last.
   one's own claims become load-bearing for their facts, as `:guarantees-unique-referent`
   already is. A stranger's sort naming one's scheme as its primary: refused today by the fence
   that the primary scheme's owner is the sort's owner, which is the unacked reading
-  `312d:enc-primary-owner-is-sort-owner`, and by "at most one mSort per mScheme" when one's own
+  `312d:enc-primary-owner-is-sort-owner`, and by "at most one MSort per MScheme" when one's own
   `:primary-of` is in force; if both fall, the stranger's sort-level closures govern facts about
   one's keys, which are their "nothing else" claims, but one's silence then rests on that
   unacked reading. Defaults stay safe: no emission is the parent given whole; emission without

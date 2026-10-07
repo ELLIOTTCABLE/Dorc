@@ -183,7 +183,7 @@ design remains the better shape if that ever bites. The outgoing conductor's ses
   several identifiers per image.
 - lane-7 platform services/names: Solaris FMRI logical/universal schemes with authority; RFC 4007
   zones (manual assignment); RFC 2181 splits the two warrants as 311 does; RFC 9499 split DNS
-  contradicts the "DNS mRoot" EXAMPLE; kernel pid/uid maps as transition-owner `:corresponds`;
+  contradicts the "DNS MRoot" EXAMPLE; kernel pid/uid maps as transition-owner `:corresponds`;
   wrappers write down their lends; systemd `is-active` rc 4 but still prints `inactive`; SMF
   "in-conflict" the one deployed refuse-both.
 - lane-8 API/IaC RFC repos: no gold-mine; single minting authority everywhere; Crossplane
@@ -238,7 +238,7 @@ design remains the better shape if that ever bites. The outgoing conductor's ses
 ## notes-for-the-successor (mechanics, not synthesis)
 
 - 311 moved under this round: read at `ae745a80`, then five commits landed (`63e49f29`) retiring
-  `:hierarchical` for the lookup-EMITTED mTraversal and defining "touches a traversal member" as
+  `:hierarchical` for the lookup-EMITTED MTraversal and defining "touches a traversal member" as
   any `compare()` answer other than DISJOINT; every lane read `63e49f29`; a sibling session kept
   editing 311 afterwards. Run `git log --oneline -- Research/notes/311*.md` before citing a
   section number.
@@ -272,11 +272,11 @@ design remains the better shape if that ever bites. The outgoing conductor's ses
   possible sitting: CPE 2.3 name matching (unequal strings ⇒ DISJOINT; UNKNOWN removed; live at
   NVD — lane 8, evidence FOR 311); OntoClean's "every domain element must instantiate some
   property carrying an IC" vs 311's absent-by-default warrants (lane 9); Kent against qualified
-  identification unless qualifiers are invariant vs 311's mParent-Store-relative primary keys
+  identification unless qualifiers are invariant vs 311's MParent-Store-relative primary keys
   (lane 9; ~SUSPECT a real tension); Couch & Chiarini's "declared consistency is intractable,
   observe instead" vs 311's speech-declared footprints (lane 5b); YANG's designed avoidance of
   positional identity vs §2.9's positional catalogs, and DEP-17's "eliminate the aliases" as the
-  same move (lanes 1, 10); RFC 9499 split DNS vs the "DNS mRoot" EXAMPLE in §1.6 (lane 7;
+  same move (lanes 1, 10); RFC 9499 split DNS vs the "DNS MRoot" EXAMPLE in §1.6 (lane 7;
   example-level); promise theory's "overriding control" assuming away §0's premise (lane 5b).
 - Lane 9's "verbatim" for Saltzer & Kaashoek p.64 overstates: the quote presents the two
   uniqueness rules as alternatives across schemes, which implies their independence rather than

@@ -170,16 +170,16 @@ The kernel's device number, by contrast, is the stdlib's primary naming of a blo
 
 ## § 5-hand-walks-against-311-as-written
 
-Assumed modelling, which is one choice among several: the device number is the primary mScheme
-of a partition mSort, identified in the boot. `UUID=`, `LABEL=`, by-path, and by-id are
-secondary mSchemes that yield into it. Their catalog is the boot's block-device population.
+Assumed modelling, which is one choice among several: the device number is the primary MScheme
+of a partition MSort, identified in the boot. `UUID=`, `LABEL=`, by-path, and by-id are
+secondary MSchemes that yield into it. Their catalog is the boot's block-device population.
 Dora's `dd` may-writes the target device given whole and closes its set.
 
 For § 3.1, line 1 against line 2's fact (~SUSPECT, hand walk):
 
 - Line 2 reads through the natural key `U`, whose identity at probe is `8:17`.
 - The writeset is `8:33` given whole. `compare(8:33, 8:17)` is DISJOINT, by two device numbers
-  of one mScheme under unique-name.
+  of one MScheme under unique-name.
 - Token rule (`311:3.3-invalidation-three-mutator-species`): `8:33` is inside the store that
   `8:17` is scoped in, and `compare()` of a key against its own container is UNKNOWN. So
   `8:17`'s token is invalidated, although the kernel did not renumber anything.
@@ -194,7 +194,7 @@ For § 3.5, the rescan: line 2 writes a sysfs attribute of the adapter, a key in
 vocabulary. It compares KNOWN_UNSPOKEN against every device number and against Ulla's
 catalog. Every fact through any of the names is invalidated (~SUSPECT, hand walk).
 
-Not expressible today: the checker's world gives each mKey at most one mReferent for the whole
+Not expressible today: the checker's world gives each MKey at most one MReferent for the whole
 book (`reaches: lone`). "`U` reaches `sdb1` before line 1 and either device after it" cannot be
 stated with every statement true. The case depends on time, which the fences do not yet hold.
 
@@ -230,7 +230,7 @@ Observations, not conclusions:
   renames the store's members only when the write names the store itself, or while the store's
   describer has not finished its entailment. In § 3.1 the block device store's finished
   record ("a copy writes only its target and what it holds") is true, and `U` moved anyway.
-  `U` is a secondary mScheme here, so the moved name is a routing question, not a token
+  `U` is a secondary MScheme here, so the moved name is a routing question, not a token
   question. The case does not decide whether a narrowed token rule would be safe for device
   numbers; it shows that a rule decided per store cannot treat device numbers and UUIDs
   differently.
@@ -244,8 +244,8 @@ Observations, not conclusions:
 
 - Who may state that a content-derived name depends on the whole population, and what
   statement says it: the scanning layer's describer, the filesystem's describer, or both?
-- Should a name's dependency be stated per mScheme rather than per store, given § 3.1 and
-  § 3.5? If so, does that hold for primary mSchemes, secondary ones, or both?
+- Should a name's dependency be stated per MScheme rather than per store, given § 3.1 and
+  § 3.5? If so, does that hold for primary MSchemes, secondary ones, or both?
 - What does the model owe a name whose referent becomes plural mid-book: withdrawal only, or
   also an account of where later writes through it can land?
 - Is a store that refuses duplicates (XFS) a seat for anything, or only a fact about its

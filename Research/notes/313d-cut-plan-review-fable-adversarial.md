@@ -13,7 +13,7 @@
 
 - Sentence (§ 3.4): "the negative answer is the licence's static half, as before, and the
   statements an author must make are the same ones; only the document that reads them changes."
-- Failure: the specification's DISJOINT is checked to mean "no common mReferent"
+- Failure: the specification's DISJOINT is checked to mean "no common MReferent"
   (`law_disjoint_is_sound`), which is the plan's own too-weak "not one thing". The shared-part case
   is a held hole there, `hole_two_separated_things_reach_one_thing_beneath`, fenced out of
   `law_sparing_is_sound`. `313:cut-the-negative-answer-is-separation` answers that hole by

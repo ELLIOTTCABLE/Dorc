@@ -69,8 +69,8 @@ column's sentence reassembled across those lines, verbatim in wording.
   detection "allowing certain parameters of resources to be unique within a device, for example
   the filename of file resources" [B-delaet-joosen-vanbrabant-survey-system-configuration-tools-2010];
   LCFG `host.subsystem.attribute` [B-anderson-towards-high-level-machine-configuration-1994]. These
-  are 311's mKey-Primary-in-mParent-Store with an implicit `:guarantees-unique-name` taken for
-  granted and no mScheme/`:yields` layer at all. ~SUSPECT (mapping is mine)
+  are 311's MKey-Primary-in-MParent-Store with an implicit `:guarantees-unique-name` taken for
+  granted and no MScheme/`:yields` layer at all. ~SUSPECT (mapping is mine)
 - Validation: theory papers (Couch & Sun, Couch & Chiarini, Burgess & Couch 2006/2011, promise
   theory) are unvalidated or toy-prototype (Tufts Masters prototypes, /etc/services only). Validated
   systems — LCFG at Edinburgh (300–400 hosts, 1994), Traugott's trading floors (~15,000 hosts),
@@ -107,11 +107,11 @@ column's sentence reassembled across those lines, verbatim in wording.
 | [B-bergstra-burgess-static-theory-of-promises-2014] | promise theory foundations | no / generic / abstract / no | committee law; observer-relative keeping | identity "attached"; conflict impossible under "overriding control" | naming/speech theory |
 | [B-burgess-some-notes-about-promise-theory-2015] | promise theory applied (CFEngine, BGP, YANG) | no / files, processes, interfaces, BGP, DB rows, containers / semi-abstract / CFEngine deployed | committee law; agent boundary is a modelling choice | promiser named by host convention; aliases via variables | speech/modelling |
 | [B-anderson-smith-configuration-tools-working-together-2005] | multi-tool interchange proposal | no / generic / semi / no | multiple authors; origin provenance ≈ attribution | lexicon sidestepped; "no late binding" | schema |
-| [B-anderson-towards-high-level-machine-configuration-1994] | LCFG origin | ~400 resources / DNS, amd, auth, inetd, www, NIS / concrete / Edinburgh 300–400 hosts | fixed key scheme ≈ mFullyQualifiedKey with host root | the key is the thing | schema + deployment |
+| [B-anderson-towards-high-level-machine-configuration-1994] | LCFG origin | ~400 resources / DNS, amd, auth, inetd, www, NIS / concrete / Edinburgh 300–400 hosts | fixed key scheme ≈ MFullyQualifiedKey with host root | the key is the thing | schema + deployment |
 | [B-traugott-huddleston-bootstrapping-infrastructure-1998] | gold-server practice | 16-step sequence / DNS, NIS, NFS, automount, crontab, apps / concrete / ~15,000 hosts | route-qualified handle warning | identity imposed by uniformity + single author | practice |
 | [B-delaet-joosen-vanbrabant-survey-system-configuration-tools-2010] | comparison framework, 11 tools | framework-exhaustive, not state-exhaustive / secondary | modality conflict = same-name collision | no identity row at all | assessment of tools |
-| [B-hewson-anderson-gordon-declarative-automated-configuration-2012] | ConfSolve: typed OO constraint config language → CSP | no / VMs, racks, DB roles, Cauldron suite / formally specified / benchmarks only | mParent via nesting + lifetime; refs to declared instances; referent-agnostic classes | closed world: identity = allocation in the model | schema + synthesis |
-| [B-palatin-prodspec-annealing-intent-based-actuation-2021] | Google intent actuation | generic assets / jobs, LB, schema, firmware / abstract data model / Google-scale | mKey-Primary in mParent-Store; references as marked fields; cells ("distinct aspects") | identity = provider's clean naming | mutation + schema |
+| [B-hewson-anderson-gordon-declarative-automated-configuration-2012] | ConfSolve: typed OO constraint config language → CSP | no / VMs, racks, DB roles, Cauldron suite / formally specified / benchmarks only | MParent via nesting + lifetime; refs to declared instances; referent-agnostic classes | closed world: identity = allocation in the model | schema + synthesis |
+| [B-palatin-prodspec-annealing-intent-based-actuation-2021] | Google intent actuation | generic assets / jobs, LB, schema, firmware / abstract data model / Google-scale | MKey-Primary in MParent-Store; references as marked fields; cells ("distinct aspects") | identity = provider's clean naming | mutation + schema |
 
 ## Citations
 
