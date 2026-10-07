@@ -62,9 +62,9 @@ Spelling inside the fences:
   statement species is a signature under the shared `Spoken`, named for the act:
   `DeclaresIdentifiedIn`, `SuppliesParent`. Its fields name what it is about. One statement
   atom in a scenario is `speaker__what_it_says`.
-- Every species has one truth predicate, `true_<Species>[s]`, which transcribes the sentence
-  that says what the statement means when true. The engine's own definitions never read the
-  world stratum; the truth predicates alone do.
+- Every species declares one `isTrue[s: <Species>]`, which transcribes the sentence that says
+  what a statement of that species means when true. The engine's own definitions never read the
+  world stratum; only the `isTrue` predicates do.
 - A field name is unique across the whole document, so no join is ever ambiguous.
 - A law is `check law_<slug> … for N`; its premise twin is `run law_<slug>_premise {…}` with
   no scope of its own; a kill or a refuted shape is `run kill_<slug> {…} for N expect 1`; a
@@ -99,7 +99,7 @@ The other two sentences are the law's own terms of refutation, and stay prose:
 ### § 0.1-the-two-strata
 
 The engine and the world are two strata, and the fences keep them apart: the world stratum (an
-MReferent, what an MKey MRefers to, what a store holds) is what the truth predicates read; the
+MReferent, what an MKey MRefers to, what a store holds) is what the `isTrue` predicates read; the
 engine's definitions read only MKeys, their declared shapes, and the statements in force.
 Nothing in the fences enforces the separation; the two sentences below are the rule, and a
 reviewer reads the engine's definitions for a world relation by eye.
@@ -147,7 +147,7 @@ run chains_meet_in_a_store {
 
 The world stratum of 0.1-the-two-strata: an MReferent, what a store holds, and what it holds by
 its own construction against what it merely re-presents (the distinction 2.3-aliases-nothing-else-the-store-warrant
-needs). The engine never reads these relations; the truth predicates do.
+needs). The engine never reads these relations; the `isTrue` predicates do.
 
 ```alloy
 sig MReferent { holds: set MReferent, owns: set MReferent, affects: set MReferent, passes: set MReferent }
@@ -167,7 +167,7 @@ fact { owns in holds }
 
 UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
 `312d:ask-world-relations-for-effects`): the world relations `holds`, `owns`, `affects`, and
-`passes` are the conductor's choice of world stratum, made so that the truth predicates of § 2
+`passes` are the conductor's choice of world stratum, made so that the `isTrue` predicates of § 2
 have something to transcribe into; 311 names none of them. In particular `owns` against `holds`
 is one reading of § 2.3's "by the store's own construction". None of this is authoritative or
 acked; it stands only until the document has run under Alloy and the reading is acked or
@@ -1214,7 +1214,7 @@ pred isTrue[f: VerdictFact] {
 
 UNACKED READING, temporary (`312d:ask-may-read-is-declared-per-key`): 311's may-read is "a
 template the MSite or environment fills"; the fence holds only the filled form, one entry per
-MKey, and no template. The truth predicates of the closure and of the vouch transcribe into the
+MKey, and no template. The `isTrue` predicates of the closure and of the vouch transcribe into the
 world relations of 1.1-referent-state-and-value, which are themselves an unacked reading. The
 conductor's reading, not acked, not authoritative, held only until acked or replaced
 (`notes/312d` § 7).
@@ -4348,6 +4348,7 @@ Plain-English "read" that must NOT be tagged or renamed (a host read, not the op
 | "perishing" and its forms, used as jargon | no term: the jargon retires. Plain English and standard compiler-engineering terminology, usually but not always a phrase with the word "invalidation". Never a capitalised or tagged form (no "Invalidation", no MInvalidation). Where it becomes "invalidation", it nearly always needs a precise subject; for how "perishing" was used, the human believes that is probably "routing invalidation", unchecked | not yet investigated |
 | `reaches`, the world relation from an MKey to an MReferent | MRefers to (one instance is an MReference); the fence field is `mRefersTo` | the r31 ledgers from `312d` on |
 | `unrelated` | KNOWN_UNSPOKEN | `30U` § 7, `compare-consumer-map`, `ANALYZER-NEEDS:an-compare-chokepoint`. The design-of-record documents keep `unrelated` until the model is ruled (4.2-supersessions-pending-in-prior-documents names them) |
+| "truth predicate" (and the identifiers `true_<Species>`) | no term: written "the `isTrue` predicates" or plain local prose; the identifier is `isTrue` (cited elsewhere as `<Kind>.isTrue`) | the r31 ledgers from `312d` on, and one translation line of § 3.2 until its rewrite |
 
 ### § 6.2-undecided-whether-a-name-is-dead
 
