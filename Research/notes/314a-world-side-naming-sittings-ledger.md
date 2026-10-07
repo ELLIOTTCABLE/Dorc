@@ -476,3 +476,41 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   Suggested method: a wide match that catches every model term and each grammatical form of it;
   then a separate find-and-replace over each grammatical form of each accepted term only (never
   `mDNS`). The human is asked only where a distinction is meaningful.
+- Landed: `ai/main` fast-forwarded over the builder's branch (tip "(AI dsn re) Capitalize model
+  terms in sh comment prose"): about 6,100 tokens re-cased, byte-checked as m-to-M only; the
+  parse clean; the gate-tier check matched every row it solved. **[CONDUCTOR]**, reported in chat
+  with no reaction: the builder's four held occurrences ruled as "rename uses, never mentions"
+  (a recorded search string, a quoted old spelling, and `312b` § 4's convention paragraph keep
+  the old spelling; prose in sh comments is a use); a separate commit re-cased one file under
+  `Research/quarantine-DO-NOT-READ/`; the builder ran `mise trust` on its worktree.
+
+## § 3-the-truth-predicates
+
+### § 3.1-the-predicates-name
+
+- **[CONDUCTOR]** put: each statement species has one predicate, `true_<Species>[d]`, which holds
+  when statement d is true in the world under examination; the law's premise
+  (`axiomaticByContractExcept`) conjoins them over the statements in force, one line per
+  species; the kills use their negation. Proposed for what each states: "truth condition"
+  (formal semantics), untagged.
+- **[TYPED]** the spelling reads strangely: "predicate: true, declares-aliases-nothing-else".
+- **[CONDUCTOR]** put: a subset signature of true statements, defined per species like the shared
+  half's `InForce`, with a one-line premise. **[TYPED]** declined: no restructuring in a naming
+  round; a defining fact is assumed in every check, at a performance cost (the class `313` § 1.2
+  measured) and likely a flexibility cost; naming only, structure untouched. Withdrawn.
+- **[TYPED]** floated `DeclaresPrimaryOf_isTrueFor[x]`, reading d as what a claim is about.
+  **[CONDUCTOR]** d is the statement itself; what it is about is reached through its fields.
+- Measured (an Opus subagent, Alloy 6.2.0, a scratch model, a kill beside every check): one
+  overloaded name per species, declared `pred isTrue[d: S]` or `pred S.isTrue` and called
+  `d.isTrue` or `isTrue[d]`, resolves by the declared type of the argument; a call on the parent
+  type is a hard "ambiguous" error; with one declaration visible, a parent-typed call is accepted
+  silently and applies that body to every atom; overloads resolve across opened modules.
+- **[TYPED]** lean, moot after the measurement: if overloading failed, a per-species accessor name
+  (`fDeclaresPrimaryOf.isTrue[d]`).
+- **[TYPED]** ACK: `pred isTrue[d: <Species>]`, the plain form with bodies unchanged, called
+  `d.isTrue`. Applied only after the subagent's survey of how larger Alloy projects spell this
+  pattern returns.
+- **[TYPED]** an assay scout starts now, scout-only and no fix: the subagent found that the
+  project's Alloy runner discards Alloy's type-check warnings (its adapter parses with a silent
+  reporter); whether assay also never shows them is unchecked.
+- Open: the family's prose name.
