@@ -715,7 +715,7 @@ A cell's MKey is written `parent-key@sm.Sort`, with the MSort's name in full rev
 minted at the mark that names it (1.4-key-and-its-two-views, 1.6-parent-one-per-key); the
 MScheme left of `@` is the MParent's. A cell's MReferent may hold its MState elsewhere than in
 its MParent, and the MState may be diffuse: the cell's may-read set (2.5-may-read-the-readset)
-says where, and the freshness of a fact about the cell follows the writesets that reach the cell
+says where, and the freshness of a fact about the cell follows the writesets that collide with the cell
 through that set (2.6-may-write-the-writeset), together with any write that covers the MParent
 (2.9-the-traversal-and-the-region-test, 3.3-invalidation-three-mutator-species). Two cells of
 one MParent are two MSorts, with two may-read sets and two `:observer-dependence`s, and
@@ -748,7 +748,7 @@ pred isTrue[d: DeclaresCell] {}
 > A cell's identity is its MParent's plus its MSort (3.1-identity-of-a-key, 3.2-compare-one-chokepoint-four-answers).
 > Declaring a cell claims nothing about the world.
 
-Example: `active` is held in the service manager's memory in the boot, and a reboot reaches it through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot only where its MParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
+Example: `active` is held in the service manager's memory in the boot, and a reboot collides with it through its may-read set. `enabled` is held in a symlink in a filesystem, and survives a reboot only where its MParent is not itself scoped in the boot (3.3-invalidation-three-mutator-species).
 
 #### § 1.9.1-a-cell-sort-and-a-scheme
 
@@ -1191,11 +1191,11 @@ pred isTrue[f: VerdictFact] {
 > The vouch is true when the measured answer depended on no MReferent outside what the marked reads MRefer to.
 > A body that marks no read has readset ⊤.
 > May-read entries are not in a readset.
-> A write reaches K through the may-read entries (2.6-may-write-the-writeset, rule 4).
+> A write collides with K through the may-read entries (2.6-may-write-the-writeset, rule 4).
 > A readset member is ⊤ where its MSort has no closed may-read set.
 > A readset member is ⊤ where an MSort on its MFullyQualifiedKey has no closed may-read set.
-> A readset member is ⊤ where a may-read entry through which rule 4 reaches it fails either test, transitively.
-> A readset member is ⊤ where its MFullyQualifiedKey, or that of a may-read entry through which rule 4 reaches it, ends at the MRoute.
+> A readset member is ⊤ where a may-read entry that rule 4 follows to the member fails either test, transitively.
+> A readset member is ⊤ where its MFullyQualifiedKey, or that of a may-read entry that rule 4 follows to the member, ends at the MRoute.
 > A readset is ⊤ where the body marked no read or where any member is ⊤.
 
 UNACKED READING, temporary (`312d:ask-may-read-is-declared-per-key`): 311's may-read is "a
@@ -1457,7 +1457,7 @@ conductor's readings, not acked, not authoritative, held only until acked or rep
 > The entailment generates no DISJOINT: "nothing else" is no other thing, never no other MKey for the thing written.
 > The finished definition is a within-MWorld sentence.
 > The finished definition never speaks across MRoutes or MRoots (3.2-compare-one-chokepoint-four-answers).
-> A may-read entry that names an MKey of another MWorld enters rule 4 where a write in that MWorld reaches it (2.5-may-read-the-readset).
+> A may-read entry that names an MKey of another MWorld enters rule 4 where a write in that MWorld collides with the entry (2.5-may-read-the-readset).
 
 Without the exclusion of containers at or above the shared level, a filesystem's entailment, which names its disk, would make two files in one filesystem collide through it. Examples of the entailment: a package's postinst enabling its unit, a restart killing a main process.
 
@@ -1748,7 +1748,7 @@ pred isTrue[d: ClosesLookedUpIn] {
 > The closure is true when every G-thing a route to the MKey's MReferent passes through is one a record names.
 > The `looked-up-in` records of every invocation accumulate: x's routes of MSort G are every G:key recorded for x.
 > The store's end of the same relation is G's enumeration of its members.
-> The may-write entailment of 2.6-may-write-the-writeset carries that enumeration as write reach.
+> The may-write entailment of 2.6-may-write-the-writeset carries that enumeration into the writeset.
 > In the test of 2.6-may-write-the-writeset, when that entailment is finished for P, its emitted members stand in for the MKeys reached beneath P (rule 3).
 > An unfinished entailment widens the writeset only.
 
@@ -2590,7 +2590,8 @@ that carry the claim are the ones the entry cites.
 > `plans/30W` §2 to §4, `26Ob:res-cell-level-relation-is-the-filtered-meet` and `26Ob:10f-the-target-pin`, `plans/27C` §4(A), `ANALYZER-NEEDS:an-invariance-speech-act`, and `271:rul-invariance-speech-act` [TYPED]: the kind owner's invariance line (`undivided-by-transit-across`, `invariant:<axis>`, `: user-invariant`) licenses transport across an index or an axis.
 > The same passages say that the store member yields invariant, keyed, or ⊤ per (kind, selector, index-kind).
 > Here: there is no invariance line and no per-kind table against axes (4.1-boundary-of-this-model).
-> Whether a lifecycle write or a lent instance reaches a cell is the shape of its MFullyQualifiedKey, not a declaration (3.3-invalidation-three-mutator-species, 3.4-entry-and-lends).
+> The shape of a cell's MFullyQualifiedKey decides whether a lifecycle write collides with the cell, and no declaration decides it (3.3-invalidation-three-mutator-species).
+> The same shape decides whether a lent instance applies to the cell (3.4-entry-and-lends).
 > Leaf MKeys inherit across a wrapper with no further speech, under the flag (§3.4).
 > The observer half of the line is `:observer-independence` of O, declared per MSort and absent by default (2.8-observer-dependence-and-independence).
 > The store half is displaced by `:aliases-nothing-else` and measured MTokens (2.3-aliases-nothing-else-the-store-warrant, 3.2-compare-one-chokepoint-four-answers).
@@ -2605,7 +2606,7 @@ that carry the claim are the ones the entry cites.
 > The third is two disagreeing answers from one placing lookup (2.10-places-the-upward-lookup).
 > `notes/272` §5 the fence: emitted locators feed only the dependence bit and the keying recipe, and are never compared against File facts.
 > Here: a may-read entry is an MKey that `compare()`s against every writeset entry.
-> An entry naming a store reaches every MKey relative to that store (2.5-may-read-the-readset, 2.6-may-write-the-writeset).
+> An entry naming a store collides with every MKey relative to that store (2.5-may-read-the-readset, 2.6-may-write-the-writeset).
 > `30T:file-identity` per-aspect identity: "same file" is one relation per aspect, and the identity tier carries an authored per-aspect relation mapping.
 > Here: there is no aspect species (4.1-boundary-of-this-model).
 > Each aspect is a cell, a singleton MSort with its own may-read set and its own `:observer-dependence` (1.9-cell-a-singleton-sort).
