@@ -272,6 +272,7 @@ bytes Alloy parses, and those bytes carry no comment, so rewording a comment or 
 paragraph moves no key; a normalisation that went wrong shows as a parse error or a moved
 verdict, never as a silent key match. A compile removes the modules the previous map listed and
 this compile no longer emits, and nothing else in the directory.
+<!-- superseded: a line break between two tokens of a paragraph in the source stays a line break in the generated module, and each emitted line maps to its own source line, so Alloy never reads formulas from separate source lines as an implicit in-line conjunction. Comments and spacing within a line still move no key; moving a line break does. -->
 
 **`every_line`, the whole-book conjunction** [ACKED, `30Yf:book-conjunction-entails-the-lines`].
 Each book with two or more line checks that carry no `for` of their own gets one more check,
