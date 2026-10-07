@@ -160,10 +160,10 @@ Conventions, typed: every object the model defines is written mFixedTerm (mKey, 
 mCell), bare, plural by appending s; every relation, attribute, or warrant declared on the
 model is written :fixed-term, always preceded by a space; every abstract operation is written
 `op()` in backticks (`compare()`, `resolve()`); every concrete authored member keeps the
-`__name()` form; a derived view of a species is written species-hyphen-gloss (MSort-PrimaryStore, MKey-Natural), never a declared species, which stays unhyphenated (MCompositeSort); every participant in the model, anything with an edge to another element, is
-tagged, MReferent included (an MKey points at it); value is never tagged (sh defines it; Dorc only
+`__name()` form; a derived view of a species is written species-hyphen-gloss (mSort-PrimaryStore, mKey-Natural), never a declared species, which stays unhyphenated (mCompositeSort); every participant in the model, anything with an edge to another element, is
+tagged, mReferent included (an mKey points at it); value is never tagged (sh defines it; Dorc only
 mirrors it, though the lifts into Dorc are real players); no umbrella term for "things the
-engine handles" is ever minted; an in-Dorc MSort is always written with its prefix (`sm.File`,
+engine handles" is ever minted; an in-Dorc mSort is always written with its prefix (`sm.File`,
 never File); RDBMS words appear only after an m once adopted or inside a parenthetical; "warrant"
 is a flavour of attribute and is said to sit on a named edge type.
 
