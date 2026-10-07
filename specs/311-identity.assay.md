@@ -114,7 +114,7 @@ third kind; this document holds none, and the first one is never filed under `Sp
 <!-- normative -->
 > The engine knows only syntax, authored speech, and what authored probes returned.
 > It never decodes an MKey and never holds an MReferent.
-> It reaches MReferents only through MKeys, MTokens, and MDerivations.
+> It knows MReferents only through MKeys, MTokens, and MDerivations.
 > The engine never holds an MState, and no MKey names one.
 
 ### § 0.2-a-world-exists
