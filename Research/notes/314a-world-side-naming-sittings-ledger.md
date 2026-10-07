@@ -624,3 +624,16 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
   taken after a rewind. State at the close: `specs/pure-logic.assay.md` holds only the rubric,
   which the review found admits nothing; the premise's translation line in 311 § 3.2 still says
   "truth predicate"; the eight per-kind truth sentences are unwritten.
+- **[TYPED]** ack, applied: the pure-logic document and its lock are removed (commit "(AI dsn rm)
+  Remove the pure-logic document and its lock").
+- **[TYPED]** ack, applied: the three leftover uses of "reach". § 0.1's normative line now reads "It
+  knows MReferents only through MKeys, MTokens, and MDerivations" (commit "(AI dsn fix) Say the
+  engine knows referents through keys, not reaches them"); § 1.4's commentary says "resolves
+  into", and § 1.10's says where a probe stood (commit "(- AI dsn fix) Say resolves into and where
+  a probe stood, not reach").
+- **[TYPED]** directive, applied: the root `AGENTS.md` terminology bridge names the parent views
+  `MParent-Catalog` and `MParent-Store`, narrow renaming only; § 6.1's note that the bridge still
+  named the old views is dropped.
+- **[TYPED]** the Windows hk race: encode it in hk properly, a build that runs before the parallel
+  steps only when the tooling changed, and not overengineered; a brief investigation of the
+  necessary complexity first, and no build until the human acks.
