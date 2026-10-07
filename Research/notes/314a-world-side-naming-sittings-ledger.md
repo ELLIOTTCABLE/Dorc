@@ -653,3 +653,15 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
   "the tooling changed" fixes the safe case, misses the real one, and costs pre-commit rebuilds.
 - **[TYPED]** ACK `fix-hook-ordering-edges`: in the `fix` hook only, the four steps that run the
   tooling binary wait for the two fixers that rewrite sources.
+- Landed, each by fast-forward onto `ai/main`:
+  - The hk ordering edges ("(AI tool fix) Start fix runs' tooling steps only after both source
+    fixers"), checked both ways by hk's own wait log; the cross-platform gate passed.
+  - The `isTrue` rename and the test split ("(AI dsn new) Write the test lock at the gate tier,
+    most rows still unmeasured", eight commits). 311 went from 4,383 lines to 2,878; its 14 books,
+    24 kills, and 9 hole witnesses moved, byte for byte, to `specs/311w-identity.tests.assay.md`,
+    which opens 311; 311 keeps every definition, law, premise twin, and hole predicate. The Windows
+    gate failed only on lock rows left unmeasured, which the human accepted; CI re-solves.
+- Applied under the "reach" ruling, one commit per sense: effect spread now says "collides with"
+  (or "the writeset"); containment says "beneath"; four one-offs take plain verbs. Graph
+  reachability keeps "reach". `30Z:hole-carries-its-witness-pair` now lets a witness live in the
+  specification's test document.

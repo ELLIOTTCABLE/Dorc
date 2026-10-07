@@ -3988,6 +3988,10 @@ row's `near:` line refreshes only when that row's other lines change.
 - defined: —
 - cited: 27C 27D 27Xf (6)
 
+## hole-carries-its-witness-pair
+- defined: —
+- cited: 30Z 314a (2)
+
 ## hole-expansion-siting-across-the-boundary
 - defined: —
 - cited: 26O (1)
