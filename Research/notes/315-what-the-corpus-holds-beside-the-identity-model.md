@@ -231,7 +231,7 @@ chains and other parties' reactions included.
 
 - human · `30U:43-45` · 2026-08-29 · typed framing (`rul-definitions-not-surveys`): “The reaches
   body is part of the word's definition … never a measurement of the world.”
-- spec · `spec:1308` · model: `true_FinishesEntailment` reads the world relation `affects`
+- spec · `spec:1308` · model: `FinishesEntailment.isTrue` reads the world relation `affects`
 - conductor · `312e:714`: “as mechanized, the knife is the may-read closure”
 - Latest typed: `30U:43-45`. Registered: `30U` only as a generator.
 
@@ -561,7 +561,7 @@ Time, attribution, the flag, the engine:
   stranger's sort naming one's scheme as its primary.
 - Of its nine holes: five are posed in the world relations, three of those being shapes of the
   one cell the pre-mechanisation table leaves open (§ 3, item 1); two sit on truth predicates
-  whose bodies are empty (`true_DeclaresCell`, `spec:724`; `true_DeclaresComposite`, `spec:2339`);
+  whose bodies are empty (`DeclaresCell.isTrue`, `spec:724`; `DeclaresComposite.isTrue`, `spec:2339`);
   two are questions about the region test and read no world relation.
 - 9 of its 28 truth predicates have an empty body. Four species have no fact saying who speaks
   them `[extracted]`: `VerdictFact`, `DeclaresAliasesNothingElse`, `DeclaresMayWrite`,

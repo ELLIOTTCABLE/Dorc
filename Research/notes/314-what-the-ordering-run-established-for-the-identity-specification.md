@@ -125,8 +125,8 @@ scopes the specification states.
 
 - `abl-no-hole-is-a-case-of-another` (+SURE of the rows) — with any one hole's shape forbidden,
   every other hole's witness stays satisfiable (72 of 72). The nine holes are nine shapes.
-- `abl-the-cell-and-composite-sentences-close-their-holes` — with `true_DeclaresCell` and
-  `true_DeclaresComposite` given the sentence that their things are one thing, both witnesses
+- `abl-the-cell-and-composite-sentences-close-their-holes` — with `DeclaresCell.isTrue` and
+  `DeclaresComposite.isTrue` given the sentence that their things are one thing, both witnesses
   have no instance, and `law_compare_same_is_sound` and `law_same_is_sound` have no
   counterexample with those exclusions dropped, premise twins satisfiable. Two DISJOINT laws
   that also exclude the composite hole timed out under the ruling. A review lane showed the

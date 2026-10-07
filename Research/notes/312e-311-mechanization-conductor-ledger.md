@@ -83,7 +83,7 @@ put to the human. The lock is to show what moved; every one is expected to move 
   translation block, so the sentences after it (both sections' law sentences) formed a blockquote
   with no header, which under `30Z:fw-normative-prose-is-a-headed-blockquote` is neither
   translation nor normative. The two paragraphs now follow their blocks. Commentary only.
-- `rep-finished-record-truth-ranges-over-the-engines-keys` — `true_FinishesEntailment` ranged
+- `rep-finished-record-truth-ranges-over-the-engines-keys` — `FinishesEntailment.isTrue` ranged
   over `keysOfSort`, which holds primary and cell MKeys only, while `entailmentFinished` reads the
   written MKey's own shape; a record for a natural shape (a file written by its path) was
   therefore true in every world. The truth now ranges over every MKey whose `sortOfKey` and shape
@@ -189,7 +189,7 @@ not re-derive them. Each is a hand-walk; no solver has seen any. None is acted o
   asks it at `4 but 4 Int, 10 Claim, 5 MLevel`, whose twin demands a store on the read MKey's
   chain, the world the four-level scope cannot seat. Its result is the affordability
   measurement.
-- `rep-sentinel-truth-presupposes-a-callers-instance` — `true_ClosesLends` demanded that every
+- `rep-sentinel-truth-presupposes-a-callers-instance` — `ClosesLends.isTrue` demanded that every
   natural MKey of an unlent MSort under the wrapper reach what the caller's instance passes to,
   with no guard that the caller holds one, so a natural MKey of an MScheme with no declared
   catalog MSort made every sentinel false and hid every world with one. The truth now

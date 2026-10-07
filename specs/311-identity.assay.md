@@ -295,7 +295,7 @@ pred isPrimary[s: MScheme] { some primaryOf[s] or floor[s] }
 
 fact { all s: MShape | floor[s.ofScheme] implies no identifiedIn[s] and not isRoot[s] }
 
-pred true_DeclaresPrimaryOf[d: DeclaresPrimaryOf] {}
+pred isTrue[d: DeclaresPrimaryOf] {}
 ```
 
 <!-- prose-translation -->
@@ -435,12 +435,12 @@ pred withinOneParent[a, b: MKey] {
    or (a.mParent + b.mParent in MKey and some a.mParent.mRefersTo and a.mParent.mRefersTo = b.mParent.mRefersTo)
 }
 
-pred true_DeclaresUniqueReferent[d: DeclaresUniqueReferent] {
+pred isTrue[d: DeclaresUniqueReferent] {
    all a, b: keysOfShape[d.referentShape] |
       withinOneParent[a, b] and a.mValue = b.mValue implies a.mRefersTo = b.mRefersTo
 }
 
-pred true_DeclaresUniqueName[d: DeclaresUniqueName] {
+pred isTrue[d: DeclaresUniqueName] {
    all a: keysOfShape[d.nameShape], b: MKey |
       b.scheme = a.scheme and withinOneParent[a, b] and some a.mRefersTo and a.mRefersTo = b.mRefersTo
          implies a.mValue = b.mValue
@@ -533,7 +533,7 @@ fact {
    }
 }
 
-pred true_SuppliesParent[s: SuppliesParent] {
+pred isTrue[s: SuppliesParent] {
    isPrimaryKey[s.forKey] implies s.forKey.mRefersTo in s.instance.mRefersTo.holds
 }
 ```
@@ -614,9 +614,9 @@ pred traversalClosed[k: MKey] { some ClosesTraversal & InForce & closedFor.k }
 
 fun mTraversal[k: MKey]: set MLevel { crossed[k] + (traversalClosed[k] implies none else k.mParent) }
 
-pred true_EmitsCrossed[d: EmitsCrossed] {}
+pred isTrue[d: EmitsCrossed] {}
 
-pred true_ClosesTraversal[d: ClosesTraversal] {
+pred isTrue[d: ClosesTraversal] {
    let k = d.closedFor | passes.(k.mRefersTo) in crossed[k].mRefersTo
 }
 ```
@@ -736,7 +736,7 @@ fact { all k: MKey | some k.cellSort implies some cellParentSort[k.cellSort] }
 
 fact { all disj a, b: MKey | some a.cellSort & b.cellSort and some a.mParent & b.mParent implies a = b }
 
-pred true_DeclaresCell[d: DeclaresCell] {}
+pred isTrue[d: DeclaresCell] {}
 ```
 
 <!-- prose-translation -->
@@ -914,7 +914,7 @@ fun catalogSortOf[s: MScheme]: lone MSort { (DeclaresCatalogSort & InForce & for
 
 fact { all s: MScheme | lone catalogSortOf[s] }
 
-pred true_DeclaresCatalogSort[d: DeclaresCatalogSort] {}
+pred isTrue[d: DeclaresCatalogSort] {}
 
 fun yieldsTo[s: MShape]: lone MScheme { (DeclaresYields & InForce & fromShape.s).intoScheme }
 
@@ -922,7 +922,7 @@ fact { all s: MShape | lone yieldsTo[s] }
 
 fact { all s: MShape | some yieldsTo[s] implies no identifiedIn[s] and not isRoot[s] }
 
-pred true_DeclaresYields[d: DeclaresYields] {
+pred isTrue[d: DeclaresYields] {
    all k: keysOfShape[d.fromShape] | some k.yielded implies k.mRefersTo = k.yielded.mRefersTo
 }
 
@@ -946,7 +946,7 @@ run law_natural_same_is_sound_premise {
 
 run kill_natural_same_is_sound_unique_referent {
    axiomaticByDifferentialTest
-   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | naturalKeyAnswer[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 6 but 4 Int expect 1
 
@@ -962,7 +962,7 @@ run law_natural_disjoint_is_sound_premise {
 
 run kill_natural_disjoint_is_sound_unique_name {
    axiomaticByDifferentialTest
-   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
+   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | naturalKeyAnswer[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int expect 1
 ```
@@ -1052,12 +1052,12 @@ pred isRoot[s: MShape] { some DeclaresRoot & InForce & rootedShape.s }
 
 fact { all s: MShape | isRoot[s] implies no identifiedIn[s] }
 
-pred true_DeclaresIdentifiedIn[d: DeclaresIdentifiedIn] {
+pred isTrue[d: DeclaresIdentifiedIn] {
    all k: keysOfShape[d.onShape] | some k.mRefersTo implies
       some r: keysOfSort[d.inSort].mRefersTo | k.mRefersTo in r.holds
 }
 
-pred true_DeclaresRoot[d: DeclaresRoot] {
+pred isTrue[d: DeclaresRoot] {
    all a, b: keysOfShape[d.rootedShape] | a.mValue = b.mValue implies a.mRefersTo = b.mRefersTo
 }
 ```
@@ -1095,7 +1095,7 @@ sig DeclaresAliasesNothingElse extends Spoken { store: one MKey }
 
 pred aliasesNothingElse[l: MLevel] { some DeclaresAliasesNothingElse & InForce & store.l }
 
-pred true_DeclaresAliasesNothingElse[d: DeclaresAliasesNothingElse] {
+pred isTrue[d: DeclaresAliasesNothingElse] {
    let s = d.store.mRefersTo |
       all r: s.holds | s in owns.r and owns.r in s
 }
@@ -1180,14 +1180,14 @@ fun readset[f: VerdictFact]: set MKey { f.markedReads }
 
 pred readsetIsTop[f: VerdictFact] { no f.markedReads or some k: f.markedReads | readsetMemberIsTop[k] }
 
-pred true_DeclaresMayRead[d: DeclaresMayRead] {}
+pred isTrue[d: DeclaresMayRead] {}
 
-pred true_ClosesMayRead[d: ClosesMayRead] {
+pred isTrue[d: ClosesMayRead] {
    all k: keysOfSort[d.readSort] | some k.mRefersTo implies
       affects.(k.mRefersTo) in k.mRefersTo.*holds + (^holds).(k.mRefersTo) + compositeMayRead[k].mRefersTo
 }
 
-pred true_VerdictFact[f: VerdictFact] {
+pred isTrue[f: VerdictFact] {
    some f.markedReads implies f.dependsOn in f.markedReads.mRefersTo
 }
 ```
@@ -1325,16 +1325,16 @@ pred spared[l: Line, f: VerdictFact] { sparedBy[l, f, writesetsAgainst[l]] }
 
 pred sparedAtTest[l: Line, f: VerdictFact] { sparedBy[l, f, writesetsAtTest[l]] }
 
-pred true_DeclaresMayWrite[d: DeclaresMayWrite] {}
+pred isTrue[d: DeclaresMayWrite] {}
 
-pred true_ClosesMayWrite[d: ClosesMayWrite] {
+pred isTrue[d: ClosesMayWrite] {
    let l = d.closedLine |
       World.lineWrites[l] in atMostEntries[l].mRefersTo + wholeWriteEntries[l].mRefersTo.passes
 }
 
-pred true_DeclaresEntails[d: DeclaresEntails] {}
+pred isTrue[d: DeclaresEntails] {}
 
-pred true_FinishesEntailment[d: FinishesEntailment] {
+pred isTrue[d: FinishesEntailment] {
    all k: MKey | sortOfKey[k] = d.finishedSort and k.shape = d.finishedShape and some k.mRefersTo implies
       (k.mRefersTo).affects in k.mRefersTo.*holds + entailed[k].mRefersTo
 }
@@ -1398,34 +1398,34 @@ run law_sparing_is_sound_with_a_store_on_the_chain_premise {
 
 run kill_sparing_is_sound_closes_may_write {
    noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
-   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
+   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some l: Line, f: VerdictFact & InForce |
          spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim expect 1
 
 run kill_sparing_is_sound_verdict_fact {
    noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
-   some d: VerdictFact & InForce | axiomaticByContractExcept[d] and not true_VerdictFact[d]
+   some d: VerdictFact & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some l: Line | spared[l, d] and some (World.lineWrites[l]).*affects & d.dependsOn
 } for 4 but 4 Int, 10 Claim expect 1
 
 run kill_sparing_is_sound_closes_may_read {
    noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
-   some d: ClosesMayRead & InForce | axiomaticByContractExcept[d] and not true_ClosesMayRead[d]
+   some d: ClosesMayRead & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some l: Line, f: VerdictFact & InForce |
          spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim expect 1
 
 run kill_sparing_is_sound_finishes_entailment {
    noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
-   some d: FinishesEntailment & InForce | axiomaticByContractExcept[d] and not true_FinishesEntailment[d]
+   some d: FinishesEntailment & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some l: Line, f: VerdictFact & InForce |
          spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim expect 1
 
 run kill_sparing_is_sound_supplies_parent {
    noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
-   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some l: Line, f: VerdictFact & InForce |
          spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
 } for 4 but 4 Int, 10 Claim, 5 MLevel expect 1
@@ -1912,7 +1912,7 @@ pred corresponds[x, y: MKey] {
    some d: DeclaresCorresponds & InForce | (d.keyX = x and d.keyY = y) or (d.keyX = y and d.keyY = x)
 }
 
-pred true_DeclaresCorresponds[d: DeclaresCorresponds] { d.keyX.mRefersTo = d.keyY.mRefersTo }
+pred isTrue[d: DeclaresCorresponds] { d.keyX.mRefersTo = d.keyY.mRefersTo }
 ```
 
 <!-- prose-translation -->
@@ -1950,7 +1950,7 @@ pred sameTopic[f, g: VerdictFact] {
    all p: topicObservers[g] | some o: topicObservers[f] | tabledCompare[o, p] = SAME
 }
 
-pred true_DeclaresObserverIndependence[d: DeclaresObserverIndependence] {
+pred isTrue[d: DeclaresObserverIndependence] {
    all f: VerdictFact | sortOfKey[f.topic] = d.independentSort implies
       no f.dependsOn & {o: f.underObservers | sortOfKey[o] = d.ofObserver}.mRefersTo
 }
@@ -1999,7 +1999,7 @@ fact { all d: EmitsAliasNothingElse | d.speaker = d.atLevel.scheme.schemeOwner }
 
 pred aliasClosed[m: MKey] { some EmitsAliasNothingElse & InForce & atLevel.m }
 
-pred true_EmitsAliasNothingElse[d: EmitsAliasNothingElse] {
+pred isTrue[d: EmitsAliasNothingElse] {
    no c: MKey - d.atLevel | c.scheme = d.atLevel.scheme and some c.mRefersTo and c.mRefersTo = d.atLevel.mRefersTo
 }
 
@@ -2075,7 +2075,7 @@ run kill_region_disjoint_is_sound_closes_looked_up_in {
    not hole_composite_keys_with_same_parts_refer_differently
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not true_ClosesLookedUpIn[d]
+   some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some D, x: MKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
 } for 5 but 4 Int expect 1
 
@@ -2085,7 +2085,7 @@ run kill_region_disjoint_is_sound_alias_nothing_else {
    not hole_composite_keys_with_same_parts_refer_differently
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not true_EmitsAliasNothingElse[d]
+   some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some D, x: MKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
 } for 5 but 4 Int expect 1
 ```
@@ -2187,13 +2187,13 @@ pred lookedUpInClosed[x: MKey, G: MSort] { some ClosesLookedUpIn & InForce & clo
 
 fun beneathFor[P: MKey]: set MKey { entailmentFinished[P] implies entailed[P] else entailed[P] + beneath[P] }
 
-pred true_DeclaresPlaces[d: DeclaresPlaces] {}
+pred isTrue[d: DeclaresPlaces] {}
 
-pred true_RecordsLookedUpIn[d: RecordsLookedUpIn] {
+pred isTrue[d: RecordsLookedUpIn] {
    d.placedKey.mRefersTo in d.inKey.mRefersTo.passes
 }
 
-pred true_ClosesLookedUpIn[d: ClosesLookedUpIn] {
+pred isTrue[d: ClosesLookedUpIn] {
    all g: keysOfSort[d.routeSort] | some d.closedKey.mRefersTo and d.closedKey.mRefersTo in g.mRefersTo.passes implies
       some r: placedIn[d.closedKey, d.routeSort] | r.mRefersTo = g.mRefersTo
 }
@@ -2367,7 +2367,7 @@ pred compositeSame[x, y: MKey] {
 
 fun compositeMayRead[k: MKey]: set MKey { mayReadEntries[k] + mayReadEntries[Role.(k.part)] }
 
-pred true_DeclaresComposite[d: DeclaresComposite] {}
+pred isTrue[d: DeclaresComposite] {}
 ```
 
 <!-- prose-translation -->
@@ -2579,7 +2579,7 @@ run kill_compare_same_is_sound_corresponds {
    not hole_cell_keys_under_same_parents_refer_differently
    not hole_composite_keys_with_same_parts_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
+   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | compare[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -2602,39 +2602,39 @@ run kill_compare_disjoint_is_sound_corresponds {
    not hole_world_scoped_top_aliases_into_a_store
    not hole_composite_keys_with_same_parts_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not true_DeclaresCorresponds[d]
+   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 pred axiomaticByContractExcept[except: set Spoken] {
-   all d: DeclaresPrimaryOf & InForce - except | true_DeclaresPrimaryOf[d]
-   all d: DeclaresYields & InForce - except | true_DeclaresYields[d]
-   all d: DeclaresIdentifiedIn & InForce - except | true_DeclaresIdentifiedIn[d]
-   all d: DeclaresRoot & InForce - except | true_DeclaresRoot[d]
-   all d: SuppliesParent & InForce - except | true_SuppliesParent[d]
-   all d: DeclaresUniqueReferent & InForce - except | true_DeclaresUniqueReferent[d]
-   all d: DeclaresUniqueName & InForce - except | true_DeclaresUniqueName[d]
-   all d: DeclaresAliasesNothingElse & InForce - except | true_DeclaresAliasesNothingElse[d]
-   all d: DeclaresMayRead & InForce - except | true_DeclaresMayRead[d]
-   all d: ClosesMayRead & InForce - except | true_ClosesMayRead[d]
-   all d: VerdictFact & InForce - except | true_VerdictFact[d]
-   all d: DeclaresMayWrite & InForce - except | true_DeclaresMayWrite[d]
-   all d: ClosesMayWrite & InForce - except | true_ClosesMayWrite[d]
-   all d: DeclaresEntails & InForce - except | true_DeclaresEntails[d]
-   all d: FinishesEntailment & InForce - except | true_FinishesEntailment[d]
-   all d: EmitsCrossed & InForce - except | true_EmitsCrossed[d]
-   all d: ClosesTraversal & InForce - except | true_ClosesTraversal[d]
-   all d: EmitsAliasNothingElse & InForce - except | true_EmitsAliasNothingElse[d]
-   all d: DeclaresPlaces & InForce - except | true_DeclaresPlaces[d]
-   all d: RecordsLookedUpIn & InForce - except | true_RecordsLookedUpIn[d]
-   all d: ClosesLookedUpIn & InForce - except | true_ClosesLookedUpIn[d]
-   all d: DeclaresCell & InForce - except | true_DeclaresCell[d]
-   all d: DeclaresCorresponds & InForce - except | true_DeclaresCorresponds[d]
-   all d: DeclaresObserverIndependence & InForce - except | true_DeclaresObserverIndependence[d]
-   all d: DeclaresComposite & InForce - except | true_DeclaresComposite[d]
-   all d: DeclaresCatalogSort & InForce - except | true_DeclaresCatalogSort[d]
-   all d: DeclaresLends & InForce - except | true_DeclaresLends[d]
-   all d: ClosesLends & InForce - except | true_ClosesLends[d]
+   all d: DeclaresPrimaryOf & InForce - except | d.isTrue
+   all d: DeclaresYields & InForce - except | d.isTrue
+   all d: DeclaresIdentifiedIn & InForce - except | d.isTrue
+   all d: DeclaresRoot & InForce - except | d.isTrue
+   all d: SuppliesParent & InForce - except | d.isTrue
+   all d: DeclaresUniqueReferent & InForce - except | d.isTrue
+   all d: DeclaresUniqueName & InForce - except | d.isTrue
+   all d: DeclaresAliasesNothingElse & InForce - except | d.isTrue
+   all d: DeclaresMayRead & InForce - except | d.isTrue
+   all d: ClosesMayRead & InForce - except | d.isTrue
+   all d: VerdictFact & InForce - except | d.isTrue
+   all d: DeclaresMayWrite & InForce - except | d.isTrue
+   all d: ClosesMayWrite & InForce - except | d.isTrue
+   all d: DeclaresEntails & InForce - except | d.isTrue
+   all d: FinishesEntailment & InForce - except | d.isTrue
+   all d: EmitsCrossed & InForce - except | d.isTrue
+   all d: ClosesTraversal & InForce - except | d.isTrue
+   all d: EmitsAliasNothingElse & InForce - except | d.isTrue
+   all d: DeclaresPlaces & InForce - except | d.isTrue
+   all d: RecordsLookedUpIn & InForce - except | d.isTrue
+   all d: ClosesLookedUpIn & InForce - except | d.isTrue
+   all d: DeclaresCell & InForce - except | d.isTrue
+   all d: DeclaresCorresponds & InForce - except | d.isTrue
+   all d: DeclaresObserverIndependence & InForce - except | d.isTrue
+   all d: DeclaresComposite & InForce - except | d.isTrue
+   all d: DeclaresCatalogSort & InForce - except | d.isTrue
+   all d: DeclaresLends & InForce - except | d.isTrue
+   all d: ClosesLends & InForce - except | d.isTrue
 }
 
 pred axiomaticByContract { axiomaticByContractExcept[none] }
@@ -2659,14 +2659,14 @@ run law_same_is_sound_premise {
 run kill_same_is_sound_unique_referent {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueReferent[d]
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 6 but 4 Int expect 1
 
 run kill_same_is_sound_yields {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not true_DeclaresYields[d]
+   some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -2686,7 +2686,7 @@ run kill_disjoint_is_sound_unique_name {
    noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not true_DeclaresUniqueName[d]
+   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -2694,14 +2694,14 @@ run kill_disjoint_is_sound_aliases_nothing_else {
    noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: DeclaresAliasesNothingElse & InForce | axiomaticByContractExcept[d] and not true_DeclaresAliasesNothingElse[d]
+   some d: DeclaresAliasesNothingElse & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 6 but 4 Int, 9 Claim expect 1
 
 run kill_same_is_sound_identified_in {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
+   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -2709,21 +2709,21 @@ run kill_disjoint_is_sound_identified_in {
    noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not true_DeclaresIdentifiedIn[d]
+   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_root {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not true_DeclaresRoot[d]
+   some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_supplies_parent {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -2731,14 +2731,14 @@ run kill_disjoint_is_sound_supplies_parent {
    noStoreIsAmongItsOwnContents
    not hole_world_scoped_top_aliases_into_a_store
    axiomaticByDifferentialTest
-   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not true_SuppliesParent[d]
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
 } for 5 but 4 Int expect 1
 
 run kill_same_is_sound_closes_lends {
    not hole_cell_keys_under_same_parents_refer_differently
    axiomaticByDifferentialTest
-   some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not true_ClosesLends[d]
+   some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
 } for 5 but 4 Int expect 1
 
@@ -3058,7 +3058,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_1 and instance = k_fs_1 and seat = DeclarationSeat }
 #= one sig tessa__ino_17_at_line_2_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_2 and instance = k_fs_1 and seat = DeclarationSeat }
 #= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a and atLine = this and markedReads = k_srv_a and dependsOn = inode_17 }
-#= axiomaticByContractExcept[tessa__a_path_names_one_inode] and axiomaticByDifferentialTest and not true_DeclaresUniqueName[tessa__a_path_names_one_inode] and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
+#= axiomaticByContractExcept[tessa__a_path_names_one_inode] and axiomaticByDifferentialTest and not tessa__a_path_names_one_inode.isTrue and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
 
    cmp -s ./golden.conf /srv/mirror/app.conf
 #} cmp dash_s golden_conf srv_mirror_app_conf
@@ -3542,7 +3542,7 @@ run kill_unstale_route_is_untouched_closes_traversal {
    not hole_a_route_off_the_catalog_reaches_the_thing
    not hole_region_closure_with_unknown_leaf_pair
    axiomaticByDifferentialTest
-   some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not true_ClosesTraversal[d]
+   some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some s: Line, k: MKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
          and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
 } for 6 but 4 Int, 9 Claim expect 1
@@ -3554,7 +3554,7 @@ run kill_unstale_route_is_untouched_closes_may_write {
    not hole_a_route_off_the_catalog_reaches_the_thing
    not hole_region_closure_with_unknown_leaf_pair
    axiomaticByDifferentialTest
-   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not true_ClosesMayWrite[d]
+   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not d.isTrue
       and some s: Line, k: MKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
          and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
 } for 6 but 4 Int, 9 Claim expect 1
@@ -3756,13 +3756,13 @@ fact {
 
 fun keysUnder[w: Wrapper]: set MKey { {k: MKey | k.at.through = w} }
 
-pred true_DeclaresLends[d: DeclaresLends] {
+pred isTrue[d: DeclaresLends] {
    all k: keysUnder[d.lendingWrapper] |
       isNaturalKey[k] and catalogSortOf[k.scheme] = d.lentSort implies
          k.mRefersTo in d.lentInstance.mRefersTo.passes
 }
 
-pred true_ClosesLends[d: ClosesLends] {
+pred isTrue[d: ClosesLends] {
    let w = d.closedWrapper {
       all k: keysUnder[w] | isNaturalKey[k] and no lent[w, catalogSortOf[k.scheme]]
             and some k.at.enteredFrom.ambient[catalogSortOf[k.scheme]] implies

@@ -60,7 +60,7 @@ that naming owns positive speech.
 
 Checked: direct evaluation of `inside` and `isTrue` in the supplied `f_rules.als`;
 `specs/311-identity.assay.md` §1.5 independently gives the same uniqueness obligation in
-`true_DeclaresUniqueReferent`. Confidence: +SURE that the example contradicts the claimed
+`DeclaresUniqueReferent.isTrue`. Confidence: +SURE that the example contradicts the claimed
 positive/closure partition; no claim that every naming warrant requires the flag.
 
 ## signature-extension-can-change-lower-results

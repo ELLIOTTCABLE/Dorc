@@ -267,7 +267,7 @@ unavoidable it is flagged `ask-` in § 5.5 and taken by default as stated.
   (§ 2.2 "or none"). No MState, no MValue beyond the key's word, at this stage.
 - `enc-statements-are-declarations` — every `:relation`, warrant, closure, and supply of § 1 and
   § 2 is a subtype of the shared `Statement`, carrying its subject as fields; each has one truth
-  predicate, `true_<Species>`, transcribing its defining sentence into the world stratum; the
+  predicate, `<Species>.isTrue`, transcribing its defining sentence into the world stratum; the
   engine reads only `InForce` statements; the laws premise `everyStatementInForceIsTrue`.
 - `enc-shape-is-the-matched-path` — `sig MShape { scheme: one MScheme }`; a key with no shape
   matched no path and reads unknown from that level; equal MValues of one MScheme match one
@@ -556,7 +556,7 @@ change to 311's meaning:
   builder swept every fence under that rule and found seven sites in all.
 - `fnd-walk-laws-quantified-natural-keys` — the two walk laws ranged `walk` over every MKey
   where § 3.2 walks by identities; restated over `walkOfKeys`, which covers the primary case as
-  the identity of a primary key and the natural case through `true_DeclaresYields`.
+  the identity of a primary key and the natural case through `DeclaresYields.isTrue`.
 - `fnd-touches-traversal-mis-scoped` — a block-bodied quantifier scoped the catalog-given-whole
   disjunct inside `some m: crossed[l]`; re-parenthesized to the translation's reading.
 - `fnd-placed-in-whole-sort-dead` — `placedIn[k, MSort]` compared one sort against the whole
@@ -585,7 +585,7 @@ closed:
   has an empty MTraversal in the fences; 311 covers it by the engine's vouch of the MRoute within
   a span (§ 1.10.1), which is prose. Excludes the unstale law.
 - `hole_natural_key_catalog_off_the_route` — no world sentence says a natural MKey's supplied
-  MParent-Catalog instance is on the route to its MReferent (`true_SuppliesParent` speaks for
+  MParent-Catalog instance is on the route to its MReferent (`SuppliesParent.isTrue` speaks for
   MKey-Primaries only). Excludes the unstale law. Conductor's candidate sentence for the sitting,
   unacked: the catalog seat is true when the MKey's MReferent is one a route through the
   instance's MReferent passes to.
@@ -663,7 +663,7 @@ Tip `50e53398` on `ai/312d-mechanize-311` (twenty-one commits over `3a5c81f7`; o
 specification and the lock touched), 2026-09-29. Turn 3 applied the fourteen rulings the
 conductor gave in chat after turn 2: `coveredBy` and `seed` per element (a branching function had
 been applied to a set argument, a second mechanical slip class beside `fnd-none-equality-class`);
-`true_ClosesLookedUpIn` guarded inside its antecedent; `routesAreStrict` as a named premise on the
+`ClosesLookedUpIn.isTrue` guarded inside its antecedent; `routesAreStrict` as a named premise on the
 untouched-route law, never a fact; the exclusion-readings law at four atoms and ten statements
 beside the sparing law; the sixth hole. The lock: 39 rows, no counterexample row. Witnessed and
 killed greens: `natural_same`, `natural_disjoint`, `same`, `nobody_spoke`. Witnessed greens:
@@ -1497,7 +1497,7 @@ specification's translation blocks. Expected answers, as the conductor walked th
   every other key in that filesystem (`touchesTraversal`: the region test reads the written
   inode as covered by the filesystem), so every same-filesystem write routing-invalidates every
   resolution in the filesystem, and the closing act cannot honestly be given at the primary
-  level while the world routes anything to the inode (`true_ClosesTraversal` needs nothing to
+  level while the world routes anything to the inode (`ClosesTraversal.isTrue` needs nothing to
   pass to it). If that walk holds, USER_STORY stage 5's file survivals never spare within one
   filesystem under the current text, whatever Anna names. To be shown by a book
   (`stage_five_the_list_files_named`, Anna naming the list inodes) after the four run, and held
@@ -1925,7 +1925,7 @@ Each is a hand-walk of the fences. None was put to the human, and no solver has 
 - `sus-a-contained-write-touches-its-store` (§ 22.3; ~SUSPECT) — its book,
   `stage_five_the_list_file_named`, is one of the three unmeasured.
 - `sus-finished-record-for-a-natural-shape-is-vacuous` (+SURE of the text; ~SUSPECT of its
-  weight) — `true_FinishesEntailment` ranges over `keysOfSort`, which holds no natural MKey,
+  weight) — `FinishesEntailment.isTrue` ranges over `keysOfSort`, which holds no natural MKey,
   while `entailmentFinished` reads the writeset member's own shape. A record for a natural
   shape is therefore true of every world. Both list-file books declare such a record.
 - `sus-top-test-follows-entries-from-the-marked-read-only` (+SURE of the text; ~SUSPECT of
