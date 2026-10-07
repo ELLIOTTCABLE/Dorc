@@ -646,3 +646,10 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
   reaching a level); effect spread on the engine's side becomes "collides with", or "the
   writeset"; containment becomes "beneath", as the fence's own `beneath`; the one-offs take plain
   verbs. Applied after the test split folds, one commit per sense.
+- **[CONDUCTOR]** put, from an Opus scout's read of the cargo and hk sources: cargo already
+  serializes builds and never touches a fresh binary, so parallel tooling runs of a stale binary
+  are safe; the race needs a tooling source to change during the hk run, which in `hk fix --all`
+  the `cargo fmt` and `typos` fixers can do; check-mode runs cannot hit it. A build gated on
+  "the tooling changed" fixes the safe case, misses the real one, and costs pre-commit rebuilds.
+- **[TYPED]** ACK `fix-hook-ordering-edges`: in the `fix` hook only, the four steps that run the
+  tooling binary wait for the two fixers that rewrite sources.
