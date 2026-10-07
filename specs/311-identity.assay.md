@@ -1559,12 +1559,12 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 #= one sig the_boot, fs_1, status_inode, the_index extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
-#= one sig k_index extends MKey {} { mValue = apt_lists  scheme = sm_AptIndex  no cellSort  shape = index_shape  no yielded  at = v0  mRefersTo = the_index }
-#= one sig k_status_inode extends MKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
-#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1 and scheme = sm_FsId and no cellSort and shape = fsid_shape and no yielded and at = v0 and mRefersTo = fs_1 }
+#= one sig k_index extends MKey {} { mValue = apt_lists and scheme = sm_AptIndex and no cellSort and shape = index_shape and no yielded and at = v0 and mRefersTo = the_index }
+#= one sig k_status_inode extends MKey {} { mValue = ino_9 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = status_inode }
+#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_status_inode and at = v0 and mRefersTo = status_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= MSort = sm_Boot + sm_Filesystem + sm_File + sm_PkgIndex
 #= MScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path + sm_AptIndex
@@ -1580,32 +1580,32 @@ run bookScope_stage_five_the_index_given_whole {} for 8 but 4 Int
 #= owns = holds
 #= passes = fs_1->status_inode
 #= no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib  readSort = sm_Boot }
-#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
-#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
-#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_status_inode  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
-#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_Filesystem }
-#= one sig anna__the_apt_index_is_primary_of_the_package_index extends DeclaresPrimaryOf {} { speaker = anna  primaryScheme = sm_AptIndex  ofSort = sm_PkgIndex }
-#= one sig anna__the_index_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = anna  onShape = index_shape  inSort = sm_Boot }
-#= one sig anna__the_index_is_in_the_boot extends SuppliesParent {} { speaker = anna  forKey = k_index  instance = k_boot  seat = DeclarationSeat }
-#= one sig anna__the_package_index_entails_nothing_else extends FinishesEntailment {} { speaker = anna  finishedSort = sm_PkgIndex  finishedShape = index_shape }
-#= one sig anna__update_writes_the_index extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_index }
-#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib and readSort = sm_Boot }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_FsId and ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = fsid_shape and inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = inode_shape and inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa and forScheme = sm_Path and catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa and forKey = k_fs_1 and instance = k_boot and seat = DeclarationSeat }
+#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_status_inode and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa and readSort = sm_File }
+#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa and readSort = sm_Filesystem }
+#= one sig anna__the_apt_index_is_primary_of_the_package_index extends DeclaresPrimaryOf {} { speaker = anna and primaryScheme = sm_AptIndex and ofSort = sm_PkgIndex }
+#= one sig anna__the_index_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = anna and onShape = index_shape and inSort = sm_Boot }
+#= one sig anna__the_index_is_in_the_boot extends SuppliesParent {} { speaker = anna and forKey = k_index and instance = k_boot and seat = DeclarationSeat }
+#= one sig anna__the_package_index_entails_nothing_else extends FinishesEntailment {} { speaker = anna and finishedSort = sm_PkgIndex and finishedShape = index_shape }
+#= one sig anna__update_writes_the_index extends DeclaresMayWrite {} { speaker = anna and writeLine = this and writeEntry = k_index }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna and closedLine = this }
 #= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and wholeWriteEntries[this] = k_index
 
    dpkg -s nginx
 #} dpkg dash_s nginx
-#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb and topic = k_status_path and atLine = this and markedReads = k_status_path and dependsOn = status_inode }
 #= let f = atLine.this, l = (anna__update_writes_the_index).writeLine | tabledCompare[k_index, f.topic] = KNOWN_UNSPOKEN and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not spared[l, f]
 ```
 
@@ -1665,13 +1665,13 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 #= one sig the_boot, fs_1, status_inode, list_inode extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
-#= one sig k_status_inode extends MKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
-#= one sig k_list_inode extends MKey {} { mValue = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = list_inode }
-#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
-#= one sig k_list_path extends MKey {} { mValue = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  mRefersTo = list_inode }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1 and scheme = sm_FsId and no cellSort and shape = fsid_shape and no yielded and at = v0 and mRefersTo = fs_1 }
+#= one sig k_status_inode extends MKey {} { mValue = ino_9 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = status_inode }
+#= one sig k_list_inode extends MKey {} { mValue = ino_31 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = list_inode }
+#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_status_inode and at = v0 and mRefersTo = status_inode }
+#= one sig k_list_path extends MKey {} { mValue = var_lib_apt_lists_release and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_list_inode and at = v0 and mRefersTo = list_inode }
 #= Speaker = stdlib + tessa + anna + deb
 #= MSort = sm_Boot + sm_Filesystem + sm_File
 #= MScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -1686,30 +1686,30 @@ run bookScope_stage_five_the_list_file_named {} for 8 but 4 Int
 #= owns = holds
 #= passes = fs_1->status_inode + fs_1->list_inode
 #= no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib  readSort = sm_Boot }
-#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
-#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
-#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_status_inode  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__the_list_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_list_inode  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
-#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_Filesystem }
-#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
-#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
-#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig stdlib__the_boots_may_read_set_is_closed extends ClosesMayRead {} { speaker = stdlib and readSort = sm_Boot }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_FsId and ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = fsid_shape and inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = inode_shape and inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa and forScheme = sm_Path and catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa and forKey = k_fs_1 and instance = k_boot and seat = DeclarationSeat }
+#= one sig tessa__the_status_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_status_inode and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__the_list_inode_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_list_inode and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa and readSort = sm_File }
+#= one sig tessa__the_filesystems_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa and readSort = sm_Filesystem }
+#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa and finishedSort = sm_File and finishedShape = slash_path_shape }
+#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna and writeLine = this and writeEntry = k_list_path }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna and closedLine = this }
 #= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
 
    dpkg -s nginx
 #} dpkg dash_s nginx
-#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb and topic = k_status_path and atLine = this and markedReads = k_status_path and dependsOn = status_inode }
 #= let f = atLine.this, l = (anna__update_writes_the_list_file).writeLine | tabledCompare[k_list_path, f.topic] = DISJOINT and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and routingInvalidatedBy[l, f.topic] and tokenInvalidatedBy[l, f.topic] and staleAt[this, f.topic] and not spared[l, f]
 ```
 
@@ -1759,11 +1759,11 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 #= one sig slash_path_shape extends MShape {} { ofScheme = sm_Path }
 #= one sig status_inode, list_inode extends MReferent {}
 #= one sig r0 extends MRoute {}
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_status_inode extends MKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = status_inode }
-#= one sig k_list_inode extends MKey {} { mValue = ino_31  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = list_inode }
-#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_status_inode  at = v0  mRefersTo = status_inode }
-#= one sig k_list_path extends MKey {} { mValue = var_lib_apt_lists_release  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_list_inode  at = v0  mRefersTo = list_inode }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_status_inode extends MKey {} { mValue = ino_9 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = status_inode }
+#= one sig k_list_inode extends MKey {} { mValue = ino_31 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = list_inode }
+#= one sig k_status_path extends MKey {} { mValue = var_lib_dpkg_status and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_status_inode and at = v0 and mRefersTo = status_inode }
+#= one sig k_list_path extends MKey {} { mValue = var_lib_apt_lists_release and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_list_inode and at = v0 and mRefersTo = list_inode }
 #= Speaker = tessa + anna + deb
 #= MSort = sm_File
 #= MScheme = sm_Inode + sm_Path
@@ -1775,18 +1775,18 @@ run bookScope_stage_five_the_list_file_named_in_the_route {} for 5 but 4 Int
 #= no Engine.lookupReadSetOpen and no GivenWhole
 #= World.lineWrites = (anna__update_writes_the_list_file).writeLine->list_inode
 #= no holds and no owns and no passes and no affects
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa  readSort = sm_File }
-#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa  finishedSort = sm_File  finishedShape = slash_path_shape }
-#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna  writeLine = this  writeEntry = k_list_path }
-#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna  closedLine = this }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__the_files_may_read_set_is_closed extends ClosesMayRead {} { speaker = tessa and readSort = sm_File }
+#= one sig tessa__writing_a_file_by_its_path_entails_nothing_else extends FinishesEntailment {} { speaker = tessa and finishedSort = sm_File and finishedShape = slash_path_shape }
+#= one sig anna__update_writes_the_list_file extends DeclaresMayWrite {} { speaker = anna and writeLine = this and writeEntry = k_list_path }
+#= one sig anna__update_writes_nothing_else extends ClosesMayWrite {} { speaker = anna and closedLine = this }
 #= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_list_path and entailmentFinished[k_list_path]
 
    dpkg -s nginx
 #} dpkg dash_s nginx
-#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb  topic = k_status_path  atLine = this  markedReads = k_status_path  dependsOn = status_inode }
+#= one sig deb__nginx_is_installed extends VerdictFact {} { speaker = deb and topic = k_status_path and atLine = this and markedReads = k_status_path and dependsOn = status_inode }
 #= let f = atLine.this, l = (anna__update_writes_the_list_file).writeLine | tabledCompare[k_list_path, f.topic] = DISJOINT and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not staleAt[this, f.topic] and readsetIsTop[f] and not spared[l, f]
 ```
 
@@ -1836,9 +1836,9 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 #= one sig volume_a, volume_b extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_volumes extends MRootWorld {} { rootShape = volume_id_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_vol_0a1 extends MKey {} { mValue = vol_0a1  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  mRefersTo = volume_a }
-#= one sig k_vol_0b2 extends MKey {} { mValue = vol_0b2  scheme = sm_VolumeId  no cellSort  shape = volume_id_shape  no yielded  at = v0  mRefersTo = volume_b }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_vol_0a1 extends MKey {} { mValue = vol_0a1 and scheme = sm_VolumeId and no cellSort and shape = volume_id_shape and no yielded and at = v0 and mRefersTo = volume_a }
+#= one sig k_vol_0b2 extends MKey {} { mValue = vol_0b2 and scheme = sm_VolumeId and no cellSort and shape = volume_id_shape and no yielded and at = v0 and mRefersTo = volume_b }
 #= Speaker = petra + ravi
 #= MSort = sm_Volume
 #= MScheme = sm_VolumeId
@@ -1850,18 +1850,18 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 #= no Engine.lookupReadSetOpen and no GivenWhole
 #= World.lineWrites = (ravi__modify_writes_the_volume).writeLine->volume_b
 #= no holds and no owns and no passes and no affects
-#= one sig petra__the_volume_id_is_primary_of_the_volume extends DeclaresPrimaryOf {} { speaker = petra  primaryScheme = sm_VolumeId  ofSort = sm_Volume }
-#= one sig petra__a_volume_id_is_a_root extends DeclaresRoot {} { speaker = petra  rootedShape = volume_id_shape }
-#= one sig petra__a_volume_has_one_id extends DeclaresUniqueName {} { speaker = petra  nameShape = volume_id_shape }
-#= one sig petra__the_volumes_may_read_set_is_closed extends ClosesMayRead {} { speaker = petra  readSort = sm_Volume }
-#= one sig petra__writing_a_volume_entails_nothing_else extends FinishesEntailment {} { speaker = petra  finishedSort = sm_Volume  finishedShape = volume_id_shape }
-#= one sig ravi__modify_writes_the_volume extends DeclaresMayWrite {} { speaker = ravi  writeLine = this  writeEntry = k_vol_0b2 }
-#= one sig ravi__modify_writes_nothing_else extends ClosesMayWrite {} { speaker = ravi  closedLine = this }
+#= one sig petra__the_volume_id_is_primary_of_the_volume extends DeclaresPrimaryOf {} { speaker = petra and primaryScheme = sm_VolumeId and ofSort = sm_Volume }
+#= one sig petra__a_volume_id_is_a_root extends DeclaresRoot {} { speaker = petra and rootedShape = volume_id_shape }
+#= one sig petra__a_volume_has_one_id extends DeclaresUniqueName {} { speaker = petra and nameShape = volume_id_shape }
+#= one sig petra__the_volumes_may_read_set_is_closed extends ClosesMayRead {} { speaker = petra and readSort = sm_Volume }
+#= one sig petra__writing_a_volume_entails_nothing_else extends FinishesEntailment {} { speaker = petra and finishedSort = sm_Volume and finishedShape = volume_id_shape }
+#= one sig ravi__modify_writes_the_volume extends DeclaresMayWrite {} { speaker = ravi and writeLine = this and writeEntry = k_vol_0b2 }
+#= one sig ravi__modify_writes_nothing_else extends ClosesMayWrite {} { speaker = ravi and closedLine = this }
 #= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and atMostEntries[this] = k_vol_0b2 and entailmentFinished[k_vol_0b2] and worldOf[k_vol_0b2] = w_volumes
 
    aws ec2 describe-volumes --volume-ids vol-0a1
 #} aws ec2 describe_volumes dash_dash_volume_ids vol_0a1
-#= one sig ravi__the_volume_is_in_use extends VerdictFact {} { speaker = ravi  topic = k_vol_0a1  atLine = this  markedReads = k_vol_0a1  dependsOn = volume_a }
+#= one sig ravi__the_volume_is_in_use extends VerdictFact {} { speaker = ravi and topic = k_vol_0a1 and atLine = this and markedReads = k_vol_0a1 and dependsOn = volume_a }
 #= let f = atLine.this, l = (ravi__modify_writes_the_volume).writeLine | tabledCompare[k_vol_0b2, f.topic] = DISJOINT and not readsetIsTop[f] and not writesetIsTop[l, writesetsAgainst[l][f.topic]] and not staleAt[this, f.topic] and spared[l, f] and no (World.lineWrites[l]).*affects & f.dependsOn
 ```
 
@@ -2257,12 +2257,12 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 #= one sig dir_shape extends MShape {} { ofScheme = sm_DirInode }
 #= one sig fs_1, dir_a, dir_b, inode_a extends MReferent {}
 #= one sig r0 extends MRoute {}
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
-#= one sig k_dir_a extends MKey {} { mValue = ino_2  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  mRefersTo = dir_a }
-#= one sig k_dir_b extends MKey {} { mValue = ino_3  scheme = sm_DirInode  no cellSort  shape = dir_shape  no yielded  at = v0  mRefersTo = dir_b }
-#= one sig k_ino_a extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_a }
-#= one sig k_srv_a_path extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_a  at = v0  mRefersTo = inode_a }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1 and scheme = sm_FsId and no cellSort and shape = fsid_shape and no yielded and at = v0 and mRefersTo = fs_1 }
+#= one sig k_dir_a extends MKey {} { mValue = ino_2 and scheme = sm_DirInode and no cellSort and shape = dir_shape and no yielded and at = v0 and mRefersTo = dir_a }
+#= one sig k_dir_b extends MKey {} { mValue = ino_3 and scheme = sm_DirInode and no cellSort and shape = dir_shape and no yielded and at = v0 and mRefersTo = dir_b }
+#= one sig k_ino_a extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_a }
+#= one sig k_srv_a_path extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_a and at = v0 and mRefersTo = inode_a }
 #= Speaker = tessa + dan + rick + carl
 #= MSort = sm_Filesystem + sm_File + sm_Directory
 #= MScheme = sm_FsId + sm_Inode + sm_Path + sm_DirInode
@@ -2278,31 +2278,31 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 #= owns = holds
 #= passes = fs_1->inode_a + dir_a->inode_a
 #= no affects
-#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__ino_a_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_a  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig dan__the_directory_inode_is_primary_of_the_directory extends DeclaresPrimaryOf {} { speaker = dan  primaryScheme = sm_DirInode  ofSort = sm_Directory }
-#= one sig dan__a_directory_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = dan  onShape = dir_shape  inSort = sm_Filesystem }
-#= one sig dan__a_directory_inode_reaches_one_directory extends DeclaresUniqueReferent {} { speaker = dan  referentShape = dir_shape }
-#= one sig dan__a_directory_has_one_inode extends DeclaresUniqueName {} { speaker = dan  nameShape = dir_shape }
-#= one sig dan__dir_a_is_in_fs_1 extends SuppliesParent {} { speaker = dan  forKey = k_dir_a  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig dan__dir_b_is_in_fs_1 extends SuppliesParent {} { speaker = dan  forKey = k_dir_b  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig dan__a_directory_places_a_file extends DeclaresPlaces {} { speaker = dan  placingSort = sm_Directory  placedSort = sm_File }
-#= one sig dan__srv_a_app_conf_is_looked_up_in_dir_a extends RecordsLookedUpIn {} { speaker = dan  placedKey = k_srv_a_path  inKey = k_dir_a }
-#= one sig dan__srv_a_app_conf_is_looked_up_in_no_other_directory extends ClosesLookedUpIn {} { speaker = dan  closedKey = k_srv_a_path  routeSort = sm_Directory }
-#= one sig dan__writing_a_directory_entails_nothing_else extends FinishesEntailment {} { speaker = dan  finishedSort = sm_Directory  finishedShape = dir_shape }
-#= one sig rick__rm_writes_srv_b extends DeclaresMayWrite {} { speaker = rick  writeLine = this  writeEntry = k_dir_b }
-#= one sig rick__rm_writes_nothing_else extends ClosesMayWrite {} { speaker = rick  closedLine = this }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_FsId and ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = inode_shape and inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa and forScheme = sm_Path and catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__ino_a_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_a and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig dan__the_directory_inode_is_primary_of_the_directory extends DeclaresPrimaryOf {} { speaker = dan and primaryScheme = sm_DirInode and ofSort = sm_Directory }
+#= one sig dan__a_directory_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = dan and onShape = dir_shape and inSort = sm_Filesystem }
+#= one sig dan__a_directory_inode_reaches_one_directory extends DeclaresUniqueReferent {} { speaker = dan and referentShape = dir_shape }
+#= one sig dan__a_directory_has_one_inode extends DeclaresUniqueName {} { speaker = dan and nameShape = dir_shape }
+#= one sig dan__dir_a_is_in_fs_1 extends SuppliesParent {} { speaker = dan and forKey = k_dir_a and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig dan__dir_b_is_in_fs_1 extends SuppliesParent {} { speaker = dan and forKey = k_dir_b and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig dan__a_directory_places_a_file extends DeclaresPlaces {} { speaker = dan and placingSort = sm_Directory and placedSort = sm_File }
+#= one sig dan__srv_a_app_conf_is_looked_up_in_dir_a extends RecordsLookedUpIn {} { speaker = dan and placedKey = k_srv_a_path and inKey = k_dir_a }
+#= one sig dan__srv_a_app_conf_is_looked_up_in_no_other_directory extends ClosesLookedUpIn {} { speaker = dan and closedKey = k_srv_a_path and routeSort = sm_Directory }
+#= one sig dan__writing_a_directory_entails_nothing_else extends FinishesEntailment {} { speaker = dan and finishedSort = sm_Directory and finishedShape = dir_shape }
+#= one sig rick__rm_writes_srv_b extends DeclaresMayWrite {} { speaker = rick and writeLine = this and writeEntry = k_dir_b }
+#= one sig rick__rm_writes_nothing_else extends ClosesMayWrite {} { speaker = rick and closedLine = this }
 #= axiomaticByContract and axiomaticByDifferentialTest and atMostClosed[this] and wholeWriteEntries[this] = k_dir_b and entailmentFinished[k_dir_b]
 
    cmp -s ./golden.conf /srv/a/app.conf
 #} cmp dash_s golden_conf srv_a_app_conf
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_path  atLine = this  markedReads = k_srv_a_path  dependsOn = inode_a }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a_path and atLine = this and markedReads = k_srv_a_path and dependsOn = inode_a }
 #= let f = atLine.this, l = (rick__rm_writes_srv_b).writeLine | regionTest[k_dir_b, f.topic] = DISJOINT and tabledCompare[f.topic, k_dir_b] = KNOWN_UNSPOKEN and hole_region_closure_with_unknown_leaf_pair and routingInvalidatedBy[l, f.topic] and tokenInvalidatedBy[l, f.topic] and staleAt[this, f.topic] and readsetIsTop[f] and not spared[l, f]
 ```
 
@@ -2923,14 +2923,14 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 #= one sig the_boot, fs_1, inode_17, inode_42 extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
-#= one sig k_ino_42 extends MKey {} { mValue = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_42 }
-#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_b extends MKey {} { mValue = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  mRefersTo = inode_42 }
-#= one sig k_srv_a_at_line_3 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  mRefersTo = inode_17 }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1 and scheme = sm_FsId and no cellSort and shape = fsid_shape and no yielded and at = v0 and mRefersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_17 }
+#= one sig k_ino_42 extends MKey {} { mValue = ino_42 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_1 and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_b extends MKey {} { mValue = srv_b_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_42 and at = v0 and mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_3 and at = v0 and mRefersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= MSort = sm_Boot + sm_Filesystem + sm_File
 #= MScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -2944,31 +2944,31 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 #= owns = holds
 #= passes = fs_1->inode_17 + fs_1->inode_42
 #= no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
-#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
-#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_1  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__ino_17_at_line_3_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_3  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__ino_42_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_42  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_FsId and ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = fsid_shape and inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = inode_shape and inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa and forScheme = sm_Path and catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa and forKey = k_fs_1 and instance = k_boot and seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_1 and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_3_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_3 and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__ino_42_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_42 and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_1 and atLine = this and markedReads = k_srv_a_at_line_1 and dependsOn = inode_17 }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[f.topic] = w_boot)
 
    cmp -s ./golden.conf /srv/b/app.conf
 #} cmp dash_s golden_conf srv_b_app_conf
-#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_b  atLine = this  markedReads = k_srv_b  dependsOn = inode_42 }
+#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_b and atLine = this and markedReads = k_srv_b and dependsOn = inode_42 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = DISJOINT and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
 
    cmp -s ./golden.conf /srv/a/app.conf
 #} cmp dash_s golden_conf srv_a_app_conf
-#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_3  atLine = this  markedReads = k_srv_a_at_line_3  dependsOn = inode_17 }
+#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_3 and atLine = this and markedReads = k_srv_a_at_line_3 and dependsOn = inode_17 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = SAME and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and sameTopic[f, g]
 ```
 
@@ -3024,12 +3024,12 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= one sig the_boot, fs_1, inode_17 extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_Filesystem->k_fs_1 }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1  scheme = sm_FsId  no cellSort  shape = fsid_shape  no yielded  at = v0  mRefersTo = fs_1 }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_a extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_mirror extends MKey {} { mValue = srv_mirror_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v0  mRefersTo = inode_17 }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_Filesystem->k_fs_1 }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_fs_1 extends MKey {} { mValue = dev_8_1 and scheme = sm_FsId and no cellSort and shape = fsid_shape and no yielded and at = v0 and mRefersTo = fs_1 }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_2 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_a extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_1 and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_mirror extends MKey {} { mValue = srv_mirror_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_2 and at = v0 and mRefersTo = inode_17 }
 #= Speaker = stdlib + tessa + carl
 #= MSort = sm_Boot + sm_Filesystem + sm_File
 #= MScheme = sm_BootId + sm_FsId + sm_Inode + sm_Path
@@ -3043,26 +3043,26 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #= owns = holds
 #= passes = fs_1->inode_17
 #= no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_FsId  ofSort = sm_Filesystem }
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = fsid_shape  inSort = sm_Boot }
-#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa  onShape = inode_shape  inSort = sm_Filesystem }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa  forScheme = sm_Path  catalogSort = sm_Filesystem }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig tessa__a_path_names_one_inode extends DeclaresUniqueName {} { speaker = tessa  nameShape = slash_path_shape }
-#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa  forKey = k_fs_1  instance = k_boot  seat = DeclarationSeat }
-#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_1  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig tessa__ino_17_at_line_2_is_in_fs_1 extends SuppliesParent {} { speaker = tessa  forKey = k_ino_17_at_line_2  instance = k_fs_1  seat = DeclarationSeat }
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a  atLine = this  markedReads = k_srv_a  dependsOn = inode_17 }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig tessa__the_filesystem_id_is_primary_of_the_filesystem extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_FsId and ofSort = sm_Filesystem }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_filesystem_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = fsid_shape and inSort = sm_Boot }
+#= one sig tessa__an_inode_is_identified_in_its_filesystem extends DeclaresIdentifiedIn {} { speaker = tessa and onShape = inode_shape and inSort = sm_Filesystem }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__a_path_is_looked_up_in_a_filesystem extends DeclaresCatalogSort {} { speaker = tessa and forScheme = sm_Path and catalogSort = sm_Filesystem }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig tessa__a_path_names_one_inode extends DeclaresUniqueName {} { speaker = tessa and nameShape = slash_path_shape }
+#= one sig tessa__fs_1_is_in_the_boot extends SuppliesParent {} { speaker = tessa and forKey = k_fs_1 and instance = k_boot and seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_1_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_1 and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig tessa__ino_17_at_line_2_is_in_fs_1 extends SuppliesParent {} { speaker = tessa and forKey = k_ino_17_at_line_2 and instance = k_fs_1 and seat = DeclarationSeat }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a and atLine = this and markedReads = k_srv_a and dependsOn = inode_17 }
 #= axiomaticByContractExcept[tessa__a_path_names_one_inode] and axiomaticByDifferentialTest and not true_DeclaresUniqueName[tessa__a_path_names_one_inode] and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1)
 
    cmp -s ./golden.conf /srv/mirror/app.conf
 #} cmp dash_s golden_conf srv_mirror_app_conf
-#= one sig carl__srv_mirror_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_mirror  atLine = this  markedReads = k_srv_mirror  dependsOn = inode_17 }
+#= one sig carl__srv_mirror_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_mirror and atLine = this and markedReads = k_srv_mirror and dependsOn = inode_17 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g] and naturalKeyAnswer[f.topic, g.topic] = DISJOINT
 ```
 
@@ -3116,13 +3116,13 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 #= one sig r0, r1 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
 #= one sig docker_exec extends Wrapper {} { wrapperOwner = dora }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  ambient = sm_PidNamespace->k_ns_0 }
-#= one sig v1 extends MVantage {} { route = r1  enteredFrom = v0  through = docker_exec  ambient = sm_PidNamespace->k_ns_1 }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_ns_0 extends MKey {} { mValue = ns_4026531836  scheme = sm_PidNsId  no cellSort  shape = initial_namespace_shape  no yielded  at = v0  mRefersTo = ns_0 }
-#= one sig k_ns_1 extends MKey {} { mValue = ns_4026532201  scheme = sm_PidNsId  no cellSort  shape = nested_namespace_shape  no yielded  at = v0  mRefersTo = ns_1 }
-#= one sig k_pid_4821 extends MKey {} { mValue = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  mRefersTo = proc_web }
-#= one sig k_pid_1 extends MKey {} { mValue = pid_1  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v1  mRefersTo = proc_web }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and ambient = sm_PidNamespace->k_ns_0 }
+#= one sig v1 extends MVantage {} { route = r1 and enteredFrom = v0 and through = docker_exec and ambient = sm_PidNamespace->k_ns_1 }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_ns_0 extends MKey {} { mValue = ns_4026531836 and scheme = sm_PidNsId and no cellSort and shape = initial_namespace_shape and no yielded and at = v0 and mRefersTo = ns_0 }
+#= one sig k_ns_1 extends MKey {} { mValue = ns_4026532201 and scheme = sm_PidNsId and no cellSort and shape = nested_namespace_shape and no yielded and at = v0 and mRefersTo = ns_1 }
+#= one sig k_pid_4821 extends MKey {} { mValue = pid_4821 and scheme = sm_Pid and no cellSort and shape = pid_shape and no yielded and at = v0 and mRefersTo = proc_web }
+#= one sig k_pid_1 extends MKey {} { mValue = pid_1 and scheme = sm_Pid and no cellSort and shape = pid_shape and no yielded and at = v1 and mRefersTo = proc_web }
 #= Speaker = stdlib + pia + dora
 #= MSort = sm_Boot + sm_PidNamespace + sm_Process
 #= MScheme = sm_BootId + sm_PidNsId + sm_Pid
@@ -3135,27 +3135,27 @@ run bookScope_nested_pid_namespaces {} for 8 but 4 Int
 #= holds = the_boot->ns_0 + ns_0->ns_1 + ns_0->proc_web + ns_1->proc_web
 #= owns = the_boot->ns_0 + ns_0->ns_1 + ns_0->proc_web
 #= no passes and no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig pia__the_namespace_id_is_primary_of_the_pid_namespace extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_PidNsId  ofSort = sm_PidNamespace }
-#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_Pid  ofSort = sm_Process }
-#= one sig pia__the_initial_namespace_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia  onShape = initial_namespace_shape  inSort = sm_Boot }
-#= one sig pia__a_nested_namespace_is_identified_in_its_parent_namespace extends DeclaresIdentifiedIn {} { speaker = pia  onShape = nested_namespace_shape  inSort = sm_PidNamespace }
-#= one sig pia__a_pid_is_identified_in_its_namespace extends DeclaresIdentifiedIn {} { speaker = pia  onShape = pid_shape  inSort = sm_PidNamespace }
-#= one sig pia__a_pid_reaches_one_process_in_its_namespace extends DeclaresUniqueReferent {} { speaker = pia  referentShape = pid_shape }
-#= one sig pia__a_process_has_one_pid_in_a_namespace extends DeclaresUniqueName {} { speaker = pia  nameShape = pid_shape }
-#= one sig pia__ns_0_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_ns_0  instance = k_boot  seat = DeclarationSeat }
-#= one sig pia__ns_1_is_in_ns_0 extends SuppliesParent {} { speaker = pia  forKey = k_ns_1  instance = k_ns_0  seat = DeclarationSeat }
-#= one sig pia__pid_4821_is_in_ns_0 extends SuppliesParent {} { speaker = pia  forKey = k_pid_4821  instance = k_ns_0  seat = DeclarationSeat }
-#= one sig pia__pid_1_is_in_ns_1 extends SuppliesParent {} { speaker = pia  forKey = k_pid_1  instance = k_ns_1  seat = DeclarationSeat }
-#= one sig dora__docker_exec_lends_the_containers_pid_namespace extends DeclaresLends {} { speaker = dora  lendingWrapper = docker_exec  lentSort = sm_PidNamespace  lentInstance = k_ns_1 }
-#= one sig dora__guest_pid_1_is_host_pid_4821 extends DeclaresCorresponds {} { speaker = dora  keyX = k_pid_1  keyY = k_pid_4821 }
-#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_4821  atLine = this  markedReads = k_pid_4821  dependsOn = proc_web }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig pia__the_namespace_id_is_primary_of_the_pid_namespace extends DeclaresPrimaryOf {} { speaker = pia and primaryScheme = sm_PidNsId and ofSort = sm_PidNamespace }
+#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia and primaryScheme = sm_Pid and ofSort = sm_Process }
+#= one sig pia__the_initial_namespace_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia and onShape = initial_namespace_shape and inSort = sm_Boot }
+#= one sig pia__a_nested_namespace_is_identified_in_its_parent_namespace extends DeclaresIdentifiedIn {} { speaker = pia and onShape = nested_namespace_shape and inSort = sm_PidNamespace }
+#= one sig pia__a_pid_is_identified_in_its_namespace extends DeclaresIdentifiedIn {} { speaker = pia and onShape = pid_shape and inSort = sm_PidNamespace }
+#= one sig pia__a_pid_reaches_one_process_in_its_namespace extends DeclaresUniqueReferent {} { speaker = pia and referentShape = pid_shape }
+#= one sig pia__a_process_has_one_pid_in_a_namespace extends DeclaresUniqueName {} { speaker = pia and nameShape = pid_shape }
+#= one sig pia__ns_0_is_in_the_boot extends SuppliesParent {} { speaker = pia and forKey = k_ns_0 and instance = k_boot and seat = DeclarationSeat }
+#= one sig pia__ns_1_is_in_ns_0 extends SuppliesParent {} { speaker = pia and forKey = k_ns_1 and instance = k_ns_0 and seat = DeclarationSeat }
+#= one sig pia__pid_4821_is_in_ns_0 extends SuppliesParent {} { speaker = pia and forKey = k_pid_4821 and instance = k_ns_0 and seat = DeclarationSeat }
+#= one sig pia__pid_1_is_in_ns_1 extends SuppliesParent {} { speaker = pia and forKey = k_pid_1 and instance = k_ns_1 and seat = DeclarationSeat }
+#= one sig dora__docker_exec_lends_the_containers_pid_namespace extends DeclaresLends {} { speaker = dora and lendingWrapper = docker_exec and lentSort = sm_PidNamespace and lentInstance = k_ns_1 }
+#= one sig dora__guest_pid_1_is_host_pid_4821 extends DeclaresCorresponds {} { speaker = dora and keyX = k_pid_1 and keyY = k_pid_4821 }
+#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia and topic = k_pid_4821 and atLine = this and markedReads = k_pid_4821 and dependsOn = proc_web }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_4821 and worldOf[f.topic] = w_boot)
 
    docker exec web kill -0 1
 #} docker exec web kill dash_0 pid_1
-#= one sig pia__init_is_running_inside extends VerdictFact {} { speaker = pia  topic = k_pid_1  atLine = this  markedReads = k_pid_1  dependsOn = proc_web }
+#= one sig pia__init_is_running_inside extends VerdictFact {} { speaker = pia and topic = k_pid_1 and atLine = this and markedReads = k_pid_1 and dependsOn = proc_web }
 #= let f = atLine.this, g = pia__web_is_running | tabledWalk[f.topic, g.topic] = UNKNOWN and tabledCompare[f.topic, g.topic] = SAME and not sameTopic[f, g]
 ```
 
@@ -3215,12 +3215,12 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= one sig slash_path_shape extends MShape {} { ofScheme = sm_Path }
 #= one sig inode_17, inode_42 extends MReferent {}
 #= one sig r0 extends MRoute {}
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
-#= one sig k_ino_42 extends MKey {} { mValue = ino_42  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_42 }
-#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_b extends MKey {} { mValue = srv_b_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_42  at = v0  mRefersTo = inode_42 }
-#= one sig k_srv_a_at_line_3 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_3  at = v0  mRefersTo = inode_17 }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_ino_17_at_line_1, k_ino_17_at_line_3 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_17 }
+#= one sig k_ino_42 extends MKey {} { mValue = ino_42 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_1 and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_b extends MKey {} { mValue = srv_b_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_42 and at = v0 and mRefersTo = inode_42 }
+#= one sig k_srv_a_at_line_3 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_3 and at = v0 and mRefersTo = inode_17 }
 #= Speaker = tessa + carl
 #= MSort = sm_File
 #= MScheme = sm_Inode + sm_Path
@@ -3231,20 +3231,20 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 #= no Wrapper and no CompositeKey and no Role and no RiskFaultlessSkips
 #= no Engine.lookupReadSetOpen and no World.lineWrites
 #= no holds and no owns and no passes and no affects
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa  nameShape = inode_shape }
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__an_inode_has_one_number extends DeclaresUniqueName {} { speaker = tessa and nameShape = inode_shape }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_1 and atLine = this and markedReads = k_srv_a_at_line_1 and dependsOn = inode_17 }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0 and no f.topic.mParent)
 
    cmp -s ./golden.conf /srv/b/app.conf
 #} cmp dash_s golden_conf srv_b_app_conf
-#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_b  atLine = this  markedReads = k_srv_b  dependsOn = inode_42 }
+#= one sig carl__srv_b_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_b and atLine = this and markedReads = k_srv_b and dependsOn = inode_42 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | tabledCompare[f.topic, g.topic] = DISJOINT and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
 
    cmp -s ./golden.conf /srv/a/app.conf
 #} cmp dash_s golden_conf srv_a_app_conf
-#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_3  atLine = this  markedReads = k_srv_a_at_line_3  dependsOn = inode_17 }
+#= one sig carl__srv_a_matches_golden_again extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_3 and atLine = this and markedReads = k_srv_a_at_line_3 and dependsOn = inode_17 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | tabledWalk[f.topic, g.topic] = UNKNOWN and tabledCompare[f.topic, g.topic] = UNKNOWN and naturalKeyAnswer[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
 ```
 
@@ -3292,10 +3292,10 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 #= one sig unit_name_shape extends MShape {} { ofScheme = sm_UnitName }
 #= one sig unit_nginx, active_state, enabled_state extends MReferent {}
 #= one sig r0 extends MRoute {}
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends MKey {} { mValue = nginx_service  scheme = sm_UnitName  no cellSort  shape = unit_name_shape  no yielded  at = v0  mRefersTo = unit_nginx }
-#= one sig k_active_at_line_1, k_active_at_line_3 extends MKey {} { mValue = nginx_at_active  no scheme  cellSort = sm_UnitActive  no shape  no yielded  at = v0  mRefersTo = active_state }
-#= one sig k_enabled extends MKey {} { mValue = nginx_at_enabled  no scheme  cellSort = sm_UnitEnabled  no shape  no yielded  at = v0  mRefersTo = enabled_state }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_nginx_at_line_1, k_nginx_at_line_3 extends MKey {} { mValue = nginx_service and scheme = sm_UnitName and no cellSort and shape = unit_name_shape and no yielded and at = v0 and mRefersTo = unit_nginx }
+#= one sig k_active_at_line_1, k_active_at_line_3 extends MKey {} { mValue = nginx_at_active and no scheme and cellSort = sm_UnitActive and no shape and no yielded and at = v0 and mRefersTo = active_state }
+#= one sig k_enabled extends MKey {} { mValue = nginx_at_enabled and no scheme and cellSort = sm_UnitEnabled and no shape and no yielded and at = v0 and mRefersTo = enabled_state }
 #= Speaker = sven
 #= MSort = sm_Unit + sm_UnitActive + sm_UnitEnabled
 #= MScheme = sm_UnitName
@@ -3308,24 +3308,24 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 #= holds = unit_nginx->active_state + unit_nginx->enabled_state
 #= owns = holds
 #= no passes and no affects
-#= one sig sven__the_unit_name_is_primary_of_the_unit extends DeclaresPrimaryOf {} { speaker = sven  primaryScheme = sm_UnitName  ofSort = sm_Unit }
-#= one sig sven__a_unit_name_reaches_one_unit extends DeclaresUniqueReferent {} { speaker = sven  referentShape = unit_name_shape }
-#= one sig sven__active_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven  theCell = sm_UnitActive  cellParent = sm_Unit }
-#= one sig sven__enabled_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven  theCell = sm_UnitEnabled  cellParent = sm_Unit }
-#= one sig sven__the_active_cell_at_line_1_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_active_at_line_1  instance = k_nginx_at_line_1  seat = BindSeat }
-#= one sig sven__the_active_cell_at_line_3_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_active_at_line_3  instance = k_nginx_at_line_3  seat = BindSeat }
-#= one sig sven__the_enabled_cell_is_of_nginx extends SuppliesParent {} { speaker = sven  forKey = k_enabled  instance = k_nginx_at_line_1  seat = BindSeat }
-#= one sig sven__nginx_is_active extends VerdictFact {} { speaker = sven  topic = k_active_at_line_1  atLine = this  markedReads = k_active_at_line_1  dependsOn = active_state }
+#= one sig sven__the_unit_name_is_primary_of_the_unit extends DeclaresPrimaryOf {} { speaker = sven and primaryScheme = sm_UnitName and ofSort = sm_Unit }
+#= one sig sven__a_unit_name_reaches_one_unit extends DeclaresUniqueReferent {} { speaker = sven and referentShape = unit_name_shape }
+#= one sig sven__active_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven and theCell = sm_UnitActive and cellParent = sm_Unit }
+#= one sig sven__enabled_is_a_cell_of_a_unit extends DeclaresCell {} { speaker = sven and theCell = sm_UnitEnabled and cellParent = sm_Unit }
+#= one sig sven__the_active_cell_at_line_1_is_of_nginx extends SuppliesParent {} { speaker = sven and forKey = k_active_at_line_1 and instance = k_nginx_at_line_1 and seat = BindSeat }
+#= one sig sven__the_active_cell_at_line_3_is_of_nginx extends SuppliesParent {} { speaker = sven and forKey = k_active_at_line_3 and instance = k_nginx_at_line_3 and seat = BindSeat }
+#= one sig sven__the_enabled_cell_is_of_nginx extends SuppliesParent {} { speaker = sven and forKey = k_enabled and instance = k_nginx_at_line_1 and seat = BindSeat }
+#= one sig sven__nginx_is_active extends VerdictFact {} { speaker = sven and topic = k_active_at_line_1 and atLine = this and markedReads = k_active_at_line_1 and dependsOn = active_state }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_active_at_line_1 and f.topic.mParent = k_nginx_at_line_1 and worldOf[f.topic] = r0)
 
    systemctl is-enabled nginx.service
 #} systemctl is_enabled nginx_service
-#= one sig sven__nginx_is_enabled extends VerdictFact {} { speaker = sven  topic = k_enabled  atLine = this  markedReads = k_enabled  dependsOn = enabled_state }
+#= one sig sven__nginx_is_enabled extends VerdictFact {} { speaker = sven and topic = k_enabled and atLine = this and markedReads = k_enabled and dependsOn = enabled_state }
 #= let f = atLine.this, g = sven__nginx_is_active | tabledCompare[f.topic, g.topic] = KNOWN_UNSPOKEN and not sameTopic[f, g]
 
    systemctl is-active nginx.service
 #} systemctl is_active nginx_service
-#= one sig sven__nginx_is_active_again extends VerdictFact {} { speaker = sven  topic = k_active_at_line_3  atLine = this  markedReads = k_active_at_line_3  dependsOn = active_state }
+#= one sig sven__nginx_is_active_again extends VerdictFact {} { speaker = sven and topic = k_active_at_line_3 and atLine = this and markedReads = k_active_at_line_3 and dependsOn = active_state }
 #= let f = atLine.this, g = sven__nginx_is_active | tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g]
 ```
 
@@ -3375,11 +3375,11 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 #= one sig base_role, overlay_role extends Role {}
 #= one sig inode_a, inode_b, merged_a_over_b, merged_b_over_a extends MReferent {}
 #= one sig r0 extends MRoute {}
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_ino_a extends MKey {} { mValue = ino_7  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_a }
-#= one sig k_ino_b extends MKey {} { mValue = ino_9  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_b }
-#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends MKey {} { mValue = merge_a_b  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  mRefersTo = merged_a_over_b }
-#= one sig k_b_over_a extends MKey {} { mValue = merge_b_a  scheme = sm_MergeKey  no cellSort  shape = merge_shape  no yielded  at = v0  mRefersTo = merged_b_over_a }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_ino_a extends MKey {} { mValue = ino_7 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_a }
+#= one sig k_ino_b extends MKey {} { mValue = ino_9 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_b }
+#= one sig k_a_over_b_at_line_1, k_a_over_b_at_line_3 extends MKey {} { mValue = merge_a_b and scheme = sm_MergeKey and no cellSort and shape = merge_shape and no yielded and at = v0 and mRefersTo = merged_a_over_b }
+#= one sig k_b_over_a extends MKey {} { mValue = merge_b_a and scheme = sm_MergeKey and no cellSort and shape = merge_shape and no yielded and at = v0 and mRefersTo = merged_b_over_a }
 #= part = k_a_over_b_at_line_1->base_role->k_ino_a + k_a_over_b_at_line_1->overlay_role->k_ino_b + k_a_over_b_at_line_3->base_role->k_ino_a + k_a_over_b_at_line_3->overlay_role->k_ino_b + k_b_over_a->base_role->k_ino_b + k_b_over_a->overlay_role->k_ino_a
 #= Speaker = tessa + cora
 #= MSort = sm_File + sm_MergedConfig
@@ -3393,21 +3393,21 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 #= no Wrapper and no RiskFaultlessSkips
 #= no Engine.lookupReadSetOpen and no World.lineWrites
 #= no holds and no owns and no passes and no affects
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig cora__the_merge_key_is_primary_of_the_merged_config extends DeclaresPrimaryOf {} { speaker = cora  primaryScheme = sm_MergeKey  ofSort = sm_MergedConfig }
-#= one sig cora__a_merged_config_is_a_composite extends DeclaresComposite {} { speaker = cora  compositeSort = sm_MergedConfig }
-#= one sig cora__a_over_b_is_valid extends VerdictFact {} { speaker = cora  topic = k_a_over_b_at_line_1  atLine = this  markedReads = k_a_over_b_at_line_1  dependsOn = merged_a_over_b }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig cora__the_merge_key_is_primary_of_the_merged_config extends DeclaresPrimaryOf {} { speaker = cora and primaryScheme = sm_MergeKey and ofSort = sm_MergedConfig }
+#= one sig cora__a_merged_config_is_a_composite extends DeclaresComposite {} { speaker = cora and compositeSort = sm_MergedConfig }
+#= one sig cora__a_over_b_is_valid extends VerdictFact {} { speaker = cora and topic = k_a_over_b_at_line_1 and atLine = this and markedReads = k_a_over_b_at_line_1 and dependsOn = merged_a_over_b }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_a_over_b_at_line_1 and worldOf[f.topic] = r0)
 
    cfg --base ./b.toml --overlay ./a.toml
 #} cfg dash_dash_base b_toml dash_dash_overlay a_toml
-#= one sig cora__b_over_a_is_valid extends VerdictFact {} { speaker = cora  topic = k_b_over_a  atLine = this  markedReads = k_b_over_a  dependsOn = merged_b_over_a }
+#= one sig cora__b_over_a_is_valid extends VerdictFact {} { speaker = cora and topic = k_b_over_a and atLine = this and markedReads = k_b_over_a and dependsOn = merged_b_over_a }
 #= let f = atLine.this, g = cora__a_over_b_is_valid | not compositeSame[f.topic, g.topic] and tabledCompare[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
 
    cfg --base ./a.toml --overlay ./b.toml
 #} cfg dash_dash_base a_toml dash_dash_overlay b_toml
-#= one sig cora__a_over_b_is_valid_again extends VerdictFact {} { speaker = cora  topic = k_a_over_b_at_line_3  atLine = this  markedReads = k_a_over_b_at_line_3  dependsOn = merged_a_over_b }
+#= one sig cora__a_over_b_is_valid_again extends VerdictFact {} { speaker = cora and topic = k_a_over_b_at_line_3 and atLine = this and markedReads = k_a_over_b_at_line_3 and dependsOn = merged_a_over_b }
 #= let f = atLine.this, g = cora__a_over_b_is_valid | tabledWalk[f.topic, g.topic] = UNKNOWN and compositeSame[f.topic, g.topic] and tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g]
 ```
 
@@ -3643,9 +3643,9 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 #= one sig the_boot, proc_web extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig w_boot extends MRootWorld {} { rootShape = boot_shape }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig k_boot extends MKey {} { mValue = boot_2f3a  scheme = sm_BootId  no cellSort  shape = boot_shape  no yielded  at = v0  mRefersTo = the_boot }
-#= one sig k_pid_at_line_1, k_pid_at_line_3 extends MKey {} { mValue = pid_4821  scheme = sm_Pid  no cellSort  shape = pid_shape  no yielded  at = v0  mRefersTo = proc_web }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig k_boot extends MKey {} { mValue = boot_2f3a and scheme = sm_BootId and no cellSort and shape = boot_shape and no yielded and at = v0 and mRefersTo = the_boot }
+#= one sig k_pid_at_line_1, k_pid_at_line_3 extends MKey {} { mValue = pid_4821 and scheme = sm_Pid and no cellSort and shape = pid_shape and no yielded and at = v0 and mRefersTo = proc_web }
 #= Speaker = stdlib + pia + rob
 #= MSort = sm_Boot + sm_Process
 #= MScheme = sm_BootId + sm_Pid
@@ -3659,25 +3659,25 @@ run bookScope_a_reboot_between_two_reads {} for 5 but 4 Int
 #= holds = the_boot->proc_web
 #= owns = holds
 #= no passes and no affects
-#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib  primaryScheme = sm_BootId  ofSort = sm_Boot }
-#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib  rootedShape = boot_shape }
-#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia  primaryScheme = sm_Pid  ofSort = sm_Process }
-#= one sig pia__a_pid_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia  onShape = pid_shape  inSort = sm_Boot }
-#= one sig pia__a_pid_reaches_one_process_in_its_boot extends DeclaresUniqueReferent {} { speaker = pia  referentShape = pid_shape }
-#= one sig pia__pid_4821_at_line_1_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_1  instance = k_boot  seat = DeclarationSeat }
-#= one sig pia__pid_4821_at_line_3_is_in_the_boot extends SuppliesParent {} { speaker = pia  forKey = k_pid_at_line_3  instance = k_boot  seat = DeclarationSeat }
-#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia  topic = k_pid_at_line_1  atLine = this  markedReads = k_pid_at_line_1  dependsOn = proc_web }
+#= one sig stdlib__the_boot_id_is_primary_of_the_boot extends DeclaresPrimaryOf {} { speaker = stdlib and primaryScheme = sm_BootId and ofSort = sm_Boot }
+#= one sig stdlib__a_boot_id_is_a_root extends DeclaresRoot {} { speaker = stdlib and rootedShape = boot_shape }
+#= one sig pia__the_pid_is_primary_of_the_process extends DeclaresPrimaryOf {} { speaker = pia and primaryScheme = sm_Pid and ofSort = sm_Process }
+#= one sig pia__a_pid_is_identified_in_its_boot extends DeclaresIdentifiedIn {} { speaker = pia and onShape = pid_shape and inSort = sm_Boot }
+#= one sig pia__a_pid_reaches_one_process_in_its_boot extends DeclaresUniqueReferent {} { speaker = pia and referentShape = pid_shape }
+#= one sig pia__pid_4821_at_line_1_is_in_the_boot extends SuppliesParent {} { speaker = pia and forKey = k_pid_at_line_1 and instance = k_boot and seat = DeclarationSeat }
+#= one sig pia__pid_4821_at_line_3_is_in_the_boot extends SuppliesParent {} { speaker = pia and forKey = k_pid_at_line_3 and instance = k_boot and seat = DeclarationSeat }
+#= one sig pia__web_is_running extends VerdictFact {} { speaker = pia and topic = k_pid_at_line_1 and atLine = this and markedReads = k_pid_at_line_1 and dependsOn = proc_web }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_pid_at_line_1 and f.topic.mParent = k_boot and worldOf[f.topic] = w_boot)
 
    reboot
 #} reboot
-#= one sig rob__reboot_writes_the_boot extends DeclaresMayWrite {} { speaker = rob  writeLine = this  writeEntry = k_boot }
-#= one sig rob__reboot_writes_nothing_else extends ClosesMayWrite {} { speaker = rob  closedLine = this }
+#= one sig rob__reboot_writes_the_boot extends DeclaresMayWrite {} { speaker = rob and writeLine = this and writeEntry = k_boot }
+#= one sig rob__reboot_writes_nothing_else extends ClosesMayWrite {} { speaker = rob and closedLine = this }
 #= atMostClosed[this] and atMostEntries[this] = k_boot and some k_boot.mParent & MRootWorld
 
    kill -0 4821
 #} kill dash_0 pid_4821
-#= one sig pia__web_is_running_again extends VerdictFact {} { speaker = pia  topic = k_pid_at_line_3  atLine = this  markedReads = k_pid_at_line_3  dependsOn = proc_web }
+#= one sig pia__web_is_running_again extends VerdictFact {} { speaker = pia and topic = k_pid_at_line_3 and atLine = this and markedReads = k_pid_at_line_3 and dependsOn = proc_web }
 #= let f = atLine.this, g = pia__web_is_running, l = (rob__reboot_writes_the_boot).writeLine | tabledCompare[f.topic, g.topic] = SAME and lifecycleInvalidatedBy[l, g.topic] and lifecycleInvalidatedBy[l, f.topic] and staleAt[this, g.topic] and staleAt[this, f.topic] and compareAt[this, f.topic, g.topic] = UNKNOWN
 ```
 
@@ -3829,12 +3829,12 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 #= one sig inode_17 extends MReferent {}
 #= one sig r0 extends MRoute {}
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig v1 extends MVantage {} { enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
-#= one sig k_ino_17_at_line_2 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  mRefersTo = inode_17 }
-#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_a_at_line_2 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  mRefersTo = inode_17 }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig v1 extends MVantage {} { enteredFrom = v0 and through = sudo }
+#= one sig k_ino_17_at_line_1 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v1 and mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_1 and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_2 and at = v1 and mRefersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= MSort = sm_File
 #= MScheme = sm_Inode + sm_Path
@@ -3845,16 +3845,16 @@ run bookScope_one_file_across_sudo_under_the_sentinel {} for 5 but 4 Int
 #= no CompositeKey and no Role and some RiskFaultlessSkips
 #= no Engine.lookupReadSetOpen and no World.lineWrites
 #= no holds and no owns and no passes and no affects
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda  closedWrapper = sudo }
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda and closedWrapper = sudo }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_1 and atLine = this and markedReads = k_srv_a_at_line_1 and dependsOn = inode_17 }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0)
 
    sudo cmp -s ./golden.conf /srv/a/app.conf
 #} sudo cmp dash_s golden_conf srv_a_app_conf
-#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_2  atLine = this  markedReads = k_srv_a_at_line_2  dependsOn = inode_17 }
+#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_2 and atLine = this and markedReads = k_srv_a_at_line_2 and dependsOn = inode_17 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | inherits[v1] and v1.route = r0 and tabledCompare[f.topic, g.topic] = SAME and sameTopic[f, g] and wanda__sudo_lends_nothing_else in sameSupport[f.topic, g.topic]
 ```
 
@@ -3900,12 +3900,12 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 #= one sig inode_17 extends MReferent {}
 #= one sig r0, r1 extends MRoute {}
 #= one sig sudo extends Wrapper {} { wrapperOwner = wanda }
-#= one sig v0 extends MVantage {} { route = r0  no enteredFrom  no through  no ambient }
-#= one sig v1 extends MVantage {} { route = r1  enteredFrom = v0  through = sudo }
-#= one sig k_ino_17_at_line_1 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v0  mRefersTo = inode_17 }
-#= one sig k_ino_17_at_line_2 extends MKey {} { mValue = ino_17  scheme = sm_Inode  no cellSort  shape = inode_shape  no yielded  at = v1  mRefersTo = inode_17 }
-#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_1  at = v0  mRefersTo = inode_17 }
-#= one sig k_srv_a_at_line_2 extends MKey {} { mValue = srv_a_app_conf  scheme = sm_Path  no cellSort  shape = slash_path_shape  yielded = k_ino_17_at_line_2  at = v1  mRefersTo = inode_17 }
+#= one sig v0 extends MVantage {} { route = r0 and no enteredFrom and no through and no ambient }
+#= one sig v1 extends MVantage {} { route = r1 and enteredFrom = v0 and through = sudo }
+#= one sig k_ino_17_at_line_1 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v0 and mRefersTo = inode_17 }
+#= one sig k_ino_17_at_line_2 extends MKey {} { mValue = ino_17 and scheme = sm_Inode and no cellSort and shape = inode_shape and no yielded and at = v1 and mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_1 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_1 and at = v0 and mRefersTo = inode_17 }
+#= one sig k_srv_a_at_line_2 extends MKey {} { mValue = srv_a_app_conf and scheme = sm_Path and no cellSort and shape = slash_path_shape and yielded = k_ino_17_at_line_2 and at = v1 and mRefersTo = inode_17 }
 #= Speaker = tessa + carl + wanda
 #= MSort = sm_File
 #= MScheme = sm_Inode + sm_Path
@@ -3916,16 +3916,16 @@ run bookScope_one_file_across_sudo_without_the_flag {} for 6 but 4 Int
 #= no CompositeKey and no Role and no RiskFaultlessSkips
 #= no Engine.lookupReadSetOpen and no World.lineWrites
 #= no holds and no owns and no passes and no affects
-#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa  primaryScheme = sm_Inode  ofSort = sm_File }
-#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa  fromShape = slash_path_shape  intoScheme = sm_Inode }
-#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa  referentShape = inode_shape }
-#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda  closedWrapper = sudo }
-#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_1  atLine = this  markedReads = k_srv_a_at_line_1  dependsOn = inode_17 }
+#= one sig tessa__the_inode_number_is_primary_of_the_file extends DeclaresPrimaryOf {} { speaker = tessa and primaryScheme = sm_Inode and ofSort = sm_File }
+#= one sig tessa__a_path_yields_an_inode extends DeclaresYields {} { speaker = tessa and fromShape = slash_path_shape and intoScheme = sm_Inode }
+#= one sig tessa__an_inode_number_reaches_one_inode extends DeclaresUniqueReferent {} { speaker = tessa and referentShape = inode_shape }
+#= one sig wanda__sudo_lends_nothing_else extends ClosesLends {} { speaker = wanda and closedWrapper = sudo }
+#= one sig carl__srv_a_matches_golden extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_1 and atLine = this and markedReads = k_srv_a_at_line_1 and dependsOn = inode_17 }
 #= axiomaticByContract and axiomaticByDifferentialTest and (let f = atLine.this | identity[f.topic] = k_ino_17_at_line_1 and worldOf[identity[f.topic]] = r0)
 
    sudo cmp -s ./golden.conf /srv/a/app.conf
 #} sudo cmp dash_s golden_conf srv_a_app_conf
-#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl  topic = k_srv_a_at_line_2  atLine = this  markedReads = k_srv_a_at_line_2  dependsOn = inode_17 }
+#= one sig carl__srv_a_matches_golden_as_root extends VerdictFact {} { speaker = carl and topic = k_srv_a_at_line_2 and atLine = this and markedReads = k_srv_a_at_line_2 and dependsOn = inode_17 }
 #= let f = atLine.this, g = carl__srv_a_matches_golden | not inherits[v1] and v1.route = r1 and tabledCompare[f.topic, g.topic] = UNKNOWN and not sameTopic[f, g]
 ```
 

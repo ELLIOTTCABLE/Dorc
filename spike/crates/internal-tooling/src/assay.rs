@@ -1107,7 +1107,7 @@ fn compile_in(inputs: &Inputs<'_>, above: &[String]) -> Result<Compiled, Vec<Fin
         0,
         &format!(
             "one sig line_1 extends Line {{}}\n\
-             fact {{ line_1.cmd = {NULL_WORD}  no line_1.argv  no line_1.above }}\n\
+             fact {{ line_1.cmd = {NULL_WORD} and no line_1.argv and no line_1.above }}\n\
              fact {{ {} }}",
             speech("line_1", &claim_atoms)
         ),
@@ -1472,7 +1472,7 @@ fn emit_book(
         shapes.push(block(
             file,
             row.cmd.line,
-            &format!("fact {{ {me}.cmd = {cmd}  {argv}  {above} }}"),
+            &format!("fact {{ {me}.cmd = {cmd} and {argv} and {above} }}"),
         ));
         let set: Vec<String> = match atoms.last() {
             None => std::mem::take(&mut in_force),

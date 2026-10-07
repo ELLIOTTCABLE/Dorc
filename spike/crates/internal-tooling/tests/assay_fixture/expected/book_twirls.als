@@ -3,9 +3,9 @@ open claims
 fact { some k: Knob | k.tag = knob_word }
 one sig line_2, line_3, line_4 extends Line {}
 one sig bob__this_spin_jiggles extends Jiggle {} { speaker = bob at = line_2 }
-fact { line_2.cmd = spin line_2.argv = 0->sprocket_path + 1->append_spin_log + 2->stderr_to_stdout no line_2.above }
-fact { line_3.cmd = twirl line_3.argv = 0->sprocket_path line_3.above = line_2 }
-fact { line_4.cmd = frob line_4.argv = 0->w__dash_c + 1->w__sq_x_sp_y_sq_ + 2->w__slash_tmp_slash_gadget line_4.above = line_2 + line_3 }
+fact { line_2.cmd = spin and line_2.argv = 0->sprocket_path + 1->append_spin_log + 2->stderr_to_stdout and no line_2.above }
+fact { line_3.cmd = twirl and line_3.argv = 0->sprocket_path and line_3.above = line_2 }
+fact { line_4.cmd = frob and line_4.argv = 0->w__dash_c + 1->w__sq_x_sp_y_sq_ + 2->w__slash_tmp_slash_gadget and line_4.above = line_2 + line_3 }
 fact { line_2.speech = alice_kit + bob__twirl_wobbles_on_the_sprocket_heap + bob__this_spin_jiggles }
 fact { line_3.speech = line_2.speech }
 fact { line_4.speech = line_3.speech }

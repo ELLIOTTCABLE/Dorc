@@ -853,21 +853,21 @@ mod tests {
         // `species.als` is opened by every book, so each book's parse repeats its warnings; one
         // message at two places is still two warnings.
         let species = crate::assay::emit::render(&format!(
-            "{o}s.assay.md{o}10\npred p {{\n   no A\n   no B\n}}\n",
+            "{o}s.assay.md{o}10\npred p {{ no A no B }}\npred q {{ no A no B }}\n",
             o = crate::assay::emit::ORIGIN
         ))
         .expect("renders");
         let modules = vec![("species.als".to_owned(), species)];
-        let at = |column| crate::alloy_jvm::adapter::Warning {
+        let at = |line| crate::alloy_jvm::adapter::Warning {
             message: "Implicit in-line conjunction".to_owned(),
             file: Some("/out/species.als".to_owned()),
-            line: Some(1),
-            column: Some(column),
+            line: Some(line),
+            column: Some(13),
         };
         let warnings = vec![
-            ("book_a.als".to_owned(), at(13)),
-            ("book_b.als".to_owned(), at(13)),
-            ("laws.als".to_owned(), at(15)),
+            ("book_a.als".to_owned(), at(1)),
+            ("book_b.als".to_owned(), at(1)),
+            ("laws.als".to_owned(), at(2)),
         ];
         let found = super::warned(
             &warnings,
@@ -876,7 +876,7 @@ mod tests {
             std::path::Path::new("/out"),
         );
         let places: Vec<(&str, usize)> = found.iter().map(|f| (f.file.as_str(), f.line)).collect();
-        assert_eq!(places, [("s.assay.md", 11), ("s.assay.md", 12)]);
+        assert_eq!(places, [("s.assay.md", 10), ("s.assay.md", 11)]);
         assert!(
             found
                 .iter()

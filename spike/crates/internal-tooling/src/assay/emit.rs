@@ -38,35 +38,42 @@ pub(super) fn render(internal: &str) -> Result<Rendered, (String, usize, &'stati
             return Err((file.clone(), *first, why));
         }
         for item in alloy::items(text, *first) {
-            let (line, segments) = one_line(&item.text, &item.toks, file);
-            out.text.push_str(&line);
-            out.text.push('\n');
-            out.map.push(segments);
+            for (line, segment) in source_lines(&item.text, &item.toks, file) {
+                out.text.push_str(&line);
+                out.text.push('\n');
+                out.map.push(vec![segment]);
+            }
         }
     }
     Ok(out)
 }
 
-fn one_line(src: &str, toks: &[Token], file: &str) -> (String, Vec<Segment>) {
-    let mut line = String::new();
-    let mut segments: Vec<Segment> = Vec::new();
+/// One emitted line per source line a paragraph's tokens sit on. Alloy reads two formulas on one
+/// line as a suspect implicit conjunction, so a line break in the source stays a line break.
+fn source_lines(src: &str, toks: &[Token], file: &str) -> Vec<(String, Segment)> {
+    let mut lines: Vec<(String, Segment)> = Vec::new();
     let mut prev: Option<&Token> = None;
     for tok in toks {
-        // Adjacent stays adjacent: `this/A` and `1..3` are other programs with a space inside.
-        if prev.is_some_and(|p| p.end < tok.start) {
-            line.push(' ');
+        match lines.last_mut() {
+            Some((line, segment)) if segment.line == tok.line => {
+                // Adjacent stays adjacent: `this/A` and `1..3` are other programs with a space inside.
+                if prev.is_some_and(|p| p.end < tok.start) {
+                    line.push(' ');
+                }
+                line.push_str(alloy::text(src, tok));
+            }
+            _ => lines.push((
+                alloy::text(src, tok).to_owned(),
+                Segment {
+                    column: 1,
+                    file: file.to_owned(),
+                    line: tok.line,
+                },
+            )),
         }
-        if segments.last().is_none_or(|s| s.line != tok.line) {
-            segments.push(Segment {
-                column: line.chars().count().saturating_add(1),
-                file: file.to_owned(),
-                line: tok.line,
-            });
-        }
-        line.push_str(alloy::text(src, tok));
         prev = Some(tok);
     }
-    (line, segments)
+    lines
 }
 
 impl Rendered {
@@ -116,15 +123,15 @@ mod tests {
         let got = render(&internal).expect("renders");
         assert_eq!(
             got.text,
-            "module m\nopen util/ordering[A]\nfact x { this/A.f in \"a  b\" }\nrun r {} for 3 but 1..3 steps\n"
+            "module m\nopen util/ordering[A]\nfact x {\nthis/A.f in \"a  b\"\n}\nrun r {} for 3 but 1..3 steps\n"
         );
         let lines: Vec<Vec<(usize, usize)>> = got
             .map
             .iter()
             .map(|segs| segs.iter().map(|s| (s.column, s.line)).collect())
             .collect();
-        assert_eq!(lines[2], vec![(1, 10), (10, 11), (29, 12)]);
-        assert_eq!(got.origin(3, 12).map(|s| s.line), Some(11));
+        assert_eq!(lines[2..5], [vec![(1, 10)], vec![(1, 11)], vec![(1, 12)]]);
+        assert_eq!(got.origin(4, 3).map(|s| s.line), Some(11));
     }
 
     #[test]

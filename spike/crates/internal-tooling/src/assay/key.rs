@@ -168,15 +168,16 @@ mod tests {
     }
 
     #[test]
-    fn comments_and_whitespace_in_a_fence_move_no_key() {
+    fn comments_and_spacing_within_a_line_move_no_key() {
+        // Line breaks inside a paragraph reach Alloy and so the key; nothing else outside a token does.
         let reworded = DOC
             .replace(
                 "pred loud[g: Gadget] { some g.speaker }",
-                "-- a note\npred loud[g: Gadget] {\n      some   g.speaker   // why\n}\n\n\n",
+                "-- a note\npred loud[g: Gadget]  {   some   g.speaker /* why */ }   // and why\n\n\n",
             )
             .replace(
                 "check lawB { no Gadget } for 3",
-                "check lawB {\n  no Gadget /* none */\n}\n  for 3",
+                "check lawB {  no Gadget /* none */ }   for 3",
             );
         assert_eq!(keys(DOC), keys(&reworded));
     }
