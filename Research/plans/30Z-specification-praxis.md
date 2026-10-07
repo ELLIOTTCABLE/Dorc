@@ -209,8 +209,10 @@ What to do when a red is a design question and the sitting must continue [CONDUC
 - **`hole-a-free-marker-excludes-nothing`** (`fal-free-marker`) — an unconstrained indicator sig
   used as a guard fences no world: the adversary sets it empty and attacks everywhere. A guard bites
   only when written as the structure of the counterexample itself.
-- **`hole-carries-its-witness-pair`** — beside the predicate, a `run` that the hole is inhabited (it
-  is real, not a misspelling) and the check's twin with the guard added (the remainder is not empty).
+- **`hole-carries-its-witness-pair`** — a `run` that the hole is inhabited (it is real, not a
+  misspelling), beside the predicate or in the specification's test document that opens it (as
+  `specs/311w-identity.tests.assay.md` does for 311), and the check's twin with the guard added
+  (the remainder is not empty).
   Together they bound the guard from both sides; its tightness beyond that is the author's judgment
   and is what a human reads at adjudication.
 - **`hole-three-kinds-and-their-idioms`** — a *representable region* the model can build takes the
