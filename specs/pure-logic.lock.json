@@ -1,0 +1,4 @@
+[
+  {"schema": 2, "commit": "681d694a6303c5778adbc94de9963e479f044c55"},
+  {"module": "book_corpus", "name": "book_corpus", "kind": "run", "scope": "5 but 4 int, 7 seq, exactly 1 Shword, exactly 0 Class, exactly 1 Line, exactly 0 Claim", "result": "sat", "budget": 600, "size": {"primary_vars": 14, "vars": 33, "clauses": 33}, "key": "01d0466b98f523e27f827eb07ecf75bb8637a808fe25cd3b99a336a8b08ef477", "platform": "windows"}
+]
