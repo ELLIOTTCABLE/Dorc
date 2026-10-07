@@ -28,7 +28,13 @@
 
 ---
 
-## IN FLIGHT (2026-10-04)
+## IN FLIGHT (2026-10-07)
+
+The world-side naming sittings (`notes/314a`, Opus conductor) closed 2026-10-07 with everything
+folded into `ai/main`. Owed to CI only: the locks of `specs/311-identity.assay.md` and
+`specs/311w-identity.tests.assay.md` are mostly unmeasured after the test split, the `isTrue`
+rename, and the adapter change that surfaces Alloy warnings; the official pass re-solves them.
+The next design-moving item is taken after a rewind.
 
 The identity dependency-order run (Fable conductor, autonomous; 2026-10-04/05) is complete and
 UNFOLDED. Its one branch, `ai/r31-identity-order-conductor` (worktree
