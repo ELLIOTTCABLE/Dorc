@@ -346,7 +346,16 @@ the license-contamination map. Cross-references are `docID:slug`.
   clean-context reports kept as delivered, `notes/313b` (Astra, neutral), `notes/313c` (Astra,
   adversarial), and `notes/313d` (Fable, adversarial). **`notes/313e`** is the foray's
   chronological sittings ledger: what the human typed, what the conductor tried and withdrew,
-  the research aside, and the assay lane.
+  the research aside, and the assay lane. **`notes/314`** is the addendum to `313` from an
+  autonomous run on the order of the identity design work (what a checker can and cannot order;
+  the precedences that follow; praxis for measuring a design question), and **`notes/315`** its
+  companion extraction of what the corpus holds beside the model (positions, supersessions,
+  names, standing rulings). **`notes/314a`** is the world-side naming sittings ledger: time as
+  logical time over mExecutions, MRefers to and its singular arity, the colon rule, model terms
+  capitalized (MTerm), the `isTrue` predicates with no family name, claim and warrant, the Alloy
+  warnings now refused by assay, and a pure-logic document tried and removed. 311's tests
+  (books, kills, hole witnesses) now live in **`specs/311w-identity.tests.assay.md`**, which
+  opens 311; 311 keeps its definitions, laws, premise twins, and hole predicates.
   The bare `312` is reserved for the phase's synthesis. `Research/GOTCHAS.md` (the design forcing-functions, by slug)
   was minted from these sittings.
 - **r31 (SCHEDULED, not open)** — the second language/kernel round. → **`plans/310`** (the
