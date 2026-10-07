@@ -11,7 +11,7 @@ use super::lock::{Outcome, Row};
 use super::replay;
 use super::tier::{Caps, DEFER_CLAUSES, Tier};
 use crate::alloy_jvm::adapter::{
-    Adapter, Ask, Budget, CommandInfo, Parsed, Refusal, Solved, human,
+    Adapter, Ask, Budget, CommandInfo, Parsed, Refusal, Solved, Warning, human,
 };
 use crate::alloy_jvm::{self, Jvm};
 
@@ -104,7 +104,21 @@ impl Entry {
 #[derive(Debug)]
 pub(super) struct Survey {
     pub(super) entries: Vec<Entry>,
+    pub(super) stops: Stops,
+}
+
+/// What stops a pass before it solves: each module Alloy refused, and each warning it raised on
+/// a module it accepted, keyed by the module parsed as root.
+#[derive(Debug, Default)]
+pub(super) struct Stops {
     pub(super) refusals: Vec<(String, Refusal)>,
+    pub(super) warnings: Vec<(String, Warning)>,
+}
+
+impl Stops {
+    pub(super) fn is_empty(&self) -> bool {
+        self.refusals.is_empty() && self.warnings.is_empty()
+    }
 }
 
 fn stem(name: &str) -> &str {
@@ -121,7 +135,7 @@ fn wanted(target: &Target, module: &str) -> bool {
 pub(super) fn survey(adapter: &mut Adapter, job: &Job<'_>) -> Result<Survey, String> {
     let fixed_base = (alloy_jvm::jar_digest()?, alloy_jvm::adapter_digest()?);
     let mut entries = Vec::new();
-    let mut refusals = Vec::new();
+    let mut stops = Stops::default();
     for (name, rendered) in job.modules {
         let module = stem(name).to_owned();
         if !wanted(job.target, &module) {
@@ -129,20 +143,25 @@ pub(super) fn survey(adapter: &mut Adapter, job: &Job<'_>) -> Result<Survey, Str
         }
         let root = job.out.join(name);
         match adapter.parse(&root, &[], SOLVER) {
-            Ok(parsed) => entries.extend(keyed(
-                &module,
-                rendered,
-                &parsed,
-                &fixed_base,
-                job.committed,
-            )),
+            Ok(parsed) => {
+                entries.extend(keyed(
+                    &module,
+                    rendered,
+                    &parsed,
+                    &fixed_base,
+                    job.committed,
+                ));
+                stops
+                    .warnings
+                    .extend(parsed.warnings.into_iter().map(|w| (name.clone(), w)));
+            }
             Err(r) if r.file.as_deref().is_some_and(|f| f.contains("$alloy4$")) => {
                 entries.extend(platform_failed(&module, rendered, &r, job.committed));
             }
-            Err(r) => refusals.push((name.clone(), r)),
+            Err(r) => stops.refusals.push((name.clone(), r)),
         }
     }
-    Ok(Survey { entries, refusals })
+    Ok(Survey { entries, stops })
 }
 
 fn keyed(
@@ -253,13 +272,13 @@ fn slice(entries: Vec<Entry>, target: &Target) -> Vec<Entry> {
         .collect()
 }
 
-pub(super) type Ran = (Vec<Computed>, Vec<(String, Refusal)>);
+pub(super) type Ran = (Vec<Computed>, Stops);
 
 pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
     let mut adapter = Adapter::new(jvm, job.caps.machine)?;
     let survey = survey(&mut adapter, job)?;
-    if !survey.refusals.is_empty() {
-        return Ok((Vec::new(), survey.refusals));
+    if !survey.stops.is_empty() {
+        return Ok((Vec::new(), survey.stops));
     }
     let entries = slice(survey.entries, job.target);
     let tally = Tally {
@@ -328,7 +347,7 @@ pub(super) fn run(jvm: &Jvm, job: &Job<'_>) -> Result<Ran, String> {
             .unwrap_or(usize::MAX)
     };
     rows.sort_by_key(|c| (module_at(&c.row.module), c.index));
-    Ok((rows, Vec::new()))
+    Ok((rows, Stops::default()))
 }
 
 #[derive(Debug, Clone, Copy)]

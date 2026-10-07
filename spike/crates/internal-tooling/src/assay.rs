@@ -56,10 +56,11 @@ pub(crate) enum Lint {
     LabelIsUniqueInModule,
     TokenizerIsCertain,
     AlloyParses,
+    AlloyRaisesNoWarning,
 }
 
 impl Lint {
-    const ALL: [Self; 14] = [
+    const ALL: [Self; 15] = [
         Self::JoinKeyCoherence,
         Self::MapWordCount,
         Self::MapLineFollowsCommand,
@@ -74,6 +75,7 @@ impl Lint {
         Self::LabelIsUniqueInModule,
         Self::TokenizerIsCertain,
         Self::AlloyParses,
+        Self::AlloyRaisesNoWarning,
     ];
 
     fn name(self) -> &'static str {
@@ -92,6 +94,7 @@ impl Lint {
             Self::LabelIsUniqueInModule => "label-is-unique-in-module",
             Self::TokenizerIsCertain => "tokenizer-is-certain",
             Self::AlloyParses => "alloy-parses",
+            Self::AlloyRaisesNoWarning => "alloy-raises-no-warning",
         }
     }
 }

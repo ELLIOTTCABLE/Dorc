@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Instant;
 
-use super::adapter::{Adapter, Ask, Budget, Exceeded, Machine, Solved};
+use super::adapter::{Adapter, Ask, Budget, Exceeded, Machine, Solved, Warning};
 use super::{Jvm, expand};
 use crate::json::Json;
 
@@ -164,7 +164,10 @@ fn parse_only(adapter: &mut Adapter, o: &Opts) -> ExitCode {
     println!("[");
     for (file, given) in &o.files {
         let (module, message) = match adapter.parse_only(file, &o.opens) {
-            Ok(module) => (module, None),
+            Ok((module, warnings)) => {
+                say_warnings(given, &warnings);
+                (module, None)
+            }
             Err(r) => {
                 ok = false;
                 (given.clone(), Some(r.message))
@@ -185,6 +188,18 @@ fn parse_only(adapter: &mut Adapter, o: &Opts) -> ExitCode {
     }
     println!("]");
     ExitCode::from(u8::from(!ok))
+}
+
+fn say_warnings(given: &str, warnings: &[Warning]) {
+    for w in warnings {
+        eprintln!(
+            "alloy runner: warning at {}:{}:{}: {}",
+            w.file.as_deref().unwrap_or(given),
+            w.line.unwrap_or(0),
+            w.column.unwrap_or(0),
+            w.message
+        );
+    }
 }
 
 fn agrees(result: &str, expects: Option<u64>) -> bool {
@@ -216,6 +231,7 @@ fn solve_all(adapter: &mut Adapter, o: &Opts) -> ExitCode {
             ));
         }
         if let Ok(p) = &p {
+            say_warnings(given, &p.warnings);
             for c in p.commands.iter().filter(|c| !c.synthesized) {
                 labels.push(c.label.clone());
                 if o.only.as_ref().is_none_or(|only| *only == c.label) {

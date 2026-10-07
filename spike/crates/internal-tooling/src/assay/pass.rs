@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use super::drive::{self, Computed, Job, Target};
+use super::drive::{self, Computed, Job, Stops, Target};
 use super::lock::{self, Row, Standing};
 use super::{
     Ask, CONTENTION, DOC_SUFFIX, Finding, Inputs, LAWS_HALF, LOCK_SUFFIX, Lint, Mode, RED, REFUSED,
@@ -11,7 +11,7 @@ use super::{
 };
 use super::{commit, report};
 use crate::alloy_jvm::Jvm;
-use crate::alloy_jvm::adapter::{Adapter, Machine, Refusal};
+use crate::alloy_jvm::adapter::{Adapter, Machine, Refusal, Warning};
 use crate::json::Json;
 
 type Fields = Vec<(String, Json)>;
@@ -328,38 +328,38 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
             Ok(a) => a,
             Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
         };
-        let refusals = if ask.mode == Mode::Parse {
-            compiled
-                .modules
-                .iter()
-                .filter_map(|(name, _)| {
-                    adapter
-                        .parse_only(&out.join(name), &[])
-                        .err()
-                        .map(|r| (name.clone(), r))
-                })
-                .collect()
+        let stops = if ask.mode == Mode::Parse {
+            let mut stops = Stops::default();
+            for (name, _) in &compiled.modules {
+                match adapter.parse_only(&out.join(name), &[]) {
+                    Ok((_, warnings)) => stops
+                        .warnings
+                        .extend(warnings.into_iter().map(|w| (name.clone(), w))),
+                    Err(r) => stops.refusals.push((name.clone(), r)),
+                }
+            }
+            stops
         } else {
             match drive::survey(&mut adapter, &job) {
                 Ok(survey) => {
-                    if survey.refusals.is_empty() {
+                    if survey.stops.refusals.is_empty() {
                         fields.push((
                             "key_diff".to_owned(),
                             key_diff(&survey.entries, &committed, &spec_path),
                         ));
                     }
-                    survey.refusals
+                    survey.stops
                 }
                 Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
             }
         };
-        if refusals.is_empty() {
+        if stops.is_empty() {
             return reporter.emit(fields, 0);
         }
         set(
             &mut fields,
             "lints",
-            lints_json(&unparsed(&refusals, &compiled.modules, &doc_name, &out)),
+            lints_json(&stopped(&stops, &compiled.modules, &doc_name, &out)),
         );
         return reporter.emit(fields, REFUSED);
     }
@@ -391,16 +391,16 @@ pub(super) fn one(spec: &Path, out: Option<PathBuf>, ask: &Ask) -> u8 {
         target: &target,
         stem: &stem,
     };
-    let (rows, refusals) = match drive::run(&jvm, &job) {
+    let (rows, stops) = match drive::run(&jvm, &job) {
         Ok(ran) => ran,
         Err(why) => return reporter.emit(runner_failed(fields, &why), RUNNER_FAILED),
     };
     log.counts = Some(drive::row_counts(&rows));
-    if !refusals.is_empty() {
+    if !stops.is_empty() {
         set(
             &mut fields,
             "lints",
-            lints_json(&unparsed(&refusals, &compiled.modules, &doc_name, &out)),
+            lints_json(&stopped(&stops, &compiled.modules, &doc_name, &out)),
         );
         return reporter.emit(fields, REFUSED);
     }
@@ -677,6 +677,71 @@ fn lock_changes(before: &[Row], after: &[Row]) -> Vec<String> {
     changes
 }
 
+fn stopped(
+    stops: &Stops,
+    modules: &[(String, emit::Rendered)],
+    doc_name: &str,
+    out: &Path,
+) -> Vec<Finding> {
+    let mut findings = unparsed(&stops.refusals, modules, doc_name, out);
+    findings.extend(warned(&stops.warnings, modules, doc_name, out));
+    findings
+}
+
+/// The spec line a position Alloy reports in a generated module walks back to.
+fn origin(
+    file: Option<&str>,
+    line: Option<u64>,
+    column: Option<u64>,
+    modules: &[(String, emit::Rendered)],
+) -> Option<(String, usize)> {
+    let name = file?.rsplit(['/', '\\']).next()?;
+    let (_, rendered) = modules.iter().find(|(n, _)| n == name)?;
+    let line = usize::try_from(line?).ok()?;
+    let column = usize::try_from(column.unwrap_or(1)).ok()?;
+    rendered
+        .origin(line, column)
+        .map(|s| (s.file.clone(), s.line))
+}
+
+/// One finding per warning. Every root that opens the module a warning sits in reports it again,
+/// so the position Alloy gives, not the root, is what makes two warnings one.
+fn warned(
+    warnings: &[(String, Warning)],
+    modules: &[(String, emit::Rendered)],
+    doc_name: &str,
+    out: &Path,
+) -> Vec<Finding> {
+    let mut unique = BTreeMap::new();
+    for (root, w) in warnings {
+        let at = w
+            .file
+            .as_deref()
+            .and_then(|f| f.rsplit(['/', '\\']).next())
+            .unwrap_or(root);
+        let (file, line) = origin(w.file.as_deref(), w.line, w.column, modules)
+            .unwrap_or_else(|| (doc_name.to_owned(), 0));
+        let position = (
+            file,
+            line,
+            at.to_owned(),
+            w.line.unwrap_or(0),
+            w.column.unwrap_or(0),
+        );
+        unique
+            .entry(position)
+            .or_insert_with(|| drive::portable(&w.message, out));
+    }
+    unique
+        .into_iter()
+        .map(|((file, line, at, at_line, at_column), message)| {
+            Finding::new(Lint::AlloyRaisesNoWarning, &file, line)
+                .with("module", format!("{at}:{at_line}:{at_column}"))
+                .with("message", message)
+        })
+        .collect()
+}
+
 fn unparsed(
     refusals: &[(String, Refusal)],
     modules: &[(String, emit::Rendered)],
@@ -686,19 +751,11 @@ fn unparsed(
     type Group = (String, Vec<String>, Option<(String, usize)>);
     let mut grouped: Vec<Group> = Vec::new();
     for (module, r) in refusals {
-        let origin = r.file.as_deref().and_then(|file| {
-            let name = file.rsplit(['/', '\\']).next()?;
-            let (_, rendered) = modules.iter().find(|(n, _)| n == name)?;
-            let line = usize::try_from(r.line?).ok()?;
-            let column = usize::try_from(r.column.unwrap_or(1)).ok()?;
-            rendered
-                .origin(line, column)
-                .map(|s| (s.file.clone(), s.line))
-        });
+        let source = origin(r.file.as_deref(), r.line, r.column, modules);
         let message = drive::portable(&r.message, out);
         match grouped.iter_mut().find(|(m, _, _)| *m == message) {
             Some((_, stopped, _)) => stopped.push(module.clone()),
-            None => grouped.push((message, vec![module.clone()], origin)),
+            None => grouped.push((message, vec![module.clone()], source)),
         }
     }
     grouped
@@ -788,6 +845,42 @@ mod tests {
         assert!(
             super::disagreements(&rows(Outcome::Timeout, Outcome::Counterexample), &conj)
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_warning_is_one_finding_per_place_however_many_roots_report_it() {
+        // `species.als` is opened by every book, so each book's parse repeats its warnings; one
+        // message at two places is still two warnings.
+        let species = crate::assay::emit::render(&format!(
+            "{o}s.assay.md{o}10\npred p {{\n   no A\n   no B\n}}\n",
+            o = crate::assay::emit::ORIGIN
+        ))
+        .expect("renders");
+        let modules = vec![("species.als".to_owned(), species)];
+        let at = |column| crate::alloy_jvm::adapter::Warning {
+            message: "Implicit in-line conjunction".to_owned(),
+            file: Some("/out/species.als".to_owned()),
+            line: Some(1),
+            column: Some(column),
+        };
+        let warnings = vec![
+            ("book_a.als".to_owned(), at(13)),
+            ("book_b.als".to_owned(), at(13)),
+            ("laws.als".to_owned(), at(15)),
+        ];
+        let found = super::warned(
+            &warnings,
+            &modules,
+            "s.assay.md",
+            std::path::Path::new("/out"),
+        );
+        let places: Vec<(&str, usize)> = found.iter().map(|f| (f.file.as_str(), f.line)).collect();
+        assert_eq!(places, [("s.assay.md", 11), ("s.assay.md", 12)]);
+        assert!(
+            found
+                .iter()
+                .all(|f| f.lint == crate::assay::Lint::AlloyRaisesNoWarning)
         );
     }
 

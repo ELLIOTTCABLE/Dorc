@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 
 import edu.mit.csail.sdg.alloy4.A4Reporter;
 import edu.mit.csail.sdg.alloy4.Err;
+import edu.mit.csail.sdg.alloy4.ErrorWarning;
 import edu.mit.csail.sdg.alloy4.Pos;
 import edu.mit.csail.sdg.alloy4.XMLNode;
 import edu.mit.csail.sdg.ast.Command;
@@ -136,9 +137,14 @@ public class AlloyAdapter {
    }
 
    static JsonObject failure(String message, Pos pos) {
-      JsonObject o = new JsonObject();
+      JsonObject o = located(message, pos);
       o.addProperty("ok", false);
       o.addProperty("result", "error");
+      return o;
+   }
+
+   static JsonObject located(String message, Pos pos) {
+      JsonObject o = new JsonObject();
       o.addProperty("message", message);
       if (pos != null && pos != Pos.UNKNOWN) {
          o.addProperty("file", pos.filename);
@@ -169,11 +175,19 @@ public class AlloyAdapter {
       String root = req.get("root").getAsString();
       JsonObject opens = req.has("opens") ? req.getAsJsonObject("opens") : null;
       Map<String, String> loaded = overlay(root, opens);
-      CompModule world = CompUtil.parseEverything_fromFile(A4Reporter.NOP, loaded, root);
+      JsonArray warnings = new JsonArray();
+      A4Reporter collect = new A4Reporter() {
+         @Override
+         public void warning(ErrorWarning w) {
+            warnings.add(located(w.msg, w.pos));
+         }
+      };
+      CompModule world = CompUtil.parseEverything_fromFile(collect, loaded, root);
       worlds.put(root, world);
       JsonObject o = new JsonObject();
       o.addProperty("ok", true);
       o.addProperty("module", world.getModuleName());
+      o.add("warnings", warnings);
       if (!full) return o;
       String base = resolutionRoot(root).getCanonicalPath();
       JsonArray files = new JsonArray();

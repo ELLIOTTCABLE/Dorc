@@ -77,10 +77,21 @@ pub(crate) struct Parsed {
     pub(crate) commands: Vec<CommandInfo>,
     pub(crate) options: Value,
     pub(crate) sigs: Vec<(String, Vec<String>)>,
+    pub(crate) warnings: Vec<Warning>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Refusal {
+    pub(crate) message: String,
+    pub(crate) file: Option<String>,
+    pub(crate) line: Option<u64>,
+    pub(crate) column: Option<u64>,
+}
+
+/// What Alloy's type checker said about a module it still accepted. An always-empty join or a
+/// formula two others were silently conjoined into often means the model is not the one meant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct Warning {
     pub(crate) message: String,
     pub(crate) file: Option<String>,
     pub(crate) line: Option<u64>,
@@ -419,6 +430,7 @@ impl Adapter {
                     Some((s.str("label")?.to_owned(), fields))
                 })
                 .collect(),
+            warnings: warnings(&reply),
         })
     }
 
@@ -426,10 +438,10 @@ impl Adapter {
         &mut self,
         root: &Path,
         opens: &[(String, PathBuf)],
-    ) -> Result<String, Refusal> {
+    ) -> Result<(String, Vec<Warning>), Refusal> {
         match self.call(&request("parse-only", root, opens, &[]), None, false) {
             Call::Reply(v) if v.bool("ok") == Some(true) => {
-                Ok(v.str("module").unwrap_or_default().to_owned())
+                Ok((v.str("module").unwrap_or_default().to_owned(), warnings(&v)))
             }
             Call::Reply(v) => Err(refusal(&v)),
             other => Err(other.refusal()),
@@ -542,6 +554,18 @@ fn refusal(v: &Value) -> Refusal {
         line: v.u64("line"),
         column: v.u64("column"),
     }
+}
+
+fn warnings(v: &Value) -> Vec<Warning> {
+    v.arr("warnings")
+        .iter()
+        .map(|w| Warning {
+            message: w.str("message").unwrap_or_default().to_owned(),
+            file: w.str("file").map(str::to_owned),
+            line: w.u64("line"),
+            column: w.u64("column"),
+        })
+        .collect()
 }
 
 fn command_info(v: &Value) -> Option<CommandInfo> {
