@@ -637,3 +637,12 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
 - **[TYPED]** the Windows hk race: encode it in hk properly, a build that runs before the parallel
   steps only when the tooling changed, and not overengineered; a brief investigation of the
   necessary complexity first, and no build until the human acks.
+- **[TYPED]** one word per meaning across the whole document, by plain STE consistency and with no
+  new term; move away from "reaches", a product-facing word with an old, specific meaning.
+  **[CONDUCTOR]** "knows" is already the document's one verb for having information, used for the
+  engine, for parties, and loosely for tools; § 0.1's line joins that sense.
+- **[TYPED]** ACK of the mapping for "reach": "reach" and "reachable" keep only graph
+  reachability (the checker reaching an answer, a code path reaching a statement, the walk
+  reaching a level); effect spread on the engine's side becomes "collides with", or "the
+  writeset"; containment becomes "beneath", as the fence's own `beneath`; the one-offs take plain
+  verbs. Applied after the test split folds, one commit per sense.
