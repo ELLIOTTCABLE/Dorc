@@ -583,3 +583,25 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   item (the premise's aggregation over the statements in force) and a tight chain of its
   dependencies, judged by the rubric; then the assay work that makes it run; more items later. How
   specifications see the document (an include mechanism, or opening) is the conductor's choice.
+- The rubric was written (only a normative block, no Alloy) and attacked by a Fable reviewer in
+  clean context (report, ephemeral: root `_tmp-314a-adversarial-review-3.md`). Upheld by the
+  conductor: as written the rubric admits nothing ("meets every sentence" with the no-clear-answer
+  fallback); the four "another choice" tests read literally exclude every definition a check uses;
+  the naming rule excludes all Alloy-forced plumbing, since Alloy's typing makes it name product
+  objects; the premise is product, the contract's trust in speakers. Refuted: that the "which
+  worlds" ruling does not exist (`312d`, typed).
+- **[TYPED]** the human suspected sycophancy and asked for an honest estimate. **[CONDUCTOR]** put,
+  by section ranges of 311: tests about a third (books, kills, twins, witnesses); working lists
+  (§ 4.2, § 6) and the index (§ 5) about 325 lines; Alloy-forced encoding of product statements 100
+  to 200 lines; generic logic about 15 lines, which Alloy's standard library already holds. Real
+  specifications separate these: conventions clauses, standard toolkits, normative and informative
+  annexes, conformance suites kept apart.
+- **[TYPED]** the same split is followed. Any pure logic is a third category: imported from a
+  standard library, or a tiny non-normative mechanical file. The target here is an annex
+  (`mechanical-annex.assay.md` floated) for shared product definitions that are noise for the
+  specification's reader. Carved out as the floor the rubric must exclude: "this holds when users'
+  speech holds" is a critical product statement that looks like annex material.
+- **[TYPED]** the test-document split is made now, by a builder, beside the subtler split of
+  product value. Asked: after the tests and the standard library, which of the remainder can leave
+  the specification body without hiding an important normative translation of the prose; the
+  human is on the fence about whether a mechanical annex is worth having.
