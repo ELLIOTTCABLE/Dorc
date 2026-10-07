@@ -587,7 +587,7 @@ MParent are 2.10-places-the-upward-lookup's.
 > An emitter is a secondary MScheme, possibly a stranger's.
 > An emitter can be wrong only about what it supplied.
 > What it supplied is its lookup, and the MParent instance where it is the seat that supplied that instance.
-> An MKey may carry further routes, one per other lookup that reached it (2.10-places-the-upward-lookup).
+> An MKey may carry further routes, one per other lookup that routes to the MKey (2.10-places-the-upward-lookup).
 > None of these routes is the MKey's MParent.
 
 Examples of a MParent-Catalog: a directory for a path's entry, a passwd database for a login name, a process table for a pid. Examples of a MParent-Store: a DNS zone for a record's owner name, a user namespace for a uid, a dpkg database for a canonical package name. Examples of a MRoot: the DNS MRoot, or a cloud instance-id whose issuer never repeats one.
@@ -2204,7 +2204,7 @@ MResolution's MFullyQualifiedKey reads unknown, so SAME loses authority, elision
 guards, and DISJOINT collides. The lines above a site are the mutators that ran before it
 (the shared order of lines). The read set of the lookup body is derived from the body, which
 the fences do not hold, so whether it is open is an uninterpreted relation with 311's sentence
-as its only axiom (`plans/30Z` § 2.6). The state mutation's kill-reach is the sparing test of
+as its only axiom (`plans/30Z` § 2.6). What a state mutation invalidates is decided by the sparing test of
 2.6-may-write-the-writeset itself, and a lifecycle write to a MRoot-adjacent MKey is caught by
 that test as a write to a container, since every MKey scoped in it meets it at itself; what the
 fences add is the token that a state mutation to the MParent-Store invalidates.
@@ -2655,7 +2655,7 @@ The rows:
 
 - ADDR: T's MKey means something only relative to P.
 - WRITE: a write to P can change T, and P is not on T's chain.
-- ROUTE: T is reachable through P.
+- ROUTE: a route to T passes through P.
 - VANT: an answer about T depends on where the read ran.
 - ATTEST: an answer about T is A's word.
 
@@ -2758,7 +2758,7 @@ The if-false column names the wrong answer:
 
 - wSAME: one fact stands for another thing's fact.
 - wDISJ: a license survives a write that destroyed it.
-- wSPARE: the same survival, reached through the sparing test.
+- wSPARE: the same survival, licensed by the sparing test.
 - stale: a MResolution stands after a write that should have invalidated it, and every
   conclusion built on it stands with it.
 - vantage: the engine keys a fact at the wrong instance.
@@ -2766,7 +2766,7 @@ The if-false column names the wrong answer:
 The flag column says whether the engine consumes the answer only under `--risk-faultless-skips`
 (3.2-compare-one-chokepoint-four-answers, 3.4-entry-and-lends). An INVAL cell marked "no"
 inherits the flag of the consumer that a kept MResolution feeds, since a stale MResolution
-reaches a decision only past a running line. The consumer column orders the rows. Within one
+feeds a decision only past a running line. The consumer column orders the rows. Within one
 consumer, the unflagged rows come first.
 
 | statement                              | kind     | speaker              | grain           | built      | consumer     | if-false        | flag     | §             |
