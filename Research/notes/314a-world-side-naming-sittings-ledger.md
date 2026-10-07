@@ -460,3 +460,19 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   `k.mKey`. Applied by one global, project-wide, single-commit capitalization change. Nothing of
   it is applied in this sitting.
 - **[TYPED]** the sitting ends here.
+
+### § 2.10-the-capitalization-pass-handed-to-a-builder
+
+2026-10-06, a successor conductor (Opus 5.5) after a handoff.
+
+- **[TYPED]** ack of the mechanical capitalization pass of § 2.9, handed to an Opus builder. Scope:
+  project-global. Nothing is exempt except this ledger, which records the rename itself.
+  Historical documents and ledgers are included.
+- **[TYPED]** the single mechanical pass renames only terms with no concern, conflict, merge,
+  split, or other subtlety. Every other case gets attention first and its own pair of commits: a
+  fix that renames nothing, then that one term's mechanical rename. The builder may yield to the
+  conductor and the human for rulings before it takes such a case.
+- **[TYPED]** the list of terms that rename freely is the conductor's and the builder's judgment.
+  Suggested method: a wide match that catches every model term and each grammatical form of it;
+  then a separate find-and-replace over each grammatical form of each accepted term only (never
+  `mDNS`). The human is asked only where a distinction is meaningful.
