@@ -4338,9 +4338,6 @@ so they carry the old words unchanged. Non-ledger content will probably be updat
 | MAspectSort, `:named-like` | none: a cell is a singleton MSort under its MParent (1.9-cell-a-singleton-sort) |
 | MNaturalKey / MPrimaryKey | MKey-Natural / MKey-Primary (the ledgers and exercises keep the old order as an acceptable gloss) |
 
-Outside r31, the last bullet of `AGENTS.md`'s "Terminology firming" still names MKey-CatalogStore,
-MKey-PrimaryStore, MSort-CatalogStore, and MSort-PrimaryStore as this model's words.
-
 Plain-English "read" that must NOT be tagged or renamed (a host read, not the operation):
 312b-exercises/01 ~line 54; 312b-exercises/02 ~lines 52 and 65.
 
