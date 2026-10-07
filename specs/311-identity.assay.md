@@ -164,7 +164,7 @@ fact { owns in holds }
 > What a store owns, it holds by its own construction.
 > A write to an MReferent affects the MState of the MReferents it affects (2.5-may-read-the-readset).
 > A route to an MReferent passes through the MReferents that pass to it.
-> What an MReferent passes to is what is reached beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
+> What an MReferent passes to is beneath it (1.7-resolution-and-its-traversal, 2.9-the-traversal-and-the-region-test).
 > An MReferent is not an MKey, and not an MSort.
 
 UNACKED READING, temporary (`312d:ask-aliases-nothing-else-world-reading`,
@@ -1394,9 +1394,9 @@ run law_exclusion_readings_agree_premise {
 > Under rule 2, a container at or above the deepest level that the written MKey shares with the read MKey contributes no entailment.
 > The entailment read for a written MKey is the one declared on that MKey and on each container on its identity's chain.
 > The written MKey is excluded with its identity.
-> Rule 3: where an MKey given whole is in the writeset, every MKey reached beneath it is in the writeset (2.9-the-traversal-and-the-region-test).
-> Where the MKey given whole has a finished enumeration, the MKeys reached beneath it are that enumeration's members (2.10-places-the-upward-lookup).
-> Where the MKey given whole has no finished enumeration, the MKeys reached beneath it are its enumeration's members and every MKey its region covers besides.
+> Rule 3: where an MKey given whole is in the writeset, every MKey beneath it is in the writeset (2.9-the-traversal-and-the-region-test).
+> Where the MKey given whole has a finished enumeration, the MKeys beneath it are that enumeration's members (2.10-places-the-upward-lookup).
+> Where the MKey given whole has no finished enumeration, the MKeys beneath it are its enumeration's members and every MKey its region covers besides.
 > P itself stays an entry of that test.
 > Rule 4 applies where an MKey in the writeset `compare()`s other than DISJOINT with a may-read entry declared for an MKey k.
 > Under rule 4, k is in the writeset (2.5-may-read-the-readset, 3.2-compare-one-chokepoint-four-answers).
@@ -1422,7 +1422,8 @@ run law_exclusion_readings_agree_premise {
 > The second kind is an MReferent that a route through a whole-marked entry's MReferent passes to.
 > A finished record is true when writing each covered MReferent affects only it, what it holds, and the MReferents the entailment names.
 > The covered MReferents are those an MKey MRefers to whose MSort and shape are the record's.
-> A held hole: two MKeys that `compare()` reads DISJOINT MRefer to two MReferents from which one MReferent is reached beneath both, by holding or by route, directly or through others.
+> A held hole: two MKeys that `compare()` reads DISJOINT MRefer to two MReferents that have one MReferent beneath both.
+> That MReferent is beneath both by holding or by route, directly or through others.
 > A held hole: a write to one MReferent affects a third MReferent through a second, and does not affect the third directly.
 > The sparing holes are five: the world-scoped-top hole, the region hole, the composite hole, the one-thing-beneath hole, and the third-thing hole (3.2-compare-one-chokepoint-four-answers, 2.9-the-traversal-and-the-region-test).
 > A world is outside the sparing holes when it is outside each of the five.
@@ -1657,7 +1658,7 @@ run law_region_disjoint_is_sound_premise {
 > In the second form, x is in no region of that MSort.
 > Step 4: otherwise UNKNOWN.
 > An entry given whole names more than the MReferent of its MKey.
-> The entry given whole also names every MReferent reached beneath that MKey, through the MScheme's lookups or through a placing route.
+> The entry given whole also names every MReferent beneath that MKey, through the MScheme's lookups or through a placing route.
 > An entry given whole names every MKey the region covers.
 > A held hole: some MKey D and some MKey x whose `compare()` reads UNKNOWN or KNOWN_UNSPOKEN, and whose region test reads DISJOINT.
 > The region law has three premises: every statement in force is true, the engine's axioms hold, and no store is among its own contents.
@@ -1749,7 +1750,7 @@ pred isTrue[d: ClosesLookedUpIn] {
 > The `looked-up-in` records of every invocation accumulate: x's routes of MSort G are every G:key recorded for x.
 > The store's end of the same relation is G's enumeration of its members.
 > The may-write entailment of 2.6-may-write-the-writeset carries that enumeration into the writeset.
-> In the test of 2.6-may-write-the-writeset, when that entailment is finished for P, its emitted members stand in for the MKeys reached beneath P (rule 3).
+> In the test of 2.6-may-write-the-writeset, when that entailment is finished for P, its emitted members stand in for the MKeys beneath P (rule 3).
 > An unfinished entailment widens the writeset only.
 
 #### § 2.10.1-invocation-and-refusal
