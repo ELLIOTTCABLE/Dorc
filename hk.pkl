@@ -297,9 +297,18 @@ hooks {
             }
         }
     }
+    // The steps that run the tooling binary wait for the two fixers that rewrite sources. If a
+    // fixer rewrites a file the binary is built from while one of those steps runs it, the next
+    // step's `cargo run` rebuilds, and on Windows cannot replace the running exe ("Access is
+    // denied").
     ["fix"] {
         fix = true
-        steps = linters
+        steps = (linters) {
+            ["cargo_fmt_detached"] { depends = List("cargo_fmt", "typos") }
+            ["docids"] { depends = List("cargo_fmt", "typos") }
+            ["slugs"] { depends = List("cargo_fmt", "typos") }
+            ["assay"] { depends = List("cargo_fmt", "typos") }
+        }
     }
     ["check"] {
         steps = (linters) {
