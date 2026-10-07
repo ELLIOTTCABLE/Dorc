@@ -329,7 +329,7 @@ RDBMS primary key and natural key, with their culture: the natural key is user-t
 An MKey is a plan-time object that models what a runtime string will denote. It is minted at a
 bind, or at an emission point a `resolve()` declares (2.1-yields-into-another-scheme), before
 any lookup runs. Every lookup is a measurement: what it decides late is which declared shape an
-MValue matches, so which MSort an MKey reaches, and which MParent MSort and warrants apply, is
+MValue matches, so which MSort an MKey resolves into, and which MParent MSort and warrants apply, is
 known only once bytes arrive. The MPlaceholder, for an MValue or an MParent not yet measured, is
 1.10-vantage-route-placeholder-witness's. An MLevel is what a MFullyQualifiedKey passes through
 (1.8-fully-qualified-key-topic-and-derivation): an MKey, or one of the world atoms that end a
@@ -759,7 +759,7 @@ ruling of `notes/312d` § 21 for 1.3.1-a-primary-scheme-and-its-sort.
 
 ### § 1.10-vantage-route-placeholder-witness
 
-A MVantage is the address a probe reached an MReferent from, and every MKey carries the one it
+A MVantage is the address where a probe stood when the probe measured an MReferent, and every MKey carries the one it
 was resolved from. What a wrapper lends, and how a vantage entered through a wrapper inherits
 the rest, is 3.4-entry-and-lends; the MRoute holds no MState and declares no may-read set, so a
 readset member whose MFullyQualifiedKey ends at it is ⊤ (2.5-may-read-the-readset). "Resolved
