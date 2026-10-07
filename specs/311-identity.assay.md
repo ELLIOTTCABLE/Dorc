@@ -4186,9 +4186,8 @@ reads the closure:
 - SPARE: the sparing test of 2.6-may-write-the-writeset.
 - INVAL: invalidation (3.3-invalidation-three-mutator-species).
 
-OPEN marks a cell with no statement in the model. The root naming file holds its candidate
-names. TABLED marks a row that the ledgers set aside (`311t` § 13). A dash marks a cell with no
-statement, where the default does the work.
+OPEN marks a cell with no statement in the model. TABLED marks a row that the ledgers set aside
+(`311t` § 13). A dash marks a cell with no statement, where the default does the work.
 
 | row    | level | end  | entry                                                            | closure                                                                  | licenses     | §             |
 | ------ | ----- | ---- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | ------------- |
