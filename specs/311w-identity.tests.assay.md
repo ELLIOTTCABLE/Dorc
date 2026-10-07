@@ -26,7 +26,83 @@ open w_311_dash_identity
 
 ## § 2-tests-of-the-model-relations
 
+### § 2.1-tests-of-yields-into-another-scheme
+
+```alloy
+run kill_natural_same_is_sound_unique_referent {
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | naturalKeyAnswer[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 6 but 4 Int expect 1
+
+run kill_natural_disjoint_is_sound_unique_name {
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | naturalKeyAnswer[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 6 but 4 Int expect 1
+```
+
+<!-- prose-translation -->
+> Each of the two laws dies with the warrant it rests on.
+> Each kill in this section asks with the engine's axioms holding.
+> With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary MScheme is reachable.
+> With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT licensed before the primary MScheme is reachable.
+
 ### § 2.6-tests-of-may-write-the-writeset
+
+```alloy
+run hole_two_separated_things_reach_one_thing_beneath_witness {
+   hole_two_separated_things_reach_one_thing_beneath and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run hole_a_write_affects_through_a_third_thing_witness {
+   hole_a_write_affects_through_a_third_thing and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run kill_sparing_is_sound_closes_may_write {
+   noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
+   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some l: Line, f: VerdictFact & InForce |
+         spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
+} for 4 but 4 Int, 10 Claim expect 1
+
+run kill_sparing_is_sound_verdict_fact {
+   noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
+   some d: VerdictFact & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some l: Line | spared[l, d] and some (World.lineWrites[l]).*affects & d.dependsOn
+} for 4 but 4 Int, 10 Claim expect 1
+
+run kill_sparing_is_sound_closes_may_read {
+   noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
+   some d: ClosesMayRead & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some l: Line, f: VerdictFact & InForce |
+         spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
+} for 4 but 4 Int, 10 Claim expect 1
+
+run kill_sparing_is_sound_finishes_entailment {
+   noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
+   some d: FinishesEntailment & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some l: Line, f: VerdictFact & InForce |
+         spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
+} for 4 but 4 Int, 10 Claim expect 1
+
+run kill_sparing_is_sound_supplies_parent {
+   noStoreIsAmongItsOwnContents and outsideTheSparingHoles and axiomaticByDifferentialTest
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some l: Line, f: VerdictFact & InForce |
+         spared[l, f] and some (World.lineWrites[l]).*affects & f.dependsOn
+} for 4 but 4 Int, 10 Claim, 5 MLevel expect 1
+```
+
+<!-- prose-translation -->
+> The sparing law dies with a statement it rests on.
+> Each kill of the sparing law asks outside the sparing holes, with the engine's axioms holding and no store among its own contents.
+> With one completion record false and every other statement in force true, a false sparing is reachable.
+> With one vouch false and every other statement in force true, a false sparing is reachable.
+> Three more kills ask whether the law also dies with one closed may-read set false, one finished record false, or one supplied MParent instance false.
+> An unsatisfiable kill says that no sparing rests on that statement alone.
+> The kill by a supplied MParent instance asks over worlds of five levels.
+> Its witness needs a store on the read MKey's chain beside the two MWorlds.
 
 #### § 2.6.2-a-book-stage-five-the-index-given-whole
 
@@ -395,6 +471,41 @@ run bookScope_two_volumes_of_one_issuer {} for 4 but 4 Int
 > At line 2, the fact is spared past line 1.
 > No MReferent that line 1 writes affects, directly or through others, an MReferent the fact's answer depended on.
 
+### § 2.9-tests-of-the-traversal-and-the-region-test
+
+```alloy
+run hole_region_closure_with_unknown_leaf_pair_witness {
+   hole_region_closure_with_unknown_leaf_pair and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run kill_region_disjoint_is_sound_closes_looked_up_in {
+   noStoreIsAmongItsOwnContents
+   not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_refer_differently
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: ClosesLookedUpIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some D, x: MKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
+} for 5 but 4 Int expect 1
+
+run kill_region_disjoint_is_sound_alias_nothing_else {
+   noStoreIsAmongItsOwnContents
+   not hole_region_closure_with_unknown_leaf_pair
+   not hole_composite_keys_with_same_parts_refer_differently
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: EmitsAliasNothingElse & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some D, x: MKey | regionTest[D, x] = DISJOINT and some x.mRefersTo & (D.mRefersTo + D.mRefersTo.passes)
+} for 5 but 4 Int expect 1
+```
+
+<!-- prose-translation -->
+> The region law dies with a statement it rests on.
+> Each kill of the region law asks outside the three holes, with the engine's axioms holding and no store among its own contents.
+> With one `looked-up-in nothing-else` false and every other statement in force true, a false DISJOINT of the region test is reachable.
+> One more kill asks whether the law also dies with one `alias nothing-else` false.
+> An unsatisfiable kill says that no DISJOINT of the region test rests on that closure alone.
+
 ### § 2.10-tests-of-places-the-upward-lookup
 
 #### § 2.10.2-a-book-a-directory-removed-beside-a-file
@@ -508,6 +619,137 @@ run bookScope_a_directory_removed_beside_a_file {} for 6 but 4 Int
 ## § 3-tests-of-composition-and-laws
 
 ### § 3.2-tests-of-compare-one-chokepoint-four-answers
+
+```alloy
+run hole_cell_keys_under_same_parents_refer_differently_witness {
+   hole_cell_keys_under_same_parents_refer_differently and axiomaticByContract and axiomaticByDifferentialTest
+} for 6 but 4 Int expect 1
+
+run hole_world_scoped_top_aliases_into_a_store_witness {
+   hole_world_scoped_top_aliases_into_a_store and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run hole_composite_keys_with_same_parts_refer_differently_witness {
+   hole_composite_keys_with_same_parts_refer_differently and axiomaticByContract and axiomaticByDifferentialTest
+} for 6 but 4 Int expect 1
+
+run kill_compare_same_is_sound_corresponds {
+   not hole_cell_keys_under_same_parents_refer_differently
+   not hole_composite_keys_with_same_parts_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | compare[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_compare_disjoint_is_sound_corresponds {
+   noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   not hole_composite_keys_with_same_parts_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresCorresponds & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | compare[x, y] = DISJOINT and walkOfKeys[x, y] != DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_same_is_sound_unique_referent {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueReferent & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 6 but 4 Int expect 1
+
+run kill_same_is_sound_yields {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresYields & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_disjoint_is_sound_unique_name {
+   noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: DeclaresUniqueName & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_disjoint_is_sound_aliases_nothing_else {
+   noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: DeclaresAliasesNothingElse & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 6 but 4 Int, 9 Claim expect 1
+
+run kill_same_is_sound_identified_in {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_disjoint_is_sound_identified_in {
+   noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: DeclaresIdentifiedIn & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_same_is_sound_root {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: DeclaresRoot & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_same_is_sound_supplies_parent {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_disjoint_is_sound_supplies_parent {
+   noStoreIsAmongItsOwnContents
+   not hole_world_scoped_top_aliases_into_a_store
+   axiomaticByDifferentialTest
+   some d: SuppliesParent & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = DISJOINT and some x.mRefersTo & y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_same_is_sound_closes_lends {
+   not hole_cell_keys_under_same_parents_refer_differently
+   axiomaticByDifferentialTest
+   some d: ClosesLends & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some x, y: MKey | walkOfKeys[x, y] = SAME and x.mRefersTo != y.mRefersTo
+} for 5 but 4 Int expect 1
+
+run kill_nobody_spoke_declines_unique_referent {
+   no InForce & (DeclaresUniqueName + DeclaresRoot + DeclaresAliasesNothingElse)
+   some DeclaresUniqueReferent & InForce
+   some disj x, y: MKey | walk[x, y] = SAME
+} for 6 but 4 Int expect 1
+```
+
+<!-- prose-translation -->
+> Each hole has a witness that shows it inhabited.
+> Each law dies with a statement it rests on.
+> Each kill of a SAME law or a DISJOINT law asks with the engine's axioms holding.
+> Such a kill also asks outside its law's holes, and under its law's store premise where the law has one.
+> With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME of the walk is reachable.
+> With one `:yields` false and every other statement in force true, a false SAME of the walk is reachable.
+> With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT of the walk is reachable.
+> With one `:aliases-nothing-else` false and every other statement in force true, a false DISJOINT of the walk is reachable.
+> With one MCorrespondence false and every other statement in force true, a false SAME of `compare()` is reachable.
+> With one MCorrespondence false and every other statement in force true, a false DISJOINT of `compare()` that the walk does not give is reachable.
+> With a `:guarantees-unique-referent` in force and no other warrant, a SAME is reachable.
+> The kill by `:aliases-nothing-else` asks over worlds of nine statements, since its witness holds eight in force at once.
+> Six more kills ask whether the walk's laws also die with one more statement false.
+> Two of these kills try one `:identified-in` false against the SAME law and the DISJOINT law of the walk.
+> One kill tries one `:root` false against the SAME law of the walk.
+> Two kills try one supplied MParent instance false against the SAME law and the DISJOINT law of the walk.
+> One kill tries one wrapper's completion sentinel false against the SAME law of the walk.
+> An unsatisfiable kill says that no SAME or DISJOINT of the walk rests on that statement alone.
 
 #### § 3.2.2-a-book-two-files-in-one-filesystem
 
@@ -1054,6 +1296,52 @@ run bookScope_one_configuration_from_two_files_in_two_orders {} for 6 but 4 Int
 > `compare()` answers SAME, and the two facts are about one MTopic.
 
 ### § 3.3-tests-of-invalidation-three-mutator-species
+
+```alloy
+run hole_unclosed_traversal_without_a_key_catalog_witness {
+   hole_unclosed_traversal_without_a_key_catalog and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run hole_natural_key_catalog_off_the_route_witness {
+   hole_natural_key_catalog_off_the_route and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run hole_a_route_off_the_catalog_reaches_the_thing_witness {
+   hole_a_route_off_the_catalog_reaches_the_thing and axiomaticByContract and axiomaticByDifferentialTest and noStoreIsAmongItsOwnContents
+} for 6 but 4 Int expect 1
+
+run kill_unstale_route_is_untouched_closes_traversal {
+   noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
+   not hole_unclosed_traversal_without_a_key_catalog
+   not hole_natural_key_catalog_off_the_route
+   not hole_a_route_off_the_catalog_reaches_the_thing
+   not hole_region_closure_with_unknown_leaf_pair
+   axiomaticByDifferentialTest
+   some d: ClosesTraversal & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some s: Line, k: MKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
+         and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
+} for 6 but 4 Int, 9 Claim expect 1
+
+run kill_unstale_route_is_untouched_closes_may_write {
+   noStoreIsAmongItsOwnContents and noRoutePassesThroughItself
+   not hole_unclosed_traversal_without_a_key_catalog
+   not hole_natural_key_catalog_off_the_route
+   not hole_a_route_off_the_catalog_reaches_the_thing
+   not hole_region_closure_with_unknown_leaf_pair
+   axiomaticByDifferentialTest
+   some d: ClosesMayWrite & InForce | axiomaticByContractExcept[d] and not d.isTrue
+      and some s: Line, k: MKey, l: s.above | not routingInvalidatedBy[l, k] and atMostClosed[l]
+         and some World.lineWrites[l] & passes.(levelsOf[k].mRefersTo + k.mRefersTo)
+} for 6 but 4 Int, 9 Claim expect 1
+```
+
+<!-- prose-translation -->
+> The untouched-route law dies with a statement it rests on.
+> Each kill of the untouched-route law asks outside the law's four holes, with the engine's axioms holding.
+> Each such kill also asks while no store is among its own contents and no route passes through itself.
+> The law dies with one traversal's closing act false and every other statement in force true.
+> The law dies with one completion record false and every other statement in force true.
+> In each such world, a line that invalidates no MResolution of an MKey writes something that a route to that MKey's MReferents passes through.
 
 #### § 3.3.2-a-book-a-reboot-between-two-reads
 
