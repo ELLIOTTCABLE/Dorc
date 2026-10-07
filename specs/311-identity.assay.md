@@ -21,7 +21,9 @@ the false friends from neighbouring fields, the names an object carried before t
 the refuted shapes (`notes/311u`), and each section's examples, illustrative and not fully
 worked, all run as plain prose, so that only the two headed forms ever render as quotes. The
 results of every command are in `311-identity.lock.json` beside this file;
-what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
+what runs them is `notes/30Y`; the arc's ledger is `notes/312d`. The books, the kills of the
+laws, and the witnesses of the held holes are in `311w-identity.tests.assay.md`, which opens this
+document.
 
 ## Conventions
 

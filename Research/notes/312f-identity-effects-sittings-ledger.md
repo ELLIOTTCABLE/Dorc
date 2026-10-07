@@ -92,7 +92,7 @@ Conductor's narrow finding (+SURE of the formula, not yet measured in a new book
 A key against its own container is UNKNOWN. Because UNKNOWN counts as a touch, even a precise
 write to one member can invalidate a sibling's token. Closing the traversal and the lookup's
 read set does not remove this separate token rule. Existing evidence is the list-file book in
-`311:2.6.3-a-book-stage-five-the-list-file-named`; the new example must isolate this rule rather
+`311w:2.6.3-a-book-stage-five-the-list-file-named`; the new example must isolate this rule rather
 than repeat that book's additional open-traversal cause.
 
 The concrete exercise must distinguish a location alias from a dependency. A logical INI
