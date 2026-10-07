@@ -255,7 +255,7 @@ whose product is removing a line from a plan only on connected, attributed claim
 the world already holds what the line would establish. The human-written ground truth is
 the root `README.md`, `DESIGN.md`, and `IMPLEMENTATION.md`; `USER_STORY.md`, `KNOBS.md`,
 and `AGENTS.md` (its terminology-firming section carries the bridge from the older
-"kind"/"entity" vocabulary to this model's mSort/mKey) are human-reviewed;
+"kind"/"entity" vocabulary to this model's MSort/MKey) are human-reviewed;
 `spike/CLAUDE.md` carries the standing invariants; `Research/GOTCHAS.md` is the project's
 list of real-world ops facts that have killed earlier designs — the model under review
 was shaped against it, so a gotcha it handles is nothing and a gotcha it mishandles is
@@ -446,7 +446,7 @@ Work in this order, and do not skip ahead:
 
 1. Read the core documents — root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
    `USER_STORY.md`, `AGENTS.md` (its terminology-firming section bridges their older
-   "kind"/"entity" vocabulary to mSort/mKey), `KNOBS.md`, `spike/CLAUDE.md`,
+   "kind"/"entity" vocabulary to MSort/MKey), `KNOBS.md`, `spike/CLAUDE.md`,
    `Research/GOTCHAS.md` (the project's list of real-world ops facts that have killed
    earlier designs, against which this one was shaped: a gotcha it handles is nothing; one
    it mishandles is something) — and then the document, in whole.
@@ -568,7 +568,7 @@ ergonomics or performance consequence — never a `correctness` one.
 
 Every finding is spelled in plain ops-sh, and rests in the model. A finding gives: a short
 book excerpt with real tools; the world state; the translation of the lines into the
-model's objects (which mKeys, of which mSchemes, in which mParents; which warrants; which
+model's objects (which MKeys, of which MSchemes, in which MParents; which warrants; which
 party the committee law appoints to say what); the answer the model returns; and why that
 answer is wrong or forced and whose true statement it rests on. You may invent a
 prospective Dorc spelling to communicate, but the finding must survive deleting it: a
@@ -592,7 +592,7 @@ Work in this order, and do not skip ahead:
 
 1. Read the core documents — root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
    `USER_STORY.md`, `AGENTS.md` (its terminology-firming section carries the bridge from
-   the older "kind"/"entity" vocabulary to mSort/mKey), `KNOBS.md`, `spike/CLAUDE.md`,
+   the older "kind"/"entity" vocabulary to MSort/MKey), `KNOBS.md`, `spike/CLAUDE.md`,
    `Research/GOTCHAS.md` — and then 311, in whole.
 2. Reason deeply. Then create your report file at
    `Research/notes/312cc-identity-model-crosscheck-astra-n.md` and write it: empty section
@@ -683,8 +683,8 @@ wrong, and the wrongly-removed line is the project's cardinal sin (`IMPLEMENTATI
 
 They revised it fifty-three times, and now it is frozen and queued for promotion from a
 note to a plan — after which it is law, and anything you miss is ours to live with. It has
-a private vocabulary for everything (mSort, mScheme, mKey, mParent-Store,
-mFullyQualifiedKey, mTraversal); a law in § 0 that says it "never reaches a false answer
+a private vocabulary for everything (MSort, MScheme, MKey, MParent-Store,
+MFullyQualifiedKey, MTraversal); a law in § 0 that says it "never reaches a false answer
 while every statement behind it is true"; a committee law in § 3.5 that says every needed
 statement is one a single party can know about their own tool; and a four-answer
 `compare()` whose every answer is defined in that same vocabulary. Those are precisely the
@@ -703,7 +703,7 @@ disagree; where a real ops fact has no seat in the model at all — `Research/GO
 the project's list of the ones that killed earlier designs, the model was shaped against
 it, so a handled gotcha is nothing and a mishandled one is a kill. Reason across the
 seams: where two locally-right rules compose wrong; where one rule's default is safe
-alone and unsafe next to another rule's default; where a rule stated for one mScheme, one
+alone and unsafe next to another rule's default; where a rule stated for one MScheme, one
 level, or one instance quietly assumes something about another. `AGENTS.md`'s
 exclusion-check (flip product, phase, direction, hat, reliability, the unaware user) is a
 good instrument. Choose the attack yourself.
@@ -730,7 +730,7 @@ finding with an ergonomics or performance consequence — never a `correctness` 
 
 Every finding is spelled in plain ops-sh and rests in the model, not in a spelling. A
 finding gives: a short book excerpt with real tools; the world state; the translation of
-the lines into the model's objects (which mKeys, of which mSchemes, in which mParents;
+the lines into the model's objects (which MKeys, of which MSchemes, in which MParents;
 which warrants; which party the committee law appoints to say what); the answer the model
 returns; and why that answer is wrong or forced and whose true statement it rests on. You
 may invent a prospective Dorc spelling to communicate, but the finding must survive
@@ -756,7 +756,7 @@ Work in this order, and do not skip ahead:
 
 1. Read the core documents — root `README.md`, `DESIGN.md`, `IMPLEMENTATION.md`,
    `USER_STORY.md`, `AGENTS.md` (its terminology-firming section bridges the older
-   "kind"/"entity" vocabulary to mSort/mKey), `KNOBS.md`, `spike/CLAUDE.md`,
+   "kind"/"entity" vocabulary to MSort/MKey), `KNOBS.md`, `spike/CLAUDE.md`,
    `Research/GOTCHAS.md` — and then 311, in whole.
 2. Reason deeply. Then create your report file at
    `Research/notes/312cd-identity-model-crosscheck-astra-a.md` and write it: empty section
@@ -874,7 +874,7 @@ finding with an ergonomics or performance consequence — never a `correctness` 
 
 Every finding is spelled in plain ops-sh and rests in the model, not in a spelling. It
 gives: a short book excerpt with real tools; the world state; the translation of the lines
-into the model's objects (which mKeys, of which mSchemes, in which mParents; which
+into the model's objects (which MKeys, of which MSchemes, in which MParents; which
 warrants; which party the committee law appoints to say what); the answer the model
 returns; and why that answer is wrong or forced and whose true statement it rests on. You
 may invent a prospective Dorc spelling to communicate, but the finding must survive
@@ -903,7 +903,7 @@ Work in this order:
 
 1. Read the core documents, fully, across several responses: root `README.md`,
    `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`; `AGENTS.md` (its terminology-firming
-   section bridges the older "kind"/"entity" vocabulary to this model's mSort/mKey),
+   section bridges the older "kind"/"entity" vocabulary to this model's MSort/MKey),
    `KNOBS.md`, `spike/CLAUDE.md` (the invariants: `compare-consumer-map`,
    `never-derive-separation`, `silence-licenses-nothing`, `set-lifting-universal-meet`,
    `top-identifies-with-nothing`, and the rest); `Research/GOTCHAS.md` (the project's list
@@ -1003,8 +1003,8 @@ UNKNOWN is safe for both.
 
 They revised it fifty-three times, and now it is frozen and queued for promotion from a
 note to a plan — after which it is law, and anything you miss is ours to live with. It has
-a private vocabulary for everything (mSort, mScheme, mKey, mParent-Store,
-mFullyQualifiedKey, mTraversal); a law in § 0 that says it "never reaches a false answer
+a private vocabulary for everything (MSort, MScheme, MKey, MParent-Store,
+MFullyQualifiedKey, MTraversal); a law in § 0 that says it "never reaches a false answer
 while every statement behind it is true"; a committee law in § 3.5 that says every needed
 statement is one a single party can know about their own tool; and a four-answer
 `compare()` whose every answer is defined in that same vocabulary. Those are precisely the
@@ -1020,7 +1020,7 @@ appointed party's statement is true and the model answers wrong; where the true 
 unreachable however many people speak; where two of the model's own paths to one referent
 disagree; where a real ops fact has no seat in the model. Look across the seams: where
 two locally-right rules compose wrong; where one rule's default is safe alone and unsafe
-next to another rule's default; where a rule stated for one mScheme, one level, or one
+next to another rule's default; where a rule stated for one MScheme, one level, or one
 instance quietly assumes something about another. Do not manufacture faults: try to
 refute every strong charge yourself, keep the survivors, and leave the rest in the file
 marked considered-and-dead. An invented fault is the one thing that would let them
@@ -1044,7 +1044,7 @@ finding with an ergonomics or performance consequence — never a `correctness` 
 
 Every finding is spelled in plain ops-sh and rests in the model, not in a spelling. It
 gives: a short book excerpt with real tools; the world state; the translation of the lines
-into the model's objects (which mKeys, of which mSchemes, in which mParents; which
+into the model's objects (which MKeys, of which MSchemes, in which MParents; which
 warrants; which party the committee law appoints to say what); the answer the model
 returns; and why that answer is wrong or forced and whose true statement it rests on. You
 may invent a prospective Dorc spelling to communicate, but the finding must survive
@@ -1074,7 +1074,7 @@ Work in this order:
 
 1. Read the core documents, fully, across several responses: root `README.md`,
    `DESIGN.md`, `IMPLEMENTATION.md`, `USER_STORY.md`; `AGENTS.md` (its terminology-firming
-   section bridges the older "kind"/"entity" vocabulary to mSort/mKey; its
+   section bridges the older "kind"/"entity" vocabulary to MSort/MKey; its
    exclusion-check — flip product, phase, direction, hat, reliability, the unaware user —
    is a good instrument), `KNOBS.md`, `spike/CLAUDE.md` (the invariants:
    `compare-consumer-map`, `never-derive-separation`, `silence-licenses-nothing`,
