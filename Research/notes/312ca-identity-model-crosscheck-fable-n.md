@@ -470,7 +470,7 @@ the engine's own vouch (1.10); a MRoot shape's MSort is whatever a stdlib declar
 of these has a may-read declaration in the model.
 
 ```sh
-cp ./nginx.conf /etc/nginx/nginx.conf      # fact: content match; chain 77 → dir → F → mRoute
+cp ./nginx.conf /etc/nginx/nginx.conf      # fact: content match; chain 77 → dir → F → MRoute
 ```
 
 Reading A ("undeclared = ⊤"): the MRoute member's set is ⊤, the readset never closes, 2.6

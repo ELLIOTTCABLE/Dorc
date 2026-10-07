@@ -77,7 +77,7 @@ transports to alpha.
 S6, the admin's posture, in behaviour only: "alpha and beta share no MKey-PrimaryStore."
 
 ```sh
-# not a spelling: the admin asserts aliases-nothing-else at the Target mKey-PrimaryStore for every sort whose chain
+# not a spelling: the admin asserts aliases-nothing-else at the Target MKey-PrimaryStore for every sort whose chain
 # passes through a Filesystem; S2's divergence then yields DISJOINT honestly, attributed to the
 # admin's line; S1 stays unknown without it
 ```

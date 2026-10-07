@@ -173,7 +173,7 @@ sm_BootSelf__resolve() {
 
 ```sh
 # added to michael-sysctl.oracle.sh
-sm_SysctlKey__resolve() {                        # the dotted name, into the /proc/sys path; runs where the mKey was bound
+sm_SysctlKey__resolve() {                        # the dotted name, into the /proc/sys path; runs where the MKey was bound
    local p; p=$(printf '%s' "$1" | tr . /)
    [ -e "/proc/sys/$p" ] || return 2             # a name I cannot find here: cannot say
    printf 'yields sm.ProcSysPath:%s\n' "$p" >>"${DREP_V1:-/dev/null}"
