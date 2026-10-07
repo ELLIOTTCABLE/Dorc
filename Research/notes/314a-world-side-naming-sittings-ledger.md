@@ -514,3 +514,31 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   project's Alloy runner discards Alloy's type-check warnings (its adapter parses with a silent
   reporter); whether assay also never shows them is unchecked.
 - Open: the family's prose name.
+
+### § 3.2-claim-warrant-and-no-family-name
+
+- Measured (an Opus subagent's survey of 445 Alloy files; partial, as GitHub code search was down
+  for part of it): no project overloads one predicate name across sibling signatures; the common
+  pattern puts truth on the parent as one relation or subset, each kind supplying its defining
+  clause; overloading by argument type is documented (the Alloy language reference, alloydocs)
+  and endorsed by Daniel Jackson on the Alloy forum.
+- Measured (an Opus scout, read-only): no path in the repo collects, prints, or fails on an Alloy
+  type-check warning; the specification yields 1,014 today, every one "implicit in-line
+  conjunction", none of the vacuity class; surfacing them moves every lock key, since the adapter's
+  digest is part of each.
+- **[CONDUCTOR]** put for the family: "truth condition"; then "guarantees" in the docs, with no
+  family noun in the spec.
+- **[TYPED]** stay with "claim" and "warrant": they read well, and keeping them saves churn. A
+  claim is anything Dorc carries as user speech: everything outside engine knowledge (the sh
+  floor and its like), horizoned truth, and universal logical or provable truth. The set is very
+  large and not usually admin-facing, but may surface as a tag on anything the engine carries and
+  cannot prove. It sounds soft on purpose: treating a popular oracle as authoritative about its
+  tool is among Dorc's gravest dangers, and everything Dorc touches is a messy, unreliable claim.
+  It covers lifted code that an author does not feel as speech. A warrant is the subset that does
+  feel like speech to an oracle author: the individually hand-authored line annotations, not what
+  the engine's analysis and lifting imply; possibly also the few warrants implied by writing an
+  entry point at all, even an empty one; nothing else.
+- **[TYPED]** no word for the `isTrue` family, and not "guarantees": non-MTerm, locally accurate
+  prose at each site, retiring any global name; "the `isTrue` predicates" in non-normative prose
+  where needed. Any normative use is raised to the human, who doubts it will justify a normative
+  name.
