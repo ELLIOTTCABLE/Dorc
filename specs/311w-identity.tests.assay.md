@@ -43,7 +43,7 @@ run kill_natural_disjoint_is_sound_unique_name {
 ```
 
 <!-- prose-translation -->
-> Each of the two laws dies with the warrant it rests on.
+> Each of the two laws of `311:2.1-yields-into-another-scheme` dies with the warrant it rests on.
 > Each kill in this section asks with the engine's axioms holding.
 > With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME licensed before the primary MScheme is reachable.
 > With one `:guarantees-unique-name` false and every other statement in force true, a false DISJOINT licensed before the primary MScheme is reachable.
@@ -732,8 +732,8 @@ run kill_nobody_spoke_declines_unique_referent {
 ```
 
 <!-- prose-translation -->
-> Each hole has a witness that shows it inhabited.
-> Each law dies with a statement it rests on.
+> Each hole of `311:3.2-compare-one-chokepoint-four-answers` has a witness that shows it inhabited.
+> Each law of `311:3.2-compare-one-chokepoint-four-answers` dies with a statement it rests on.
 > Each kill of a SAME law or a DISJOINT law asks with the engine's axioms holding.
 > Such a kill also asks outside its law's holes, and under its law's store premise where the law has one.
 > With one `:guarantees-unique-referent` false and every other statement in force true, a false SAME of the walk is reachable.
@@ -855,14 +855,14 @@ run bookScope_two_files_one_filesystem {} for 10 but 4 Int
 > No lookup's read set is open.
 > Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold.
 > At line 1, the path's identity is the inode key its lookup emitted, and its MFullyQualifiedKey ends at the boot's MWorld.
-> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one MTopic.
+> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of `311:2.1-yields-into-another-scheme` answers UNKNOWN, and the two facts are not about one MTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: `compare()` answers SAME, the natural-key license answers UNKNOWN, and the two facts are about one MTopic.
 
 #### § 3.2.3-a-book-a-hardlink-under-a-false-unique-name
 
 Tessa's world with one inode under two paths, and Tessa's `:guarantees-unique-name` on the
 path shape in force although it is false in that world (a hardlink is that warrant's failure,
-2.3-aliases-nothing-else-the-store-warrant). The book asks the walk by identities and the
+`311:2.3-aliases-nothing-else-the-store-warrant`). The book asks the walk by identities and the
 natural-key license the same question, and asks which statement in force is the false one.
 The natural-key license's DISJOINT is the wrong answer that the one false statement licenses.
 
@@ -949,7 +949,7 @@ run bookScope_a_hardlink_under_a_false_unique_name {} for 8 but 4 Int
 #### § 3.2.4-a-book-nested-pid-namespaces
 
 Guest pid 1 and host pid 4821 are one process (`311u:refuted-deriving-the-store-warrant-from-chain-shape`;
-2.7-corresponds-across-a-transition's first example). Pia's pids are identified in pid
+`311:2.7-corresponds-across-a-transition`'s first example). Pia's pids are identified in pid
 namespaces, which nest by shape, the initial one identified in the boot; the container's
 namespace declares no `:aliases-nothing-else`. The book's second line runs inside the container
 through Dora's `docker exec`, which lends the container's namespace; Dora declares the
@@ -1129,13 +1129,13 @@ run bookScope_two_files_scoped_in_the_route {} for 7 but 4 Int
 > Line 1, `cmp` against `/srv/a/app.conf`: every statement in force is true and the engine's axioms hold.
 > At line 1, the path's identity is the inode key its lookup emitted, whose MFullyQualifiedKey ends at the MRoute.
 > At line 1, the path's own MKey has no MParent.
-> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of 2.1-yields-into-another-scheme answers UNKNOWN, and the two facts are not about one MTopic.
+> Line 2, `cmp` against `/srv/b/app.conf`, against line 1: `compare()` answers DISJOINT, the natural-key license of `311:2.1-yields-into-another-scheme` answers UNKNOWN, and the two facts are not about one MTopic.
 > Line 3, `cmp` against `/srv/a/app.conf` again, against line 1: the MFullyQualifiedKey walk and `compare()` answer UNKNOWN.
 > At line 3, the natural-key license answers UNKNOWN, and the two facts are not about one MTopic.
 
 #### § 3.2.6-a-book-two-cells-of-one-unit
 
-Two cells of one MParent are two MSorts (1.9-cell-a-singleton-sort), and the walk decides
+Two cells of one MParent are two MSorts (`311:1.9-cell-a-singleton-sort`), and the walk decides
 between them as between any two MSorts. Sven describes units and two of their cells; the unit
 name is scoped in the MRoute, so the world is thin. The book reads one cell twice, under two
 MKey atoms for the unit, and reads the other cell once.
@@ -1214,7 +1214,7 @@ run bookScope_two_cells_of_one_unit {} for 6 but 4 Int
 
 #### § 3.2.7-a-book-one-configuration-from-two-files-in-two-orders
 
-A composite MKey names one part per role (2.11-composite-sorts-and-roles), and the same two
+A composite MKey names one part per role (`311:2.11-composite-sorts-and-roles`), and the same two
 parts in swapped roles are another MKey (`composite-identity-is-structure-not-a-bag`). Cora
 describes a tool that merges a base file with an overlay; Tessa's files are thin, scoped in the
 MRoute. The walk over the composites answers UNKNOWN because the merge shape carries no warrant.
