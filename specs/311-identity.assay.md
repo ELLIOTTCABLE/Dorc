@@ -25,12 +25,12 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 
 ## Conventions
 
-- A model object is written mFixedTerm. The bare word never stands in for it.
+- A model object is written MFixedTerm. The bare word never stands in for it.
 - A relation, attribute, or warrant known to Dorc only from what Dorc is given is written
   `:fixed-term`, the default that silence leaves included (a default is a spelling too). These
   are neither built into the engine nor hidden from Dorc by design, and they are what product
   design has to spell. A relation in the world,
-  which the engine never holds, is a model object, written mFixedTerm. A relation the engine
+  which the engine never holds, is a model object, written MFixedTerm. A relation the engine
   derives takes neither.
 - An abstract operation is written `op()`. A concrete authored member keeps the `__name()` form.
 - A derived view of a species is written species-hyphen-gloss: mKey-Primary, mParent-Catalog,
@@ -55,9 +55,9 @@ what runs them is `notes/30Y`; the arc's ledger is `notes/312d`.
 
 Spelling inside the fences:
 
-- A model object keeps its prose name in the fences, its m included: the signatures `mKey` and
-  `mSort`, the fields `mParent` and `mRefersTo`. A shell word is assay's `Shword`; an mKey's
-  mValue is one.
+- In the fences, a model object keeps its prose name. A signature keeps the capital M: `MKey`,
+  `MSort`. A field, or a function of one atom, starts with a lowercase m: `mParent`, `mRefersTo`,
+  `mToken`. A shell word is assay's `Shword`; an mKey's mValue is one.
 - A statement is a spoken foundation: a party states it, and the contract trusts it. A
   statement species is a signature under the shared `Spoken`, named for the act:
   `DeclaresIdentifiedIn`, `SuppliesParent`. Its fields name what it is about. One statement
