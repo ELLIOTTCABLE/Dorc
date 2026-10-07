@@ -565,3 +565,21 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   `and` rewrites of multi-line paragraphs are dropped. Lean: drop any normalization in the emitter
   that changes meaning at all; key churn from some formatting changes is acceptable, arbitrary
   re-wrapping is unlikely, and CI re-solves the lock.
+
+## § 4-the-pure-logic-document
+
+- **[TYPED]** the premise's translation reads like philosophical epistemics, not a product claim.
+  "Every oracle author's claim must hold" is a product fact, and a subset of what the line says;
+  "for a statement to hold, each composed sub-statement must hold" is no Dorc product fact and
+  does not belong in 311. Dorc-unique epistemics do belong there.
+- **[CONDUCTOR]** put, and acked by the human's next line: 311's normative prose states what is
+  true of Dorc, not what is true of logic; a third kind, a modelling choice that looks like logic
+  (no store among its own contents, which a bind mount can break), is product and stays.
+- **[TYPED]** begin cutting 311 down: a document in `specs/` that is normative but not product
+  surface, holding the bare-bones content Alloy forces and no interesting product choice, written
+  as genuine epistemics and never as a description of iteration. Hard ack on a very strict entry
+  rubric: the document must not absorb statements that are, subtly, about the product.
+- **[TYPED]** no scout yet. Order: the rubric alone first, with no Alloy; then the one identified
+  item (the premise's aggregation over the statements in force) and a tight chain of its
+  dependencies, judged by the rubric; then the assay work that makes it run; more items later. How
+  specifications see the document (an include mechanism, or opening) is the conductor's choice.
