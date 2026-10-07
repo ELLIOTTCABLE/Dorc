@@ -5913,6 +5913,10 @@ row's `near:` line refreshes only when that row's other lines change.
 ## 30R:read-and-write-state-machines
 - defined: Research/plans/30R-durable-whylog-and-reingestion.md:331
 
+## read-the-test-document-states-no-fact-about-the-specification
+- defined: —
+- cited: 311w 313 (2)
+
 ## 24U:read-value-lane
 - defined: Research/notes/24U-round24-closeout.md:134 — (the `$(hostname)` capture fold, `notes/219` q-3; previously
 
@@ -6036,7 +6040,7 @@ row's `near:` line refreshes only when that row's other lines change.
 
 ## 311u:refuted-deriving-the-store-warrant-from-chain-shape
 - defined: Research/notes/311u-refuted-shapes-register.md:72
-- cited: 311 (1)
+- cited: 311w (1)
 
 ## 311u:refuted-equal-keys-reach-one-referent-by-default
 - defined: Research/notes/311u-refuted-shapes-register.md:154
