@@ -602,3 +602,25 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
   product value. Asked: after the tests and the standard library, which of the remainder can leave
   the specification body without hiding an important normative translation of the prose; the
   human is on the fence about whether a mechanical annex is worth having.
+- **[CONDUCTOR]** put, on a worked example, 311 § 3.2's premise block (the per-kind conjunction,
+  the contract and engine premises, the two world-shape premises) with the walk's memo tables
+  beside it. Of the block's 47 lines, about 30 (the per-kind conjunction, and its named-set slot,
+  whose only use is the kills) can leave the body without hiding meaning, but only once every
+  kind's section says when its claim is true: 19 sections do, 8 do not. About 17 lines stay as
+  product: the contract premise, the engine axiom, and the two world-shape premises, which a bind
+  mount can break. The tables (11 lines) could leave, at the cost of a jump for the reader of the
+  walk. Estimated residue that could leave after the test split: 70 to 100 lines of a body of
+  about 2,900. Recommended in place of an annex: assay generates the per-kind conjunction from
+  the declared kinds, complete by construction; the premise's translation becomes the product
+  floor sentence, with the eight missing per-kind sentences; the question is judged again after
+  the split.
+- **[TYPED]** novel assay generation is fine where it is sound and obvious, and for some of these
+  items it is strictly better than a separate file. Not dispatched.
+- **[TYPED]** the test split is dispatched to a builder, the `isTrue` rename first. The test
+  document takes an unused 311 letter, not a new document ID (`316` nacked): `311w`.
+- **[TYPED]** durables never mention temporary files. This ledger's pointers to review reports,
+  inventories, and the held-work inventory were removed, and their findings kept.
+- **[TYPED]** the remainder is tabled and the sitting closes. The next open design-moving item is
+  taken after a rewind. State at the close: `specs/pure-logic.assay.md` holds only the rubric,
+  which the review found admits nothing; the premise's translation line in 311 § 3.2 still says
+  "truth predicate"; the eight per-kind truth sentences are unwritten.
