@@ -542,3 +542,26 @@ The reviewer attacked the seven commits of § 2.5 (its report, ephemeral, is roo
   prose at each site, retiring any global name; "the `isTrue` predicates" in non-normative prose
   where needed. Any normative use is raised to the human, who doubts it will justify a normative
   name.
+- **[CONDUCTOR]** put: the one normative use (the translation of `axiomaticByContractExcept`,
+  "satisfies its species' truth predicate") can become product prose that defers to each
+  species' own section, but that is exact only once the eight species whose truth test is empty,
+  and whose sections never say so, each get one sentence; two of the eight are held holes.
+  **[TYPED]** ack of the identifier rename; the line's Alloy flavour bothers the human, who
+  asked for a product-level translation without weakening anything. No ruling on the packet yet.
+
+### § 3.3-alloy-warnings-surfaced
+
+- **[TYPED]** the warnings fix authorized: narrow, plain engineering, the minimal fix that closes
+  the hole; then every implicit-conjunction warning, and no other kind, fixed in one commit. Done
+  on a builder branch: assay refuses a spec with any Alloy type-check warning, and the runner
+  prints them.
+- **[CONDUCTOR]** found mid-fix: 149 of the warnings exist only because assay's emitter puts each
+  paragraph on one output line; an explicit `and` there needs parentheses wherever `implies`, `or`,
+  or a quantifier is involved, and a missing pair changes meaning with no type error, while
+  juxtaposed formulas are conjoined whole whatever their operators.
+- **[TYPED]** an `and` at the start of each later line reads fine to the human; the silent
+  precedence danger is near a dealbreaker.
+- **[TYPED]** ACK `fix-the-emitter-layout`: the emitter keeps the source's line breaks; the
+  `and` rewrites of multi-line paragraphs are dropped. Lean: drop any normalization in the emitter
+  that changes meaning at all; key churn from some formatting changes is acceptable, arbitrary
+  re-wrapping is unlikely, and CI re-solves the lock.
