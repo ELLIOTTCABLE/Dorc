@@ -665,3 +665,6 @@ The reviewer attacked the seven commits of § 2.5. The conductor put seven items
   (or "the writeset"); containment says "beneath"; four one-offs take plain verbs. Graph
   reachability keeps "reach". `30Z:hole-carries-its-witness-pair` now lets a witness live in the
   specification's test document.
+- The Linux hk checks over the split's changes, run by explicit refs, passed. Every branch and
+  worktree of this sitting is folded and removed. The sitting closes here; the next design-moving
+  item is chosen after a rewind.
